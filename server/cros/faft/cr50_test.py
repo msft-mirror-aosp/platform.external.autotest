@@ -9,7 +9,6 @@ import logging
 import os
 import pprint
 import six
-import subprocess
 import time
 
 from autotest_lib.client.bin import utils
@@ -959,58 +958,24 @@ class Cr50Test(FirmwareTest):
         @param name: The name to give the job
         @param expect_error: True if the command should fail
         """
-        set_pwd_cmd = utils.sh_escape(cmd)
-        full_ssh_command = '%s "%s"' % (self.host.ssh_command(options='-tt'),
-                                        set_pwd_cmd)
-        if isinstance(password, six.text_type):
-            password = password.encode('utf8')
         logging.info('Running: %s', cmd)
         logging.info('Password: %s', password)
-
         # Make sure the test waits long enough to avoid ccd rate limiting.
         time.sleep(self.cr50.CCD_PASSWORD_RATE_LIMIT)
-
-        # StringIO.StringIO() in python2. io.StringIO() in python3
-        stdout = six.StringIO()
-        # Start running the gsctool Command in the background.
-        gsctool_job = utils.BgJob(
-                full_ssh_command,
-                nickname='%s_with_password' % name,
-                stdout_tee=stdout,
-                stderr_tee=utils.TEE_TO_LOGS,
-                stdin=subprocess.PIPE)
-        if gsctool_job == None:
-            raise error.TestFail('could not start gsctool command %r' % cmd)
-
-        try:
-            # Wait for enter prompt
-            gsctool_job.process_output()
-            logging.info(stdout.getvalue().strip())
-            # Enter the password
-            gsctool_job.sp.stdin.write(password + '\n')
-
-            # Wait for re-enter prompt
-            gsctool_job.process_output()
-            logging.info(stdout.getvalue().strip())
-            # Re-enter the password
-            gsctool_job.sp.stdin.write(password + '\n')
-            time.sleep(self.cr50.CONSERVATIVE_CCD_WAIT)
-            gsctool_job.process_output()
-        finally:
-            exit_status = utils.nuke_subprocess(gsctool_job.sp)
-            output = stdout.getvalue().strip()
-            logging.info('%s stdout: %s', name, output)
-            logging.info('%s exit status: %s', name, exit_status)
-            if exit_status:
-                message = ('gsctool %s failed using %r: %s %s' %
-                           (name, password, exit_status, output))
-                if expect_error:
-                    logging.info(message)
-                else:
-                    raise error.TestFail(message)
-            elif expect_error:
-                raise error.TestFail('%s with %r did not fail when expected' %
-                                     (name, password))
+        full_cmd = "echo -e '%s\n%s\n' | %s" % (password, password, cmd)
+        result = self.host.run(full_cmd, ignore_status=expect_error)
+        if result.exit_status:
+            message = ('gsctool %s failed using %r: %s %s' %
+                       (name, password, result.exit_status, result.stderr))
+            if expect_error:
+                logging.info(message)
+            else:
+                raise error.TestFail(message)
+        elif expect_error:
+            raise error.TestFail('%s with %r did not fail when expected' %
+                                 (name, password))
+        else:
+            logging.info('ran %s password command: %r', name, result.stdout)
 
     def set_ccd_password(self, password, expect_error=False):
         """Set the ccd password"""

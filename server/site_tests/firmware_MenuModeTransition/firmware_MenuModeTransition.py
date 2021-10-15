@@ -14,9 +14,8 @@ class firmware_MenuModeTransition(FirmwareTest):
     """
     version = 1
 
-    def initialize(self, host, cmdline_args, ec_wp=None):
-        super(firmware_MenuModeTransition, self).initialize(
-                host, cmdline_args, ec_wp=ec_wp)
+    def initialize(self, host, cmdline_args):
+        super(firmware_MenuModeTransition, self).initialize(host, cmdline_args)
         if not self.menu_switcher:
             raise error.TestNAError('Test skipped for menuless UI')
         self.switcher.setup_mode('normal')

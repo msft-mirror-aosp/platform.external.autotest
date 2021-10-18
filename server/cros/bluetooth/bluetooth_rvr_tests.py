@@ -36,12 +36,13 @@ class BluetoothAdapterRvRTests(BluetoothAdapterTests):
         try:
             fixed_attenuation = bt_attenuator.get_minimal_total_attenuation()
             logging.debug('Fixed attentuation is %s', fixed_attenuation)
-            final_attenuation = 100
-            freq = 2427
+            final_attenuation = 100  # Maximum attenuation
+            freq = 2427  # Frequency used to calculate total attenuation
             rssi_dict = {}
-            for attn in range(fixed_attenuation, final_attenuation, 1):
+            for attn in range(fixed_attenuation, final_attenuation):
                 logging.debug('Setting attenuation to %s', attn)
                 bt_attenuator.set_total_attenuation(attn, freq)
+                device.SetDiscoverable(True)
                 try:
                     rssi = self.get_device_sample_rssi(device,
                                                        use_cached_value=False)

@@ -13,6 +13,7 @@ TIME = "FAST"
 TEST_CATEGORY = "Functional"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
+PY_VERSION = 3
 
 DOC = """
 This test remotely switches type C port to USB3 device mode. It fails if

@@ -308,7 +308,7 @@ class RpcServerTracker(object):
 
     def disconnect_all(self):
         """Disconnect all known RPC proxy ports."""
-        for port in self._rpc_proxy_map.keys():
+        for port in list(self._rpc_proxy_map.keys()):
             self.disconnect(port)
 
 

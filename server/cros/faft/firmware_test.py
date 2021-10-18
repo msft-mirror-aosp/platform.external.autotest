@@ -2270,10 +2270,10 @@ class FirmwareTest(test.test):
                                     'access to the Cr50 console')
 
         self._ccd_open_job.process_output()
+        output = self._ccd_open_stdout.getvalue()
         self._ccd_open_stdout.seek(self._ccd_open_last_len)
-        output = self._ccd_open_stdout.read()
-        self._ccd_open_last_len = self._ccd_open_stdout.len
-        return output
+        self._ccd_open_last_len = len(output)
+        return self._ccd_open_stdout.read().strip()
 
     def _close_ccd_open_job(self):
         """Terminate the process and check the results."""

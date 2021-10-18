@@ -183,7 +183,11 @@ def _strip_http_message(message):
 
 
 def _get_image_storage_server():
-    return CONFIG.get_config_value('CROS', 'image_storage_server', type=str)
+    image_path = CONFIG.get_config_value('CROS',
+                                         'image_storage_server',
+                                         type=str)
+    # see b/203531740; this forces a trailing / if not there yet.
+    return os.path.join(image_path, '')
 
 
 def _get_canary_channel_server():
@@ -193,7 +197,11 @@ def _get_canary_channel_server():
 
     @return: The url to the canary channel server.
     """
-    return CONFIG.get_config_value('CROS', 'canary_channel_server', type=str)
+    image_path = CONFIG.get_config_value('CROS',
+                                         'canary_channel_server',
+                                         type=str)
+    # see b/203531740; this forces a trailing / if not there yet.
+    return os.path.join(image_path, '')
 
 
 def _get_storage_server_for_artifacts(artifacts=None):
@@ -1175,7 +1183,8 @@ class ImageServerBase(DevServer):
         @raise DevServerException upon any return code that's not HTTP OK.
         """
         if not archive_url:
-            archive_url = _get_storage_server_for_artifacts(artifacts) + build
+            archive_url = os.path.join(
+                    _get_storage_server_for_artifacts(artifacts), build)
 
         artifacts_arg = ','.join(artifacts) if artifacts else ''
         files_arg = ','.join(files) if files else ''

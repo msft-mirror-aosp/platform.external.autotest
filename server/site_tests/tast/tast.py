@@ -571,7 +571,7 @@ class tast(test.test):
 
         if not gs_bucket or not build:
             return []
-        gs_path = gs_bucket + build
+        gs_path = os.path.join(gs_bucket, build)
         if not gs_path.endswith('/'):
             gs_path += '/'
         logging.info('Cloud storage bucket: %s', gs_path)

@@ -161,7 +161,8 @@ class firmware_IntegratedU2F(FirmwareTest):
             logging.info('pressed power button')
             time.sleep(self.SHORT_WAIT)
             # send enter to the test process
-            self.u2ftest_job.sp.stdin.write('\n')
+            self.u2ftest_job.sp.stdin.write(b'\n')
+            self.u2ftest_job.sp.stdin.flush()
             logging.info('hit enter')
             self.output = ''
         return self.u2ftest_job.sp.poll() is not None
@@ -170,10 +171,10 @@ class firmware_IntegratedU2F(FirmwareTest):
     def get_u2ftest_output(self):
         """Read the new output"""
         self.u2ftest_job.process_output()
+        output = self.stdout.getvalue()
         self.stdout.seek(self.last_len)
-        output = self.stdout.read().strip()
-        self.last_len = self.stdout.len
-        return output
+        self.last_len = len(output)
+        return self.stdout.read().strip()
 
     def run_u2ftest(self):
         """Run U2FTest with the U2F device"""

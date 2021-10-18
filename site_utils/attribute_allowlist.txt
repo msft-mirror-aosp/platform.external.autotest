@@ -183,7 +183,6 @@ suite:enterprise
 suite:experimental
 suite:factory
 suite:faft_bios
-suite:faft_bios_ec3po
 suite:faft_bios_ro_qual
 suite:faft_bios_rw_qual
 suite:faft_bios_tot

@@ -513,15 +513,11 @@ class firmware_Cr50DeviceState(Cr50Test):
         client_at = autotest.Autotest(self.host)
         client_at.run_test('login_LoginSuccess')
 
-        # Check if the device supports S0ix. The exit status will be 0 if it
-        # does 1 if it doesn't.
-        result = self.host.run('check_powerd_config --suspend_to_idle',
-                ignore_status=True)
-        if not result.exit_status:
+        if self.s0ix_supported:
             self.verify_state('S0ix')
 
-        # Enter S3
-        self.verify_state('S3')
+        if self.s3_supported:
+            self.verify_state('S3')
 
         # Enter G3
         self.verify_state('G3')
@@ -540,6 +536,15 @@ class firmware_Cr50DeviceState(Cr50Test):
             self.cr50.ccd_disable(raise_error=True)
 
         self.ccd_enabled = self.cr50.ccd_is_enabled()
+        # Check if the device supports S0ix.
+        self.s0ix_supported = not self.host.run(
+                'check_powerd_config --suspend_to_idle',
+                ignore_status=True).exit_status
+        # Check if the device supports S3.
+        self.s3_supported = not self.host.run(
+                'grep -q deep /sys/power/mem_sleep',
+                ignore_status=True).exit_status
+
         self.run_through_power_states()
 
         if supports_dts_control:

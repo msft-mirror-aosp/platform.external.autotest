@@ -248,7 +248,7 @@ Run the entire faft_pd suite
 
 To run servod in a different host, specify the servo_host and servo_port arguments.
 
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=$SERVO_HOST servo_port=$SERVO_PORT" suite:faft_lv1`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=$SERVO_HOST servo_port=$SERVO_PORT" suite:faft_ec`
 
 To run multiple servo boards on the same servo host (labstation), use serial and port number.
 

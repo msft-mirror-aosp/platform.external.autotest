@@ -31,7 +31,7 @@ class power_Speedometer2(power_test.power_Test):
         @param url: url of Speedometer2 test page.
         """
         with chrome.Chrome(init_network_controller=True) as self.cr:
-            tab = self.cr.browser.tabs.New()
+            tab = self.cr.browser.tabs[0]
             tab.Activate()
 
             # Run in full-screen.

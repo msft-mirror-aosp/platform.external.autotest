@@ -4962,11 +4962,15 @@ class BluetoothAdapterTests(test.test):
                         device.address, 'RSSI')
 
                 if not found:
+                    # Not clearing self.fails will result in test
+                    # failing with test_discover_device failure
+                    self.fails = []
                     logging.info(
                             'Failing with TEST_NA as peer %s was not'
-                            ' discovered', device.address)
-                    raise error.TestNAError('Peer {} not discovered'.format(
-                            device.address))
+                            ' discovered during RSSI check', device.address)
+                    raise error.TestNAError(
+                            'Peer {} not discovered during RSSI check'.format(
+                                    device.address))
 
                 if not rssi or rssi < self.MIN_RSSI:
                     logging.info('Failing with TEST_NA since RSSI (%s) is low ',

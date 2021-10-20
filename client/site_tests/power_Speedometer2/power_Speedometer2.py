@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import logging
-import re
 import time
 
 from autotest_lib.client.common_lib.cros import chrome
@@ -12,7 +11,6 @@ from autotest_lib.client.cros.power import power_test
 
 URL = 'http://crospower.page.link/power_Speedometer2'
 RESULT = 'result'
-CONFIDENCE = 'confidence'
 
 class power_Speedometer2(power_test.power_Test):
     """class for running Speedometer2 test in Chrome.
@@ -60,22 +58,13 @@ class power_Speedometer2(power_test.power_Test):
                         RESULT)
             end_time = time.time()
             result = float(result)
-            confidence = tab.EvaluateJavaScript(
-                    'document.getElementById("%s-number").innerHTML' % \
-                    CONFIDENCE)
-            match = re.search(r"((\d+(\.\d+)?)|(\.\d+))", confidence)
-            confidence = float(match.group(0))
 
-            keyvals = {RESULT: result, CONFIDENCE: confidence}
+            keyvals = {RESULT: result}
             for key, val in keyvals.items():
                 logging.info('Speedometer2 %s: %s', key, val)
             self.keyvals.update(keyvals)
             self.output_perf_value(description=RESULT, value=result,
                                    higher_is_better=True)
-            self.output_perf_value(description=CONFIDENCE, value=confidence,
-                                   higher_is_better=False)
 
             self._keyvallogger.add_item(RESULT, result, 'point', 'perf')
-            self._keyvallogger.add_item(CONFIDENCE, confidence, 'point',
-                                        'perf')
             self._keyvallogger.set_end(end_time)

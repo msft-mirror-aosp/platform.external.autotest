@@ -1,3 +1,16 @@
+dymo-20200714-lm280.ppd.gz
+dymo-20200714-lm400.ppd.gz
+dymo-20200714-lm420p.ppd.gz
+dymo-20200714-lm450.ppd.gz
+dymo-20200714-lm500ts.ppd.gz
+dymo-20200714-lmpc.ppd.gz
+dymo-20200714-lmpc2.ppd.gz
+dymo-20200714-lmpnp.ppd.gz
+dymo-20200714-lmpnpw.ppd.gz
+dymo-20200714-lp350.ppd.gz
+dymo-20200714-lw450dt.ppd.gz
+dymo-20200714-lwduot.ppd.gz
+dymo-20200714-lwduot2.ppd.gz
 foomatic-20191029-Samsung_ML-2525W_Series_PXL.ppd.gz
 foomatic-20200219-Apple-Color_StyleWriter_1500-lpstyl.ppd.gz
 foomatic-20200219-Apple-ImageWriter_II-iwhi.ppd.gz
@@ -89,6 +102,7 @@ hplip-20201209-hplip-3.20.11-hp-designjet_Z9_44in-ps.ppd.gz
 hplip-20201209-hplip-3.20.11-hp-designjet_Z9dr_44in-ps.ppd.gz
 hplip-20201209-hplip-3.20.11-hp-P15_CISS.ppd.gz
 kyocera-20190830-Kyocera_Generic_Monochrome.ppd.gz
+sharp-20191219-Sharp-MX-2614N-ps.ppd.gz
 star-20191209-mcp20.ppd.gz
 star-20191209-mcp21.ppd.gz
 star-20191209-mcp30.ppd.gz

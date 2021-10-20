@@ -1,9 +1,9 @@
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.appcompat-shard-2'
+NAME = 'tast.appcompat-shard-3'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:appcompat'
@@ -31,7 +31,7 @@ def run(machine):
                  test_exprs=['("group:appcompat")'],
                  ignore_test_failures=True, max_run_sec=16200,
                  totalshards=6,
-                 shardindex=2,
+                 shardindex=3,
                  command_args=args)
 
 parallel_simple(run, machines)

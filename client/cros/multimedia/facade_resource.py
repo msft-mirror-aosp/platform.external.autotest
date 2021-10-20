@@ -5,7 +5,6 @@
 
 """A module providing common resources for different facades."""
 
-import exceptions
 import logging
 import time
 
@@ -22,7 +21,7 @@ _FLAKY_CALL_RETRY_TIMEOUT_SEC = 60
 _FLAKY_CHROME_CALL_RETRY_DELAY_SEC = 1
 
 retry_chrome_call = retry.retry(
-        (chrome.Error, exceptions.IndexError, exceptions.Exception),
+        (chrome.Error, IndexError, Exception),
         timeout_min=_FLAKY_CALL_RETRY_TIMEOUT_SEC / 60.0,
         delay_sec=_FLAKY_CHROME_CALL_RETRY_DELAY_SEC)
 

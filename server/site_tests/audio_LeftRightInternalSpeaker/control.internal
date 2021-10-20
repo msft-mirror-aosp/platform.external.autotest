@@ -5,7 +5,7 @@
 from autotest_lib.server import utils
 
 AUTHOR = "chromeos-chameleon"
-NAME = "audio_LeftRightInternalSpeaker.native"
+NAME = "audio_LeftRightInternalSpeaker.internal"
 PURPOSE = "Remotely controlled left/right internal speaker audio test."
 CRITERIA = "This test will fail if the captured audio does not match original file."
 TIME = "SHORT"
@@ -14,7 +14,8 @@ TEST_CLASS = "audio"
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:chameleon_audio_unstable"
 DEPENDENCIES = "audio_box"
-# JOB_RETRIES = 0
+JOB_RETRIES = 1
+PY_VERSION = 3
 
 DOC = """
 This test remotely tests internal speaker audio function by playing
@@ -28,6 +29,6 @@ chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
-    job.run_test("audio_LeftRightInternalSpeaker", host=host, player='native')
+    job.run_test("audio_LeftRightInternalSpeaker", host=host, player='internal')
 
 parallel_simple(run, machines)

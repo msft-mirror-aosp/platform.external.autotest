@@ -207,7 +207,7 @@ def parse_stat_output(stat_output):
     stat = _SOX_STAT()
 
     for line in stat_output.splitlines():
-        match = _RE_STAT_LINE.match(line)
+        match = _RE_STAT_LINE.match(line.decode('utf-8'))
         if not match:
             continue
         key, value = (_remove_redundant_spaces(x) for x in match.groups())

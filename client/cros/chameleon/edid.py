@@ -79,7 +79,7 @@ class Edid(object):
         for start in range(0, data_len, Edid.BLOCK_SIZE):
             # Each block (128-byte) has a checksum at the last byte.
             checksum = reduce(operator.add,
-                              list(map(ord, data[start:start+Edid.BLOCK_SIZE])))
+                              list(data[start:start+Edid.BLOCK_SIZE]))
             if checksum % 256 != 0:
                 logging.debug('Wrong checksum in the block %d of EDID',
                               start // Edid.BLOCK_SIZE)

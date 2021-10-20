@@ -171,6 +171,7 @@ CONFIG['NEEDS_CTS_HELPERS'] = [
 
 CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
+        'CtsDeqpTestCases.dEQP-VK',
         'CtsMediaTestCases',
 ]
 

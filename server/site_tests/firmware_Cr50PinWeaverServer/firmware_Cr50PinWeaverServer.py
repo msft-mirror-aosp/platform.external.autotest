@@ -56,7 +56,10 @@ class firmware_Cr50PinWeaverServer(test.test):
         # Label 0 is guaranteed to be empty because the self test above resets
         # the tree and removes the leaf it adds.
         label = 0
-        h_aux = compute_empty_tree_auxilary_hashes().hex()
+        hashes = compute_empty_tree_auxilary_hashes()
+        # TODO(mruthven): always use hashes.hex() after python3 migration.
+        h_aux = hashes.hex() if hasattr(hashes,
+                                        'hex') else hashes.encode('hex')
         le_secret = sha256(b'1234').hexdigest()
         he_secret = sha256(b'ag3#l4Z9').hexdigest()
         reset_secret = sha256(b'W8oE@Ja2mq.R1').hexdigest()

@@ -22,7 +22,7 @@ def run_TS(machine):
         iterations=1,
         tag='11_r5.arm.CtsCameraTestCases.NativeCameraDeviceTest.ctshardware',
         test_name='cheets_CTS_R.11_r5.arm.CtsCameraTestCases.NativeCameraDeviceTest.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsCameraTestCases', '--test', 'android.hardware.camera2.cts.NativeCameraDeviceTest', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsCameraTestCases',
         target_plan=None,

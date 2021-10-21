@@ -35,7 +35,7 @@ class firmware_EventLog(FirmwareTest):
 
     def _gather_events(self):
         entries = self.faft_client.system.run_shell_command_get_output(
-                'mosys eventlog list')
+                'elogtool list')
         now = self._now()
         self._events = []
         for line in reversed(entries):
@@ -50,8 +50,8 @@ class firmware_EventLog(FirmwareTest):
             logging.info('Found event: "%s"', line)
             self._events.append(event)
 
-    # This assumes that Linux and the firmware use the same RTC. mosys converts
-    # timestamps to localtime, and so do we (by calling date without --utc).
+    # This assumes that Linux and the firmware use the same RTC. elogtool uses
+    # timestamps in localtime, and so do we (by calling date without --utc).
     def _now(self):
         time_string = self.faft_client.system.run_shell_command_get_output(
                 'date +"%s"' % self._TIME_FORMAT)[0]

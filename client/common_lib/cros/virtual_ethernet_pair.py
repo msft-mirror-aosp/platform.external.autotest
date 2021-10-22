@@ -40,6 +40,7 @@ with virtual_ethernet_pair.VirtualEthernetPair(...) as vif:
 """
 
 import logging
+import re
 
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros.network import interface
@@ -83,15 +84,17 @@ class VirtualEthernetPair(object):
         self._host = host
         if host is not None:
             self._run = host.run
+        (self._eth_name, self._eth_ip) = self._get_ipv4_config()
 
-    def _get_ipv4_addr(self, iface):
-        addr_output = utils.system_output("ip -4 addr show dev %s" % iface)
-        for line in addr_output.splitlines():
-            parts = line.lstrip().split()
-            if parts[0] != 'inet' or 'deprecated' in parts:
-                continue
-            return parts[1]
-        return None
+    def _get_ipv4_config(self):
+        """@return Tuple with interface name and IP address used for
+        external communication."""
+        route = utils.system_output("ip route get 8.8.8.8")
+        # Only first line is interesting - match it for interface and
+        # IP address
+        m = re.search("dev (\S+) .*? src ((?:\d+\.){3}\d+)",
+                      route[:route.find('\n')])
+        return (m.group(1), m.group(2)) if m else (None, None)
 
     def setup(self):
         """
@@ -133,7 +136,7 @@ class VirtualEthernetPair(object):
         # In addition to INPUT configure also FORWARD'ing for the case
         # of interface being moved to its own namespace so that there is
         # contact with "the world" from within that namespace.
-        if self._interface_ns is not None:
+        if self._interface_ns and self._eth_ip:
             command = 'iptables -w -I FORWARD -i %s -j ACCEPT' \
                       % self._peer_interface_name
             status = self._run(command, ignore_status=True)
@@ -142,19 +145,19 @@ class VirtualEthernetPair(object):
                         'failed to configure forwarding rule for %s: '
                         '%s', self._peer_interface_name, status.stderr)
             command = 'iptables -w -t nat -I POSTROUTING ' \
-                      '--src %s -o eth0 -j MASQUERADE' % self._interface_ip
+                      '--src %s -o %s -j MASQUERADE' % \
+                      (self._interface_ip, self._eth_name)
             status = self._run(command, ignore_status=True)
             if status.exit_status != 0:
                 logging.warning('failed to configure nat rule for %s: '
                                 '%s', self._peer_interface_name, status.stderr)
-            # Get the addr of eth0 and add default route to it in namespace
-            eth0_addr = self._get_ipv4_addr('eth0')
-            eth0_addr = eth0_addr[:eth0_addr.rfind('/')]  # strip prefix
+            # Add default route in namespace to the address used for
+            # outbound traffic
             commands = [
                     'ip r add %s dev %s', 'ip route add default via %s dev %s'
             ]
             for command in commands:
-                command = command % (eth0_addr, self._interface_name)
+                command = command % (self._eth_ip, self._interface_name)
                 status = self._run(self._ns_exec + command, ignore_status=True)
                 if status.exit_status != 0:
                     logging.warning(
@@ -175,12 +178,13 @@ class VirtualEthernetPair(object):
                 self._run(self._ns_exec + command, ignore_status=True)
             else:
                 self._run(command, ignore_status=True)
-        if self._interface_ns is not None:
+        if self._interface_ns and self._eth_ip:
             self._run('iptables -w -D FORWARD -i %s -j ACCEPT' %
                       self._peer_interface_name,
                       ignore_status=True)
             command = 'iptables -w -t nat -I POSTROUTING ' \
-                      '--src %s -o eth0 -j MASQUERADE' % self._interface_ip
+                      '--src %s -o %s -j MASQUERADE' % \
+                      (self._interface_ip, self._eth_name)
             self._run(command, ignore_status=True)
         if not self._either_interface_exists():
             logging.warning('VirtualEthernetPair.teardown() called, '

@@ -70,6 +70,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     # Subtest to use for logging into DUTs in a test.
     _LOGIN_TEST = 'login_LoginSuccess'
+    _LOGIN_TEST_PIN = 'login_LoginPin'
 
     _CORRUPT_STATEFUL_PATH = '/mnt/stateful_partition/.corrupt_stateful'
 

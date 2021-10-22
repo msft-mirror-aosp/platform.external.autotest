@@ -28,6 +28,8 @@ VAULT_PATH_PATTERN = '/home/.shadow/%s/vault'
 
 DBUS_PROTOS_DEP = 'dbus_protos'
 
+LEC_KEY = 'low_entropy_credentials_supported'
+
 
 def get_user_hash(user):
     """Get the user hash for the given user."""
@@ -359,10 +361,13 @@ def remove_key(user, password, remove_key_label):
     logging.info(run_cmd(' '.join(args)))
 
 
-def get_supported_key_policies():
+def get_supported_key_policies(host=None):
     """Get supported key policies."""
     args = [CRYPTOHOME_CMD, '--action=get_supported_key_policies']
-    out = run_cmd(' '.join(args))
+    if host is not None:
+        out = host.run(args).stdout
+    else:
+        out = run_cmd(' '.join(args))
     logging.info(out)
     policies = {}
     for line in out.splitlines():
@@ -370,6 +375,12 @@ def get_supported_key_policies():
         if match:
             policies[match.group(1)] = match.group(2) == 'true'
     return policies
+
+
+def is_low_entropy_credentials_supported(host=None):
+    """ Returns True if low entropy credenitals are supported."""
+    key_policies = get_supported_key_policies(host)
+    return LEC_KEY in key_policies and key_policies[LEC_KEY]
 
 
 def unmount_vault(user=None):

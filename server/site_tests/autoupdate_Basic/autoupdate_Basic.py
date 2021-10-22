@@ -22,7 +22,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                  full_payload,
                  job_repo_url=None,
                  m2n=False,
-                 running_at_desk=False):
+                 running_at_desk=False,
+                 pin_login=False):
         """
         Performs a N-to-N autoupdate with Nebraska.
 
@@ -33,6 +34,7 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
               of this board before updating to ToT.
         @param running_at_desk: Indicates test is run locally from workstation.
                                 Flag does not work with M2N tests.
+        @param pin_login: True to use login via PIN.
 
         """
         self._m2n = m2n
@@ -55,7 +57,12 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                     is_release_bucket=True).run_provision()
 
         # Login to device before update
-        self._run_client_test_and_check_result(self._LOGIN_TEST, tag='before')
+        if pin_login:
+            self._run_client_test_and_check_result(self._LOGIN_TEST_PIN,
+                                                   tag='before')
+        else:
+            self._run_client_test_and_check_result(self._LOGIN_TEST,
+                                                   tag='before')
 
         # Get a payload to use for the test.
         payload_url = self.get_payload_for_nebraska(
@@ -81,6 +88,11 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
             logging.info('Restoring stateful partition to ToT version')
             self._update_stateful()
         # Check we can login with the same user after update.
-        self._run_client_test_and_check_result(self._LOGIN_TEST,
-                                               tag='after',
-                                               dont_override_profile=True)
+        if pin_login:
+            self._run_client_test_and_check_result(self._LOGIN_TEST_PIN,
+                                                   tag='after',
+                                                   setup_pin=False)
+        else:
+            self._run_client_test_and_check_result(self._LOGIN_TEST,
+                                                   tag='after',
+                                                   dont_override_profile=True)

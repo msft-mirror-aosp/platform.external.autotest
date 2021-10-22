@@ -19,5 +19,4 @@ By default both parts are executed consequentially. To skip any part one could
 use `setup_pin` and `login_pin` boolean parameters.
 """
 
-job.run_test('login_LoginPin',
-             username='autotest', password='password', pin='123456789')
+job.run_test('login_LoginPin')

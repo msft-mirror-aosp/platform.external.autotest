@@ -295,28 +295,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.UnexportMediaPlayer()
 
 
-    def select_audio_output_node(self):
-        """Select the audio output node through cras.
-
-        @raises: error.TestError if failed.
-        """
-        def bluetooth_type_selected(node_type):
-            """Check if the bluetooth node type is selected."""
-            selected = self.bluetooth_facade.get_selected_output_device_type()
-            logging.debug('active output node type: %s, expected %s',
-                          selected, node_type)
-            return selected == node_type
-
-        node_type = self.CRAS_BLUETOOTH_OUTPUT_NODE_TYPE
-        if not self.bluetooth_facade.select_output_node(node_type):
-            raise error.TestError('select_output_node failed')
-
-        desc='waiting for %s as active cras audio output node type' % node_type
-        logging.debug(desc)
-        self._poll_for_condition(lambda: bluetooth_type_selected(node_type),
-                                 desc=desc)
-
-
     def initialize_hfp(self, device, test_profile, test_data,
                        recording_device, bluez_function):
         """Initial set up for hfp tests.
@@ -617,7 +595,42 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return self.get_ref_and_deg_files(trimmed_file, test_profile, test_data)
 
 
-    def handle_chunks(self, device, test_profile, test_data, duration):
+    # ---------------------------------------------------------------
+    # Definitions of all bluetooth audio test cases
+    # ---------------------------------------------------------------
+
+    @test_retry_and_log(False)
+    def test_select_audio_output_node(self, node_type=None):
+        """Select the audio output node through cras.
+
+        @param node_type: A str representing node type defined in CRAS_NODE_TYPES.
+        @raises: error.TestError if failed.
+
+        @return True if select given node success.
+        """
+
+        def node_type_selected(node_type):
+            """Check if the given node type is selected."""
+            selected = self.bluetooth_facade.get_selected_output_device_type()
+            logging.debug('active output node type: %s, expected %s', selected,
+                          node_type)
+            return selected == node_type
+
+        if node_type is None:
+            node_type = self.CRAS_BLUETOOTH_OUTPUT_NODE_TYPE
+
+        if not self.bluetooth_facade.select_output_node(node_type):
+            raise error.TestError('select_output_node failed')
+
+        desc = 'waiting for %s as active cras audio output node type' % node_type
+        logging.debug(desc)
+        self._poll_for_condition(lambda: node_type_selected(node_type),
+                                 desc=desc)
+
+        return True
+
+    @test_retry_and_log(False)
+    def test_check_chunks(self, device, test_profile, test_data, duration):
         """Handle chunks of recorded streams and verify the primary frequencies.
 
         @param device: the bluetooth peer device
@@ -637,6 +650,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         all_chunks_test_result = True
         for i in range(nchunks):
             logging.info('Handle chunk %d', i)
+
             recorded_file = device.HandleOneChunk(chunk_in_secs, i,
                                                   test_profile, self.host.ip)
             if recorded_file is None:
@@ -669,9 +683,131 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all_chunks_test_result
 
 
-    # ---------------------------------------------------------------
-    # Definitions of all bluetooth audio test cases
-    # ---------------------------------------------------------------
+    @test_retry_and_log(False)
+    def test_dut_to_start_playing_audio_subprocess(self, test_data):
+        """Start playing audio in a subprocess.
+
+        @param test_data: the audio test data
+
+        @returns: True on success. False otherwise.
+        """
+        start_playing_audio = self.bluetooth_facade.start_playing_audio_subprocess(
+                test_data)
+        self.results = {
+                'dut_to_start_playing_audio_subprocess': start_playing_audio
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_dut_to_stop_playing_audio_subprocess(self):
+        """Stop playing audio in the subprocess.
+
+        @returns: True on success. False otherwise.
+        """
+        stop_playing_audio = (
+                self.bluetooth_facade.stop_playing_audio_subprocess())
+
+        self.results = {
+                'dut_to_stop_playing_audio_subprocess': stop_playing_audio
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_dut_to_start_capturing_audio_subprocess(self, audio_data,
+                                                     recording_device):
+        """Start capturing audio in a subprocess.
+
+        @param audio_data: the audio test data
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'
+
+        @returns: True on success. False otherwise.
+        """
+        start_capturing_audio = self.bluetooth_facade.start_capturing_audio_subprocess(
+                audio_data, recording_device)
+        self.results = {
+                'dut_to_start_capturing_audio_subprocess':
+                start_capturing_audio
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_dut_to_stop_capturing_audio_subprocess(self):
+        """Stop capturing audio.
+
+        @returns: True on success. False otherwise.
+        """
+        stop_capturing_audio = (
+                self.bluetooth_facade.stop_capturing_audio_subprocess())
+
+        self.results = {
+                'dut_to_stop_capturing_audio_subprocess': stop_capturing_audio
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_device_to_start_playing_audio_subprocess(self, device,
+                                                      test_profile, test_data):
+        """Start playing the audio file in a subprocess.
+
+        @param device: the bluetooth peer device
+        @param test_data: the audio file to play and data about the file
+        @param audio_profile: the audio profile, either a2dp, hfp_wbs, or hfp_nbs
+
+        @returns: True on success. False otherwise.
+        """
+        start_playing_audio = device.StartPlayingAudioSubprocess(
+                test_profile, test_data)
+        self.results = {
+                'device_to_start_playing_audio_subprocess': start_playing_audio
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_device_to_stop_playing_audio_subprocess(self, device):
+        """Stop playing the audio file in a subprocess.
+
+        @param device: the bluetooth peer device
+
+        @returns: True on success. False otherwise.
+        """
+        stop_playing_audio = device.StopPlayingAudioSubprocess()
+        self.results = {
+                'device_to_stop_playing_audio_subprocess': stop_playing_audio
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_device_to_start_recording_audio_subprocess(
+            self, device, test_profile, test_data):
+        """Start recording audio in a subprocess.
+
+        @param device: the bluetooth peer device
+        @param test_profile: the audio profile used to get the recording settings
+        @param test_data: the details of the file being recorded
+
+        @returns: True on success. False otherwise.
+        """
+        start_recording_audio = device.StartRecordingAudioSubprocess(
+                test_profile, test_data)
+        self.results = {
+                'device_to_start_recording_audio_subprocess':
+                start_recording_audio
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_device_to_stop_recording_audio_subprocess(self, device):
+        """Stop the recording subprocess.
+
+        @returns: True on success. False otherwise.
+        """
+        stop_recording_audio = device.StopRecordingingAudioSubprocess()
+        self.results = {
+                'device_to_stop_recording_audio_subprocess':
+                stop_recording_audio
+        }
+        return all(self.results.values())
 
 
     @test_retry_and_log(False)
@@ -810,6 +946,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         return all(visqol_results.values())
 
+
     @test_retry_and_log(False)
     def test_device_a2dp_connected(self, device, timeout=15):
         """ Tests a2dp profile is connected on device. """
@@ -823,74 +960,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         return all(self.results.values())
 
-    @test_retry_and_log(False)
-    def test_a2dp_sinewaves(self, device, test_profile, duration):
-        """Test Case: a2dp sinewaves
-
-        @param device: the bluetooth peer device
-        @param test_profile: the a2dp test profile;
-                             choices are A2DP and A2DP_LONG
-        @param duration: the duration of the audio file to test
-                         0 means to use the default value in the test profile
-
-        @returns: True if the recorded primary frequency is within the
-                  tolerance of the playback sine wave frequency.
-
-        """
-        # Make a copy since the test_data may be formatted with distinct
-        # arguments in the follow-up tests.
-        test_data = audio_test_data[test_profile].copy()
-        if bool(duration):
-            test_data['duration'] = duration
-        else:
-            duration = test_data['duration']
-
-        test_data['file'] %= duration
-        logging.info('%s test for %d seconds.', test_profile, duration)
-
-        # Wait for pulseaudio a2dp bluez source
-        check_connection = lambda: self._get_pulseaudio_bluez_source_a2dp(
-                device, A2DP)
-        is_connected = self._wait_for_condition(check_connection,
-                                                'test_device_a2dp_connected',
-                                                timeout=20)
-        if not is_connected:
-            self.results = {'peer a2dp connected': is_connected}
-            # Fail early if host can not connect to the peer.
-            return False
-
-        # Select audio output node so that we do not rely on chrome to do it.
-        self.select_audio_output_node()
-
-        # Start recording audio on the peer Bluetooth audio device.
-        logging.debug('Start recording a2dp')
-        if not device.StartRecordingAudioSubprocess(test_profile, test_data):
-            raise error.TestError(
-                    'Failed to record on the peer Bluetooth audio device.')
-
-        # Play audio on the DUT in a non-blocked way and check the recorded
-        # audio stream in a real-time manner.
-        logging.debug('Start playing audio')
-        if not self.bluetooth_facade.start_playing_audio_subprocess(test_data):
-            raise error.TestError('DUT failed to play audio.')
-
-        # Handle chunks of recorded streams and verify the primary frequencies.
-        # This is a blocking call until all chunks are completed.
-        all_chunks_test_result = self.handle_chunks(device, test_profile,
-                                                    test_data, duration)
-
-        # Stop recording audio on the peer Bluetooth audio device.
-        logging.debug('Stop recording a2dp')
-        if not device.StopRecordingingAudioSubprocess():
-            msg = 'Failed to stop recording on the peer Bluetooth audio device'
-            logging.error(msg)
-
-        # Stop playing audio on DUT.
-        logging.debug('Stop playing audio on DUT')
-        if not self.bluetooth_facade.stop_playing_audio_subprocess():
-            raise error.TestError('DUT failed to stop playing audio.')
-
-        return all_chunks_test_result
 
     @test_retry_and_log(False)
     def test_hfp_dut_as_source(self, device, test_profile):
@@ -1063,3 +1132,53 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                         'artist': result_artist, 'title': result_title,
                         'length': result_length}
         return all(self.results.values())
+
+
+    # ---------------------------------------------------------------
+    # Definitions of all bluetooth audio test sequences
+    # ---------------------------------------------------------------
+
+    def test_a2dp_sinewaves(self, device, test_profile, duration):
+        """Test Case: a2dp sinewaves
+
+        @param device: the bluetooth peer device
+        @param test_profile: the a2dp test profile;
+                             choices are A2DP and A2DP_LONG
+        @param duration: the duration of the audio file to test
+                         0 means to use the default value in the test profile
+
+        """
+        # Make a copy since the test_data may be formatted with distinct
+        # arguments in the follow-up tests.
+        test_data = audio_test_data[test_profile].copy()
+        if bool(duration):
+            test_data['duration'] = duration
+        else:
+            duration = test_data['duration']
+
+        test_data['file'] %= duration
+        logging.info('%s test for %d seconds.', test_profile, duration)
+
+        # Wait for pulseaudio a2dp bluez source
+        self.test_device_a2dp_connected(device)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.test_select_audio_output_node()
+
+        # Start recording audio on the peer Bluetooth audio device.
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, test_data)
+
+        # Play audio on the DUT in a non-blocked way and check the recorded
+        # audio stream in a real-time manner.
+        self.test_dut_to_start_playing_audio_subprocess(test_data)
+
+        # Handle chunks of recorded streams and verify the primary frequencies.
+        # This is a blocking call until all chunks are completed.
+        self.test_check_chunks(device, test_profile, test_data, duration)
+
+        # Stop recording audio on the peer Bluetooth audio device.
+        self.test_device_to_stop_recording_audio_subprocess(device)
+
+        # Stop playing audio on DUT.
+        self.test_dut_to_stop_playing_audio_subprocess()

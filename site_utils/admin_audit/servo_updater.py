@@ -62,7 +62,6 @@ class _BaseUpdateServoFw(object):
 
         @returns: True if update required, False if not
         """
-        # Check if channel passed. If not then set stable as default.
         if not channel:
             channel = self.DEFAULT_FW_CHANNEL
         if not self._host:
@@ -95,8 +94,7 @@ class _BaseUpdateServoFw(object):
                                 version R90. Possible values: stable, prev,
                                 dev, alpha.
         """
-        # Check if channel passed. If not then set stable as default.
-        if channel is None or '':
+        if not channel:
             channel = self.DEFAULT_FW_CHANNEL
         if not self.need_update(ignore_version, channel=channel):
             logging.info("The board %s doesn't need update.", self.get_board())

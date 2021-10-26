@@ -139,17 +139,28 @@ class _RootServoPresentVerifier(hosts.Verifier):
 
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
+        logging.debug("_RootServoPresentVerifier: Starting verifier.")
         device = None
         topology = host.get_topology()
         topology.read(host.get_dut_host_info())
         try:
+            logging.debug("_RootServoPresentVerifier: Getting root servo.")
             device = topology.get_root_servo()
+            logging.debug("_RootServoPresentVerifier: Got root servo.")
         except Exception as e:
-            host.request_reboot()
-            logging.info('Reboot labstation requested, it will be handled'
-                         ' by labstation AdminRepair task.'
-                         ' Unable to detect root servo info from topology.')
-            logging.debug('(Not critical) %s', e)
+            logging.debug("_RootServoPresentVerifier: Exception"\
+                "when getting root servo")
+            if host.is_containerized_servod():
+                logging.debug("_RootServoPresentVerifier: Restarting servod.")
+                host.restart_servod()
+                logging.debug("_RootServoPresentVerifier: Restarted servod.")
+            else:
+                logging.debug("_RootServoPresentVerifier: Requesting reboot.")
+                host.request_reboot()
+                logging.info('Reboot labstation requested, it will be handled'
+                             ' by labstation AdminRepair task.'
+                             ' Unable to detect root servo info from topology.')
+                logging.debug('(Not critical) %s', e)
         if device:
             logging.info('Root servo is present')
             return
@@ -165,10 +176,12 @@ class _RootServoPresentVerifier(hosts.Verifier):
         raise hosts.AutoservVerifyError('Root servo not found!')
 
     def _is_applicable(self, host):
+        logging.debug('_RootServoPresentVerifier: Checking applicability')
         if host.is_containerized_servod():
             # TODO(otabek@): revisit after stabilize container.
+            logging.debug("_RootServoPresentVerifier: Action is applicable.")
             logging.info('Servod is running within a container.')
-            return False
+            return True
         # Run only for servos under labstations.
         if not host.is_labstation():
             return False
@@ -1060,11 +1073,20 @@ class ServodDutControllerMissingVerifier(hosts.Verifier):
 
     @timeout_util.TimeoutDecorator(cros_constants.VERIFY_TIMEOUT_SEC)
     def verify(self, host):
+        logging.debug('ServodDutControllerMissingVerifier: Starting verifier.')
         if host.get_servo().get('dut_controller_missing_fault') == 'on':
+            logging.debug('ServodDutControllerMissingVerifier: DUT Controller missing fault is on.')
             raise hosts.AutoservVerifyError('Servod is missing dut controller')
+        else:
+            logging.debug('ServodDutControllerMissingVerifier: DUT Controller missing fault is not on.')
 
     def _is_applicable(self, host):
-        if not (host.is_labstation() or host.is_containerized_servod()):
+        if host.is_containerized_servod():
+            logging.debug('ServodDutControllerMissingVerifier: Detected containerized servod.')
+            logging.info('Servod is running within a container')
+            return True
+        if not host.is_labstation():
+            logging.debug('ServodDutControllerMissingVerifier: Detected non-labstation.')
             logging.info('Not supported for servo_v3.')
             return False
         return host.is_in_lab()

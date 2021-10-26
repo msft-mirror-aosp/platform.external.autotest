@@ -55,6 +55,9 @@ _CONFIG = global_config.global_config
 
 SERVOD_CONTAINER_IMAGE_PATH = "us-docker.pkg.dev/chromeos-partner-moblab/common-core"
 
+DOCKER_SERVOD_DEBUG_MODE = os.environ.get('DOCKER_SERVOD_DEBUG_MODE', '0')
+
+SERVOD_DEBUG_FLAG = '/servod_debug'
 
 class ServoHost(base_servohost.BaseServoHost):
     """Host class for a servo host(e.g. beaglebone, labstation)
@@ -705,7 +708,13 @@ class ServoHost(base_servohost.BaseServoHost):
             return
 
         if self.is_containerized_servod():
-            self.stop_containerized_servod()
+            # TODO(gregorynisbet): Remove this message in 2022Q2.
+            logging.debug("ServoHost: Detected containerized servod.")
+            remove_container = True
+            if DOCKER_SERVOD_DEBUG_MODE == '1' or os.path.exists(
+                    SERVOD_DEBUG_FLAG):
+                remove_container = False
+            self.stop_containerized_servod(remove_container=remove_container)
             return
 
         logging.debug('Stopping servod on port %s', self.servo_port)
@@ -812,7 +821,7 @@ class ServoHost(base_servohost.BaseServoHost):
         except docker.errors.ImageNotFound:
             logging.exception("Servod container image %s not found.", image)
 
-    def stop_containerized_servod(self):
+    def stop_containerized_servod(self, remove_container=True):
         """Stop the container running servod."""
         logging.info("Stopping servod container %s.", self.hostname)
         client = docker_utils.get_docker_client()
@@ -826,8 +835,9 @@ class ServoHost(base_servohost.BaseServoHost):
                     "Stopping servod container %s caused a docker error.",
                     self.hostname)
         else:
-            cont.remove(force=True)
-            logging.debug('Servod container instance removed')
+            if remove_container:
+                cont.remove(force=True)
+                logging.debug('Servod container instance removed')
 
     def restart_servod(self, quick_startup=False):
         """Restart the servod process on servohost.

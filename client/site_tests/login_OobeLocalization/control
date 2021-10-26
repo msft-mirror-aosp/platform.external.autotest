@@ -15,6 +15,7 @@ TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'login'
 TEST_TYPE = 'client'
 JOB_RETRIES = 2
+PY_VERSION = 3
 
 DOC = """
 This test verifies the locale and keyboard options present at OOBE under

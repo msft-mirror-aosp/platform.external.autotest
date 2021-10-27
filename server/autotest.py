@@ -352,12 +352,6 @@ class Autotest(installable_object.InstallableObject):
         host.setup()
         # B/203609358 someting is removing telemetry. Adding this to check the
         # status of the folder as early as possible.
-        try:
-            logging.debug('Telemetry Status:\n%s',
-                          self.host.run('ls /usr/local/telemetry').stdout)
-        except Exception:
-            logging.error('Telemetry Folder not found on host %s',
-                          host.hostname)
         logging.info("Installing autotest on %s", host.hostname)
 
         # set up the autotest directory on the remote machine
@@ -1247,12 +1241,6 @@ class _Run(object):
         finally:
             # B/203609358 someting is removing telemetry. Adding this to check the
             # status of the folder as late as possible.
-            try:
-                logging.debug('Telemetry Status:\n%s',
-                              self.host.run('ls /usr/local/telemetry').stdout)
-            except Exception:
-                logging.error('Telemetry Folder not found on host %s',
-                              self.host.hostname)
             logging.debug('Autotest job finishes running. Below is the '
                           'post-processing operations.')
             logger.close()

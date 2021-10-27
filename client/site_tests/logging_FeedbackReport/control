@@ -10,6 +10,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "logging"
 TEST_TYPE = "client"
 ATTRIBUTES = "suite:bvt-perbuild, suite:usb_detect"
+PY_VERSION = 3
 
 DOC = """
 Open feedback report and verify UI is correct

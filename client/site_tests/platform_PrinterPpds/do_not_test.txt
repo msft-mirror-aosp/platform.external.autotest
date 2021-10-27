@@ -27,6 +27,7 @@ foomatic-20200219-Canon-LBP-470-lips4.ppd.gz
 foomatic-20200219-Compaq-IJ1200-drv_z42.ppd.gz
 foomatic-20200219-Compaq-IJ750-lxm3200X.ppd.gz
 foomatic-20200219-Dell-3010cn-pxldpl.ppd.gz
+foomatic-20200219-Epson-LP-9600SPD-Postscript-Epson.ppd.gz
 foomatic-20200219-Epson-PM_760C-PM760pX.upp.ppd.gz
 foomatic-20200219-Epson-PM_820C-PM820pX.upp.ppd.gz
 foomatic-20200219-Epson-SQ_1170-stcolor.ppd.gz
@@ -102,10 +103,4 @@ hplip-20201209-hplip-3.20.11-hp-designjet_Z9_44in-ps.ppd.gz
 hplip-20201209-hplip-3.20.11-hp-designjet_Z9dr_44in-ps.ppd.gz
 hplip-20201209-hplip-3.20.11-hp-P15_CISS.ppd.gz
 kyocera-20190830-Kyocera_Generic_Monochrome.ppd.gz
-sharp-20191219-Sharp-MX-2614N-ps.ppd.gz
-star-20191209-mcp20.ppd.gz
-star-20191209-mcp21.ppd.gz
-star-20191209-mcp30.ppd.gz
-star-20191209-mcp31.ppd.gz
-star-20191209-pop10.ppd.gz
 star-20191209-tsp651.ppd.gz

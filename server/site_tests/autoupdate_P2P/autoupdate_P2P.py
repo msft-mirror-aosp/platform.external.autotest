@@ -261,21 +261,27 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
 
 
     def run_once(self,
+                 companions,
                  job_repo_url=None,
                  too_many_attempts=False,
                  deadline_expired=False,
-                 with_dlc=False):
+                 with_dlc=False,
+                 running_at_desk=False):
         """
         Testing autoupdate via P2P.
 
+        @param companions: List of other DUTs used in the test.
         @param job_repo_url: A url linking to autotest packages.
         @param too_many_attempts: True to test what happens with too many
                                   failed update attempts.
         @param deadline_expired: True to test what happens when the deadline
                                  between peers has expired
         @param with_dlc: Whether to include sample-dlc in the test.
+        @param running_at_desk: True to stage files on public bucket. Useful
+                                for debugging locally.
 
         """
+        self._hosts = [self._host, companions[0]]
         logging.info('Hosts for this test: %s', self._hosts)
 
         self._too_many_attempts = too_many_attempts
@@ -290,16 +296,22 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         # updates are very slow so we will only update with a delta payload. In
         # addition we need the full DLC payload so we can perform its install.
         self._payload_urls = [
-                self.get_payload_for_nebraska(job_repo_url, full_payload=False)
+                self.get_payload_for_nebraska(job_repo_url,
+                                              full_payload=False,
+                                              public_bucket=running_at_desk)
         ]
         if self._with_dlc:
             self._payload_urls += [
-                    self.get_payload_for_nebraska(job_repo_url=job_repo_url,
-                                                  full_payload=True,
-                                                  is_dlc=True),
-                    self.get_payload_for_nebraska(job_repo_url=job_repo_url,
-                                                  full_payload=False,
-                                                  is_dlc=True)
+                    self.get_payload_for_nebraska(
+                            job_repo_url=job_repo_url,
+                            full_payload=True,
+                            is_dlc=True,
+                            public_bucket=running_at_desk),
+                    self.get_payload_for_nebraska(
+                            job_repo_url=job_repo_url,
+                            full_payload=False,
+                            is_dlc=True,
+                            public_bucket=running_at_desk)
             ]
 
         # The first device just updates normally.

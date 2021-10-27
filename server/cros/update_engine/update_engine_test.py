@@ -74,19 +74,15 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     _CORRUPT_STATEFUL_PATH = '/mnt/stateful_partition/.corrupt_stateful'
 
-    def initialize(self, host=None, hosts=None):
+    def initialize(self, host=None):
         """
         Sets default variables for the test.
 
         @param host: The DUT we will be running on.
-        @param hosts: If we are running a test with multiple DUTs (eg P2P)
-                      we will use hosts instead of host.
 
         """
         self._current_timestamp = None
         self._host = host
-        # Some AU tests use multiple DUTs
-        self._hosts = hosts
 
         # Define functions used in update_engine_util.
         self._run = self._host.run if self._host else None
@@ -348,8 +344,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         """Gets the job_repo_url argument supplied to the test by the lab."""
         if job_repo_url is not None:
             return job_repo_url
-        if self._hosts is not None:
-            self._host = self._hosts[0]
         if self._host is None:
             raise error.TestFail('No host specified by AU test.')
         info = self._host.host_info_store.get()

@@ -19,6 +19,7 @@ suite:arc-gts
 suite:arc-gts-qual
 suite:au-m2n
 suite:au-oobe
+suite:au-p2p
 suite:au-perbuild
 suite:au_fsi
 suite:audio

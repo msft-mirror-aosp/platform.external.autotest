@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -56,7 +57,7 @@ class platform_InputScreenshot(test.test):
 
         filesize = utils.system_output('ls -l %s/%s | cut -d" " -f5'
                                        % (filepath, self._SCREENSHOT))
-        if filesize < self._MIN_SIZE:
+        if int(filesize) < self._MIN_SIZE:
             self._ERROR.append('Screenshot size:%s at %s is wrong'
                                % (filesize, filepath))
 

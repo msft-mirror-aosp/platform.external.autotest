@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -353,7 +354,7 @@ class platform_ExternalUsbPeripherals(test.test):
         self.detect_crash = crash_detector.CrashDetector(self.host)
         self.detect_crash.remove_crash_files()
 
-        for iteration in xrange(1, repeat + 1):
+        for iteration in range(1, repeat + 1):
             step = 0
             for action in actions:
                 step += 1

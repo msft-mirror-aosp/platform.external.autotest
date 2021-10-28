@@ -5,6 +5,8 @@
 import logging
 import os
 
+from autotest_lib.server import utils
+
 _BUILDS_BUCKET = 'gs://chromeos-arc-images/builds'
 
 _ABI_MAP = {
@@ -86,6 +88,30 @@ def push_userdebug_image(host, branch_prefix, lunch_target, download_func,
     push_to_device_dir = install_bundle_func(push_to_device_uri)
     push_to_device_tool = os.path.join(push_to_device_dir, 'push_to_device.py')
 
+    # Current lxc container's default python3 version is 3.4. ptd.py requires
+    # python 3.6 or above. extra_paths passed to run_func() will prepend the
+    # path to the PATH variable, which should pick up python3.6.
+    extra_paths = None
+    if utils.is_in_container():
+        extra_paths = ['/usr/local/bin']
+        logging.info('Prepending extra PATH: {}'.format(str(extra_paths)))
+
+        # TODO(rkuroiwa): Remove this once it is verified that the path is setup
+        # correctly to pick up the right python version.
+        logging.info('Current PATH={}'.format(os.environ['PATH']))
+        result = run_func('python3',
+                          args=['--version'],
+                          ignore_status=True,
+                          verbose=True)
+        logging.info('Default python version is: {}'.format(result.stdout))
+        result = run_func('python3',
+                          args=['--version'],
+                          extra_paths=extra_paths,
+                          ignore_status=True,
+                          verbose=True)
+        logging.info('Python version with extra PATH is: {}'.format(
+                result.stdout))
+
     # This file on the device tells the infrastructure
     # that the device has to be reprovisioned before running other tasks.
     host.run('touch /mnt/stateful_partition/.force_provision', )
@@ -101,6 +127,7 @@ def push_userdebug_image(host, branch_prefix, lunch_target, download_func,
                     '--force',
                     host.host_port,
             ],
+            extra_paths=extra_paths,
             ignore_status=False,
             verbose=True,
             nickname='Push userdebug image.',

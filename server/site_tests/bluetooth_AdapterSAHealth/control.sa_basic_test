@@ -13,7 +13,7 @@ TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth'
+DEPENDENCIES = 'bluetooth_state:NORMAL'
 PY_VERSION = 3
 
 DOC = """

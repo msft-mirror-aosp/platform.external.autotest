@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_P.9.0_r17.x86.CtsMediaTestCases.VideoDecoderPerfAndEncoderTest'
-ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-hardware'
+ATTRIBUTES = 'suite:arc-cts-qual'
 DEPENDENCIES = 'arc, cts_abi_x86'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

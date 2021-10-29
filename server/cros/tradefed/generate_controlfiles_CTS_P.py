@@ -337,7 +337,6 @@ CONFIG['HARDWARE_MODULES'] = [
 
 SUITES_DEQP_SUBMODULE = [
     'suite:arc-cts-deqp','suite:graphics_per-week']
-SUITES_QUAL_HARDWARE = ['suite:arc-cts-qual', CONFIG['HARDWARE_SUITE_NAME']]
 
 CONFIG['EXTRA_MODULES'] = {
         'CtsDeqpTestCases': {
@@ -349,10 +348,10 @@ CONFIG['EXTRA_MODULES'] = {
         },
         'CtsMediaTestCases': {
                 'CtsMediaTestCases.audio': ['suite:arc-cts'],
-                'CtsMediaTestCases.DecodeAccuracyTest': SUITES_QUAL_HARDWARE,
+                'CtsMediaTestCases.DecodeAccuracyTest': ['suite:arc-cts-qual'],
                 'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest':
-                SUITES_QUAL_HARDWARE,
-                'CtsMediaTestCases.other': SUITES_QUAL_HARDWARE,
+                ['suite:arc-cts-qual'],
+                'CtsMediaTestCases.other': ['suite:arc-cts-qual'],
         },
         _WM_PRESUBMIT: {
                 _WM_PRESUBMIT: [],
@@ -380,9 +379,6 @@ CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
                 'CtsPermissionTestCases.camera': [],
         },
 }
-
-SUITES_MOBLAB_QUAL_HARDWARE = [
-        CONFIG['MOBLAB_SUITE_NAME'], CONFIG['MOBLAB_HARDWARE_SUITE_NAME']]
 
 # Moblab wants to shard dEQP really finely. This isn't needed anymore as it got
 # faster, but I guess better safe than sorry.
@@ -481,10 +477,10 @@ CONFIG['PUBLIC_EXTRA_MODULES'] = {
         },
         'CtsMediaTestCases': {
                 'CtsMediaTestCases.DecodeAccuracyTest':
-                SUITES_MOBLAB_QUAL_HARDWARE,
+                [CONFIG['MOBLAB_SUITE_NAME']],
                 'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest':
-                SUITES_MOBLAB_QUAL_HARDWARE,
-                'CtsMediaTestCases.other': SUITES_MOBLAB_QUAL_HARDWARE,
+                [CONFIG['MOBLAB_SUITE_NAME']],
+                'CtsMediaTestCases.other': [CONFIG['MOBLAB_SUITE_NAME']],
         },
 }
 

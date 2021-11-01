@@ -41,9 +41,9 @@ class ParseKnownCTSFailures(object):
         # board name like 'eve' or 'kevin' applies to the DUT running the board.
         dut_config = ['all', arch, board, model]
         dut_config.extend(extra_dut_config)
-        # 'nativebridge' applies to the case running ARM CTS on x86 devices.
+        # 'binarytranslated' applies to the case running ARM CTS on x86 devices.
         if bundle_abi and bundle_abi[0:3] != arch:
-            dut_config.append('nativebridge')
+            dut_config.append('binarytranslated')
         # 'N' or 'P' or 'R' applies to the device running that Android version.
         if sdk_ver in sdk_ver_map:
             dut_config.append(sdk_ver_map[sdk_ver])

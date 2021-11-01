@@ -64,6 +64,25 @@ class CtsExpectedFailureParserTest(unittest.TestCase):
         self.assertTrue('GtsOpenglTestCases' in found_waivers)
         self.assertFalse('GtsVulkanTestCases' in found_waivers)
 
+    def test_binarytranslated_tag(self):
+        mockhost = MockHost('MockHost', False)
+        expected_fail_files = glob_add_files(
+                'cts_expected_failure_parser_unittest_data')
+
+        waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
+                expected_fail_files)
+        # params: arch, board, model, bundle_abi, sdk_ver, first_api_level, host
+        found_waivers = waivers.find_waivers('x86', 'hatch', 'kohaku', 'arm',
+                                             '30', '30', mockhost)
+
+        self.assertTrue('GtsOnlyPrimaryAbiTestCases' in found_waivers)
+
+        # params: arch, board, model, bundle_abi, sdk_ver, first_api_level, host
+        found_waivers = waivers.find_waivers('x86', 'hatch', 'kohaku', 'x86',
+                                             '30', '30', mockhost)
+
+        self.assertFalse('GtsOnlyPrimaryAbiTestCases' in found_waivers)
+
 
 if __name__ == '__main__':
     unittest.main()

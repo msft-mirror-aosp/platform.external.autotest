@@ -41,14 +41,16 @@ class firmware_RollbackFirmware(FirmwareTest):
         logging.info("Rollback firmware A.")
         self.check_state((self.checkers.fw_tries_checker, 'A'))
         version_a = self.faft_client.bios.get_version('a')
-        logging.info("Change version from %d to %d.", version_a, version_a - 1)
+        logging.info("Change A version from %d to %d.", version_a,
+                     version_a - 1)
         self.faft_client.bios.set_version('a', version_a - 1)
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected firmware B boot and rollback firmware B.")
         self.check_state((self.checkers.fw_tries_checker, ('B', False)))
         version_b = self.faft_client.bios.get_version('b')
-        logging.info("Change version from %d to %d.", version_b, version_b - 1)
+        logging.info("Change B version from %d to %d.", version_b,
+                     version_b - 1)
         self.faft_client.bios.set_version('b', version_b - 1)
 
         # Older devices (without BROKEN screen) didn't wait for removal in

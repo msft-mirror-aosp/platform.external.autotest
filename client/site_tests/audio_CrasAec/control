@@ -8,6 +8,7 @@ PURPOSE = 'Verifies echo cancellation function'
 CRITERIA = '''
 Check if the echo cancellation works good under various recording formats.
 '''
+ATTRIBUTES = 'suite:audio'
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'audio'

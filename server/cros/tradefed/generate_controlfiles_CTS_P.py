@@ -88,6 +88,7 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsPrintTestCases': 1.5,
         'CtsSecurityTestCases': 2.0,
         'CtsVideoTestCases': 1.5,
+        'CtsWidgetTestCases': 1.5,
         _COLLECT: 2.5,
         _PUBLIC_COLLECT: 2.5,
         _WM_PRESUBMIT: 0.2,

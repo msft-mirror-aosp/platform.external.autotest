@@ -30,6 +30,6 @@ def run_TS(machine):
         bundle='x86',
         uri='LATEST',
         prerequisites=['region_us'],
-        timeout=30600)
+        timeout=34200)
 
 parallel_simple(run_TS, machines)

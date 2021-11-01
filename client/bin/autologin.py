@@ -43,12 +43,6 @@ def main(args):
                         dest='feature',
                         const='ArcNativeBridgeExperiment',
                         help='Toggle the translation from houdini to ndk')
-    parser.add_argument(
-            '--nativebridge64',
-            action='append_const',
-            dest='feature',
-            const='ArcNativeBridge64BitSupportExperiment',
-            help='Enables the experiment for 64-bit native bridges')
     parser.add_argument('-f',
                         '--feature',
                         action='append',

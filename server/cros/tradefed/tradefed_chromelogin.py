@@ -28,7 +28,6 @@ class ChromeLogin(object):
                  dont_override_profile=False,
                  enable_default_apps=False,
                  toggle_ndk=False,
-                 nativebridge64=False,
                  log_dir=None):
         """Initializes the ChromeLogin object.
 
@@ -37,7 +36,6 @@ class ChromeLogin(object):
         @param dont_override_profile: reuses the existing test profile if any
         @param enable_default_apps: enables default apps (like Files app)
         @param toggle_ndk: toggles native bridge engine switch.
-        @param nativebridge64: enables 64-bit native bridge experiment.
         @param log_dir: Any log files for this Chrome session is written to this
                directory.
         """
@@ -49,7 +47,6 @@ class ChromeLogin(object):
         self._need_reboot = False
         self._hard_reboot_on_failure = False
         self._toggle_ndk = toggle_ndk
-        self._nativebridge64 = nativebridge64
         self._log_dir = log_dir
 
     def _cmd_builder(self, verbose=False):
@@ -78,8 +75,6 @@ class ChromeLogin(object):
         if self._enable_default_apps:
             logging.info('Using --enable_default_apps to start Chrome.')
             cmd += ' --enable_default_apps'
-        if self._nativebridge64:
-            cmd += ' --nativebridge64'
         if not verbose:
             cmd += ' > /dev/null 2>&1'
         return cmd

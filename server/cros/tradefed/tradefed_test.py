@@ -1306,7 +1306,6 @@ class TradefedTest(test.test):
         self.summary = ''
         board = self._get_board_name()
         session_id = None
-        nativebridge64_experiment = (self._get_release_branch_number() == 0)
 
         self._setup_result_directories()
         if media_asset:
@@ -1336,7 +1335,6 @@ class TradefedTest(test.test):
                                     board=board,
                                     dont_override_profile=keep_media,
                                     enable_default_apps=enable_default_apps,
-                                    nativebridge64=nativebridge64_experiment,
                                     log_dir=session_log_dir) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with

@@ -1007,7 +1007,23 @@ class TradefedTest(test.test):
 
     def _run_commands(self, commands, **kwargs):
         """Run commands on all the hosts."""
+        # We need to copy the ADB key to the device to run adb on it.
+        pre_commands = []
+        if any(command.startswith('adb ') for command in commands):
+            key_path = '/tmp/arc.adb_key'
+            for host in self._hosts:
+                host.env['ADB_VENDOR_KEYS'] = key_path
+            pre_commands = [
+                    'adb kill-server',
+                    'echo %s > %s' %
+                    (pipes.quote(constants.PRIVATE_KEY), key_path)
+            ]
+
         for host in self._hosts:
+            if pre_commands:
+                logging.info('Running DUT adb setup')
+                for command in pre_commands:
+                    host.run(command, ignore_status=True, verbose=False)
             for command in commands:
                 logging.info('RUN: %s\n', command)
                 output = host.run(command, **kwargs)

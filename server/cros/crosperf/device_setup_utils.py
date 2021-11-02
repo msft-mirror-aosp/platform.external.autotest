@@ -364,8 +364,8 @@ def wait_cooldown(dut, cooldown_time, cooldown_temp):
             dut, 'ls /sys/class/thermal/thermal_zone*/temp')
     _, all_thermal_sensor_types, _ = run_command_on_dut(
             dut, 'cat /sys/class/thermal/thermal_zone*/type')
-    all_thermal_sensors = all_thermal_sensors.split()
-    all_thermal_sensor_types = all_thermal_sensor_types.split()
+    all_thermal_sensors = all_thermal_sensors.split('\n')
+    all_thermal_sensor_types = all_thermal_sensor_types.split('\n')
     assert len(all_thermal_sensors) == len(all_thermal_sensor_types), (
             'Number of sensors must match the number of types '
             'read from /sys/class/thermal/thermal_zone*/type.')

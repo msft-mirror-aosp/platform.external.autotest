@@ -646,6 +646,34 @@ class device_setup_utilsTest(unittest.TestCase):
 
     @mock.patch.object(device_setup_utils, 'run_command_on_dut')
     @mock.patch.object(time, 'sleep')
+    def test_wait_cooldown_space_in_thermal_name(self, mock_sleep,
+                                                 mock_run_command):
+        """
+        Wait one iteration for cooldown.
+
+        Make sure the cooldown is working properly when there is a space
+        in the sensor type name.
+        """
+        mock_sleep.return_value = 0
+        mock_run_command.side_effect = [
+                (0, '/sys/class/thermal/thermal_zone0/temp\n'
+                 '/sys/class/thermal/thermal_zone1/temp', ''),
+                (0, 'cpu\ngpu thermal', ''),
+                (0, '39000', ''),
+                (0, '41000', ''),
+                (0, '38000', ''),
+        ]
+        cooldown_time = 10
+        cooldown_temp = 40
+        wait_time = device_setup_utils.wait_cooldown(self.dut, cooldown_time,
+                                                     cooldown_temp)
+        mock_run_command.assert_called()
+        # Expect no wait time.
+        mock_sleep.assert_called_once()
+        self.assertGreater(wait_time, 0)
+
+    @mock.patch.object(device_setup_utils, 'run_command_on_dut')
+    @mock.patch.object(time, 'sleep')
     def test_wait_cooldown_wait_timeout(self, mock_sleep, mock_run_command):
         """
         Test exit by timeout.

@@ -66,6 +66,9 @@ class FirmwareTest(test.test):
     OTHER_KERNEL_MAP = {'a':'4', 'b':'2', '2':'4', '4':'2', '3':'4', '5':'2'}
     OTHER_ROOTFS_MAP = {'a':'5', 'b':'3', '2':'5', '4':'3', '3':'5', '5':'3'}
 
+    # Mapping of kernel type and name.
+    KERNEL_TYPE_NAME_MAP = {'KERN': 'kernel', 'MINIOS': 'minios'}
+
     CHROMEOS_MAGIC = "CHROMEOS"
     CORRUPTED_MAGIC = "CORRUPTD"
 
@@ -158,6 +161,8 @@ class FirmwareTest(test.test):
         self._backup_gbb_flags = None
         self._backup_firmware_identity = dict()
         self._backup_kernel_sha = dict()
+        for kernel_type in self.KERNEL_TYPE_NAME_MAP:
+            self._backup_kernel_sha[kernel_type] = dict()
         self._backup_cgpt_attr = dict()
         self._backup_dev_mode = None
         self._restore_power_mode = None
@@ -192,6 +197,12 @@ class FirmwareTest(test.test):
                 self.faft_client.system.get_platform_name(),
                 self.faft_client.system.get_model_name())
         self.checkers = FAFTCheckers(self)
+
+        # Mapping of kernel type and kernel servicer class
+        self.kernel_servicer = {
+                'KERN': self.faft_client.kernel,
+                'MINIOS': self.faft_client.minios,
+        }
 
         if self.faft_config.chrome_ec:
             self.ec = chrome_ec.ChromeEC(self.servo)
@@ -1930,65 +1941,78 @@ class FirmwareTest(test.test):
                 self.faft_client.ec.dump_firmware(ec_in_work_path)
             self.faft_client.updater.repack_shellball()
 
-    def is_kernel_changed(self):
+    def is_kernel_changed(self, kernel_type='KERN'):
         """Check if the current kernel is changed, by comparing its SHA1 hash.
 
+        @param kernel_type: The type name of kernel ('KERN' or 'MINIOS').
         @return: True if it is changed; otherwise, False.
         """
         changed = False
         for p in ('A', 'B'):
-            backup_sha = self._backup_kernel_sha.get(p, None)
-            current_sha = self.faft_client.kernel.get_sha(p)
+            backup_sha = self._backup_kernel_sha[kernel_type].get(p, None)
+            current_sha = self.kernel_servicer[kernel_type].get_sha(p)
             if backup_sha != current_sha:
                 changed = True
-                logging.info('Kernel %s is changed', p)
+                logging.info('Kernel %s-%s is changed', kernel_type, p)
         return changed
 
-    def backup_kernel(self, suffix='.original'):
+    def backup_kernel(self, suffix='.original', kernel_type='KERN'):
         """Backup kernel to files, and the send them to host.
 
+        @param kernel_type: The type name of kernel ('KERN' or 'MINIOS').
         @param suffix: a string appended to backup file name.
         """
+        kernel_name = self.KERNEL_TYPE_NAME_MAP[kernel_type]
+        servicer = self.kernel_servicer[kernel_type]
         remote_temp_dir = self.faft_client.system.create_temp_dir()
         for p in ('A', 'B'):
-            remote_path = os.path.join(remote_temp_dir, 'kernel_%s' % p)
-            self.faft_client.kernel.dump(p, remote_path)
+            remote_path = os.path.join(remote_temp_dir,
+                                       '%s_%s' % (kernel_name, p))
+            servicer.dump(p, remote_path)
             self._client.get_file(
                     remote_path,
-                    os.path.join(self.resultsdir, 'kernel_%s%s' % (p, suffix)))
-            self._backup_kernel_sha[p] = self.faft_client.kernel.get_sha(p)
-        logging.info('Backup kernel stored in %s with suffix %s',
-            self.resultsdir, suffix)
+                    os.path.join(self.resultsdir,
+                                 '%s_%s%s' % (kernel_name, p, suffix)))
+            self._backup_kernel_sha[kernel_type][p] = servicer.get_sha(p)
+        logging.info('Backup %s stored in %s with suffix %s', kernel_name,
+                     self.resultsdir, suffix)
 
-    def is_kernel_saved(self):
+    def is_kernel_saved(self, kernel_type='KERN'):
         """Check if kernel images are saved (backup_kernel called before).
 
+        @param kernel_type: The type name of kernel ('KERN' or 'MINIOS').
         @return: True if the kernel is saved; otherwise, False.
         """
-        return len(self._backup_kernel_sha) != 0
+        return len(self._backup_kernel_sha[kernel_type]) != 0
 
-    def restore_kernel(self, suffix='.original'):
+    def restore_kernel(self, suffix='.original', kernel_type='KERN'):
         """Restore kernel from host in resultsdir.
 
+        @param kernel_type: The type name of kernel ('KERN' or 'MINIOS').
         @param suffix: a string appended to backup file name.
         """
-        if not self.is_kernel_changed():
+        if not self.is_kernel_changed(kernel_type):
             return
 
         # Backup current corrupted kernel.
-        self.backup_kernel(suffix='.corrupt')
+        self.backup_kernel(suffix='.corrupt', kernel_type=kernel_type)
 
         # Restore kernel.
+        kernel_name = self.KERNEL_TYPE_NAME_MAP[kernel_type]
+        servicer = self.kernel_servicer[kernel_type]
         remote_temp_dir = self.faft_client.system.create_temp_dir()
         for p in ('A', 'B'):
-            remote_path = os.path.join(remote_temp_dir, 'kernel_%s' % p)
+            remote_path = os.path.join(remote_temp_dir,
+                                       '%s_%s' % (kernel_name, p))
+            servicer.dump(p, remote_path)
             self._client.send_file(
-                    os.path.join(self.resultsdir, 'kernel_%s%s' % (p, suffix)),
+                    os.path.join(self.resultsdir,
+                                 '%s_%s%s' % (kernel_name, p, suffix)),
                     remote_path)
-            self.faft_client.kernel.write(p, remote_path)
+            servicer.write(p, remote_path)
 
         self.switcher.mode_aware_reboot()
-        logging.info('Successfully restored kernel.')
+        logging.info('Successfully restored %s.', kernel_type)
 
     def backup_cgpt_attributes(self):
         """Backup CGPT partition table attributes."""

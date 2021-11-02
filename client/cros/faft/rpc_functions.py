@@ -57,6 +57,7 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         self.cgpt = CgptServicer(os_if)
         self.ec = EcServicer(os_if)
         self.kernel = KernelServicer(os_if)
+        self.minios_kernel = KernelServicer(os_if, is_minios=True)
         self.rootfs = RootfsServicer(os_if)
         self.rpc_settings = RpcSettingsServicer(os_if)
         self.system = SystemServicer(os_if)
@@ -68,6 +69,7 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 'cgpt': self.cgpt,
                 'ec': self.ec,
                 'kernel': self.kernel,
+                'minios': self.minios_kernel,
                 'rpc_settings': self.rpc_settings,
                 'rootfs': self.rootfs,
                 'system': self.system,
@@ -654,12 +656,14 @@ class EcServicer(object):
 class KernelServicer(object):
     """Class to service all Kernel RPCs"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if, is_minios=False):
         """
         @type os_if: os_interface.OSInterface
+        @type is_minios: True if it is a MiniOS kernel; otherwise, False.
         """
         self._os_if = os_if
-        self._real_kernel_handler = kernel_handler.KernelHandler(self._os_if)
+        self._real_kernel_handler = kernel_handler.KernelHandler(
+                self._os_if, is_minios)
 
     @property
     def _kernel_handler(self):

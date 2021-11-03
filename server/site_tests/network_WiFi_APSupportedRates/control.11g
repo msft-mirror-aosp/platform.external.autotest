@@ -6,7 +6,6 @@ AUTHOR = 'briannorris'
 NAME = 'network_WiFi_APSupportedRates.11g'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
-ATTRIBUTES = ('suite:wifi_matfunc')
 DEPENDENCIES = 'wificell'
 
 DOC = """

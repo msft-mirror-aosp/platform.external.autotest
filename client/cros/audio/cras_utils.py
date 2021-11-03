@@ -20,6 +20,30 @@ class CrasUtilsError(Exception):
     pass
 
 
+def dump_audio_thread():
+    """Dumps audio thread info.
+
+    @returns: A list of cras audio information.
+    """
+    proc = subprocess.Popen([_CRAS_TEST_CLIENT, '--dump_a'],
+                            stdout=subprocess.PIPE)
+
+    output, err = proc.communicate()
+    if err:
+        raise CrasUtilsError(err)
+    return output.splitlines()
+
+
+def get_audio_thread_summary():
+    """Gets stream summary info.
+
+    @returns: A list of stream summary information.
+    """
+
+    lines = dump_audio_thread()
+    return [l for l in lines if l.startswith('Summary:')]
+
+
 def playback(blocking=True, stdin=None, *args, **kargs):
     """A helper function to execute the playback_cmd.
 

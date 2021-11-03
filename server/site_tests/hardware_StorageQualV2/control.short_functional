@@ -11,7 +11,6 @@ TIME = 'lengthy'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
-PY_VERSION = 3
 PRIORITY = 200
 
 MAX_RESULT_SIZE_KB = 1024 * 1024

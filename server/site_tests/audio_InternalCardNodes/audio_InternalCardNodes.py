@@ -32,7 +32,10 @@ class audio_InternalCardNodes(audio_test.AudioTest):
             a tuple (output, input) containing lists of expected input and
             output nodes.
         """
-        nodes = ([], ['POST_DSP_LOOPBACK', 'POST_MIX_LOOPBACK'])
+        nodes = ([], [
+                'POST_DSP_DELAYED_LOOPBACK', 'POST_DSP_LOOPBACK',
+                'POST_MIX_LOOPBACK'
+        ])
         if plugged:
             # Checks whether line-out or headphone is detected.
             hp_jack_node_type = audio_test_utils.check_hp_or_lineout_plugged(

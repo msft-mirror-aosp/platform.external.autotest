@@ -63,7 +63,7 @@ class RPCProxy(object):
 
         @param host: The host object, passed via the test control file.
         """
-        self._client = host
+        self.host = host
         self._faft_client = None
 
     def __del__(self):
@@ -98,8 +98,8 @@ class RPCProxy(object):
     def connect(self):
         """Connect the RPC server."""
         # Make sure Autotest dependency is there.
-        autotest.Autotest(self._client).install()
-        self._faft_client = self._client.rpc_server_tracker.xmlrpc_connect(
+        autotest.Autotest(self.host).install()
+        self._faft_client = self.host.rpc_server_tracker.xmlrpc_connect(
                 self._client_config.rpc_command,
                 self._client_config.rpc_port,
                 command_name=self._client_config.rpc_command_short,
@@ -118,8 +118,8 @@ class RPCProxy(object):
         # so no need to pkill upon disconnect.
         if self._faft_client is not None:
             logging.debug("Closing FAFT RPC server connection.")
-        self._client.rpc_server_tracker.disconnect(
-                self._client_config.rpc_port, pkill=False)
+        self.host.rpc_server_tracker.disconnect(self._client_config.rpc_port,
+                                                pkill=False)
         self._faft_client = None
 
     def quit(self):
@@ -138,17 +138,15 @@ class RPCProxy(object):
             # fall back to SIGTERM, because it may not have exited.
             need_pkill = True
 
-        self._client.rpc_server_tracker.disconnect(
-                self._client_config.rpc_port, pkill=need_pkill)
+        self.host.rpc_server_tracker.disconnect(self._client_config.rpc_port,
+                                                pkill=need_pkill)
         self._faft_client = None
 
     def __repr__(self):
         """Return a description of the proxy object"""
-        return '%s(%s)' % (self.__class__.__name__, self._client)
+        return '%s(%s)' % (self.__class__.__name__, self.host)
 
     def __str__(self):
         """Return a description of the proxy object"""
-        return "<%s '%s:%s'>" % (
-                self.__class__.__name__,
-                self._client.hostname,
-                self._client_config.rpc_port)
+        return "<%s '%s:%s'>" % (self.__class__.__name__, self.host.hostname,
+                                 self._client_config.rpc_port)

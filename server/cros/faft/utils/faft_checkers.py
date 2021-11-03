@@ -217,3 +217,22 @@ class FAFTCheckers(object):
                     return False
         logging.info("Wrong output format of '%s':\n%s", cmd, '\n'.join(lines))
         return False
+
+    def dev_boot_minios_checker(self):
+        """Check the current boot is a success MiniOS boot in developer mode.
+
+        The DUT must be in developer mode to allow SSH connection, and we can
+        only use the raw command, host.run_output(), to check since autotest
+        client libraries cannot be installed in MiniOS.
+
+        @return True if DUT booted to MiniOS in developer mode; otherwise,
+                False.
+        @raise TestError if DUT does not enable MiniOS.
+        """
+
+        if not self.faft_config.minios_enabled:
+            raise error.TestError('MiniOS is not enabled for this board')
+
+        cmdline = self.faft_client.host.run_output('cat /proc/cmdline')
+        # TODO(b/204964537): No need to remove the double quote.
+        return 'cros_minios' in cmdline.replace('"', '').split()

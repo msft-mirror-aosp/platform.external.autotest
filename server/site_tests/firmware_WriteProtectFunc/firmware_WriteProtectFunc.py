@@ -165,6 +165,21 @@ class firmware_WriteProtectFunc(FirmwareTest):
         if self.faft_config.chrome_ec:
             reboots += (('ec reboot', lambda:self.sync_and_ec_reboot('hard')), )
 
+        # Check that SW WP cannot be disabled when HW WP is enabled.
+        for target in self._targets:
+            flashrom_return_code = self.faft_client.system.run_shell_command_get_status(
+                    'flashrom -p %s --wp-disable' %
+                    self._flashrom_targets[target])
+            sw_wp_dict = self._rpcs[target].get_write_protect_status()
+            logging.debug("self._rpcs[%s].get_write_protect_status() = %s",
+                          target, sw_wp_dict)
+            if not flashrom_return_code or not sw_wp_dict['enabled']:
+                raise error.TestFail(
+                        'Hardware write protection looks broken.  Software write '
+                        'protection was mutated while hardware write protection '
+                        'was enabled.')
+
+
         # Check if enabled SW WP can stay preserved across reboots.
         for (reboot_name, reboot_method) in reboots:
             self.switcher.mode_aware_reboot('custom', reboot_method)

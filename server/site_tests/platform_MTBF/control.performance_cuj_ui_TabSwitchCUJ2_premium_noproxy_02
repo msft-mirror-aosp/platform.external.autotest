@@ -3,17 +3,17 @@
 # found in the LICENSE file.
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = '{name}'
-ATTRIBUTES = '{attributes}'
-TIME = '{length}'
+NAME = 'ui_TabSwitchCUJ2_premium_noproxy_02'
+ATTRIBUTES = 'suite:performance_cuj'
+TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
-PRIORITY = {priority}
+PRIORITY = 4909
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 5
 REQUIRE_SSP = True
-DEPENDENCIES = '{dependencies}'
+DEPENDENCIES = 'premium'
 
 DOC = '''
 Run the Tast-based MTBF performance CUJ test.
@@ -38,12 +38,12 @@ from autotest_lib.site_utils.deployment.prepare import dut
 from autotest_lib.utils import labellib
 
 test_args = dict()
-test_args['test_version'] = {version}
+test_args['test_version'] = 1
 
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
-  labels['test'] = '{test_exprs}'
-  labels['test_iteration'] = '{iteration}'
+  labels['test'] = 'ui.TabSwitchCUJ2.premium_noproxy'
+  labels['test_iteration'] = '2'
   utils.write_keyval(job.resultdir, labels)
   # Try to retrieve and report DUT HWID and serial number.
   try:
@@ -97,9 +97,9 @@ def run(machine):
       yaml.dump(test_args, stream=temp_file, default_flow_style=False)
       job.run_test('tast',
                   host=host,
-                  test_exprs=['{test_exprs}'],
+                  test_exprs=['ui.TabSwitchCUJ2.premium_noproxy'],
                   ignore_test_failures=False,
-                  max_run_sec={duration},
+                  max_run_sec=3600,
                   command_args=args,
                   varsfiles=[temp_file.name])
 

@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 # This file has been automatically generated. Do not edit!
+from autotest_lib.client.common_lib import utils, global_config
+import pipes
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_R.11_r5.arm.CtsUsageStatsTestCases.ctshardware'
@@ -16,6 +18,9 @@ DOC = 'Run module CtsUsageStatsTestCases of the Android Compatibility Test Suite
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
+    ssid = utils.get_wireless_ssid(machine['hostname'])
+    wifipass = global_config.global_config.get_config_value('CLIENT',
+                'wireless_password', default=None)
     job.run_test(
         'cheets_CTS_R',
         hosts=host_list,
@@ -28,6 +33,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
+        precondition_commands=['adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass)), 'adb shell cmd wifi connect-network %s' % pipes.quote(ssid), 'adb shell cmd wifi transports -eth'],
         use_jdk9=True,
         timeout=3600)
 

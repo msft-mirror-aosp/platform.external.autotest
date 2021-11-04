@@ -33,9 +33,11 @@ _CONTROLFILE_TEMPLATE = Template(
 
     # This file has been automatically generated. Do not edit!
     {%- if servo_support_needed %}
-
-    from autotest_lib.server import utils
-
+    from autotest_lib.server import server_utils
+    {%- endif %}
+    {%- if wifi_info_needed %}
+    from autotest_lib.client.common_lib import utils, global_config
+    import pipes
     {%- endif %}
 
     AUTHOR = 'ARC++ Team'
@@ -57,7 +59,7 @@ _CONTROLFILE_TEMPLATE = Template(
 
     # For local debugging, if your test setup doesn't have servo, REMOVE these
     # two lines.
-    args_dict = utils.args_to_dict(args)
+    args_dict = server_utils.args_to_dict(args)
     servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
     {%- endif %}
@@ -77,6 +79,11 @@ _CONTROLFILE_TEMPLATE = Template(
             host_list = [hosts.create_host(machine)]
         {%- else %}
         host_list = [hosts.create_host(machine)]
+        {%- endif %}
+        {%- if wifi_info_needed %}
+        ssid = utils.get_wireless_ssid(machine['hostname'])
+        wifipass = global_config.global_config.get_config_value('CLIENT',
+                    'wireless_password', default=None)
         {%- endif %}
     {%- endif %}
         job.run_test(
@@ -283,6 +290,12 @@ def get_doc(modules, abi, is_public):
 def servo_support_needed(modules, is_public=True):
     """Determines if servo support is needed for a module."""
     return not is_public and all(module in CONFIG['NEEDS_POWER_CYCLE']
+                                 for module in modules)
+
+
+def wifi_info_needed(modules, is_public):
+    """Determines if Wifi AP info needs to be retrieved."""
+    return not is_public and any(module in CONFIG.get('WIFI_MODULES')
                                  for module in modules)
 
 
@@ -905,6 +918,7 @@ def get_controlfile_content(combined,
             uri=uri,
             DOC=get_doc(modules, abi, is_public),
             servo_support_needed=servo_support_needed(modules, is_public),
+            wifi_info_needed=wifi_info_needed(modules, is_public),
             max_retries=get_max_retries(modules, abi, suites, is_public),
             timeout=calculate_timeout(modules, suites),
             run_template=get_run_template(modules,

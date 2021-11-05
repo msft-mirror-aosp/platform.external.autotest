@@ -34,7 +34,11 @@ class autoupdate_InvalidateUpdateBeforeReboot(
         self._run_client_test_and_check_result(self._CLIENT_TEST,
                                                payload_url=payload_url)
 
-        # Verify the update invalidated successfully.
-        rootfs_hostlog, _ = self._create_hostlog_files(
-                ignore_event_rootfs=True)
-        self.verify_update_events(self._FORCED_UPDATE, rootfs_hostlog)
+        # Verify via the logs the update was applied.
+        self._check_update_engine_log_for_entry(
+                'Update successfully applied, waiting to reboot.',
+                raise_error=True)
+
+        # Verify via the logs the update was invalidated.
+        self._check_update_engine_log_for_entry(
+                'Invalidating previous update.', raise_error=True)

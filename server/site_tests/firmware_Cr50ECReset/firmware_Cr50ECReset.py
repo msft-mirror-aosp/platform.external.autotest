@@ -43,7 +43,13 @@ class firmware_Cr50ECReset(Cr50Test):
         # Don't bother if there is no Chrome EC or if EC hibernate doesn't work.
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
-        self.check_ec_hibernate()
+
+        # Verify the EC can wake from hibernate with a power button press. If it
+        # can't, it's a device or servo issue.
+        try:
+            self.check_ec_hibernate()
+        except error.TestError as e:
+            raise error.TestNAError('Unsupported setup: %s' % str(e))
 
 
     def cleanup(self):
@@ -116,7 +122,7 @@ class firmware_Cr50ECReset(Cr50Test):
         time.sleep(self.RELEASE_RESET_DELAY)
         self.wake_ec(self.power_button)
         if not self.ec_is_up():
-            raise error.TestError('Could not recover EC')
+            raise error.TestError('Could not recover EC with power button')
 
 
     def can_wake_ec(self, wake_method):

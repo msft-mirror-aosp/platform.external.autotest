@@ -295,7 +295,7 @@ def servo_support_needed(modules, is_public=True):
 
 def wifi_info_needed(modules, is_public):
     """Determines if Wifi AP info needs to be retrieved."""
-    return not is_public and any(module in CONFIG.get('WIFI_MODULES')
+    return not is_public and any(module in CONFIG.get('WIFI_MODULES', [])
                                  for module in modules)
 
 

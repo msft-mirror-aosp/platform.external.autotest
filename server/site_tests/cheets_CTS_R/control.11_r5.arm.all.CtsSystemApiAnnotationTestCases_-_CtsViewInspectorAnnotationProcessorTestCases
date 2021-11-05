@@ -34,7 +34,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
-        precondition_commands=['adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass)), 'adb shell cmd wifi connect-network %s' % pipes.quote(ssid), 'adb shell cmd wifi transports -eth'],
+        precondition_commands=['adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass)), 'adb shell cmd wifi connect-network %s' % pipes.quote(ssid), 'adb shell dumpsys wifi transports -eth'],
         use_jdk9=True,
         timeout=172800)
 

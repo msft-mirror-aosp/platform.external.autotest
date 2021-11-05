@@ -199,7 +199,7 @@ _WIFI_CONNECT_COMMANDS_V2 = [
         # These needs to be in order.
         "'adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass))",
         "'adb shell cmd wifi connect-network %s' % pipes.quote(ssid)",
-        "'adb shell cmd wifi transports -eth'",
+        "'adb shell dumpsys wifi transports -eth'",
 ]
 
 _MUTE_COMMAND = "\'cras_test_client --mute 1\'"

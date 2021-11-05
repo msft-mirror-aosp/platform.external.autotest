@@ -43,6 +43,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # The node types of the bluetooth output nodes in cras are the same for both
     # A2DP and HFP.
     CRAS_BLUETOOTH_OUTPUT_NODE_TYPE = 'BLUETOOTH'
+    CRAS_INTERNAL_SPEAKER_OUTPUT_NODE_TYPE = 'INTERNAL_SPEAKER'
     # The node types of the bluetooth input nodes in cras are different for WBS
     # and NBS.
     CRAS_HFP_BLUETOOTH_INPUT_NODE_TYPE = {HFP_WBS: 'BLUETOOTH',
@@ -621,11 +622,32 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # Definitions of all bluetooth audio test cases
     # ---------------------------------------------------------------
 
+
     @test_retry_and_log(False)
-    def test_select_audio_output_node(self, node_type=None):
+    def test_select_audio_output_node_bluetooth(self):
+        """Select the Bluetooth device as output node.
+
+        @returns: True on success. False otherwise.
+        """
+        return self._test_select_audio_output_node(
+                self.CRAS_BLUETOOTH_OUTPUT_NODE_TYPE)
+
+
+    @test_retry_and_log(False)
+    def test_select_audio_output_node_internal_speaker(self):
+        """Select the internal speaker as output node.
+
+        @returns: True on success. False otherwise.
+        """
+        return self._test_select_audio_output_node(
+                self.CRAS_INTERNAL_SPEAKER_OUTPUT_NODE_TYPE)
+
+
+    def _test_select_audio_output_node(self, node_type=None):
         """Select the audio output node through cras.
 
-        @param node_type: A str representing node type defined in CRAS_NODE_TYPES.
+        @param node_type: a str representing node type defined in
+                          CRAS_NODE_TYPES.
         @raises: error.TestError if failed.
 
         @return True if select given node success.
@@ -637,9 +659,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                           node_type)
             return selected == node_type
 
-        if node_type is None:
-            node_type = self.CRAS_BLUETOOTH_OUTPUT_NODE_TYPE
-
         if not self.bluetooth_facade.select_output_node(node_type):
             raise error.TestError('select_output_node failed')
 
@@ -650,15 +669,26 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         return True
 
+
     @test_retry_and_log(False)
-    def test_check_chunks(self, device, test_profile, test_data, duration):
-        """Handle chunks of recorded streams and verify the primary frequencies.
+    def test_check_chunks(self,
+                          device,
+                          test_profile,
+                          test_data,
+                          duration,
+                          check_legitimacy=True,
+                          check_frequencies=True):
+        """Check chunks of recorded streams and verify the primary frequencies.
 
         @param device: the bluetooth peer device
         @param test_profile: the a2dp test profile;
                              choices are A2DP and A2DP_LONG
         @param test_data: the test data of the test profile
         @param duration: the duration of the audio file to test
+        @param check_legitimacy: specify this to True to run
+                                _check_audio_frames_legitimacy test
+        @param check_frequencies: specify this to True to run
+                                 _check_primary_frequencies test
 
         @returns: True if all chunks pass the frequencies check.
         """
@@ -668,40 +698,96 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         nchunks = duration // chunk_in_secs
         logging.info('Number of chunks: %d', nchunks)
 
-        all_chunks_test_result = True
+        check_audio_frames_legitimacy = True
+        check_primary_frequencies = True
         for i in range(nchunks):
-            logging.info('Handle chunk %d', i)
+            logging.info('Check chunk %d', i)
 
             recorded_file = device.HandleOneChunk(chunk_in_secs, i,
                                                   self.host.ip)
             if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
 
+            if check_legitimacy:
+                # Check if the audio frames in the recorded file are legitimate.
+                if not self._check_audio_frames_legitimacy(
+                        test_data, 'recorded_by_peer', recorded_file=recorded_file):
+                    if (i > self.IGNORE_LAST_FEW_CHUNKS and
+                            i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS):
+                        logging.info('empty chunk %d ignored for last %d chunks',
+                                     i, self.IGNORE_LAST_FEW_CHUNKS)
+                    else:
+                        check_audio_frames_legitimacy = False
+                    break
+
+            if check_frequencies:
+                # Check if the primary frequencies of the recorded file
+                # meet expectation.
+                if not self._check_primary_frequencies(
+                        test_profile,
+                        test_data,
+                        'recorded_by_peer',
+                        recorded_file=recorded_file):
+                    if (i > self.IGNORE_LAST_FEW_CHUNKS and
+                            i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS):
+                        msg = 'partially filled chunk %d ignored for last %d chunks'
+                        logging.info(msg, i, self.IGNORE_LAST_FEW_CHUNKS)
+                    else:
+                        check_primary_frequencies = False
+                    break
+
+        self.results = dict()
+        if check_legitimacy:
+            self.results['check_audio_frames_legitimacy'] = (
+                    check_audio_frames_legitimacy)
+
+        if check_frequencies:
+            self.results['check_primary_frequencies'] = (
+                    check_primary_frequencies)
+
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_check_empty_chunks(self, device, test_data, duration):
+        """Check if all the chunks are empty.
+
+        @param device: The Bluetooth peer device.
+        @param test_data: The test data of the test profile.
+        @param duration: The duration of the audio file to test.
+
+        @returns: True if all the chunks are empty.
+        """
+        chunk_in_secs = test_data['chunk_in_secs']
+        if not bool(chunk_in_secs):
+            chunk_in_secs = self.DEFAULT_CHUNK_IN_SECS
+        nchunks = duration // chunk_in_secs
+        logging.info('Number of chunks: %d', nchunks)
+
+        all_chunks_empty = True
+        for i in range(nchunks):
+            logging.info('Check chunk %d', i)
+
+            recorded_file = device.HandleOneChunk(chunk_in_secs, i,
+                                                  self.host.ip)
+            if recorded_file is None:
+                raise error.TestError('Failed to handle chunk %d' % i)
+
+
             # Check if the audio frames in the recorded file are legitimate.
-            if not self._check_audio_frames_legitimacy(
-                    test_data, 'recorded_by_peer', recorded_file=recorded_file):
+            if self._check_audio_frames_legitimacy(
+                    test_data, 'recorded_by_peer', recorded_file):
                 if (i > self.IGNORE_LAST_FEW_CHUNKS and
                         i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS):
                     logging.info('empty chunk %d ignored for last %d chunks',
                                  i, self.IGNORE_LAST_FEW_CHUNKS)
                 else:
-                    all_chunks_test_result = False
+                    all_chunks_empty = False
                 break
 
-            # Check if the primary frequencies of the recorded file
-            # meet expectation.
-            if not self._check_primary_frequencies(test_profile, test_data,
-                                                   'recorded_by_peer',
-                                                   recorded_file=recorded_file):
-                if (i > self.IGNORE_LAST_FEW_CHUNKS and
-                        i >= nchunks - self.IGNORE_LAST_FEW_CHUNKS):
-                    msg = 'partially filled chunk %d ignored for last %d chunks'
-                    logging.info(msg, i, self.IGNORE_LAST_FEW_CHUNKS)
-                else:
-                    all_chunks_test_result = False
-                break
+        self.results = {'all chunks are empty': all_chunks_empty}
 
-        return all_chunks_test_result
+        return all(self.results.values())
 
 
     @test_retry_and_log(False)
@@ -1183,7 +1269,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_device_a2dp_connected(device)
 
         # Select audio output node so that we do not rely on chrome to do it.
-        self.test_select_audio_output_node()
+        self.test_select_audio_output_node_bluetooth()
 
         # Start recording audio on the peer Bluetooth audio device.
         self.test_device_to_start_recording_audio_subprocess(
@@ -1193,7 +1279,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         # audio stream in a real-time manner.
         self.test_dut_to_start_playing_audio_subprocess(test_data)
 
-        # Handle chunks of recorded streams and verify the primary frequencies.
+        # Check chunks of recorded streams and verify the primary frequencies.
         # This is a blocking call until all chunks are completed.
         self.test_check_chunks(device, test_profile, test_data, duration)
 
@@ -1201,4 +1287,48 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_device_to_stop_recording_audio_subprocess(device)
 
         # Stop playing audio on DUT.
+        self.test_dut_to_stop_playing_audio_subprocess()
+
+
+    def playback_and_connect(self, device, test_profile):
+        """Connect then disconnect an A2DP device while playing stream.
+
+        This test first plays the audio stream and then selects the BT device
+        as output node, checking if the stream has routed to the BT device.
+        After that, disconnect the BT device and also check whether the stream
+        closes on it gracefully.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: to select which A2DP test profile is used.
+        """
+        test_data = audio_test_data[test_profile]
+
+        # Start playing audio on the Dut.
+        self.test_dut_to_start_playing_audio_subprocess(test_data)
+
+        # Connect the Bluetooth device.
+        self.test_device_set_discoverable(device, True)
+        self.test_discover_device(device.address)
+        self.test_pairing(device.address, device.pin, trusted=True)
+        self.test_connection_by_adapter(device.address)
+        self.test_device_a2dp_connected(device)
+
+        # Select Bluetooth as output node.
+        self.test_select_audio_output_node_bluetooth()
+
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, test_data)
+
+        # Handle chunks of recorded streams and verify the primary frequencies.
+        # This is a blocking call until all chunks are completed.
+        self.test_check_chunks(device, test_profile, test_data,
+                               test_data['chunk_checking_duration'])
+
+        self.test_device_to_stop_recording_audio_subprocess(device)
+
+        self.test_select_audio_output_node_internal_speaker()
+
+        # Check if the device disconnects successfully.
+        self.expect_test(False, self.test_device_a2dp_connected, device)
+
         self.test_dut_to_stop_playing_audio_subprocess()

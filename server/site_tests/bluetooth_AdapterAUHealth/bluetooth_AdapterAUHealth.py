@@ -9,7 +9,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, A2DP_LONG, AVRCP, HFP_WBS, HFP_NBS)
+        A2DP, A2DP_MEDIUM, A2DP_LONG, AVRCP, HFP_WBS, HFP_NBS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -44,6 +44,24 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.cleanup_bluetooth_audio(device, test_profile)
 
 
+    def au_run_test_sequence(self, device, test_sequence, test_profile):
+        """Audio procedure of running a specified test sequence.
+
+        @param device: The Bluetooth peer device.
+        @param test_sequence: The audio test sequence to run.
+        @param test_profile: Which test profile is used,
+                             A2DP, A2DP_MEDIUM, HFP_WBS or HFP_NBS.
+        """
+        # Setup the Bluetooth device.
+        self.test_reset_on_adapter()
+        self.test_bluetoothd_running()
+        self.initialize_bluetooth_audio(device, test_profile)
+
+        test_sequence()
+
+        self.cleanup_bluetooth_audio(device, test_profile)
+
+
     def _au_a2dp_test(self, test_profile, duration=0):
         """A2DP test with sinewaves on the two channels.
 
@@ -72,6 +90,18 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         @param duration: the duration to test a2dp. The unit is in seconds.
         """
         self._au_a2dp_test(A2DP_LONG, duration=duration)
+
+
+    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('A2DP playback and connect test',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def au_a2dp_playback_and_connect_test(self):
+        """Connect then disconnect an A2DP device while playing stream."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        test_profile = A2DP_MEDIUM
+        test_sequence = lambda: self.playback_and_connect(device, test_profile)
+        self.au_run_test_sequence(device, test_sequence, test_profile)
 
 
     def check_wbs_capability(self):
@@ -247,6 +277,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_hfp_nbs_dut_as_sink_visqol_test()
         self.au_avrcp_command_test()
         self.au_avrcp_media_info_test()
+        self.au_a2dp_playback_and_connect_test()
 
 
     def run_once(self,

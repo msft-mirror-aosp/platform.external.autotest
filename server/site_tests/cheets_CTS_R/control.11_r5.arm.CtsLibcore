@@ -14,6 +14,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsLibcoreApiEvolutionTestCases, CtsLibcoreApiEvolutionTestCases[secondary_user], CtsLibcoreFileIOTestCases, CtsLibcoreFileIOTestCases[secondary_user], CtsLibcoreJsr166TestCases, CtsLibcoreJsr166TestCases[secondary_user], CtsLibcoreLegacy22TestCases, CtsLibcoreLegacy22TestCases[secondary_user], CtsLibcoreOjTestCases, CtsLibcoreOjTestCases[secondary_user], CtsLibcoreOkHttpTestCases, CtsLibcoreOkHttpTestCases[secondary_user], CtsLibcoreTestCases, CtsLibcoreTestCases[secondary_user], CtsLibcoreWycheproofBCTestCases, CtsLibcoreWycheproofBCTestCases[secondary_user], CtsLibcoreWycheproofConscryptTestCases, CtsLibcoreWycheproofConscryptTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
 def run_TS(machine):

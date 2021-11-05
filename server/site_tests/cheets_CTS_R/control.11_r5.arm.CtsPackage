@@ -12,6 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsPackageInstallAppOpDefaultTestCases, CtsPackageInstallAppOpDefaultTestCases[instant], CtsPackageInstallAppOpDefaultTestCases[secondary_user], CtsPackageInstallAppOpDeniedTestCases, CtsPackageInstallAppOpDeniedTestCases[instant], CtsPackageInstallAppOpDeniedTestCases[secondary_user], CtsPackageInstallTestCases, CtsPackageInstallTestCases[instant], CtsPackageInstallTestCases[secondary_user], CtsPackageInstallerTapjackingTestCases, CtsPackageInstallerTapjackingTestCases[secondary_user], CtsPackageUninstallTestCases, CtsPackageUninstallTestCases[secondary_user], CtsPackageWatchdogTestCases, CtsPackageWatchdogTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
 def run_TS(machine):

@@ -12,6 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsNativeEncryptionTestCases, CtsNativeEncryptionTestCases[instant], CtsNativeEncryptionTestCases[secondary_user], CtsNativeHardwareTestCases, CtsNativeHardwareTestCases[secondary_user], CtsNativeMediaAAudioTestCases, CtsNativeMediaAAudioTestCases[instant], CtsNativeMediaAAudioTestCases[secondary_user], CtsNativeMediaMetricsTestCases, CtsNativeMediaMetricsTestCases[instant], CtsNativeMediaMetricsTestCases[secondary_user], CtsNativeMediaSlTestCases, CtsNativeMediaSlTestCases[instant], CtsNativeMediaSlTestCases[secondary_user], CtsNativeMediaXaTestCases, CtsNativeMediaXaTestCases[instant], CtsNativeMediaXaTestCases[secondary_user], CtsNativeMidiTestCases, CtsNativeMidiTestCases[secondary_user], CtsNativeNetDnsTestCases, CtsNativeNetDnsTestCases[instant], CtsNativeNetDnsTestCases[secondary_user], CtsNativeNetTestCases, CtsNativeNetTestCases[instant], CtsNativeNetTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
 def run_TS(machine):

@@ -12,6 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsShortcutHostTestCases, CtsShortcutManagerLauncher1, CtsShortcutManagerLauncher1[secondary_user], CtsShortcutManagerLauncher2, CtsShortcutManagerLauncher2[secondary_user], CtsShortcutManagerLauncher3, CtsShortcutManagerLauncher3[secondary_user], CtsShortcutManagerLauncher4, CtsShortcutManagerLauncher4[secondary_user], CtsShortcutManagerPackage1, CtsShortcutManagerPackage1[secondary_user], CtsShortcutManagerPackage2, CtsShortcutManagerPackage2[secondary_user], CtsShortcutManagerPackage3, CtsShortcutManagerPackage3[secondary_user], CtsShortcutManagerPackage4, CtsShortcutManagerPackage4[secondary_user], CtsShortcutManagerTestCases, CtsShortcutManagerTestCases[secondary_user], CtsShortcutManagerThrottlingTest, CtsShortcutManagerThrottlingTest[secondary_user] of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):

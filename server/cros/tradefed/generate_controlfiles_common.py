@@ -48,6 +48,7 @@ _CONTROLFILE_TEMPLATE = Template(
     TEST_TYPE = 'server'
     TIME = '{{test_length}}'
     MAX_RESULT_SIZE_KB = {{max_result_size_kb}}
+    PY_VERSION = 3
     {%- if sync_count and sync_count > 1 %}
     SYNC_COUNT = {{sync_count}}
     {%- endif %}

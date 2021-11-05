@@ -12,6 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsPermission2TestCases, CtsPermission2TestCases[instant], CtsPermission3TestCases, CtsPermission3TestCases[secondary_user], CtsPermissionTestCases, CtsPermissionTestCasesSdk28, CtsPermissionTestCasesSdk28[instant], CtsPermissionTestCasesSdk28[secondary_user], CtsPermissionTestCasesTelephony, CtsPermissionTestCasesTelephony[instant], CtsPermissionTestCasesTelephony[secondary_user], CtsPermissionTestCases[instant] of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):

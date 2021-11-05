@@ -12,6 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsHiddenApiBlacklistApi27TestCases, CtsHiddenApiBlacklistApi27TestCases[instant], CtsHiddenApiBlacklistApi27TestCases[secondary_user], CtsHiddenApiBlacklistApi28TestCases, CtsHiddenApiBlacklistApi28TestCases[instant], CtsHiddenApiBlacklistApi28TestCases[secondary_user], CtsHiddenApiBlacklistCurrentApiTestCases, CtsHiddenApiBlacklistCurrentApiTestCases[instant], CtsHiddenApiBlacklistCurrentApiTestCases[secondary_user], CtsHiddenApiBlacklistDebugClassTestCases, CtsHiddenApiBlacklistDebugClassTestCases[instant], CtsHiddenApiBlacklistDebugClassTestCases[secondary_user], CtsHiddenApiBlacklistTestApiTestCases, CtsHiddenApiBlacklistTestApiTestCases[instant], CtsHiddenApiBlacklistTestApiTestCases[secondary_user], CtsHiddenApiKillswitchDebugClassTestCases, CtsHiddenApiKillswitchDebugClassTestCases[instant], CtsHiddenApiKillswitchDebugClassTestCases[secondary_user], CtsHiddenApiKillswitchWhitelistTestCases, CtsHiddenApiKillswitchWhitelistTestCases[instant], CtsHiddenApiKillswitchWhitelistTestCases[secondary_user], CtsHiddenApiKillswitchWildcardTestCases, CtsHiddenApiKillswitchWildcardTestCases[instant], CtsHiddenApiKillswitchWildcardTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):

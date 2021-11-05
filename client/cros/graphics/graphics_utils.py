@@ -28,9 +28,9 @@ from functools import wraps
 
 # The uinput module might not be available at SDK test time.
 try:
-  from autotest_lib.client.cros.graphics import graphics_uinput
+    from autotest_lib.client.cros.graphics import graphics_uinput
 except ImportError:
-  graphics_uinput = None
+    graphics_uinput = None
 
 
 class GraphicsTest(test.test):
@@ -155,9 +155,10 @@ class GraphicsTest(test.test):
                 pass
             self.Foo('test_name') # call Foo with unnamed args
          """
-        def decorator(fn):
+
+        def _decorator(fn):
             @wraps(fn)
-            def wrapper(*args, **kwargs):
+            def _wrapper(*args, **kwargs):
                 if len(args) > 1:
                     raise error.TestError('Unnamed arguments is not accepted. '
                                           'Please apply this decorator to '
@@ -169,8 +170,10 @@ class GraphicsTest(test.test):
                     # Cherry pick the arguments for the wrapped function.
                     d_args, d_kwargs = utils.cherry_pick_args(fn, args, kwargs)
                     return fn(instance, *d_args, **d_kwargs)
-            return wrapper
-        return decorator
+
+            return _wrapper
+
+        return _decorator
 
     def add_failures(self, name, subtest=None):
         """
@@ -226,7 +229,7 @@ class GraphicsTest(test.test):
         # Report subtests failures
         for failure in list(self._failures_by_description.values()):
             if len(failure['names']) > 0:
-                logging.debug('GraphicsTest failure: %s' % failure['names'])
+                logging.debug('GraphicsTest failure: %s', failure['names'])
                 total_failures += len(failure['names'])
 
             if not self._test_failure_report_subtest:

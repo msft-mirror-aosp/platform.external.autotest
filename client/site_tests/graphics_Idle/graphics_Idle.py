@@ -26,7 +26,11 @@ FBC_PATHS = [
 GEM_OBJECTS_PATHS = ['/sys/kernel/debug/dri/0/i915_gem_objects']
 GEM_PATHS = ['/sys/kernel/debug/dri/0/i915_gem_active']
 PSR_PATHS = ['/sys/kernel/debug/dri/0/i915_edp_psr_status']
-RC6_PATHS = ['/sys/kernel/debug/dri/0/i915_drpc_info']
+# Kernel 5.7+ has DRPC info in gt/ subdirectory
+RC6_PATHS = [
+    '/sys/kernel/debug/dri/0/i915_drpc_info',
+    '/sys/kernel/debug/dri/0/gt/drpc'
+]
 
 
 class graphics_Idle(graphics_utils.GraphicsTest):
@@ -430,6 +434,14 @@ class graphics_Idle(graphics_utils.GraphicsTest):
         to become idle (i.e. the i915_gem_active list or i915_gem_objects
         client/process gem object counts need to go to 0);
         idle before doing so, and retry every second for 20 seconds."""
+        kernel_version = utils.get_kernel_version()[0:4].rstrip(".")
+        # Skip test on kernel 5.10 and above.
+        if common_utils.compare_versions(kernel_version, '5.10') != -1:
+            # The data needed for this test was removed in the 5.10 kernel.
+            # See b/179453336 for details.
+            logging.info('Skipping gem idle check on 5.10 and above')
+            return ''
+
         logging.info('Running verify_graphics_gem_idle')
         if utils.get_cpu_soc_family() == 'x86_64':
             tries = 0

@@ -5,7 +5,7 @@
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.informational-chrome'
+NAME = 'tast.informational-chrome-shard-1'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
@@ -48,6 +48,8 @@ def run(machine):
                              ')'],
                  ignore_test_failures=True,
                  max_run_sec=4*60*60,
+                 totalshards=3,
+                 shardindex=1,
                  command_args=args,
                  clear_tpm=True)
 

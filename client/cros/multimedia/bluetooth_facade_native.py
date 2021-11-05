@@ -799,7 +799,10 @@ class BluetoothBaseFacadeNative(object):
                  dict.Otherwise it returns the raw string read.
         """
         # map the string read from device to chipset name
-        chipset_string_dict = {'qcom,wcn3991-bt\x00': 'WCN3991'}
+        chipset_string_dict = {
+                'qcom,wcn3991-bt\x00': 'WCN3991',
+                'qcom,wcn6750-bt\x00': 'WCN6750',
+        }
 
         hci_device = '/sys/class/bluetooth/hci0'
         real_path = os.path.realpath(hci_device)

@@ -348,7 +348,7 @@ class TastTest(unittest.TestCase):
         """Tests that failing tests are reported correctly."""
         tests = [TestInfo('pkg.Test1', 0, 2, errors=[('failed', 1)]),
                  TestInfo('pkg.Test2', 3, 6),
-                 TestInfo('pkg.Test2', 7, 8, errors=[('another', 7)])]
+                 TestInfo('pkg.Test3', 7, 8, errors=[('another', 7)])]
         self._init_tast_commands(tests)
         self._run_test_for_failure([tests[0], tests[2]], [])
         self.assertEqual(status_string(get_status_entries_from_tests(tests)),

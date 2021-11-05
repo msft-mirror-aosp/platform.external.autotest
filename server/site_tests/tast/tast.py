@@ -6,6 +6,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from collections import OrderedDict
 import datetime
 import json
 import logging
@@ -187,7 +188,8 @@ class tast(test.test):
                    varslist=[],
                    maybemissingvars='',
                    use_camera_box=False,
-                   vars_gs_path=''):
+                   vars_gs_path='',
+                   retries=0):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -260,6 +262,7 @@ class tast(test.test):
         self._maybemissingvars = maybemissingvars
         self._vars_gs_path = vars_gs_path
         self._use_camera_box = use_camera_box
+        self._retries = retries
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -278,7 +281,7 @@ class tast(test.test):
 
         # Register a hook to write the results of individual Tast tests as
         # top-level entries in the TKO status.log file.
-        self.job.add_post_run_hook(self._log_all_tests)
+        self.job.add_post_run_hook(self._log_all_unique_tests)
 
     def run_once(self):
         """Runs a single iteration of the test."""
@@ -800,6 +803,8 @@ class tast(test.test):
         args.extend(self._get_cloud_storage_info())
         args.extend(self._get_firmware_args())
         args.extend(self._get_camerabox_args())
+        if self._retries:
+            args.append('-retries=%d' % self._retries)
 
         for varsfile in self._varsfiles:
             args.append('-varsfile=%s' % varsfile)
@@ -830,6 +835,11 @@ class tast(test.test):
             with open(path, 'r') as f:
                 self._run_error = f.read().strip()
 
+    def maybe_replace(self, test, failed):
+        # Remove the result, will take & only count the second result.
+        if test[_KEY_NAME] in failed:
+            failed.remove(test[_KEY_NAME])
+
     def _parse_results(self, ignore_missing_file, run_error_msg):
         """Parses results written by the tast command.
 
@@ -853,7 +863,7 @@ class tast(test.test):
                 return
             raise error.TestFail('Results file %s not found' % path)
 
-        failed = []
+        failed = set()
         seen_test_names = set()
         with open(path, 'r') as f:
             for line in f:
@@ -865,6 +875,8 @@ class tast(test.test):
                 except ValueError as e:
                     raise error.TestFail('Failed to parse %s: %s' % (path, e))
                 self._test_results.append(test)
+                if test[_KEY_NAME] in seen_test_names:
+                    self.maybe_replace(test, failed)
 
                 name = test[_KEY_NAME]
                 seen_test_names.add(name)
@@ -872,13 +884,13 @@ class tast(test.test):
                 if test.get(_KEY_ERRORS):
                     for err in test[_KEY_ERRORS]:
                         logging.warning('%s: %s', name, err[_KEY_REASON])
-                    failed.append(name)
+                    failed.add(name)
                 else:
                     # The test will have a zero (i.e. 0001-01-01 00:00:00 UTC)
                     # end time (preceding the Unix epoch) if it didn't report
                     # completion.
                     if _rfc3339_time_to_timestamp(test[_KEY_END]) <= 0:
-                        failed.append(name)
+                        failed.add(name)
 
         missing = [
                 t[_KEY_NAME] for t in self._tests_to_run
@@ -935,12 +947,32 @@ class tast(test.test):
             msg += '%d missing: %s' % (len(missing), list_tests(missing))
         return msg
 
-    def _log_all_tests(self):
+    def _log_all_unique_tests(self):
         """Writes entries to the TKO status.log file describing the results of
         all tests.
+
+        If there are 2 tests with the same name, AND it has an error (failure)
+            replace the result.
+        Because: if it has an err AND a second result, its either:
+            The first attempt is logged and failed and we want to use the
+                retry result
+            Or the attempts are out of order, and the already logged attempt is
+                the second attempt which failed, meaning the first ALSO failed.
+                So in this case, its still safe to override because we just
+                need to mark the failure.
+        The benefit of this is, if the first result is logged and failed, the
+            retry might have passed, so we want to log that.
+
         """
         seen_test_names = set()
-        for test in self._test_results:
+        tests_to_log = OrderedDict()
+        for test_res in self._test_results:
+            test_name = test_res[_KEY_NAME]
+
+            dup_res = tests_to_log.get(test_name)
+            if not dup_res or dup_res.get(_KEY_ERRORS):
+                tests_to_log[test_name] = test_res
+        for test in tests_to_log.values():
             self._log_test(test)
             seen_test_names.add(test[_KEY_NAME])
 

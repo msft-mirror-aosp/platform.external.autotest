@@ -1242,6 +1242,13 @@ class BluetoothBaseFacadeNative(object):
         # Note: should convert the dbus.String to the regular string.
         return str(cras_utils.get_selected_output_device_type())
 
+    def get_audio_thread_summary(self):
+        """Dumps audio thread info.
+
+        @returns: a list of cras audio information.
+        """
+        return cras_utils.get_audio_thread_summary()
+
 
 class BluezPairingAgent(dbus.service.Object):
     """The agent handling the authentication process of bluetooth pairing.

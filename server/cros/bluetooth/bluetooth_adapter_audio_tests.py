@@ -671,6 +671,26 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     @test_retry_and_log(False)
+    def test_audio_is_alive_on_dut(self):
+        """Test that if the audio stream is alive on the DUT.
+
+        @returns: True if the audio summary is found on the DUT.
+        """
+        summary = self.bluetooth_facade.get_audio_thread_summary()
+        result = bool(summary)
+
+        # If we can find something starts with summary like: "Summary: Output
+        # device [Silent playback device.] 4096 48000 2  Summary: Output stream
+        # CRAS_CLIENT_TYPE_TEST CRAS_STREAM_TYPE_DEFAULT 480 240 0x0000 48000
+        # 2 0" this means that there's an audio stream alive on the DUT.
+        desc = " ".join(str(line) for line in summary)
+        logging.debug('find summary: %s', desc)
+
+        self.results = {'test_audio_is_alive_on_dut': result}
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
     def test_check_chunks(self,
                           device,
                           test_profile,
@@ -1331,4 +1351,50 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         # Check if the device disconnects successfully.
         self.expect_test(False, self.test_device_a2dp_connected, device)
 
+        self.test_dut_to_stop_playing_audio_subprocess()
+
+
+    def playback_and_disconnect(self, device, test_profile):
+        """Disconnect the Bluetooth device while the stream is playing.
+
+        This test will keep the stream playing and then disconnect the
+        Bluetooth device. The goal is to check the stream is still alive
+        after the Bluetooth device disconnected.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: to select which A2DP test profile is used.
+        """
+        test_data = audio_test_data[test_profile]
+
+        # Connect the Bluetooth device.
+        self.test_device_set_discoverable(device, True)
+        self.test_discover_device(device.address)
+        self.test_pairing(device.address, device.pin, trusted=True)
+        self.test_connection_by_adapter(device.address)
+        self.test_device_a2dp_connected(device)
+
+        # Select Bluetooth as output node.
+        self.test_select_audio_output_node_bluetooth()
+
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, test_data)
+
+        # Start playing audio on the DUT.
+        self.test_dut_to_start_playing_audio_subprocess(test_data)
+
+        # Handle chunks of recorded streams and verify the primary frequencies.
+        # This is a blocking call until all chunks are completed.
+        self.test_check_chunks(device, test_profile, test_data,
+                               test_data['chunk_checking_duration'])
+
+        self.test_device_to_stop_recording_audio_subprocess(device)
+
+        # Disconnect the Bluetooth device.
+        self.test_disconnection_by_adapter(device.address)
+
+        # Obtain audio thread summary to check if the audio stream is still
+        # alive.
+        self.test_audio_is_alive_on_dut()
+
+        # Stop playing audio on the DUT.
         self.test_dut_to_stop_playing_audio_subprocess()

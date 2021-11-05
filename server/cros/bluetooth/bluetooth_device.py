@@ -1251,6 +1251,13 @@ class BluetoothDevice(object):
         """
         return self._proxy.create_audio_record_directory(audio_record_dir)
 
+    @proxy_thread_safe
+    def get_audio_thread_summary(self):
+        """Dumps audio thread info.
+
+        @returns: a list of cras audio information.
+        """
+        return self._proxy.get_audio_thread_summary()
 
     @proxy_thread_safe
     def start_capturing_audio_subprocess(self, audio_data, recording_device):

@@ -42,8 +42,7 @@ class firmware_Cr50RddG3(Cr50Test):
         return None
 
 
-    def check_rdd_status(self, dts_mode, err_desc, capabilities=None,
-                         irregular_cap=False):
+    def check_rdd_status(self, dts_mode, err_desc, capabilities=None):
         """Check the rdd state.
 
         @param dts_mode: 'on' if Rdd should be connected. 'off' if it should be
@@ -51,8 +50,6 @@ class firmware_Cr50RddG3(Cr50Test):
         @param err_desc: Description of the rdd error.
         @param capabilities: ignore err_desc if any of the capabilities from
                              this list are found in the faft board config.
-        @param irregular_cap: If True, don't fail when the behavior doesn't
-                              happen and the board capability is present.
         @param raises TestFail if rdd state doesn't match the expected rdd state
                       or if it does and the board has the capability set.
         """
@@ -69,11 +66,12 @@ class firmware_Cr50RddG3(Cr50Test):
             else:
                 err_msg = err_desc
         elif board_cap:
-            err_msg = 'Board has %r, but %r did not occur.' % (board_cap,
-                                                               err_desc)
-            if irregular_cap:
-                logging.info('Irregular Cap behavior %s', err_msg)
-                err_msg = None
+            # Log a warning if the board has a Rdd issue, but it didn't show up
+            # during this test run.
+            logging.warning(
+                    'Irregular Cap behavior: Board has %r, but %r did '
+                    'not occur.', board_cap, err_desc)
+            err_msg = None
         if err_msg:
             logging.warning(err_msg)
             self.rdd_failures.append(err_msg)
@@ -122,8 +120,9 @@ class firmware_Cr50RddG3(Cr50Test):
 
         logging.info('Checking Rdd can be disconnected in G3.')
         self.servo.set_dts_mode('off')
-        self.check_rdd_status('off', 'Cr50 did not detect Rdd disconnect in G3',
-                              ['rdd_leakage'], irregular_cap=True)
+        self.check_rdd_status('off',
+                              'Cr50 did not detect Rdd disconnect in G3',
+                              ['rdd_leakage'])
         self._try_to_bring_dut_up()
         if self.rdd_failures:
             raise error.TestFail('Found Rdd issues: %s' % (self.rdd_failures))

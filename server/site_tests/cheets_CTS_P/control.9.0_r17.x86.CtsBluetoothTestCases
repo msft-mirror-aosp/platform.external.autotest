@@ -14,6 +14,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsBluetoothTestCases of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
 # For local debugging, if your test setup doesn't have servo, REMOVE these

@@ -12,6 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'LONG'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsBackgroundRestrictionsTestCases, CtsCameraTestCases, CtsColorModeTestCases, CtsDatabaseTestCases, CtsDisplayTestCases, CtsDpiTestCases, CtsDreamsTestCases, CtsEdiHostTestCases, CtsExternalSourcesTestCases, CtsFileSystemTestCases, CtsFragmentTestCases, CtsFragmentTestCasesSdk26, CtsGestureTestCases, CtsHostsideWebViewTests, CtsInputMethodServiceHostTestCases, CtsInputMethodTestCases, CtsLocation2TestCases, CtsLocationTestCases, CtsMediaHostTestCases, CtsMediaTestCases, CtsMultiUserTestCases, CtsOsHostTestCases, CtsPdfTestCases, CtsPermission2TestCases, CtsPermissionTestCases, CtsPreference2TestCases, CtsPreferenceTestCases, CtsPrintTestCases of the Android Compatibility Test Suite for Instant Apps (CTS Instant) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):

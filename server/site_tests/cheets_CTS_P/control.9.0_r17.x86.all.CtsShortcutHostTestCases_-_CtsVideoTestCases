@@ -12,6 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsShortcutHostTestCases, CtsShortcutManagerTestCases, CtsSimRestrictedApisTestCases, CtsSimpleCpuTestCases, CtsSimpleperfTestCases, CtsSkQPTestCases, CtsSliceTestCases, CtsSpeechTestCases, CtsStatsdHostTestCases, CtsSustainedPerformanceHostTestCases, CtsSyncAccountAccessOtherCertTestCases, CtsSyncContentHostTestCases, CtsSyncManagerTestsCases, CtsSystemApiAnnotationTestCases, CtsSystemApiSignatureTestCases, CtsSystemIntentTestCases, CtsSystemUiHostTestCases, CtsSystemUiTestCases, CtsTelecomTestCases, CtsTelecomTestCases2, CtsTelecomTestCases3, CtsTelephony2TestCases, CtsTelephonyTestCases, CtsTextTestCases, CtsThemeDeviceTestCases, CtsThemeHostTestCases, CtsToastLegacyTestCases, CtsToastTestCases, CtsTransitionTestCases, CtsTrustedVoiceHostTestCases, CtsTvProviderTestCases, CtsTvTestCases, CtsUiAutomationTestCases, CtsUiDeviceTestCases, CtsUiRenderingTestCases, CtsUidIsolationTestCases, CtsUsageStatsTestCases, CtsUsbTests, CtsUtilTestCases, CtsVideoTestCases of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):

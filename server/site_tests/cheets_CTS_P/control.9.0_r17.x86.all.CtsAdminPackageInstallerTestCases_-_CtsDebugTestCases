@@ -12,6 +12,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'LONG'
 MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
 DOC = 'Run module CtsAdminPackageInstallerTestCases, CtsAdminTestCases, CtsAlarmClockTestCases, CtsAlarmManagerTestCases, CtsAndroidAppTestCases, CtsAndroidTestBase27ApiSignatureTestCases, CtsAndroidTestMockCurrentApiSignatureTestCases, CtsAndroidTestRunnerCurrentApiSignatureTestCases, CtsAnimationTestCases, CtsApacheHttpLegacy27ApiSignatureTestCases, CtsApacheHttpLegacyCurrentApiSignatureTestCases, CtsApacheHttpLegacyUsesLibraryApiSignatureTestCases, CtsAppComponentFactoryTestCases, CtsAppSecurityHostTestCases, CtsAppTestCases, CtsAppUsageHostTestCases, CtsAppWidgetTestCases, CtsAslrMallocTestCases, CtsAssistTestCases, CtsAtraceHostTestCases, CtsAutoFillServiceTestCases, CtsBackgroundRestrictionsTestCases, CtsBackupHostTestCases, CtsBackupTestCases, CtsBatterySavingTestCases, CtsBionicTestCases, CtsBluetoothTestCases, CtsBootStatsTestCases, CtsCalendarcommon2TestCases, CtsCameraApi25TestCases, CtsCameraTestCases, CtsCarTestCases, CtsCarrierApiTestCases, CtsColorModeTestCases, CtsCompilationTestCases, CtsContactsProviderWipe, CtsContentTestCases, CtsCppToolsTestCases, CtsCurrentApiSignatureTestCases, CtsDatabaseTestCases, CtsDebugTestCases of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):

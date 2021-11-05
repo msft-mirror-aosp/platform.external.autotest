@@ -12,6 +12,7 @@ JOB_RETRIES = 0
 TEST_TYPE = 'server'
 TIME = 'LENGTHY'
 MAX_RESULT_SIZE_KB = 1024000
+PY_VERSION = 3
 DOC = 'Run all of the Android Compatibility Test Suite for Instant Apps (CTS Instant) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):

@@ -3,7 +3,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import contextlib
+# contextlib.nested is deprecated and removed in python3
+# Since the apis are quite different, keep track of whether to use nested or not
+# based on the availability of contextlib.nested and take different code paths.
+try:
+  from contextlib import nested
+  use_nested = True
+except ImportError:
+  import contextlib
+  use_nested = False
+
 import dbus
 import errno
 import functools
@@ -79,7 +88,7 @@ def terminate_old(script_name, sigterm_timeout=5, sigkill_timeout=3):
     if not running:
         return
 
-    running.sort()
+    running.sort(key=lambda p: p.pid)
     logging.info('Trying SIGKILL: pids=%s', [p.pid for p in running])
     for proc in running:
         try:
@@ -91,7 +100,7 @@ def terminate_old(script_name, sigterm_timeout=5, sigkill_timeout=3):
 
     (sigkilled, running) = psutil.wait_procs(running, sigkill_timeout)
     if running:
-        running.sort()
+        running.sort(key=lambda p: p.pid)
         logging.warn('Found leftover processes %s; address may be in use!',
                      [p.pid for p in running])
     else:
@@ -154,13 +163,12 @@ class XmlRpcServer(threading.Thread):
         self._server.register_instance(delegate)
         self._delegates.append(delegate)
 
-
     def run(self):
         """Block and handle many XmlRpc requests."""
         logging.info('XmlRpcServer starting...')
-        # TODO(wiley) nested is deprecated, but we can't use the replacement
-        #       until we move to Python 3.0.
-        with contextlib.nested(*self._delegates):
+
+        def stack_inner():
+            """Handle requests to server until asked to stop running."""
             while self._keep_running:
                 try:
                     self._server.handle_request()
@@ -169,6 +177,14 @@ class XmlRpcServer(threading.Thread):
                     # handle this kind of error.
                     if v[0] != errno.EINTR:
                         raise
+
+        if use_nested:
+            with nested(*self._delegates):
+                stack_inner()
+        else:
+            with contextlib.ExitStack() as stack:
+                delegates = [stack.enter_context(d) for d in self._delegates]
+                stack_inner()
 
         for delegate in self._delegates:
             if hasattr(delegate, 'cleanup'):

@@ -58,13 +58,14 @@ class OutputRecorder(object):
         """Construction of output recorder.
 
         @param cmd: the command of which the output is to record.
+                This may be a list or a string.
         @param open_mode: the open mode for writing output to save_file.
                 Could be either 'w' or 'a'.
         @param stop_delay_secs: the delay time before stopping the cmd.
         @param save_file: the file to save the output.
 
         """
-        self.cmd = cmd
+        self.cmd = [cmd] if isinstance(cmd, str) else cmd
         self.open_mode = open_mode
         self.start_delay_secs = start_delay_secs
         self.stop_delay_secs = stop_delay_secs
@@ -85,12 +86,15 @@ class OutputRecorder(object):
 
     def record(self):
         """Record the output of the cmd."""
-        logging.info('Recording output of "%s".', self.cmd)
+        logging.info('Recording output of "%s".', ' '.join(self.cmd))
         try:
             self._recorder = subprocess.Popen(
                     self.cmd, stdout=self._node, stderr=self._node)
         except:
-            raise OutputRecorderError('Failed to run "%s"' % self.cmd)
+            raise OutputRecorderError('Failed to run "%s"' %
+                                      ' '.join(self.cmd))
+
+        ansi_escape_re = re.compile(r'\x1b\[[^m]*m')
 
         with open(self.save_file, self.open_mode) as output_f:
             output_f.write(os.linesep + '*' * 80 + os.linesep)
@@ -103,13 +107,11 @@ class OutputRecorder(object):
                     line = ''
 
                 if line:
+                    # Remove ANSI escape sequence so that XML converter can work.
+                    line = ansi_escape_re.sub('', line)
                     output_f.write(line)
                     output_f.flush()
-                    # The output, e.g. the output of btmon, may contain some
-                    # special unicode such that we would like to escape.
-                    # In this way, regular expression search could be conducted
-                    # properly.
-                    self.contents.append(line.encode('unicode-escape'))
+                    self.contents.append(line)
                 elif self._stop_recording_thread_event.is_set():
                     self._stop_recording_thread_event.clear()
                     break
@@ -198,7 +200,7 @@ class OutputRecorder(object):
 
 if __name__ == '__main__':
     # A demo using btmon tool to monitor bluetoohd activity.
-    cmd = 'btmon'
+    cmd = ['btmon', '-c', 'never']
     recorder = OutputRecorder(cmd)
 
     if True:

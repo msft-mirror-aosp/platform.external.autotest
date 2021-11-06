@@ -1139,8 +1139,7 @@ class BluetoothControlSocket(BluetoothSocket):
                 None on failure.
 
         """
-        msg_data = struct.pack('<6sBB', address.encode('utf-8'), address_type,
-                               action)
+        msg_data = struct.pack('<6sBB', address.encode(), address_type, action)
         (status, data) = self.send_command_and_wait(
                 MGMT_OP_ADD_DEVICE,
                 index,
@@ -1153,7 +1152,7 @@ class BluetoothControlSocket(BluetoothSocket):
                 address,
                 address_type,
         ) = struct.unpack_from('<6sB', memoryview(data))
-        return (address, address_type)
+        return (address.decode(), address_type)
 
 
     def remove_device(self, index, address, address_type):
@@ -1167,7 +1166,7 @@ class BluetoothControlSocket(BluetoothSocket):
                 None on failure.
 
         """
-        msg_data = struct.pack('<6sB', address, address_type)
+        msg_data = struct.pack('<6sB', address.encode(), address_type)
         (status, data) = self.send_command_and_wait(
                 MGMT_OP_REMOVE_DEVICE,
                 index,
@@ -1177,10 +1176,10 @@ class BluetoothControlSocket(BluetoothSocket):
             return None
 
         (
-                address,
+                address_b,
                 address_type,
         ) = struct.unpack_from('<6sB', memoryview(data))
-        return (address, address_type)
+        return (address_b.decode(), address_type)
 
 
 class BluetoothRawSocket(BluetoothSocket):
@@ -1213,11 +1212,11 @@ class BluetoothRawSocket(BluetoothSocket):
         buf = array.array('B', [0] * 96)
         fcntl.ioctl(self.fileno(), HCIGETDEVINFO, buf, 1)
 
-        ( dev_id, name, address, flags, dev_type, features, pkt_type,
-          link_policy, link_mode, acl_mtu, acl_pkts, sco_mtu, sco_pkts,
-          err_rx, err_tx, cmd_tx, evt_rx, acl_tx, acl_rx, sco_tx, sco_rx,
-          byte_rx, byte_tx ) = struct.unpack_from(
-                '@H8s6sIBQIIIHHHHIIIIIIIIII', buf)
+        (dev_id, name, address, flags, dev_type, features, pkt_type,
+         link_policy, link_mode, acl_mtu, acl_pkts, sco_mtu, sco_pkts, err_rx,
+         err_tx, cmd_tx, evt_rx, acl_tx, acl_rx, sco_tx, sco_rx, byte_rx,
+         byte_tx) = struct.unpack_from('@H8s6sIBQIIIHHHHIIIIIIIIII',
+                                       memoryview(buf))
 
         return (dev_id, name.decode('utf-8').rstrip('\0'), ':'.join(
                 '%02X' % x for x in reversed(struct.unpack('6B', address))),

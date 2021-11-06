@@ -529,7 +529,7 @@ class BluetoothBaseFacadeNative(object):
             # If the syspath has a uniq property that matches the peripheral
             # device's address, then it has matched
             props = UdevadmInfo.GetProperties(hidpath)
-            if props.get('uniq', '').lower() == device_address.lower():
+            if (props.get(b'uniq', b'').lower().decode() == device_address):
                 logging.info('Found hid device for address {} at {}'.format(
                         device_address, hidpath))
                 return True
@@ -542,11 +542,13 @@ class BluetoothBaseFacadeNative(object):
             existing_inputs = UdevadmTrigger(
                     subsystem_match=['input']).DryRun()
             for entry in existing_inputs:
+                entry = entry.decode()
                 bt_hid = any([t in entry for t in ['uhid', 'hci']])
                 logging.info('udevadm trigger entry is {}: {}'.format(
                         bt_hid, entry))
 
-                if bt_hid and _match_hid_to_device(entry, device_address):
+                if (bt_hid and _match_hid_to_device(entry,
+                                                    device_address.lower())):
                     return True
 
             return False
@@ -567,8 +569,8 @@ class BluetoothBaseFacadeNative(object):
             return True
         except utils.TimeoutError as e:
             logging.error('%s: %s', method_name, e)
-        except:
-            logging.error('%s: unexpected error', method_name)
+        except Exception as e:
+            logging.error('%s: unexpected error: %s', method_name, e)
 
         return False
 
@@ -1376,7 +1378,8 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
         # Initialize a btmon object to record bluetoothd's activity.
         self.btmon = output_recorder.OutputRecorder(
-                'btmon', stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
+                ['btmon', '-c', 'never'],
+                stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
 
         self.advertisements = []
         self.advmon_interleave_logger = logger_helper.InterleaveLogger()
@@ -1992,9 +1995,8 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         #                   BluetoothControlSocket idle too long(about 3 secs)
         #                   (b:137603211)
         _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(
-                _control.add_device(0, address.encode('utf-8'), address_type,
-                                    action))
+        return json.dumps(_control.add_device(0, address, address_type,
+                                              action))
 
     def remove_device(self, address, address_type):
         """Remove a device from the Kernel action list.

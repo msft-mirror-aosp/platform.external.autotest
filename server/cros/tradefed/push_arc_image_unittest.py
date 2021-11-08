@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 import unittest
-from mock import Mock, ANY, call, patch
+from mock import Mock, ANY, call
 
 from autotest_lib.server.cros.tradefed import push_arc_image
 
@@ -97,7 +97,6 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
-                        extra_paths=ANY,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -144,7 +143,6 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
-                        extra_paths=ANY,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -192,7 +190,6 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
-                        extra_paths=ANY,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -239,7 +236,6 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
-                        extra_paths=ANY,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -286,7 +282,6 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
-                        extra_paths=ANY,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -333,7 +328,6 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
-                        extra_paths=ANY,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -420,29 +414,3 @@ class PushArcImageTest(unittest.TestCase):
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
-
-    # Verify that run() is called with extra_paths set.
-    @patch('autotest_lib.server.utils.is_in_container')
-    def test_push_userdebug_image_in_container(self, mock_is_in_container):
-        mock_is_in_container.return_value = True
-
-        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'x86_64')
-        mock_download_func = self.createMockDownloadFunc()
-        mock_install_bundle_func = self.createMockInstallBundleFunc()
-        mock_run_func = Mock()
-
-        self.assertTrue(
-                push_arc_image.push_userdebug_image(mock_host, 'rvc-arc',
-                                                    'bertha',
-                                                    mock_download_func,
-                                                    mock_install_bundle_func,
-                                                    mock_run_func))
-
-        mock_run_func.assert_any_call(
-                _DEFAULT_EXPECTED_PTD_PATH,
-                args=_DEFAULT_EXPECTED_RUN_ARGS,
-                ignore_status=ANY,
-                verbose=ANY,
-                nickname=ANY,
-                extra_paths=['/usr/local/bin'],
-        )

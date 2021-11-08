@@ -55,9 +55,12 @@ _CONFIG = global_config.global_config
 
 SERVOD_CONTAINER_IMAGE_PATH = "us-docker.pkg.dev/chromeos-partner-moblab/common-core"
 
+# Create the flag on drone or inside the ssp container to enable servod debug mode.
+# The servod container will not be deleted after being stopped.
+SERVOD_DEBUG_FLAG = '/servod_debug'
+
 DOCKER_SERVOD_DEBUG_MODE = os.environ.get('DOCKER_SERVOD_DEBUG_MODE', '0')
 
-SERVOD_DEBUG_FLAG = '/servod_debug'
 
 class ServoHost(base_servohost.BaseServoHost):
     """Host class for a servo host(e.g. beaglebone, labstation)
@@ -150,6 +153,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self._servo_state = None
         self.servo_port = None
         self.servo_board = None
+        self._ec_supported = None
         self.servo_model = None
         self.servo_serial = None
         self.servo_setup = None
@@ -536,12 +540,18 @@ class ServoHost(base_servohost.BaseServoHost):
     def is_ec_supported(self):
         """Check if ec is supported on the servo_board"""
         if self.servo_board:
+            if self._ec_supported is not None:
+                return self._ec_supported
             try:
                 frm_config = config.Config(self.servo_board, self.servo_model)
-                return frm_config.chrome_ec
+                self._ec_supported = getattr(frm_config, 'chrome_ec', False)
+                return self._ec_supported
             except Exception as e:
-                logging.error('Unexpected error when read from firmware'
-                    ' configs; %s', str(e))
+                logging.error(
+                        'Unexpected error when read from firmware'
+                        ' configs; %s', e)
+        else:
+            logging.debug('Cannot detect if DUT has EC as board unknown.')
         return False
 
     def validate_image_usbkey(self):
@@ -746,18 +756,20 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def start_containerized_servod(self, with_servod=True):
         """Start the servod process on servohost."""
+        logging.info("Starting servod container %s.", self.hostname)
         client = docker_utils.get_docker_client()
         try:
             if self.is_up():
                 logging.warning("Container already exists - not starting")
                 return
-            self.stop_servod()
+            self.stop_containerized_servod()
         except docker.errors.NotFound:
+            logging.info("Servod container %s not found", self.hostname)
             pass
         except docker.errors.APIError:
             # Container exists but is not running
             logging.info("Cleanup of non functional container.")
-            self.stop_servod()
+            self.stop_containerized_servod()
 
         label = os.environ.get("SERVOD_CONTAINER_LABEL", "release")
         registry = os.environ.get("REGISTRY_URI", SERVOD_CONTAINER_IMAGE_PATH)
@@ -835,7 +847,7 @@ class ServoHost(base_servohost.BaseServoHost):
                     "Stopping servod container %s caused a docker error.",
                     self.hostname)
         else:
-            if remove_container:
+            if remove_container == True:
                 cont.remove(force=True)
                 logging.debug('Servod container instance removed')
 
@@ -1574,19 +1586,18 @@ class ServoHost(base_servohost.BaseServoHost):
     def is_servo_topology_supported(self):
         """Check if servo_topology is supported."""
         if self.is_containerized_servod():
-            # TODO(otabek@): revisit after stabilize container.
-            logging.info('Servod-container is not supported for now.')
-            return False
+            logging.info('Servod is running within a container.')
+            return True
         if not self.is_up_fast():
             logging.info('Servo-Host is not reachable.')
-            return False
-        if not self.is_labstation():
-            logging.info('Servo-topology supported only for labstation.')
             return False
         if not self.servo_serial:
             logging.info('Servo-topology required a servo serial.')
             return False
-        return True
+        if self.is_labstation():
+            logging.info('Servod is running within labstation.')
+            return True
+        return False
 
     def get_topology(self):
         """Get servo topology."""
@@ -1854,8 +1865,8 @@ def create_servo_host(dut,
     if newhost.is_containerized_servod():
         # TODO(otabek@): Update for servod-manager.
         # Servod docker is not available for access.
-        pass
-    elif newhost.use_icmp and not newhost.is_up_fast(count=3):
+        newhost.start_containerized_servod()
+    if newhost.use_icmp and not newhost.is_up_fast(count=3):
         # ServoHost has internal check to wait if servo-host is in reboot
         # process. If servo-host still is not available this check will stop
         # further attempts as we do not have any option to recover servo_host.
@@ -1863,12 +1874,8 @@ def create_servo_host(dut,
 
     # Reset or reboot servo device only during AdminRepair tasks.
     if try_servo_repair:
-        if newhost.is_containerized_servod():
-            # TODO(otabek@): Update for servod-manager.
-            # Servod docker is not available for access.
-            pass
-        elif newhost._is_locked:
-            # Print available servos on the host for debuging.
+        if newhost._is_locked:
+            # Print available servos on the host for debugging.
             newhost.print_all_servo_of_host()
             # Reset servo if the servo is locked, as we check if the servohost
             # is up, if the servohost is labstation and if the servohost is in
@@ -1885,8 +1892,7 @@ def create_servo_host(dut,
         newhost.set_dut_hostname(dut.hostname)
     if dut_host_info:
         newhost.set_dut_host_info(dut_host_info)
-    if (not newhost.is_containerized_servod() and dut_health_profile
-                and (try_lab_servo or try_servo_repair)):
+    if (dut_health_profile and (try_lab_servo or try_servo_repair)):
         try:
             if newhost.is_localhost():
                 logging.info('Servohost is a localhost, skip device'

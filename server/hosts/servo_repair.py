@@ -34,7 +34,6 @@ from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
 try:
     import docker
-    from autotest_lib.site_utils.docker import utils as docker_utils
 except ImportError:
     logging.info("Docker API is not installed in this environment")
 
@@ -137,6 +136,8 @@ class _RootServoPresentVerifier(hosts.Verifier):
         except Exception as e:
             if host.is_containerized_servod():
                 host.restart_servod()
+                logging.debug('Restarting servod container (Not critical) %s',
+                              e)
             else:
                 host.request_reboot()
                 logging.info(
@@ -1101,12 +1102,6 @@ class _RestartServod(hosts.RepairAction):
     @property
     def description(self):
         return 'Start servod with the proper config settings.'
-
-    def _is_applicable(self, host):
-        if host.is_containerized_servod():
-            logging.info('Servod is running within a container.')
-            return False
-        return True
 
 
 class _ServoRebootRepair(repair_utils.RebootRepair):

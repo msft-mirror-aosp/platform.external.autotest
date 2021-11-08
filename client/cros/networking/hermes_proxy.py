@@ -361,6 +361,17 @@ class EuiccProxy(object):
                     dbus.String(root_smds),
                     timeout=hermes_constants.HERMES_DBUS_METHOD_REPLY_TIMEOUT)
 
+    def is_test_euicc(self):
+        """
+      Returns if the eUICC is a test eSIM. Automatically chooses the correct
+      TLS certs to use for the eUICC
+      """
+        try:
+            logging.info('Calling Euicc.IsTestEuicc')
+            return self.iface_euicc.IsTestEuicc()
+        except dbus.DBusException as e:
+            logging.error('IsTestEuicc failed with error: %s', e)
+
     def use_test_certs(self, is_test_certs):
         """
         Sets Hermes daemon to test mode, required to run autotests

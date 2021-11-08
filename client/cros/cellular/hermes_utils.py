@@ -127,11 +127,12 @@ def uninstall_all_profiles(euicc_path, hermes_manager):
         logging.error('Failed to uninstall a profile error:%s', e)
         raise error.TestFail('Failed to uninstall profile')
 
-def initialize_test(is_prod_ci):
+
+def initialize_test(is_prod_ci_test):
     """
     Initialize euicc paths, connect to hermes, set test mode
 
-    @param is_prod_ci:  true if it is prodci test and false for testci
+    @param is_prod_ci_test:  true if it is prodci test and false for testci
 
     """
     logging.info('===initialize_test started===')
@@ -149,17 +150,24 @@ def initialize_test(is_prod_ci):
     # self.prod_euicc_path = "/org/chromium/Hermes/euicc/22"
     # self.test_euicc_path = "/org/chromium/Hermes/euicc/23"
 
-    prod_euicc_path = "/org/chromium/Hermes/euicc/0"
-    test_euicc_path = "/org/chromium/Hermes/euicc/1"
-    euicc_path = prod_euicc_path if is_prod_ci \
-        else test_euicc_path
+    euicc = None
+    euicc_path = None
+    for path in hermes_manager.get_available_euiccs():
+        logging.info("Found euicc at %s", path)
+        is_prod_euicc = not hermes_manager.get_euicc(path).is_test_euicc()
+        if is_prod_euicc == is_prod_ci_test:
+            euicc_path = path
+            euicc = hermes_manager.get_euicc(euicc_path)
+            break
 
-    euicc = hermes_manager.get_euicc(euicc_path)
     if not euicc:
-        raise error.TestFail("Initialize test failed, euicc not found")
-    euicc.use_test_certs(not is_prod_ci)
+        raise error.TestFail("Initialize test failed, " +
+                             "prod" if is_prod_ci_test else "test" +
+                             " euicc not found")
 
-    if not is_prod_ci:
+    euicc.use_test_certs(not is_prod_ci_test)
+
+    if not is_prod_ci_test:
         uninstall_all_profiles(euicc_path, hermes_manager)
     logging.info('===initialize_test done===\n')
     return  mm_proxy, hermes_manager, euicc_path

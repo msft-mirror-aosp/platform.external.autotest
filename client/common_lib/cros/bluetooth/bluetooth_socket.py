@@ -1139,7 +1139,8 @@ class BluetoothControlSocket(BluetoothSocket):
                 None on failure.
 
         """
-        msg_data = struct.pack('<6sBB', address, address_type, action)
+        msg_data = struct.pack('<6sBB', address.encode('utf-8'), address_type,
+                               action)
         (status, data) = self.send_command_and_wait(
                 MGMT_OP_ADD_DEVICE,
                 index,
@@ -1218,29 +1219,9 @@ class BluetoothRawSocket(BluetoothSocket):
           byte_rx, byte_tx ) = struct.unpack_from(
                 '@H8s6sIBQIIIHHHHIIIIIIIIII', buf)
 
-        return (
-                dev_id,
-                name.rstrip('\0'),
-                ':'.join('%02X' % x
-                         for x in reversed(struct.unpack('6B', address))),
-                flags,
-                (dev_type & 0x30) >> 4,
-                dev_type & 0x0f,
-                features,
-                pkt_type,
-                link_policy,
-                link_mode,
-                acl_mtu,
-                acl_pkts,
-                sco_mtu,
-                sco_pkts,
-                err_rx,
-                err_tx,
-                cmd_tx,
-                evt_rx,
-                acl_tx,
-                acl_rx,
-                sco_tx,
-                sco_rx,
-                byte_rx,
-                byte_tx)
+        return (dev_id, name.decode('utf-8').rstrip('\0'), ':'.join(
+                '%02X' % x for x in reversed(struct.unpack('6B', address))),
+                flags, (dev_type & 0x30) >> 4, dev_type & 0x0f, features,
+                pkt_type, link_policy, link_mode, acl_mtu, acl_pkts, sco_mtu,
+                sco_pkts, err_rx, err_tx, cmd_tx, evt_rx, acl_tx, acl_rx,
+                sco_tx, sco_rx, byte_rx, byte_tx)

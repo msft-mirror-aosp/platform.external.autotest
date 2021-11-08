@@ -7,11 +7,11 @@
 # Since the apis are quite different, keep track of whether to use nested or not
 # based on the availability of contextlib.nested and take different code paths.
 try:
-  from contextlib import nested
-  use_nested = True
+    from contextlib import nested
+    use_nested = True
 except ImportError:
-  import contextlib
-  use_nested = False
+    import contextlib
+    use_nested = False
 
 import dbus
 import errno

@@ -151,7 +151,7 @@ SHILL_XMLRPC_SERVER_READY_METHOD = 'ready'
 BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT = 9990
 BLUETOOTH_DEVICE_XMLRPC_SERVER_COMMAND = (
         'cd /usr/local/autotest/cros/bluetooth; '
-        './bluetooth_device_xmlrpc_server.py')
+        './bluetooth_device_xmlrpc_server.py --py_version=3')
 BLUETOOTH_DEVICE_XMLRPC_SERVER_CLEANUP_PATTERN = (
         'bluetooth_device_xmlrpc_server')
 BLUETOOTH_DEVICE_XMLRPC_SERVER_READY_METHOD = 'ready'

@@ -272,16 +272,16 @@ class RemoteFacadeProxy(object):
                 cmd = constants.MULTIMEDIA_XMLRPC_SERVER_COMMAND
 
             self._xmlrpc_proxy = self._client.rpc_server_tracker.xmlrpc_connect(
-                    cmd, constants.MULTIMEDIA_XMLRPC_SERVER_PORT,
-                    command_name=(
-                        constants.MULTIMEDIA_XMLRPC_SERVER_CLEANUP_PATTERN
-                    ),
+                    cmd,
+                    constants.MULTIMEDIA_XMLRPC_SERVER_PORT,
+                    command_name=(constants.
+                                  MULTIMEDIA_XMLRPC_SERVER_CLEANUP_PATTERN),
                     ready_test_name=(
-                        constants.MULTIMEDIA_XMLRPC_SERVER_READY_METHOD),
+                            constants.MULTIMEDIA_XMLRPC_SERVER_READY_METHOD),
                     timeout_seconds=self.XMLRPC_CONNECT_TIMEOUT,
                     logfile=constants.MULTIMEDIA_XMLRPC_SERVER_LOG_FILE,
-                    request_timeout_seconds=
-                            constants.MULTIMEDIA_XMLRPC_SERVER_REQUEST_TIMEOUT)
+                    request_timeout_seconds=constants.
+                    MULTIMEDIA_XMLRPC_SERVER_REQUEST_TIMEOUT)
 
         logging.info('Setup the connection to RPC server, with retries...')
         connect_with_retries()

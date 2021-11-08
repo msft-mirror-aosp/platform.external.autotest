@@ -1992,8 +1992,9 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         #                   BluetoothControlSocket idle too long(about 3 secs)
         #                   (b:137603211)
         _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.add_device(0, address, address_type,
-                                              action))
+        return json.dumps(
+                _control.add_device(0, address.encode('utf-8'), address_type,
+                                    action))
 
     def remove_device(self, address, address_type):
         """Remove a device from the Kernel action list.

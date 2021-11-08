@@ -1224,7 +1224,10 @@ class BluetoothAdapterTests(test.test):
         if hasattr(self, 'input_facade'):
             del self.input_facade
         self.factory = remote_facade_factory.RemoteFacadeFactory(
-                self.host, disable_arc=True, no_chrome=not self.start_browser)
+                self.host,
+                disable_arc=True,
+                no_chrome=not self.start_browser,
+                force_python3=True)
         self.bluetooth_facade = self.factory.create_bluetooth_facade(
                 self.floss)
         self.input_facade = self.factory.create_input_facade()

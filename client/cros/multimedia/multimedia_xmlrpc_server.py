@@ -10,6 +10,7 @@ import code
 import logging
 import os
 import six.moves.xmlrpc_client
+import sys
 import traceback
 
 import common   # pylint: disable=unused-import
@@ -20,7 +21,6 @@ from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros import xmlrpc_server
 from autotest_lib.client.cros.multimedia import assistant_facade_native
 from autotest_lib.client.cros.multimedia import audio_facade_native
-from autotest_lib.client.cros.multimedia import bluetooth_facade_native
 from autotest_lib.client.cros.multimedia import browser_facade_native
 from autotest_lib.client.cros.multimedia import cfm_facade_native
 from autotest_lib.client.cros.multimedia import display_facade_native
@@ -31,6 +31,10 @@ from autotest_lib.client.cros.multimedia import kiosk_facade_native
 from autotest_lib.client.cros.multimedia import system_facade_native
 from autotest_lib.client.cros.multimedia import usb_facade_native
 from autotest_lib.client.cros.multimedia import video_facade_native
+
+# Python3 required for the following:
+if sys.version_info[0] >= 3:
+    from autotest_lib.client.cros.multimedia import bluetooth_facade_native
 
 
 class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
@@ -54,10 +58,6 @@ class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 'audio':
                 audio_facade_native.AudioFacadeNative(resource,
                                                       arc_resource=arc_res),
-                'bluetooth':
-                bluetooth_facade_native.BluezFacadeNative(),
-                'floss':
-                bluetooth_facade_native.FlossFacadeNative(),
                 'video':
                 video_facade_native.VideoFacadeNative(resource,
                                                       arc_resource=arc_res),
@@ -81,11 +81,19 @@ class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
                 graphics_facade_native.GraphicsFacadeNative()
         }
 
+        # Limit some facades to python3
+        if sys.version_info[0] >= 3:
+            self._facades[
+                    'bluetooth'] = bluetooth_facade_native.BluezFacadeNative()
+            self._facades['floss'] = bluetooth_facade_native.FlossFacadeNative(
+            )
 
     def __exit__(self, exception, value, traceback):
         """Clean up the resources."""
         self._facades['audio'].cleanup()
 
+        if 'floss' in self._facades:
+            self._facades['floss'].cleanup()
 
     def _dispatch(self, method, params):
         """Dispatches the method to the proper facade.

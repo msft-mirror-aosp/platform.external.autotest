@@ -164,7 +164,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # server, which log out the user.
 
         self.factory = remote_facade_factory.RemoteFacadeFactory(
-                host, no_chrome=not self.start_browser, disable_arc=True)
+                host,
+                no_chrome=not self.start_browser,
+                disable_arc=True,
+                force_python3=True)
         try:
             self.bluetooth_facade = self.factory.create_bluetooth_facade(
                     self.floss)

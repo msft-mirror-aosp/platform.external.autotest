@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_R.x86.CtsMediaTestCases.testGLViewDecodeAccuracy.ctshardware'
-ATTRIBUTES = 'suite:cts'
+ATTRIBUTES = 'suite:cts-hardware'
 DEPENDENCIES = 'arc, cts_abi_x86'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

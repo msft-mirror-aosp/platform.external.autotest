@@ -345,10 +345,9 @@ def get_suites(modules, abi, is_public, camera_facing=None,
     cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES', []))
 
     if is_public:
-        for module in modules:
-            suites = set([CONFIG['MOBLAB_SUITE_NAME']])
-            if hardware_suite and module in cts_hardware_modules:
-                suites = set([CONFIG['MOBLAB_HARDWARE_SUITE_NAME']])
+        suites = set([CONFIG['MOBLAB_SUITE_NAME']])
+        if hardware_suite:
+            suites = set([CONFIG['MOBLAB_HARDWARE_SUITE_NAME']])
         return sorted(list(suites))
 
     suites = set(CONFIG['INTERNAL_SUITE_NAMES'])

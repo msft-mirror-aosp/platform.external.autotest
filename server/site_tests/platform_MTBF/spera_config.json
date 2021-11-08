@@ -125,6 +125,51 @@
       "deps": ["external_display", "plus"]
     },
     {
+      "name": "zoom-basic-two",
+      "tool": "tast",
+      "test_expr": "ui.ZoomConfCUJ.basic_two",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "zoom-basic-small",
+      "tool": "tast",
+      "test_expr": "ui.ZoomConfCUJ.basic_small",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "zoom-basic-large",
+      "tool": "tast",
+      "test_expr": "ui.ZoomConfCUJ.basic_large",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "zoom-basic-class",
+      "tool": "tast",
+      "test_expr": "ui.ZoomConfCUJ.basic_class",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "zoom-plus-large",
+      "tool": "tast",
+      "test_expr": "ui.ZoomConfCUJ.plus_large",
+      "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "zoom-plus-class",
+      "tool": "tast",
+      "test_expr": "ui.ZoomConfCUJ.plus_class",
+      "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "zoom-premium-large",
+      "tool": "tast",
+      "test_expr": "ui.ZoomConfCUJ.premium_large",
+      "attributes": ["premium"],
+      "deps": ["premium"]
+    },
+    {
       "name": "geekbench-public-android",
       "tool": "tast",
       "test_expr": "ui.GeekbenchPublicAndroidApp",
@@ -166,7 +211,14 @@
         {"test": "video-plus-youtube-app", "repeats": 1},
         {"test": "everyday-basic-ytmusic", "repeats": 1},
         {"test": "everyday-plus-ytmusic", "repeats": 1},
-        {"test": "extended-display-meet", "repeats": 1}
+        {"test": "extended-display-meet", "repeats": 1},
+        {"test": "zoom-basic-two", "repeats": 1},
+        {"test": "zoom-basic-small", "repeats": 1},
+        {"test": "zoom-basic-large", "repeats": 1},
+        {"test": "zoom-basic-class", "repeats": 1},
+        {"test": "zoom-plus-large", "repeats": 1},
+        {"test": "zoom-plus-class", "repeats": 1},
+        {"test": "zoom-premium-large", "repeats": 1}
       ]
     },
     {

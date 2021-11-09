@@ -15,6 +15,7 @@ suite:arc-cts-r
 suite:arc-cts-s
 suite:arc-cts-unibuild
 suite:arc-cts-unibuild-hw
+suite:arc-data-snapshot_per-build
 suite:arc-gts
 suite:arc-gts-qual
 suite:au-m2n

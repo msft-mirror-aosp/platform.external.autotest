@@ -3,8 +3,7 @@
 # found in the LICENSE file.
 
 # This file has been automatically generated. Do not edit!
-
-from autotest_lib.server import utils
+from autotest_lib.server import server_utils
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_P.9.0_r17.x86.CtsBluetoothTestCases'
@@ -19,7 +18,7 @@ DOC = 'Run module CtsBluetoothTestCases of the Android Compatibility Test Suite 
 
 # For local debugging, if your test setup doesn't have servo, REMOVE these
 # two lines.
-args_dict = utils.args_to_dict(args)
+args_dict = server_utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run_TS(machine):

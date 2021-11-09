@@ -227,6 +227,19 @@ _MUTE_COMMAND = "\'cras_test_client --mute 1\'"
 
 _START_MDNS_COMMAND = "\'android-sh -c \\\'setprop ctl.start mdnsd\\\'\'"
 
+_WIFI_CONNECT_COMMANDS_V2 = [
+        # These needs to be in order.
+        "'adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass))",
+        "'adb shell cmd wifi connect-network %s' % pipes.quote(ssid)",
+        "'adb shell dumpsys wifi transports -eth'",
+]
+
+CONFIG['WIFI_MODULES'] = [
+        'CtsLibcoreTestCases',
+        'CtsNetTestCases',
+        'CtsUsageStatsTestCases',
+]
+
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
         'CtsSecurityHostTestCases':
@@ -259,13 +272,15 @@ _WIFI_CONNECT_COMMANDS = [
 
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
-    'CtsSecurityHostTestCases': [
-        _SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND
-    ],
-    'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
-    'CtsNetTestCases': _WIFI_CONNECT_COMMANDS + [_START_MDNS_COMMAND],
-    'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsSecurityHostTestCases':
+        [_SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND],
+        'CtsNetTestCases': [_START_MDNS_COMMAND],
 }
+
+for m in CONFIG['WIFI_MODULES']:
+    CONFIG['PUBLIC_PRECONDITION'].setdefault(m,
+                                             []).extend(_WIFI_CONNECT_COMMANDS)
+    CONFIG['PRECONDITION'].setdefault(m, []).extend(_WIFI_CONNECT_COMMANDS_V2)
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {
     'CtsCameraTestCases': ['lighting'],

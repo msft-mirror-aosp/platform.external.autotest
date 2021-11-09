@@ -21,7 +21,10 @@ class _BaseMenuModeSwitcher:
         self.faft_config = self.test.faft_config
         self.servo = self.test.servo
         self.menu = menu_navigator
+        self.checkers = faft_framework.checkers
+
         self.minidiag_enabled = self.faft_config.minidiag_enabled
+        self.minios_enabled = self.faft_config.minios_enabled
 
     @abc.abstractmethod
     def trigger_rec_to_dev(self):
@@ -169,7 +172,17 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
 
     The "menu UI" aims to replace both "legacy clamshell UI" and "legacy
     menu UI". See chromium:1033815 for the discussion about the naming.
+
+    Menu items in recovery select screen:
+        0. Language
+        1. Recovery using phone (always hidden)
+        2. Recovery using external disk
+        3. Recovery using internet connection (shown if minios_enabled)
+        4. Launch diagnostics (shown if minidiag_enabled)
+        5. Advanced options
+        6. Power off
     """
+    RECOVERY_SELECT_ITEM_COUNT = 7
 
     def _confirm_to_dev(self):
         if self.faft_config.rec_button_dev_switch:
@@ -184,14 +197,6 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
     def trigger_rec_to_dev(self):
         """
         Trigger to-dev transition.
-
-        Menu items in recovery select screen:
-            0. Language
-            1. Recovery using phone
-            2. Recovery using external disk
-            3. Launch diagnostics
-            4. Advanced options
-            5. Power off
 
         Menu items in advanced options screen:
             0. Language
@@ -208,8 +213,8 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         (*) is the default selection.
         """
         self.test.wait_for('firmware_screen')
-        # Since the default selection is unknown, navigate to item 5 first
-        self.menu.move_to(0, 5)
+        # The default selection is unknown, navigate to the last item first
+        self.menu.move_to(0, self.RECOVERY_SELECT_ITEM_COUNT)
         # Navigate to "Advanced options"
         self.menu.up()
         self.test.wait_for('keypress_delay')
@@ -303,14 +308,6 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         """
         Trigger rec-to-MiniDiag.
 
-        Menu items in recovery select screen:
-            0. Language
-            1. Recovery using phone
-            2. Recovery using external disk
-            3. Launch diagnostics
-            4. Advanced options
-            5. Power off
-
         @raise TestError if MiniDiag is not enabled.
         """
 
@@ -319,8 +316,8 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
             raise error.TestError('Minidiag is not enabled for this board')
 
         self.test.wait_for('firmware_screen')
-        # Since the default selection is unknown, navigate to item 5 first
-        self.menu.move_to(0, 5)
+        # The default selection is unknown, so navigate to the last item first
+        self.menu.move_to(0, self.RECOVERY_SELECT_ITEM_COUNT)
         # Navigate to "Launch diagnostics"
         self.menu.up()
         self.test.wait_for('keypress_delay')
@@ -377,7 +374,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
             raise error.TestError('Minidiag is not enabled for this board')
 
         # From root screen to quick memory test screen
-        # Since there might be self test items, navigate to the last item first
+        # There might be self test items, so navigate to the last item first
         self.menu.move_to(0, 5)
         self.menu.up()  # full memory test
         self.test.wait_for('keypress_delay')
@@ -408,6 +405,53 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         else:
             raise error.TestError('No apreset support')
         self.test.switcher.wait_for_client()
+
+    def trigger_rec_to_minios(self, older_version=False):
+        """
+        Trigger recovery-to-MiniOS transition.
+
+        Menu items in advanced options screen, developer mode:
+            0. Language
+           *1. Debug info
+            2. Firmware log
+            3. Internet recovery (older version)
+            4. Back
+            5. Power off
+
+        (*) is the default selection.
+
+        @param older_version: True for selecting the older version button in the
+                              advanced options screen, and False for selecting
+                              the newer one in the recovery selection screen.
+        @raise TestError if MiniOS is not enabled.
+        """
+        # Validity check
+        if not self.minios_enabled:
+            raise NotImplementedError
+
+        # Boot to MiniOS through UI menu
+        if older_version:
+            logging.info('Boot to MiniOS (older version)')
+            # The default selection is unknown, so navigate to the last item
+            # first
+            self.menu.move_to(0, self.RECOVERY_SELECT_ITEM_COUNT)
+            # Navigate to "Advanced options"
+            self.menu.up()
+            self.test.wait_for('keypress_delay')
+            self.menu.select('Selecting "Advanced options"...')
+            self.test.wait_for('keypress_delay')
+            # Navigate to the last item in advanced options
+            self.menu.move_to(0, 5)
+            self.menu.move_to(5, 3)
+            self.menu.select(
+                    'Selecting "Internet recovery (older version)"...')
+        else:
+            logging.info('Boot to MiniOS')
+            self.menu.down()
+            self.menu.select(
+                    'Selecting "Recovery using internet connection"...')
+
+        self.test.wait_for('minios_screen')
 
 
 _MENU_MODE_SWITCHER_CLASSES = {

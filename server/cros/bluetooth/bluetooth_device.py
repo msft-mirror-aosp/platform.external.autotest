@@ -61,15 +61,63 @@ class BluetoothDevice(object):
         client_at.install()
         self._proxy_lock = threading.Lock()
 
-        # If remote facade wasn't already created, connect directly here
-        if not self._remote_proxy:
-            self._connect_xmlrpc_directly()
+        # Assign the correct _proxy based on the remote facade
+        if self._remote_proxy:
+            if self.floss:
+                self._proxy = self._remote_proxy.floss
+            else:
+                self._proxy = self._remote_proxy.bluetooth
+        else:
+            # If remote facade wasn't already created, connect directly here
+            self._proxy = self._connect_xmlrpc_directly()
 
         # Get some static information about the bluetooth adapter.
         properties = self.get_adapter_properties()
         self.bluez_version = properties.get('Name')
         self.address = properties.get('Address')
         self.bluetooth_class = properties.get('Class')
+
+    def __getattr__(self, name):
+        """Override default attribute behavior to call proxy methods.
+
+        To remove duplicate code in this class, we allow methods in the proxy
+        class to be called directly from the bluetooth device class. If an
+        attribute is contained within this class, we return it. Otherwise, if
+        the proxy object contains a callable attribute of that name, we return a
+        function that calls that object when invoked.
+
+        All methods called on the proxy in this way will hold the proxy lock.
+        """
+        try:
+            return object.__getattr__(self, name)
+        except AttributeError as ae:
+            pass
+
+        # We only return proxied methods if no such attribute exists on this
+        # class. Any attribute errors here will be raised at the end if attr
+        # is None
+        try:
+            proxy = object.__getattribute__(self, '_proxy')
+            proxy_lock = object.__getattribute__(self, '_proxy_lock')
+            attr = proxy.__getattr__(name)
+            if attr:
+
+                def wrapper(*args, **kwargs):
+                    """Call target function while holding proxy lock."""
+                    with proxy_lock:
+                        return attr(*args, **kwargs)
+
+                return wrapper
+        except AttributeError as ae:
+            pass
+
+        # Couldn't find the attribute in either self or self._proxy.
+        raise AttributeError('{} has no attribute: {}'.format(
+                type(self).__name__, name))
+
+    def is_floss(self):
+        """Is the current facade running Floss?"""
+        return self.floss
 
     def update_adapter_properties(self):
         """Refresh the cached adapter properties"""
@@ -85,6 +133,13 @@ class BluetoothDevice(object):
 
     def _connect_xmlrpc_directly(self):
         """Connects to the bluetooth native facade directly via xmlrpc."""
+        # When the xmlrpc server is already created (using the
+        # RemoteFacadeFactory), we will use the BluezFacadeNative inside the
+        # remote proxy. Otherwise, we will use the xmlrpc server started from
+        # this class. Currently, there are a few users outside of the Bluetooth
+        # autotests that use this and this can be removed once those users
+        # migrate to using the RemoteFacadeFactory to generate the xmlrpc
+        # connection.
         proxy = self.host.rpc_server_tracker.xmlrpc_connect(
                 constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_COMMAND,
                 constants.BLUETOOTH_DEVICE_XMLRPC_SERVER_PORT,
@@ -98,28 +153,6 @@ class BluetoothDevice(object):
 
         self._bt_direct_proxy = proxy
         return proxy
-
-    @property
-    def _proxy(self):
-        """Gets the proxy to the DUT bluetooth facade.
-
-        @return XML RPC proxy to DUT bluetooth facade.
-
-        """
-        # When the xmlrpc server is already created (using the
-        # RemoteFacadeFactory), we will use the BluezFacadeNative inside the
-        # remote proxy. Otherwise, we will use the xmlrpc server started from
-        # this class. Currently, there are a few users outside of the Bluetooth
-        # autotests that use this and this can be removed once those users
-        # migrate to using the RemoteFacadeFactory to generate the xmlrpc
-        # connection.
-        if self._remote_proxy:
-            if self.floss:
-                return self._remote_proxy.floss
-            else:
-                return self._remote_proxy.bluetooth
-        else:
-            return self._bt_direct_proxy
 
     @proxy_thread_safe
     def set_debug_log_levels(self, bluez_vb, kernel_vb):

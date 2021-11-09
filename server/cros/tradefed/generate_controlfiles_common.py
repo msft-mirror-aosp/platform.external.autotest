@@ -668,7 +668,7 @@ def _format_modules_cmd(is_public,
             cmd.extend(special_cmd)
         elif _ALL in modules:
             pass
-        elif len(modules) == 1:
+        elif len(modules) == 1 and not is_hardware:
             cmd += ['--module', list(modules)[0]]
         else:
             if whole_module_set is None:

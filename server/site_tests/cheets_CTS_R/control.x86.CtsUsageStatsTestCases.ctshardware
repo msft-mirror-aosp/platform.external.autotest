@@ -24,7 +24,7 @@ def run_TS(machine):
         iterations=1,
         tag='x86.CtsUsageStatsTestCases.ctshardware',
         test_name='cheets_CTS_R.x86.CtsUsageStatsTestCases.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsUsageStatsTestCases'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsUsageStatsTestCases'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsUsageStatsTestCases',
         target_plan=None,

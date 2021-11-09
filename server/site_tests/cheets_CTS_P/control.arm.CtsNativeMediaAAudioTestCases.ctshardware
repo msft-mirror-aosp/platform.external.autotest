@@ -23,7 +23,7 @@ def run_TS(machine):
         iterations=1,
         tag='arm.CtsNativeMediaAAudioTestCases.ctshardware',
         test_name='cheets_CTS_P.arm.CtsNativeMediaAAudioTestCases.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsNativeMediaAAudioTestCases'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsNativeMediaAAudioTestCases'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsNativeMediaAAudioTestCases',
         target_plan=None,

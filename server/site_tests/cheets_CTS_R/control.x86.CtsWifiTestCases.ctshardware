@@ -24,7 +24,7 @@ def run_TS(machine):
         iterations=1,
         tag='x86.CtsWifiTestCases.ctshardware',
         test_name='cheets_CTS_R.x86.CtsWifiTestCases.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsWifiTestCases'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsWifiTestCases'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsWifiTestCases',
         target_plan=None,

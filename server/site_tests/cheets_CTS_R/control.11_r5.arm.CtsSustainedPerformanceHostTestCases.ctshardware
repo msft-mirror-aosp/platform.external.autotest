@@ -23,7 +23,7 @@ def run_TS(machine):
         iterations=1,
         tag='11_r5.arm.CtsSustainedPerformanceHostTestCases.ctshardware',
         test_name='cheets_CTS_R.11_r5.arm.CtsSustainedPerformanceHostTestCases.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsSustainedPerformanceHostTestCases', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsSustainedPerformanceHostTestCases', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsSustainedPerformanceHostTestCases',
         target_plan=None,

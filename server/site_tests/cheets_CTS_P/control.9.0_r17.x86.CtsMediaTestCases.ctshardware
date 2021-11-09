@@ -24,7 +24,7 @@ def run_TS(machine):
         needs_push_media=True,
         tag='9.0_r17.x86.CtsMediaTestCases.ctshardware',
         test_name='cheets_CTS_P.9.0_r17.x86.CtsMediaTestCases.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMediaTestCases', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaTestCases', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsMediaTestCases',
         target_plan=None,

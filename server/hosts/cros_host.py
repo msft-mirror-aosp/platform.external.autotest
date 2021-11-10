@@ -260,6 +260,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             host = hosts.create_host(machine, btpeer_args=btpeer_args)
         ~~~~~~~~
 
+        If btpeer_host_list is given, it should be a comma delimited list of
+            host:ssh_port/chameleon_port
+            127.0.0.1:22/9992
+
+        When using ipv6, wrap the host portion in square brackets:
+            [::1]:22/9992
+
+        Note: Only the host name is required. Both ports are optional.
+              If providing the chameleon port, note that you should provide an
+              unforwarded port (i.e. the port exposed on the actual dut).
+
         @param args_dict: Dictionary from which to extract the btpeer
           arguments.
         """
@@ -269,9 +280,21 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 # IPv6 addresses including a port number should be enclosed in
                 # square brackets.
                 delimiter = ']:' if re.search(r':.*:', btpeer) else ':'
-                result.append({key: value for key,value in
-                    zip(('btpeer_host','btpeer_port'),
-                    btpeer.strip('[]').split(delimiter))})
+
+                # Split into ip + ports
+                split = btpeer.strip('[]').split(delimiter)
+
+                # If ports are given, split into ssh + chameleon ports
+                if len(split) > 1:
+                    ports = split[1].split('/')
+                    split = [split[0]] + ports
+
+                result.append({
+                        key: value
+                        for key, value in zip(('btpeer_host',
+                                               'btpeer_ssh_port',
+                                               'btpeer_port'), split)
+                })
             return result
         else:
             return {key: args_dict[key]

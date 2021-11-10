@@ -1488,7 +1488,7 @@ class ServoHost(base_servohost.BaseServoHost):
         The state detecting based on first fail verifier or collecting of
         them.
         """
-        ssh = self.get_verifier_state('servo_ssh')
+        ssh = self.get_verifier_state('connection')
         servo_root_present = self.get_verifier_state('servo_root_present')
         servo_root_present_node = self.get_repair_strategy_node(
                 'servo_root_present')
@@ -1866,7 +1866,10 @@ def create_servo_host(dut,
         # TODO(otabek@): Update for servod-manager.
         # Servod docker is not available for access.
         newhost.start_containerized_servod()
-    if newhost.use_icmp and not newhost.is_up_fast(count=3):
+    # use_icmp is always set to true in autotest, but in labpack
+    # this is determined by autoserv args. We need to make this consistent
+    # across labpack and autotest b/205855910
+    elif newhost.use_icmp and not newhost.is_up_fast(count=3):
         # ServoHost has internal check to wait if servo-host is in reboot
         # process. If servo-host still is not available this check will stop
         # further attempts as we do not have any option to recover servo_host.

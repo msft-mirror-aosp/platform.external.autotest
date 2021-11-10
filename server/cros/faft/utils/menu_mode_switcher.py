@@ -12,7 +12,9 @@ from autotest_lib.client.common_lib import error
 
 @six.add_metaclass(abc.ABCMeta)
 class _BaseMenuModeSwitcher:
-    """Base class for mode switch with menu navigator."""
+    """
+    Base class for mode switch with menu navigator.
+    """
 
     def __init__(self, faft_framework, menu_navigator):
         self.test = faft_framework
@@ -23,12 +25,16 @@ class _BaseMenuModeSwitcher:
 
     @abc.abstractmethod
     def trigger_rec_to_dev(self):
-        """Trigger to-dev transition."""
+        """
+        Trigger to-dev transition.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
     def dev_boot_from_internal(self):
-        """Boot from internal disk in developer mode."""
+        """
+        Boot from internal disk in developer mode.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -38,12 +44,15 @@ class _BaseMenuModeSwitcher:
 
     @abc.abstractmethod
     def trigger_dev_to_normal(self):
-        """Trigger dev-to-norm transition."""
+        """
+        Trigger dev-to-norm transition.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
     def power_off(self):
-        """Power off the device.
+        """
+        Power off the device.
 
         This method should work in both developer and recovery screens.
         """
@@ -51,18 +60,22 @@ class _BaseMenuModeSwitcher:
 
 
 class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
-    """Mode switcher with menu navigator for legacy menu UI.
+    """
+    Mode switcher with menu navigator for legacy menu UI.
 
     The "legacy menu UI" is an old menu-based UI, which has been replaced
     by the new one, called "menu UI".
     """
 
     def trigger_rec_to_dev(self):
-        """Trigger to-dev transition."""
+        """
+        Trigger to-dev transition.
+        """
         self.test.switcher.trigger_rec_to_dev()
 
     def dev_boot_from_internal(self):
-        """Boot from internal disk in developer mode.
+        """
+        Boot from internal disk in developer mode.
 
         Menu items in developer warning screen:
             0. Developer Options
@@ -114,7 +127,8 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
         self.menu.select('Selecting "Boot From USB or SD Card"...')
 
     def trigger_dev_to_normal(self):
-        """Trigger dev-to-norm transition.
+        """
+        Trigger dev-to-norm transition.
 
         Menu items in developer warning screen:
             0. Developer Options
@@ -138,7 +152,8 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
         self.menu.select('Selecing "Confirm Enabling OS Verification"...')
 
     def power_off(self):
-        """Power off the device.
+        """
+        Power off the device.
 
         This method should work in both developer and recovery screens.
         """
@@ -149,7 +164,8 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
 
 
 class _MenuModeSwitcher(_BaseMenuModeSwitcher):
-    """Mode switcher with menu navigator for menu UI.
+    """
+    Mode switcher with menu navigator for menu UI.
 
     The "menu UI" aims to replace both "legacy clamshell UI" and "legacy
     menu UI". See chromium:1033815 for the discussion about the naming.
@@ -166,7 +182,8 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
             self.menu.select('Confirm to-dev by menu selection')
 
     def trigger_rec_to_dev(self):
-        """Trigger to-dev transition.
+        """
+        Trigger to-dev transition.
 
         Menu items in recovery select screen:
             0. Language
@@ -204,7 +221,8 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         self._confirm_to_dev()
 
     def dev_boot_from_internal(self):
-        """Boot from internal disk in developer mode.
+        """
+        Boot from internal disk in developer mode.
 
         Menu items in developer mode screen:
             0. Language
@@ -240,7 +258,8 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         self.menu.select('Selecting "Boot from external disk"...')
 
     def trigger_dev_to_normal(self):
-        """Trigger dev-to-norm transition.
+        """
+        Trigger dev-to-norm transition.
 
         Menu items in developer mode screen:
             0. Language
@@ -269,7 +288,8 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         self.menu.select('Selecing "Confirm"...')
 
     def power_off(self):
-        """Power off the device.
+        """
+        Power off the device.
 
         This method should work in both developer and recovery screens.
         """
@@ -281,7 +301,8 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
 
     def trigger_rec_to_minidiag(self):
         """
-        Trigger to-minidiag.
+        Trigger rec-to-MiniDiag.
+
         Menu items in recovery select screen:
             0. Language
             1. Recovery using phone
@@ -289,9 +310,11 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
             3. Launch diagnostics
             4. Advanced options
             5. Power off
+
+        @raise TestError if MiniDiag is not enabled.
         """
 
-        # Validity check; this only applicable for minidiag enabled devices.
+        # Validity check; this only applicable for MiniDiag enabled devices.
         if not self.minidiag_enabled:
             raise error.TestError('Minidiag is not enabled for this board')
 
@@ -309,15 +332,18 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
     def navigate_minidiag_storage(self):
         """
         Navigate to storage screen.
+
         Menu items in storage screen:
             0. Language
             1. Page up (disabled)
             2. Page down
             3. Back
             4. Power off
+
+        @raise TestError if MiniDiag is not enabled.
         """
 
-        # Validity check; this only applicable for minidiag enabled devices.
+        # Validity check; this only applicable for MiniDiag enabled devices.
         if not self.minidiag_enabled:
             raise error.TestError('Minidiag is not enabled for this board')
 
@@ -329,21 +355,24 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         # Navigate to "Back"
         self.menu.up()
         self.test.wait_for('keypress_delay')
-        self.menu.select('Back to minidiag root screen...')
+        self.menu.select('Back to MiniDiag root screen...')
         self.test.wait_for('keypress_delay')
 
     def navigate_minidiag_quick_memory_check(self):
         """
         Navigate to quick memory test screen.
+
         Menu items in quick memory test screen:
             0. Language
             1. Page up (disabled)
             2. Page down (disabled
             3. Back
             4. Power off
+
+        @raise TestError if MiniDiag is not enabled.
         """
 
-        # Validity check; this only applicable for minidiag enabled devices.
+        # Validity check; this only applicable for MiniDiag enabled devices.
         if not self.minidiag_enabled:
             raise error.TestError('Minidiag is not enabled for this board')
 
@@ -357,13 +386,17 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         self.menu.select('Selecting "Quick memory test"...')
         self.test.wait_for('keypress_delay')
         # Wait for quick memory test
-        self.menu.select('Back to minidiag root screen...')
+        self.menu.select('Back to MiniDiag root screen...')
         self.test.wait_for('keypress_delay')
 
     def reset_and_leave_minidiag(self):
-        """Reset the DUT and normal boot to leave minidiag."""
+        """
+        Reset the DUT and normal boot to leave MiniDiag.
 
-        # Validity check; this only applicable for minidiag enabled devices.
+        @raise TestError if MiniDiag is not enabled or no apreset support.
+        """
+
+        # Validity check; this only applicable for MiniDiag enabled devices.
         if not self.minidiag_enabled:
             raise error.TestError('Minidiag is not enabled for this board')
 
@@ -384,7 +417,8 @@ _MENU_MODE_SWITCHER_CLASSES = {
 
 
 def create_menu_mode_switcher(faft_framework, menu_navigator):
-    """Create a proper navigator based on its mode switcher type.
+    """
+    Create a proper navigator based on its mode switcher type.
 
     @param faft_framework: The main FAFT framework object.
     @param menu_navigator: The menu navigator for base logic of navigation.

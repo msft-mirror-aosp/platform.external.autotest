@@ -4,7 +4,7 @@
 
 import os, sys
 
-import constants
+from client.cros import constants
 
 sys.path.append(os.environ.get("SYSROOT", "/usr/local/") +
                 constants.FLIMFLAM_TEST_PATH)

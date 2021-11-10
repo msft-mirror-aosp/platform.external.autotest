@@ -155,9 +155,9 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
 
         if self._telemetry_on_dut:
             telemetry_cmd.extend([
-                    self._host.ssh_command(
-                            alive_interval=900, connection_attempts=4),
-                    'python2',
+                    self._host.ssh_command(alive_interval=900,
+                                           connection_attempts=4),
+                    'python',
                     script,
                     '--output-format=%s' % output_format,
                     '--output-dir=%s' % output_dir,
@@ -165,7 +165,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
             ])
         else:
             telemetry_cmd.extend([
-                    'python2',
+                    'python',
                     script,
                     '--browser=cros-chrome',
                     '--output-format=%s' % output_format,
@@ -460,7 +460,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         self._benchmark_deps = tempfile.NamedTemporaryFile(
                 prefix='fetch_benchmark_deps_result.', suffix='.json')
         deps_path = self._benchmark_deps.name
-        format_fetch = ('python2 %s --output-deps=%s %s')
+        format_fetch = ('python %s --output-deps=%s %s')
         command_fetch = format_fetch % (fetch_path, deps_path, test_name)
         command_get = 'cat %s' % deps_path
 
@@ -604,10 +604,10 @@ class LocalTelemetryRunner(TelemetryRunner):
         for the execution of this test:
 
         telemetry_on_dut=False:
-        python2 run_benchmark --browser=cros-chrome --remote=[dut] [test]
+        python run_benchmark --browser=cros-chrome --remote=[dut] [test]
 
         telemetry_on_dut=True:
-        ssh [dut] python2 run_benchmark --browser=system [test]
+        ssh [dut] python run_benchmark --browser=system [test]
 
         @param args: The list of arguments to be passed. See Base class for a
                      complete list of accepted arguments.
@@ -664,10 +664,10 @@ class DroneTelemetryRunner(TelemetryRunner):
         for the execution of this test:
 
         telemetry_on_dut=False:
-        python2 run_benchmark --browser=cros-chrome --remote=[dut] [test]
+        python run_benchmark --browser=cros-chrome --remote=[dut] [test]
 
         telemetry_on_dut=True:
-        ssh [dut] python2 run_benchmark --browser=system [test]
+        ssh [dut] python run_benchmark --browser=system [test]
 
         @param args: The list of arguments to be passed. See Base class for a
                      complete list of accepted arguments.

@@ -665,6 +665,26 @@ def _format_modules_cmd(is_public,
 
         special_cmd = _get_special_command_line(modules, is_public)
         if special_cmd:
+            # For hardware suite we want to exclude [instant] modules.
+            # For that purpose, replace --module by --include-filter works.
+            if is_hardware:
+                try:
+                    i = special_cmd.index('--module')
+                    if i + 3 < len(special_cmd) and special_cmd[i +
+                                                                2] == '--test':
+                        # [--module, x, --test, y] ==> [--include-filter, "x y"]
+                        special_cmd = special_cmd[:i] + [
+                                '--include-filter',
+                                '%s %s' %
+                                (special_cmd[i + 1], special_cmd[i + 3])
+                        ] + special_cmd[i + 4:]
+                    else:
+                        # [--module, x] ==> [--include-filter, x]
+                        special_cmd = special_cmd[:i] + [
+                                '--include-filter'
+                        ] + special_cmd[i + 1:]
+                except:
+                    pass
             cmd.extend(special_cmd)
         elif _ALL in modules:
             pass

@@ -24,7 +24,7 @@ def run_TS(machine):
         needs_push_media=True,
         tag='9.0_r17.x86.CtsMediaStressTestCases.camera.ctshardware',
         test_name='cheets_CTS_P.9.0_r17.x86.CtsMediaStressTestCases.camera.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMediaStressTestCases', '--test', 'android.mediastress.cts.MediaRecorderStressTest', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaStressTestCases android.mediastress.cts.MediaRecorderStressTest', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsMediaStressTestCases.camera',
         target_plan=None,

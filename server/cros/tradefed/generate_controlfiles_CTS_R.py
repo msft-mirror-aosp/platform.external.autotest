@@ -433,8 +433,7 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsDeqpTestCases', '--test', 'dEQP-GLES3.*'
         ],
         'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test',
+                '--module', 'CtsDeqpTestCases', '--test',
                 'dEQP-GLES3.functional.prerequisite#*'
         ],
         'CtsDeqpTestCases.dEQP-GLES31': [
@@ -731,7 +730,7 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewLargerWidthDecodeAccuracy',
         ],
         'CtsMediaTestCases.exclude-GLView': [
-                '-m',
+                '--module',
                 'CtsMediaTestCases',
                 '--exclude-filter',
                 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewDecodeAccuracy',

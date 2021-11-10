@@ -25,7 +25,7 @@ def run_TS(machine):
         needs_push_media=True,
         tag='arm.CtsMediaTestCases.other.ctshardware',
         test_name='cheets_CTS_P.arm.CtsMediaTestCases.other.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMediaTestCases', '--exclude-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest', '--exclude-filter', 'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest', '--exclude-filter', 'CtsMediaTestCases android.media.cts.VideoEncoderTest'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaTestCases', '--exclude-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest', '--exclude-filter', 'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest', '--exclude-filter', 'CtsMediaTestCases android.media.cts.VideoEncoderTest'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsMediaTestCases',
         target_plan=None,

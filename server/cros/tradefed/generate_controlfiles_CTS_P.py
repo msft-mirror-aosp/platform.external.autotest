@@ -528,8 +528,7 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsDeqpTestCases', '--test', 'dEQP-GLES3.*'
         ],
         'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test',
+                '--module', 'CtsDeqpTestCases', '--test',
                 'dEQP-GLES3.functional.prerequisite#*'
         ],
         'CtsDeqpTestCases.dEQP-GLES31': [

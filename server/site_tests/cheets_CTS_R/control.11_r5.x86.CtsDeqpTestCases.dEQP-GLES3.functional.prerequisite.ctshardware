@@ -23,7 +23,7 @@ def run_TS(machine):
         iterations=1,
         tag='11_r5.x86.CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite.ctshardware',
         test_name='cheets_CTS_R.11_r5.x86.CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases', '--test', 'dEQP-GLES3.functional.prerequisite#*', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases dEQP-GLES3.functional.prerequisite#*', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite',
         target_plan=None,

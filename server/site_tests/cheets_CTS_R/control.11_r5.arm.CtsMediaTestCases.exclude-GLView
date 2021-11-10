@@ -25,7 +25,7 @@ def run_TS(machine):
         needs_push_media=True,
         tag='11_r5.arm.CtsMediaTestCases.exclude-GLView',
         test_name='cheets_CTS_R.11_r5.arm.CtsMediaTestCases.exclude-GLView',
-        run_template=['run', 'commandAndExit', 'cts', '-m', 'CtsMediaTestCases', '--exclude-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewDecodeAccuracy', '--exclude-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewLargerHeightDecodeAccuracy', '--exclude-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewLargerWidthDecodeAccuracy', '--exclude-filter', 'CtsMediaTestCases android.media.cts.MediaExtractorTest#testProgramStreamExtraction', '--exclude-filter', 'CtsMediaTestCases[instant] android.media.cts.MediaExtractorTest#testProgramStreamExtraction', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMediaTestCases', '--exclude-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewDecodeAccuracy', '--exclude-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewLargerHeightDecodeAccuracy', '--exclude-filter', 'CtsMediaTestCases android.media.cts.DecodeAccuracyTest#testGLViewLargerWidthDecodeAccuracy', '--exclude-filter', 'CtsMediaTestCases android.media.cts.MediaExtractorTest#testProgramStreamExtraction', '--exclude-filter', 'CtsMediaTestCases[instant] android.media.cts.MediaExtractorTest#testProgramStreamExtraction', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsMediaTestCases',
         target_plan=None,

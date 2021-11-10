@@ -23,7 +23,7 @@ def run_TS(machine):
         iterations=1,
         tag='arm.CtsAppTestCases.feature.ctshardware',
         test_name='cheets_CTS_P.arm.CtsAppTestCases.feature.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsAppTestCases', '--test', 'android.app.cts.SystemFeaturesTest'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsAppTestCases android.app.cts.SystemFeaturesTest'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsAppTestCases.feature',
         target_plan=None,

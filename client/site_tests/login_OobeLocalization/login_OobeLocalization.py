@@ -78,11 +78,14 @@ class login_OobeLocalization(test.test):
 
 
     def _run_with_chrome(self, func, *args):
-        with chrome.Chrome(auto_login=False) as self._chrome:
+        with chrome.Chrome(auto_login=False,
+                           extra_browser_args=[
+                                   "--disable-hid-detection-on-oobe"
+                           ]) as self._chrome:
             self._chrome.browser.oobe.WaitForJavaScriptCondition(
                     "typeof Oobe == 'function' && "
                     "typeof OobeAPI == 'object' && "
-                    "Oobe.readyForTesting",
+                    "OobeAPI.screens.WelcomeScreen.isVisible()",
                     timeout=30)
             return func(*args)
 

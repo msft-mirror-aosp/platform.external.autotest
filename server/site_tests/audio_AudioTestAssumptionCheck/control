@@ -18,6 +18,7 @@ TEST_CLASS = "audio"
 TEST_TYPE = "server"
 DEPENDENCIES = 'chameleon, audio_board'
 JOB_RETRIES = 2
+PY_VERSION = 3
 
 DOC = """
 This test remotely tests if some functions, audio tests rely on, work correctly

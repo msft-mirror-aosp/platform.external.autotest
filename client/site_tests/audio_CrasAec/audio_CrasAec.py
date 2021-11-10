@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -57,7 +58,7 @@ class audio_CrasAec(test.test):
         proc = subprocess.Popen(['cras_test_client', '--dump_a'],
                                 stdout=subprocess.PIPE)
         output, err = proc.communicate()
-        lines = output.split('\n')
+        lines = output.decode().split('\n')
         # Filter through the summary lines by effects 0x0001 to find
         # the stream id.
         for line in lines:

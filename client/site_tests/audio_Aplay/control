@@ -15,6 +15,7 @@ TIME='SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = "audio,qav"
 TEST_TYPE = 'client'
+PY_VERSION = 3
 
 DOC = """
 Check that the system plays audio via internal speaker.

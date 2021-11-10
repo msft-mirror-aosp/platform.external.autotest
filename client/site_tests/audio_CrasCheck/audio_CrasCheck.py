@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -90,7 +91,7 @@ class audio_CrasCheck(test.test):
             self._check['crashes_at_end'] = True
 
         err_msg = ''
-        if self._check.values().count(False) > 0:
+        if list(self._check.values()).count(False) > 0:
             if not self._check['crashes_on_boot']:
                 err_msg = ('1. Found cras crashes on boot: %s.\n' %
                            existing_crash_reports)

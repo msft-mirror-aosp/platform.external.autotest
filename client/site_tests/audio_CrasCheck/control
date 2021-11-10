@@ -17,6 +17,8 @@ TEST_CATEGORY = 'General'
 TEST_CLASS = 'audio'
 TEST_TYPE = 'client'
 JOB_RETRIES = 2
+PY_VERSION = 3
+
 BUG_TEMPLATE = {
     'owner': 'vsuley@chromium.org',
     'labels': ['OS-Chrome'],

@@ -143,9 +143,8 @@ class StaticAPConfigurator(ap_configurator.APConfiguratorAbstract):
         """Allow cartridge to run commands in _command_list"""
         self.check_pdu_status()
         for command in self._command_list:
-            args_as_str =  ", ".join(command.args)
             logging.debug("Command to run method: %s", command.method.__name__)
-            logging.debug("Command to run with args: %s", args_as_str)
+            logging.debug("Command to run with args: %s", str(command.args))
             command.method(*command.args)
 
 

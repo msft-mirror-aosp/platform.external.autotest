@@ -783,6 +783,11 @@ class tast(test.test):
             return False
 
         logging.info('Expect to run %d test(s)', len(self._tests_to_run))
+
+        logging.info('Tests in scope:')
+        for test in self._tests_to_run:
+            logging.info('Test: %s', test['name'])
+
         return True
 
     def _run_tests(self):
@@ -836,6 +841,11 @@ class tast(test.test):
                 self._run_error = f.read().strip()
 
     def maybe_replace(self, test, failed):
+        """ Removes a test from the list of failed results
+
+        @param test: Name of test to remove from failed list
+        @param failed: List of failed tests
+        """
         # Remove the result, will take & only count the second result.
         if test[_KEY_NAME] in failed:
             failed.remove(test[_KEY_NAME])

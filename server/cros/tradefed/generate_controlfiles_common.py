@@ -33,7 +33,7 @@ _CONTROLFILE_TEMPLATE = Template(
 
     # This file has been automatically generated. Do not edit!
     {%- if servo_support_needed %}
-    from autotest_lib.server import server_utils
+    from autotest_lib.server import utils as server_utils
     {%- endif %}
     {%- if wifi_info_needed %}
     from autotest_lib.client.common_lib import utils, global_config

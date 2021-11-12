@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 # This file has been automatically generated. Do not edit!
-from autotest_lib.server import server_utils
+from autotest_lib.server import utils as server_utils
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_P.9.0_r17.x86.CtsBluetoothTestCases'

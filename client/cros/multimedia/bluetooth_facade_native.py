@@ -3379,7 +3379,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         the response on another characteristic.
 
         @param tx_object_path: the object path of the characteristic to write.
-        @param rx_object_path: the object path of the characteristic ti read.
+        @param rx_object_path: the object path of the characteristic to read.
         @param value: A byte array containing the data to write.
 
         @returns: The value of the characteristic to read from.
@@ -3394,6 +3394,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
         self._chrc_property = None
 
+        value = str(value)
         self._signal_watch = self._system_bus.add_signal_receiver(
                 self._property_changed,
                 signal_name='PropertiesChanged',

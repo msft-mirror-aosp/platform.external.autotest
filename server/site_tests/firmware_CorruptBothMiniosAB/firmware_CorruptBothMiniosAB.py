@@ -34,7 +34,7 @@ class firmware_CorruptBothMiniosAB(FirmwareTest):
         self.host = host
         # SSH to MiniOS is only available in developer mode
         self.switcher.setup_mode('dev')
-        self.setup_usbkey(usbkey=False)
+        self.setup_usbkey(usbkey=True, host=True, used_for_recovery=True)
 
     def cleanup(self):
         try:

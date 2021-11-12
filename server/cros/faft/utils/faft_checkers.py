@@ -234,5 +234,4 @@ class FAFTCheckers(object):
             raise error.TestError('MiniOS is not enabled for this board')
 
         cmdline = self.faft_client.host.run_output('cat /proc/cmdline')
-        # TODO(b/204964537): No need to remove the double quote.
-        return 'cros_minios' in cmdline.replace('"', '').split()
+        return 'cros_minios' in cmdline.split()

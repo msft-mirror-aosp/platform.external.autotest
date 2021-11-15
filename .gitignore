@@ -43,6 +43,7 @@ results-*
 results/*
 server/tmp
 tko/parsers/test/site_scenarios
+tko/tko_pb2.py
 ExternalSource
 /frontend/client/www/
 /shadow_config.ini

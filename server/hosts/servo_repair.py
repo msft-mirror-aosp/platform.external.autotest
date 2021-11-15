@@ -1092,7 +1092,9 @@ class _RestartServod(hosts.RepairAction):
 
     @timeout_util.TimeoutDecorator(cros_constants.REPAIR_TIMEOUT_SEC)
     def repair(self, host):
-        if not host.is_cros_host():
+        if host.is_containerized_servod():
+            pass
+        elif not host.is_cros_host():
             raise hosts.AutoservRepairError(
                     'Can\'t restart servod: not running '
                     'embedded Chrome OS.',

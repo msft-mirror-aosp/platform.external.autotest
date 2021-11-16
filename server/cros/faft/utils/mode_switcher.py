@@ -148,14 +148,17 @@ class _KeyboardBypasser(_BaseFwBypasser):
         self.servo.switch_usbkey('dut')
         logging.info('Enabled dut_sees_usb')
         tries = 3
-        while tries > 0 and not self.client_host.ping_wait_up(
-                timeout=self.faft_config.delay_reboot_to_ping):
+        while tries > 0 and not self.client_host.wait_up(
+                timeout=self.faft_config.delay_reboot_to_ping,
+                host_is_down=True):
             tries = tries - 1
-            logging.info('ping timed out, try REC_ON, retries left: %d', tries)
+            logging.info('connect timed out, try REC_ON, retries left: %d',
+                         tries)
             psc = self.servo.get_power_state_controller()
             psc.power_on(psc.REC_ON)
             # Check Vbus after reboot again
             self.check_vbus_and_pd_state()
+        logging.info('bypass_rec_mode DONE')
 
 
     def trigger_dev_to_rec(self):

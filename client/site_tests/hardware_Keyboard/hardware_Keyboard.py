@@ -77,5 +77,5 @@ class hardware_Keyboard(test.test):
         status = proc.returncode
         if status:
             raise error.TestError('Key Capture Test failed : %s' % output);
-        if (output != hardware_Keyboard.live_test_key):
+        if (output.decode() != hardware_Keyboard.live_test_key):
             raise error.TestError('Incorrect key pressed : %s' % output);

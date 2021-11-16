@@ -18,6 +18,7 @@ ChromeOS ARC++ tests.
 
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+import re
 
 
 def predicate(test):
@@ -27,6 +28,8 @@ def predicate(test):
     return False
   # Strip off the cheets_CTS. from the test name before comparing to args
   name = test.name[test.name.find('.') + 1:]
+  if name.endswith('.ctshardware'):
+    name = re.sub('.ctshardware', '', name)
   if 'tests' in args_dict and name not in args_dict['tests']:
     return False
   return True

@@ -6,6 +6,7 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <Entry include="CtsAppSecurityHostTestCases android.appsecurity.cts.ApkVerityInstallTest" />
   <Entry include="CtsAppSecurityHostTestCases android.appsecurity.cts.DocumentsTest#testRestrictStorageAccessFrameworkDisabled_notBlockFromTree" />
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testAllOutputYUVResolutions[1]" />
   <Entry include="CtsCameraTestCases[instant] android.hardware.camera2.cts.ImageReaderTest#testAllOutputYUVResolutions[1]" />
@@ -48,6 +49,7 @@
   <Entry include="CtsNativeEncryptionTestCases[instant] FileBasedEncryptionPolicyTest#allowedPolicy" />
   <Entry include="CtsOsTestCases android.os.cts.EnvironmentTest#testHidePid2" />
   <Entry include="CtsOsTestCases[instant] android.os.cts.EnvironmentTest#testHidePid2" />
+  <Entry include="CtsScopedStorageHostTest android.scopedstorage.cts.host.ScopedStorageHostTest#testVfsCacheConsistency" />
   <Entry include="CtsSecurityHostTestCases android.security.cts.MetadataEncryptionTest#testMetadataEncryptionIsEnabled" />
   <Entry include="CtsSecurityTestCases android.security.cts.EncryptionTest#testEncryption" />
   <Entry include="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiScanTimestamp" />
@@ -55,4 +57,6 @@
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AssistantStackTests#testAssistantStackFinishToPreviousApp" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AssistantStackTests#testAssistantStackLaunchNewTask" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationTests#testAnimationCallbacks_overlapping" />
+  <Entry include="LegacyStorageTest android.scopedstorage.cts.host.ScopedStorageHostTest#testVfsCacheConsistency" />
+  <Entry include="ScopedStorageTest android.scopedstorage.cts.host.ScopedStorageHostTest#testVfsCacheConsistency" />
 </SubPlan>

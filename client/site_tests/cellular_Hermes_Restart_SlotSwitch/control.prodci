@@ -14,7 +14,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"
 TEST_TYPE = "client"
-DEPENDENCIES = "carrier:esim"
+DEPENDENCIES = "carrier:esim, board:trogdor"
 DOC = """
   Defines randomly occuring operations:
   RS = Restart Hermes + Slot Switch

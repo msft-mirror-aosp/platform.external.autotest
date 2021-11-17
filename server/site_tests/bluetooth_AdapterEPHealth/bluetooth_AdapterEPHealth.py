@@ -43,11 +43,12 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    def get_device_verifier(self, device):
+    def get_device_verifier(self, device, expected_pass):
         """Helper function to get a proper test method for verifying device
            avalibility depending on its type
 
         @param device: a peer device
+        @param expected_pass: True if the test is expected to pass
         @returns: a test method if the device type can be recongnized,
                   None otherwise.
         """
@@ -56,7 +57,12 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         elif device.device_type == 'MOUSE':
             return self.test_mouse_left_click
         elif device.device_type == 'BLUETOOTH_AUDIO':
-            return lambda device: self.test_a2dp_sinewaves(device, A2DP, 0)
+            # If the test is expected to pass, verify the whole audio procedure
+            # Otherwise only make sure A2DP is not connected on peer device.
+            if expected_pass:
+                return lambda device: self.test_a2dp_sinewaves(device, A2DP, 0)
+            else:
+                return lambda device: self.test_device_a2dp_connected(device)
         else:
             raise error.TestError('Failed to find verifier for device type %s' %
                                   device.device_type)
@@ -167,7 +173,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
         for device, expected_pass in zip(devices, expected_passes):
             self.check_if_blocked_by_policy(device, not expected_pass)
-            verifier = self.get_device_verifier(device)
+            verifier = self.get_device_verifier(device, expected_pass)
             # Whether the test should pass or fail depends on expected_pass.
             self.expect_test(expected_pass, verifier, device)
 

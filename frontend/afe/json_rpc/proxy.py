@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 """
   Copyright (c) 2007 Jan-Klaas Kollhof
 
@@ -127,9 +128,11 @@ class ServiceProxy(object):
         # Caller can pass in a minimum value of timeout to be used for urlopen
         # call. Otherwise, the default socket timeout will be used.
         min_rpc_timeout = kwargs.pop('min_rpc_timeout', None)
-        postdata = json_encoder_class().encode({'method': self.__serviceName,
-                                                'params': args + (kwargs,),
-                                                'id': 'jsonrpc'})
+        postdata = json_encoder_class().encode({
+                'method': self.__serviceName,
+                'params': args + (kwargs, ),
+                'id': 'jsonrpc'
+        }).encode('utf-8')
         url_with_args = self.__serviceURL + '?' + urllib.parse.urlencode(
                 {'method': self.__serviceName})
         if self.__use_sso_client:

@@ -637,28 +637,11 @@ def test_retry_and_log(test_method_or_retry_flag,
                         logging.info('[*** passed: {} ({})]'.format(
                                 test_method.__name__, reason))
 
-            # Log TestError and TestNA and let the quicktest wrapper catch it.
-            # Those errors should skip out of the testcase entirely.
-            except error.TestNAError as e:
-                fail_msg = '[--- SKIPPED {} ({})]'.format(
-                        test_method.__name__, str(e))
-                logging.error(fail_msg)
-                instance.fails.append(fail_msg)
+            # Reset _expected_result and let the quicktest wrapper catch it.
+            # These errors should skip out of the testcase entirely.
+            except (error.TestNAError, error.TestError, error.TestFail):
                 instance._expected_result = True
                 raise
-            except error.TestError as e:
-                fail_msg = '[--- error {} ({})]'.format(
-                        test_method.__name__, str(e))
-                logging.error(fail_msg)
-                instance.fails.append(fail_msg)
-                instance._expected_result = True
-                raise
-            except error.TestFail as e:
-                fail_msg = '[--- failed {} ({})]'.format(
-                        test_method.__name__, str(e))
-                logging.error(fail_msg)
-                instance.fails.append(fail_msg)
-                should_raise = True
 
             # Next test_method should pass by default.
             instance._expected_result = True

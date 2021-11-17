@@ -393,20 +393,25 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
                     test_method(self)
                 except error.TestError as e:
-                    if not bool(self.fails):
-                        self.fails.append('[--- error {} ({})]'.format(
-                                test_method.__name__, str(e)))
+                    fail_msg = '[--- error {} ({})]'.format(
+                            test_method.__name__, str(e))
+                    logging.error(fail_msg)
+                    self.fails.append(fail_msg)
                 except error.TestFail as e:
-                    if not bool(self.fails):
-                        self.fails.append('[--- failed {} ({})]'.format(
-                                test_method.__name__, str(e)))
+                    fail_msg = '[--- failed {} ({})]'.format(
+                            test_method.__name__, str(e))
+                    logging.error(fail_msg)
+                    self.fails.append(fail_msg)
                 except error.TestNAError as e:
-                    if not bool(self.fails):
-                        self.fails.append('[--- SKIPPED {} ({})]'.format(
-                                test_method.__name__, str(e)))
+                    fail_msg = '[--- SKIPPED {} ({})]'.format(
+                            test_method.__name__, str(e))
+                    logging.error(fail_msg)
+                    self.fails.append(fail_msg)
                 except Exception as e:
-                    self.fails.append('[--- unknown error {} ({})]'.format(
-                            test_method.__name__, str(e)))
+                    fail_msg = '[--- unknown error {} ({})]'.format(
+                            test_method.__name__, str(e))
+                    logging.exception(fail_msg)
+                    self.fails.append(fail_msg)
 
                 self.quick_test_test_end(model_testNA=model_testNA,
                                          model_testWarn=model_testWarn,

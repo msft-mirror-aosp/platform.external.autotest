@@ -241,8 +241,8 @@ def get_extension(module,
     changes regularly. This ordering makes it simpler to add/remove modules.
     @param module: CTS module which will be tested in the control file. If 'all'
                    is specified, the control file will runs all the tests.
-    @param public: boolean variable to specify whether or not the bundle is from
-                   public source or not.
+    @param is_public: boolean variable to specify whether or not the bundle is
+                   from public source or not.
     @param led_provision: string or None indicate whether the camerabox has led
                           light or not.
     @param camera_facing: string or None indicate whether it's camerabox tests
@@ -251,12 +251,15 @@ def get_extension(module,
                      abi to run.
     @return string: unique string for specific tests. If public=True then the
                     string is "<abi>.<module>", otherwise, the unique string is
-                    "<revision>.<abi>.<module>". Note that if abi is empty, the
-                    abi part is omitted.
+                    "internal.<abi>.<module>" for internal. Note that if abi is empty,
+                    the abi part is omitted.
     """
     ext_parts = []
     if not CONFIG.get('SINGLE_CONTROL_FILE') and not is_public:
-        ext_parts = [revision]
+        if module == _COLLECT:
+            ext_parts = [revision]
+        else:
+            ext_parts = ['internal']
     if not CONFIG.get('SINGLE_CONTROL_FILE') and abi:
         ext_parts += [abi]
     ext_parts += [module]

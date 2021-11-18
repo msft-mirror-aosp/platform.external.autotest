@@ -80,6 +80,14 @@ Failed to get FP sensor frame
 SETVAR
 )"
 
+readonly _FP_FRAME_RAW_ACCESS_DENIED_ERROR2="$(cat <<SETVAR
+ioctl -1, errno 13 (Permission denied), EC result 255 (<unknown>)
+ioctl -1, errno 13 (Permission denied), EC result 255 (<unknown>)
+ioctl -1, errno 13 (Permission denied), EC result 255 (<unknown>)
+Failed to get FP sensor frame
+SETVAR
+)"
+
 readonly _FW_NAMES="rb0 rb1 rb9 dev"
 readonly _FW_TYPES="ro rw"
 
@@ -140,7 +148,8 @@ check_raw_fpframe_fails() {
   fi
 
   local stderr_output="$(cat "${stderr_output_file}")"
-  if [[ "${stderr_output}" != "${_FP_FRAME_RAW_ACCESS_DENIED_ERROR}" ]]; then
+  if [[ "${stderr_output}" != "${_FP_FRAME_RAW_ACCESS_DENIED_ERROR}" && \
+    "${stderr_output}" != "${_FP_FRAME_RAW_ACCESS_DENIED_ERROR2}" ]]; then
     echo "raw fpframe command returned unexpected value"
     echo "stderr_output: ${stderr_output}"
     exit 1

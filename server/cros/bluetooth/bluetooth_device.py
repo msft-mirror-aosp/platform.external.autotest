@@ -602,7 +602,7 @@ class BluetoothDevice(object):
         Required to handle non-ascii data
         @param data: data to be JSON and base64 decode
 
-        @return : JSON and base64 decoded date
+        @return : JSON and base64 decoded data
 
 
         """
@@ -636,8 +636,7 @@ class BluetoothDevice(object):
             dictionaries on success, the value False otherwise.
 
         """
-        encoded_devices = self._proxy.get_devices()
-        return self._decode_json_base64(encoded_devices)
+        return json.loads(self._proxy.get_devices())
 
 
     @proxy_thread_safe
@@ -654,14 +653,10 @@ class BluetoothDevice(object):
 
         # Handle dbus error case returned by xmlrpc_server.dbus_safe decorator
         if prop_val is None:
-            return prop_val
+            return None
 
         # Decode and return property value
-        val = self._decode_json_base64(prop_val)
-        if isinstance(val, bytes) or isinstance(val, bytearray):
-            return val.decode('utf-8')
-        else:
-            return val
+        return json.loads(prop_val)
 
 
     @proxy_thread_safe

@@ -2045,6 +2045,22 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         logging.debug('JSON encoded data is %s', json_encoded)
         return json_encoded
 
+    def _encode_json(self, data):
+        """Encodes input data as JSON object.
+
+        Note that for bytes elements in the input data, they are decoded as
+        unicode string.
+
+        @param data: data to be JSON encoded
+
+        @return: JSON encoded data
+        """
+        logging.debug('_encode_json raw data is %s', data)
+        str_data = utils.bytes_to_str_recursive(data)
+        json_encoded = json.dumps(str_data)
+        logging.debug('JSON encoded data is %s', json_encoded)
+        return json_encoded
+
     def get_devices(self):
         """Read information about remote devices known to the adapter.
 
@@ -2053,7 +2069,9 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
         """
         devices = self._get_devices()
-        return self._encode_base64_json(devices)
+        # Note that bluetooth facade now runs in Python 3.
+        # Refer to crrev.com/c/3268347.
+        return self._encode_json(devices)
 
     @xmlrpc_server.dbus_safe(None)
     def get_device_property(self, address, prop_name):
@@ -2080,7 +2098,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
                                       prop_name,
                                       dbus_interface=dbus.PROPERTIES_IFACE)
 
-        return self._encode_base64_json(prop_val)
+        return self._encode_json(prop_val)
 
     @xmlrpc_server.dbus_safe(None)
     def get_battery_property(self, address, prop_name):

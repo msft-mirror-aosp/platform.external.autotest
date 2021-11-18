@@ -178,3 +178,72 @@ class TestUtils(unittest.TestCase):
             'transfers_per_s': 4.45,
             'written_kb': 188458.0,
         }, statistics)
+
+    def test_base64_recursive_encode(self):
+        obj = {
+                'a': 10,
+                'b': 'hello',
+                'c': [100, 200, bytearray(b'\xf0\xf1\xf2\xf3\xf4')],
+                'd': {
+                        784: bytearray(b'@\x14\x01P'),
+                        78.0: bytearray(b'\x10\x05\x0b\x10\xb2\x1b\x00')
+                }
+        }
+        if utils.is_python2():
+            expected_encoded_obj = {
+                    'YQ==': 10,
+                    'Yg==': 'aGVsbG8=',
+                    'Yw==': [100, 200, '8PHy8/Q='],
+                    'ZA==': {
+                            784: 'QBQBUA==',
+                            78.0: 'EAULELIbAA=='
+                    }
+            }
+        else:
+            expected_encoded_obj = {
+                    'a': 10,
+                    'b': 'hello',
+                    'c': [100, 200, b'8PHy8/Q='],
+                    'd': {
+                            784: b'QBQBUA==',
+                            78.0: b'EAULELIbAA=='
+                    }
+            }
+
+        encoded_obj = utils.base64_recursive_encode(obj)
+        self.assertEqual(expected_encoded_obj, encoded_obj)
+
+    def test_base64_recursive_decode(self):
+        if utils.is_python2():
+            encoded_obj = {
+                    'YQ==': 10,
+                    'Yg==': 'aGVsbG8=',
+                    'Yw==': [100, 200, '8PHy8/Q='],
+                    'ZA==': {
+                            784: 'QBQBUA==',
+                            78.0: 'EAULELIbAA=='
+                    }
+            }
+        else:
+            encoded_obj = {
+                    'a': 10,
+                    'b': 'hello',
+                    'c': [100, 200, b'8PHy8/Q='],
+                    'd': {
+                            784: b'QBQBUA==',
+                            78.0: b'EAULELIbAA=='
+                    }
+            }
+
+        expected_decoded_obj = {
+                'a': 10,
+                'b': 'hello',
+                'c': [100, 200, b'\xf0\xf1\xf2\xf3\xf4'],
+                'd': {
+                        784: b'@\x14\x01P',
+                        78.0: b'\x10\x05\x0b\x10\xb2\x1b\x00'
+                }
+        }
+
+        decoded_obj = utils.base64_recursive_decode(encoded_obj)
+        self.assertEqual(expected_decoded_obj, decoded_obj)

@@ -28,6 +28,7 @@ import shutil
 import signal
 import string
 import subprocess
+import sys
 import tempfile
 import time
 import uuid
@@ -2307,20 +2308,29 @@ def recursive_func(obj, func, types, sequence_types=(list, tuple, set),
         return obj
 
 
+def is_python2():
+    """True if it is interpreted by Python 2."""
+    return sys.version_info.major == 2
+
+
 def base64_recursive_encode(obj):
     """Apply base64 encode recursively into the obj structure.
 
-    Most of the string-like types could be traced to basestring and bytearray
-    as follows:
-        str: basestring
-        bytes: basestring
-        dbus.String: basestring
-        dbus.Signature: basestring
-        dbus.ByteArray: basestring
+    Python 2 case:
+        Most of the string-like types could be traced to basestring and bytearray
+        as follows:
+            str: basestring
+            bytes: basestring
+            dbus.String: basestring
+            dbus.Signature: basestring
+            dbus.ByteArray: basestring
 
-    Note that all the above types except dbus.String could be traced back to
-    str. In order to cover dbus.String, basestring is used as the ancestor
-    class for string-like types.
+        Note that all the above types except dbus.String could be traced back to
+        str. In order to cover dbus.String, basestring is used as the ancestor
+        class for string-like types.
+
+    Python 3 case:
+        Perform base64 encode on bytes element only.
 
     The other type that needs encoding with base64 in a structure includes
         bytearray: bytearray
@@ -2333,24 +2343,13 @@ def base64_recursive_encode(obj):
         dbus.Dictionary: dict
 
     An example code and output look like
+    in Python 2:
         obj = {'a': 10, 'b': 'hello',
                'c': [100, 200, bytearray(b'\xf0\xf1\xf2\xf3\xf4')],
                'd': {784: bytearray(b'@\x14\x01P'),
                      78.0: bytearray(b'\x10\x05\x0b\x10\xb2\x1b\x00')}}
         encode_obj = base64_recursive_encode(obj)
         decode_obj = base64_recursive_decode(encode_obj)
-
-        print 'obj: ', obj
-        print 'encode_obj: ', encode_obj
-        print 'decode_obj: ', decode_obj
-        print 'Equal?', obj == decode_obj
-
-        Output:
-        obj:  {'a': 10,
-               'c': [100, 200, bytearray(b'\xf0\xf1\xf2\xf3\xf4')],
-               'b': 'hello',
-               'd': {784: bytearray(b'@\x14\x01P'),
-                     78.0: bytearray(b'\x10\x05\x0b\x10\xb2\x1b\x00')}}
 
         encode_obj:  {'YQ==': 10,
                       'Yw==': [100, 200, '8PHy8/Q='],
@@ -2361,13 +2360,34 @@ def base64_recursive_encode(obj):
                       'b': 'hello',
                       'd': {784: '@\x14\x01P',
                             78.0: '\x10\x05\x0b\x10\xb2\x1b\x00'}}
-        Equal? True
+
+    in Python 3:
+        obj = {'a': 10, 'b': 'hello',
+               'c': [100, 200, bytearray(b'\xf0\xf1\xf2\xf3\xf4')],
+               'd': {784: bytearray(b'@\x14\x01P'),
+                     78.0: bytearray(b'\x10\x05\x0b\x10\xb2\x1b\x00')}}
+        encode_obj = base64_recursive_encode(obj)
+        decode_obj = base64_recursive_decode(encode_obj)
+
+        encode_obj:  {'a': 10,
+                      'c': [100, 200, '8PHy8/Q='],
+                      'b': 'hello',
+                      'ZA==': {784: 'QBQBUA==', 78.0: 'EAULELIbAA=='}}
+        decode_obj:  {'a': 10,
+                      'c': [100, 200, '\xf0\xf1\xf2\xf3\xf4'],
+                      'b': 'hello',
+                      'd': {784: '@\x14\x01P',
+                            78.0: '\x10\x05\x0b\x10\xb2\x1b\x00'}}
 
     @param obj: the object to apply base64 encoding recursively.
 
     @return: the base64 encoded object.
     """
-    encode_types = (six.string_types, bytearray)
+    if is_python2():
+        encode_types = (six.string_types, bytearray)
+    else:
+        encode_types = (bytes, bytearray)
+
     return recursive_func(obj, base64.standard_b64encode, encode_types)
 
 
@@ -2378,6 +2398,9 @@ def base64_recursive_decode(obj):
 
     @return: the base64 decoded object.
     """
-    decode_types = (six.string_types,)
+    if is_python2():
+        decode_types = (six.string_types, )
+    else:
+        decode_types = (bytes, bytearray)
     return recursive_func(obj, base64.standard_b64decode, decode_types,
                           fix_num_key=True)

@@ -14,6 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 import base64
+import chardet
 import collections
 import errno
 import glob
@@ -2404,3 +2405,34 @@ def base64_recursive_decode(obj):
         decode_types = (bytes, bytearray)
     return recursive_func(obj, base64.standard_b64decode, decode_types,
                           fix_num_key=True)
+
+
+def bytes_to_str_recursive(obj):
+    """Converts obj's bytes elements to str.
+
+    It focuses on elements in the input obj whose type is bytes or byearray.
+    For the elements, it first guesses the encoding of the input bytes (or
+    bytearray) and decode the bytes to str. For unknown encoding, try UTF-8.
+    If it still fails, converts the element as "ERROR_DECODE_BYTES_TO_STR".
+
+    @param obj: an object.
+
+    @return: an object that converts the input object's bytes elements to
+        strings.
+    """
+    # Python 2's bytes is equivalent to string. Do nothing.
+    if is_python2():
+        return obj
+
+    def bytes_to_str(bytes_obj):
+        guessed_encoding = chardet.detect(bytes_obj).get('encoding')
+        if not guessed_encoding:
+            guessed_encoding = 'utf-8'
+        try:
+            return bytes_obj.decode(guessed_encoding, 'backslashreplace')
+        except:
+            logging.info("Failed to decode bytes %r to str with encoding %r",
+                         bytes_obj, guessed_encoding)
+            return 'ERROR_DECODE_BYTES_TO_STR'
+
+    return recursive_func(obj, bytes_to_str, (bytes, bytearray))

@@ -247,3 +247,42 @@ class TestUtils(unittest.TestCase):
 
         decoded_obj = utils.base64_recursive_decode(encoded_obj)
         self.assertEqual(expected_decoded_obj, decoded_obj)
+
+    def test_bytes_to_str_recursive(self):
+        obj = {
+                'a': 10,
+                'b': 'hello',
+                'c': b'b_hello',
+                'd': [100, 200, bytearray(b'\xf0\xf1\xf2\xf3\xf4')],
+                'e': {
+                        784: bytearray(b'@\x14\x01P'),
+                        78.0: bytearray(b'\x10\x05\x0b\x10\xb2\x1b\x00')
+                }
+        }
+
+        if utils.is_python2():
+            self.assertEqual(b'foo', utils.bytes_to_str_recursive(b'foo'))
+            self.assertEqual(b'\x80abc',
+                             utils.bytes_to_str_recursive(b'\x80abc'))
+            self.assertEqual('foo', utils.bytes_to_str_recursive('foo'))
+            self.assertEqual('\x80abc',
+                             utils.bytes_to_str_recursive('\x80abc'))
+            self.assertEqual(obj, utils.bytes_to_str_recursive(obj))
+        else:
+            self.assertEqual('foo', utils.bytes_to_str_recursive(b'foo'))
+            # self.assertEqual('\ufffdabc', utils.bytes_to_str_recursive(b'\x80abc'))
+            self.assertEqual('foo', utils.bytes_to_str_recursive('foo'))
+            self.assertEqual('\x80abc',
+                             utils.bytes_to_str_recursive('\x80abc'))
+            expected_obj = {
+                    'a': 10,
+                    'b': 'hello',
+                    'c': 'b_hello',
+                    # u prefix: Python 2 interpreter friendly.
+                    'd': [100, 200, u'\u0440\u0441\u0442\u0443\u0444'],
+                    'e': {
+                            784: '@\x14\x01P',
+                            78.0: u'\x10\x05\x0b\x10\u00b2\x1b\x00'
+                    }
+            }
+            self.assertEqual(expected_obj, utils.bytes_to_str_recursive(obj))

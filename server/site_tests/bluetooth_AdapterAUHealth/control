@@ -39,6 +39,7 @@ DOC = """
     - au_avrcp_media_info_test
     - au_a2dp_playback_and_connect_test
     - au_a2dp_playback_and_disconnect_test
+    - au_a2dp_playback_back2back_test
     """
 
 args_dict = utils.args_to_dict(args)

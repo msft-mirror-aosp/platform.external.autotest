@@ -1398,3 +1398,44 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         # Stop playing audio on the DUT.
         self.test_dut_to_stop_playing_audio_subprocess()
+
+
+    def playback_back2back(self, device, test_profile):
+        """Repeat to start and stop the playback stream several times.
+
+        This test repeats to start and stop the playback stream and verify
+        that the Bluetooth device receives the stream correctly.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: to select which A2DP test profile is used.
+        """
+        test_data = audio_test_data[test_profile]
+
+        self.test_device_set_discoverable(device, True)
+        self.test_discover_device(device.address)
+        self.test_pairing(device.address, device.pin, trusted=True)
+        self.test_connection_by_adapter(device.address)
+
+        self.test_device_a2dp_connected(device)
+        self.test_select_audio_output_node_bluetooth()
+
+        for _ in range(3):
+            # TODO(b/208165757): In here if we record the audio stream before
+            # playing that will cause an audio blank about 1~2 sec in the
+            # beginning of the recorded file and make the chunks checking fail.
+            # Need to fix this problem in the future.
+            self.test_dut_to_start_playing_audio_subprocess(test_data)
+            self.test_device_to_start_recording_audio_subprocess(
+                    device, test_profile, test_data)
+            self.test_check_chunks(device, test_profile, test_data,
+                                   test_data['chunk_checking_duration'])
+            self.test_dut_to_stop_playing_audio_subprocess()
+            self.test_device_to_stop_recording_audio_subprocess(device)
+
+            self.test_device_to_start_recording_audio_subprocess(
+                    device, test_profile, test_data)
+            self.test_check_empty_chunks(device, test_data,
+                                         test_data['chunk_checking_duration'])
+            self.test_device_to_stop_recording_audio_subprocess(device)
+
+        self.test_disconnection_by_adapter(device.address)

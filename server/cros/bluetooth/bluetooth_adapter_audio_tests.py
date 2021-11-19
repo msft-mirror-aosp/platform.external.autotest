@@ -811,7 +811,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     @test_retry_and_log(False)
-    def test_dut_to_start_playing_audio_subprocess(self, test_data):
+    def test_dut_to_start_playing_audio_subprocess(self,
+                                                   test_data,
+                                                   pin_device=None):
         """Start playing audio in a subprocess.
 
         @param test_data: the audio test data
@@ -819,7 +821,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @returns: True on success. False otherwise.
         """
         start_playing_audio = self.bluetooth_facade.start_playing_audio_subprocess(
-                test_data)
+                test_data, pin_device)
         self.results = {
                 'dut_to_start_playing_audio_subprocess': start_playing_audio
         }
@@ -1438,4 +1440,39 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                          test_data['chunk_checking_duration'])
             self.test_device_to_stop_recording_audio_subprocess(device)
 
+        self.test_disconnection_by_adapter(device.address)
+
+
+    def pinned_playback(self, device, test_profile):
+        """Play an audio stream that is pinned to the Bluetooth device.
+
+        This test does not choose Bluetooth as the output node but directly
+        plays the sound that is pinned to the Bluetooth device and check
+        whether it receives the audio stream correctly.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: to select which A2DP test profile is used.
+        """
+        test_data = audio_test_data[test_profile]
+
+        self.test_device_set_discoverable(device, True)
+        self.test_discover_device(device.address)
+        self.test_pairing(device.address, device.pin, trusted=True)
+        self.test_connection_by_adapter(device.address)
+
+        self.test_device_a2dp_connected(device)
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, test_data)
+
+        # We do not select Bluetooth as output node but play audio pinned to
+        # the Bluetooth device straight forward.
+        device_id = self.bluetooth_facade.get_device_id_from_node_type(
+                self.CRAS_BLUETOOTH_OUTPUT_NODE_TYPE, False)
+        logging.info("Bluetooth device id for audio stream output: %s",
+                     device_id)
+        self.test_dut_to_start_playing_audio_subprocess(test_data, device_id)
+        self.test_check_chunks(device, test_profile, test_data,
+                               test_data['duration'])
+        self.test_dut_to_stop_playing_audio_subprocess()
+        self.test_device_to_stop_recording_audio_subprocess(device)
         self.test_disconnection_by_adapter(device.address)

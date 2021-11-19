@@ -128,6 +128,19 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         test_sequence = lambda: self.playback_back2back(device, test_profile)
         self.au_run_test_sequence(device, test_sequence, test_profile)
 
+
+    # Remove flags=['Quick Health'] when this test is migrated to stable test.
+    @test_wrapper('A2DP pinned playback test',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def au_a2dp_pinned_playback_test(self):
+        """Pinned playback stream test."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        test_profile = A2DP
+        test_sequence = lambda: self.pinned_playback(device, test_profile)
+        self.au_run_test_sequence(device, test_sequence, test_profile)
+
+
     def check_wbs_capability(self):
         """Check if the DUT supports WBS capability.
 
@@ -304,6 +317,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_a2dp_playback_and_connect_test()
         self.au_a2dp_playback_and_disconnect_test()
         self.au_a2dp_playback_back2back_test()
+        self.au_a2dp_pinned_playback_test()
 
 
     def run_once(self,

@@ -1260,6 +1260,17 @@ class BluetoothDevice(object):
         return self._proxy.get_audio_thread_summary()
 
     @proxy_thread_safe
+    def get_device_id_from_node_type(self, node_type, is_input):
+        """Gets device id from node type.
+
+        @param node_type: a node type defined in CRAS_NODE_TYPES.
+        @param is_input: True if the node is input. False otherwise.
+
+        @returns: a string for device id.
+        """
+        return self._proxy.get_device_id_from_node_type(node_type, is_input)
+
+    @proxy_thread_safe
     def start_capturing_audio_subprocess(self, audio_data, recording_device):
         """Start capturing audio in a subprocess.
 
@@ -1283,15 +1294,17 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def start_playing_audio_subprocess(self, audio_data):
+    def start_playing_audio_subprocess(self, audio_data, pin_device=None):
         """Start playing audio in a subprocess.
 
-        @param audio_data: the audio test data
+        @param audio_data: the audio test data.
+        @param pin_device: the device id to play audio.
 
         @returns: True on success. False otherwise.
         """
         audio_data = json.dumps(audio_data)
-        return self._proxy.start_playing_audio_subprocess(audio_data)
+        return self._proxy.start_playing_audio_subprocess(
+                audio_data, pin_device)
 
 
     @proxy_thread_safe

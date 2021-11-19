@@ -55,6 +55,13 @@ class cellular_SafetyDance(test.test):
         Raises:
             error.TestFail if the states are not consistent.
         """
+
+        # b/188448918 : QC modems indicate that they are disabled even if they
+        # are enabled. There is no way to know when the disable completed until
+        # b/188448918 is fixed, and MM receives power state indications from the
+        # modem. The sleep can be removed once b/188448918 is fixed.
+        time.sleep(2)
+
         utils.poll_for_condition(
                 lambda: not self.test_env.modem.IsEnabled(),
                 error.TestFail('Modem failed to enter state Disabled.'))

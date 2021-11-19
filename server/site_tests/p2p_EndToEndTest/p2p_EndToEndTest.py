@@ -29,7 +29,7 @@ class p2p_EndToEndTest(test.test):
     version = 1
 
 
-    def run_once(self, dut, file_id, companions, barrier):
+    def run_once(self, dut, file_id, companions):
         self._dut = dut
         self._companion = companions[0]
 

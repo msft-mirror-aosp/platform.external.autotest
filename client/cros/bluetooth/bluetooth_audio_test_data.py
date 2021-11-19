@@ -14,6 +14,12 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.bin import utils
 
 
+# Chameleon device's data storing path.
+DEVICE_AUDIO_RECORD_DIR = '/tmp/audio'
+# Refer to TEST_DATA_DIR in the chameleon/deploy/deploy file.
+DEVICE_AUDIO_DATA_DIR = '/usr/share/autotest/audio-test-data'
+
+
 DIST_FILES = 'gs://chromeos-localmirror/distfiles'
 DOWNLOAD_TIMEOUT = 90 # timeout for gsutil downloads
 DATA_DIR = '/tmp'
@@ -51,18 +57,12 @@ AUDIO_DATA_TARBALL_PATH = os.path.join(DATA_DIR, AUDIO_TARBALL_NAME)
 
 
 A2DP = 'a2dp'
+A2DP_MEDIUM = 'a2dp_medium'
 A2DP_LONG = 'a2dp_long'
 AVRCP = 'avrcp'
 HFP_NBS = 'hfp_nbs'
 HFP_WBS = 'hfp_wbs'
 VISQOL_BUFFER_LENGTH = 10.0
-
-
-common_test_data = {
-    'bit_width': 16,
-    'format': 'S16_LE',
-    'duration': 5,
-}
 
 
 def download_file_from_bucket(dir, file_address, verify_download):
@@ -185,6 +185,16 @@ hfp_nbs_test_data = {
                                      'hfp_nbs_recorded_by_peer.wav'),
     'recorded_by_dut': os.path.join(AUDIO_RECORD_DIR,
                                     'hfp_nbs_recorded_by_dut.raw'),
+
+    'bit_width': 16,
+    'format': 'S16_LE',
+    'duration': 5,
+
+    # Device side data used by StartPlayingAudioSubprocess function in
+    # bluetooth_audio.py.
+    'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                'sine_3500hz_rate8000_ch1_5secs.wav'),
+
     'visqol_test_files': [
         {
             'file': os.path.join(AUDIO_TEST_DATA_DIR,
@@ -208,6 +218,11 @@ hfp_nbs_test_data = {
             'sink_passing_score': 3.5,
             'source_passing_score': 3.5,
             'reporting_type': 'voice-8k',
+
+            # Device side data used by StartPlayingAudioSubprocess function in
+            # bluetooth_audio.py.
+            'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                        'voice_8k.wav'),
         },
         {
             'file': os.path.join(AUDIO_TEST_DATA_DIR,
@@ -235,10 +250,14 @@ hfp_nbs_test_data = {
             'sink_passing_score': 1.0,
             'source_passing_score': 1.0,
             'reporting_type': 'sine-3.5k',
+
+            # Device side data used by StartPlayingAudioSubprocess function in
+            # bluetooth_audio.py.
+            'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                        'sine_3500hz_rate8000_ch1_5secs.wav'),
         }
     ]
 }
-hfp_nbs_test_data.update(common_test_data)
 
 
 # Audio test data for hfp wide band speech
@@ -253,6 +272,15 @@ hfp_wbs_test_data = {
                                      'hfp_wbs_recorded_by_peer.wav'),
     'recorded_by_dut': os.path.join(AUDIO_RECORD_DIR,
                                     'hfp_wbs_recorded_by_dut.raw'),
+    'bit_width': 16,
+    'format': 'S16_LE',
+    'duration': 5,
+
+    # Device side data used by StartPlayingAudioSubprocess function in
+    # bluetooth_audio.py.
+    'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                'sine_7000hz_rate16000_ch1_5secs.wav'),
+
     'visqol_test_files': [
         {
             'file': os.path.join(AUDIO_TEST_DATA_DIR,
@@ -274,6 +302,11 @@ hfp_wbs_test_data = {
             'sink_passing_score': 4.0,
             'source_passing_score': 4.0,
             'reporting_type': 'voice-16k',
+
+            # Device side data used by StartPlayingAudioSubprocess function in
+            # bluetooth_audio.py.
+            'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                        'voice.wav'),
         },
         {
             'file': os.path.join(AUDIO_TEST_DATA_DIR,
@@ -295,10 +328,14 @@ hfp_wbs_test_data = {
             'sink_passing_score': 4.0,
             'source_passing_score': 4.0,
             'reporting_type': 'sine-7k',
+
+            # Device side data used by StartPlayingAudioSubprocess function in
+            # bluetooth_audio.py.
+            'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                        'sine_7000hz_rate16000_ch1_5secs.wav'),
         }
     ]
 }
-hfp_wbs_test_data.update(common_test_data)
 
 
 # Audio test data for a2dp
@@ -311,8 +348,14 @@ a2dp_test_data = {
     'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
                                      'a2dp_recorded_by_peer.raw'),
     'chunk_in_secs': 5,
+    'bit_width': 16,
+    'format': 'S16_LE',
+    'duration': 5,
+
+    # Device side data used by HandleOneChunk function in bluetooth_audio.py.
+    'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                               'a2dp_recorded_by_peer_%d.raw'),
 }
-a2dp_test_data.update(common_test_data)
 
 
 # Audio test data for a2dp long test. The file and duration attributes
@@ -323,11 +366,29 @@ a2dp_long_test_data.update({
                                      'a2dp_long_recorded_by_peer.raw'),
     'duration': 0,       # determined at run time
     'chunk_in_secs': 1,
+    # Device side data used by HandleOneChunk function in bluetooth_audio.py.
+    'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                               'a2dp_long_recorded_by_peer_%d.raw'),
+})
+
+
+# Audio test data for a2dp medium test.
+a2dp_medium_test_data = a2dp_test_data.copy()
+a2dp_medium_test_data.update({
+    'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
+                                     'a2dp_medium_recorded_by_peer.raw'),
+    'duration': 60,
+    'chunk_in_secs': 1,
+    'chunk_checking_duration': 5,
+    # Device side data used by HandleOneChunk function in bluetooth_audio.py.
+    'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                               'a2dp_medium_recorded_by_peer_%d.raw'),
 })
 
 
 audio_test_data = {
     A2DP: a2dp_test_data,
+    A2DP_MEDIUM: a2dp_medium_test_data,
     A2DP_LONG: a2dp_long_test_data,
     HFP_WBS: hfp_wbs_test_data,
     HFP_NBS: hfp_nbs_test_data,

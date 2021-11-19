@@ -673,7 +673,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             logging.info('Handle chunk %d', i)
 
             recorded_file = device.HandleOneChunk(chunk_in_secs, i,
-                                                  test_profile, self.host.ip)
+                                                  self.host.ip)
             if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
 
@@ -690,7 +690,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
             # Check if the primary frequencies of the recorded file
             # meet expectation.
-            if not self._check_primary_frequencies(A2DP, test_data,
+            if not self._check_primary_frequencies(test_profile, test_data,
                                                    'recorded_by_peer',
                                                    recorded_file=recorded_file):
                 if (i > self.IGNORE_LAST_FEW_CHUNKS and

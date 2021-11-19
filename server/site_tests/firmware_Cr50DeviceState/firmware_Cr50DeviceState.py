@@ -116,7 +116,9 @@ class firmware_Cr50DeviceState(Cr50Test):
     CHAN_EVENTS = 0x20
     CHAN_ACPI = 0x400
     CHAN_HOSTCMD = 0x80
-    CHAN_RESTRICTED = CHAN_ALL ^ (CHAN_EVENTS | CHAN_ACPI | CHAN_HOSTCMD)
+    CHAN_USBCHARGE = 0x200000
+    CHAN_RESTRICTED = CHAN_ALL ^ (CHAN_EVENTS | CHAN_ACPI | CHAN_HOSTCMD
+                                  | CHAN_USBCHARGE)
 
 
     def initialize(self, host, cmdline_args, full_args):

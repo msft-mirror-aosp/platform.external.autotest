@@ -12,7 +12,7 @@
   <Entry include="CtsPermissionTestCases android.permission.cts.Camera2PermissionTest" />
   <Entry include="CtsSensorTestCases" />
   <Entry include="CtsSustainedPerformanceHostTestCases" />
-  <Entry include="CtsUsageTestCases" />
+  <Entry include="CtsUsageStatsTestCases" />
   <Entry include="CtsViewTestCases" />
   <Entry include="CtsWifiTestCases" />
 </SubPlan>

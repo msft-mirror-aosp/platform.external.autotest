@@ -85,7 +85,7 @@ def assert_byte_length(str, len_bytes):
 def get_str_length_as_hex(str, additional_len=0):
     """Get the length of str plus any additional_len as a hex string."""
     assert (len(str) % 2) == 0
-    length_bytes = len(str) / 2
+    length_bytes = len(str) // 2
     # hex() returns strings with a '0x' prefix, which we remove.
     return hex(length_bytes + additional_len)[2:]
 

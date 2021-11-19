@@ -47,7 +47,11 @@ class LogReader():
         argv = ['tail', '-n', '%d' % (lines_count+1), _PATH_LOG_FILE]
         p1 = subprocess.Popen(argv, stdout=subprocess.PIPE)
         out,err = p1.communicate()
-        lines = out.split('\n')
+
+        # It is possible for invalid UTF-8 to appear in the system log
+        # (e.g. null bytes on unclean poweroff), but this doesn't
+        # concern us, so we elect to ignore it.
+        lines = out.decode(errors="ignore").split('\n')
         lines.pop()
         if len(lines) > lines_count:
             if len(lines) == 0:

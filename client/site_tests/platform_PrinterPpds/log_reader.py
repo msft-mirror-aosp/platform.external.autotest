@@ -241,7 +241,7 @@ class LogReader():
             filters[-1] = subprocess.check_output(find_cmd).rstrip()
         # build and return the script
         script = '#!/bin/bash\nset -e\nset -o pipefail\n'
-        for name, value in envp.iteritems():
+        for name, value in envp.items():
             script += ('export %s=%s\n' % (name, value))
         for ind, filt in enumerate(filters):
             if ind > 0:

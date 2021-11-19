@@ -26,7 +26,7 @@ class EvenNumbersGenerator():
 
         """
         # prepares input data
-        self._data = range(count)
+        self._data = list(range(count))
         # runs the calculations and returns an output
         return self._processor.run(self._thread, count)
 

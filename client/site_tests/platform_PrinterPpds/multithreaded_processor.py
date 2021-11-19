@@ -54,7 +54,7 @@ class MultithreadedProcessor():
         @throws Exception if at least one of the tasks threw any Exception.
 
         """
-        self._tasks_ids = range(number_of_tasks) # list of tasks ids to process
+        self._tasks_ids = list(range(number_of_tasks))  # tasks ids to process
         self._outputs = [None]*number_of_tasks
         self._error = None
 

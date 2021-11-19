@@ -96,7 +96,7 @@ class Archiver():
                 max_prefixes_per_archive)
         self._filenames_prefixes = dict()
         prefixes.reverse()
-        for ap, fc in sorted(self._archives_names.iteritems()):
+        for ap, fc in sorted(self._archives_names.items()):
             self._archives_names[ap] = [fc, []]
             while fc > 0:
                 self._filenames_prefixes[prefixes.pop()] = [ap, set()]

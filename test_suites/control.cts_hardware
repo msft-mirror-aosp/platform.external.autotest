@@ -18,19 +18,20 @@ ChromeOS ARC++ tests.
 
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
-import re
-
 
 def predicate(test):
   if not hasattr(test, 'suite') or not hasattr(test, 'name'):
     return False
   if not NAME in test.suite.split(','):
     return False
-  # Strip off the cheets_CTS. from the test name before comparing to args
-  name = test.name[test.name.find('.') + 1:]
-  if name.endswith('.ctshardware'):
-    name = re.sub('.ctshardware', '', name)
-  if 'tests' in args_dict and name not in args_dict['tests']:
+  # Moblab specific workflow:
+  # Moblab prepares retry test package list using test failures in TF stdout.
+  # `args_dics['tests']` holds list of items in format abi.CtsPackageName.
+  #   ie. ['arm,CtsAppTestCases', 'x86.CtsCameraTestCases', ...]
+  # `test.name` holds the actual autotest test name.
+  #   ie. cheets_CTS_P.x86.CtsMediaTestCases.other
+  name = test.name.split('.')
+  if 'tests' in args_dict and name[1]+'.'+name[2] not in args_dict['tests']:
     return False
   return True
 

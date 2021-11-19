@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 import json
-import md5
+import hashlib
 import os
 import requests
 
@@ -261,7 +261,7 @@ def calculate_digest(doc):
     out = _normalize_document(doc)
 
     # Calculates hash
-    return md5.new(out).hexdigest()
+    return hashlib.md5(out).hexdigest()
 
 
 def parse_digests_file(path_digests, denylist):

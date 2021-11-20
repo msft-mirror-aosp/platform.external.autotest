@@ -32,7 +32,7 @@ class cellular_Callbox_AssertSMS(test.test):
         """
         self.log = logging.getLogger()
         self.sim = cmw.CMW500CellularSimulator(cbl.callboxes[host.hostname],
-                                               22)
+                                               5025)
         self.dut = ChromebookCellularDut.ChromebookCellularDut(host, self.log)
         self.simulation = LteSimulation.LteSimulation(
                 self.sim, self.log, self.dut, {

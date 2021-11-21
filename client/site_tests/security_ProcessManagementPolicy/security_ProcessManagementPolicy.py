@@ -20,7 +20,7 @@ class security_ProcessManagementPolicy(test.test):
     _ALLOWLIST_DICT = {
         "cros-disks": set(("chronos", "fuse-exfat", "fuse-sshfs", "nobody",
                            "ntfs-3g", "fuse-rar2fs", "fuse-smbfs", "fuse-zip")),
-        "shill": set(("dhcp", "vpn", "openvpn", "syslog", "nobody")),
+        "shill": set(("dhcp", "vpn", "syslog", "nobody")),
     }
 
     def __init__(self, *args, **kwargs):
@@ -93,8 +93,6 @@ class security_ProcessManagementPolicy(test.test):
         self._test_setuid("cros-disks", "root", True, False)
         # Make sure 'shill' can't setuid() to 'chronos'
         self._test_setuid("shill", "chronos", True, False)
-        # Make sure 'openvpn' can't setuid() to 'root'
-        self._test_setuid("openvpn", "root", True, False)
         # Make sure 'vpn' can't setuid() to 'root'
         self._test_setuid("vpn", "root", True, False)
 

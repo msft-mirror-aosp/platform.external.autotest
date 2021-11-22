@@ -9,6 +9,7 @@ import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.audio import sox_utils
 
 
@@ -68,6 +69,8 @@ class audio_CrasAec(test.test):
                 break
         else:
             # Possibly error has occurred in capture proess.
+            audio_helper.dump_audio_diagnostics(
+                    os.path.join(self.resultsdir, "audio_diagnostics.txt"))
             raise error.TestFail("Fail to find aec stream's id")
 
         file_name = os.path.join(self.resultsdir,

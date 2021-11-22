@@ -161,8 +161,7 @@ class TradefedTest(test.test):
 
         # Install the tradefed bundle.
         bundle_install_path = self._install_bundle(
-                self._get_latest_bundle_url(bundle) if uri == 'LATEST' else (
-                        uri or self._get_default_bundle_url(bundle)))
+                self._get_bundle_url(uri, bundle))
         self._repository = os.path.join(bundle_install_path,
                                         self._get_tradefed_base_dir())
 
@@ -1235,6 +1234,11 @@ class TradefedTest(test.test):
                                                        m.group(1, 2, 3, 4, 5))
             lastmatch = (session, passed, failed, done == total)
         return lastmatch
+
+    def _get_bundle_url(self, uri, bundle):
+        # TODO: Replace with NotImplementedError once all subclasses are done
+        return self._get_latest_bundle_url(bundle) if uri == 'LATEST' else (
+                uri or self._get_default_bundle_url(bundle))
 
     def _tradefed_retry_command(self, template, session_id):
         raise NotImplementedError('Subclass should override this function')

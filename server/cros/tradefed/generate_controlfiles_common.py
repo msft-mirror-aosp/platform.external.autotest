@@ -9,6 +9,7 @@ from __future__ import print_function
 import argparse
 import contextlib
 import copy
+from enum import Enum
 import logging
 import os
 import re
@@ -20,6 +21,13 @@ import textwrap
 import zipfile
 # Use 'sudo pip install jinja2' to install.
 from jinja2 import Template
+
+# Type of source storage from where the generated control files should
+# retrieve the xTS bundle zip file.
+#  'MOBLAB' means the bucket for moblab used by 3PL.
+#  'LATEST' means the latest official xTS release.
+#  'DEV' means the preview version build from development branch.
+SourceType = Enum('SourceType', ['MOBLAB', 'LATEST', 'DEV'])
 
 
 # TODO(ihf): Assign better TIME to control files. Scheduling uses this to run
@@ -769,8 +777,8 @@ def get_retry_template(modules, is_public):
     return get_run_template(modules, is_public, retry=True)
 
 
-def get_extra_modules_dict(is_public, abi):
-    if not is_public:
+def get_extra_modules_dict(source_type, abi):
+    if source_type != SourceType.MOBLAB:
         return CONFIG['EXTRA_MODULES']
 
     extra_modules = copy.deepcopy(CONFIG['PUBLIC_EXTRA_MODULES'])
@@ -878,8 +886,7 @@ def get_controlfile_content(combined,
                             build,
                             uri,
                             suites=None,
-                            is_public=False,
-                            is_latest=False,
+                            source_type=None,
                             abi_bits=None,
                             led_provision=None,
                             camera_facing=None,
@@ -892,6 +899,7 @@ def get_controlfile_content(combined,
                    file. If 'all' is specified, the control file will run
                    all the tests.
     """
+    is_public = (source_type == SourceType.MOBLAB)
     # We tag results with full revision now to get result directories containing
     # the revision. This fits stainless/ better.
     tag = '%s' % get_extension(combined, abi, revision, is_public,
@@ -903,11 +911,15 @@ def get_controlfile_content(combined,
     if not suites:
         suites = get_suites(modules, abi, is_public, camera_facing, hardware_suite)
     attributes = ', '.join(suites)
-    uri = 'LATEST' if is_latest else (None if is_public else uri)
+    uri = {
+            SourceType.MOBLAB: None,
+            SourceType.LATEST: 'LATEST',
+            SourceType.DEV: 'DEV'
+    }.get(source_type)
     target_module = None
     if (combined not in get_collect_modules(is_public) and combined != _ALL):
         target_module = combined
-    for target, config in get_extra_modules_dict(is_public, abi).items():
+    for target, config in get_extra_modules_dict(source_type, abi).items():
         if combined in config.keys():
             target_module = target
     abi_to_run = {
@@ -1185,12 +1197,12 @@ def write_controlfile(name,
                       build,
                       uri,
                       suites,
-                      is_public,
-                      is_latest=False,
+                      source_type,
                       whole_module_set=None,
                       hardware_suite=False,
                       abi_bits=None):
     """Write control files per each ABI or combined."""
+    is_public = (source_type == SourceType.MOBLAB)
     abi_bits_list = []
     config_key = 'PUBLIC_SPLIT_BY_BITS_MODULES' if is_public else 'SPLIT_BY_BITS_MODULES'
     if modules & set(CONFIG.get(config_key, [])):
@@ -1215,8 +1227,7 @@ def write_controlfile(name,
                                           build,
                                           uri,
                                           suites,
-                                          is_public,
-                                          is_latest,
+                                          source_type,
                                           hardware_suite=hardware_suite,
                                           whole_module_set=whole_module_set,
                                           abi_bits=abi_bits)
@@ -1224,7 +1235,7 @@ def write_controlfile(name,
             f.write(content)
 
 
-def write_moblab_controlfiles(modules, abi, revision, build, uri, is_public):
+def write_moblab_controlfiles(modules, abi, revision, build, uri):
     """Write all control files for moblab.
 
     Nothing gets combined.
@@ -1238,12 +1249,18 @@ def write_moblab_controlfiles(modules, abi, revision, build, uri, is_public):
         # option will cover variants with optional parameters.
         if is_parameterized_module(module):
             continue
-        write_controlfile(module, set([module]), abi, revision, build, uri,
-                          None, is_public)
+        write_controlfile(module,
+                          set([module]),
+                          abi,
+                          revision,
+                          build,
+                          uri,
+                          None,
+                          source_type=SourceType.MOBLAB)
 
 
 def write_regression_controlfiles(modules, abi, revision, build, uri,
-                                  is_public, is_latest):
+                                  source_type):
     """Write all control files for stainless/ToT regression lab coverage.
 
     Regression coverage on tot currently relies heavily on watching stainless
@@ -1262,18 +1279,17 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
                           build,
                           uri,
                           None,
-                          is_public,
-                          is_latest,
+                          source_type,
                           whole_module_set=module_set)
     else:
         combined = combine_modules_by_common_word(set(modules))
         for key in combined:
             write_controlfile(key, combined[key], abi, revision, build, uri,
-                              None, is_public, is_latest)
+                              None, source_type)
 
 
 def write_qualification_controlfiles(modules, abi, revision, build, uri,
-                                     is_public, is_latest):
+                                     source_type):
     """Write all control files to run "all" tests for qualification.
 
     Qualification was performed on N by running all tests using tradefed
@@ -1295,19 +1311,16 @@ def write_qualification_controlfiles(modules, abi, revision, build, uri,
                                       build,
                                       uri,
                                       CONFIG.get('QUAL_SUITE_NAMES'),
-                                      is_public,
-                                      is_latest,
+                                      source_type,
                                       abi_bits=abi_bits)
         else:
             write_controlfile('all.' + key, combined[key], abi,
                               revision, build, uri,
-                              CONFIG.get('QUAL_SUITE_NAMES'), is_public,
-                              is_latest)
+                              CONFIG.get('QUAL_SUITE_NAMES'), source_type)
 
 
 def write_qualification_and_regression_controlfile(modules, abi, revision,
-                                                   build, uri, is_public,
-                                                   is_latest):
+                                                   build, uri, source_type):
     """Write a control file to run "all" tests for qualification and regression.
     """
     # For cts-instant, qualication control files are expected to cover
@@ -1323,17 +1336,22 @@ def write_qualification_and_regression_controlfile(modules, abi, revision,
                           build,
                           uri,
                           suites,
-                          is_public,
-                          is_latest,
+                          source_type,
                           whole_module_set=module_set)
 
 
-def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public,
-                               is_latest, is_hardware=False):
+def write_collect_controlfiles(_modules,
+                               abi,
+                               revision,
+                               build,
+                               uri,
+                               source_type,
+                               is_hardware=False):
     """Write all control files for test collection used as reference to
 
     compute completeness (missing tests) on the CTS dashboard.
     """
+    is_public = (source_type == SourceType.MOBLAB)
     if is_public:
         if is_hardware:
             suites = [CONFIG['MOBLAB_HARDWARE_SUITE_NAME']]
@@ -1353,36 +1371,40 @@ def write_collect_controlfiles(_modules, abi, revision, build, uri, is_public,
                           build,
                           uri,
                           suites,
-                          is_public,
-                          is_latest,
+                          source_type,
                           hardware_suite=is_hardware)
 
 
-def write_extra_controlfiles(_modules, abi, revision, build, uri, is_public,
-                             is_latest):
+def write_extra_controlfiles(_modules, abi, revision, build, uri, source_type):
     """Write all extra control files as specified in config.
 
     This is used by moblab to load balance large modules like Deqp, as well as
     making custom modules such as WM presubmit. A similar approach was also used
     during bringup of grunt to split media tests.
     """
-    for module, config in get_extra_modules_dict(is_public, abi).items():
+    for module, config in get_extra_modules_dict(source_type, abi).items():
         for submodule, suites in config.items():
             write_controlfile(submodule, set([submodule]), abi, revision,
-                              build, uri, suites, is_public,
-                              is_latest)
+                              build, uri, suites, source_type)
 
-def write_hardwaresuite_controlfiles(abi, revision, build, uri, is_public,
-                                     is_latest):
+
+def write_hardwaresuite_controlfiles(abi, revision, build, uri, source_type):
     """Control files for Build variant hardware only tests."""
+    is_public = (source_type == SourceType.MOBLAB)
     cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES', []))
     for module in cts_hardware_modules:
         name = get_controlfile_name(module, abi, revision, is_public,
                                     hardware_suite=True)
 
-        content = get_controlfile_content(module, set([module]), abi, revision,
-                                    build, uri, None, is_public, is_latest,
-                                    hardware_suite=True)
+        content = get_controlfile_content(module,
+                                          set([module]),
+                                          abi,
+                                          revision,
+                                          build,
+                                          uri,
+                                          None,
+                                          source_type,
+                                          hardware_suite=True)
 
         with open(name, 'w') as f:
             f.write(content)
@@ -1398,17 +1420,16 @@ def write_hardwaresuite_controlfiles(abi, revision, build, uri, is_public,
                                               build,
                                               uri,
                                               None,
-                                              is_public,
-                                              is_latest,
+                                              source_type,
                                               hardware_suite=True)
             with open(name, 'w') as f:
                 f.write(content)
 
 
-def write_extra_camera_controlfiles(abi, revision, build, uri, is_public,
-                                    is_latest):
+def write_extra_camera_controlfiles(abi, revision, build, uri, source_type):
     """Control files for CtsCameraTestCases.camerabox.*"""
     module = 'CtsCameraTestCases'
+    is_public = (source_type == SourceType.MOBLAB)
     for facing in ['back', 'front']:
         led_provision = 'noled'
         name = get_controlfile_name(module, abi, revision, is_public,
@@ -1420,21 +1441,21 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, is_public,
                                           build,
                                           uri,
                                           None,
-                                          is_public,
-                                          is_latest,
+                                          source_type,
                                           led_provision=led_provision,
                                           camera_facing=facing)
         with open(name, 'w') as f:
             f.write(content)
 
 
-def run(uris, is_public, is_latest, cache_dir):
+def run(uris, source_type, cache_dir):
     """Downloads each bundle in |uris| and generates control files for each
 
     module as reported to us by tradefed.
     """
     for uri in uris:
         abi = get_bundle_abi(uri)
+        is_public = (source_type == SourceType.MOBLAB)
         # Get tradefed data by downloading & unzipping the files
         with TemporaryDirectory(prefix='cts-android_') as tmp:
             if cache_dir is not None:
@@ -1454,46 +1475,63 @@ def run(uris, is_public, is_latest, cache_dir):
                 raise Exception('Could not determine revision.')
 
             logging.info('Writing all control files.')
-            if is_public:
-                write_moblab_controlfiles(modules, abi, revision, build, uri,
-                                          is_public)
-            else:
-                if CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS']:
-                    write_qualification_and_regression_controlfile(
-                            modules, abi, revision, build, uri, is_public,
-                            is_latest)
-                else:
-                    write_regression_controlfiles(modules, abi, revision,
-                                                  build, uri, is_public,
-                                                  is_latest)
-                    write_qualification_controlfiles(modules, abi, revision,
-                                                     build, uri, is_public,
-                                                     is_latest)
+            if source_type == SourceType.MOBLAB:
+                write_moblab_controlfiles(modules, abi, revision, build, uri)
 
-                if CONFIG['CONTROLFILE_WRITE_CAMERA']:
+            if CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS']:
+                # Might be worth generating DEV control files, but since this
+                # is used for only ARC-P CTS_Instant modules whose regression
+                # is 99.99% coverved by CTS DEV runs, having only LATEST is
+                # sufficient.
+                if source_type == SourceType.LATEST:
+                    write_qualification_and_regression_controlfile(
+                            modules, abi, revision, build, uri, source_type)
+            else:
+                if source_type == SourceType.DEV:
+                    write_regression_controlfiles(modules, abi, revision,
+                                                  build, uri, source_type)
+                if source_type == SourceType.LATEST:
+                    write_qualification_controlfiles(modules, abi, revision,
+                                                     build, uri, source_type)
+
+            if CONFIG['CONTROLFILE_WRITE_CAMERA']:
+                # For now camerabox is not stable for qualification purpose.
+                # Hence, the usage is limited to DEV. In the future we need
+                # to reconsider.
+                if source_type == SourceType.DEV:
                     write_extra_camera_controlfiles(abi, revision, build, uri,
-                                                    is_public, is_latest)
+                                                    source_type)
 
             if CONFIG.get('CONTROLFILE_WRITE_COLLECT', True):
-                write_collect_controlfiles(modules, abi, revision, build, uri,
-                                           is_public, is_latest,
-                                           is_hardware=False)
-                if 'HARDWARE_MODULES' in CONFIG:
-                    write_collect_controlfiles(modules,
-                                               abi,
-                                               revision,
-                                               build,
-                                               uri,
-                                               is_public,
-                                               is_latest,
-                                               is_hardware=True)
+                # Collect-test control files are used for checking the test
+                # completeness before qualification. Not needed for DEV.
+                if source_type == SourceType.LATEST or source_type == SourceType.MOBLAB:
+                    for_hardware_suite = [False]
+                    if 'HARDWARE_MODULES' in CONFIG:
+                        for_hardware_suite.append(True)
+                    for is_hardware in for_hardware_suite:
+                        write_collect_controlfiles(modules,
+                                                   abi,
+                                                   revision,
+                                                   build,
+                                                   uri,
+                                                   source_type,
+                                                   is_hardware=is_hardware)
 
             if CONFIG['CONTROLFILE_WRITE_EXTRA']:
-                write_extra_controlfiles(None, abi, revision, build, uri,
-                                         is_public, is_latest)
+                # "EXTRA" control files are for workaround test instability
+                # by running only sub-tests. For now let's attribute them to
+                # qualification suites, since it is sometimes critical to
+                # have the stability for qualification. If needed we need to
+                # implement some way to add them to DEV suites as well.
+                if source_type == SourceType.LATEST or source_type == SourceType.MOBLAB:
+                    write_extra_controlfiles(None, abi, revision, build, uri,
+                                             source_type)
 
-            write_hardwaresuite_controlfiles(abi, revision, build, uri,
-                                             is_public, is_latest)
+            # "Hardware only" jobs are for reducing tests on qualification.
+            if source_type == SourceType.LATEST or source_type == SourceType.MOBLAB:
+                write_hardwaresuite_controlfiles(abi, revision, build, uri,
+                                                 source_type)
 
 
 def main(config):
@@ -1535,4 +1573,10 @@ def main(config):
             'bundle file if exists, or caches a downloaded file to this '
             'directory if not.')
     args = parser.parse_args()
-    run(args.uris, args.is_public, args.is_latest, args.cache_dir)
+    if args.is_public:
+        source_type = SourceType.MOBLAB
+    elif args.is_latest:
+        source_type = SourceType.LATEST
+    else:
+        source_type = SourceType.DEV
+    run(args.uris, source_type, args.cache_dir)

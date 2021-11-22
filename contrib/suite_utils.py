@@ -187,6 +187,8 @@ class TestManager(object):
                 found_tests = self.tests[test].enumerate_tests_from_tast_exprs(
                         self.get_dut())
                 for t in range(len(found_tests)):
+                    if found_tests[t] == '':
+                        continue
                     suite_tests.append("tast." + str(found_tests[t]))
             else:
                 suite_tests.append(test)

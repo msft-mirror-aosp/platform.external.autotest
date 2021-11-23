@@ -704,7 +704,9 @@ class TastTest(unittest.TestCase):
 
     def testCameraboxArgs(self):
         """Tests passing camerabox specific args into Tast runner."""
-        vars = ['chart=0.0.0.0']
+        # Now it won't specify any chart IP address if it does not find a valid
+        # one.
+        vars = []
         self._init_tast_commands([TestInfo('pkg.Test', 0, 0)], run_vars=vars)
         self._run_test(use_camera_box=True)
 

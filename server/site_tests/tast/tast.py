@@ -459,10 +459,14 @@ class tast(test.test):
             chart_host_name = '.'.join(domains)
             try:
                 chart_ip = socket.gethostbyname(chart_host_name)
+
+                # Check if the IP is pingable.
+                if os.system("ping -c 1 " + chart_ip) != 0:
+                    logging.error('Failed to ping IP: %s.', chart_ip)
+
+                args += ['-var=chart=' + chart_ip]
             except socket.gaierror:
                 logging.exception('Failed to get IP: %s.', chart_host_name)
-                chart_ip = '0.0.0.0'
-            args += ['-var=chart=' + chart_ip]
         logging.info('Camerabox args: %s', args)
         return args
 

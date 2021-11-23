@@ -2849,12 +2849,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         return 'servo' if self._servo_host else None
 
-
-    def has_internal_display(self):
-        """Determine if the device under test is equipped with an internal
-        display.
-
-        @return: 'internal_display' if one is present; None otherwise.
+    def _has_display(self, internal):
+        """ Determine if the device under test is equipped with a display
+        @params internal: True if checking internal display else checking
+                          external display.
+        @return: 'internal_display' if internal is true and internal display
+                 present;
+                 'external_display' if internal is false and external display
+                 present;
+                 None otherwise.
         """
         from autotest_lib.client.cros.graphics import graphics_utils
         from autotest_lib.client.common_lib import utils as common_utils
@@ -2873,12 +2876,32 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         utils.system_output = __system_output
         common_utils.read_file = __read_file
         try:
-            return ('internal_display' if graphics_utils.has_internal_display()
-                                   else None)
+            if internal:
+                return ('internal_display'
+                        if graphics_utils.has_internal_display() else None)
+            else:
+                return ('external_display'
+                        if graphics_utils.has_external_display() else None)
         finally:
             utils.system_output = original_system_output
             common_utils.read_file = original_read_file
 
+
+    def has_internal_display(self):
+        """Determine if the device under test is equipped with an internal
+        display.
+
+        @return: 'internal_display' if one is present; None otherwise.
+        """
+        return self._has_display(True)
+
+    def has_external_display(self):
+        """Determine if the device under test is equipped with an external
+        display.
+
+        @return: 'external_display' if one is present; None otherwise.
+        """
+        return self._has_display(False)
 
     def is_boot_from_usb(self):
         """Check if DUT is boot from USB.

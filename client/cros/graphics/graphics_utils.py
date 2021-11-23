@@ -776,6 +776,14 @@ def has_internal_display():
     return bool(get_internal_connector_name())
 
 
+def has_external_display():
+    """Checks whether the DUT is equipped with an external display.
+
+    @return True if external display is present; False otherwise.
+    """
+    return bool(get_external_connector_name())
+
+
 def get_external_resolution():
     """Gets the resolution of the external display.
 

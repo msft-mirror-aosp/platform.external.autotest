@@ -49,7 +49,8 @@ class firmware_ECPowerButton(FirmwareTest):
                 self.faft_config.hold_pwr_button_poweron, 1)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
-        self.has_internal_display = host.has_internal_display()
+        self.has_display = host.has_internal_display() or \
+                host.has_external_display()
 
     def kill_powerd(self):
         """Stop powerd on client."""
@@ -135,7 +136,7 @@ class firmware_ECPowerButton(FirmwareTest):
         if self.get_power_state() != self.POWER_STATE_S0:
             raise error.TestFail("DUT didn't boot by short power button press")
 
-        if self.has_internal_display:
+        if self.has_display:
             logging.info("Display connected, check system ignores short 200ms "
                          "power button press.")
             old_boot_id = self.get_bootid(retry=1)
@@ -168,7 +169,7 @@ class firmware_ECPowerButton(FirmwareTest):
         logging.info(
                 "Shutdown when powerd is still running and wake from S5/G3 "
                 "with short power button press.")
-        if self.servo.is_localhost() and self.has_internal_display:
+        if self.servo.is_localhost() and self.has_display:
             self.check_state(self.debounce_power_button)
         self.switcher.mode_aware_reboot(
                 'custom', lambda: self.shutdown_and_wake(

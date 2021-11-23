@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -75,7 +76,7 @@ class platform_InitLoginPerfServer(test.test):
 
     def save_perf_data(self):
         """Extract perf data from client-side test results."""
-        for bmname, bm in BENCHMARKS.iteritems():
+        for bmname, bm in BENCHMARKS.items():
             try:
                 self.perf_results[bmname].append(
                         float(self.client_results[bm['stage']][bm['name']]))
@@ -105,7 +106,7 @@ class platform_InitLoginPerfServer(test.test):
     def display_perf_headers(self):
         """Add headers for the results table to the info log."""
         hdr = "# "
-        for bm in BENCHMARKS.itervalues():
+        for bm in BENCHMARKS.values():
             hdr += bm['display'] + ' '
         logging.info('# Results for delay = %.2f sec', self.pre_init_delay)
         logging.info(hdr)

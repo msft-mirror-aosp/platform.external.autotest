@@ -21,6 +21,7 @@ suite:au-m2n
 suite:au-oobe
 suite:au-p2p
 suite:au-perbuild
+suite:au-perbuild-tast
 suite:au_fsi
 suite:audio
 suite:audio_advanced

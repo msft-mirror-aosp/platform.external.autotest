@@ -14,6 +14,7 @@ TEST_TYPE = 'client'
 # bug filing/DUT replacement in lab).
 ATTRIBUTES = "suite:bvt-perbuild"
 JOB_RETRIES = 2
+PY_VERSION = 3
 
 DOC = """
 This test check wear out status for storage device available in SMART for SSD

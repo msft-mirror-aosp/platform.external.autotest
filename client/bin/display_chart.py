@@ -26,6 +26,8 @@ from autotest_lib.client.cros.multimedia import display_facade_native
 from autotest_lib.client.cros.multimedia import facade_resource
 from autotest_lib.client.common_lib.cros import chrome
 
+DEFAULT_DISPLAY_LEVEL = 96.0
+
 
 @contextlib.contextmanager
 def set_display_brightness(display_level):
@@ -44,9 +46,8 @@ def set_display_brightness(display_level):
     utils.system(SET_BRIGHTNESS_CMD % original_display_level)
 
 
-def display(filepath):
+def display(filepath, display_level):
     """Display chart with filepath on device by using telemetry."""
-    DISPLAY_LEVEL = 96.0
     DISPLAY_ORIENTATION = 90
 
     assert os.path.isfile(filepath), 'filepath %r not found.' % filepath
@@ -66,7 +67,7 @@ def display(filepath):
             extension_paths=[constants.DISPLAY_TEST_EXTENSION],
             autotest_ext=True,
             init_network_controller=True) as cr, set_display_brightness(
-                    DISPLAY_LEVEL):
+                    display_level):
         logging.info('Set fullscreen.')
         facade = facade_resource.FacadeResource(cr)
         display_facade = display_facade_native.DisplayFacadeNative(facade)
@@ -98,6 +99,12 @@ if __name__ == '__main__':
             description='Display chart file on chrome by using telemetry.'
             ' Send SIGINT or keyboard interrupt to stop displaying.')
     argparser.add_argument('filepath', help='Path of displayed chart file.')
+    argparser.add_argument(
+            '--display_level',
+            type=float,
+            default=DEFAULT_DISPLAY_LEVEL,
+            help=
+            'Set brightness as linearly-calculated percent in [0.0, 100.0].')
 
     args = argparser.parse_args()
-    display(args.filepath)
+    display(args.filepath, args.display_level)

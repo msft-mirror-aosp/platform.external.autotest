@@ -25,13 +25,12 @@ class login_OobeLocalization(test.test):
     _KEYBOARD_ITEMS = "document.getElementById('connect').$.keyboardSelect.items"
     _FALLBACK_KEYBOARD = 'xkb:us::eng'
 
+    _VPD_CACHE_DIR = '/mnt/stateful_partition/unencrypted/cache/vpd'
     # dump_vpd_log reads the VPD cache in lieu of running `vpd -l`.
-    _VPD_FILENAME = '/var/cache/vpd/full-v2.txt'
+    _VPD_FILENAME = _VPD_CACHE_DIR + '/full-v2.txt'
     # The filtered cache is created from the cache by dump_vpd_log. It is read
-    # at startup if the device is not owned. (Otherwise /tmp/machine-info is
-    # created by dump_vpd_log and read. See
-    # /platform/login_manager/init/machine-info.conf.)
-    _FILTERED_VPD_FILENAME = '/var/log/vpd_2.0.txt'
+    # by Chrome to load region information.
+    _FILTERED_VPD_FILENAME = _VPD_CACHE_DIR + '/filtered.txt'
     # cros-regions.json has information for each region (locale, input method,
     # etc.) in JSON format.
     _REGIONS_FILENAME = '/usr/share/misc/cros-regions.json'

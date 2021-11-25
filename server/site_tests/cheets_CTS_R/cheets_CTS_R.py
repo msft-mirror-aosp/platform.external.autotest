@@ -28,19 +28,21 @@ _CTS_TIMEOUT_SECONDS = 3600
 
 # Public download locations for android cts bundles.
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
-_CTS_URI = {
-        'arm': _PUBLIC_CTS + 'android-cts-11_r5-linux_x86-arm.zip',
-        'x86': _PUBLIC_CTS + 'android-cts-11_r5-linux_x86-x86.zip',
+_INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/R/'
+_BUNDLE_MAP = {
+        (None, 'arm'): _PUBLIC_CTS + 'android-cts-11_r5-linux_x86-arm.zip',
+        (None, 'x86'): _PUBLIC_CTS + 'android-cts-11_r5-linux_x86-x86.zip',
+        ('LATEST', 'arm'):
+        _INTERNAL_CTS + 'android-cts-11_r5-linux_x86-arm.zip',
+        ('LATEST', 'x86'):
+        _INTERNAL_CTS + 'android-cts-11_r5-linux_x86-x86.zip',
+        ('DEV', 'arm'):
+        _INTERNAL_CTS + 'android-cts-7941842-linux_x86-arm.zip',
+        ('DEV', 'x86'):
+        _INTERNAL_CTS + 'android-cts-7941842-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
-
-# Internal uprev for all CTS modules.
-_INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/R/'
-_CTS_LATEST_URI = {
-        'arm': _INTERNAL_CTS + 'android-cts-11_r5-linux_x86-arm.zip',
-        'x86': _INTERNAL_CTS + 'android-cts-11_r5-linux_x86-x86.zip',
-}
 
 
 class cheets_CTS_R(tradefed_test.TradefedTest):
@@ -67,11 +69,11 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
             cmd.append('--log-level-display=DEBUG')
         return cmd
 
-    def _get_default_bundle_url(self, bundle):
-        return _CTS_URI[bundle]
-
-    def _get_latest_bundle_url(self, bundle):
-        return _CTS_LATEST_URI[bundle]
+    def _get_bundle_url(self, uri, bundle):
+        if uri and (uri.startswith('http') or uri.startswith('gs')):
+            return uri
+        else:
+            return _BUNDLE_MAP[(uri, bundle)]
 
     def _get_tradefed_base_dir(self):
         return 'android-cts'

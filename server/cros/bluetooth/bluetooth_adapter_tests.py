@@ -4262,58 +4262,61 @@ class BluetoothAdapterTests(test.test):
         return self._test_check_set_allowlist('', True)
 
 
-    def policy_is_blocked(self, device):
-        """Check if the device is blocked by policy.
+    def policy_is_affected(self, device):
+        """Check if the device is affected by policy.
 
         @param device: the connected device.
 
-        @returns: True if the device is blocked; False otherwise.
+        @returns: True if the device is affected by the enterprise policy.
+                  False if not. None if the device is not found.
         """
-        return self.bluetooth_facade.get_device_property(device.address,
-                                                         'IsBlockedByPolicy')
+        return self.bluetooth_facade.policy_get_device_affected(device.address)
 
 
     @test_retry_and_log(False)
-    def test_blocked_by_policy(self, device):
-        """A test that the device is blocked by policy
+    def test_affected_by_policy(self, device):
+        """A test that the device is affected by policy
 
         @param device: the peripheral device
-        @returns: True if the device is blocked; False otherwise.
+        @returns: True if the device is affected; False otherwise.
         """
-        result = self.policy_is_blocked(device)
-        logging.debug('IsBlockedByPolicy: %s', result)
-        self.results = {'expected_result': 'True (blocked)',
-                        'actual_result': result}
-        return result
+        result = self.policy_is_affected(device)
+        logging.debug('policy_is_affected(%s): %s', device.address, result)
+        self.results = {
+                'expected_result': 'True (affected)',
+                'actual_result': result
+        }
+        return result is True
 
 
     @test_retry_and_log(False)
-    def test_not_blocked_by_policy(self, device):
-        """A test that the device is not blocked by policy
+    def test_not_affected_by_policy(self, device):
+        """A test that the device is not affected by policy
 
         @param device: the peripheral device
-        @returns: True if the device is not blocked; False otherwise.
+        @returns: True if the device is not affected; False otherwise.
         """
-        result = self.policy_is_blocked(device)
-        logging.debug('IsBlockedByPolicy: %s', result)
-        self.results = {'expected_result': 'False (not blocked)',
-                        'actual_result': result}
-        return not result
+        result = self.policy_is_affected(device)
+        logging.debug('policy_is_affected(%s): %s', device.address, result)
+        self.results = {
+                'expected_result': 'False (not affected)',
+                'actual_result': result
+        }
+        return result is False
 
-
-    def check_if_blocked_by_policy(self, device, expected_result):
+    def check_if_affected_by_policy(self, device, expected_result):
         """A test that the device policy is enforced correctly
 
         @param device: the peripheral device
         @param expected_result: True if the test is expected to pass.
 
-        @returns: True if the device is blocked or not blocked per
+        @returns: True if the device is affected or not affected per
                   expected_result; False otherwise.
         """
         if expected_result:
-            return self.test_blocked_by_policy(device)
+            return self.test_affected_by_policy(device)
         else:
-            return self.test_not_blocked_by_policy(device)
+            return self.test_not_affected_by_policy(device)
 
 
     # -------------------------------------------------------------------

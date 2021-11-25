@@ -172,7 +172,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
             pre_test_method(device, expected_pass)
 
         for device, expected_pass in zip(devices, expected_passes):
-            self.check_if_blocked_by_policy(device, not expected_pass)
+            self.check_if_affected_by_policy(device, not expected_pass)
             verifier = self.get_device_verifier(device, expected_pass)
             # Whether the test should pass or fail depends on expected_pass.
             self.expect_test(expected_pass, verifier, device)

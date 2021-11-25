@@ -1896,3 +1896,15 @@ class BluetoothDevice(object):
         @returns: (True, '') on success, (False, '<error>') on failure
         """
         return self._proxy.policy_set_service_allow_list(uuids)
+
+    @proxy_thread_safe
+    def policy_get_device_affected(self, device_address):
+        """Get if the device is affected by enterprise policy.
+
+        @param device_address: address of the device
+                               e.g. '6C:29:95:1A:D4:6F'
+
+        @returns: True if the device is affected by the enterprise policy.
+                  False if not. None if the device is not found.
+        """
+        return self._proxy.policy_get_device_affected(device_address)

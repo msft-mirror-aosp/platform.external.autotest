@@ -1304,7 +1304,8 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
     BLUEZ_DEBUG_LOG_IFACE = 'org.chromium.Bluetooth.Debug'
     BLUEZ_MANAGER_IFACE = 'org.freedesktop.DBus.ObjectManager'
     BLUEZ_ADAPTER_IFACE = 'org.bluez.Adapter1'
-    BLUEZ_ADMIN_POLICY_IFACE = 'org.bluez.AdminPolicy1'
+    BLUEZ_ADMIN_POLICY_SET_IFACE = 'org.bluez.AdminPolicySet1'
+    BLUEZ_ADMIN_POLICY_STATUS_IFACE = 'org.bluez.AdminPolicyStatus1'
     BLUEZ_BATTERY_IFACE = 'org.bluez.Battery1'
     BLUEZ_DEVICE_IFACE = 'org.bluez.Device1'
     BLUEZ_GATT_SERV_IFACE = 'org.bluez.GattService1'
@@ -3622,7 +3623,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
         @returns: array of strings representing the allowed service UUIDs.
         """
-        uuids = self._adapter.Get(self.BLUEZ_ADMIN_POLICY_IFACE,
+        uuids = self._adapter.Get(self.BLUEZ_ADMIN_POLICY_STATUS_IFACE,
                                   'ServiceAllowList',
                                   dbus_interface=dbus.PROPERTIES_IFACE)
         logging.debug('ServiceAllowList: %s', dbus_util.dbus2primitive(uuids))
@@ -3636,15 +3637,38 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
         @returns: (True, '') on success, (False, '<error>') on failure.
         """
-        dbus_array = dbus.Array([], signature=dbus.Signature('y'))
+        dbus_array = dbus.Array([], signature=dbus.Signature('s'))
         if bool(uuids.strip()):
             for uuid in uuids.split(','):
                 dbus_array.append(dbus.String(uuid.strip()))
 
         logging.debug('policy_set_service_allow_list: %s', dbus_array)
         self._adapter.SetServiceAllowList(
-                dbus_array, dbus_interface=self.BLUEZ_ADMIN_POLICY_IFACE)
+                dbus_array, dbus_interface=self.BLUEZ_ADMIN_POLICY_SET_IFACE)
         return (True, '')
+
+    @dbus_print_error(False)
+    def policy_get_device_affected(self, device_address):
+        """Check if the device is affected by enterprise policy.
+
+        @param device_address: address of the device
+                               e.g. '6C:29:95:1A:D4:6F'
+
+        @returns: True if the device is affected by the enterprise policy.
+                  False if not. None if the device is not found.
+        """
+        device = self._find_device(device_address)
+        if not device:
+            logging.debug('Failed to find device %s', device_address)
+            return None
+
+        affected = dbus_util.dbus2primitive(
+                device.Get(self.BLUEZ_ADMIN_POLICY_STATUS_IFACE,
+                           'AffectedByPolicy',
+                           dbus_interface=dbus.PROPERTIES_IFACE))
+        logging.debug('policy_get_device_affected(%s): %s', device_address,
+                      affected)
+        return affected
 
     def cleanup(self):
         """Cleanup before exiting the client xmlrpc process."""

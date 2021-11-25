@@ -435,6 +435,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.test_check_set_allowlist(BluetoothPolicy.UUID_HID, True)
         self.test_stop_bluetoothd()
         self.test_start_bluetoothd()
+        # Powering on adapter could take a few milliseconds, make sure the power
+        # is on before proceeding.
+        self.test_adapter_work_state()
         self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=None, expected_passes=True)
 
@@ -447,6 +450,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.test_check_set_allowlist('abcd', True)
         self.test_stop_bluetoothd()
         self.test_start_bluetoothd()
+        # Powering on adapter could take a few milliseconds, make sure the power
+        # is on before proceeding.
+        self.test_adapter_work_state()
         self.run_test_method(self.ep_outgoing_connection, device,
                              uuids=None, expected_passes=False)
 

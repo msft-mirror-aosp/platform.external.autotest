@@ -85,7 +85,7 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         return cmd
 
     def _get_bundle_url(self, uri, bundle):
-        if uri.startswith('http') or uri.startswith('gs'):
+        if uri and (uri.startswith('http') or uri.startswith('gs')):
             return uri
         else:
             return _BUNDLE_MAP[(uri, bundle)]

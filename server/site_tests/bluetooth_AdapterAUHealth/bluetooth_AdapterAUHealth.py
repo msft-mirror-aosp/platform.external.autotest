@@ -258,6 +258,28 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_NBS)
 
 
+    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('HFP NBS back2back test with dut as source',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def au_hfp_nbs_dut_as_source_back2back_test(self):
+        """HFP NBS back2back test from dut to peer"""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.hfp_dut_as_source_back2back,
+                               HFP_NBS)
+
+
+    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('HFP WBS back2back test with dut as source',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def au_hfp_wbs_dut_as_source_back2back_test(self):
+        """HFP WBS back2back test from dut to peer"""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.hfp_dut_as_source_back2back,
+                               HFP_WBS)
+
+
     def au_run_avrcp_method(self, device, test_method):
         """avrcp procedure of running a specified test method.
 
@@ -318,6 +340,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_a2dp_playback_and_disconnect_test()
         self.au_a2dp_playback_back2back_test()
         self.au_a2dp_pinned_playback_test()
+        self.au_hfp_nbs_dut_as_source_back2back_test()
+        self.au_hfp_wbs_dut_as_source_back2back_test()
 
 
     def run_once(self,

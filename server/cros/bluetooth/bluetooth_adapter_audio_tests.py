@@ -1513,3 +1513,58 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_dut_to_stop_capturing_audio_subprocess()
         self.test_check_audio_file(device, test_profile, hfp_test_data,
                                    'recorded_by_dut')
+
+
+    def hfp_dut_as_source_back2back(self, device, test_profile):
+        """Play and stop the audio stream from DUT to Bluetooth peer device.
+
+        The test starts then stops the stream playback for three times. In each
+        iteration, it checks the Bluetooth device can successfully receive the
+        stream when it is played; also check the absence of the streama when
+        stop playing.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        """
+        hfp_test_data = audio_test_data[test_profile]
+
+        # Select audio input device.
+        self.test_select_audio_input_device(device.name)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.test_select_audio_output_node_bluetooth()
+
+        # Enable HFP profile.
+        self.test_dut_to_start_capturing_audio_subprocess(hfp_test_data,
+                                                          'recorded_by_peer')
+
+        # Wait for pulseaudio bluez hfp source/sink
+        self.test_hfp_connected(
+                self._get_pulseaudio_bluez_source_hfp, device, test_profile)
+
+        for _ in range(3):
+            # TODO(b/208165757): If we record the audio stream before playing
+            # that will cause an audio blank about 1~2 sec in the beginning of
+            # the recorded file and make the chunks checking fail. Need to fix
+            # this problem in the future.
+            self.test_dut_to_start_playing_audio_subprocess(hfp_test_data)
+            self.test_device_to_start_recording_audio_subprocess(
+                    device, test_profile, hfp_test_data)
+            time.sleep(hfp_test_data['chunk_checking_duration'])
+
+            self.test_dut_to_stop_playing_audio_subprocess()
+            self.test_device_to_stop_recording_audio_subprocess(device)
+            self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                       'recorded_by_peer')
+
+            self.test_device_to_start_recording_audio_subprocess(
+                    device, test_profile, hfp_test_data)
+            time.sleep(hfp_test_data['chunk_checking_duration'])
+
+            self.test_device_to_stop_recording_audio_subprocess(device)
+            self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                       recording_device='recorded_by_peer',
+                                       check_frequencies=False)
+
+        # Disable HFP profile.
+        self.test_dut_to_stop_capturing_audio_subprocess()

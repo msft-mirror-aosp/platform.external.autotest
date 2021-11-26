@@ -313,7 +313,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
 
         # Validity check; this only applicable for MiniDiag enabled devices.
         if not self.minidiag_enabled:
-            raise error.TestError('Minidiag is not enabled for this board')
+            raise error.TestError('MiniDiag is not enabled for this board')
 
         self.test.wait_for('firmware_screen')
         # The default selection is unknown, so navigate to the last item first
@@ -342,7 +342,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
 
         # Validity check; this only applicable for MiniDiag enabled devices.
         if not self.minidiag_enabled:
-            raise error.TestError('Minidiag is not enabled for this board')
+            raise error.TestError('MiniDiag is not enabled for this board')
 
         # From root screen to storage screen
         self.menu.select('Selecting "Storage"...')
@@ -371,7 +371,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
 
         # Validity check; this only applicable for MiniDiag enabled devices.
         if not self.minidiag_enabled:
-            raise error.TestError('Minidiag is not enabled for this board')
+            raise error.TestError('MiniDiag is not enabled for this board')
 
         # From root screen to quick memory test screen
         # There might be self test items, so navigate to the last item first
@@ -395,7 +395,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
 
         # Validity check; this only applicable for MiniDiag enabled devices.
         if not self.minidiag_enabled:
-            raise error.TestError('Minidiag is not enabled for this board')
+            raise error.TestError('MiniDiag is not enabled for this board')
 
         # Since we want to keep the cbmem log, we need an AP reset and reboot to
         # normal mode
@@ -403,8 +403,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
             logging.info('Trigger apreset')
             self.test.ec.send_command('apreset')
         else:
-            raise error.TestError('No apreset support')
-        self.test.switcher.wait_for_client()
+            raise error.TestError('EC command apreset is not supported')
 
     def trigger_rec_to_minios(self, older_version=False):
         """

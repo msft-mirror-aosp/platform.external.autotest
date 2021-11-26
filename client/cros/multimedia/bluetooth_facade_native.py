@@ -58,8 +58,12 @@ CheckQualityArgsClass = collections.namedtuple(
 
 
 def _dbus_byte_array_to_b64_string(dbus_byte_array):
-    """Base64 encodes a dbus byte array for use with the xml rpc proxy."""
-    return base64.standard_b64encode(bytearray(dbus_byte_array))
+    """Base64 encodes a dbus byte array for use with the xml rpc proxy.
+
+    Input is encoded to bytes using base64 encoding. Then the base64 bytes is
+    decoded as string.
+    """
+    return base64.standard_b64encode(bytearray(dbus_byte_array)).decode()
 
 
 def _b64_string_to_dbus_byte_array(b64_string):

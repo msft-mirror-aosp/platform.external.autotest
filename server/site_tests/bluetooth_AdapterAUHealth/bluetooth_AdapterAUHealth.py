@@ -9,7 +9,8 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, A2DP_MEDIUM, A2DP_LONG, AVRCP, HFP_WBS, HFP_NBS)
+        A2DP, A2DP_MEDIUM, A2DP_LONG, AVRCP, HFP_WBS, HFP_NBS, HFP_WBS_MEDIUM,
+        HFP_NBS_MEDIUM)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -158,7 +159,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
         """
         if self.check_wbs_capability():
-            if test_profile == HFP_WBS:
+            if test_profile in (HFP_WBS, HFP_WBS_MEDIUM):
                 # Restart cras to ensure that cras goes back to the default
                 # selection of either WBS or NBS.
                 # Any board that supports WBS should use WBS by default, unless
@@ -168,16 +169,16 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 self.restart_cras()
                 # The audio team suggests a simple 2-second sleep.
                 time.sleep(2)
-            elif test_profile == HFP_NBS:
+            elif test_profile in (HFP_NBS, HFP_NBS_MEDIUM):
                 # Cras may be in either WBS or NBS mode. Disable WBS explicitly.
                 if not self.bluetooth_facade.enable_wbs(False):
                     raise error.TestError('failed to disable wbs')
         else:
-            if test_profile == HFP_WBS:
+            if test_profile in (HFP_WBS, HFP_WBS_MEDIUM):
                 # Skip the WBS test on a board that does not support WBS.
                 raise error.TestNAError(
                         'The DUT does not support WBS. Skip the test.')
-            elif test_profile == HFP_NBS:
+            elif test_profile in (HFP_NBS, HFP_NBS_MEDIUM):
                 # Restart cras to ensure that cras goes back to the default
                 # selection of either WBS or NBS.
                 # Any board that does not support WBS should use NBS by default.
@@ -280,6 +281,28 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_WBS)
 
 
+    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('Switch A2DP to HFP NBS test with dut as source',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def au_a2dp_to_hfp_nbs_dut_as_source_test(self):
+        """Switch A2DP to HFP NBS test with dut as source."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.a2dp_to_hfp_dut_as_source,
+                               HFP_NBS_MEDIUM)
+
+
+    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('Switch A2DP to HFP WBS test with dut as source',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def au_a2dp_to_hfp_wbs_dut_as_source_test(self):
+        """Switch A2DP to HFP WBS test with dut as source."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.a2dp_to_hfp_dut_as_source,
+                               HFP_WBS_MEDIUM)
+
+
     def au_run_avrcp_method(self, device, test_method):
         """avrcp procedure of running a specified test method.
 
@@ -342,6 +365,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_a2dp_pinned_playback_test()
         self.au_hfp_nbs_dut_as_source_back2back_test()
         self.au_hfp_wbs_dut_as_source_back2back_test()
+        self.au_a2dp_to_hfp_nbs_dut_as_source_test()
+        self.au_a2dp_to_hfp_wbs_dut_as_source_test()
 
 
     def run_once(self,

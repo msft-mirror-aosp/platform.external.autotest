@@ -61,7 +61,9 @@ A2DP_MEDIUM = 'a2dp_medium'
 A2DP_LONG = 'a2dp_long'
 AVRCP = 'avrcp'
 HFP_NBS = 'hfp_nbs'
+HFP_NBS_MEDIUM = 'hfp_nbs_medium'
 HFP_WBS = 'hfp_wbs'
+HFP_WBS_MEDIUM = 'hfp_wbs_medium'
 VISQOL_BUFFER_LENGTH = 10.0
 
 
@@ -185,7 +187,7 @@ hfp_nbs_test_data = {
                                      'hfp_nbs_recorded_by_peer.wav'),
     'recorded_by_dut': os.path.join(AUDIO_RECORD_DIR,
                                     'hfp_nbs_recorded_by_dut.raw'),
-
+    'chunk_in_secs': 1,
     'bit_width': 16,
     'format': 'S16_LE',
     'duration': 5,
@@ -195,6 +197,10 @@ hfp_nbs_test_data = {
     # bluetooth_audio.py.
     'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
                                 'sine_3500hz_rate8000_ch1_5secs.wav'),
+
+    # Device side data used by HandleOneChunk function in bluetooth_audio.py.
+    'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                               'hfp_nbs_recorded_by_peer_%d.raw'),
 
     'visqol_test_files': [
         {
@@ -275,6 +281,7 @@ hfp_wbs_test_data = {
                                      'hfp_wbs_recorded_by_peer.wav'),
     'recorded_by_dut': os.path.join(AUDIO_RECORD_DIR,
                                     'hfp_wbs_recorded_by_dut.raw'),
+    'chunk_in_secs': 1,
     'bit_width': 16,
     'format': 'S16_LE',
     'duration': 5,
@@ -284,6 +291,10 @@ hfp_wbs_test_data = {
     # bluetooth_audio.py.
     'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
                                 'sine_7000hz_rate16000_ch1_5secs.wav'),
+
+    # Device side data used by HandleOneChunk function in bluetooth_audio.py.
+    'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                               'hfp_wbs_recorded_by_peer_%d.raw'),
 
     'visqol_test_files': [
         {
@@ -343,6 +354,59 @@ hfp_wbs_test_data = {
     ]
 }
 
+# Audio test data for hfp nbs medium test.
+hfp_nbs_medium_test_data = {
+    'rate': 8000,
+    'channels': 1,
+    'frequencies': (3500,),
+    'file': os.path.join(AUDIO_TEST_DIR,
+                         'sine_3500hz_rate8000_ch1_60secs.raw'),
+    'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
+                                     'hfp_nbs_medium_recorded_by_peer.raw'),
+    'recorded_by_dut': os.path.join(AUDIO_RECORD_DIR,
+                                    'hfp_nbs_medium_recorded_by_dut.raw'),
+    'chunk_in_secs': 1,
+    'bit_width': 16,
+    'format': 'S16_LE',
+    'duration': 60,
+    'chunk_checking_duration': 5,
+
+    # Device side data used by StartPlayingAudioSubprocess function in
+    # bluetooth_audio.py.
+    'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                'sine_3500hz_rate8000_ch1_60secs.wav'),
+    # Device side data used by HandleOneChunk function in bluetooth_audio.py.
+    'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                               'hfp_nbs_medium_recorded_by_peer_%d.raw'),
+}
+
+
+# Audio test data for hfp wbs medium test.
+hfp_wbs_medium_test_data = {
+    'rate': 16000,
+    'channels': 1,
+    'frequencies': (7000,),
+    'file': os.path.join(AUDIO_TEST_DIR,
+                         'sine_7000hz_rate16000_ch1_60secs.raw'),
+    'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
+                                     'hfp_wbs_medium_recorded_by_peer.raw'),
+    'recorded_by_dut': os.path.join(AUDIO_RECORD_DIR,
+                                    'hfp_wbs_medium_recorded_by_dut.raw'),
+    'chunk_in_secs': 1,
+    'bit_width': 16,
+    'format': 'S16_LE',
+    'duration': 60,
+    'chunk_checking_duration': 5,
+
+    # Device side data used by StartPlayingAudioSubprocess function in
+    # bluetooth_audio.py.
+    'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                'sine_7000hz_rate16000_ch1_60secs.raw'),
+    # Device side data used by HandleOneChunk function in bluetooth_audio.py.
+    'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                               'hfp_wbs_medium_recorded_by_peer_%d.raw'),
+}
+
 
 # Audio test data for a2dp
 a2dp_test_data = {
@@ -397,5 +461,7 @@ audio_test_data = {
     A2DP_MEDIUM: a2dp_medium_test_data,
     A2DP_LONG: a2dp_long_test_data,
     HFP_WBS: hfp_wbs_test_data,
+    HFP_WBS_MEDIUM: hfp_wbs_medium_test_data,
     HFP_NBS: hfp_nbs_test_data,
+    HFP_NBS_MEDIUM: hfp_nbs_medium_test_data,
 }

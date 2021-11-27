@@ -19,10 +19,10 @@ import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, HFP_NBS, HFP_WBS, AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH,
-        DATA_DIR, VISQOL_PATH, VISQOL_SIMILARITY_MODEL, VISQOL_TEST_DIR,
-        AUDIO_RECORD_DIR, audio_test_data, get_audio_test_data,
-        get_visqol_binary)
+        A2DP, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS, HFP_WBS_MEDIUM,
+        AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH, DATA_DIR, VISQOL_PATH,
+        VISQOL_SIMILARITY_MODEL, VISQOL_TEST_DIR, AUDIO_RECORD_DIR,
+        audio_test_data, get_audio_test_data, get_visqol_binary)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
     BluetoothAdapterTests, test_retry_and_log)
 from six.moves import range
@@ -239,7 +239,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             raise error.TestError('Failed to start pulseaudio.')
         logging.debug('pulseaudio is started.')
 
-        if test_profile in (HFP_WBS, HFP_NBS):
+        if test_profile in (HFP_WBS, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS_MEDIUM):
             if device.StartOfono():
                 logging.debug('ofono is started.')
             else:
@@ -1565,6 +1565,65 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             self.test_check_audio_file(device, test_profile, hfp_test_data,
                                        recording_device='recorded_by_peer',
                                        check_frequencies=False)
+
+        # Disable HFP profile.
+        self.test_dut_to_stop_capturing_audio_subprocess()
+
+
+    def a2dp_to_hfp_dut_as_source(self, device, test_profile):
+        """Play the audio from DUT to Bluetooth device and switch the profile.
+
+        This test first uses A2DP profile and plays the audio stream on the
+        DUT, checking if the peer receives the audio stream correctly. And
+        then switch to the HFP_NBS profile and check the audio stream again.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS_MEDIUM or
+                             HFP_NBS_MEDIUM.
+        """
+        hfp_test_data = audio_test_data[test_profile]
+
+        # Wait for pulseaudio a2dp bluez source.
+        self.test_device_a2dp_connected(device)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.test_select_audio_output_node_bluetooth()
+
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, hfp_test_data)
+
+        # Play audio on the DUT in a non-blocked way and check the recorded
+        # audio stream in a real-time manner.
+        self.test_dut_to_start_playing_audio_subprocess(hfp_test_data)
+
+        time.sleep(hfp_test_data['chunk_checking_duration'])
+
+        self.test_device_to_stop_recording_audio_subprocess(device)
+
+        self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                   'recorded_by_peer')
+
+        self.test_select_audio_input_device(device.name)
+
+        # Enable HFP profile.
+        self.test_dut_to_start_capturing_audio_subprocess(hfp_test_data,
+                                                          'recorded_by_peer')
+
+        # Wait for pulseaudio bluez hfp source/sink.
+        self.test_hfp_connected(
+                self._get_pulseaudio_bluez_source_hfp, device, test_profile)
+
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, hfp_test_data)
+
+        time.sleep(hfp_test_data['chunk_checking_duration'])
+
+        self.test_dut_to_stop_playing_audio_subprocess()
+
+        self.test_device_to_stop_recording_audio_subprocess(device)
+
+        self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                   'recorded_by_peer')
 
         # Disable HFP profile.
         self.test_dut_to_stop_capturing_audio_subprocess()

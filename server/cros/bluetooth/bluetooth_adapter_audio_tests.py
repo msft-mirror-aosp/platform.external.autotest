@@ -1627,3 +1627,56 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         # Disable HFP profile.
         self.test_dut_to_stop_capturing_audio_subprocess()
+
+
+    def hfp_to_a2dp_dut_as_source(self, device, test_profile):
+        """Play the audio from DUT to Bluetooth peer in A2DP then switch to HFP.
+
+        This test first uses HFP profile and plays the audio stream on the DUT,
+        checking if the peer receives the audio stream correctly. And then
+        switch to the A2DP profile and check the audio stream again.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used,
+                             HFP_NBS_MEDIUM or HFP_WBS_MEDIUM.
+        """
+        hfp_test_data = audio_test_data[test_profile]
+
+        self.test_select_audio_input_device(device.name)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.test_select_audio_output_node_bluetooth()
+
+        # Enable HFP profile.
+        self.test_dut_to_start_capturing_audio_subprocess(hfp_test_data,
+                                                          'recorded_by_peer')
+
+        # Wait for pulseaudio bluez hfp source/sink.
+        self.test_hfp_connected(
+                self._get_pulseaudio_bluez_source_hfp, device, test_profile)
+
+        # Play audio on the DUT in a non-blocked way and check the recorded
+        # audio stream in a real-time manner.
+        self.test_dut_to_start_playing_audio_subprocess(hfp_test_data)
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, hfp_test_data)
+        time.sleep(hfp_test_data['chunk_checking_duration'])
+
+        self.test_device_to_stop_recording_audio_subprocess(device)
+        self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                   'recorded_by_peer')
+
+        # Disable HFP profile.
+        self.test_dut_to_stop_capturing_audio_subprocess()
+
+        # Wait for pulseaudio a2dp bluez source.
+        self.test_device_a2dp_connected(device)
+
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, hfp_test_data)
+        time.sleep(hfp_test_data['chunk_checking_duration'])
+
+        self.test_dut_to_stop_playing_audio_subprocess()
+        self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                   'recorded_by_peer')
+        self.test_device_to_stop_recording_audio_subprocess(device)

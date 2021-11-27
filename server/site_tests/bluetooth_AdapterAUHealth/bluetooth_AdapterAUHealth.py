@@ -303,6 +303,28 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_WBS_MEDIUM)
 
 
+    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('Switch HFP NBS to A2DP test with dut as source',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def au_hfp_nbs_to_a2dp_dut_as_source_test(self):
+        """Switch HFP NBS to A2DP test with dut as source."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.hfp_to_a2dp_dut_as_source,
+                               HFP_NBS_MEDIUM)
+
+
+    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('Switch HFP WBS to A2DP test with dut as source',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def au_hfp_wbs_to_a2dp_dut_as_source_test(self):
+        """Switch HFP WBS to A2DP test with dut as source."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.hfp_to_a2dp_dut_as_source,
+                               HFP_WBS_MEDIUM)
+
+
     def au_run_avrcp_method(self, device, test_method):
         """avrcp procedure of running a specified test method.
 
@@ -367,6 +389,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_hfp_wbs_dut_as_source_back2back_test()
         self.au_a2dp_to_hfp_nbs_dut_as_source_test()
         self.au_a2dp_to_hfp_wbs_dut_as_source_test()
+        self.au_hfp_nbs_to_a2dp_dut_as_source_test()
+        self.au_hfp_wbs_to_a2dp_dut_as_source_test()
 
 
     def run_once(self,

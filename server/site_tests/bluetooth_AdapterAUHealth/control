@@ -45,6 +45,8 @@ DOC = """
     - au_hfp_wbs_dut_as_source_back2back_test
     - au_a2dp_to_hfp_nbs_dut_as_source_test
     - au_a2dp_to_hfp_wbs_dut_as_source_test
+    - au_hfp_nbs_to_a2dp_dut_as_source_test
+    - au_hfp_wbs_to_a2dp_dut_as_source_test
     """
 
 args_dict = utils.args_to_dict(args)

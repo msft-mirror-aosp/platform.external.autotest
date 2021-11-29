@@ -398,7 +398,7 @@ class tast(test.test):
         # Load varsfiles
         for varsfile in self._varsfiles:
             with open(varsfile, 'r') as f:
-                for key, val in yaml.load(f).items():
+                for key, val in yaml.safe_load(f).items():
                     if 'var:' + key in extvars:
                         logging.info('var:%s overwritten', key)
                     extvars['var:' + key] = val

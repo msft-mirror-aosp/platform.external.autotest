@@ -69,7 +69,7 @@ def strip_kernelnext_suffix(board_name):
     return board_name
 
 BOARDS_WITH_HOTWORDING = [
-        'atlas', 'coral', 'eve', 'kevin', 'nami', 'nocturne', 'pyro', 'rammus',
+        'atlas', 'coral', 'eve', 'kevin', 'nami', 'nocturne', 'rammus',
         'samus', 'volteer'
 ]
 

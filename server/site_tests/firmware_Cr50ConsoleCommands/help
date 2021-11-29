@@ -1,5 +1,5 @@
 ap_ro_info
-ap_ro_verstate
+(?P<mp>-ap_ro_verstate)?
 bid
 -bitbang
 bpforce
@@ -12,6 +12,7 @@ dump_nvmem
 ec_comm
 ecrst
 (?P<guc>eraseflashinfo)?
+(?P<prepvt>fips)?
 (?P<tot>fips)?
 gettime
 gpiocfg

@@ -68,7 +68,7 @@ def run(machine):
             ["ExFAT", "Ext4", "FAT", "NTFS"],
         # USB Web camera
         "cat /sys/class/video4linux/video*/name | grep -iE " :
-            ["\"TeckNet|USB ?2.0 PC Camera\""],
+            ["\"TeckNet|USB ?2.0 PC Camera|Video Capture|Video Output|Metadata\""],
         }
 
     job.run_test("platform_ExternalUsbPeripherals", host=host,

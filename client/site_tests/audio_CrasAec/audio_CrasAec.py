@@ -64,6 +64,8 @@ class audio_CrasAec(test.test):
             words = line.split(' ')
             if words[0] != 'Summary:':
                 continue
+
+            logging.debug("audio dump summaries: %s", line)
             if words[8] == '0x0001':
                 stream_id = words[3]
                 break
@@ -114,7 +116,7 @@ class audio_CrasAec(test.test):
         try:
             self.play_sound()
             recorded_file = self.record_aec(rate, channels)
-            time.sleep(0.1)
+            time.sleep(0.3)
             self.aecdump(rate, channels)
             time.sleep(3)
         finally:

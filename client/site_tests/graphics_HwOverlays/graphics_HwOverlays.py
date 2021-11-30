@@ -52,17 +52,17 @@ class graphics_HwOverlays(graphics_utils.GraphicsTest):
         executes the test in `html_file`.
         """
         if not graphics_utils.is_drm_atomic_supported():
-            logging.info('Skipping test: platform does not support DRM atomic')
-            return
+            raise error.TestNAError(
+                    'Skipping test: platform does not support DRM atomic')
 
         if graphics_utils.get_max_num_available_drm_planes() <= 2:
-            logging.info('Skipping test: platform supports 2 or less planes')
-            return
+            raise error.TestNAError(
+                    'Skipping test: platform supports 2 or less planes')
 
         is_video = "video" in html_file
         if is_video and not graphics_utils.is_nv12_supported_by_drm_planes():
-            logging.info('Skipping test: platform does not support NV12 planes')
-            return
+            raise error.TestNAError(
+                    'Skipping test: platform does not support NV12 planes')
 
         extra_browser_args = EXTRA_BROWSER_ARGS
         if use_skia_renderer:
@@ -80,8 +80,8 @@ class graphics_HwOverlays(graphics_utils.GraphicsTest):
             # TODO(crbug.com/927103): Run on an external monitor if one is
             # present.
             if not display_facade.has_internal_display():
-                logging.info('Skipping test: platform has no internal display')
-                return
+                raise error.TestNAError(
+                        'Skipping test: platform has no internal display')
 
             self.set_rotation_to_zero(display_facade)
 

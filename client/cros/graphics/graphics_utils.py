@@ -1356,7 +1356,7 @@ def is_drm_atomic_supported():
     for dev_path in glob.glob(_DEV_DRI_CARD_PATH):
         try:
             logging.debug('trying device %s', dev_path);
-            with open(dev_path, 'r+') as dev:
+            with open(dev_path, 'w') as dev:
                 # Pack a struct drm_set_client_cap: two u64.
                 drm_pack = struct.pack("QQ", _DRM_CLIENT_CAP_ATOMIC, 1)
                 result = fcntl.ioctl(dev, _DRM_IOCTL_SET_CLIENT_CAP, drm_pack)

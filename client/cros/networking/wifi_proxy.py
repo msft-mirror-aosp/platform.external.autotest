@@ -35,7 +35,7 @@ class WifiProxy(shill_proxy.ShillProxy):
         """Iterate over all pushed profiles and remove WiFi entries."""
         profiles = self.get_profiles()
         for profile in profiles:
-            profile_properties = profile.GetProperties(utf8_strings=True)
+            profile_properties = profile.GetProperties()
             entries = profile_properties[self.PROFILE_PROPERTY_ENTRIES]
             for entry_id in entries:
                 try:
@@ -173,8 +173,7 @@ class WifiProxy(shill_proxy.ShillProxy):
             service_object = self.find_matching_service(discovery_params)
             if service_object:
                 try:
-                    service_properties = service_object.GetProperties(
-                            utf8_strings=True)
+                    service_properties = service_object.GetProperties()
                 except dbus.exceptions.DBusException:
                     # This usually means the service handle has become invalid.
                     # Which is sort of like not getting a handle back from
@@ -318,14 +317,14 @@ class WifiProxy(shill_proxy.ShillProxy):
 
     def get_active_wifi_SSIDs(self):
         """@return list of string SSIDs with at least one BSS we've scanned."""
-        properties = self.manager.GetProperties(utf8_strings=True)
+        properties = self.manager.GetProperties()
         services = [self.get_dbus_object(self.DBUS_TYPE_SERVICE, path)
                     for path in properties[self.MANAGER_PROPERTY_SERVICES]]
         wifi_services = []
         for service in services:
             try:
-                service_properties = self.dbus2primitive(service.GetProperties(
-                        utf8_strings=True))
+                service_properties = self.dbus2primitive(
+                        service.GetProperties())
             except dbus.exceptions.DBusException:
                 pass  # Probably the service disappeared before GetProperties().
             logging.debug('Considering service with properties: %r',

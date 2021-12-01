@@ -462,7 +462,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                           self.hostname,
                           self.run('ls /usr/local/telemetry').stdout)
         except Exception:
-            logging.error('Telemetry Folder not found on host pre test %s',
+            logging.debug('Telemetry Folder not found on host pre test %s',
                           self.hostname)
 
 
@@ -1477,7 +1477,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                           self.hostname,
                           self.run('ls /usr/local/telemetry').stdout)
         except Exception:
-            logging.error('Telemetry Folder not found on host post test %s',
+            logging.debug('Telemetry Folder not found on host post test %s',
                           self.hostname)
         super(CrosHost, self).close()
 

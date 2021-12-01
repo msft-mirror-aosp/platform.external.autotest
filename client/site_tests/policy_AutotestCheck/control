@@ -4,7 +4,8 @@
 
 AUTHOR = 'rzakarian'
 NAME = 'policy_AutotestCheck'
-ATTRIBUTES = 'suite:ent-nightly, suite:policy, suite:bvt-perbuild, suite:smoke'
+# TODO(b/207816948): Add back suite:smoke when policy-testserver is fixed.
+ATTRIBUTES = 'suite:ent-nightly, suite:policy, suite:bvt-perbuild'
 TIME = 'SHORT'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'enterprise'

@@ -286,6 +286,9 @@ class telemetry_AFDOGenerate(test.test):
         # this will be set to True by default.
         self._minimal_telemetry = False
 
+        # Ignored servo arguments.
+        ignored_options = ('servo_host', 'servo_port')
+
         for option_name, value in args.iteritems():
             if option_name == 'arch':
                 self._arch = value
@@ -299,6 +302,8 @@ class telemetry_AFDOGenerate(test.test):
                 self._minimal_telemetry = (value == 'True')
             elif option_name == 'version':
                 self._version = value
+            elif option_name in ignored_options:
+                continue
             else:
                 raise error.TestFail('Unknown option passed: %s' % option_name)
 

@@ -67,8 +67,9 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     GUC_BRANCH_STR = 'cr50_v1.9308_26_0.'
     MP_BRANCH_STR = 'cr50_v1.9308_87_mp.'
     MP_BRANCH_STR_NEW = 'cr50_v1.9311'
-    PREPVT_BRANCH_STR = 'cr50_v1.9308_B.'
-    TOT_STR = 'cr50_v2.0.'
+    # TODO: update the prepvt string once it's been fixed in the branch.
+    PREPVT_BRANCH_STR = 'cr50_v2.0.'
+    #TOT_STR = 'cr50_v2.0.'
     OPTIONAL_EXT = '_optional'
 
     def initialize(self, host, cmdline_args, full_args):
@@ -207,7 +208,9 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
             self.include.append('guc')
             self.exclude.append('tot')
             self.exclude.append('prepvt')
-        elif self.is_tot_run or self.TOT_STR in version:
+        elif self.is_tot_run:
+            # TODO: check for TOT_STR in version once the prepvt branch starts
+            # using the correct version string
             # TOT isn't that controlled. It may include prepvt, mp, or guc
             # changes. Don't exclude any branches.
             self.include.append('tot')

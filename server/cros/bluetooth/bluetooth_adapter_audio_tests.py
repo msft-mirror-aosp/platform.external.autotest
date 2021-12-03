@@ -723,8 +723,20 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         for i in range(nchunks):
             logging.info('Check chunk %d', i)
 
-            recorded_file = device.HandleOneChunk(chunk_in_secs, i,
-                                                  self.host.ip)
+            # TODO(b/207046142): Remove the old version fallback after the new
+            # Chameleon bundle is deployed.
+            try:
+                recorded_file = device.HandleOneChunk(chunk_in_secs, i,
+                                                      self.host.ip)
+            except Exception as e:
+                logging.debug("Unable to use new version of HandleOneChunk;"
+                              "fall back to use the old one.")
+                try:
+                    recorded_file = device.HandleOneChunk(
+                            chunk_in_secs, i, test_profile, self.host.ip)
+                except Exception as e:
+                    raise error.TestError('Failed to handle chunk (%s)', e)
+
             if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
 
@@ -769,12 +781,15 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     @test_retry_and_log(False)
-    def test_check_empty_chunks(self, device, test_data, duration):
+    def test_check_empty_chunks(self, device, test_data, duration,
+                                test_profile):
         """Check if all the chunks are empty.
 
         @param device: The Bluetooth peer device.
         @param test_data: The test data of the test profile.
         @param duration: The duration of the audio file to test.
+        @param test_profile: Which audio profile is used. Profiles are defined
+                             in bluetooth_audio_test_data.py.
 
         @returns: True if all the chunks are empty.
         """
@@ -788,8 +803,20 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         for i in range(nchunks):
             logging.info('Check chunk %d', i)
 
-            recorded_file = device.HandleOneChunk(chunk_in_secs, i,
-                                                  self.host.ip)
+            # TODO(b/207046142): Remove the old version fallback after the new
+            # Chameleon bundle is deployed.
+            try:
+                recorded_file = device.HandleOneChunk(chunk_in_secs, i,
+                                                      self.host.ip)
+            except Exception as e:
+                logging.debug("Unable to use new version of HandleOneChunk;"
+                              "fall back to use the old one.")
+                try:
+                    recorded_file = device.HandleOneChunk(
+                            chunk_in_secs, i, test_profile, self.host.ip)
+                except Exception as e:
+                    raise error.TestError('Failed to handle chunk (%s)', e)
+
             if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
 
@@ -1325,6 +1352,21 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         test_data = audio_test_data[test_profile]
 
+        # TODO(b/207046142): Remove the old version fallback after the new
+        # Chameleon bundle is deployed.
+        # Currently the BT audio tests store test profile parameters in
+        # Chameleon bundle. However, we decide to move the test profiles to
+        # server test. During the transition, the new test code may interact
+        # with old/existing Chameleon bundle, which does not have A2DP_MEDIUM
+        # profile. We use a trick here: override the passing-in test_profile
+        # with A2DP so that Chameleon can look up the profile, and override the
+        # three parameters locally to make it a A2DP_MEDIUM profile.
+        test_profile = A2DP
+        test_data = audio_test_data[test_profile].copy()
+        test_data['duration'] = 60
+        test_data['chunk_checking_duration'] = 5
+        test_data['chunk_in_secs'] = 1
+
         # Start playing audio on the Dut.
         self.test_dut_to_start_playing_audio_subprocess(test_data)
 
@@ -1367,6 +1409,21 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param test_profile: to select which A2DP test profile is used.
         """
         test_data = audio_test_data[test_profile]
+
+        # TODO(b/207046142): Remove the old version fallback after the new
+        # Chameleon bundle is deployed.
+        # Currently the BT audio tests store test profile parameters in
+        # Chameleon bundle. However, we decide to move the test profiles to
+        # server test. During the transition, the new test code may interact
+        # with old/existing Chameleon bundle, which does not have A2DP_MEDIUM
+        # profile. We use a trick here: override the passing-in test_profile
+        # with A2DP so that Chameleon can look up the profile, and override the
+        # three parameters locally to make it a A2DP_MEDIUM profile.
+        test_profile = A2DP
+        test_data = audio_test_data[test_profile].copy()
+        test_data['duration'] = 60
+        test_data['chunk_checking_duration'] = 5
+        test_data['chunk_in_secs'] = 1
 
         # Connect the Bluetooth device.
         self.test_device_set_discoverable(device, True)
@@ -1413,6 +1470,21 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         test_data = audio_test_data[test_profile]
 
+        # TODO(b/207046142): Remove the old version fallback after the new
+        # Chameleon bundle is deployed.
+        # Currently the BT audio tests store test profile parameters in
+        # Chameleon bundle. However, we decide to move the test profiles to
+        # server test. During the transition, the new test code may interact
+        # with old/existing Chameleon bundle, which does not have A2DP_MEDIUM
+        # profile. We use a trick here: override the passing-in test_profile
+        # with A2DP so that Chameleon can look up the profile, and override the
+        # three parameters locally to make it a A2DP_MEDIUM profile.
+        test_profile = A2DP
+        test_data = audio_test_data[test_profile].copy()
+        test_data['duration'] = 60
+        test_data['chunk_checking_duration'] = 5
+        test_data['chunk_in_secs'] = 1
+
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
         self.test_pairing(device.address, device.pin, trusted=True)
@@ -1437,7 +1509,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             self.test_device_to_start_recording_audio_subprocess(
                     device, test_profile, test_data)
             self.test_check_empty_chunks(device, test_data,
-                                         test_data['chunk_checking_duration'])
+                                         test_data['chunk_checking_duration'],
+                                         test_profile)
             self.test_device_to_stop_recording_audio_subprocess(device)
 
         self.test_disconnection_by_adapter(device.address)

@@ -125,7 +125,7 @@ class ModemManager1Proxy(object):
                     'Failed to obtain dbus manager object.- No manager')
             if not inhibit and not self._device:
                 raise ModemManager1ProxyError(
-                    'Uninhibit called before inhibit %s', self._device)
+                    'Uninhibit called before inhibit %s' % self._device)
 
             if inhibit:
                 modem = self.get_modem()
@@ -153,7 +153,7 @@ class ModemManager1Proxy(object):
         except dbus.exceptions.DBusException as e:
             raise ModemManager1ProxyError(
                 'Failed to to obtain dbus object for the modem.'
-                'DBus error: |%s|', repr(e))
+                'DBus error: %s' % repr(e))
 
     def get_modem(self):
         """
@@ -181,14 +181,14 @@ class ModemManager1Proxy(object):
             modems = object_manager.GetManagedObjects()
         except dbus.exceptions.DBusException as e:
             raise ModemManager1ProxyError(
-                'Failed to list the available modems. DBus error: |%s|',
+                'Failed to list the available modems. DBus error: %s' %
                 repr(e))
 
         if not modems:
             return None
         elif len(modems) > 1:
             raise ModemManager1ProxyError(
-                'Expected one modem object, found %d', len(modems))
+                'Expected one modem object, found %d' % len(modems))
 
         modem_proxy = ModemProxy(self._bus, list(modems.keys())[0])
         # Check that this object is valid
@@ -200,8 +200,8 @@ class ModemManager1Proxy(object):
             if _is_unknown_dbus_binding_exception(e):
                 return None
             raise ModemManager1ProxyError(
-                'Failed to obtain dbus object for the modem. DBus error: '
-                '|%s|', repr(e))
+                'Failed to obtain dbus object for the modem. DBus error: %s' %
+                repr(e))
 
     def wait_for_modem(self, timeout_seconds):
         """
@@ -289,8 +289,8 @@ class ModemProxy(object):
             if _is_unknown_dbus_binding_exception(e):
                 return None
             raise ModemManager1ProxyError(
-                'Failed to obtain dbus object for the SIM. DBus error: '
-                '|%s|', repr(e))
+                'Failed to obtain dbus object for the SIM. DBus error: %s' %
+                repr(e))
 
     def get_sim_slots(self):
         """
@@ -380,10 +380,10 @@ class ModemProxy(object):
                 mm1_constants.MM_MODEM_PROPERTY_NAME_STATE] in states,
             exception=ModemManager1ProxyError(
                 'Timed out waiting for modem to enter one of these '
-                'states: %s, current state=%s',
-                states,
-                self.properties(mm1_constants.I_MODEM)[
-                    mm1_constants.MM_MODEM_PROPERTY_NAME_STATE]),
+                'states: %s, current state=%s' %
+                (states,
+                 self.properties(mm1_constants.I_MODEM)[
+                     mm1_constants.MM_MODEM_PROPERTY_NAME_STATE])),
             timeout=timeout_seconds)
 
 class SimProxy(object):

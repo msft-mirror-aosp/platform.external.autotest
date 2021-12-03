@@ -39,7 +39,6 @@
   <Entry include="CtsDeqpTestCases dEQP-VK.sparse_resources.shader_intrinsics.2d_sparse_sample_explicit_lod.r32ui#512_256_1" />
   <Entry include="CtsDeqpTestCases dEQP-VK.tessellation.tesscoord#triangles_equal_spacing" />
   <Entry include="CtsDisplayTestCases android.display.cts.DisplayTest#testModeSwitch" />
-  <Entry include="CtsHardwareTestCases android.hardware.input.cts.tests.MicrosoftSculpttouchTest#testAllMotions" />
   <Entry include="CtsGraphicsTestCases android.graphics.drawable.cts.VectorDrawableTest#testMutate" />
   <Entry include="CtsLibcoreTestCases org.apache.harmony.tests.java.io.FileTest#test_createNewFile" />
   <!-- Remove needs_push_media=True in control files when the case below is removed. -->
@@ -52,10 +51,10 @@
   <Entry include="CtsScopedStorageHostTest android.scopedstorage.cts.host.ScopedStorageHostTest#testVfsCacheConsistency" />
   <Entry include="CtsSecurityHostTestCases android.security.cts.MetadataEncryptionTest#testMetadataEncryptionIsEnabled" />
   <Entry include="CtsSecurityTestCases android.security.cts.EncryptionTest#testEncryption" />
+  <Entry include="CtsStatsdHostTestCases android.cts.statsd.metric.MetricActivationTests#testMultipleActivations" />
+  <Entry include="CtsStatsdHostTestCases[instant] android.cts.statsd.metric.MetricActivationTests#testMultipleActivations" />
   <Entry include="CtsWifiTestCases android.net.wifi.cts.WifiManagerTest#testWifiScanTimestamp" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AnrTests#slowUiThreadWithKeyEventTriggersAnr" />
-  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AssistantStackTests#testAssistantStackFinishToPreviousApp" />
-  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AssistantStackTests#testAssistantStackLaunchNewTask" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.WindowInsetsAnimationTests#testAnimationCallbacks_overlapping" />
   <Entry include="LegacyStorageTest android.scopedstorage.cts.host.ScopedStorageHostTest#testVfsCacheConsistency" />
   <Entry include="ScopedStorageTest android.scopedstorage.cts.host.ScopedStorageHostTest#testVfsCacheConsistency" />

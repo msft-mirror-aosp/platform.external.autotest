@@ -584,14 +584,28 @@ class UpdateEngineUtil(object):
 
         """
         update_url = self._append_query_to_url(update_url, kwargs)
+        release_version = 'CHROMEOS_RELEASE_VERSION=%s' % build
+        auserver = 'CHROMEOS_AUSERVER=%s' % update_url
 
         self._run(['mkdir', os.path.dirname(self._CUSTOM_LSB_RELEASE)],
                   ignore_status=True)
         self._run(['touch', self._CUSTOM_LSB_RELEASE])
-        self._run(['echo', 'CHROMEOS_RELEASE_VERSION=%s' % build, '>',
-                   self._CUSTOM_LSB_RELEASE])
-        self._run(['echo', 'CHROMEOS_AUSERVER=%s' % update_url, '>>',
-                   self._CUSTOM_LSB_RELEASE])
+        self._run(['echo', release_version, '>', self._CUSTOM_LSB_RELEASE])
+        self._run(['echo', auserver, '>>', self._CUSTOM_LSB_RELEASE])
+
+        # Confirm the custom lsb-release file was created successfully.
+        def custom_lsb_created():
+            """
+            Checks if the custom lsb-release file exists and has the correct
+            contents.
+
+            @returns: True if the file exists with the expected contents
+                      False otherwise
+            """
+            contents = self._run(['cat', self._CUSTOM_LSB_RELEASE]).stdout
+            return auserver in contents and release_version in contents
+
+        utils.poll_for_condition(condition=custom_lsb_created)
 
 
     def _clear_custom_lsb_release(self):

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 __author__ = "kerl@google.com, gwendal@google.com (Gwendal Grignou)"
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # Lint as: python2, python3
 # pylint: disable=missing-docstring,bad-indentation
 

@@ -147,13 +147,6 @@ suite:cellular_ota
 suite:cellular_ota_flaky
 suite:cellular_pseudomodem
 suite:cellular_qual
-suite:chameleon_audiovideo
-suite:chameleon_dp
-suite:chameleon_dp_hdmi
-suite:chameleon_hdmi
-suite:chameleon_hdmi_perbuild
-suite:chameleon_hdmi_unstable
-suite:chameleon_vga
 suite:check_setup_cts_N
 suite:check_setup_storage_qual
 suite:chrome-informational

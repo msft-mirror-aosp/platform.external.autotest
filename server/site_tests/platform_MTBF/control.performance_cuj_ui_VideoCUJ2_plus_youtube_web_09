@@ -94,7 +94,10 @@ def run(machine):
       stage_config(host)
 
       # Writing all test arguments to yaml file.
-      yaml.dump(test_args, stream=temp_file, default_flow_style=False)
+      yaml.safe_dump(test_args,
+                    stream=temp_file,
+                    default_flow_style=False,
+                    allow_unicode=True)
       job.run_test('tast',
                   host=host,
                   test_exprs=['ui.VideoCUJ2.plus_youtube_web'],

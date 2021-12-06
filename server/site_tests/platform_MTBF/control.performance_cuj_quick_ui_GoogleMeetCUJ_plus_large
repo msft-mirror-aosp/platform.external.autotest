@@ -34,6 +34,7 @@ import yaml
 
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.site_utils.deployment.prepare import dut
 from autotest_lib.utils import labellib
 
 test_args = dict()
@@ -44,6 +45,13 @@ def report_host_info(host):
   labels['test'] = 'ui.GoogleMeetCUJ.plus_large'
   labels['test_iteration'] = '1'
   utils.write_keyval(job.resultdir, labels)
+  # Try to retrieve and report DUT HWID and serial number.
+  try:
+    dut.setup_hwid_and_serialnumber(host)
+    logging.info("Host info store: %s", host.host_info_store.get())
+    utils.write_keyval(job.resultdir, host.host_info_store.get().attributes)
+  except Exception as e:
+    logging.warning("Failed retrieving DUT host info: %s", e)
 
 def parse_config(config_url):
   response = urllib.request.urlopen(config_url)
@@ -86,7 +94,10 @@ def run(machine):
       stage_config(host)
 
       # Writing all test arguments to yaml file.
-      yaml.dump(test_args, stream=temp_file, default_flow_style=False)
+      yaml.safe_dump(test_args,
+                    stream=temp_file,
+                    default_flow_style=False,
+                    allow_unicode=True)
       job.run_test('tast',
                   host=host,
                   test_exprs=['ui.GoogleMeetCUJ.plus_large'],

@@ -8,7 +8,7 @@ TIME = 'SHORT'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'stub'
 TEST_TYPE = 'server'
-
+PY_VERSION = 3
 DOC = """
 Verify the companion dut flag reaches a test.
 """

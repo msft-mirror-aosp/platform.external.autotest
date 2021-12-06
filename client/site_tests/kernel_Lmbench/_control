@@ -1,3 +1,8 @@
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
 NAME = "kernel_Lmbench"
 AUTHOR = "Chrome OS Team"
 ATTRIBUTES = "suite:kernel_per-build_benchmarks"

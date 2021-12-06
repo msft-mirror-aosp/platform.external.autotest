@@ -2,17 +2,22 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
 from autotest_lib.server import utils
 
 AUTHOR = "Chrome OS Team"
-NAME = "kernel_ExternalUsbPeripheralsDetectionTest.printer_epson"
+NAME = "kernel_ExternalUsbPeripheralsDetectionTest.printer_hp"
 PURPOSE = "Kernel USB detection test"
 CRITERIA = "This test will fail if any of the actions or checks fail."
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform, kernel"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING, usb_printer_epson"
+DEPENDENCIES = "servo_state:WORKING, usb_printer_hp"
 
 DOC = """
 This test uses servo to connect USB devices.
@@ -25,7 +30,7 @@ The test fails if
 - there is no servo board attached
 
 USB peripherals plugged
-- USB Epson XP-610 Series printer
+- USB printer
 """
 
 args_dict = utils.args_to_dict(args)
@@ -35,18 +40,18 @@ def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
     usb_checks = {
-        # Epson printer
+        # Epson or HP USB printer
         str("lsusb") :
-            ["04b8:089e Seiko Epson Corp."],
-        str("lsusb -v -d 04b8:089e") :
-            ["iProduct.*EPSON XP-610 Series",
+            ["03f0:d911 Hewlett-Packard"],
+        str("lsusb -v -d 03f0:d911") :
+            ["iProduct.*OfficeJet 4650 series",
              "bInterfaceClass.*Printer"],
         }
 
-    vendor_id_dict_control_file = {'04b8': 'Printer'}
+    vendor_id_dict_control_file = {'03f0': 'Printer'}
 
     job.run_test("kernel_ExternalUsbPeripheralsDetectionTest", host=host,
-                 disable_sysinfo=True, usb_checks=usb_checks, tag="printer_epson",
+                 disable_sysinfo=True, usb_checks=usb_checks, tag="printer_hp",
                  vendor_id_dict_control_file=vendor_id_dict_control_file)
 
 parallel_simple(run, machines)

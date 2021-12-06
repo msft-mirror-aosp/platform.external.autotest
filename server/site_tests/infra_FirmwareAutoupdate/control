@@ -6,6 +6,7 @@ AUTHOR = "Chrome OS Team"
 NAME = "infra_FirmwareAutoupdate"
 TIME = "SHORT"
 TEST_TYPE = "server"
+PY_VERSION = 3
 
 DOC = """
 This is an administrative procedure used to update the RW firmware

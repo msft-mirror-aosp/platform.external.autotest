@@ -1,8 +1,13 @@
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
 AUTHOR = "Chromium OS Team"
 NAME = "security_RendererSandbox"
 PURPOSE = "Basic check to ensure renderer is sandboxed/jailed in Chromium OS."
 CRITERIA = """
-This test will fail if (a) no renderer is found or (b) the requested URL is not 
+This test will fail if (a) no renderer is found or (b) the requested URL is not
 sandboxed/jailed.
 """
 TIME = "SHORT"
@@ -12,7 +17,7 @@ TEST_CLASS = "security"
 TEST_TYPE = "client"
 
 DOC = """
-This test simply checks if a page is loaded within the sandboxed/jailed 
+This test simply checks if a page is loaded within the sandboxed/jailed
 environment inside Chromium OS.
 """
 

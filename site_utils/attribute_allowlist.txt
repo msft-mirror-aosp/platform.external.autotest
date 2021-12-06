@@ -331,6 +331,7 @@ suite:thermal_qual_fast
 suite:thermal_qual_full
 suite:toolchain-tests
 suite:touch
+suite:touch_replay
 suite:typec_lab
 suite:usb-camera
 suite:usb_detect

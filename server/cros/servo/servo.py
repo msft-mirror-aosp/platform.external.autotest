@@ -576,6 +576,8 @@ class Servo(object):
     # List of servos that connect to a debug header on the board.
     FLEX_SERVOS = ['c2d2', 'servo_micro', 'servo_v3']
 
+    CCD_PREFIX = 'ccd_'
+
     def __init__(self, servo_host, servo_serial=None, delay_init=False):
         """Sets up the servo communication infrastructure.
 
@@ -1781,14 +1783,16 @@ class Servo(object):
     def _get_servo_type_fw_version(self, servo_type, prefix=''):
         """Helper to handle fw retrieval for micro/v4 vs ccd.
 
-        @param servo_type: one of 'servo_v4', 'servo_micro', 'ccd_cr50', 'c2d2'
+        @param servo_type: one of 'servo_v4', 'servo_micro', 'c2d2',
+                           'ccd_cr50', or 'ccd_gsc'
         @param prefix: whether the control has a prefix
 
         @returns: fw version for non-ccd devices, cr50 version for ccd device
         """
-        if servo_type == 'ccd_cr50':
-            # ccd_cr50 runs on cr50, so need to query the cr50 fw.
-            servo_type = 'cr50'
+        # If it's a ccd device, remove the 'ccd_' prefix to find the firmware
+        # name.
+        if servo_type.startswith(self.CCD_PREFIX):
+            servo_type[len(self.CCD_PREFIX)::]
         cmd = '%s_version' % servo_type
         try:
             return self.get(cmd, prefix=prefix)

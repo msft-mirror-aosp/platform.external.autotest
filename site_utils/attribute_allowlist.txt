@@ -281,6 +281,7 @@ suite:pvs-kernel
 suite:pvs-staging
 suite:pvs-tast-cq
 suite:pvs-video
+suite:py3-beta
 suite:reboot_stress
 suite:regression
 suite:rlz

@@ -7,6 +7,8 @@ NAME = "infra_ServerPythonVersion.3"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DOC = """Verify the Sever & Client Python Version."""
+PY_VERSION = 3
+ATTRIBUTES = "suite:py3-beta"
 
 def run(machine):
     job.run_test('infra_ServerPythonVersion',

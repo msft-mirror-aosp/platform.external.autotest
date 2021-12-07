@@ -64,9 +64,9 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
                         count=5,
                         source_iface=router_lan_iface_name)
                 self.context.router.ping(ping_config)
-            except:
+            except Exception as e:
                 raise error.TestNAError(
                         'Could not verify connection between router and pcap '
                         'devices. Router and pcap device must have a direct '
                         'Ethernet connection over their LAN ports to run '
-                        'performance tests.')
+                        'performance tests: %s' % (e))

@@ -42,7 +42,7 @@ class AdvMonitor(dbus.service.Object):
     # Refer doc/advertisement-monitor-api.txt for more info about unset values.
     UNSET_RSSI = 127
     UNSET_TIMEOUT = 0
-    UNSET_SAMPLING_PERIOD = 0
+    UNSET_SAMPLING_PERIOD = 256
 
     # Indexes of the Monitor object parameters in a monitor data list.
     MONITOR_TYPE = 0

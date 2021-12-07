@@ -42,7 +42,7 @@ class TestMonitor():
         """
         self.type = None
         self.rssi = []
-        self.sampling_period = 0
+        self.sampling_period = 256  # unset Sampling Period
         self.patterns = []
         self.monitor_id = None
         self.app_id = app_id
@@ -155,7 +155,7 @@ class BluetoothAdapterAdvMonitorTests(
     # Refer doc/advertisement-monitor-api.txt for more info about unset values.
     UNSET_RSSI = 127
     UNSET_TIMEOUT = 0
-    UNSET_SAMPLING_PERIOD = 0
+    UNSET_SAMPLING_PERIOD = 256
 
     # Non-zero count value is used to indicate the case where multiple
     # DeviceFound/DeviceLost events are expected to occur.

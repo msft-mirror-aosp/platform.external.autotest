@@ -2,9 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
 AUTHOR = "achuith@chromium.org"
-NAME = "telemetry_UnitTestsServer_perf"
-PURPOSE = "Run the Telemetry perf unit tests as a logged-in user."
+NAME = "telemetry_UnitTestsServer"
+PURPOSE = "Run the Telemetry unit tests as a logged-in user."
 ATTRIBUTES = "suite:telemetry_unit_server"
 TIME = "LONG"
 TEST_CATEGORY = "Functional"
@@ -12,17 +17,17 @@ TEST_CLASS = "desktopui"
 TEST_TYPE = "server"
 
 DOC = """
-Verifies that all Telemetry perf unit tests pass when run as a logged-in user.
+Verifies that all Telemetry unit tests pass when run as a logged-in user.
 """
 
 def run_client(machine):
     host = hosts.create_host(machine)
     host.log_kernel()
-    job.run_test('telemetry_UnitTestsServer', host=host,
+    job.run_test('telemetry_UnitTestsServer',  host=host,
                  use_packaging=use_packaging,
                  copy_boto_file=True,
-                 browser_type='system', tag='perf', unit_tests=[],
-                 perf_tests=[''])
+                 browser_type='system', tag='user', unit_tests=[''],
+                 perf_tests=[])
 
 
 job.parallel_simple(run_client, machines)

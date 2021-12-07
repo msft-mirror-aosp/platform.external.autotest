@@ -62,8 +62,11 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
                 ping_config = ping_runner.PingConfig(
                         pcap_lan_ip_addr,
                         count=5,
-                        source_iface=router_lan_iface_name)
-                self.context.router.ping(ping_config)
+                        source_iface=router_lan_iface_name,
+                        ignore_result=True)
+                ping_result = self.context.router.ping(ping_config)
+                if ping_result.received == 0:
+                    raise Exception("Ping failed (%s)" % (ping_result))
             except Exception as e:
                 raise error.TestNAError(
                         'Could not verify connection between router and pcap '

@@ -2151,7 +2151,6 @@ class BluetoothAdapterTests(test.test):
         @returns: True if the device is found. False otherwise.
 
         """
-        has_device_initially = False
         discovery_stopped = False
         is_not_discovering = False
         device_discovered = False
@@ -2159,39 +2158,45 @@ class BluetoothAdapterTests(test.test):
         discovery_started = not start_discovery
         has_device = self.bluetooth_facade.has_device
 
-        if has_device(device_address):
-            has_device_initially = True
-        else:
-            if start_discovery:
-                discovery_started = self.bluetooth_facade.start_discovery()
+        if start_discovery:
+            if has_device(device_address):
+                # Before starting a new discovery, remove the found device since
+                # it is likely to be a temporary device, and we don't know when
+                # it will be removed by bluez. Therefore, remove it and re-find
+                # the device to ensure the device object exists for the
+                # following test, e.g. test_pairing.
+                logging.debug('Removing device %s to restart temporary timer',
+                              device_address)
+                self.bluetooth_facade.remove_device_object(device_address)
 
-            if discovery_started:
-                try:
-                    utils.poll_for_condition(
-                            condition=(lambda: has_device(device_address)),
-                            timeout=self.ADAPTER_DISCOVER_TIMEOUT_SECS,
-                            sleep_interval=
-                            self.ADAPTER_DISCOVER_POLLING_SLEEP_SECS,
-                            desc='Waiting for discovering %s' % device_address)
-                    device_discovered = True
-                except utils.TimeoutError as e:
-                    logging.error('test_discover_device: %s', e)
-                except Exception as e:
-                    logging.error('test_discover_device: %s', e)
-                    err = ('bluetoothd probably crashed.'
-                           'Check out /var/log/messages')
-                    logging.error(err)
-                except:
-                    logging.error('test_discover_device: unexpected error')
+            discovery_started = self.bluetooth_facade.start_discovery()
 
-            if start_discovery and stop_discovery:
-                discovery_stopped, _ = self.bluetooth_facade.stop_discovery()
-                is_not_discovering = self._wait_for_condition(
-                        lambda: not self.bluetooth_facade.is_discovering(),
-                        method_name())
+        if discovery_started:
+            try:
+                utils.poll_for_condition(
+                        condition=(lambda: has_device(device_address)),
+                        timeout=self.ADAPTER_DISCOVER_TIMEOUT_SECS,
+                        sleep_interval=self.
+                        ADAPTER_DISCOVER_POLLING_SLEEP_SECS,
+                        desc='Waiting for discovering %s' % device_address)
+                device_discovered = True
+            except utils.TimeoutError as e:
+                logging.error('test_discover_device: %s', e)
+            except Exception as e:
+                logging.error('test_discover_device: %s', e)
+                err = ('bluetoothd probably crashed.'
+                       'Check out /var/log/messages')
+                logging.error(err)
+            except:
+                logging.error('test_discover_device: unexpected error')
+
+        if start_discovery and stop_discovery:
+            discovery_stopped, _ = self.bluetooth_facade.stop_discovery()
+            is_not_discovering = self._wait_for_condition(
+                    lambda: not self.bluetooth_facade.is_discovering(),
+                    method_name())
 
         self.results = {
-                'has_device_initially': has_device_initially,
                 'should_start_discovery': start_discovery,
                 'should_stop_discovery': stop_discovery,
                 'start_discovery': discovery_started,
@@ -2200,11 +2205,11 @@ class BluetoothAdapterTests(test.test):
                 'device_discovered': device_discovered}
 
         # Make sure a discovered device properly started and stopped discovery
-        device_found = device_discovered and discovery_started and (
-                discovery_stopped and is_not_discovering
-                if stop_discovery else True)
+        device_found = device_discovered and (discovery_stopped
+                                              and is_not_discovering
+                                              if stop_discovery else True)
 
-        return has_device_initially or device_found
+        return device_found
 
 
     def _test_discover_by_device(self, device):

@@ -234,12 +234,6 @@ _WIFI_CONNECT_COMMANDS_V2 = [
         "'adb shell dumpsys wifi transports -eth'",
 ]
 
-CONFIG['WIFI_MODULES'] = [
-        'CtsLibcoreTestCases',
-        'CtsNetTestCases',
-        'CtsUsageStatsTestCases',
-]
-
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
         'CtsSecurityHostTestCases':
@@ -274,13 +268,10 @@ _WIFI_CONNECT_COMMANDS = [
 CONFIG['PUBLIC_PRECONDITION'] = {
         'CtsSecurityHostTestCases':
         [_SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND],
-        'CtsNetTestCases': [_START_MDNS_COMMAND],
+        'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsNetTestCases': _WIFI_CONNECT_COMMANDS + [_START_MDNS_COMMAND],
+        'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
 }
-
-for m in CONFIG['WIFI_MODULES']:
-    CONFIG['PUBLIC_PRECONDITION'].setdefault(m,
-                                             []).extend(_WIFI_CONNECT_COMMANDS)
-    CONFIG['PRECONDITION'].setdefault(m, []).extend(_WIFI_CONNECT_COMMANDS_V2)
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {
     'CtsCameraTestCases': ['lighting'],

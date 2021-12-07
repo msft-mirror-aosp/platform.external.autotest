@@ -209,18 +209,6 @@ _DISPLAY_REFRESH_COMMANDS = [
         "'android-sh -c \\'am start -a android.intent.action.VIEW -d https://webglsamples.org/aquarium/aquarium.html\\''"
 ]
 
-# The list of modules requiring Wifi connection.
-CONFIG['WIFI_MODULES'] = [
-        'CtsHostsideNetworkTests',
-        'CtsLibcoreTestCases',
-        'CtsNetApi23TestCases',
-        'CtsNetTestCases',
-        'CtsJobSchedulerTestCases',
-        'CtsUsageStatsTestCases',
-        'CtsStatsdHostTestCases',
-        'CtsWifiTestCases',
-]
-
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
         'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
@@ -242,11 +230,15 @@ CONFIG['LOGIN_PRECONDITION'] = {
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
         'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
+        'CtsHostsideNetworkTests': _WIFI_CONNECT_COMMANDS,
+        'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsNetTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsJobSchedulerTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsStatsdHostTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsWifiTestCases': _WIFI_CONNECT_COMMANDS,
 }
-
-for m in CONFIG['WIFI_MODULES']:
-    CONFIG['PUBLIC_PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS
-    CONFIG['PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {
         'CtsCameraTestCases': ['lighting'],

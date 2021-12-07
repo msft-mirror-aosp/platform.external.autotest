@@ -282,8 +282,8 @@ class firmware_PDDataSwap(FirmwareTest):
                         # Swap power role, back to the original
                         self._change_dut_power_role()
                 else:
-                    logging.warn('Power swap not successful!')
-                    logging.warn('Only tested with DUT in %s state',
+                    logging.warning('Power swap not successful!')
+                    logging.warning('Only tested with DUT in %s state',
                                  dut_connect_state)
             else:
                 logging.info('DUT does not advertise power swap support')

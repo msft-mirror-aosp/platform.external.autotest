@@ -48,7 +48,7 @@ class power_WaitForCoolDown(power_test.power_Test):
             self.loop_sleep(i, loop_secs)
 
         max_temp = max(self._tlog.refresh())
-        logging.warn(
+        logging.warning(
             'Fail to cool down after %d seconds, temp: %.1fC, target: %dC',
             num_loop * loop_secs, max_temp, target_temp)
 

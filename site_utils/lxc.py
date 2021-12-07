@@ -55,7 +55,7 @@ def main():
     # TODO(dshi): crbug.com/459344 Set remove this enforcement when test
     # container can be unprivileged container.
     if utils.sudo_require_password():
-        logging.warn('SSP requires root privilege to run commands, please '
+        logging.warning('SSP requires root privilege to run commands, please '
                      'grant root access to this process.')
         utils.run('sudo true')
 

@@ -301,7 +301,7 @@ class DestinyConfig(BaseLabConfig):
         """
         row = device_hostname.row
         if row == 13:
-            logging.warn('Rule not implemented for row 13 in chromeos4')
+            logging.warning('Rule not implemented for row 13 in chromeos4')
             return ''
 
         # rpm row is like chromeos4-row1_2-rackX-rpmY

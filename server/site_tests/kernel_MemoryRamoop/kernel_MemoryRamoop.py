@@ -49,7 +49,7 @@ class kernel_MemoryRamoop(test.test):
             self._run_test(self._do_kernel_panic, '.*lkdtm:.*PANIC$')
             self._run_test(self._do_kernel_bug, '.*lkdtm:.*BUG$')
         else:
-            logging.warn('DUT did not have kernel dump test module')
+            logging.warning('DUT did not have kernel dump test module')
 
         self._run_test(self._do_reboot_with_suspend, '.*Restarting system.*$')
 

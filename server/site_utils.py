@@ -651,7 +651,7 @@ def SetupTsMonGlobalState(*args, **kwargs):
         # meaningful chunks.
         from autotest_lib.utils.frozen_chromite.lib import ts_mon_config
     except ImportError as e:
-        logging.warn('Unable to import chromite. Monarch is disabled: %s', e)
+        logging.warning('Unable to import chromite. Monarch is disabled: %s', e)
         return TrivialContextManager()
 
     try:

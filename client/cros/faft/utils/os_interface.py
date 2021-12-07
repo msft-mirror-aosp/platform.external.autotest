@@ -214,7 +214,7 @@ class OSInterface(object):
                 os.fdatasync(log_f.fileno())
         except EnvironmentError:
             logging.info('%s', text)
-            logging.warn("Couldn't write RPC Log: %s", self.log_file,
+            logging.warning("Couldn't write RPC Log: %s", self.log_file,
                          exc_info=True)
             # Report error only once.
             self._use_log_file = False
@@ -236,7 +236,7 @@ class OSInterface(object):
             self.log('Begin RPC Log: %s (this file)' % self.log_file)
 
         except EnvironmentError:
-            logging.warn("Couldn't write RPC Log: %s", self.log_file,
+            logging.warning("Couldn't write RPC Log: %s", self.log_file,
                          exc_info=True)
             self._use_log_file = False
 

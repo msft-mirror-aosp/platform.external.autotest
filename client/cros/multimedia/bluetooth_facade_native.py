@@ -3452,7 +3452,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         """Timeout handler when waiting for properties update signal."""
         self._signal_watch.remove()
         if self._dbus_mainloop.is_running():
-            logging.warn("quit main loop due to timeout")
+            logging.warning("quit main loop due to timeout")
             self._dbus_mainloop.quit()
         # Return false so that this method will not be called again.
         return False

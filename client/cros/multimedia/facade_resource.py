@@ -191,7 +191,7 @@ class FacadeResource(object):
                 try:
                     tab.Close()
                 except py_utils.TimeoutException:
-                    logging.warn('close tab timeout %r, %s', tab, tab.url)
+                    logging.warning('close tab timeout %r, %s', tab, tab.url)
 
 
     @retry_chrome_call

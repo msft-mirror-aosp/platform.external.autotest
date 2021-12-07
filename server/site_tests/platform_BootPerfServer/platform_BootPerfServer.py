@@ -43,7 +43,7 @@ class platform_BootPerfServer(test.test):
         """Helper function for editing kernel args."""
         partition = self._get_root_partition(host)
         if partition is None:
-            logging.warn('Unable to get root partition index')
+            logging.warning('Unable to get root partition index')
             return
 
         tmp_name = str(uuid.uuid4())
@@ -82,7 +82,7 @@ class platform_BootPerfServer(test.test):
         # the test, enable by adding 'cros_bootchart' to the kernel arg list.
         kernel_cmdline = host.run_output('cat /proc/cmdline')
         if 'cros_bootchart' in kernel_cmdline:
-            logging.warn('cros_bootchart is enabled before the test.')
+            logging.warning('cros_bootchart is enabled before the test.')
             return
 
         logging.info('Enable bootchart.')
@@ -102,7 +102,7 @@ class platform_BootPerfServer(test.test):
         """
         kernel_cmdline = host.run_output('cat /proc/cmdline')
         if 'cros_bootchart' not in kernel_cmdline:
-            logging.warn('Bootchart not enabled in the test.')
+            logging.warning('Bootchart not enabled in the test.')
             return
 
         logging.info('Disable cros_bootchart and reboot.')

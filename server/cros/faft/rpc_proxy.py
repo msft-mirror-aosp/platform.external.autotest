@@ -133,7 +133,7 @@ class RPCProxy(object):
             remote_quit()
             need_pkill = False
         except Exception as e:
-            logging.warn("Error while telling FAFT RPC server to quit: %s", e)
+            logging.warning("Error while telling FAFT RPC server to quit: %s", e)
             # If we failed to tell the RPC server to quit for some reason,
             # fall back to SIGTERM, because it may not have exited.
             need_pkill = True

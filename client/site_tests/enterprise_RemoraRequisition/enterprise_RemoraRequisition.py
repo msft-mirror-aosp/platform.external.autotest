@@ -21,7 +21,7 @@ class enterprise_RemoraRequisition(test.test):
         user_id, password = utils.get_signin_credentials(os.path.join(
                 os.path.dirname(os.path.realpath(__file__)), 'credentials.txt'))
         if not (user_id and password):
-            logging.warn('No credentials found - exiting test.')
+            logging.warning('No credentials found - exiting test.')
             return
 
         with chrome.Chrome(

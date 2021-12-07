@@ -786,7 +786,7 @@ class CrasTestClient(object):
                     sleep_interval=0.5,
                     desc='Waiting for subprocess to terminate')
         except Exception:
-            logging.warn('Killing subprocess due to timeout')
+            logging.warning('Killing subprocess due to timeout')
             proc.kill()
             proc.wait()
 

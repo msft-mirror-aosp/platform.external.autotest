@@ -176,7 +176,7 @@ class ServoV4ChargeManager(object):
             if not self._servo.has_control('charger_connected'):
                 # TODO(coconutruben): remove this check once labs have the
                 # latest hdctools with the required control.
-                logging.warn('Could not verify %r control as the '
+                logging.warning('Could not verify %r control as the '
                               'control is not available on servod.',
                               'charger_connected')
                 return

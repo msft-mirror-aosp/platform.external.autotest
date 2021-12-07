@@ -234,7 +234,7 @@ class WebRtcPeerConnectionTest(object):
             full_filename = screenshot_name + '_graphics_utils'
             graphics_utils.take_screenshot(self.debugdir, full_filename)
         except Exception as e:
-            logging.warn('Screenshot using graphics_utils failed', exc_info = e)
+            logging.warning('Screenshot using graphics_utils failed', exc_info = e)
 
     def take_browser_tab_screenshot(self, screenshot_name):
         """
@@ -251,11 +251,11 @@ class WebRtcPeerConnectionTest(object):
             except Exception:
                 # This can for example occur if Chrome crashes. It will
                 # cause the Screenshot call to timeout.
-                logging.warn(
+                logging.warning(
                         'Screenshot using telemetry tab.Screenshot failed',
                         exc_info=True)
         else:
-            logging.warn(
+            logging.warning(
                     'Screenshot using telemetry tab.Screenshot() not supported')
 
 

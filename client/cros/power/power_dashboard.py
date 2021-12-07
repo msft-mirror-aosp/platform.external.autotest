@@ -483,7 +483,7 @@ class MeasurementLoggerDashboard(ClientTestDashboard):
             raw measurement dictionary or None if no readings
         """
         if len(self._logger.readings) == 0:
-            logging.warn('No readings in logger ... ignoring')
+            logging.warning('No readings in logger ... ignoring')
             return None
 
         power_dict = collections.defaultdict(dict, {

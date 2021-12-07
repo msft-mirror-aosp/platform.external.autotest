@@ -75,7 +75,7 @@ class FAFTCheckers(object):
         got_dict = self._parse_crossystem_output(lines)
         for key in expected_dict:
             if key not in got_dict:
-                logging.warn('Expected key %r not in crossystem result', key)
+                logging.warning('Expected key %r not in crossystem result', key)
                 succeed = False
                 continue
             if isinstance(expected_dict[key], str):
@@ -97,7 +97,7 @@ class FAFTCheckers(object):
                     message = ('Expected %r values %r == real value %r' % (
                                key, expected_dict[key], got_dict[key]))
             else:
-                logging.warn('The expected value of %r is neither a str nor a '
+                logging.warning('The expected value of %r is neither a str nor a '
                              'dict: %r', key, expected_dict[key])
                 succeed = False
                 continue

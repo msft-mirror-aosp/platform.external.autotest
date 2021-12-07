@@ -32,7 +32,7 @@ class enterprise_KioskEnrollment(test.test):
                 os.path.dirname(os.path.realpath(__file__)),
                 'credentials.' + self.APP_NAME))
         if not (user_id and password):
-            logging.warn('No credentials found - exiting test.')
+            logging.warning('No credentials found - exiting test.')
             return
 
         with chrome.Chrome(auto_login=False,

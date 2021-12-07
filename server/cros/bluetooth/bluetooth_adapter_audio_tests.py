@@ -246,7 +246,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         elif device.StopOfono():
             logging.debug('ofono is stopped.')
         else:
-            logging.warn('Failed to stop ofono. Ignored.')
+            logging.warning('Failed to stop ofono. Ignored.')
 
         # Need time to complete starting services.
         time.sleep(self.WAIT_DAEMONS_READY_SECS)
@@ -262,12 +262,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         if device.StopPulseaudio():
             logging.debug('pulseaudio is stopped.')
         else:
-            logging.warn('Failed to stop pulseaudio. Ignored.')
+            logging.warning('Failed to stop pulseaudio. Ignored.')
 
         if device.StopOfono():
             logging.debug('ofono is stopped.')
         else:
-            logging.warn('Failed to stop ofono. Ignored.')
+            logging.warning('Failed to stop ofono. Ignored.')
 
 
     def initialize_bluetooth_player(self, device):

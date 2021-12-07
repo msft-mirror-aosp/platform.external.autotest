@@ -55,7 +55,7 @@ class servo_LabControlVerification(test.test):
                 # This a set servod control.
                 ctrl['ctrl_value'] = ctrl_elems[1]
             elif len(ctrl_elems) > 2:
-                logging.warn('The line containing %r in the control sequence '
+                logging.warning('The line containing %r in the control sequence '
                              'file has an unkown format. Ignoring for now.',
                              ctrl)
             ctrls.append(ctrl)

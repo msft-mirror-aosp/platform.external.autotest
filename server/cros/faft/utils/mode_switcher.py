@@ -948,7 +948,7 @@ class _BaseModeSwitcher(object):
         """
         if not self.client_host.ping_wait_down(timeout):
             if orig_boot_id and self.client_host.get_boot_id() != orig_boot_id:
-                logging.warn('Reboot done very quickly.')
+                logging.warning('Reboot done very quickly.')
                 return
             raise ConnectionError('DUT is still up unexpectedly')
 

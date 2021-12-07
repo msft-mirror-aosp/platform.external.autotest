@@ -369,7 +369,7 @@ def verify_boot_into_rec_mode(host):
         try:
             host.run('chromeos-tpm-recovery')
         except error.AutoservRunError:
-            logging.warn('chromeos-tpm-recovery is too old.')
+            logging.warning('chromeos-tpm-recovery is too old.')
     except Exception:
         # Restore the servo_v4 role to src if we called boot_in_recovery_mode
         # method with snk_mode=True earlier. If no exception raise, recover

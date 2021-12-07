@@ -510,7 +510,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         info = self.host_info_store.get()
         if not info.board:
-            logging.warn('No board label value found. Trying to infer '
+            logging.warning('No board label value found. Trying to infer '
                          'from the host itself.')
             try:
                 info.labels.append(self.get_board())
@@ -924,7 +924,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             try:
                 model = self.get_platform()
             except Exception as e:
-                logging.warn('Dut is unresponsive: %s', str(e))
+                logging.warning('Dut is unresponsive: %s', str(e))
 
         # If local firmware path not provided fetch it from the dev server
         tmpd = None
@@ -1011,7 +1011,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     if e.result_obj.exit_status != 255:
                         raise
                     elif ec_image:
-                        logging.warn("DUT network dropped during update"
+                        logging.warning("DUT network dropped during update"
                                      " (often caused by EC resetting USB)")
                     else:
                         logging.error("DUT network dropped during update"
@@ -1169,7 +1169,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         try:
             self.run('chromeos-tpm-recovery')
         except error.AutoservRunError:
-            logging.warn('chromeos-tpm-recovery is too old.')
+            logging.warning('chromeos-tpm-recovery is too old.')
 
         with metrics.SecondsTimer(
                 'chromeos/autotest/provision/servo_install/install_duration'):

@@ -486,11 +486,11 @@ class _Uart(object):
             try:
                 content = self._servo.get(stream)
             except Exception as err:
-                logging.warn('Failed to get UART log for %s: %s', stream, err)
+                logging.warning('Failed to get UART log for %s: %s', stream, err)
                 continue
 
             if content == 'not_applicable':
-                logging.warn('%s is not applicable', stream)
+                logging.warning('%s is not applicable', stream)
                 continue
 
             # The UART stream may contain non-printable characters, and servo
@@ -509,7 +509,7 @@ class _Uart(object):
             try:
                 self._start_stop_capture(uart, False)
             except Exception as err:
-                logging.warn('Failed to stop UART logging for %s: %s', uart,
+                logging.warning('Failed to stop UART logging for %s: %s', uart,
                              err)
 
 
@@ -1342,7 +1342,7 @@ class Servo(object):
             logging.info('%s is active', active_device)
             return 'servo_v4_with_' + active_device
 
-        logging.warn("%s is active even though it's not in servo type",
+        logging.warning("%s is active even though it's not in servo type",
                      active_device)
         return servo_type
 
@@ -1491,7 +1491,7 @@ class Servo(object):
         # Ignore extracting EC image and re-programming if not a Chrome EC
         chrome_ec = FAFTConfig(board).chrome_ec
         if not chrome_ec:
-            logging.warn('Not a Chrome EC, ignore re-programming it')
+            logging.warning('Not a Chrome EC, ignore re-programming it')
             return None
 
         # Try to retrieve firmware build target from the version reported
@@ -1500,7 +1500,7 @@ class Servo(object):
         try:
             fw_target = self.get_ec_board()
         except Exception as err:
-            logging.warn('Failed to get ec_board value; ignoring')
+            logging.warning('Failed to get ec_board value; ignoring')
             fw_target = model
             pass
 
@@ -1560,7 +1560,7 @@ class Servo(object):
         try:
             fw_target = self.get_ec_board()
         except Exception as err:
-            logging.warn('Failed to get ec_board value; ignoring')
+            logging.warning('Failed to get ec_board value; ignoring')
             fw_target = model
             pass
 
@@ -1794,7 +1794,7 @@ class Servo(object):
             return self.get(cmd, prefix=prefix)
         except error.TestFail:
             # Do not fail here, simply report the version as unknown.
-            logging.warn('Unable to query %r to get servo fw version.', cmd)
+            logging.warning('Unable to query %r to get servo fw version.', cmd)
             return 'unknown'
 
 

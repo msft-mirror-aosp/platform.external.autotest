@@ -88,7 +88,7 @@ class ContainerId(collections.namedtuple('ContainerId',
         except IOError as err:
             # File not found, or couldn't be opened for some other reason.
             # Treat all these cases as no ID.
-            logging.warn('Load container id file "%s" error: %s', src, err)
+            logging.warning('Load container id file "%s" error: %s', src, err)
             return None
         # TODO(pprabhu, crbug.com/842343) Remove this once all persistent
         # container ids have migrated to str.
@@ -252,7 +252,7 @@ class Container(object):
                 except error.CmdError as e:
                     # The container could be created in a incompleted
                     # state. Delete the container folder instead.
-                    logging.warn('Failed to destroy container %s, error: %s',
+                    logging.warning('Failed to destroy container %s, error: %s',
                                  new_name, e)
                     utils.run('sudo rm -rf "%s"' % container_folder)
             # Create the directory prior to creating the new container.  This

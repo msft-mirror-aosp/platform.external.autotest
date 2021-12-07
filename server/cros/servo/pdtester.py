@@ -154,7 +154,7 @@ class PDTester(chrome_ec.ChromeEC):
             srccaps = self.get_adapter_source_caps()
         except PDTesterError:
             # htctools and servov4 is not updated, fallback to the old path.
-            logging.warn('hdctools or servov4 firmware too old, fallback to '
+            logging.warning('hdctools or servov4 firmware too old, fallback to '
                          'fixed charging voltages.')
             return list(self.USBC_CHARGING_VOLTAGES_LEGACY.keys())
 
@@ -202,7 +202,7 @@ class PDTester(chrome_ec.ChromeEC):
         try:
             usbc_pr = self.get(self.USBC_PR)
         except:
-            logging.warn(
+            logging.warning(
                     'Unsupported control(%s). '
                     'Maybe firmware or servod too old? '
                     'sudo servo_updater -b servo_v4; '

@@ -118,4 +118,4 @@ def restore(force_discharge_success):
     """
     if force_discharge_success:
         if not power_utils.charge_control_by_ectool(True):
-            logging.warn('Can not restore from force discharge.')
+            logging.warning('Can not restore from force discharge.')

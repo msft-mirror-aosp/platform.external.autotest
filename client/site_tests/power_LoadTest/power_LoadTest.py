@@ -214,7 +214,7 @@ class power_LoadTest(arc.ArcTest):
                         from_dbus_proxy_output(raw_output)
                 if result.success:
                     break
-                logging.warn('wifi connect: disc:%d assoc:%d config:%d fail:%s',
+                logging.warning('wifi connect: disc:%d assoc:%d config:%d fail:%s',
                              result.discovery_time, result.association_time,
                              result.configuration_time, result.failure_reason)
             else:
@@ -336,7 +336,7 @@ class power_LoadTest(arc.ArcTest):
             if not self._gaia_login:
                 raise
             self._gaia_login = False
-            logging.warn("Unable to use GAIA acct %s.  Using GUEST instead.\n",
+            logging.warning("Unable to use GAIA acct %s.  Using GUEST instead.\n",
                          self._username)
             self._browser = chrome.Chrome(extension_paths=[ext_path],
                                           gaia_login=self._gaia_login)
@@ -811,7 +811,7 @@ class power_LoadTest(arc.ArcTest):
         elif has_light_sensor:
             level_to_set = (40 * default_level) / 100
         elif has_hover:
-            logging.warn('Device has hover but no light sensor')
+            logging.warning('Device has hover but no light sensor')
 
         logging.info('Setting keyboard backlight to %d', level_to_set)
         self._keyboard_backlight.set_level(level_to_set)
@@ -841,7 +841,7 @@ class power_LoadTest(arc.ArcTest):
                 if start_extension >= start:
                     start = start_extension
                     break
-                logging.warn('Timestamp from extension (%.2f) is earlier than'
+                logging.warning('Timestamp from extension (%.2f) is earlier than'
                              'timestamp from autotest (%.2f).',
                              start_extension, start)
 

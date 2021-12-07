@@ -196,7 +196,7 @@ class firmware_PDVbusRequest(FirmwareTest):
                         dut_power_voltage_limit, dut_max_charging_power,
                         selected_power)
         except self.pdtester.PDTesterError:
-            logging.warn('Unable to get charging voltages and currents. '
+            logging.warning('Unable to get charging voltages and currents. '
                          'Test may fail on high voltages.')
 
         pdtester_failures = []
@@ -250,7 +250,7 @@ class firmware_PDVbusRequest(FirmwareTest):
             raise error.TestFail('PDTester failed %d times' % number)
 
         if (is_voltage_reduced_if_batt_full and self._is_batt_full()):
-            logging.warn('This DUT reduces input voltage when chipset is in '
+            logging.warning('This DUT reduces input voltage when chipset is in '
                          'G3/S5 and battery is full. DUT initiated tests '
                          'will be skipped. Please discharge battery to level '
                          'that allows charging and run this test again')

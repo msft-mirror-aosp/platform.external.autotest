@@ -302,9 +302,9 @@ class BatteryStat(DevStat):
                 self._read_battery()
                 return
             except error.TestError as e:
-                logging.warn(e)
+                logging.warning(e)
                 for field, prop in self.battery_fields.items():
-                    logging.warn(field + ': ' + repr(getattr(self, field)))
+                    logging.warning(field + ': ' + repr(getattr(self, field)))
                 continue
         raise error.TestError('Failed to read battery state')
 
@@ -519,7 +519,7 @@ class SysStat(object):
                 return True
 
         if not self.battery_path:
-            logging.warn('Unable to determine battery charge status')
+            logging.warning('Unable to determine battery charge status')
             return False
 
         return self.battery.status.rstrip() == 'Charging'
@@ -530,7 +530,7 @@ class SysStat(object):
         Returns true if battery is currently discharging or false otherwise.
         """
         if not self.battery_path:
-            logging.warn('Unable to determine battery discharge status')
+            logging.warning('Unable to determine battery discharge status')
             return False
 
         return self.battery.status.rstrip() == 'Discharging'
@@ -540,7 +540,7 @@ class SysStat(object):
         Returns true if battery is currently full or false otherwise.
         """
         if not self.battery_path:
-            logging.warn('Unable to determine battery fullness status')
+            logging.warning('Unable to determine battery fullness status')
             return False
 
         return self.battery.status.rstrip() == 'Full'
@@ -2978,7 +2978,7 @@ class PCHPowergatingStats(object):
         if on_ip:
             on_ip_in_warn_list = on_ip & S0IX_WARNLIST
             if on_ip_in_warn_list:
-                logging.warn('Found PCH IP that may be able to powergate: %s',
+                logging.warning('Found PCH IP that may be able to powergate: %s',
                              ', '.join(on_ip_in_warn_list))
             on_ip -= S0IX_WARNLIST
 

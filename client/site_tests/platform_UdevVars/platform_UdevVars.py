@@ -118,7 +118,7 @@ class platform_UdevVars(test.test):
                               'one of %s', role, num, repr(expected_num))
 
         if len(self.devices_with_role['external_input']) != 0:
-            logging.warn('%d external input devices detected',
+            logging.warning('%d external input devices detected',
                          len(self.devices_with_role['external_input']))
 
 

@@ -75,7 +75,7 @@ class _BaseProgrammer(object):
             # We should reinstate this exception once the programmer is working
             # to indicate the missing utilities earlier in the test cycle.
             # Bug chromium:371011 filed to track this.
-            logging.warn("Ignoring exception when verify required bins : %s",
+            logging.warning("Ignoring exception when verify required bins : %s",
                          ' '.join(req_list))
 
 
@@ -87,7 +87,7 @@ class _BaseProgrammer(object):
             try:
                 present = self._servo.get(key)
             except error.TestFail:
-                logging.warn('Missing servo control: %s', key)
+                logging.warning('Missing servo control: %s', key)
                 continue
             if present == 'not_applicable':
                 # control is has no bearing in this servo config so ignore it.

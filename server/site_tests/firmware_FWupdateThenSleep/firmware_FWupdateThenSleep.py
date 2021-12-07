@@ -151,7 +151,7 @@ class firmware_FWupdateThenSleep(FirmwareTest):
                 self.MODE, append, options, ignore_status=True)
 
         if result.exit_status == 255:
-            logging.warn("DUT network dropped during update.")
+            logging.warning("DUT network dropped during update.")
         elif result.exit_status != 0:
             if (image_fwids == before_fwids and
                     'Good. It seems nothing was changed.' in result.stdout):

@@ -60,7 +60,7 @@ class power_LW(test.test):
         try:
             host.run('stop recover_duts')
         except:
-            logging.warn("Continue if stop recover_duts failed.")
+            logging.warning("Continue if stop recover_duts failed.")
 
         eth_usb = host.find_usb_devices(
             self.SERVO_V4_ETH_VENDOR, self.SERVO_V4_ETH_PRODUCT)

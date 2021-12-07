@@ -169,7 +169,7 @@ class power_Monitoring(test.test):
                 # Broad except as we don't really care about the exception
                 # but rather want to make sure that we know how many failures
                 # have happened in a row.
-                logging.warn('Issue running %s: %s', current_test.name, str(e))
+                logging.warning('Issue running %s: %s', current_test.name, str(e))
                 consecutive_failures += 1
             if consecutive_failures >= self.MAX_CONSECUTIVE_FAILURES:
                 raise error.TestFail('%d consecutive failures. Stopping.' %
@@ -195,7 +195,7 @@ class power_Monitoring(test.test):
         try:
             return self._get_charge_percent()
         except error.TestFail as e:
-            logging.warn('Failed to get battery charge levels even ',
+            logging.warning('Failed to get battery charge levels even ',
                          'after turning on charging. Cold resetting.'
                          'before re-attempting.')
             self._host.servo.get_power_state_controller().reset()

@@ -124,7 +124,7 @@ class usbpd_GFU(test.test):
                 continue
 
             if rw != '/dev/null' and not self._is_in_rw(port):
-                logging.warn('Port%d: not in RW after flashpd ... retrying',
+                logging.warning('Port%d: not in RW after flashpd ... retrying',
                              port.index)
                 tries -= 1
             else:
@@ -136,7 +136,7 @@ class usbpd_GFU(test.test):
                                          self.FW_UP_DNAME],
                                         retries=5, sleep_seconds=2)
         if not msg:
-            logging.warn('Port%d: Driver does NOT see dev in not in RO',
+            logging.warning('Port%d: Driver does NOT see dev in not in RO',
                          port.index)
             return False
         logging.info('Port%d: Driver sees device in RO', port.index)
@@ -172,7 +172,7 @@ class usbpd_GFU(test.test):
                 rsp_str = 'Port%d: RW modified with RW=%s failed' % \
                           (port.index, rw)
                 if tries:
-                    logging.warn('%s ... retrying.', rsp_str)
+                    logging.warning('%s ... retrying.', rsp_str)
                     tries -= 1
                 else:
                     raise error.TestError(rsp_str)
@@ -185,7 +185,7 @@ class usbpd_GFU(test.test):
             if not msg:
                 rsp_str = 'Port%d: driver did NOT update FW' % port.index
                 if tries:
-                    logging.warn('%s ... retrying.', rsp_str)
+                    logging.warning('%s ... retrying.', rsp_str)
                     tries -= 1
                     continue
                 else:
@@ -200,7 +200,7 @@ class usbpd_GFU(test.test):
             if not self._is_in_rw(port):
                 rsp_str = 'Port%d: Device is not in RW' % port.index
                 if tries:
-                    logging.warn('%s ... retrying.', rsp_str)
+                    logging.warning('%s ... retrying.', rsp_str)
                     tries -= 1
                     continue
                 else:

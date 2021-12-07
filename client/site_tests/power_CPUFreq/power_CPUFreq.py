@@ -115,7 +115,7 @@ class power_CPUFreq(test.test):
         try:
             freq = cpu.get_current_frequency()
         except IOError:
-            logging.warn('Frequency getting failed.  Retrying once.')
+            logging.warning('Frequency getting failed.  Retrying once.')
             time.sleep(.1)
             freq = cpu.get_current_frequency()
 
@@ -165,7 +165,7 @@ class cpufreq(object):
         try:
             utils.open_write_close(path, data)
         except IOError as e:
-            logging.warn('write of %s failed: %s', path, str(e))
+            logging.warning('write of %s failed: %s', path, str(e))
 
     def __read_file(self, file_name):
         path = os.path.join(self.__base_path, file_name)

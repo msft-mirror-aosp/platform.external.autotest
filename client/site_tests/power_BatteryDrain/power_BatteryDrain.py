@@ -26,7 +26,7 @@ class power_BatteryDrain(test.test):
         '''Cleanup for a test run'''
         if self._force_discharge:
             if not power_utils.charge_control_by_ectool(True):
-                logging.warn('Can not restore from force discharge.')
+                logging.warning('Can not restore from force discharge.')
         if self.backlight:
             self.backlight.restore()
         if self.keyboard_backlight:

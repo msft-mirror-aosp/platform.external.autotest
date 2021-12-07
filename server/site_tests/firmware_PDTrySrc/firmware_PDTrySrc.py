@@ -138,7 +138,7 @@ class firmware_PDTrySrc(FirmwareTest):
             try_src_supported = port_pair[d_idx].try_src(True)
 
             if not try_src_supported:
-                logging.warn('DUT does not support Try.SRC feature. '
+                logging.warning('DUT does not support Try.SRC feature. '
                              'Skip running Try.SRC-enabled test case.')
             else:
                 # Run disconnect/connect sequence with Try.SRC enabled

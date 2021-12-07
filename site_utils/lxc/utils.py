@@ -76,7 +76,7 @@ def is_vm():
         logging.debug('virt-what output: %s', virt)
         return bool(virt)
     except error.CmdError:
-        logging.warn('Package virt-what is not installed, default to assume '
+        logging.warning('Package virt-what is not installed, default to assume '
                      'it is not a virtual machine.')
         return False
 

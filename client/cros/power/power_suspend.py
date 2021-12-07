@@ -463,7 +463,7 @@ class Suspender(object):
                         break
                 else:
                     if ignore_kernel_warns:
-                        logging.warn('Non-allowlisted KernelError: %s', src)
+                        logging.warning('Non-allowlisted KernelError: %s', src)
                     else:
                         raise sys_power.KernelError("%s\n%s" % (src, text))
             if abort_regex.search(line):
@@ -640,7 +640,7 @@ class Suspender(object):
                     msg = 'S0ix residency did not change.'
                     if cpu_uarch not in self._IGNORE_S0IX_RESIDENCY_CHECK:
                         raise sys_power.S0ixResidencyNotChanged(msg)
-                    logging.warn(msg)
+                    logging.warning(msg)
                 logging.info('S0ix residency : %d secs.', s0ix_residency_secs)
             elif hasattr(self, '_s2idle_residency_stats'):
                 s2idle_residency_usecs = \

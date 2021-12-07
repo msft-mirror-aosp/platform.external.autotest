@@ -2590,7 +2590,7 @@ def sudo_require_password():
         run('sudo -n true')
         return False
     except error.CmdError:
-        logging.warn('sudo command requires password.')
+        logging.warning('sudo command requires password.')
         return True
 
 

@@ -17,14 +17,14 @@ try:
     from autotest_lib.utils.frozen_chromite.lib import retry_util
     from autotest_lib.utils.frozen_chromite.lib import timeout_util
 except ImportError as e:
-    logging.warn('Unable to import chromite: %s', e)
+    logging.warning('Unable to import chromite: %s', e)
     retry_util = None
     timeout_util = None
 
 try:
     from autotest_lib.utils.frozen_chromite.lib import metrics
 except ImportError as e:
-    logging.warn('Unable to import metrics from '
+    logging.warning('Unable to import metrics from '
                  'autotest_lib.utils.frozen_chromite: %s', e)
     metrics = utils.metrics_mock
 

@@ -204,13 +204,13 @@ class RpcServerTracker(object):
             except Exception as exc:
                 log_lines = []
                 if logfile:
-                    logging.warn('Failed to start XMLRPC server; getting log.')
+                    logging.warning('Failed to start XMLRPC server; getting log.')
                     with tempfile.NamedTemporaryFile() as temp:
                         self._host.get_file(logfile, temp.name)
                         with open(temp.name) as f:
                             log_lines = f.read().rstrip().splitlines()
                 else:
-                    logging.warn('Failed to start XMLRPC server; no log.')
+                    logging.warning('Failed to start XMLRPC server; no log.')
 
                 logging.error(
                         'Failed to start XMLRPC server:  %s.%s: %s.',

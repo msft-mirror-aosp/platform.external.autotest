@@ -82,7 +82,7 @@ def terminate_old(script_name, sigterm_timeout=5, sigkill_timeout=3):
         except psutil.NoSuchProcess as e:
             logging.debug('%s: %s', e, proc)
         except psutil.Error as e:
-            logging.warn('%s: %s', e, proc)
+            logging.warning('%s: %s', e, proc)
 
     (terminated, running) = psutil.wait_procs(running, sigterm_timeout)
     if not running:
@@ -96,12 +96,12 @@ def terminate_old(script_name, sigterm_timeout=5, sigkill_timeout=3):
         except psutil.NoSuchProcess as e:
             logging.debug('%s: %s', e, proc)
         except psutil.Error as e:
-            logging.warn('%s: %s', e, proc)
+            logging.warning('%s: %s', e, proc)
 
     (sigkilled, running) = psutil.wait_procs(running, sigkill_timeout)
     if running:
         running.sort(key=lambda p: p.pid)
-        logging.warn('Found leftover processes %s; address may be in use!',
+        logging.warning('Found leftover processes %s; address may be in use!',
                      [p.pid for p in running])
     else:
         logging.debug('Leftover processes have exited.')

@@ -444,7 +444,7 @@ class ChromeEC(ChromeConsole):
         try:
             result = self.send_command_get_output('feat', [regexp])
         except servo.ResponsiveConsoleError as e:
-            logging.warn("feat command is not available: %s", str(e))
+            logging.warning("feat command is not available: %s", str(e))
             return False
 
         feat_bitmap = int(result[0][1], 16)

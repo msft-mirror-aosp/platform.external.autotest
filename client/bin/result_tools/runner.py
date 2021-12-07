@@ -100,7 +100,7 @@ def run_on_client(host, client_results_dir, cleanup_only=False):
                                            host.job.max_result_size_KB)
                     except AttributeError:
                         # In case host job is not set, skip throttling.
-                        logging.warn('host object does not have job attribute, '
+                        logging.warning('host object does not have job attribute, '
                                      'skipping result throttling.')
                 cmd = (_BUILD_DIR_SUMMARY_CMD %
                        (DEFAULT_AUTOTEST_DIR, client_results_dir,

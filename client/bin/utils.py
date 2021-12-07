@@ -2197,7 +2197,7 @@ def is_package_installed(package):
         utils.run(_CHECK_PACKAGE_INSTALLED_COMMAND % package)
         return True
     except error.CmdError:
-        logging.warn('Package %s is not installed.', package)
+        logging.warning('Package %s is not installed.', package)
         return False
 
 
@@ -2210,7 +2210,7 @@ def is_python_package_installed(package):
         __import__(package)
         return True
     except ImportError:
-        logging.warn('Python package %s is not installed.', package)
+        logging.warning('Python package %s is not installed.', package)
         return False
 
 

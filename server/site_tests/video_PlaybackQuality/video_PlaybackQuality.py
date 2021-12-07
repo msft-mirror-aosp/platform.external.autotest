@@ -208,7 +208,7 @@ class video_PlaybackQuality(test.test):
             # Some pixels are wrong.
             if error_number != total_pixels:
                 corrupted_frame_count += 1
-                logging.warn('[Corrupted]%s', log_string)
+                logging.warning('[Corrupted]%s', log_string)
                 continue
 
             # All pixels are wrong.

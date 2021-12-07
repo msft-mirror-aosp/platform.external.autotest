@@ -284,7 +284,7 @@ class autoserv_parser(object):
             if unknown_args:
                 removed_args.append(unknown_args.pop(0))
         if removed_args:
-            logging.warn('Unknown arguments are removed from the options: %s',
+            logging.warning('Unknown arguments are removed from the options: %s',
                          removed_args)
 
         self.args = unknown_args + shlex.split(self.options.args or '')
@@ -292,7 +292,7 @@ class autoserv_parser(object):
         self.options.host_attributes = ast.literal_eval(
                 self.options.host_attributes)
         if self.options.lab and self.options.host_attributes:
-            logging.warn(
+            logging.warning(
                     '--lab and --host-attributes are mutually exclusive. '
                     'Ignoring custom host attributes: %s',
                     str(self.options.host_attributes))

@@ -114,7 +114,7 @@ class display_HotPlugNoisy(test.test):
                         # user would try to re-plug the cable to recover.
                         # We emulate this behavior below and report error if
                         # the problem persists.
-                        logging.warn('Possibly flaky: %s', err)
+                        logging.warning('Possibly flaky: %s', err)
                         warns.append('Possibly flaky: %s' % err)
                         logging.info('Replug and retry the screen test...')
                         chameleon_port.unplug()

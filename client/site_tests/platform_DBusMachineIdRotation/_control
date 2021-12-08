@@ -1,0 +1,17 @@
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = 'zeuthen'
+NAME = 'platform_DBusMachineIdRotation'
+TIME = 'FAST'
+TEST_CATEGORY = 'Functional'
+TEST_CLASS = 'platform'
+TEST_TYPE = 'client'
+ATTRIBUTES = "suite:experimental"
+DOC = """
+Verifies that /var/lib/dbus/machine-id is properly rotated.
+"""
+
+job.run_test('platform_DBusMachineIdRotation')

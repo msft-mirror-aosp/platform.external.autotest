@@ -1,0 +1,26 @@
+# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "abrestic, sonnyrao"
+NAME = "platform_ChromeCgroups"
+PURPOSE = "Verify that the chrome_renderers cgroups are created and used."
+CRITERIA = "Fails if the required cgroups do not exist or are empty."
+ATTRIBUTES = "suite:regression"
+TIME = "SHORT"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "platform"
+TEST_TYPE = "client"
+
+DOC = """
+This test verifies that the chrome_renderers foreground and background
+cgroups exist and that tasks are placed in those cgroups when multiple
+tabs are open.
+"""
+
+job.run_test('platform_ChromeCgroups')

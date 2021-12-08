@@ -1,0 +1,25 @@
+# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+TIME="SHORT"
+AUTHOR = "The Chromium OS Authors"
+DOC = """
+Tests features of the tlsdate{,d} tools.
+"""
+NAME = "platform_TLSDate"
+PURPOSE = "Regression and integration tests of tlsdate{,d}."
+CRITERIA = """
+Fail if any of the tlsdate{,d} features fail.
+"""
+ATTRIBUTES = "suite:bvt-perbuild"
+TEST_CLASS = "platform"
+TEST_CATEGORY = "Functional"
+TEST_TYPE = "client"
+
+job.run_test("platform_TLSDate")

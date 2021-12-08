@@ -1,0 +1,24 @@
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+TIME='SHORT'
+AUTHOR = 'The Chromium OS Authors'
+DOC = """
+Tests that the last shutdown was clean (without errors).
+
+NOTE: You need to shutdown or reboot the device at least once before running
+this test for a given build or else the test is useless.
+"""
+
+NAME = 'platform_CleanShutdown'
+PURPOSE = 'Verify the last shutdown was clean.'
+CRITERiA = """
+Fails if the stateful partition was not cleanly unmounted on the last shutdown.
+"""
+TEST_CLASS = 'platform'
+TEST_CATEGORY = 'Functional'
+TEST_TYPE = 'client'
+
+job.run_test('platform_CleanShutdown')

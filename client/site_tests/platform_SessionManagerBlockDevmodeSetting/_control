@@ -1,0 +1,21 @@
+# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = 'mnissler, pastarmovj'
+NAME = 'platform_SessionManagerBlockDevmodeSetting'
+ATTRIBUTES = "suite:experimental"
+TIME = 'SHORT'
+TEST_TYPE = 'client'
+
+DOC = """
+This test checks whether session_manager correctly updates the block_devmode
+crossystem flag according to the value stored in device settings.
+"""
+
+job.run_test('platform_SessionManagerBlockDevmodeSetting')

@@ -22,4 +22,3 @@ This test will only work when using the fake DM server.
 args_dict = utils.args_to_dict(args)
 
 job.run_test('policy_ExtensionPolicy', **args_dict)
-

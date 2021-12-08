@@ -25,4 +25,3 @@ It tests the methods:
 args_dict = utils.args_to_dict(args)
 
 job.run_test('policy_PlatformKeys', **args_dict)
-

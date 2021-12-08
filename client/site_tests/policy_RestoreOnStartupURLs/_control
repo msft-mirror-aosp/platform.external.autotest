@@ -27,4 +27,3 @@ See accompanying README file for usage instructions and examples.
 args_dict = utils.args_to_dict(args)
 
 job.run_test('policy_RestoreOnStartupURLs', **args_dict)
-

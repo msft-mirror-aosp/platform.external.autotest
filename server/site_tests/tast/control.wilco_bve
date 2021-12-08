@@ -23,8 +23,7 @@ of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
 more information.
 '''
 
-command_args, varslist = tast.split_arguments(args)
-args_dict = utils.args_to_dict(command_args)
+args_dict = utils.args_to_dict(args)
 assert 'servo_state:WORKING' in DEPENDENCIES
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
@@ -33,7 +32,6 @@ def run(machine):
                  host=hosts.create_host(machine, servo_args=servo_args),
                  max_run_sec=10800,
                  test_exprs=['("group:wilco_bve")'],
-                 command_args=command_args,
-                 varslist=varslist)
+                 command_args=args)
 
 parallel_simple(run, machines)

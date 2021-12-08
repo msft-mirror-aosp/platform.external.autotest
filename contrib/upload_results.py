@@ -11,11 +11,14 @@ import re
 import shlex
 import shutil
 import subprocess
+from subprocess import Popen, PIPE
 import sys
 import time
 import uuid
+import json
 
 from google.cloud import storage
+from google.api_core import exceptions as cloud_exceptions
 
 # Appends the third_party.autotest and src paths so that the script can import
 # libraries under these paths.
@@ -25,9 +28,6 @@ sys.path.append('/mnt/host/source/src/platform/moblab/src')
 import common
 from tko import job_serializer, models, parser_lib
 from moblab_common import pubsub_client
-
-os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS",
-                      "%s/.service_account.json" % os.environ["HOME"])
 
 CURRENT_TIMESTAMP = int(time.time())
 FAKE_JOB_ID = CURRENT_TIMESTAMP
@@ -46,6 +46,10 @@ AUTOTEST_DIR = "/mnt/host/source/src/third_party/autotest/files/"
 DEFAULT_SUITE_NAME = "default_suite"
 SUITE_NAME_REGEX = "Fetching suite for suite named (.+?)\.\.\."
 DEBUG_FILE_PATH = "debug/test_that.DEBUG"
+CONFIG_DIR = os.path.dirname(os.path.abspath(__file__)) + "/config/"
+DEFAULT_BOTO_CONFIG = CONFIG_DIR + ".boto_upload_utils"
+UPLOAD_CONFIG = CONFIG_DIR + "upload_config.json"
+SERVICE_ACCOUNT_CONFIG = CONFIG_DIR + ".service_account.json"
 
 
 def parse_arguments(argv):
@@ -58,31 +62,13 @@ def parse_arguments(argv):
         A parser object for input arguments.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-            "-b",
-            "--bucket",
-            type=str,
-            required=True,
-            help="The GCS bucket that test results are uploaded to, e.g."
-            "'gs://xxxx'.")
-    parser.add_argument(
-            "--bug",
-            type=_valid_bug_id,
-            required=False,
-            help=
-            "Write bug id to the test results. Each test entry can only have "
-            "at most 1 bug id. Optional.")
-    parser.add_argument("-d",
-                        "--directory",
-                        type=str,
-                        required=True,
-                        nargs='+',
-                        help="The directory of non-Moblab test results.")
-    parser.add_argument(
-            "--dry_run",
-            action='store_true',
-            help="Generate job.serialize locally but do not upload test "
-            "directories and not send pubsub messages.")
+    subparsers = parser.add_subparsers(
+            help='select sub option for test result utility',
+            dest='subcommand')
+    parser.add_argument("-v",
+                        "--verbose",
+                        action='store_true',
+                        help="Enable verbose (debug) logging.")
     def_logfile = "/tmp/" + os.path.basename(
             sys.argv[0].split(".")[0]) + ".log"
     parser.add_argument("-l",
@@ -91,7 +77,45 @@ def parse_arguments(argv):
                         required=False,
                         default=def_logfile,
                         help="Full path to logfile. Default: " + def_logfile)
-    parser.add_argument(
+
+    # configuration subcommand to create config file and populate environment
+    config_parser = subparsers.add_parser(name="config",
+                                          help='upload test results to CPCon')
+    config_parser.add_argument(
+            "-b",
+            "--bucket",
+            type=str,
+            required=True,
+            help="The GCS bucket that test results are uploaded to, e.g."
+            "'gs://xxxx'.")
+    config_parser.add_argument("-f",
+                               "--force",
+                               dest='force',
+                               action="store_true",
+                               help="Force overwrite of previous config files")
+
+    upload_parser = subparsers.add_parser(name="upload",
+                                          help='upload test results to CPCon')
+    upload_parser.add_argument(
+            "--bug",
+            type=_valid_bug_id,
+            required=False,
+            help=
+            "Write bug id to the test results. Each test entry can only have "
+            "at most 1 bug id. Optional.")
+    upload_parser.add_argument(
+            "-d",
+            "--directory",
+            type=str,
+            required=True,
+            nargs='+',
+            help="The directory of non-Moblab test results.")
+    upload_parser.add_argument(
+            "--dry_run",
+            action='store_true',
+            help="Generate job.serialize locally but do not upload test "
+            "directories and not send pubsub messages.")
+    upload_parser.add_argument(
             "-s",
             "--suite",
             type=str,
@@ -99,10 +123,6 @@ def parse_arguments(argv):
             help="The suite is used to identify the type of test results,"
             "e.g. 'power' for platform power team. If not specific, the "
             "default value is 'default_suite'.")
-    parser.add_argument("-v",
-                        "--verbose",
-                        action='store_true',
-                        help="Enable verbose (debug) logging.")
     return parser.parse_args(argv)
 
 
@@ -226,7 +246,7 @@ def is_pubsub_sent(test_dir):
     return False
 
 
-def upload_test_results(args, test_dir, job_keyval, moblab_id, job_id):
+def upload_test_results(bucket, test_dir, job_keyval, moblab_id, job_id):
     """
         Upload the test directory with job.serialize to GCS bucket.
 
@@ -245,7 +265,6 @@ def upload_test_results(args, test_dir, job_keyval, moblab_id, job_id):
     fake_moblab_install_id = moblab_id
     hostname = job_keyval.get('hostname', '0.0.0.0')  # ip address
 
-    bucket = args.bucket
     gcs_bucket_path = os.path.join("gs://%s" % bucket, "results",
                                    fake_moblab_id, fake_moblab_install_id,
                                    "%s-moblab" % job_id, hostname)
@@ -526,9 +545,89 @@ def get_suite_name(results_dir):
     return None
 
 
+def read_until_string(pipe, stop_string):
+    lines = [""]
+    while True:
+        c = pipe.read(1)
+        lines[-1] = lines[-1] + c.decode("utf-8")
+        if stop_string == lines[-1]:
+            return lines
+        if c.decode("utf-8") == "\n":
+            lines.append("")
+
+
+def configure_environment(parsed_args):
+    # create config directory if not exists
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+
+    if os.path.exists(UPLOAD_CONFIG) and not parsed_args.force:
+        logging.error("Environment already configured, run with --force")
+        exit()
+
+    # call the gsutil config tool to set up accounts
+    if os.path.exists(DEFAULT_BOTO_CONFIG + ".bak"):
+        os.remove(DEFAULT_BOTO_CONFIG + ".bak")
+
+    if os.path.exists(DEFAULT_BOTO_CONFIG):
+        os.remove(DEFAULT_BOTO_CONFIG)
+    os.mknod(DEFAULT_BOTO_CONFIG)
+    os.environ["BOTO_CONFIG"] = DEFAULT_BOTO_CONFIG
+    with subprocess.Popen(["gsutil", "config"],
+                          stdout=PIPE,
+                          stderr=PIPE,
+                          stdin=PIPE) as sp:
+        lines = read_until_string(sp.stdout, "Enter the authorization code: ")
+        code = input("enter auth code from " + str(lines[1]) + ": ")
+        sp.stdin.write(bytes(code + '\n', "utf-8"))
+        sp.stdin.flush()
+        lines = read_until_string(sp.stdout, "What is your project-id? ")
+        sp.stdin.write(bytes(parsed_args.bucket + '\n', "utf-8"))
+        sp.stdin.flush()
+
+    # use configured gsutil to download service_account to config
+    client = storage.Client()
+    bucket = client.lookup_bucket(parsed_args.bucket)
+    blob = bucket.get_blob(".service_account.json")
+    if bucket is None:
+        logging.error("Invalid bucket selected, try a different bucket")
+        exit()
+    else:
+        logging.info("Bucket name saved to config")
+    with open(SERVICE_ACCOUNT_CONFIG, "wb") as file_obj:
+        file_obj.write(blob.download_as_bytes())
+
+    # deposit parsed_args.bucket to the json file
+    with open(UPLOAD_CONFIG, "w") as cf:
+        settings = {}
+        settings["bucket"] = parsed_args.bucket
+        settings["service_account"] = CONFIG_DIR + ".service_account.json"
+        settings["boto_key"] = DEFAULT_BOTO_CONFIG
+
+        cf.write(json.dumps(settings))
+
+
+def load_config():
+    mandatory_keys = ["bucket", "service_account", "boto_key"]
+
+    if not os.path.exists(UPLOAD_CONFIG):
+        logging.error("Missing mandatory config file, run config command")
+        exit()
+    with open(UPLOAD_CONFIG, "r") as cf:
+        settings = json.load(cf)
+
+    for key in mandatory_keys:
+        if key not in settings:
+            logging.error("Missing mandatory setting " + str(key) +
+                          ", run config command")
+            exit()
+
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings["service_account"]
+    os.environ["BOTO_CONFIG"] = settings["boto_key"]
+    return argparse.Namespace(**settings)
+
+
 def main(args):
     parsed_args = parse_arguments(args)
-    bucket = parsed_args.bucket
 
     logger = logging.getLogger()
     fmt = logging.Formatter('%(asctime)s :: %(levelname)-8s :: %(message)s')
@@ -548,6 +647,12 @@ def main(args):
     hfile.setFormatter(fmt)
     hfile.setLevel(log_level)
     logger.addHandler(hfile)
+
+    if parsed_args.subcommand == "config":
+        configure_environment(parsed_args)
+        return
+
+    persistent_settings = load_config()
 
     # The non-moblab test results generated by test_that CLI don't have moblab
     # id, moblab install id, suite name and job id. Thus, we need to fake these
@@ -593,10 +698,11 @@ def main(args):
             # This process run is not a dry run
             if not is_pubsub_sent(test_dir):
                 try:
-                    upload_test_results(parsed_args, test_dir, job_keyval,
-                                        fake_moblab_id, fake_job_id)
-                    send_pubsub_message(test_dir, bucket, fake_moblab_id,
+                    upload_test_results(persistent_settings.bucket, test_dir,
+                                        job_keyval, fake_moblab_id,
                                         fake_job_id)
+                    send_pubsub_message(test_dir, persistent_settings.bucket,
+                                        fake_moblab_id, fake_job_id)
                 except Exception as e:
                     logging.warning(e)
                     continue

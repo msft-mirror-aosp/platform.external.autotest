@@ -1,0 +1,30 @@
+# Copyright (c) 2018 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = 'kirtika'
+NAME = 'network_WiFi_BT_AntennaCoex'
+TIME = 'SHORT'
+TEST_TYPE = 'Server'
+ATTRIBUTES = ''
+DEPENDENCIES = 'wificell, bluetooth'
+
+DOC = """
+WiFi and BT share an antenna on most wifi modules. This test tests a sequence
+of turning off/on wifi mixed with turning off/on BT to check that at the end
+of the sequence, both wifi and BT are functional. This protects against
+firmware bugs in one subsystem that won't release the antenna and cause
+a deadlock state for the other subsystem. See b/79233533.
+"""
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('network_WiFi_BT_AntennaCoex', host=host,
+                 raw_cmdline_args=args)
+
+parallel_simple(run, machines)

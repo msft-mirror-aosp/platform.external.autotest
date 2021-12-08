@@ -1,0 +1,19 @@
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "Chrome OS Team"
+NAME = "network_NegotiatedLANSpeed"
+PURPOSE = "Ensure wired network interface is running at least 1Gbps."
+CRITERIA = "Fails if wired network speed is less than 1Gbps."
+TIME = "SHORT"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "Network"
+TEST_TYPE = "client"
+
+DOC = """
+This test checks whether a wired network interface is running at 1000Mbps
+"""
+
+job.run_test('network_NegotiatedLANSpeed', iface_name = 'eth0', tag = 'eth0')

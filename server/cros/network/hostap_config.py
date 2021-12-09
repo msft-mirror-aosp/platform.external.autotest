@@ -191,13 +191,13 @@ class HostapConfig(object):
     # we tolerate HT40 in channels 149-161 (not allowed in EU), but also
     # tolerate HT40+ on channel 7 (not allowed in the US).  We take the loose
     # definition so that we don't prohibit testing in either domain.
-    HT40_ALLOW_MAP = {N_CAPABILITY_HT40_MINUS: range(5, 14) +
-                                           range(40, 65, 8) +
-                                           range(104, 145, 8) +
+    HT40_ALLOW_MAP = {N_CAPABILITY_HT40_MINUS: list(range(5, 14)) +
+                                           list(range(40, 65, 8)) +
+                                           list(range(104, 145, 8)) +
                                            [153, 161],
-                  N_CAPABILITY_HT40_PLUS: range(1, 10) +
-                                           range(36, 61, 8) +
-                                           range(100, 141, 8) +
+                  N_CAPABILITY_HT40_PLUS: list(range(1, 10)) +
+                                           list(range(36, 61, 8)) +
+                                           list(range(100, 141, 8)) +
                                            [149, 157]}
 
     PMF_SUPPORT_DISABLED = 0
@@ -293,7 +293,7 @@ class HostapConfig(object):
         """@return string suitable for the vht_capab= line in a hostapd config.
         """
         ret = []
-        for cap in self.AC_CAPABILITIES_MAPPING.keys():
+        for cap in list(self.AC_CAPABILITIES_MAPPING.keys()):
             if cap in self._ac_capabilities:
                 ret.append(self.AC_CAPABILITIES_MAPPING[cap])
         return ''.join(ret)

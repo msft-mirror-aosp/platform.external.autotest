@@ -1067,6 +1067,14 @@ class TradefedTest(test.test):
             logging.warning('Failed to restore powerd policy, overrided policy '
                             'will persist until device reboot.')
 
+    def _mute_device(self):
+        """Mutes the device to avoid noises while running tests"""
+        try:
+            self._run_commands(['cras_test_client --mute 1'],
+                               ignore_status=True)
+        except:
+            logging.warning('Failed to mute the device')
+
     def _clean_crash_logs(self):
         try:
             self._run_commands(['rm -f /home/chronos/crash/*'])
@@ -1406,6 +1414,8 @@ class TradefedTest(test.test):
                     # enough disk space for 16GB storage devices: b/156075084.
                     if not keep_media:
                         self._clean_crash_logs()
+                # b/196748125. Mute before running tests to avoid noises.
+                self._mute_device()
                 # TODO(b/182397469): speculatively disable the "screen-on"
                 # handler for dEQP. Revert when the issue is resolved.
                 keep_screen_on = not (target_module

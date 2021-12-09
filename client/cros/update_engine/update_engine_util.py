@@ -8,17 +8,20 @@ from __future__ import division
 from __future__ import print_function
 
 import datetime
+import json
 import logging
 import os
 import re
 import shutil
 import time
+import six
 from six.moves import range
 import six.moves.urllib_parse as urlparse
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import kernel_utils
+from autotest_lib.client.cros.update_engine import nebraska_wrapper
 from autotest_lib.client.cros.update_engine import update_engine_event
 
 _DEFAULT_RUN = utils.run
@@ -765,3 +768,39 @@ class UpdateEngineUtil(object):
                 return requests[i]
 
         return None
+
+    def _edit_nebraska_startup_config(self, **kwargs):
+        """
+        Edits an existing nebraska startup config file.
+
+        @param kwargs: A dictionary of key/values for nebraska config options.
+                       See platform/dev/nebraska/nebraska.py for more info.
+
+        """
+        conf = json.loads(
+                self._run(['cat', nebraska_wrapper.NEBRASKA_CONFIG]).stdout)
+        for k, v in six.iteritems(kwargs):
+            conf[k] = v
+        self._run([
+                'echo',
+                json.dumps(conf), '>', nebraska_wrapper.NEBRASKA_CONFIG
+        ])
+
+    def _clear_nebraska_dir(self):
+        """
+        Clears the nebraska dir on the DUT where the nebraska config and payload
+        metadata files are stored.
+
+        """
+        self._run(['rm', '-rf', '/usr/local/nebraska'])
+
+    def _get_nebraska_update_url(self):
+        """
+        Gets the update URL for an active nebraska server. Assumes nebraska is
+        up and running.
+
+        @returns: string of the update URL for the active nebraska.
+
+        """
+        nebraska_port = self._run(['cat', '/run/nebraska/port']).stdout
+        return 'http://localhost:%s/update' % nebraska_port

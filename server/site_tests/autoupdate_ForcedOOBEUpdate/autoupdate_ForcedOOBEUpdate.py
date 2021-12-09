@@ -25,6 +25,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
         self._clear_custom_lsb_release()
 
+        # Clean up the nebraska usr dir.
+        self._clear_nebraska_dir()
+
         self._set_update_over_cellular_setting(False)
 
         # Cancel any update still in progress.
@@ -110,8 +113,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                  interrupt=None,
                  job_repo_url=None,
                  moblab=False,
-                 m2n=False,
-                 return_noupdate_starting=2):
+                 m2n=False):
         """
         Runs a forced autoupdate during ChromeOS OOBE.
 
@@ -126,11 +128,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param moblab: True if we are running on moblab.
         @param m2n: True if we should first provision the latest stable version
                     for the current board so that we can perform a M->N update.
-        @param return_noupdate_starting: (Number of times - 1) we want
-                                         FakeOmaha to return an update before
-                                         returning noupdate. 1 means never
-                                         return noupdate. 2 means return
-                                         noupdate after 1 update response.
 
         """
         if interrupt and interrupt not in self._SUPPORTED_INTERRUPTS:
@@ -152,21 +149,14 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                     update_url, host=self._host,
                     is_release_bucket=True).run_provision()
 
-        # This test can be used with Nebraska (cellular tests) or a devserver
-        # (non-cellular) tests. Each passes a different value to the client:
-        # An update_url for a devserver or a payload_url for Nebraska.
         payload_url = None
-        update_url = None
         if cellular:
             self._set_update_over_cellular_setting(True)
             payload_url = self.get_payload_url_on_public_bucket(
                 job_repo_url, full_payload=full_payload)
         else:
-            update_url = self.get_update_url_for_test(
-                    job_repo_url,
-                    full_payload=full_payload,
-                    moblab=moblab,
-                    return_noupdate_starting=return_noupdate_starting)
+            payload_url = self.get_payload_for_nebraska(
+                    job_repo_url, full_payload=full_payload)
         before_version = self._host.get_release_version()
 
         # Clear any previously started updates.
@@ -185,11 +175,13 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         active, inactive = kernel_utils.get_kernel_state(self._host)
         # Call client test to start the forced OOBE update.
         self._run_client_test_and_check_result(
-            'autoupdate_StartOOBEUpdate', update_url=update_url,
-            payload_url=payload_url, full_payload=full_payload,
-            cellular=cellular, critical_update=True,
-            interrupt_network=interrupt == self._NETWORK_INTERRUPT,
-            interrupt_progress=progress)
+                'autoupdate_StartOOBEUpdate',
+                payload_url=payload_url,
+                full_payload=full_payload,
+                cellular=cellular,
+                critical_update=True,
+                interrupt_network=interrupt == self._NETWORK_INTERRUPT,
+                interrupt_progress=progress)
 
         if interrupt in [self._REBOOT_INTERRUPT, self._SUSPEND_INTERRUPT]:
             logging.info('Waiting to interrupt update.')
@@ -214,9 +206,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             # Remove screenshots since interrupt test succeeded.
             self._remove_screenshots()
 
-        # Create lsb-release with no_update=True to get post-reboot event.
-        lsb_url = payload_url if cellular else update_url
-        self._create_custom_lsb_release(lsb_url, no_update=True)
+        # Set no_update=True in the nebraska startup config to get the
+        # post-reboot update event.
+        self._edit_nebraska_startup_config(no_update=True)
 
         self._wait_for_oobe_update_to_complete()
 

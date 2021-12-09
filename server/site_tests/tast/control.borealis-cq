@@ -26,6 +26,7 @@ def run(machine):
                  host=hosts.create_host(machine, servo_args=servo_args),
                  test_exprs=['("group:borealis" && borealis_cq)'],
                  ignore_test_failures=True, max_run_sec=3600,
-                 command_args=args)
+                 command_args=args,
+                 retries=2)
 
 parallel_simple(run, machines)

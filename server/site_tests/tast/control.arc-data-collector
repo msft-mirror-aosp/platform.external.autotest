@@ -34,6 +34,7 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=['("group:arc-data-collector")'],
                  ignore_test_failures=False, max_run_sec=1200,
-                 command_args=args)
+                 command_args=args,
+                 retries=2)
 
 parallel_simple(run, machines)

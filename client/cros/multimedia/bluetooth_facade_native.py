@@ -242,7 +242,7 @@ class BluetoothBaseFacadeNative(object):
 
         try:
             cmd = ['lspci', '-knn']
-            output = subprocess.check_output(cmd)
+            output = subprocess.check_output(cmd, encoding='UTF-8')
             vid_pid = _get_lspci_vid_pid(output)
             logging.debug("got vid_pid %s", vid_pid)
             if vid_pid is not None:
@@ -296,7 +296,7 @@ class BluetoothBaseFacadeNative(object):
                 logging.info('Executing %s cmd', msg)
                 cmd = cmd_str.split(' ')
                 logging.debug('command is "%s"', cmd)
-                output = subprocess.check_output(cmd)
+                output = subprocess.check_output(cmd, enconding='UTF-8')
                 logging.info('%s cmd successfully executed', msg)
                 logging.debug('output is %s', output)
                 return (True, output)
@@ -3690,7 +3690,9 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         # Please refer to
         # third_party/bluez/current/src/shared/shell.c:bt_shell_printf
         # for more information
-        output = subprocess.check_output(cmd.split(), stdin=subprocess.PIPE)
+        output = subprocess.check_output(cmd.split(),
+                                         stdin=subprocess.PIPE,
+                                         encoding='UTF-8')
 
         if output is None:
             logging.warning('Unable to retrieve output of %s', cmd)

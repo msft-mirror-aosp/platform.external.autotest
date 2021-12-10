@@ -76,7 +76,7 @@ class power_HotCPUSuspend(test.test):
         try:
             # fill all CPUs with a spinning task
             logging.info('starting %d workers', workers)
-            results = [pool.apply_async(cpu_stress) for _ in xrange(workers)]
+            results = [pool.apply_async(cpu_stress) for _ in range(workers)]
 
             # wait for things to settle
             logging.info('spinning for %d seconds', SUSPEND_BURN_SECONDS)

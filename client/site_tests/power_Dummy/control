@@ -11,7 +11,7 @@ TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
 ATTRIBUTES = ""
-
+PY_VERSION = 3
 DOC = """
 Dummy client test for testing power telemetry wrapper tests, measurement
 loggers, and measurement dashboards. Run for a short amount of time, collect

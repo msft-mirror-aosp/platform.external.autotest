@@ -8,6 +8,7 @@ TIME = 'SHORT'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
 ATTRIBUTES = 'suite:bluetooth_wifi_testbed_update'
+PY_VERSION = 3
 
 DOC = """
 This test updates the packet capture in a WiFi cell to the latest stable

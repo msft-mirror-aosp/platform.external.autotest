@@ -64,6 +64,7 @@ class desktopui_ChromeCheck(test.test):
                         cr.username)
 
             # Check that Chrome is able to load a web page.
+            logging.info('derek binddir {}'.format(self.bindir))
             cr.browser.platform.SetHTTPServerDirectories(self.bindir)
             url = cr.browser.platform.http_server.UrlOf(
                     os.path.join(self.bindir, self._TEST_FILENAME))

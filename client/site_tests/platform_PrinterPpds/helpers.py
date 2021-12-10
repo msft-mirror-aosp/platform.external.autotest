@@ -315,7 +315,7 @@ def save_digests_file(path_digests, digests, sizes, denylist):
         digests_content += '\n'
 
     with open(path_digests, 'wb') as file_digests:
-        file_digests.write(digests_content)
+        file_digests.write(digests_content.encode("utf-8"))
 
 
 def load_lines_from_file(path):

@@ -28,11 +28,21 @@ X_AUTHORITY = '/home/chronos/.Xauthority'
 class chromedriver(object):
     """Wrapper class, a context manager type, for tests to use Chrome Driver."""
 
-    def __init__(self, extra_chrome_flags=[], subtract_extra_chrome_flags=[],
-                 extension_paths=[], username=None, password=None,
-                 server_port=None, skip_cleanup=False, url_base=None,
-                 extra_chromedriver_args=None, gaia_login=False,
-                 disable_default_apps=True, dont_override_profile=False, *args,
+    def __init__(self,
+                 extra_chrome_flags=[],
+                 subtract_extra_chrome_flags=[],
+                 extension_paths=[],
+                 username=None,
+                 password=None,
+                 server_port=None,
+                 skip_cleanup=False,
+                 url_base=None,
+                 extra_chromedriver_args=None,
+                 gaia_login=False,
+                 disable_default_apps=True,
+                 dont_override_profile=False,
+                 chromeOptions={},
+                 *args,
                  **kwargs):
         """Initialize.
 
@@ -57,6 +67,8 @@ class chromedriver(object):
                                       Telemetry will output a warning with this
                                       option.
         """
+        if not isinstance(chromeOptions, dict):
+            raise TypeError("chromeOptions must be of type dict.")
         self._cleanup = not skip_cleanup
         assert os.geteuid() == 0, 'Need superuser privileges'
 
@@ -95,9 +107,11 @@ class chromedriver(object):
         urllib.request.urlopen('http://localhost:%i/json/new' %
                         utils.get_chrome_remote_debugging_port())
 
-        chromeOptions = {'debuggerAddress':
-                         ('localhost:%d' %
-                          utils.get_chrome_remote_debugging_port())}
+        chromeBaseOptions = {
+                'debuggerAddress':
+                ('localhost:%d' % utils.get_chrome_remote_debugging_port())
+        }
+        chromeOptions.update(chromeBaseOptions)
         capabilities = {'chromeOptions':chromeOptions}
         # Handle to chromedriver, for chrome automation.
         try:

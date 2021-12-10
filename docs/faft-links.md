@@ -7,23 +7,25 @@ firmware end-to-end tests written for ChromiumOS.
 
 FAFT tests were originally written for the remote test driver [Tauto]. There is
 a 2021 initiative to convert FAFT tests to another remote driver, [Tast]. That
-initiative is called [FAFT2Tast].
+initiative is called [FAFT2Tast]. All new tests should be written in [Tast].
 
 [Tauto]: https://chromium.googlesource.com/chromiumos/third_party/autotest/
 [Tast]: https://chromium.googlesource.com/chromiumos/platform/tast/
 [FAFT2Tast]: https://goto.google.com/faft2tast-overview
 
-## Tauto-related FAFT links
+## FAFT related links
 
 *Note:* Go links requires access to the Google interanet.
 
 Link name           | Go link              | Source location
 ------------------- | -------------------- | ---------------
 FAFT Links          | [go/faft-links]      | [docs/faft-links.md]
-FAFT Design Doc     | [go/faft-design-doc] | [docs/faft-design-doc.md]
-FAFT PD             | [go/faft-pd]         | [docs/faft-pd.md]
 FAFT Running manual | [go/faft-running]    | [docs/faft-how-to-run-doc.md]
-FAFT Code overview  | [go/faft-code]       | [docs/faft-code.md]
+FAFT PD             | [go/faft-pd]         | [docs/faft-pd.md]
+FAFT for bringup    | [go/faft-bringup]    | tast-tests/src/chromiumos/tast/remote/firmware/bringup.md
+Tast FAFT Codelab   | [go/tast-faft-codelab] | tast-tests/src/chromiumos/tast/remote/firmware/codelab/README.md
+FAFT Code overview (deprecated)  | [go/faft-code]       | [docs/faft-code.md]
+FAFT Design Doc    | [go/faft-design-doc] | [docs/faft-design-doc.md]
 
 [go/faft-links]: https://goto.google.com/faft-links
 [docs/faft-links.md]: faft-links.md
@@ -39,6 +41,9 @@ FAFT Code overview  | [go/faft-code]       | [docs/faft-code.md]
 
 [go/faft-code]: https://goto.google.com/faft-code
 [docs/faft-code.md]: faft-code.md
+
+[go/tast-faft-codelab]: https://chromium.googlesource.com/chromiumos/platform/tast-tests/+/HEAD/src/chromiumos/tast/remote/firmware/codelab/README.md
+[go/faft-bringup]: https://chromium.googlesource.com/chromiumos/platform/tast-tests/+/HEAD/src/chromiumos/tast/remote/firmware/bringup.md
 
 ## FAFT Users Chat
 

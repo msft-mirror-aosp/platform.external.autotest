@@ -23,4 +23,5 @@ installing/uninstalling autotest packages.
 # We need to record the state, so that tko paser can still parse it
 # as a test.
 job.record('START', None, NAME)
+job.record('GOOD', None, None, 'completed successfully')
 job.record('END GOOD', None, NAME)

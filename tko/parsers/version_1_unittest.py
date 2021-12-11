@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 from autotest_lib.tko import models
 import datetime, time, unittest, mock

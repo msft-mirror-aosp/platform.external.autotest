@@ -6,6 +6,8 @@ AUTHOR = "dbeckett"
 NAME = "infra_TLSFakeOmaha"
 TIME = "SHORT"
 TEST_TYPE = "server"
+PY_VERSION = 3
+
 DOC = """
 Test the TLS FakeOmaha API
 """

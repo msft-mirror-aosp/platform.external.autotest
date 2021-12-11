@@ -7,6 +7,7 @@ NAME = "infra_TLSExecDUTCommand.stress_fail"
 TIME = "SHORT"
 TEST_TYPE = "server"
 ATTRIBUTES = 'suite:ent-nightly'
+PY_VERSION = 3
 
 DOC = """
 Test the TLS ExecDUTCommand API

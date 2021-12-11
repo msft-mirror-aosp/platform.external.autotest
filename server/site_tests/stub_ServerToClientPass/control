@@ -9,6 +9,7 @@ TEST_CATEGORY = 'General'
 TEST_CLASS = 'stub'
 TEST_TYPE = 'server'
 ATTRIBUTES = 'suite:infra_qual'
+PY_VERSION = 3
 
 DOC = """
 Stub to verify a client test can be kicked off and passes from a server test.

@@ -170,6 +170,30 @@
       "deps": ["premium"]
     },
     {
+      "name": "gdocs-basic",
+      "tool": "tast",
+      "test_expr": "ui.GoogleDocsWebCUJ.basic",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "gdocs-premium",
+      "tool": "tast",
+      "test_expr": "ui.GoogleDocsWebCUJ.premium",
+      "attributes": ["premium"]
+    },
+    {
+      "name": "msoffice-basic",
+      "tool": "tast",
+      "test_expr": "ui.MicrosoftOfficeWebCUJ.basic",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "msoffice-premium",
+      "tool": "tast",
+      "test_expr": "ui.MicrosoftOfficeWebCUJ.premium",
+      "attributes": ["premium"]
+    },
+    {
       "name": "geekbench-public-android",
       "tool": "tast",
       "test_expr": "ui.GeekbenchPublicAndroidApp",
@@ -218,7 +242,11 @@
         {"test": "zoom-basic-class", "repeats": 1},
         {"test": "zoom-plus-large", "repeats": 1},
         {"test": "zoom-plus-class", "repeats": 1},
-        {"test": "zoom-premium-large", "repeats": 1}
+        {"test": "zoom-premium-large", "repeats": 1},
+        {"test": "gdocs-basic", "repeats": 1},
+        {"test": "gdocs-premium", "repeats": 1},
+        {"test": "msoffice-basic", "repeats": 1},
+        {"test": "msoffice-premium", "repeats": 1}
       ]
     },
     {

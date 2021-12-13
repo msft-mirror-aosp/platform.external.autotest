@@ -199,7 +199,7 @@ def _run_autoserv(command, pretend=False):
         # so that autoserv output can be displayed to the user
         # immediately.
         for message in iter(_autoserv_proc.stdout.readline, b''):
-            logging.info('autoserv| %s', message.rstrip().decode())
+            logging.info('autoserv| %s', message.rstrip().decode('utf-8'))
         _autoserv_proc.wait()
         returncode = _autoserv_proc.returncode
         _autoserv_proc = None

@@ -44,9 +44,17 @@ CREDENTIALS = {
 SHADOW_ROOT = '/home/.shadow'
 
 CRYPTOHOME_DEV_REGEX_ANY = r'.*'
+CRYPTOHOME_DEV_REGEX_REGULAR_USER_DMCRYPT_DEVICE = r'^/dev/mapper/.*$'
+CRYPTOHOME_DEV_REGEX_REGULAR_USER_LOOP_DEVICE = r'^/dev/(?!loop[0-9]+$)[^/]*$'
 CRYPTOHOME_DEV_REGEX_REGULAR_USER_SHADOW = r'^/home/\.shadow/.*/vault$'
-CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE = r'^/dev/(?!loop[0-9]+$)[^/]*$'
 CRYPTOHOME_DEV_REGEX_REGULAR_USER_EPHEMERAL = r'^ephemeralfs/.*$'
+
+
+# Cryptohome mounts are either backed by a dm-crypt or a loop device.
+CRYPTOHOME_DEV_REGEX_REGULAR_USER_DEVICE = r'(%s|%s)' % (
+        CRYPTOHOME_DEV_REGEX_REGULAR_USER_DMCRYPT_DEVICE,
+        CRYPTOHOME_DEV_REGEX_REGULAR_USER_LOOP_DEVICE)
+
 # Ecryptfs-based user home directory mounts the SHADOW encrypted directory,
 # while ext4-crypto based user home is a bind-mount to an encrypted directory
 # part of a ext4 filesystem that mounts the main disk device. Both can be

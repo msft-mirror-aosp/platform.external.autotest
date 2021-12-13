@@ -108,7 +108,7 @@ class Edid(object):
             data = reduce(operator.add,
                           [codecs.decode(s.strip(), 'hex') for s in open(filename).readlines()])
         else:
-            data = open(filename).read()
+            data = open(filename, 'rb').read()
         return cls(data, skip_verify)
 
 

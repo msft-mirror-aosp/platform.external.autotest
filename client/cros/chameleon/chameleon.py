@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 import atexit
 import six.moves.http_client
+import six
 import logging
 import os
 import socket
@@ -827,7 +828,12 @@ class ChameleonVideoInput(ChameleonPort):
 
         @return An Image object.
         """
-        return Image.fromstring(
+        if six.PY2:
+            return Image.fromstring(
+                    'RGB',
+                    self.get_resolution(),
+                    self.chameleond_proxy.DumpPixels(self.port_id).data)
+        return Image.frombytes(
                 'RGB',
                 self.get_resolution(),
                 self.chameleond_proxy.DumpPixels(self.port_id).data)

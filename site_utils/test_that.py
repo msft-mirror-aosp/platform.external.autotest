@@ -173,6 +173,12 @@ def _parse_arguments_internal(argv):
                         nargs='*',
                         help='List of tests to not use.',
                         default=[''])
+    parser.add_argument('--py_version',
+                        dest='py_version',
+                        help='Python version to use, passed '
+                        'to Autotest modules, defaults to 2.',
+                        default=None)
+
     return parser.parse_args(argv), remote_argv
 
 

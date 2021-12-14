@@ -136,7 +136,10 @@ CONFIG['BVT_PERBUILD'] = [
         'CtsMidiTestCases',
 ]
 
-CONFIG['NEEDS_POWER_CYCLE'] = []
+CONFIG['NEEDS_POWER_CYCLE'] = [
+        'CtsAppTestCases',
+        'CtsSensorTestCases',
+]
 
 CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
         'CtsSensorTestCases',

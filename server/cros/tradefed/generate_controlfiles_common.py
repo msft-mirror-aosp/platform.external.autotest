@@ -301,7 +301,7 @@ def get_doc(modules, abi, is_public):
 
 def servo_support_needed(modules, is_public=True):
     """Determines if servo support is needed for a module."""
-    return not is_public and all(module in CONFIG['NEEDS_POWER_CYCLE']
+    return not is_public and any(module in CONFIG['NEEDS_POWER_CYCLE']
                                  for module in modules)
 
 

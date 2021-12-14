@@ -73,6 +73,18 @@ class diffable_logdir_test(unittest.TestCase):
             f.write(text)
 
 
+    def get_dest_path(self, src_path):
+        """Get file path in dest dir from the one in src dir.
+
+        @param src_path: File path in src dir.
+
+        """
+        # Make sure src_path is a subpath of self.src_dir
+        self.assertEqual(os.path.commonprefix((src_path, self.src_dir)),
+                         self.src_dir)
+        rel_path = os.path.relpath(src_path, self.src_dir)
+        return os.path.join(self.dest_dir, rel_path)
+
     def assert_trees_equal(self, dir1, dir2, ignore=None):
         """Assert two directory trees contain the same files.
 
@@ -127,17 +139,16 @@ class diffable_logdir_test(unittest.TestCase):
         # Validate files in dest_dir.
         for file_name, file_path in zip(self.existing_files+self.new_files,
                                 self.existing_files_path+self.new_files_path):
-            file_path = file_path.replace('src', 'dest')
+            file_path = self.get_dest_path(file_path)
             with open(file_path, 'r') as f:
                 self.assertEqual(file_name, f.read())
 
         # Assert that FIFOs are not in the diff.
-        self.assertFalse(
-                os.path.exists(self.existing_fifo_path.replace('src', 'dest')),
-                msg='Existing FIFO present in diff sysinfo')
-        self.assertFalse(
-                os.path.exists(new_fifo_path.replace('src', 'dest')),
-                msg='New FIFO present in diff sysinfo')
+        self.assertFalse(os.path.exists(
+                self.get_dest_path(self.existing_fifo_path)),
+                         msg='Existing FIFO present in diff sysinfo')
+        self.assertFalse(os.path.exists(self.get_dest_path(new_fifo_path)),
+                         msg='New FIFO present in diff sysinfo')
 
         # With collect_all=True, full sysinfo should also be present.
         full_sysinfo_path = self.dest_dir + self.src_dir

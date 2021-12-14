@@ -10,6 +10,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-perbuild"
+PY_VERSION = 3
 DOC = """
 This tests a repeated update by enabling the repeated updates feature.
 It sends two updates with the same fingerprint value. Client side should reject

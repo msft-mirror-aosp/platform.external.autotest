@@ -30,12 +30,12 @@ _CTS_TIMEOUT_SECONDS = 3600
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/R/'
 _BUNDLE_MAP = {
-        (None, 'arm'): _PUBLIC_CTS + 'android-cts-11_r5-linux_x86-arm.zip',
-        (None, 'x86'): _PUBLIC_CTS + 'android-cts-11_r5-linux_x86-x86.zip',
+        (None, 'arm'): _PUBLIC_CTS + 'android-cts-11_r6-linux_x86-arm.zip',
+        (None, 'x86'): _PUBLIC_CTS + 'android-cts-11_r6-linux_x86-x86.zip',
         ('LATEST', 'arm'):
-        _INTERNAL_CTS + 'android-cts-11_r5-linux_x86-arm.zip',
+        _INTERNAL_CTS + 'android-cts-11_r6-linux_x86-arm.zip',
         ('LATEST', 'x86'):
-        _INTERNAL_CTS + 'android-cts-11_r5-linux_x86-x86.zip',
+        _INTERNAL_CTS + 'android-cts-11_r6-linux_x86-x86.zip',
         ('DEV', 'arm'):
         _INTERNAL_CTS + 'android-cts-7941842-linux_x86-arm.zip',
         ('DEV', 'x86'):

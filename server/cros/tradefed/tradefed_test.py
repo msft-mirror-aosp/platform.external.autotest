@@ -159,6 +159,11 @@ class TradefedTest(test.test):
             else:
                 logging.info('Non-lab environment: should be using JDK9+')
 
+        # TODO(kinaba): Remove the hack and fully enable the feature.
+        # For release branches (Rx-yyyyy.3.0 or above), always use the
+        # official build instead of the release build. See b/210369548
+        if uri == 'DEV' and self._get_release_branch_number() >= 3:
+            uri = 'LATEST'
         # Install the tradefed bundle.
         bundle_install_path = self._install_bundle(
                 self._get_bundle_url(uri, bundle))

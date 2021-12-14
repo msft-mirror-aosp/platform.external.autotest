@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2021 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -196,7 +197,7 @@ class IperfResult(object):
     def __repr__(self):
         fields = []
         fields += [
-                '%s=%0.2f' % item for item in vars(self).iteritems()
+                '%s=%0.2f' % item for item in list(vars(self).items())
                 if item[1] is not None and isinstance(item[1], numbers.Number)
         ]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(fields))

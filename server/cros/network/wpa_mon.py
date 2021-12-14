@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -21,14 +22,14 @@ class WpaMon(object):
     CTRL_EVENT_SCAN_RESULTS = 'CTRL-EVENT-SCAN-RESULTS'
     CTRL_EVENT_BSS_ADDED = 'CTRL-EVENT-BSS-ADDED'
 
-    ROAM_MATCH = ' cur_bssid=([\da-fA-F:]+) cur_freq=(\d+) ' \
+    ROAM_MATCH = str(r' cur_bssid=([\da-fA-F:]+) cur_freq=(\d+) ' \
                  'cur_level=([\d-]+) cur_est=(\d+) ' \
                  'sel_bssid=([\da-fA-F:]+) sel_freq=(\d+) ' \
-                 'sel_level=([\d-]+) sel_est=(\d+)'
-    DISCONNECT_MATCH = ' bssid=([\da-fA-F:]+) reason=(\d+)' \
-                       '(?: locally_generated=(1))?'
-    SCAN_RESULTS_MATCH = '()'
-    BSS_ADDED_MATCH = ' ([\d]+) ([\da-fA-F:]+)'
+                 'sel_level=([\d-]+) sel_est=(\d+)')
+    DISCONNECT_MATCH = str(r' bssid=([\da-fA-F:]+) reason=(\d+)' \
+                       '(?: locally_generated=(1))?')
+    SCAN_RESULTS_MATCH = str(r'()')
+    BSS_ADDED_MATCH = str(r' ([\d]+) ([\da-fA-F:]+)')
 
     Roam = namedtuple('Roam',
                       ['cur_bssid', 'cur_freq', 'cur_level', 'cur_est',
@@ -181,7 +182,7 @@ class WpaMon(object):
         for match in matches:
             obj = self.EVENT_MATCH_DICT[event].obj(*match)
             does_match = True
-            for attr, val in attrs.items():
+            for attr, val in list(attrs.items()):
                 if getattr(obj, attr) != val:
                     does_match = False
                     break

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -132,8 +133,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         if not uname_result.exit_status and uname_result.stdout.find(' ') < 0:
             kernel_arch = uname_result.stdout.strip()
         cpu_info = self.host.run('cat /proc/cpuinfo').stdout.splitlines()
-        cpu_count = len(filter(lambda x: x.lower().startswith('bogomips'),
-                               cpu_info))
+        cpu_count = len([x for x in cpu_info if x.lower().startswith('bogomips')])
         cpu_count_str = ''
         if cpu_count:
             cpu_count_str = 'x%d' % cpu_count
@@ -154,7 +154,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         result = self.host.run("iw dev %s get power_save" % self.wifi_if)
         output = result.stdout.rstrip()       # NB: chop \n
         # Output should be either "Power save: on" or "Power save: off".
-        find_re = re.compile('([^:]+):\s+(\w+)')
+        find_re = re.compile(r'([^:]+):\s+(\w+)')
         find_results = find_re.match(output)
         if not find_results:
             raise error.TestFail('Failed to find power_save parameter '
@@ -597,7 +597,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
             """
             is_requested_bss = lambda iw_bss: iw_bss.bss == bssid
             scan_results = self.iw_runner.scan(self.wifi_if)
-            return scan_results and filter(is_requested_bss, scan_results)
+            return scan_results and list(filter(is_requested_bss, scan_results))
         try:
             utils.poll_for_condition(
                 condition=dut_sees_bss,
@@ -1177,7 +1177,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
 
         lines = result.stdout.strip().split('\n')
         disconnect_reasons = []
-        disconnect_reason_regex = re.compile(' to (\D?\d+)')
+        disconnect_reason_regex = re.compile(r' to (\D?\d+)')
 
         found = False
         for line in reversed(lines):
@@ -1256,9 +1256,9 @@ class WiFiClient(site_linux_system.LinuxSystem):
         # where 1941 is an arbitrary PID number. By checking if the last
         # instance of this message contains the substring "not connected", we
         # can determine whether or not shill was connected on its last resume.
-        connection_status_log_regex_str = 'INFO:wifi\.cc.*OnAfterResume'
-        not_connected_substr = 'not connected'
-        connected_substr = 'connected'
+        connection_status_log_regex_str = str(r'INFO:wifi\.cc.*OnAfterResume')
+        not_connected_substr = str(r'not connected')
+        connected_substr = str(r'connected')
 
         cmd = ('grep -E %s /var/log/net.log | tail -1' %
                connection_status_log_regex_str)
@@ -1289,7 +1289,7 @@ class WiFiClient(site_linux_system.LinuxSystem):
         # wake on WiFi was throttled. This is an example of the error message:
         #     [...] [ERROR:wake_on_wifi.cc(1304)] OnDarkResume: Too many dark \
         #       resumes; disabling wake on WiFi temporarily
-        dark_resume_log_regex_str = 'ERROR:wake_on_wifi\.cc.*OnDarkResume:.*'
+        dark_resume_log_regex_str = str(r'ERROR:wake_on_wifi\.cc.*OnDarkResume:.*')
         throttled_msg_substr = ('Too many dark resumes; disabling wake on '
                                    'WiFi temporarily')
 

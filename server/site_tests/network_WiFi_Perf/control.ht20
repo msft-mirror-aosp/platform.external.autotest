@@ -9,6 +9,7 @@ TIME = 'SHORT'
 MAX_RESULT_SIZE_KB = 512000
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
+PY_VERSION = 3
 
 DOC = """
 This test uses netperf to measure and verify the maximal receiving and

@@ -10,6 +10,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-p2p"
+PY_VERSION = 3
 DOC = """
 This tests autoupdate between two devices via peer to peer is disabled when
 deadline has expired.

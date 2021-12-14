@@ -16,6 +16,7 @@ TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-p2p"
 JOB_RETRIES = 2
+PY_VERSION = 3
 
 DOC = """
 End-to-end test of the peer-to-peer (p2p) file sharing system.

@@ -10,7 +10,7 @@ NAME = 'cellular_ChromeEndToEnd.ethernetPreferred_att'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_endtoend'
 DEPENDENCIES = 'servo_state:WORKING, carrier:att'
-
+PY_VERSION = 3
 DOC = """
 Tests that the device prefers ethernet over cellular network.
 """

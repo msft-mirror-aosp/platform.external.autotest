@@ -8,6 +8,7 @@ ATTRIBUTES = "suite:cellular_callbox"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_TYPE = "server"
+PY_VERSION = 3
 DOC = """
 This test asserts the stability of cellular data on DUTs. This does so by
 connecting to a CMW500 Callbox that is connected to the DUT, asserts that

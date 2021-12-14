@@ -10,7 +10,7 @@ NAME = 'cellular_ChromeEndToEnd.enableDisableCellular_tmobile'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_endtoend'
 DEPENDENCIES = 'servo_state:WORKING, carrier:tmobile'
-
+PY_VERSION = 3
 DOC = """
 Tests that cellular can be enabled or disabled on the DUI.
 """

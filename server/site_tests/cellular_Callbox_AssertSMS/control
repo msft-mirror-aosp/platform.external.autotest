@@ -8,6 +8,7 @@ ATTRIBUTES = "suite:cellular_callbox"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_TYPE = "server"
+PY_VERSION = 3
 DOC = """
 This test asserts the functionality of SMS messages on Chromebooks. It does so
 by connecting to a CMW500 Callbox, setting the SMS message to a unique string,

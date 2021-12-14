@@ -143,6 +143,7 @@ class tast(test.test):
     _SSP_REMOTE_TEST_RUNNER_PATH = os.path.join(_SSP_ROOT, 'remote_test_runner')
     _SSP_DEFAULT_VARS_DIR_PATH = os.path.join(_SSP_ROOT, 'vars')
 
+    _F20_CONTAINER_BREADCRUMB = '/usr/local/f20container'
     # Prefix added to Tast test names when writing their results to TKO
     # status.log files.
     _TEST_NAME_PREFIX = 'tast.'
@@ -234,8 +235,18 @@ class tast(test.test):
         @param use_camera_box: Bring the IP address of chart device in CameraBox
             to tast tests.
 
+        When the F20 breadcrumb is detected, it is assumed we are running in
+            the F20 container, meaning we will force disable SSP (though the
+            SSP flag should be false in this case). The F20 container is fully
+            build versioned and matches the chroot paths, so we do not want to
+            take the SSP logic.
+
         @raises error.TestFail if the Tast installation couldn't be found.
         """
+        f20_container = False
+        if os.path.exists(self._F20_CONTAINER_BREADCRUMB):
+            ssp = False
+            f20_container = True
         if ssp is None:
             ssp = os.path.exists(self._SSP_TAST_PATH)
         if build is None:
@@ -263,6 +274,7 @@ class tast(test.test):
         self._vars_gs_path = vars_gs_path
         self._use_camera_box = use_camera_box
         self._retries = retries
+        self._f20_container = f20_container
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -640,7 +652,11 @@ class tast(test.test):
             '-totalshards=%s' % self._totalshards,
             '-shardindex=%s' % self._shardindex,
         ]
-        if self._build:
+        if self._f20_container:
+            cmd.extend(['-build=false'])
+            if self._run_private_tests:
+                cmd.append('-downloadprivatebundles=true')
+        elif self._build:
             cmd.extend([
                 '-build=true',
                 '-buildbundle=%s' % self._build_bundle,

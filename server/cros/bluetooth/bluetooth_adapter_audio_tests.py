@@ -318,51 +318,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                  desc=desc)
 
 
-    def initialize_hfp(self, device, test_profile, test_data,
-                       recording_device, bluez_function):
-        """Initial set up for hfp tests.
-
-        Setup that is required for all hfp tests where
-        dut is either source or sink. Selects input device, starts recording,
-        and lastly it waits for pulseaudio bluez source/sink.
-
-        @param device: the bluetooth peer device
-        @param test_profile: the test profile used, HFP_WBS or HFP_NBS
-        @param test_data: a dictionary about the audio test data defined in
-                client/cros/bluetooth/bluetooth_audio_test_data.py
-        @param recording_device: which device recorded the audio, possible
-                values are 'recorded_by_dut' or 'recorded_by_peer'
-        @param bluez_function: the appropriate bluez hfp function either
-                _get_pulseaudio_bluez_source_hfp or
-                _get_pulseaudio_bluez_sink_hfp depending on the role of the dut
-        """
-        device_type = 'DUT' if recording_device == 'recorded_by_dut' else 'Peer'
-        dut_role = 'sink' if recording_device == 'recorded_by_dut' else 'source'
-
-        # Select audio input device.
-        desc = 'waiting for cras to select audio input device'
-        logging.debug(desc)
-        self._poll_for_condition(
-                lambda: self.bluetooth_facade.select_input_device(device.name),
-                desc=desc)
-
-        # Select audio output node so that we do not rely on chrome to do it.
-        self.select_audio_output_node()
-
-        # Enable HFP profile.
-        logging.debug('Start recording audio on {}'.format(device_type))
-        if not self.bluetooth_facade.start_capturing_audio_subprocess(
-                test_data, recording_device):
-            desc = '{} failed to start capturing audio.'.format(device_type)
-            raise error.TestError(desc)
-
-        # Wait for pulseaudio bluez hfp source/sink
-        desc = 'waiting for pulseaudio bluez hfp {}'.format(dut_role)
-        logging.debug(desc)
-        self._poll_for_condition(lambda: bluez_function(device, test_profile),
-                                 desc=desc)
-
-
     def hfp_record_on_dut(self, device, test_profile, test_data):
         """Play audio from test_data dictionary from peer device to dut.
 
@@ -998,10 +953,30 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             filename = os.path.split(test_file['file'])[1]
             logging.debug('Testing file: {}'.format(filename))
 
-            # Set up hfp test to record on peer
-            self.initialize_hfp(device, test_profile, test_file,
-                                'recorded_by_peer',
-                                self._get_pulseaudio_bluez_source_hfp)
+            # Select audio input device.
+            desc = 'waiting for cras to select audio input device'
+            logging.debug(desc)
+            self._poll_for_condition(
+                    lambda: self.bluetooth_facade.select_input_device(
+                            device.name), desc=desc)
+
+            # Select audio output node so that we do not rely on chrome to do it.
+            self.select_audio_output_node()
+
+            # Enable HFP profile.
+            logging.debug('Start recording audio on {}'.format('Peer'))
+            if not self.bluetooth_facade.start_capturing_audio_subprocess(
+                    test_file, 'recorded_by_peer'):
+                desc = '{} failed to start capturing audio.'.format('Peer')
+                raise error.TestError(desc)
+
+            # Wait for pulseaudio bluez hfp source/sink
+            desc = 'waiting for pulseaudio bluez hfp {}'.format('source')
+            logging.debug(desc)
+            self._poll_for_condition(
+                    lambda: self._get_pulseaudio_bluez_source_hfp(
+                            device, test_profile), desc=desc)
+
             logging.debug('Initialized HFP')
 
             if not self.hfp_record_on_peer(device, test_profile, test_file):
@@ -1065,10 +1040,30 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             filename = os.path.split(test_file['file'])[1]
             logging.debug('Testing file: {}'.format(filename))
 
-            # Set up hfp test to record on dut
-            self.initialize_hfp(device, test_profile, test_file,
-                                'recorded_by_dut',
-                                self._get_pulseaudio_bluez_sink_hfp)
+            # Select audio input device.
+            desc = 'waiting for cras to select audio input device'
+            logging.debug(desc)
+            self._poll_for_condition(
+                    lambda: self.bluetooth_facade.select_input_device(
+                            device.name), desc=desc)
+
+            # Select audio output node so that we do not rely on chrome to do it.
+            self.select_audio_output_node()
+
+            # Enable HFP profile.
+            logging.debug('Start recording audio on {}'.format('DUT'))
+            if not self.bluetooth_facade.start_capturing_audio_subprocess(
+                    test_file, 'recorded_by_dut'):
+                desc = '{} failed to start capturing audio.'.format('DUT')
+                raise error.TestError(desc)
+
+            # Wait for pulseaudio bluez hfp source/sink
+            desc = 'waiting for pulseaudio bluez hfp {}'.format('sink')
+            logging.debug(desc)
+            self._poll_for_condition(
+                    lambda: self._get_pulseaudio_bluez_sink_hfp(
+                            device, test_profile), desc=desc)
+
             logging.debug('Initialized HFP')
             # Record audio on dut played from pi, returns true if anything
             # was successfully recorded, false otherwise
@@ -1128,9 +1123,29 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         hfp_test_data = audio_test_data[test_profile]
 
-        self.initialize_hfp(device, test_profile, hfp_test_data,
-                            'recorded_by_peer',
-                            self._get_pulseaudio_bluez_source_hfp)
+        # Select audio input device.
+        desc = 'waiting for cras to select audio input device'
+        logging.debug(desc)
+        self._poll_for_condition(
+                lambda: self.bluetooth_facade.select_input_device(device.name),
+                desc=desc)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.select_audio_output_node()
+
+        # Enable HFP profile.
+        logging.debug('Start recording audio on {}'.format('Peer'))
+        if not self.bluetooth_facade.start_capturing_audio_subprocess(
+                hfp_test_data, 'recorded_by_peer'):
+            desc = '{} failed to start capturing audio.'.format('Peer')
+            raise error.TestError(desc)
+
+        # Wait for pulseaudio bluez hfp source/sink
+        desc = 'waiting for pulseaudio bluez hfp {}'.format('source')
+        logging.debug(desc)
+        self._poll_for_condition(
+                lambda: self._get_pulseaudio_bluez_source_hfp(
+                        device, test_profile), desc=desc)
 
         if not self.hfp_record_on_peer(device, test_profile, hfp_test_data):
             return False
@@ -1154,10 +1169,29 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         hfp_test_data = audio_test_data[test_profile]
 
-        # Set up hfp test to record on dut
-        self.initialize_hfp(device, test_profile, hfp_test_data,
-                            'recorded_by_dut',
-                            self._get_pulseaudio_bluez_sink_hfp)
+        # Select audio input device.
+        desc = 'waiting for cras to select audio input device'
+        logging.debug(desc)
+        self._poll_for_condition(
+                lambda: self.bluetooth_facade.select_input_device(device.name),
+                desc=desc)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.select_audio_output_node()
+
+        # Enable HFP profile.
+        logging.debug('Start recording audio on {}'.format('DUT'))
+        if not self.bluetooth_facade.start_capturing_audio_subprocess(
+                hfp_test_data, 'recorded_by_dut'):
+            desc = '{} failed to start capturing audio.'.format('DUT')
+            raise error.TestError(desc)
+
+        # Wait for pulseaudio bluez hfp source/sink
+        desc = 'waiting for pulseaudio bluez hfp {}'.format('sink')
+        logging.debug(desc)
+        self._poll_for_condition(
+                lambda: self._get_pulseaudio_bluez_sink_hfp(
+                        device, test_profile), desc=desc)
 
         # Record audio on dut play from pi, returns true if anything recorded
         if not self.hfp_record_on_dut(device, test_profile, hfp_test_data):

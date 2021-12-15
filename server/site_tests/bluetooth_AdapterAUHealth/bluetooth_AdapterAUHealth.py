@@ -196,7 +196,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_wbs_dut_as_source_test(self):
         """HFP WBS test with sinewave streaming from dut to peer."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.test_hfp_dut_as_source, HFP_WBS)
+        self.au_hfp_run_method(device, self.hfp_dut_as_source, HFP_WBS)
 
 
     @test_wrapper('HFP WBS sinewave test with dut as sink',
@@ -204,7 +204,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_wbs_dut_as_sink_test(self):
         """HFP WBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.test_hfp_dut_as_sink, HFP_WBS)
+        self.au_hfp_run_method(device, self.hfp_dut_as_sink, HFP_WBS)
 
 
     @test_wrapper('HFP NBS sinewave test with dut as source',
@@ -212,7 +212,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_nbs_dut_as_source_test(self):
         """HFP NBS test with sinewave streaming from dut to peer."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.test_hfp_dut_as_source, HFP_NBS)
+        self.au_hfp_run_method(device, self.hfp_dut_as_source, HFP_NBS)
 
 
     @test_wrapper('HFP NBS sinewave test with dut as sink',
@@ -220,7 +220,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_nbs_dut_as_sink_test(self):
         """HFP NBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.test_hfp_dut_as_sink, HFP_NBS)
+        self.au_hfp_run_method(device, self.hfp_dut_as_sink, HFP_NBS)
 
 
     @test_wrapper('HFP WBS VISQOL test with dut as sink',
@@ -228,7 +228,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_wbs_dut_as_sink_visqol_test(self):
         """HFP WBS VISQOL test with audio streaming from peer to dut"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.test_hfp_dut_as_sink_visqol_score,
+        self.au_hfp_run_method(device, self.hfp_dut_as_sink_visqol_score,
                                HFP_WBS)
 
 
@@ -237,7 +237,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_wbs_dut_as_source_visqol_test(self):
         """HFP WBS VISQOL test with audio streaming from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.test_hfp_dut_as_source_visqol_score,
+        self.au_hfp_run_method(device, self.hfp_dut_as_source_visqol_score,
                                HFP_WBS)
 
     @test_wrapper('HFP NBS VISQOL test with dut as sink',
@@ -245,7 +245,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_nbs_dut_as_sink_visqol_test(self):
         """HFP NBS VISQOL test with audio streaming from peer to dut"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.test_hfp_dut_as_sink_visqol_score,
+        self.au_hfp_run_method(device, self.hfp_dut_as_sink_visqol_score,
                                HFP_NBS)
 
 
@@ -254,7 +254,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_nbs_dut_as_source_visqol_test(self):
         """HFP NBS VISQOL test with audio streaming from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.test_hfp_dut_as_source_visqol_score,
+        self.au_hfp_run_method(device, self.hfp_dut_as_source_visqol_score,
                                HFP_NBS)
 
 

@@ -296,28 +296,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.UnexportMediaPlayer()
 
 
-    def select_audio_output_node(self):
-        """Select the audio output node through cras.
-
-        @raises: error.TestError if failed.
-        """
-        def bluetooth_type_selected(node_type):
-            """Check if the bluetooth node type is selected."""
-            selected = self.bluetooth_facade.get_selected_output_device_type()
-            logging.debug('active output node type: %s, expected %s',
-                          selected, node_type)
-            return selected == node_type
-
-        node_type = self.CRAS_BLUETOOTH_OUTPUT_NODE_TYPE
-        if not self.bluetooth_facade.select_output_node(node_type):
-            raise error.TestError('select_output_node failed')
-
-        desc='waiting for %s as active cras audio output node type' % node_type
-        logging.debug(desc)
-        self._poll_for_condition(lambda: bluetooth_type_selected(node_type),
-                                 desc=desc)
-
-
     def parse_visqol_output(self, stdout, stderr):
         """
         Parse stdout and stderr string from VISQOL output and parse into
@@ -884,16 +862,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
 
-    @test_retry_and_log(False)
-    def test_hfp_dut_as_source_visqol_score(self, device, test_profile):
-        """Test Case: hfp test files streaming from peer device to dut
+    def hfp_dut_as_source_visqol_score(self, device, test_profile):
+        """Test Case: HFP test files streaming from peer device to the DUT.
 
-        @param device: the bluetooth peer device
-        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
-
-        @returns: True if the all the test files score at or above their
-                  source_passing_score value as defined in
-                  bluetooth_audio_test_data.py
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
         """
         # list of test wav files
         hfp_test_data = audio_test_data[test_profile]
@@ -902,126 +875,51 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         get_visqol_binary()
         get_audio_test_data()
 
-        # Download test data to DUT
-        self.host.send_file(AUDIO_DATA_TARBALL_PATH, AUDIO_DATA_TARBALL_PATH)
-        if not self.bluetooth_facade.unzip_audio_test_data(
-                AUDIO_DATA_TARBALL_PATH, DATA_DIR):
-            logging.error('Audio data directory not found in DUT')
-            raise error.TestError('Failed to unzip audio test data to DUT')
-
-        # Result of visqol test on all files
-        visqol_results = dict()
+        # Download test data to the DUT.
+        self.test_send_audio_to_dut_and_unzip()
 
         for test_file in test_files:
             filename = os.path.split(test_file['file'])[1]
             logging.debug('Testing file: {}'.format(filename))
 
-            # Select audio input device.
-            desc = 'waiting for cras to select audio input device'
-            logging.debug(desc)
-            self._poll_for_condition(
-                    lambda: self.bluetooth_facade.select_input_device(
-                            device.name), desc=desc)
-
-            # Select audio output node so that we do not rely on chrome to do it.
-            self.select_audio_output_node()
+            self.test_select_audio_input_device(device.name)
+            self.test_select_audio_output_node_bluetooth()
 
             # Enable HFP profile.
-            logging.debug('Start recording audio on {}'.format('Peer'))
-            if not self.bluetooth_facade.start_capturing_audio_subprocess(
-                    test_file, 'recorded_by_peer'):
-                desc = '{} failed to start capturing audio.'.format('Peer')
-                raise error.TestError(desc)
+            self.test_dut_to_start_capturing_audio_subprocess(
+                    test_file, 'recorded_by_peer')
 
             # Wait for pulseaudio bluez hfp source/sink
-            desc = 'waiting for pulseaudio bluez hfp {}'.format('source')
-            logging.debug(desc)
-            self._poll_for_condition(
-                    lambda: self._get_pulseaudio_bluez_source_hfp(
-                            device, test_profile), desc=desc)
+            self.test_hfp_connected(self._get_pulseaudio_bluez_source_hfp,
+                                    device, test_profile)
 
-            logging.debug('Initialized HFP')
-
-            logging.debug('Start recording audio on Pi')
-            # Start recording audio on the peer Bluetooth audio device.
-            if not device.StartRecordingAudioSubprocess(test_profile, test_file):
-                raise error.TestError(
-                        'Failed to record on the peer Bluetooth audio device.')
+            self.test_device_to_start_recording_audio_subprocess(
+                    device, test_profile, test_file)
 
             # Play audio on the DUT in a non-blocked way.
             # If there are issues, cras_test_client playing back might be blocked
             # forever. We would like to avoid the testing procedure from that.
-            logging.debug('Start playing audio')
-            if not self.bluetooth_facade.start_playing_audio_subprocess(test_file):
-                raise error.TestError('DUT failed to play audio.')
-
+            self.test_dut_to_start_playing_audio_subprocess(test_file)
             time.sleep(test_file['duration'])
-
-            logging.debug('Stop recording audio on Pi')
-            # Stop recording audio on the peer Bluetooth audio device.
-            if not device.StopRecordingingAudioSubprocess():
-                msg = 'Failed to stop recording on the peer Bluetooth audio device'
-                logging.error(msg)
+            self.test_dut_to_stop_playing_audio_subprocess()
+            self.test_device_to_stop_recording_audio_subprocess(device)
 
             # Disable HFP profile.
-            logging.debug('Stop recording audio on DUT')
-            if not self.bluetooth_facade.stop_capturing_audio_subprocess():
-                raise error.TestError('DUT failed to stop capturing audio.')
-
-            # Stop playing audio on DUT.
-            logging.debug('Stop playing audio on DUT')
-            if not self.bluetooth_facade.stop_playing_audio_subprocess():
-                raise error.TestError('DUT failed to stop playing audio.')
+            self.test_dut_to_stop_capturing_audio_subprocess()
 
             # Copy the recorded audio file to the DUT for spectrum analysis.
-            logging.debug('Scp to DUT')
             recorded_file = test_file['recorded_by_peer']
             device.ScpToDut(recorded_file, recorded_file, self.host.ip)
 
-            # Check if the audio frames in the recorded file are legitimate.
-            if not self._check_audio_frames_legitimacy(test_file,
-                                                       'recorded_by_peer'):
-                return False
-
-            logging.debug('Recorded {} successfully'.format(filename))
-
-            ref_file, deg_file = self.format_recorded_file(test_file,
-                                                           test_profile,
-                                                           'recorded_by_peer')
-            if not ref_file or not deg_file:
-                desc = 'Failed to get ref and deg file: ref {}, deg {}'.format(
-                        ref_file, deg_file)
-                raise error.TestError(desc)
-
-            score = self.get_visqol_score(ref_file, deg_file,
-                                          speech_mode=test_file['speech_mode'])
-
-            logging.info('{} scored {}, min passing score: {}'.format(
-                    filename, score, test_file['source_passing_score']))
-            passed = score >= test_file['source_passing_score']
-            visqol_results[filename] = passed
-
-            # Track visqol performance
-            test_desc = '{}_{}_{}'.format(test_profile, 'source',
-                                          test_file['reporting_type'])
-            self.write_perf_keyval({test_desc: score})
-
-            if not passed:
-                logging.warning('Failed: {}'.format(filename))
-
-        return all(visqol_results.values())
+            self.test_get_visqol_score(test_file, test_profile,
+                                       'recorded_by_peer')
 
 
-    @test_retry_and_log(False)
-    def test_hfp_dut_as_sink_visqol_score(self, device, test_profile):
-        """Test Case: hfp test files streaming from peer device to dut
+    def hfp_dut_as_sink_visqol_score(self, device, test_profile):
+        """Test Case: HFP test files streaming from peer device to the DUT.
 
-        @param device: the bluetooth peer device
-        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
-
-        @returns: True if the all the test files score at or above their
-                  sink_passing_score value as defined in
-                  bluetooth_audio_test_data.py
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
         """
         # list of test wav files
         hfp_test_data = audio_test_data[test_profile]
@@ -1029,100 +927,38 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         get_visqol_binary()
         get_audio_test_data()
-        self.host.send_file(AUDIO_DATA_TARBALL_PATH, AUDIO_DATA_TARBALL_PATH)
-        if not self.bluetooth_facade.unzip_audio_test_data(
-                AUDIO_DATA_TARBALL_PATH, DATA_DIR):
-            logging.error('Audio data directory not found in DUT')
-            raise error.TestError('Failed to unzip audio test data to DUT')
 
-        # Result of visqol test on all files
-        visqol_results = dict()
+        # Download test data to the DUT.
+        self.test_send_audio_to_dut_and_unzip()
 
         for test_file in test_files:
             filename = os.path.split(test_file['file'])[1]
             logging.debug('Testing file: {}'.format(filename))
 
-            # Select audio input device.
-            desc = 'waiting for cras to select audio input device'
-            logging.debug(desc)
-            self._poll_for_condition(
-                    lambda: self.bluetooth_facade.select_input_device(
-                            device.name), desc=desc)
-
-            # Select audio output node so that we do not rely on chrome to do it.
-            self.select_audio_output_node()
+            self.test_select_audio_input_device(device.name)
+            self.test_select_audio_output_node_bluetooth()
 
             # Enable HFP profile.
-            logging.debug('Start recording audio on {}'.format('DUT'))
-            if not self.bluetooth_facade.start_capturing_audio_subprocess(
-                    test_file, 'recorded_by_dut'):
-                desc = '{} failed to start capturing audio.'.format('DUT')
-                raise error.TestError(desc)
+            self.test_dut_to_start_capturing_audio_subprocess(
+                    test_file, 'recorded_by_dut')
 
-            # Wait for pulseaudio bluez hfp source/sink
-            desc = 'waiting for pulseaudio bluez hfp {}'.format('sink')
-            logging.debug(desc)
-            self._poll_for_condition(
-                    lambda: self._get_pulseaudio_bluez_sink_hfp(
-                            device, test_profile), desc=desc)
+            # Wait for pulseaudio bluez hfp source/sink.
+            self.test_hfp_connected(self._get_pulseaudio_bluez_sink_hfp,
+                                    device, test_profile)
 
-            logging.debug('Initialized HFP')
+            self.test_select_audio_input_device(device.name)
 
-            # Select audio input device.
-            logging.debug('Select input device')
-            if not self.bluetooth_facade.select_input_device(device.name):
-                raise error.TestError('DUT failed to select audio input device.')
-
-            # Start playing audio on chameleon.
-            logging.debug('Start playing audio on Pi')
-            if not device.StartPlayingAudioSubprocess(test_profile, hfp_test_data):
-                err = 'Failed to start playing audio file on the peer device'
-                raise error.TestError(err)
-
-            time.sleep(hfp_test_data['duration'])
-
-            # Stop playing audio on chameleon.
-            logging.debug('Stop playing audio on Pi')
-            if not device.StopPlayingAudioSubprocess():
-                err = 'Failed to stop playing audio on the peer device'
-                raise error.TestError(err)
+            self.test_device_to_start_playing_audio_subprocess(
+                    device, test_profile, test_file)
+            time.sleep(test_file['duration'])
+            self.test_device_to_stop_playing_audio_subprocess(device)
 
             # Disable HFP profile.
-            logging.debug('Stop recording audio on DUT')
-            if not self.bluetooth_facade.stop_capturing_audio_subprocess():
-                raise error.TestError('DUT failed to stop capturing audio.')
-
-            # Check if the audio frames in the recorded file are legitimate.
-            if not self._check_audio_frames_legitimacy(hfp_test_data,
-                                                    'recorded_by_dut'):
-                return False
+            self.test_dut_to_stop_capturing_audio_subprocess()
             logging.debug('Recorded {} successfully'.format(filename))
 
-            ref_file, deg_file = self.format_recorded_file(test_file,
-                                                           test_profile,
-                                                           'recorded_by_dut')
-            if not ref_file or not deg_file:
-                desc = 'Failed to get ref and deg file: ref {}, deg {}'.format(
-                        ref_file, deg_file)
-                raise error.TestError(desc)
-
-            score = self.get_visqol_score(ref_file, deg_file,
-                                          speech_mode=test_file['speech_mode'])
-
-            logging.info('{} scored {}, min passing score: {}'.format(
-                    filename, score, test_file['sink_passing_score']))
-            passed = score >= test_file['sink_passing_score']
-            visqol_results[filename] = passed
-
-            # Track visqol performance
-            test_desc = '{}_{}_{}'.format(test_profile, 'sink',
-                                          test_file['reporting_type'])
-            self.write_perf_keyval({test_desc: score})
-
-            if not passed:
-                logging.warning('Failed: {}'.format(filename))
-
-        return all(visqol_results.values())
+            self.test_get_visqol_score(test_file, test_profile,
+                                       'recorded_by_dut')
 
     @test_retry_and_log(False)
     def test_device_a2dp_connected(self, device, timeout=15):
@@ -1231,161 +1067,68 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
 
-    @test_retry_and_log(False)
-    def test_hfp_dut_as_source(self, device, test_profile):
-        """Test Case: hfp sinewave streaming from dut to peer device
+    def hfp_dut_as_source(self, device, test_profile):
+        """Test Case: HFP sinewave streaming from the DUT to peer device.
 
-        @param device: the bluetooth peer device
-        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
-
-        @returns: True if the recorded primary frequency is within the
-                  tolerance of the playback sine wave frequency.
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
         """
         hfp_test_data = audio_test_data[test_profile]
 
-        # Select audio input device.
-        desc = 'waiting for cras to select audio input device'
-        logging.debug(desc)
-        self._poll_for_condition(
-                lambda: self.bluetooth_facade.select_input_device(device.name),
-                desc=desc)
-
-        # Select audio output node so that we do not rely on chrome to do it.
-        self.select_audio_output_node()
+        self.test_select_audio_input_device(device.name)
+        self.test_select_audio_output_node_bluetooth()
 
         # Enable HFP profile.
-        logging.debug('Start recording audio on {}'.format('Peer'))
-        if not self.bluetooth_facade.start_capturing_audio_subprocess(
-                hfp_test_data, 'recorded_by_peer'):
-            desc = '{} failed to start capturing audio.'.format('Peer')
-            raise error.TestError(desc)
+        self.test_dut_to_start_capturing_audio_subprocess(
+                hfp_test_data, 'recorded_by_peer')
 
         # Wait for pulseaudio bluez hfp source/sink
-        desc = 'waiting for pulseaudio bluez hfp {}'.format('source')
-        logging.debug(desc)
-        self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_source_hfp(
-                        device, test_profile), desc=desc)
+        self.test_hfp_connected(self._get_pulseaudio_bluez_source_hfp, device,
+                                test_profile)
 
-        logging.debug('Start recording audio on Pi')
-        # Start recording audio on the peer Bluetooth audio device.
-        if not device.StartRecordingAudioSubprocess(test_profile,
-                                                    hfp_test_data):
-            raise error.TestError(
-                    'Failed to record on the peer Bluetooth audio device.')
-
-        # Play audio on the DUT in a non-blocked way.
-        # If there are issues, cras_test_client playing back might be blocked
-        # forever. We would like to avoid the testing procedure from that.
-        logging.debug('Start playing audio')
-        if not self.bluetooth_facade.start_playing_audio_subprocess(
-                hfp_test_data):
-            raise error.TestError('DUT failed to play audio.')
-
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, hfp_test_data)
+        self.test_dut_to_start_playing_audio_subprocess(hfp_test_data)
         time.sleep(hfp_test_data['duration'])
-
-        logging.debug('Stop recording audio on Pi')
-        # Stop recording audio on the peer Bluetooth audio device.
-        if not device.StopRecordingingAudioSubprocess():
-            msg = 'Failed to stop recording on the peer Bluetooth audio device'
-            logging.error(msg)
+        self.test_dut_to_stop_playing_audio_subprocess()
+        self.test_device_to_stop_recording_audio_subprocess(device)
+        self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                   'recorded_by_peer')
 
         # Disable HFP profile.
-        logging.debug('Stop recording audio on DUT')
-        if not self.bluetooth_facade.stop_capturing_audio_subprocess():
-            raise error.TestError('DUT failed to stop capturing audio.')
-
-        # Stop playing audio on DUT.
-        logging.debug('Stop playing audio on DUT')
-        if not self.bluetooth_facade.stop_playing_audio_subprocess():
-            raise error.TestError('DUT failed to stop playing audio.')
-
-        # Copy the recorded audio file to the DUT for spectrum analysis.
-        logging.debug('Scp to DUT')
-        recorded_file = hfp_test_data['recorded_by_peer']
-        device.ScpToDut(recorded_file, recorded_file, self.host.ip)
-
-        # Check if the audio frames in the recorded file are legitimate.
-        if not self._check_audio_frames_legitimacy(hfp_test_data,
-                                                    'recorded_by_peer'):
-            return False
-
-        # Check if the primary frequencies of recorded file meet expectation.
-        check_freq_result = self._check_primary_frequencies(
-                test_profile, hfp_test_data, 'recorded_by_peer')
-        return check_freq_result
+        self.test_dut_to_stop_capturing_audio_subprocess()
 
 
-    @test_retry_and_log(False)
-    def test_hfp_dut_as_sink(self, device, test_profile):
-        """Test Case: hfp sinewave streaming from peer device to dut
+    def hfp_dut_as_sink(self, device, test_profile):
+        """Test Case: HFP sinewave streaming from peer device to the DUT.
 
-        @param device: the bluetooth peer device
-        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
-
-        @returns: True if the recorded primary frequency is within the
-                  tolerance of the playback sine wave frequency.
-
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
         """
         hfp_test_data = audio_test_data[test_profile]
 
-        # Select audio input device.
-        desc = 'waiting for cras to select audio input device'
-        logging.debug(desc)
-        self._poll_for_condition(
-                lambda: self.bluetooth_facade.select_input_device(device.name),
-                desc=desc)
-
-        # Select audio output node so that we do not rely on chrome to do it.
-        self.select_audio_output_node()
+        self.test_select_audio_input_device(device.name)
+        self.test_select_audio_output_node_bluetooth()
 
         # Enable HFP profile.
-        logging.debug('Start recording audio on {}'.format('DUT'))
-        if not self.bluetooth_facade.start_capturing_audio_subprocess(
-                hfp_test_data, 'recorded_by_dut'):
-            desc = '{} failed to start capturing audio.'.format('DUT')
-            raise error.TestError(desc)
+        self.test_dut_to_start_capturing_audio_subprocess(
+                hfp_test_data, 'recorded_by_dut')
 
         # Wait for pulseaudio bluez hfp source/sink
-        desc = 'waiting for pulseaudio bluez hfp {}'.format('sink')
-        logging.debug(desc)
-        self._poll_for_condition(
-                lambda: self._get_pulseaudio_bluez_sink_hfp(
-                        device, test_profile), desc=desc)
+        self.test_hfp_connected(self._get_pulseaudio_bluez_sink_hfp, device,
+                                test_profile)
 
-        # Select audio input device.
-        logging.debug('Select input device')
-        if not self.bluetooth_facade.select_input_device(device.name):
-            raise error.TestError('DUT failed to select audio input device.')
+        self.test_select_audio_input_device(device.name)
 
-        # Start playing audio on chameleon.
-        logging.debug('Start playing audio on Pi')
-        if not device.StartPlayingAudioSubprocess(test_profile, hfp_test_data):
-            err = 'Failed to start playing audio file on the peer device'
-            raise error.TestError(err)
-
+        self.test_device_to_start_playing_audio_subprocess(
+                device, test_profile, hfp_test_data)
         time.sleep(hfp_test_data['duration'])
-
-        # Stop playing audio on chameleon.
-        logging.debug('Stop playing audio on Pi')
-        if not device.StopPlayingAudioSubprocess():
-            err = 'Failed to stop playing audio on the peer device'
-            raise error.TestError(err)
+        self.test_device_to_stop_playing_audio_subprocess(device)
 
         # Disable HFP profile.
-        logging.debug('Stop recording audio on DUT')
-        if not self.bluetooth_facade.stop_capturing_audio_subprocess():
-            raise error.TestError('DUT failed to stop capturing audio.')
-
-        # Check if the audio frames in the recorded file are legitimate.
-        if not self._check_audio_frames_legitimacy(hfp_test_data,
-                                                   'recorded_by_dut'):
-            return False
-
-        # Check if the primary frequencies of recorded file meet expectation.
-        check_freq_result = self._check_primary_frequencies(
-                test_profile, hfp_test_data, 'recorded_by_dut')
-        return check_freq_result
+        self.test_dut_to_stop_capturing_audio_subprocess()
+        self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                   'recorded_by_dut')
 
 
     @test_retry_and_log(False)

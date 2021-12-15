@@ -773,19 +773,19 @@ def _report_result_size_metrics(result_size_info):
     metrics.Counter(RESULT_METRICS_PREFIX + 'client_result_collected_KB',
                     description='The total size (in KB) of test results '
                     'collected from test device. Set to be the total size of '
-                    'the given path.'
-                    ).increment_by(result_size_info.client_result_collected_KB,
-                                   fields=fields)
+                    'the given path.').increment_by(int(
+                            result_size_info.client_result_collected_KB),
+                                                    fields=fields)
     metrics.Counter(RESULT_METRICS_PREFIX + 'original_result_total_KB',
                     description='The original size (in KB) of test results '
-                    'before being trimmed.'
-                    ).increment_by(result_size_info.original_result_total_KB,
-                                   fields=fields)
+                    'before being trimmed.').increment_by(int(
+                            result_size_info.original_result_total_KB),
+                                                          fields=fields)
     metrics.Counter(RESULT_METRICS_PREFIX + 'result_uploaded_KB',
                     description='The total size (in KB) of test results to be '
-                    'uploaded.'
-                    ).increment_by(result_size_info.result_uploaded_KB,
-                                   fields=fields)
+                    'uploaded.').increment_by(int(
+                            result_size_info.result_uploaded_KB),
+                                              fields=fields)
 
 
 @metrics.SecondsTimerDecorator(

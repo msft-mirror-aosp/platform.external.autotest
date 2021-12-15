@@ -255,6 +255,21 @@ To run multiple servo boards on the same servo host (labstation), use serial and
 - `$ sudo servod --board=$BOARD --port $port_number --serial $servo_serial_number`
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=localhost servo_port=$port_number faft_iterations=5000" f:.*firmware_ConsecutiveBoot/control`
 
+## Running FAFT on a new kernel {#faft-kernel-next}
+
+The lab hosts shown in go/cros-testing-kernelnext provide a static environment
+for FAFT to be executed continuously and the recommendation is to pursue the
+sustainable approach of using these DUTs for kernel-next FAFT execution.
+
+Local execution via go/faft-running may be required to debug layers of
+accumulated problems in boards where end-to-end integration tests lack an
+effective continuous execution. Install a kernelnext image onto the test USB
+stick and ensure that a kernelnext image is also installed in the DUT prior
+to running FAFT. The test_that commands to execute tests on a DUT with a
+kernelnext OS are the same.
+
+The key point is to ensure that the USB and DUT contain a kernelnext image.
+
 ## Frequently Asked Questions (FAQ) {#faq}
 
 Q: All of my FAFT tests are failing. What should I do?
@@ -302,6 +317,10 @@ Q: What causes filesystem corruption?
 Q: Can I compare the results obtained with a Type-C servo to those obtained with a Type-A servo + micro?
 
 - A: When running tests with a Type-C servo, it is recommended to to rerun a failure using the Type-A setup to do a fast check prior to digging deeper, i.e. before connecting a USB analyzer or probing the signals.
+
+Q: How can I obtain a device for a local FAFT execution?
+
+- A: The lab is a good source of devices for FAFT per go/cros-testing-kernelnext. If DUTs are not available or cannot be repaired by the lab team, request a DUT for development via go/hwrequest.
 
 [FAFT suite]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/master/server/site_tests/
 [servo]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/README.md#Power-Measurement

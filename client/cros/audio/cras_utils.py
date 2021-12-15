@@ -31,7 +31,7 @@ def dump_audio_thread():
     output, err = proc.communicate()
     if err:
         raise CrasUtilsError(err)
-    return output.splitlines()
+    return output.decode().splitlines()
 
 
 def get_audio_thread_summary():

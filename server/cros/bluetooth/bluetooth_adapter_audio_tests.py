@@ -444,7 +444,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 raise error.TestError('Could not convert raw file to wav')
 
         # Compute the duration of played file without added buffer
-        new_duration = test_data['duration'] - VISQOL_BUFFER_LENGTH
+        new_duration = (test_data['chunk_checking_duration'] -
+                        VISQOL_BUFFER_LENGTH)
         # build path for file resulting from trimming to desired duration
         trimmed_file = '{}_t{}'.format(*os.path.splitext(untrimmed_file))
         if not self.bluetooth_facade.trim_wav_file(
@@ -862,104 +863,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
 
-    def hfp_dut_as_source_visqol_score(self, device, test_profile):
-        """Test Case: HFP test files streaming from peer device to the DUT.
-
-        @param device: the Bluetooth peer device.
-        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
-        """
-        # list of test wav files
-        hfp_test_data = audio_test_data[test_profile]
-        test_files = hfp_test_data['visqol_test_files']
-
-        get_visqol_binary()
-        get_audio_test_data()
-
-        # Download test data to the DUT.
-        self.test_send_audio_to_dut_and_unzip()
-
-        for test_file in test_files:
-            filename = os.path.split(test_file['file'])[1]
-            logging.debug('Testing file: {}'.format(filename))
-
-            self.test_select_audio_input_device(device.name)
-            self.test_select_audio_output_node_bluetooth()
-
-            # Enable HFP profile.
-            self.test_dut_to_start_capturing_audio_subprocess(
-                    test_file, 'recorded_by_peer')
-
-            # Wait for pulseaudio bluez hfp source/sink
-            self.test_hfp_connected(self._get_pulseaudio_bluez_source_hfp,
-                                    device, test_profile)
-
-            self.test_device_to_start_recording_audio_subprocess(
-                    device, test_profile, test_file)
-
-            # Play audio on the DUT in a non-blocked way.
-            # If there are issues, cras_test_client playing back might be blocked
-            # forever. We would like to avoid the testing procedure from that.
-            self.test_dut_to_start_playing_audio_subprocess(test_file)
-            time.sleep(test_file['duration'])
-            self.test_dut_to_stop_playing_audio_subprocess()
-            self.test_device_to_stop_recording_audio_subprocess(device)
-
-            # Disable HFP profile.
-            self.test_dut_to_stop_capturing_audio_subprocess()
-
-            # Copy the recorded audio file to the DUT for spectrum analysis.
-            recorded_file = test_file['recorded_by_peer']
-            device.ScpToDut(recorded_file, recorded_file, self.host.ip)
-
-            self.test_get_visqol_score(test_file, test_profile,
-                                       'recorded_by_peer')
-
-
-    def hfp_dut_as_sink_visqol_score(self, device, test_profile):
-        """Test Case: HFP test files streaming from peer device to the DUT.
-
-        @param device: the Bluetooth peer device.
-        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
-        """
-        # list of test wav files
-        hfp_test_data = audio_test_data[test_profile]
-        test_files = hfp_test_data['visqol_test_files']
-
-        get_visqol_binary()
-        get_audio_test_data()
-
-        # Download test data to the DUT.
-        self.test_send_audio_to_dut_and_unzip()
-
-        for test_file in test_files:
-            filename = os.path.split(test_file['file'])[1]
-            logging.debug('Testing file: {}'.format(filename))
-
-            self.test_select_audio_input_device(device.name)
-            self.test_select_audio_output_node_bluetooth()
-
-            # Enable HFP profile.
-            self.test_dut_to_start_capturing_audio_subprocess(
-                    test_file, 'recorded_by_dut')
-
-            # Wait for pulseaudio bluez hfp source/sink.
-            self.test_hfp_connected(self._get_pulseaudio_bluez_sink_hfp,
-                                    device, test_profile)
-
-            self.test_select_audio_input_device(device.name)
-
-            self.test_device_to_start_playing_audio_subprocess(
-                    device, test_profile, test_file)
-            time.sleep(test_file['duration'])
-            self.test_device_to_stop_playing_audio_subprocess(device)
-
-            # Disable HFP profile.
-            self.test_dut_to_stop_capturing_audio_subprocess()
-            logging.debug('Recorded {} successfully'.format(filename))
-
-            self.test_get_visqol_score(test_file, test_profile,
-                                       'recorded_by_dut')
-
     @test_retry_and_log(False)
     def test_device_a2dp_connected(self, device, timeout=15):
         """ Tests a2dp profile is connected on device. """
@@ -1065,70 +968,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             logging.warning('Failed: {}'.format(filename))
 
         return all(self.results.values())
-
-
-    def hfp_dut_as_source(self, device, test_profile):
-        """Test Case: HFP sinewave streaming from the DUT to peer device.
-
-        @param device: the Bluetooth peer device.
-        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
-        """
-        hfp_test_data = audio_test_data[test_profile]
-
-        self.test_select_audio_input_device(device.name)
-        self.test_select_audio_output_node_bluetooth()
-
-        # Enable HFP profile.
-        self.test_dut_to_start_capturing_audio_subprocess(
-                hfp_test_data, 'recorded_by_peer')
-
-        # Wait for pulseaudio bluez hfp source/sink
-        self.test_hfp_connected(self._get_pulseaudio_bluez_source_hfp, device,
-                                test_profile)
-
-        self.test_device_to_start_recording_audio_subprocess(
-                device, test_profile, hfp_test_data)
-        self.test_dut_to_start_playing_audio_subprocess(hfp_test_data)
-        time.sleep(hfp_test_data['duration'])
-        self.test_dut_to_stop_playing_audio_subprocess()
-        self.test_device_to_stop_recording_audio_subprocess(device)
-        self.test_check_audio_file(device, test_profile, hfp_test_data,
-                                   'recorded_by_peer')
-
-        # Disable HFP profile.
-        self.test_dut_to_stop_capturing_audio_subprocess()
-
-
-    def hfp_dut_as_sink(self, device, test_profile):
-        """Test Case: HFP sinewave streaming from peer device to the DUT.
-
-        @param device: the Bluetooth peer device.
-        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
-        """
-        hfp_test_data = audio_test_data[test_profile]
-
-        self.test_select_audio_input_device(device.name)
-        self.test_select_audio_output_node_bluetooth()
-
-        # Enable HFP profile.
-        self.test_dut_to_start_capturing_audio_subprocess(
-                hfp_test_data, 'recorded_by_dut')
-
-        # Wait for pulseaudio bluez hfp source/sink
-        self.test_hfp_connected(self._get_pulseaudio_bluez_sink_hfp, device,
-                                test_profile)
-
-        self.test_select_audio_input_device(device.name)
-
-        self.test_device_to_start_playing_audio_subprocess(
-                device, test_profile, hfp_test_data)
-        time.sleep(hfp_test_data['duration'])
-        self.test_device_to_stop_playing_audio_subprocess(device)
-
-        # Disable HFP profile.
-        self.test_dut_to_stop_capturing_audio_subprocess()
-        self.test_check_audio_file(device, test_profile, hfp_test_data,
-                                   'recorded_by_dut')
 
 
     @test_retry_and_log(False)
@@ -1511,3 +1350,166 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_dut_to_stop_playing_audio_subprocess()
         self.test_device_to_stop_recording_audio_subprocess(device)
         self.test_disconnection_by_adapter(device.address)
+
+
+    def hfp_dut_as_source_visqol_score(self, device, test_profile):
+        """Test Case: HFP test files streaming from peer device to the DUT.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        """
+        # list of test wav files
+        hfp_test_data = audio_test_data[test_profile]
+        test_files = hfp_test_data['visqol_test_files']
+
+        get_visqol_binary()
+        get_audio_test_data()
+
+        # Download test data to the DUT.
+        self.test_send_audio_to_dut_and_unzip()
+
+        for test_file in test_files:
+            filename = os.path.split(test_file['file'])[1]
+            logging.debug('Testing file: {}'.format(filename))
+
+            self.test_select_audio_input_device(device.name)
+            self.test_select_audio_output_node_bluetooth()
+
+            # Enable HFP profile.
+            self.test_dut_to_start_capturing_audio_subprocess(
+                    test_file, 'recorded_by_peer')
+
+            # Wait for pulseaudio bluez hfp source/sink
+            self.test_hfp_connected(self._get_pulseaudio_bluez_source_hfp,
+                                    device, test_profile)
+
+            self.test_device_to_start_recording_audio_subprocess(
+                    device, test_profile, test_file)
+
+            # Play audio on the DUT in a non-blocked way.
+            # If there are issues, cras_test_client playing back might be blocked
+            # forever. We would like to avoid the testing procedure from that.
+            self.test_dut_to_start_playing_audio_subprocess(test_file)
+            time.sleep(test_file['chunk_checking_duration'])
+            self.test_dut_to_stop_playing_audio_subprocess()
+            self.test_device_to_stop_recording_audio_subprocess(device)
+
+            # Disable HFP profile.
+            self.test_dut_to_stop_capturing_audio_subprocess()
+
+            # Copy the recorded audio file to the DUT for spectrum analysis.
+            recorded_file = test_file['recorded_by_peer']
+            device.ScpToDut(recorded_file, recorded_file, self.host.ip)
+
+            self.test_get_visqol_score(test_file, test_profile,
+                                       'recorded_by_peer')
+
+
+    def hfp_dut_as_sink_visqol_score(self, device, test_profile):
+        """Test Case: HFP test files streaming from peer device to the DUT.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        """
+        # list of test wav files
+        hfp_test_data = audio_test_data[test_profile]
+        test_files = hfp_test_data['visqol_test_files']
+
+        get_visqol_binary()
+        get_audio_test_data()
+
+        # Download test data to the DUT.
+        self.test_send_audio_to_dut_and_unzip()
+
+        for test_file in test_files:
+            filename = os.path.split(test_file['file'])[1]
+            logging.debug('Testing file: {}'.format(filename))
+
+            self.test_select_audio_input_device(device.name)
+            self.test_select_audio_output_node_bluetooth()
+
+            # Enable HFP profile.
+            self.test_dut_to_start_capturing_audio_subprocess(
+                    test_file, 'recorded_by_dut')
+
+            # Wait for pulseaudio bluez hfp source/sink.
+            self.test_hfp_connected(self._get_pulseaudio_bluez_sink_hfp,
+                                    device, test_profile)
+
+            self.test_select_audio_input_device(device.name)
+
+            self.test_device_to_start_playing_audio_subprocess(
+                    device, test_profile, test_file)
+            time.sleep(test_file['chunk_checking_duration'])
+            self.test_device_to_stop_playing_audio_subprocess(device)
+
+            # Disable HFP profile.
+            self.test_dut_to_stop_capturing_audio_subprocess()
+            logging.debug('Recorded {} successfully'.format(filename))
+
+            self.test_get_visqol_score(test_file, test_profile,
+                                       'recorded_by_dut')
+
+
+    def hfp_dut_as_source(self, device, test_profile):
+        """Test Case: HFP sinewave streaming from the DUT to peer device.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        """
+        hfp_test_data = audio_test_data[test_profile]
+
+        self.test_select_audio_input_device(device.name)
+        self.test_select_audio_output_node_bluetooth()
+
+        # Enable HFP profile.
+        self.test_dut_to_start_capturing_audio_subprocess(
+                hfp_test_data, 'recorded_by_peer')
+
+        # Wait for pulseaudio bluez hfp source/sink
+        self.test_hfp_connected(self._get_pulseaudio_bluez_source_hfp, device,
+                                test_profile)
+
+        self.test_device_to_start_recording_audio_subprocess(
+                device, test_profile, hfp_test_data)
+        self.test_dut_to_start_playing_audio_subprocess(hfp_test_data)
+        time.sleep(hfp_test_data['chunk_checking_duration'])
+        self.test_dut_to_stop_playing_audio_subprocess()
+        self.test_device_to_stop_recording_audio_subprocess(device)
+        self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                   'recorded_by_peer')
+
+        # Disable HFP profile.
+        self.test_dut_to_stop_capturing_audio_subprocess()
+
+
+    def hfp_dut_as_sink(self, device, test_profile):
+        """Test Case: HFP sinewave streaming from peer device to the DUT.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        """
+        hfp_test_data = audio_test_data[test_profile]
+
+        self.test_select_audio_input_device(device.name)
+        self.test_select_audio_output_node_bluetooth()
+
+        # Enable HFP profile.
+        self.test_dut_to_start_capturing_audio_subprocess(
+                hfp_test_data, 'recorded_by_dut')
+
+        # Wait for pulseaudio bluez hfp source/sink
+        self.test_hfp_connected(self._get_pulseaudio_bluez_sink_hfp, device,
+                                test_profile)
+
+        self.test_select_audio_input_device(device.name)
+
+        self.test_device_to_start_playing_audio_subprocess(
+                device, test_profile, hfp_test_data)
+        time.sleep(hfp_test_data['chunk_checking_duration'])
+        self.test_device_to_stop_playing_audio_subprocess(device)
+
+        # Disable HFP profile.
+        self.test_dut_to_stop_capturing_audio_subprocess()
+        self.test_check_audio_file(device, test_profile, hfp_test_data,
+                                   'recorded_by_dut')

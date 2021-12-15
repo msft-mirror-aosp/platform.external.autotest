@@ -189,6 +189,7 @@ hfp_nbs_test_data = {
     'bit_width': 16,
     'format': 'S16_LE',
     'duration': 5,
+    'chunk_checking_duration': 5,
 
     # Device side data used by StartPlayingAudioSubprocess function in
     # bluetooth_audio.py.
@@ -206,6 +207,7 @@ hfp_nbs_test_data = {
             'channels': 1,
             'rate': 8000,
             'duration': 26.112 + VISQOL_BUFFER_LENGTH,
+            'chunk_checking_duration': 26.112 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
             # convenient way to differentiate ViSQOL tests from regular tests
@@ -234,6 +236,7 @@ hfp_nbs_test_data = {
             'channels': 1,
             'rate': 8000,
             'duration': 5.0 + VISQOL_BUFFER_LENGTH,
+            'chunk_checking_duration': 5.0 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
             # convenient way to differentiate ViSQOL tests from regular tests
@@ -275,6 +278,7 @@ hfp_wbs_test_data = {
     'bit_width': 16,
     'format': 'S16_LE',
     'duration': 5,
+    'chunk_checking_duration': 5,
 
     # Device side data used by StartPlayingAudioSubprocess function in
     # bluetooth_audio.py.
@@ -292,6 +296,7 @@ hfp_wbs_test_data = {
             'channels': 1,
             'rate': 16000,
             'duration': 26.112 + VISQOL_BUFFER_LENGTH,
+            'chunk_checking_duration': 26.112 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
             # convenient way to differentiate ViSQOL tests from regular tests
@@ -318,6 +323,7 @@ hfp_wbs_test_data = {
             'channels': 1,
             'rate': 16000,
             'duration': 5.0 + VISQOL_BUFFER_LENGTH,
+            'chunk_checking_duration': 5.0 + VISQOL_BUFFER_LENGTH,
             'bit_width': 16,
             'format': 'S16_LE',
             # convenient way to differentiate ViSQOL tests from regular tests

@@ -21,4 +21,3 @@ autoconnect on and off.
 args_dict = utils.args_to_dict(args)
 
 job.run_test('policy_WiFiTypes', **args_dict)
-

@@ -22,4 +22,3 @@ Trigger this through the 'policy_WiFiPrecedenceServer' test.
 args_dict = utils.args_to_dict(args)
 
 job.run_test('policy_WiFiPrecedence', **args_dict)
-

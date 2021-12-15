@@ -21,4 +21,3 @@ behavior does not match expected policy behavior.
 args_dict = utils.args_to_dict(args)
 
 job.run_test('policy_GlobalNetworkSettings', **args_dict)
-

@@ -117,15 +117,15 @@ class NetperfResult(object):
 
     @staticmethod
     def _get_stats(samples, field_name):
-        if any(map(lambda x: getattr(x, field_name) is None, samples)):
+        if any([getattr(x, field_name) is None for x in samples]):
             return (None, None)
 
-        values = map(lambda x: getattr(x, field_name), samples)
+        values = [getattr(x, field_name) for x in samples]
         N = len(samples)
         mean = math.fsum(values) / N
         deviation = None
         if N > 1:
-            differences = map(lambda x: math.pow(mean - x, 2), values)
+            differences = [math.pow(mean - x, 2) for x in values]
             deviation = math.sqrt(math.fsum(differences) / (N - 1))
         return mean, deviation
 

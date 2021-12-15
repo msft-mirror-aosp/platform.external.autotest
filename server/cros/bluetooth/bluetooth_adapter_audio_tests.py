@@ -482,6 +482,22 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     @test_retry_and_log(False)
+    def test_select_audio_input_device(self, device_name):
+        """Select the audio input device for the DUT.
+
+        @param: device_name: the audio input device to be selected.
+
+        @returns: True on success. Raise otherwise.
+        """
+        desc = 'waiting for cras to select audio input device'
+        logging.debug(desc)
+        self._poll_for_condition(
+                lambda: self.bluetooth_facade.select_input_device(device_name),
+                desc=desc)
+        return True
+
+
+    @test_retry_and_log(False)
     def test_select_audio_output_node_bluetooth(self):
         """Select the Bluetooth device as output node.
 
@@ -691,6 +707,50 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 break
 
         self.results = {'all chunks are empty': all_chunks_empty}
+
+        return all(self.results.values())
+
+
+    def test_check_audio_file(self,
+                              device,
+                              test_profile,
+                              test_data,
+                              recording_device,
+                              check_legitimacy=True,
+                              check_frequencies=True):
+        """Check the audio file and verify the primary frequencies.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: A2DP or HFP test profile.
+        @param test_data: the test data of the test profile.
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'.
+        @param check_legitimacy: if set this to True, run
+                                _check_audio_frames_legitimacy test.
+        @param check_frequencies: if set this to True, run
+                                 _check_primary_frequencies test.
+
+        @returns: True if audio file passes the frequencies check.
+        """
+        if recording_device == 'recorded_by_peer':
+            logging.debug('Scp to DUT')
+            try:
+                recorded_file = test_data[recording_device]
+                device.ScpToDut(recorded_file, recorded_file, self.host.ip)
+                logging.debug('Recorded {} successfully'.format(recorded_file))
+            except Exception as e:
+                raise error.TestError('Exception occurred when (%s)' % (e))
+
+        self.results = dict()
+        if check_legitimacy:
+            self.results['check_audio_frames_legitimacy'] = (
+                    self._check_audio_frames_legitimacy(
+                            test_data, recording_device))
+
+        if check_frequencies:
+            self.results['check_primary_frequencies'] = (
+                    self._check_primary_frequencies(
+                            test_profile, test_data, recording_device))
 
         return all(self.results.values())
 
@@ -1074,6 +1134,99 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                                 'test_device_a2dp_connected',
                                                 timeout=timeout)
         self.results['peer a2dp connected'] = is_connected
+
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_hfp_connected(self,
+                           bluez_function,
+                           device,
+                           test_profile,
+                           timeout=15):
+        """Tests HFP profile is connected.
+
+        @param bluez_function: the appropriate bluez HFP function either
+                _get_pulseaudio_bluez_source_hfp or
+                _get_pulseaudio_bluez_sink_hfp depending on the role of the DUT.
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        @param timeout: number of seconds to wait before giving up connecting
+                        to HFP profile.
+
+        @returns: True on success. False otherwise.
+        """
+        check_connection = lambda: bluez_function(device, test_profile)
+        is_connected = self._wait_for_condition(check_connection,
+                                                'test_hfp_connected',
+                                                timeout=timeout)
+        self.results = {'peer hfp connected': is_connected}
+
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_send_audio_to_dut_and_unzip(self):
+        """Send the audio file to the DUT and unzip it.
+
+        @returns: True on success. False otherwise.
+        """
+        try:
+            self.host.send_file(AUDIO_DATA_TARBALL_PATH,
+                                AUDIO_DATA_TARBALL_PATH)
+        except Exception as e:
+            raise error.TestError('Fail to send file to the DUT: (%s)', e)
+
+        unzip_success = self.bluetooth_facade.unzip_audio_test_data(
+                AUDIO_DATA_TARBALL_PATH, DATA_DIR)
+
+        self.results = {'unzip audio file': unzip_success}
+
+        return all(self.results.values())
+
+
+    @test_retry_and_log(False)
+    def test_get_visqol_score(self, test_file, test_profile, recording_device):
+        """Test that if the recorded audio file meets the passing score.
+
+        This function also records the visqol performance.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        @param recording_device: which device recorded the audio,
+                possible values are 'recorded_by_dut' or 'recorded_by_peer'.
+
+        @returns: True if the test files score at or above the
+                  source_passing_score value as defined in
+                  bluetooth_audio_test_data.py.
+        """
+        dut_role = 'sink' if recording_device == 'recorded_by_dut' else 'source'
+        filename = os.path.split(test_file['file'])[1]
+
+        ref_file, deg_file = self.format_recorded_file(test_file, test_profile,
+                                                       recording_device)
+        if not ref_file or not deg_file:
+            desc = 'Failed to get ref and deg file: ref {}, deg {}'.format(
+                    ref_file, deg_file)
+            raise error.TestError(desc)
+
+        score = self.get_visqol_score(ref_file,
+                                      deg_file,
+                                      speech_mode=test_file['speech_mode'])
+
+        key = ''.join((dut_role, '_passing_score'))
+        logging.info('{} scored {}, min passing score: {}'.format(
+                filename, score, test_file[key]))
+        passed = score >= test_file[key]
+        self.results = {filename: passed}
+
+        # Track visqol performance
+        test_desc = '{}_{}_{}'.format(test_profile, dut_role,
+                                      test_file['reporting_type'])
+        self.write_perf_keyval({test_desc: score})
+
+        if not passed:
+            logging.warning('Failed: {}'.format(filename))
 
         return all(self.results.values())
 

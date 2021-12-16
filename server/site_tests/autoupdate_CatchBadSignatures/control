@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = "Chromium OS"
@@ -17,6 +12,7 @@ TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:bvt-inline, suite:satlab-qual-bvt-inline"
 JOB_RETRIES = 2
+PY_VERSION = 3
 
 DOC = """
 This is a test to verify that update_engine correctly checks signatures in the

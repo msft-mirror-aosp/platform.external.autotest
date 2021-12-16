@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_LoginStartUpdateLogout"
 TEST_CATEGORY = "Functional"
@@ -14,6 +9,7 @@ TEST_CLASS = "platform"
 TEST_TYPE = "client"
 PURPOSE = "Tests logging in and out during an update."
 TIME = "SHORT"
+PY_VERSION = 3
 DOC = """ Tests logging in and out during an update. """
 
 job.run_test('autoupdate_LoginStartUpdateLogout')

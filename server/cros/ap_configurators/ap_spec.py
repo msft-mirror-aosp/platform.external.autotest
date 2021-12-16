@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -54,7 +55,7 @@ VALID_SECURITIES = [SECURITY_TYPE_DISABLED,
                     SECURITY_TYPE_WEP]
 
 # List of valid channels.
-VALID_2GHZ_CHANNELS = range(1,15)
+VALID_2GHZ_CHANNELS = list(range(1,15))
 VALID_5GHZ_CHANNELS = [36, 40, 44, 48, 128, 149, 153, 157, 161, 165]
 
 # Frequency to channel conversion table

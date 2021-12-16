@@ -6,7 +6,7 @@ import logging
 import math
 import threading
 
-import common
+from . import common
 from autotest_lib.client.common_lib import env
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils

@@ -7,7 +7,7 @@ import io
 import six
 import unittest
 
-import common
+from . import common
 
 from autotest_lib.client.common_lib import seven
 from autotest_lib.server.cros import ap_config

@@ -11,6 +11,7 @@ AUTHOR = 'asnagarajan, wiley, jabele'
 NAME = 'network_WiFi_ChaosLongConnect.netperf_udp_downstream'
 TIME = 'LONG'
 TEST_TYPE = 'server'
+PY_VERSION = 3
 
 DOC = """
 This script iterates through all of the access points in the AP compatibility

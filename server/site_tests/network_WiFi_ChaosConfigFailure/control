@@ -16,6 +16,7 @@ AUTHOR = 'krisr, wiley, jabele'
 NAME = 'network_WiFi_ChaosConfigFailure'
 TIME = 'SHORT'
 TEST_TYPE = 'server'
+PY_VERSION = 3
 
 DOC = """
 This test is run when a chaos APConfigurator fails to successfully configure

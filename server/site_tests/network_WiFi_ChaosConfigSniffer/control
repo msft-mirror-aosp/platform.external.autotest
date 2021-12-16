@@ -15,6 +15,7 @@ TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'network'
 TEST_TYPE = 'server'
+PY_VERSION = 3
 
 DOC = """
 Searches for particular SSIDs and generates the config block to be added

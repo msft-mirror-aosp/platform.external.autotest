@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -38,7 +39,7 @@ def allocate_packet_capturer(lock_manager):
     for pcap in available_pcaps:
         # Ensure the pcap and dut are in the same subnet
         # Encode response that's in unicode format
-        pcap_hostname = pcap['hostname'].encode("utf-8")
+        pcap_hostname = (pcap['hostname'])
         # Pass pcap hostname as set to lock_kmanager
         pcap_host = set([pcap_hostname])
         if lock_manager.lock(pcap_host):

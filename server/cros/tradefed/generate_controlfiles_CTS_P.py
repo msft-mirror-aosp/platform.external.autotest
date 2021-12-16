@@ -82,9 +82,6 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsLibcoreOjTestCases': 2.0,
         'CtsMediaStressTestCases': 5.0,
         'CtsMediaTestCases': 10.0,
-        'CtsMediaTestCases.DecodeAccuracyTest': 2.0,
-        'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest': 3.0,
-        'CtsMediaTestCases.other': 10.0,
         'CtsPrintTestCases': 1.5,
         'CtsSecurityTestCases': 2.0,
         'CtsVideoTestCases': 1.5,
@@ -179,9 +176,6 @@ CONFIG['MEDIA_MODULES'] = [
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
         'CtsMediaStressTestCases.camera',
         'CtsMediaTestCases.audio',
-        'CtsMediaTestCases.DecodeAccuracyTest',
-        'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest',
-        'CtsMediaTestCases.other',
 ]
 CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
@@ -195,9 +189,6 @@ CONFIG['NEEDS_DYNAMIC_CONFIG_ON_COLLECTION'] = False
 CONFIG['NEEDS_DYNAMIC_CONFIG'] = CONFIG['MEDIA_MODULES'] + [
         'CtsIntentSignatureTestCases',
         'CtsMediaStressTestCases.camera',
-        'CtsMediaTestCases.DecodeAccuracyTest',
-        'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest',
-        'CtsMediaTestCases.other',
 ]
 
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
@@ -223,8 +214,6 @@ _CONFIG_MODULE_COMMAND = "\'modprobe configs\'"
 # TODO(b/126741318): Fix performance regression and remove this.
 _SLEEP_60_COMMAND = "\'sleep 60\'"
 
-_MUTE_COMMAND = "\'cras_test_client --mute 1\'"
-
 _START_MDNS_COMMAND = "\'android-sh -c \\\'setprop ctl.start mdnsd\\\'\'"
 
 _WIFI_CONNECT_COMMANDS_V2 = [
@@ -241,19 +230,12 @@ CONFIG['PRECONDITION'] = {
         # Tests are performance-sensitive, workaround to avoid CPU load on login.
         # TODO(b/126741318): Fix performance regression and remove this.
         'CtsViewTestCases': [_SLEEP_60_COMMAND],
-        'CtsMediaStressTestCases': [_MUTE_COMMAND],
-        'CtsMediaTestCases': [_MUTE_COMMAND],
-        'CtsMediaTestCases.audio': [_MUTE_COMMAND],
-        'CtsMediaTestCases.DecodeAccuracyTest': [_MUTE_COMMAND],
-        'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest': [_MUTE_COMMAND],
-        'CtsMediaTestCases.other': [_MUTE_COMMAND],
         'CtsNetTestCases': [_START_MDNS_COMMAND],
 }
 CONFIG['LOGIN_PRECONDITION'] = {
     'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
     'CtsJobSchedulerTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
     'CtsMediaTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
-    'CtsMediaTestCases.other': [_EJECT_REMOVABLE_DISK_COMMAND],
     'CtsOsTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
     'CtsProviderTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
 }
@@ -355,10 +337,6 @@ CONFIG['EXTRA_MODULES'] = {
         },
         'CtsMediaTestCases': {
                 'CtsMediaTestCases.audio': ['suite:arc-cts'],
-                'CtsMediaTestCases.DecodeAccuracyTest': ['suite:arc-cts-qual'],
-                'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest':
-                ['suite:arc-cts-qual'],
-                'CtsMediaTestCases.other': ['suite:arc-cts-qual'],
         },
         _WM_PRESUBMIT: {
                 _WM_PRESUBMIT: [],
@@ -376,11 +354,6 @@ CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
         },
         'CtsMediaStressTestCases': {
                 'CtsMediaStressTestCases.camera': [],
-        },
-        'CtsMediaTestCases': {
-                'CtsMediaTestCases.DecodeAccuracyTest': [],
-                'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest': [],
-                'CtsMediaTestCases.other': [],
         },
         'CtsPermissionTestCases': {
                 'CtsPermissionTestCases.camera': [],
@@ -481,13 +454,6 @@ CONFIG['PUBLIC_EXTRA_MODULES'] = {
                 'CtsDeqpTestCases.dEQP-VK.ycbcr': [
                         CONFIG['MOBLAB_SUITE_NAME']
                 ],
-        },
-        'CtsMediaTestCases': {
-                'CtsMediaTestCases.DecodeAccuracyTest':
-                [CONFIG['MOBLAB_SUITE_NAME']],
-                'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest':
-                [CONFIG['MOBLAB_SUITE_NAME']],
-                'CtsMediaTestCases.other': [CONFIG['MOBLAB_SUITE_NAME']],
         },
 }
 
@@ -754,26 +720,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsMediaTestCases android.media.cts.SoundPoolOggTest',
                 '--include-filter',
                 'CtsMediaTestCases android.media.cts.VolumeShaperTest',
-        ],
-        'CtsMediaTestCases.DecodeAccuracyTest': [
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.DecodeAccuracyTest',
-        ],
-        'CtsMediaTestCases.VideoDecoderPerfAndEncoderTest': [
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.VideoEncoderTest',
-        ],
-        'CtsMediaTestCases.other': [
-                '--module',
-                'CtsMediaTestCases',
-                '--exclude-filter',
-                'CtsMediaTestCases android.media.cts.DecodeAccuracyTest',
-                '--exclude-filter',
-                'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest',
-                '--exclude-filter',
-                'CtsMediaTestCases android.media.cts.VideoEncoderTest',
         ],
         'CtsPermissionTestCases.camera': [
                 '--include-filter',

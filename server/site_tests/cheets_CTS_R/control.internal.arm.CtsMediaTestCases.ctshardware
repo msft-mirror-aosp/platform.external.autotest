@@ -31,7 +31,6 @@ def run_TS(machine):
         bundle='arm',
         uri='LATEST',
         login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
-        precondition_commands=['cras_test_client --mute 1'],
         use_jdk9=True,
         timeout=36000)
 

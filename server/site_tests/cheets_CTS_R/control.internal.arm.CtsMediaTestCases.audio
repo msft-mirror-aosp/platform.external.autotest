@@ -31,7 +31,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
-        precondition_commands=['cras_test_client --mute 1'],
         use_jdk9=True,
         timeout=172800)
 

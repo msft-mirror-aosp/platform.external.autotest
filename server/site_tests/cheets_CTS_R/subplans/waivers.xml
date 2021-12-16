@@ -8,6 +8,7 @@
   -->
   <Entry include="CtsAppSecurityHostTestCases android.appsecurity.cts.ApkVerityInstallTest" />
   <Entry include="CtsAppSecurityHostTestCases android.appsecurity.cts.DocumentsTest#testRestrictStorageAccessFrameworkDisabled_notBlockFromTree" />
+  <Entry include="CtsAppTestCases android.app.cts.DisplayTest#testRotation" />
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testAllOutputYUVResolutions[1]" />
   <Entry include="CtsCameraTestCases[instant] android.hardware.camera2.cts.ImageReaderTest#testAllOutputYUVResolutions[1]" />
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest" />

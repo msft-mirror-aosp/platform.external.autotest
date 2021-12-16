@@ -29,17 +29,20 @@ _CTS_TIMEOUT_SECONDS = 3600
 # Public download locations for android cts bundles.
 _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/R/'
+_PARTNER_CTS = 'gs://chromeos-partner-gts/R/'
+_OFFICIAL_ZIP_NAME = 'android-cts-11_r6-linux_x86-%s.zip'
+_PREVIEW_ZIP_NAME = 'android-cts-8006480-linux_x86-%s.zip'
 _BUNDLE_MAP = {
-        (None, 'arm'): _PUBLIC_CTS + 'android-cts-11_r6-linux_x86-arm.zip',
-        (None, 'x86'): _PUBLIC_CTS + 'android-cts-11_r6-linux_x86-x86.zip',
-        ('LATEST', 'arm'):
-        _INTERNAL_CTS + 'android-cts-11_r6-linux_x86-arm.zip',
-        ('LATEST', 'x86'):
-        _INTERNAL_CTS + 'android-cts-11_r6-linux_x86-x86.zip',
-        ('DEV', 'arm'):
-        _INTERNAL_CTS + 'android-cts-7941842-linux_x86-arm.zip',
-        ('DEV', 'x86'):
-        _INTERNAL_CTS + 'android-cts-7941842-linux_x86-x86.zip',
+        (None, 'arm'): _PUBLIC_CTS + _OFFICIAL_ZIP_NAME % 'arm',
+        (None, 'x86'): _PUBLIC_CTS + _OFFICIAL_ZIP_NAME % 'x86',
+        ('DEV_MOBLAB', 'arm'): _PARTNER_CTS + _PREVIEW_ZIP_NAME % 'arm',
+        ('DEV_MOBLAB', 'x86'): _PARTNER_CTS + _PREVIEW_ZIP_NAME % 'x86',
+        ('LATEST', 'arm'): _INTERNAL_CTS + _OFFICIAL_ZIP_NAME % 'arm',
+        ('LATEST', 'x86'): _INTERNAL_CTS + _OFFICIAL_ZIP_NAME % 'x86',
+        ('DEV', 'arm'): _INTERNAL_CTS + _PREVIEW_ZIP_NAME % 'arm',
+        ('DEV', 'x86'): _INTERNAL_CTS + _PREVIEW_ZIP_NAME % 'x86',
+        ('DEV_WAIVER', 'arm'): _INTERNAL_CTS + _PREVIEW_ZIP_NAME % 'arm',
+        ('DEV_WAIVER', 'x86'): _INTERNAL_CTS + _PREVIEW_ZIP_NAME % 'x86',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'

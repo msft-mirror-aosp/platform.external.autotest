@@ -7,6 +7,7 @@ import logging
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
+from autotest_lib.client.cros import cryptohome
 from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -37,6 +38,11 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         @param pin_login: True to use login via PIN.
 
         """
+        if pin_login:
+            if not cryptohome.is_low_entropy_credentials_supported(self._host):
+                raise error.TestNAError(
+                        'Skip test: No hardware support for PIN login')
+
         self._m2n = m2n
         if self._m2n:
             if self._host.get_board().endswith("-kernelnext"):

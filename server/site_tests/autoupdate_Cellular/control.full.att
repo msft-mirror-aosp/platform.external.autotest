@@ -11,6 +11,7 @@ TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:cellular_au"
 DEPENDENCIES = "carrier:att"
+PY_VERSION = 3
 DOC = """
 This tests autoupdate over a cellular connection.
 

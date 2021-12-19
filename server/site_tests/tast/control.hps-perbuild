@@ -25,7 +25,7 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=['("group:hps" && hps_perbuild)'],
                  ignore_test_failures=True,
-                 max_run_sec=3600,  # 1 hour
+                 max_run_sec=7200,  # 2 hours
                  command_args=args)
 
 parallel_simple(run, machines)

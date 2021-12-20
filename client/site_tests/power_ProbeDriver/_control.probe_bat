@@ -1,0 +1,34 @@
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "Chrome OS Team"
+NAME = "power_ProbeDriver.probe_bat"
+PURPOSE = "Confirm that battery driver is loaded and functioning."
+CRITERIA = """\
+Unplug AC before run this test.
+
+This test will pass only if all of the following conditions occur:
+- Find one or more batteries.
+- One of batteries is discharging.
+
+This test will fail if all of the following conditions occur:
+- Find one or more ACs.
+- One of ACs is online.
+"""
+TIME = "SHORT"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "power"
+TEST_TYPE = "client"
+
+DOC = """
+This is a sample test that probes sysfs and makes sure that batteries driver
+is loaded and functioning.
+"""
+
+job.run_test('power_ProbeDriver', test_which='Battery')

@@ -1,0 +1,21 @@
+# Copyright (c) 2021 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "Chrome OS Team"
+NAME = "infra_PythonVersion"
+PURPOSE = "Verify the python version running the test"
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_TYPE = "client"
+
+DOC = """Verify the python version running the test."""
+
+args_dict = utils.args_to_dict(args)
+
+job.run_test('infra_PythonVersion', **args_dict)

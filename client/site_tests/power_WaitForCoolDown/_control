@@ -1,0 +1,26 @@
+# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "puthik"
+NAME = "power_WaitForCoolDown"
+PURPOSE = "Transition test to wait for DUT to cool down after thermal test."
+TIME = "SHORT"
+TEST_CATEGORY = "Benchmark"
+TEST_CLASS = "power"
+TEST_TYPE = "client"
+
+DOC = """
+Transition test to wait for DUT to cool down after thermal test while collecting
+power / thermal releated log.
+"""
+
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_WaitForCoolDown', pdash_note=pdash_note,
+             force_discharge='optional')

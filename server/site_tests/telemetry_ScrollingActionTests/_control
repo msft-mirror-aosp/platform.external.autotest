@@ -1,0 +1,26 @@
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "chromeos-perf"
+NAME = "telemetry_ScrollingActionTests"
+TIME = "LONG"
+TEST_CATEGORY = "Functional"
+TEST_TYPE = "server"
+
+DOC = """
+This server side test suite executes the Telemetry Scrolling Benchmark.
+This is part of our effort to support Chrome for Chrome OS performance testing.
+"""
+
+def run_test(machine):
+    host = hosts.create_host(machine)
+    job.run_test("telemetry_ScrollingActionTests", host=host)
+
+
+parallel_simple(run_test, machines)

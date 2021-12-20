@@ -1,0 +1,22 @@
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "Chrome OS Team"
+NAME = "power_Thermal"
+PURPOSE = "Verify thermal feedback operation."
+CRITERIA = "Fails if CPU is not slowed down on crossing temperature theshold."
+TIME = "MEDIUM"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "power"
+TEST_TYPE = "client"
+
+DOC = """This is a test which changes the temperature theshold and expects
+the system to slow down the CPU clock in response."""
+
+job.run_test('power_Thermal')

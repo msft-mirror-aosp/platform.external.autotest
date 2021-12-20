@@ -1,0 +1,28 @@
+# Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = 'wiley, pstew, quiche'
+NAME = 'network_DhcpNak'
+ATTRIBUTES = "suite:network_nightly"
+TIME = 'SHORT'
+TEST_TYPE = 'client'
+PY_VERSION = 3
+
+DOC = """
+  Tests handling of DHCP NAK messages. In particular, tests that
+  we accept DHCP NAK messages without a server-id. This is necessary
+  because some DHCP servers do not include a server-id in their
+  NAKs.
+
+  The test will fail if dhcpcd does not restart the DHCP process
+  when it receives a NAK without a server-id.
+
+"""
+
+job.run_test('network_DhcpNak')

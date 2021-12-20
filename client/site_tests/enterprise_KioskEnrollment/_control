@@ -1,0 +1,23 @@
+# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "achuith, zelidrag"
+NAME = "enterprise_KioskEnrollment"
+TIME = "SHORT"
+TEST_CATEGORY = "Enterprise"
+TEST_CLASS = "enterprise"
+TEST_TYPE = "client"
+# Reboot after test ends.
+DEPENDENCIES='cleanup-reboot'
+
+DOC = """
+This test enrolls a ChromeOS device in Kiosk mode.
+"""
+
+job.run_test('enterprise_KioskEnrollment')

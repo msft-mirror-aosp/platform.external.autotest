@@ -1,0 +1,23 @@
+AUTHOR = "Chrome OS Team"
+NAME = "power_WebGL"
+PURPOSE = "Measure WebGL power usage."
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+CRITERIA = "This test is a benchmark."
+TIME = "SHORT"
+TEST_CATEGORY = "Benchmark"
+TEST_CLASS = "power"
+TEST_TYPE = "client"
+ATTRIBUTES = "suite:power_check, suite:power_daily, suite:power_monitoring"
+
+DOC = """
+This test records power related statistics while open WebGL heavy page.
+"""
+
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_WebGL', pdash_note=pdash_note)

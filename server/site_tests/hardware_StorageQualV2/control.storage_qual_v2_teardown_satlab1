@@ -30,10 +30,16 @@ See http://go/tast-failures for information about investigating failures.
 import tempfile
 import yaml
 
+global args_dict
+try:
+    args_dict
+except NameError:
+    args_dict = utils.args_to_dict(args)
+
 keyval = dict()
 keyval['storage_qual_version'] = 2
-keyval['bug_id'] = bug_id
-keyval['part_id'] = part_id
+keyval['bug_id'] = args_dict.get("bug_id", "")
+keyval['part_id'] = args_dict.get("part_id", "")
 utils.write_keyval(job.resultdir, keyval)
 
 def run(machine):

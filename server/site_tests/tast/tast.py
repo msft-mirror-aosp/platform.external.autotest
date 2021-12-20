@@ -1030,6 +1030,12 @@ class tast(test.test):
         if test_skipped and not test_reported_errors:
             return
 
+        # Look for magic error _TEST_DID_NOT_RUN_MSG and mark test as not run.
+        for err in test.get(_KEY_ERRORS) or []:
+            if err[_KEY_REASON] == self._TEST_DID_NOT_RUN_MSG:
+                test_not_run = True
+                test[_KEY_MISSING_REASON] = self._TEST_DID_NOT_RUN_MSG
+
         self._log_test_event(self._JOB_STATUS_START, name, start_time)
 
         if test_not_run:

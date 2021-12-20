@@ -1,0 +1,26 @@
+# Copyright 2018 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "kirtika"
+NAME = "stress_ClientTestReboot.wifi"
+TIME = "MEDIUM"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "Stress"
+TEST_TYPE = "server"
+ATTRIBUTES = 'suite:network_nightly'
+
+DOC = """
+This test reboots the machine and checks whether the wireless interface comes up.
+"""
+
+def run_reboot_stress(machine):
+    job.run_test('stress_ClientTestReboot', client_ip=machine,
+                 testname='network_WlanPresent', loops=20)
+
+parallel_simple(run_reboot_stress, machines)

@@ -1,0 +1,22 @@
+# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# For instructions on how to: go/tauto-py3-migration
+# To re-enable migrate to Python 3.
+# If the test is not migrated by 1/14/22 it will be deleted.
+
+AUTHOR = "dbeckett"
+NAME = "infra_TLSExecDUTCommand"
+TIME = "SHORT"
+TEST_TYPE = "server"
+DOC = """
+Test the TLS ExecDUTCommand API
+"""
+
+def run(machine):
+    job.run_test('infra_TLSExecDUTCommand',
+                 host=hosts.create_host(machine))
+
+parallel_simple(run, machines)

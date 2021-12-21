@@ -2,18 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "ChromeOS Team"
 NAME = "network_EthernetStressPlug"
 PURPOSE = "Stress-test Ethernet plug/unplug"
 CRITERIA = """
 This test fails if device fails to obtain dhcp through ethernet.
 """
-# Note: This is now only for manual run.
+PY_VERSION = 3
+
+# Note: This test is currently only intended for manual runs in
+# a "well controlled" enviroment. In other words, document the
+# configuration (DUT mfg/model, Ethernet mfg/model, OS version, etc.)
+# and test results (histogram).
 TIME = "SHORT"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "network"

@@ -1,3 +1,4 @@
+# Lint as python2, python3
 # Copyright (c) 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -183,7 +184,7 @@ class network_EthernetStressPlug(test.test):
 
         self.test_status['ipaddress'] = ethernet_status['ipaddress']
 
-        for param, val in ethernet_status.iteritems():
+        for param, val in list(ethernet_status.items()):
             if self.dongle.GetParam(param) is None:
                 # For parameters with expected values none, we check the
                 # existence of a value.
@@ -294,7 +295,7 @@ class network_EthernetStressPlug(test.test):
                 time.sleep(1)
                 self._PowerEthernet(power)
                 self.link_speed_failures += 1
-                logging.warning('Link Renegotiated ' +
+                logging.warning('Link Renegotiated %s',
                     self.test_status['reason'])
 
             # If ethernet is enabled  and has an IP, OR
@@ -313,9 +314,9 @@ class network_EthernetStressPlug(test.test):
 
         logging.debug(self.test_status['reason'])
         raise error.TestFail('ERROR: TIMEOUT : %s IP is %s after setting '
-                             'power %s (last_wait = %.2f seconds)' %
-                             (self.interface, self.test_status['ipaddress'],
-                             power_str[power], self.test_status['last_wait']))
+                             'power %s (last_wait = %.2f seconds)',
+                             self.interface, self.test_status['ipaddress'],
+                             power_str[power], self.test_status['last_wait'])
 
     def RandSleep(self, min_sleep, max_sleep):
         """ Sleeps for a random duration.
@@ -470,7 +471,7 @@ class network_EthernetStressPlug(test.test):
         ethtool_dict = self.ParseEthTool()
 
         if not ethtool_dict:
-            raise error.TestFail('Unable to parse ethtool output for %s.' %
+            raise error.TestFail('Unable to parse ethtool output for %s.',
                                  self.interface)
 
         # Ethtool output is ordered in terms of speed so this obtains the
@@ -510,18 +511,18 @@ class network_EthernetStressPlug(test.test):
                 if self.warning_count > num_iterations * self.warning_threshold:
                     raise error.TestFail('ERROR: %.2f%% of total runs (%d) '
                                          'took longer than %d seconds for '
-                                         'ethernet to come up.' %
-                                         (self.warning_threshold*100,
-                                          num_iterations,
-                                          self.secs_before_warning))
+                                         'ethernet to come up.',
+                                         self.warning_threshold * 100,
+                                         num_iterations,
+                                         self.secs_before_warning)
 
             # Link speed failures are secondary.
             # Report after all iterations complete.
             if self.link_speed_failures > 1:
-                raise error.TestFail('ERROR: %s : Link Renegotiated %d times'
-                                % (self.interface, self.link_speed_failures))
+                raise error.TestFail('ERROR: %s : Link Renegotiated %d times',
+                                self.interface, self.link_speed_failures)
 
         except Exception as e:
             exc_info = sys.exc_info()
             self._PowerEthernet(1)
-            raise exc_info[0], exc_info[1], exc_info[2]
+            raise exc_info[0](exc_info[1]).with_traceback(exc_info[2])

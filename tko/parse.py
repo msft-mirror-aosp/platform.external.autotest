@@ -306,7 +306,7 @@ def export_tko_job_to_file(job, jobname, filename):
 
     @param job: database object.
     @param jobname: the job name as string.
-    @param filename: The path to the results to be parsed.
+    @param filename: the serialized binary destination path.
     """
     from autotest_lib.tko import job_serializer
 
@@ -323,6 +323,8 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
                     e.g. '1234-chromeos-test/host1'
     @param path: The path to the results to be parsed.
     @param parse_options: _ParseOptions instance.
+
+    @return job: the parsed job object
     """
     reparse = parse_options.reparse
     mail_on_failure = parse_options.mail_on_failure
@@ -333,7 +335,7 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
     old_job_idx = db.find_job(jobname)
     if old_job_idx is not None and not reparse:
         tko_utils.dprint("! Job is already parsed, done")
-        return
+        return None
 
     # look up the status version
     job_keyval = models.job.read_keyval(path)
@@ -345,7 +347,7 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
     status_log_path = _find_status_log_path(path)
     if not status_log_path:
         tko_utils.dprint("! Unable to parse job, no status file")
-        return
+        return None
     _parse_status_log(parser, job, status_log_path)
 
     if old_job_idx is not None:
@@ -384,7 +386,7 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
             path, log=tko_utils.dprint)
     tko_utils.dprint('Finished collecting result sizes after %s seconds' %
                      (time.time()-start_time))
-    job.keyval_dict.update(result_size_info.__dict__)
+    job.keyval_dict.update(result_size_info._asdict())
 
     # TODO(dshi): Update sizes with sponge_invocation.xml and throttle it.
 
@@ -480,6 +482,7 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
             gs_offloader_instructions[constants.GS_OFFLOADER_NO_OFFLOAD] = True
             with open(gs_instructions_file, 'w') as f:
                 json.dump(gs_offloader_instructions, f)
+    return job
 
 
 def _write_job_to_db(db, jobname, job):

@@ -68,7 +68,7 @@ class network_Ipv6SimpleNegotiation(dhcp_test_base.DhcpTestBase):
         for ipconfig in self.get_interface_ipconfig_objects(
                 self.ethernet_pair.peer_interface_name):
             ipconfig_properties = shill_proxy.ShillProxy.dbus2primitive(
-                    ipconfig.GetProperties(utf8_strings=True))
+                    ipconfig.GetProperties())
             if 'Method' not in ipconfig_properties:
                 continue
 

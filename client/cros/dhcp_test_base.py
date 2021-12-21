@@ -16,6 +16,7 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
+import six
 from six.moves import filter
 from six.moves import range
 import socket
@@ -123,7 +124,10 @@ class DhcpTestBase(test.test):
         if device is None:
             return []
 
-        device_properties = device.GetProperties(utf8_strings=True)
+        if six.PY2:
+            device_properties = device.GetProperties(utf8_strings=True)
+        else:
+            device_properties = device.GetProperties()
         proxy = self.shill_proxy
 
         ipconfig_object = proxy.DBUS_TYPE_IPCONFIG
@@ -147,7 +151,10 @@ class DhcpTestBase(test.test):
         dhcp_properties = None
         for ipconfig in self.get_interface_ipconfig_objects(interface_name):
             logging.info('Looking at ipconfig %r', ipconfig)
-            ipconfig_properties = ipconfig.GetProperties(utf8_strings=True)
+            if six.PY2:
+                ipconfig_properties = ipconfig.GetProperties(utf8_strings=True)
+            else:
+                ipconfig_properties = ipconfig.GetProperties()
             if 'Method' not in ipconfig_properties:
                 logging.info('Found ipconfig object with no method field')
                 continue

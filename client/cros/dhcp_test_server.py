@@ -54,6 +54,7 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
+import six
 from six.moves import range
 import socket
 import threading
@@ -166,9 +167,13 @@ class DhcpTestServer(threading.Thread):
             self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             if self._interface is not None:
                 self._logger.info("Binding to %s", self._interface)
-                self._socket.setsockopt(socket.SOL_SOCKET,
-                                        SO_BINDTODEVICE,
-                                        self._interface)
+                if six.PY2:
+                    self._socket.setsockopt(socket.SOL_SOCKET, SO_BINDTODEVICE,
+                                            self._interface)
+                else:
+                    self._socket.setsockopt(
+                            socket.SOL_SOCKET, SO_BINDTODEVICE,
+                            self._interface.encode('ISO-8859-1'))
             self._socket.bind((self._ingress_address, self._ingress_port))
             # Wait 100 ms for a packet, then return, thus keeping the thread
             # active but mostly idle.

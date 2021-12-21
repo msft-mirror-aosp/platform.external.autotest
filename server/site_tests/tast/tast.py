@@ -2,11 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-from collections import OrderedDict
 import datetime
 import json
 import logging
@@ -14,21 +11,17 @@ import os
 import shutil
 import socket
 import tempfile
+from collections import OrderedDict
 
 import dateutil.parser
 import six
 import yaml
-from autotest_lib.client.common_lib import base_job
-from autotest_lib.client.common_lib import config_vars
-from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import dev_server
-from autotest_lib.client.common_lib.cros import tpm_utils
-from autotest_lib.server import test
-from autotest_lib.server import utils
+from autotest_lib.client.common_lib import (base_job, config_vars, error,
+                                            lsbrelease_utils)
+from autotest_lib.client.common_lib.cros import dev_server, tpm_utils
+from autotest_lib.server import test, utils
 from autotest_lib.server.cros.network import wifi_test_context_manager
-from autotest_lib.server.hosts import cros_host
-from autotest_lib.server.hosts import servo_constants
-from autotest_lib.server.hosts import servo_host
+from autotest_lib.server.hosts import cros_host, servo_constants, servo_host
 from autotest_lib.site_utils.rpm_control_system import rpm_constants
 from autotest_lib.utils import labellib
 from six.moves import urllib
@@ -610,8 +603,13 @@ class tast(test.test):
 
         The result is saved as self._devserver_args.
         """
-        devservers, _ = dev_server.ImageServer.get_available_devservers(
-            self._host.hostname, prefer_local_devserver=True)
+        logging.info('All devservers: %s',
+                     ', '.join(dev_server.ImageServer.servers()))
+        devservers, can_retry = dev_server.ImageServer.get_available_devservers(
+                self._host.hostname, prefer_local_devserver=True)
+        if not devservers and can_retry and not lsbrelease_utils.is_moblab():
+            devservers, can_retry = dev_server.ImageServer.get_available_devservers(
+                    self._host.hostname, prefer_local_devserver=False)
         logging.info('Using devservers: %s', ', '.join(devservers))
         self._devserver_args = ['-devservers=%s' % ','.join(devservers)]
         if self._ephemeraldevserver is not None:

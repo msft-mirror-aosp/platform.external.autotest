@@ -45,7 +45,7 @@ _retry_display_call = retry.retry(
 class DisplayFacadeNative(object):
     """Facade to access the display-related functionality.
 
-    The methods inside this class only accept Python native types.
+    The methods inside this class only accept Python core types.
     """
 
     CALIBRATION_IMAGE_PATH = '/tmp/calibration.png'

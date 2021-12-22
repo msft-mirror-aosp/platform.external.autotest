@@ -67,7 +67,7 @@ def split_arguments(args):
 
 
 def _encode_text(text):
-    """Takes an unicode string into native string
+    """Takes an unicode string into utf-8 string
     (bytes for python 2 and text for python 3).
     """
     if six.PY2:

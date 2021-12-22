@@ -132,7 +132,7 @@ class BluetoothDevice(object):
         self.bluetooth_class = properties.get('Class')
 
     def _connect_xmlrpc_directly(self):
-        """Connects to the bluetooth native facade directly via xmlrpc."""
+        """Connects to the bluetooth facade directly via xmlrpc."""
         # When the xmlrpc server is already created (using the
         # RemoteFacadeFactory), we will use the BluezFacadeNative inside the
         # remote proxy. Otherwise, we will use the xmlrpc server started from

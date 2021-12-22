@@ -2,23 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = 'wiley, pstew, quiche'
-NAME = 'network_WiFi_RoamSuspendTimeout.wpa'
+NAME = 'network_WiFi_RoamSuspendTimeout.wpa2'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
-ATTRIBUTES = "suite:wifi_flaky"
+ATTRIBUTES = "suite:wifi_matfunc"
 DEPENDENCIES = 'wificell'
+PY_VERSION = 3
 
 DOC = """
-This tests verifies that we can reconnect to an AP broadcasting a WPA network
-using TKIP after deauthentication while the DUT is suspended.  TKIP is
-deprecated for having some security holes, and WPA is deprecated in favor of
-WPA2, but routers of a certain age only support this mode.
+This tests verifies that we can reconnect to an AP broadcasting a WPA2 (aka
+RSN) network after deauthentication while the DUT is suspended.  By definition,
+traffic on this network is encrypted under AES.
 """
 
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
@@ -29,8 +24,8 @@ from autotest_lib.server.cros.network import hostap_config
 def run(machine):
     wpa_config = xmlrpc_security_types.WPAConfig(
             psk='chromeos',
-            wpa_mode=xmlrpc_security_types.WPAConfig.MODE_PURE_WPA,
-            wpa_ciphers=[xmlrpc_security_types.WPAConfig.CIPHER_TKIP])
+            wpa_mode=xmlrpc_security_types.WPAConfig.MODE_PURE_WPA2,
+            wpa2_ciphers=[xmlrpc_security_types.WPAConfig.CIPHER_CCMP])
     job.run_test('network_WiFi_RoamSuspendTimeout',
                  tag=NAME.split('.')[1],
                  host=hosts.create_host(machine),

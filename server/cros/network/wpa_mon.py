@@ -23,9 +23,9 @@ class WpaMon(object):
     CTRL_EVENT_BSS_ADDED = 'CTRL-EVENT-BSS-ADDED'
 
     ROAM_MATCH = str(r' cur_bssid=([\da-fA-F:]+) cur_freq=(\d+) ' \
-                 'cur_level=([\d-]+) cur_est=(\d+) ' \
-                 'sel_bssid=([\da-fA-F:]+) sel_freq=(\d+) ' \
-                 'sel_level=([\d-]+) sel_est=(\d+)')
+                 r'cur_level=([\d-]+) cur_est=(\d+) ' \
+                 r'sel_bssid=([\da-fA-F:]+) sel_freq=(\d+) ' \
+                 r'sel_level=([\d-]+) sel_est=(\d+)')
     DISCONNECT_MATCH = str(r' bssid=([\da-fA-F:]+) reason=(\d+)' \
                        '(?: locally_generated=(1))?')
     SCAN_RESULTS_MATCH = str(r'()')
@@ -71,9 +71,9 @@ class WpaMon(object):
         # encounters an EOF. Using `cat` or the PIPE address type would close
         # the input stream after the first write, instructing socat to tear
         # everything else down.
-        command = "nohup sudo -u wpa -g wpa socat SYSTEM:'mkfifo %s; " \
-                  "tail -f %s'\!\!STDOUT UNIX-CONNECT:%s,type=2,bind=%s " \
-                  "</dev/null >%s 2>&1 & echo $!" % \
+        command = r"nohup sudo -u wpa -g wpa socat SYSTEM:'mkfifo %s; " \
+                  r"tail -f %s'\!\!STDOUT UNIX-CONNECT:%s,type=2,bind=%s " \
+                  r"</dev/null >%s 2>&1 & echo $!" % \
                   (self._pipe, self._pipe, self._dest, local, self._log_path)
         out_lines = self._host.run(command).stdout.splitlines()
         pid = int(out_lines[0])

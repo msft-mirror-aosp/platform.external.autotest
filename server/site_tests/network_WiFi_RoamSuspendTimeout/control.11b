@@ -2,17 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_RoamSuspendTimeout.11b'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 ATTRIBUTES = "suite:wifi_flaky"
 DEPENDENCIES = 'wificell'
+PY_VERSION = 3
 
 DOC = """
 This test attempts to verify that we can reconnect to a router over 802.11b

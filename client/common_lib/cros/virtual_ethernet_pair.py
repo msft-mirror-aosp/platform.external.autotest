@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -92,7 +93,7 @@ class VirtualEthernetPair(object):
         route = utils.system_output("ip route get 8.8.8.8")
         # Only first line is interesting - match it for interface and
         # IP address
-        m = re.search("dev (\S+) .*? src ((?:\d+\.){3}\d+)",
+        m = re.search(r"dev (\S+) .*? src ((?:\d+\.){3}\d+)",
                       route[:route.find('\n')])
         return (m.group(1), m.group(2)) if m else (None, None)
 

@@ -20,7 +20,7 @@ import six
 # and should be updated when possible. ("master" -> "main")
 _MAIN_SSH_COMMAND_TEMPLATE = (
         '/usr/bin/ssh -a -x -N '
-        '-o ControlMaster=yes '  # Create multiplex socket.
+        '-o ControlMaster=yes '  # Create multiplex socket. # nocheck
         '-o ControlPath=%(socket)s '
         '-o StrictHostKeyChecking=no '
         '-o UserKnownHostsFile=/dev/null '

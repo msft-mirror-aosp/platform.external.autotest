@@ -61,7 +61,8 @@ class gtest_parser(object):
 
         # TODO b:169251326 terms below are set outside of this codebase
         # and should be updated when possible. ("master" -> "main")
-        self._main_name_re = re.compile(r'\[Running for master: "([^"]*)"')
+        self._main_name_re = re.compile(
+                r'\[Running for master: "([^"]*)"')  # nocheck
         self.main_name = ''
 
         self._error_logging_start_re = re.compile('=' * 70)

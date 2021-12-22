@@ -88,5 +88,5 @@ For example, try running:
 > {isLoggedIn: false, isOwner: false, isReadyForPassword: false, isScreenLocked: false}
 ```
 
-[these steps]: https://chromium.googlesource.com/chromiumos/docs/+/master/simple_chrome_workflow.md#set-up-the-chrome-os-device
-[OS Developer Guide]: https://chromium.googlesource.com/chromiumos/docs/+/master/developer_guide.md#get-the-source
+\[these steps\]: https://chromium.googlesource.com/chromiumos/docs/+/main/simple_chrome_workflow.md#set-up-the-chrome-os-device <br>
+\[OS Developer Guide\]: https://chromium.googlesource.com/chromiumos/docs/+/main/developer_guide.md#get-the-source

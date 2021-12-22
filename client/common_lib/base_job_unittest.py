@@ -1372,7 +1372,7 @@ class test_job_tags(unittest.TestCase):
         self.assertEqual(expected, actual)
 
 
-    def test_subtest_with_master_test_path_and_subdir(self):
+    def test_subtest_with_main_test_path_and_subdir(self):
         self.assertEqual(
             ('test9', 'subtestdir/test9.subdirtag', 'subdirtag'),
             self.job._build_tagged_test_name('test9',

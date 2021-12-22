@@ -13,7 +13,7 @@ DOC = """
 This test fetches a specific branch of crouton, and runs crouton tests.
 
 @param repo: (dnschneid/crouton) github repository to fetch from
-@param branch: (master) github branch
+@param branch: (master) github branch # nocheck
 @param runargs: (-R precise 00) parameters to pass to run.sh
 @param env: () Environment variables to set, semicolon-separated key=val pairs.
             Only CROUTON_MIRROR_* can be set

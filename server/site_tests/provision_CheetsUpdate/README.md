@@ -24,7 +24,7 @@ $ python3 ./ptd/push_to_device.py --use-prebuilt-file ./cheets_arm-img-4885137.z
 ```
 
 Warning: If the command fails, check run\_push\_to\_device method in
-[provision_CheetsUpdate.py](https://chromium.googlesource.com/chromiumos/third_party/autotest/+/master/server/site_tests/provision_CheetsUpdate/provision_CheetsUpdate.py) for required params.
+[provision_CheetsUpdate.py](https://chromium.googlesource.com/chromiumos/third_party/autotest/+/main/server/site_tests/provision_CheetsUpdate/provision_CheetsUpdate.py) for required params.
 
 ## Updating the autotest
 

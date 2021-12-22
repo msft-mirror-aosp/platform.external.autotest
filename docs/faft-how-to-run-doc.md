@@ -322,14 +322,14 @@ Q: How can I obtain a device for a local FAFT execution?
 
 - A: The lab is a good source of devices for FAFT per go/cros-testing-kernelnext. If DUTs are not available or cannot be repaired by the lab team, request a DUT for development via go/hwrequest.
 
-[FAFT suite]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/master/server/site_tests/
-[servo]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/README.md#Power-Measurement
-[servo v2]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servo_v2.md
-[servo v4]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servo_v4.md
-[servo micro]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servo_micro.md
-[servo v4 Type-C]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servo_v4.md#Type_C-Version
-[stateful partition is too small]: https://crrev.com/c/1935408
-[FAFT]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/master/docs/faft-design-doc.md
-[FAFT framework]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/master/docs/faft-code.md
-[servod]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/master/docs/servod.md
-[test that]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/master/docs/test-that.md
+\[FAFT suite\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/main/server/site_tests/ <br>
+\[servo\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/README.md#Power-Measurement <br>
+\[servo v2\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_v2.md <br>
+\[servo v4\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_v4.md <br>
+\[servo micro\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_micro.md <br>
+\[servo v4 Type-C\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_v4.md#Type_C-Version <br>
+\[stateful partition is too small\]: https://crrev.com/c/1935408 <br>
+\[FAFT\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/faft-design-doc.md <br>
+\[FAFT framework\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/faft-code.md <br>
+\[servod\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servod.md <br>
+\[test that\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/test-that.md <br>

@@ -191,14 +191,14 @@ data to refine the test, potentially changing the load mix or the parameters
 of the test. Our goal is to ensure that when you purchase a device, you know -
 with reasonable certainty - how long that device will last in your daily use.
 
-[1]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/master/client/site_tests/power_LoadTest/
-[2]: https://chromium.googlesource.com/chromiumos/platform2/+/master/power_manager/tools/backlight_tool.cc#154
-[3]: http://www.chromium.org/chromium-os/developer-guide#TOC-Build-a-disk-image-for-your-board
-[4]: http://www.chromium.org/chromium-os/developer-guide#TOC-Installing-Chromium-OS-on-your-Device
-[5]: http://www.chromium.org/chromium-os/testing/autotest-user-doc#TOC-Running-tests
-[6]: https://chromium.googlesource.com/chromiumos/docs/+/master/developer_guide.md#enter-the-chroot
-[7]: https://www.chromium.org/chromium-os/how-tos-and-troubleshooting/debugging-features
-[8]: https://developer.chrome.com/extensions/getstarted
-[9]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+archive/master/client/site_tests/power_LoadTest.tar.gz
-[10]: https://chromium.googlesource.com/chromiumos/platform2/+/master/power_manager/docs/keyboard_backlight.md
-[11]: http://go/cros-plt-doc
+\[1\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/main/client/site_tests/power_LoadTest/<br>
+\[2\]: https://chromium.googlesource.com/chromiumos/platform2/+/main/power_manager/tools/backlight_tool.cc#154<br>
+\[3\]: http://www.chromium.org/chromium-os/developer-guide#TOC-Build-a-disk-image-for-your-board<br>
+\[4\]: http://www.chromium.org/chromium-os/developer-guide#TOC-Installing-Chromium-OS-on-your-Device<br>
+\[5\]: http://www.chromium.org/chromium-os/testing/autotest-user-doc#TOC-Running-tests<br>
+\[6]\: https://chromium.googlesource.com/chromiumos/docs/+/main/developer_guide.md#enter-the-chroot<br>
+\[7\]: https://www.chromium.org/chromium-os/how-tos-and-troubleshooting/debugging-features<br>
+\[8\]: https://developer.chrome.com/extensions/getstarted<br>
+\[9\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+archive/main/client/site_tests/power_LoadTest.tar.gz<br>
+\[10\]: https://chromium.googlesource.com/chromiumos/platform2/+/main/power_manager/docs/keyboard_backlight.md<br>
+\[11\]: http://go/cros-plt-doc<br>

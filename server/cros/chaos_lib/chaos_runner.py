@@ -24,8 +24,8 @@ from autotest_lib.server.cros.network import wifi_client
 
 # Webdriver main hostname
 # TODO b:169251326 terms below are set outside of this codebase and should
-# be updated when possible ("master" -> "main").
-MAINNAME = 'chromeos3-chaosvmmaster.cros.corp.google.com'
+# be updated when possible ("master" -> "main"). # nocheck
+MAINNAME = 'chromeos3-chaosvmmaster.cros.corp.google.com'  # nocheck
 WEBDRIVER_PORT = 9515
 
 
@@ -72,8 +72,9 @@ class ChaosRunner(object):
 
         lock_manager = host_lock_manager.HostLockManager()
         # TODO b:169251326 terms below are set outside of this codebase and
-        # should be updated when possible ("master" -> "main").
-        webdriver_main = hosts.SSHHost(MAINNAME, user='chaosvmmaster')
+        # should be updated when possible ("master" -> "main"). # nocheck
+        webdriver_main = hosts.SSHHost(MAINNAME,
+                                       user='chaosvmmaster')  # nocheck
         host_prefix = self._host.hostname.split('-')[0]
         with host_lock_manager.HostsLockedBy(lock_manager):
             capture_host = utils.allocate_packet_capturer(
@@ -215,10 +216,10 @@ class ChaosRunner(object):
                                            capture_host, {},'packet_capturer')
                             continue
                         if networks == list():
-                           # Packet capturer did not find the SSID in scan or
-                           # there was a security mismatch.
-                           utils.release_ap(ap, batch_locker, self._broken_pdus)
-                           continue
+                            # Packet capturer did not find the SSID in scan or
+                            # there was a security mismatch.
+                            utils.release_ap(ap, batch_locker, self._broken_pdus)
+                            continue
 
                         assoc_params = ap.get_association_parameters()
 

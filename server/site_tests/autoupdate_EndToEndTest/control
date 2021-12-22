@@ -95,7 +95,7 @@ To run locally:
     Run ssh-keygen to generate your id_rsa and id_rsa.pub files into ~/.ssh/
 
     Download the testing_rsa ssh keys from here:
-    https://chromium.googlesource.com/chromiumos/chromite/+/master/ssh_keys
+    https://chromium.googlesource.com/chromiumos/chromite/+/main/ssh_keys
     Save both to ~/.ssh
     chmod 600 ~/.ssh/testing_rsa* (otherwise permissions are too loose and
     will be ignored)

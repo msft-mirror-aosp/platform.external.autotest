@@ -95,21 +95,19 @@ class enterprise_LongevityTrackerServer(test.test):
         }
         #TODO(krishnargv): Add a method to capture the chrome_version.
         # TODO b:169251326 terms below are set outside of this codebase and
-        # should be updated when possible ("master" -> "main").
+        # should be updated when possible ("master" -> "main"). # nocheck
         dash_entry = {
-            'master': 'ChromeOS_Enterprise',
-            'bot': 'cros-%s' % self.board_name,
-            'point_id': self.point_id,
-            'versions': {
-                'cros_version': self.chromeos_version,
-
-            },
-            'supplemental': {
-                'default_rev': 'r_cros_version',
-                'kiosk_app_name': 'a_' + self.kiosk_app_name,
-
-            },
-            'chart_data': perf_values
+                'master': 'ChromeOS_Enterprise',  # nocheck
+                'bot': 'cros-%s' % self.board_name,
+                'point_id': self.point_id,
+                'versions': {
+                        'cros_version': self.chromeos_version,
+                },
+                'supplemental': {
+                        'default_rev': 'r_cros_version',
+                        'kiosk_app_name': 'a_' + self.kiosk_app_name,
+                },
+                'chart_data': perf_values
         }
         return {'data': json.dumps(dash_entry)}
 
@@ -263,7 +261,7 @@ class enterprise_LongevityTrackerServer(test.test):
         perf_values = {'cpu': [], 'mem': [], 'temp': []}
         perf_metrics = {'cpu': [], 'mem': [], 'temp': []}
 
-         # Create perf_<timestamp> file and writer.
+        # Create perf_<timestamp> file and writer.
         timestamp_fname = (PERF_FILE_NAME_PREFIX +
                            time.strftime('_%Y-%m-%d_%H-%M') + '.csv')
         timestamp_fpath = os.path.join(self.temp_dir, timestamp_fname)
@@ -296,7 +294,7 @@ class enterprise_LongevityTrackerServer(test.test):
                         perf_values, perf_metrics)
                 perf_values = {'cpu': [], 'mem': [], 'temp': []}
 
-            # Set previous time to current time.
+                # Set previous time to current time.
                 metric_prev_time = time.time()
                 metric_elapsed_prev_time = self.elapsed_time(metric_prev_time)
 
@@ -315,14 +313,14 @@ class enterprise_LongevityTrackerServer(test.test):
         # Close perf timestamp file.
         timestamp_file.close()
 
-         # Open perf timestamp file to read, and aggregated file to append.
+        # Open perf timestamp file to read, and aggregated file to append.
         timestamp_file = open(timestamp_fpath, 'r')
         aggregated_fname = (PERF_FILE_NAME_PREFIX + '_aggregated.csv')
         aggregated_fpath = os.path.join(self.temp_dir, aggregated_fname)
         aggregated_file = enterprise_longevity_helper.open_perf_file(
                 aggregated_fpath)
 
-         # Append contents of perf timestamp file to perf aggregated file.
+        # Append contents of perf timestamp file to perf aggregated file.
         enterprise_longevity_helper.append_to_aggregated_file(
                 timestamp_file, aggregated_file)
         timestamp_file.close()

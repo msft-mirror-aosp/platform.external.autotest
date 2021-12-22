@@ -117,10 +117,10 @@ class GitRepoManager(object):
         If the dependent repo is empty pull from main.
         """
         # TODO b:169251326 terms below are set outside of this codebase
-        # and should be updated when possible. ("master" -> "main")
+        # and should be updated when possible. ("master" -> "main") # nocheck
         # Currently (but I believe it will eventually) does not support
-        # `reset --hard origin/main` (must be origin/master).
-        self.git_repo_manager.reinit_repo_at('master')
+        # `reset --hard origin/main` (must be origin/master). # nocheck
+        self.git_repo_manager.reinit_repo_at('master')  # nocheck
         self.commit_hash = self.git_repo_manager.get_latest_commit_hash()
 
 

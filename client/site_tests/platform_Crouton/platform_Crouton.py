@@ -19,7 +19,7 @@ class platform_Crouton(test.test):
 
     def _parse_args(self, args):
         self._repo = "dnschneid/crouton"
-        self._branch = "master"
+        self._branch = "master"  # nocheck
         self._runargs = "00"
         self._env = ""
 

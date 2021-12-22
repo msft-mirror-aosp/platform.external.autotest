@@ -54,8 +54,8 @@ REIMAGE_TYPE_OS = 'os'
 REIMAGE_TYPE_FIRMWARE = 'firmware'
 
 # TODO b:169251326 terms below are set outside of this codebase and should
-# be updated when possible ("master" -> "main").
-LATEST_BUILD_URL = 'gs://chromeos-image-archive/master-paladin/LATEST-master'
+# be updated when possible ("master" -> "main"). # nocheck
+LATEST_BUILD_URL = 'gs://chromeos-image-archive/master-paladin/LATEST-master'  # nocheck
 
 JOB_OFFLOAD_FAILURES_KEY = 'offload_failures_only'
 

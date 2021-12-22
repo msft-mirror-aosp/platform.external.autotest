@@ -330,22 +330,22 @@ class longevity_Tracker(test.test):
             'charts': chart_data,
         }
         # TODO b:169251326 terms below are set outside of this codebase and
-        # should be updated when possible ("master" -> "main").
+        # should be updated when possible ("master" -> "main"). # nocheck
         dash_entry = {
-            'master': 'ChromeOS_Enterprise',
-            'bot': 'cros-%s' % self.board_name,
-            'point_id': self.point_id,
-            'versions': {
-                'cros_version': self.chromeos_version,
-                'chrome_version': self.chrome_version,
-            },
-            'supplemental': {
-                'default_rev': 'r_cros_version',
-                'hardware_identifier': 'a_' + self.hw_id,
-                'kiosk_app_name': 'a_' + self.kiosk_app_name,
-                'kiosk_app_version': 'r_' + self.kiosk_app_version
-            },
-            'chart_data': perf_values
+                'master': 'ChromeOS_Enterprise',  # nocheck
+                'bot': 'cros-%s' % self.board_name,
+                'point_id': self.point_id,
+                'versions': {
+                        'cros_version': self.chromeos_version,
+                        'chrome_version': self.chrome_version,
+                },
+                'supplemental': {
+                        'default_rev': 'r_cros_version',
+                        'hardware_identifier': 'a_' + self.hw_id,
+                        'kiosk_app_name': 'a_' + self.kiosk_app_name,
+                        'kiosk_app_version': 'r_' + self.kiosk_app_version
+                },
+                'chart_data': perf_values
         }
         return {'data': json.dumps(dash_entry)}
 

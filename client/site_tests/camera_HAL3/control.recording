@@ -24,7 +24,7 @@ DOC = """
 This is a wrapper test for cros_camera_test.
 For more information on HAL3 see:
 https://source.android.com/devices/camera/camera3.html
-https://android.googlesource.com/platform/hardware/libhardware/+/master/include/hardware/camera3.h
+https://android.googlesource.com/platform/hardware/libhardware/+/master/include/hardware/camera3.h # nocheck
 """
 
 facing_options = [

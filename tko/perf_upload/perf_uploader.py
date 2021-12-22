@@ -157,23 +157,23 @@ def _format_for_upload(board_name, cros_version, chrome_version,
         }
 
     # TODO b:169251326 terms below are set outside of this codebase and
-    # should be updated when possible ("master" -> "main").
+    # should be updated when possible ("master" -> "main"). # nocheck
     # see catapult-project/catapult/dashboard/dashboard/add_point.py
     dash_entry = {
-        'master': presentation_info['main_name'],
-        'bot': 'cros-' + board_name,  # Prefix to clarify it's ChromeOS.
-        'point_id': _get_id_from_version(chrome_version, cros_version),
-        'versions': {
-            'cros_version': cros_version,
-            'chrome_version': chrome_version,
-        },
-        'supplemental': {
-            'default_rev': 'r_cros_version',
-            'hardware_identifier': hardware_id,
-            'hardware_hostname': hardware_hostname,
-            'jobname': jobname,
-        },
-        'chart_data': perf_values,
+            'master': presentation_info['main_name'],  # nocheck
+            'bot': 'cros-' + board_name,  # Prefix to clarify it's ChromeOS.
+            'point_id': _get_id_from_version(chrome_version, cros_version),
+            'versions': {
+                    'cros_version': cros_version,
+                    'chrome_version': chrome_version,
+            },
+            'supplemental': {
+                    'default_rev': 'r_cros_version',
+                    'hardware_identifier': hardware_id,
+                    'hardware_hostname': hardware_hostname,
+                    'jobname': jobname,
+            },
+            'chart_data': perf_values,
     }
     return {'data': json.dumps(dash_entry)}
 

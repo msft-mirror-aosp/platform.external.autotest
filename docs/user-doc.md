@@ -244,7 +244,7 @@ When running tests, fundamentally, you want to either:
 ### Running tests on a machine
 
 Autotests are run with a tool called
-[test_that](https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/master/docs/test-that.md).
+[test_that](https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/test-that.md).
 
 ### Running tests in a VM - cros_run_test
 
@@ -253,7 +253,7 @@ the VM using a given image and then calls `test_that`. This is run by builders
 to test using the Smoke suite.
 
 If you want to run your tests in a VM (see
-[here](https://chromium.googlesource.com/chromiumos/docs/+/master/cros_vm.md#Run-an-autotest-in-the-VM)
+[here](https://chromium.googlesource.com/chromiumos/docs/+/main/cros_vm.md#Run-an-autotest-in-the-VM)
 
 -   `cros_run_test` starts up a VM and runs autotests using the port
 -   specified (defaults to 9222).  As an example:

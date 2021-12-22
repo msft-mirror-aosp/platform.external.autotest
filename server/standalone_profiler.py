@@ -22,7 +22,7 @@ import six
 # Client control file snippet used to synchronize profiler start & stop.
 _RUNTEST_PATTERN = ("job.run_test('profiler_sync', timeout_sync=%r,\n"
                     "             timeout_start=%r, timeout_stop=%r,\n"
-                    "             hostid='%s', masterid='%s', all_ids=%r)")
+                    "             hostid='%s', mainid='%s', all_ids=%r)")
 _PROF_MAIN = platform.node()
 _PORT = 11920
 

@@ -83,7 +83,7 @@ class firmware_ECUsbPorts(FirmwareTest):
             gpio_name = str(gpio_name)
         _, val = self.ec.send_command_get_output(
                 '%sget %s' % (('gpio', 'ioex')[is_ioex], gpio_name),
-                ['([01])[^\n\r]*\s%s' % gpio_name])[0]
+                ['(?i)([01])[^\n\r]*\s%s' % gpio_name])[0]
         return val == '1'
 
     def probe_port_count(self):

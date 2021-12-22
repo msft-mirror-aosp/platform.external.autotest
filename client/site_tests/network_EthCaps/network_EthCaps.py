@@ -229,7 +229,7 @@ class network_EthCaps(test.test):
         # In fact, WoL only known to work for PCIe Ethernet devices.
         # We know _some_ platforms power off all USB ports when suspended.
         # USB adapters with "pg" capabilities _might_ WoL on _some_ platforms.
-        # White list/black listing of platforms will be required to test
+        # allow list/deny listing of platforms will be required to test
         # WoL against USB dongles in the future.
         if self._is_usb():
             logging.debug("Skipping WOL test on USB Ethernet device.")

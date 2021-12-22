@@ -13,7 +13,7 @@
 #
 # The parser uses the test report generator which comes bundled with the Chrome
 # OS source tree in order to maintain consistency. As well as not having to keep
-# track of any secondary failure white lists.
+# track of any secondary failure allow lists.
 #
 # Stack trace generation is done by the minidump_stackwalk utility which is also
 # bundled with the Chrome OS source tree. Requires gsutil and cros_sdk utilties
@@ -194,7 +194,7 @@ def main():
     from generate_test_report import ResultCollector
 
     # Collect results using the standard Chrome OS test report generator. Doing
-    # so allows us to use the same crash white list and reporting standards the
+    # so allows us to use the same crash allow list and reporting standards the
     # VM based test instances use.
     # TODO(scottz): Reevaluate this code usage. crosbug.com/35282
     results = ResultCollector().RecursivelyCollectResults(results_dir)

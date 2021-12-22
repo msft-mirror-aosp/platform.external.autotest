@@ -67,7 +67,7 @@ FIXTURE_SETUP(TRAP) {
 		struct sock_filter filter[] = {
 			BPF_STMT(BPF_LD+BPF_W+BPF_ABS,
 				offsetof(struct seccomp_data, nr)),
-			/* Whitelist anything you might need in the sigaction */
+			/* Allow-list anything you might need in the sigaction */
 #ifdef __NR_sigreturn
 			BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_sigreturn, 4, 0),
 #endif

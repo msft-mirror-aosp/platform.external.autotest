@@ -8,6 +8,7 @@ ATTRIBUTES = ''
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell, working_bluetooth_btpeer:1'
+PY_VERSION = 3
 
 DOC = """
 This test uses netperf to measure the maximal receiving and transmitting

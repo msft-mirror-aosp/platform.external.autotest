@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -31,7 +32,7 @@ class AttenuatorController(object):
     @property
     def supported_attenuators(self):
         """@return iterable of int attenuators supported on this host."""
-        return self._fixed_attenuations.keys()
+        return list(self._fixed_attenuations.keys())
 
 
     def __init__(self, hostname):
@@ -43,7 +44,7 @@ class AttenuatorController(object):
         self.hostname = hostname
         super(AttenuatorController, self).__init__()
         part = hostname.split('.cros', 1)[0]
-        if part not in HOST_TO_FIXED_ATTENUATIONS.keys():
+        if part not in list(HOST_TO_FIXED_ATTENUATIONS.keys()):
             logging.debug('Attenuator %s not found in attenuator_host list',
                           part)
             self._fixed_attenuations = FAKE_HOST
@@ -72,7 +73,7 @@ class AttenuatorController(object):
 
         old_offset = None
         approx_freq = None
-        for defined_freq in self._fixed_attenuations[attenuator_num].keys():
+        for defined_freq in list(self._fixed_attenuations[attenuator_num].keys()):
             new_offset = abs(defined_freq - freq)
             if old_offset is None or new_offset < old_offset:
                 old_offset = new_offset
@@ -157,8 +158,8 @@ class AttenuatorController(object):
         self._fail_if_fake()
 
         max_atten = 0
-        for atten_num in self._fixed_attenuations.iterkeys():
-            atten_values = self._fixed_attenuations[atten_num].values()
+        for atten_num in self._fixed_attenuations.keys():
+            atten_values = list(self._fixed_attenuations[atten_num].values())
             max_atten = max(max(atten_values), max_atten)
         return max_atten
 

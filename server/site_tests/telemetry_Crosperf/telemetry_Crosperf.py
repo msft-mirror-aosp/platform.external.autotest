@@ -46,9 +46,9 @@ FAILED_STATUS = 'FAILED'
 
 # Regex for the RESULT output lines understood by chrome buildbot.
 # TODO b:169251326 terms below are set outside of this codebase and
-# should be updated when possible ("slave").
+# should be updated when possible ("slave"). # nocheck
 # Keep in sync with
-# chromium/tools/build/scripts/slave/performance_log_processor.py.
+# chromium/tools/build/scripts/slave/performance_log_processor.py. # nocheck
 RESULTS_REGEX = re.compile(r'(?P<IMPORTANT>\*)?RESULT '
                            r'(?P<GRAPH>[^:]*): (?P<TRACE>[^=]*)= '
                            r'(?P<VALUE>[\{\[]?[-\d\., ]+[\}\]]?)('

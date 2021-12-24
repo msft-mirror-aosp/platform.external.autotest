@@ -210,7 +210,7 @@ def _restart_adb_and_wait_for_ready(timeout):
 
         # First, collect some information and log it.
         arc_alive = is_android_container_alive()
-        arc_booted = _android_shell('getprop sys.boot_completed',
+        arc_booted = _android_shell('getprop ro.arc.boot_completed',
                                     ignore_status=True)
         arc_system_events = _android_shell(
             'logcat -d -b events *:S arc_system_event', ignore_status=True)

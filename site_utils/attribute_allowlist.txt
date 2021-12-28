@@ -274,6 +274,7 @@ suite:power_qual_fast
 suite:power_qual_full
 suite:power_requirements
 suite:powerplay
+suite:printscan
 suite:push_to_prod
 suite:pvs-audio
 suite:pvs-display

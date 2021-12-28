@@ -1792,7 +1792,7 @@ class Servo(object):
         # If it's a ccd device, remove the 'ccd_' prefix to find the firmware
         # name.
         if servo_type.startswith(self.CCD_PREFIX):
-            servo_type[len(self.CCD_PREFIX)::]
+            servo_type = servo_type[len(self.CCD_PREFIX)::]
         cmd = '%s_version' % servo_type
         try:
             return self.get(cmd, prefix=prefix)

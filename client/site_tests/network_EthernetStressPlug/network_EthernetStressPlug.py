@@ -296,7 +296,7 @@ class network_EthernetStressPlug(test.test):
                 self._PowerEthernet(power)
                 self.link_speed_failures += 1
                 logging.warning('Link Renegotiated %s',
-                    self.test_status['reason'])
+                                self.test_status['reason'])
 
             # If ethernet is enabled  and has an IP, OR
             # if ethernet is disabled and does not have an IP,
@@ -313,10 +313,11 @@ class network_EthernetStressPlug(test.test):
             time.sleep(1)
 
         logging.debug(self.test_status['reason'])
-        raise error.TestFail('ERROR: TIMEOUT : %s IP is %s after setting '
-                             'power %s (last_wait = %.2f seconds)',
-                             self.interface, self.test_status['ipaddress'],
-                             power_str[power], self.test_status['last_wait'])
+        raise error.TestFail(
+                'ERROR: TIMEOUT : %s IP is %s after setting '
+                'power %s (last_wait = %.2f seconds)', self.interface,
+                self.test_status['ipaddress'], power_str[power],
+                self.test_status['last_wait'])
 
     def RandSleep(self, min_sleep, max_sleep):
         """ Sleeps for a random duration.
@@ -509,18 +510,18 @@ class network_EthernetStressPlug(test.test):
                               linkup_time)
 
                 if self.warning_count > num_iterations * self.warning_threshold:
-                    raise error.TestFail('ERROR: %.2f%% of total runs (%d) '
-                                         'took longer than %d seconds for '
-                                         'ethernet to come up.',
-                                         self.warning_threshold * 100,
-                                         num_iterations,
-                                         self.secs_before_warning)
+                    raise error.TestFail(
+                            'ERROR: %.2f%% of total runs (%d) '
+                            'took longer than %d seconds for '
+                            'ethernet to come up.',
+                            self.warning_threshold * 100, num_iterations,
+                            self.secs_before_warning)
 
             # Link speed failures are secondary.
             # Report after all iterations complete.
             if self.link_speed_failures > 1:
                 raise error.TestFail('ERROR: %s : Link Renegotiated %d times',
-                                self.interface, self.link_speed_failures)
+                                     self.interface, self.link_speed_failures)
 
         except Exception as e:
             exc_info = sys.exc_info()

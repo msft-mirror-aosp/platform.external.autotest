@@ -48,7 +48,7 @@ class network_EthernetStressPlug(test.test):
         sysnet = os.path.join('/', 'sys', 'class', 'net')
 
         def get_ethernet_interface(interface):
-            """ Valid interface requires link and duplex status."""
+            """ Valid interface requires link status."""
             avail_eth_interfaces = []
             if interface is None:
                 # This is not the (bridged) eth dev we are looking for.
@@ -200,13 +200,11 @@ class network_EthernetStressPlug(test.test):
 
         for param, val in list(ethernet_status.items()):
             if self.dongle.GetParam(param) is None:
-                # For parameters with expected values none, we check the
-                # existence of a value.
-                if not bool(val):
-                    self.test_status['eth_state'] = False
-                    self.test_status['reason'] = '%s is not ready: %s == %s' \
-                                                 % (self.interface, param, val)
-                    return False
+                # For parameters with expected values None, just check the
+                # existence of a value but do nothing with it.
+                if bool(val):
+                    logging.debug("ReadEthVal(%s): %s is %s", self.interface,
+                                  param, val)
             else:
                 if val != self.dongle.GetParam(param):
                     self.test_status['eth_state'] = False
@@ -492,10 +490,14 @@ class network_EthernetStressPlug(test.test):
         # Ethtool output is ordered in terms of speed so this obtains the
         # fastest speed supported by dongle.
         # QCA ESS EDMA driver doesn't report "Supported link modes".
-        max_link = ethtool_dict['Advertised link modes'][-1]
-
-        return EthernetDongle(expect_speed=max_link['Speed'],
-                              expect_duplex=max_link['Duplex'])
+        if ethtool_dict.get('Advertised link modes', None):
+            max_link = ethtool_dict['Advertised link modes'][-1]
+            return EthernetDongle(expect_speed=max_link['Speed'],
+                                  expect_duplex=max_link['Duplex'])
+        else:
+            # Pre-v5.13 cdc_ncm driver doesn't report speed or duplex.
+            # v5.13 (and later) will report speed, but not duplex.
+            return EthernetDongle(expect_speed=None, expect_duplex=None)
 
     def run_once(self, num_iterations=1):
         try:

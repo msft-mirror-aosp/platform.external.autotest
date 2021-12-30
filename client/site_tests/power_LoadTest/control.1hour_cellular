@@ -1,22 +1,17 @@
-# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "Chrome OS Team"
-NAME = "power_LoadTest"
+NAME = "power_LoadTest.1hour_cellular"
 PURPOSE = "Measure power draw when system is under load."
 CRITERIA = "This test is a benchmark."
-TIME = "LONG"
+TIME = "LENGTHY"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:power_loadtest"
-EXTENDED_TIMEOUT = 58500  # 16 Hours + 900 second guard.
+EXTENDED_TIMEOUT = 4500
+PY_VERSION = 3
 
 DOC = """
 This test runs a load test consisting of cycling though web pages, playing
@@ -26,18 +21,24 @@ determined by the seconds variable.
 
 The following manual steps need to be performed on the device under test
 before this test can be run:
-  - make sure that Ethernet cable is disconnected and WiFi is connected
+  - make sure that Ethernet cable is disconnected and the cellular network
+    is connected
   - disconnect power cable
+
+Currently this test can only be executed locally on the DUT, not remotely
+with 'test_that'.
 
 You are now ready to run the test.
 """
 
 # TODO (bleung): Find a way to do automatic Facebook login for test account.
-
+# TODO (tbroch): Find way to not replicate all these parameters that are common
+# between this control file and the original
 loop_time = 3600
-loop_count = 16
+loop_count = 1
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_LoadTest', loop_time=loop_time, loop_count=loop_count,
-             test_low_batt_p=3, pdash_note=pdash_note)
+             test_low_batt_p=6, use_cellular_network=True,
+             tag=NAME.split('.')[1], pdash_note=pdash_note)

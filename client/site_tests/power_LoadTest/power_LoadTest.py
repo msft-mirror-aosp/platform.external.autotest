@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -196,7 +197,7 @@ class power_LoadTest(arc.ArcTest):
 
             self._shill_proxy = wifi_proxy.WifiProxy()
             self._shill_proxy.remove_all_wifi_entries()
-            for i in xrange(1,4):
+            for i in range(1, 4):
                 raw_output = self._shill_proxy.connect_to_wifi_network(
                         wifi_config.ssid,
                         wifi_config.security,
@@ -453,12 +454,12 @@ class power_LoadTest(arc.ArcTest):
 
 
         def _log_per_loop_stats():
-            samples_per_loop = self._loop_time / self._wait_time + 1
+            samples_per_loop = int(self._loop_time / self._wait_time) + 1
             for kname in self._stats:
                 start_idx = 0
                 loop = 1
-                for end_idx in xrange(samples_per_loop, len(self._stats[kname]),
-                                      samples_per_loop):
+                for end_idx in range(samples_per_loop, len(self._stats[kname]),
+                                     samples_per_loop):
                     _log_stats("%s loop %d" % (kname, loop),
                                self._stats[kname][start_idx:end_idx])
                     loop += 1
@@ -561,7 +562,7 @@ class power_LoadTest(arc.ArcTest):
                             keyvals)
         # Avoid polluting the keyvals with non-core domains.
         core_keyvals = power_utils.get_core_keyvals(keyvals)
-        for key, value in core_keyvals.iteritems():
+        for key, value in core_keyvals.items():
             if re.match(r'percent_[cg]pu(idle|pkg).*_R?C0(_C1)?_time', key):
                 self.output_perf_value(description=key,
                                        value=value,
@@ -905,7 +906,7 @@ def _extension_log_handler(handler, form, loop_number):
     """
 
     if form:
-        for field in sorted(form.keys(), key=alphanum_key):
+        for field in sorted(list(form.keys()), key=alphanum_key):
             logging.debug("[extension] @ %s %s", _loop_prefix(loop_number),
             form[field].value)
             # we don't want to add url information to our keyvals.
@@ -1006,7 +1007,7 @@ def _extension_key_values_handler(handler, form, loop_number,
         keyval_data = json.loads(form[field].value)
 
         # Print each key:value pair and associate it with the data
-        for key, value in keyval_data.iteritems():
+        for key, value in keyval_data.items():
             logging.debug("[extension] @ %s key: %s val: %s",
                 _loop_prefix(loop_number), key, value)
             # Add the key:values to the _tmp_keyvals set

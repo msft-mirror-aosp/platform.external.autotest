@@ -2,13 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "Chrome OS Team"
-NAME = "power_LoadTest.docs_1hour"
+NAME = "power_LoadTest.email_1hour"
 PURPOSE = "Measure power draw when system is under load."
 CRITERIA = "This test is a benchmark."
 TIME = "LENGTHY"
@@ -16,6 +11,7 @@ TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
 EXTENDED_TIMEOUT = 4500
+PY_VERSION = 3
 
 DOC = """
 This test runs a load test consisting of cycling though web pages, playing
@@ -67,15 +63,27 @@ tasks='[{' + \
 '     \'http://www.facebook.com\'' + \
 '    ]}, {' + \
 '    type: \'cycle\',' + \
-'    name: \'docs\',' + \
+'    name: \'email\',' + \
 '    start: seconds(1),' + \
 '    duration: minutes(60),' + \
-'    delay: seconds(60),' + \
+'    delay: minutes(5),' + \
 '    timeout: seconds(10),' + \
 '    focus: true,' + \
 '    urls: [' + \
-'     ViewGDoc + \'1ywpQGu18T9e2lB_QVMlihDqiF0V5hsYkhlXCfu9B8jY\',' + \
-'     ViewGDoc + \'12qBD7L6n9hLW1OFgLgpurx7WSgDM3l01dU6YYU-xdXU\'' + \
+'     \'http://gmail.com\',' + \
+'     \'http://mail.google.com\'' + \
+'    ]}, {' + \
+'    type: \'cycle\',' + \
+'    name: \'audio\',' + \
+'    start: 0,' + \
+'    duration: minutes(60),' + \
+'    delay: minutes(12),' + \
+'    timeout: seconds(10),' + \
+'    focus: false,' + \
+'    urls: [' + \
+'     \'http://www.bbc.co.uk/worldservice/audioconsole/?stream=live\',' + \
+'     \'http://www.npr.org/templates/player/mediaPlayer.html?action=3&t=live1\',' + \
+'     \'http://www.cbc.ca/radio2/channels/popup.html?stream=classical\'' + \
 ']}]'
 
 

@@ -2,26 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "Chrome OS Team"
-NAME = "power_LoadTest.email_1hour"
+NAME = "power_LoadTest.single_page"
 PURPOSE = "Measure power draw when system is under load."
 CRITERIA = "This test is a benchmark."
-TIME = "LENGTHY"
+TIME = "MEDIUM"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-EXTENDED_TIMEOUT = 4500
+PY_VERSION = 3
 
 DOC = """
-This test runs a load test consisting of cycling though web pages, playing
-videos, etc. and measures battery power draw. The duration of this test is
-determined by the seconds variable.
+This test measures the power of a single webpage including stats such as
+cpu usage.
 
+@args: the website url to run the test with
 
 The following manual steps need to be performed on the device under test
 before this test can be run:
@@ -34,7 +29,7 @@ You are now ready to run the test.
 # TODO (bleung): Find a way to do automatic Facebook login for test account.
 # TODO (tbroch): Find way to not replicate all these parameters that are common
 # between this control file and the original
-loop_time = 3600
+loop_time = 300
 loop_count = 1
 
 # Task format:
@@ -53,43 +48,22 @@ loop_count = 1
 # tabs: list of urls for the window type
 # urls: list of urls to cycle through for the cycle type
 
+# The duration and delay are scaled by 1/12 due to the loop time being 300
+# instead of 3600 seconds. This is why duration is minutes(60) instead of
+# minutes(5) and delay is minutes(12) instead of minutes(1).
 tasks='[{' + \
-'    type: \'window\',' + \
-'    name: \'background\',' + \
-'    start: 0,' + \
-'    duration: minutes(60),' + \
-'    focus: false,' + \
-'    tabs: [' + \
-'     \'http://www.google.com\',' + \
-'     \'http://news.google.com\',' + \
-'     \'http://www.reddit.com\',' + \
-'     \'http://clothing.shop.ebay.com/Womens-Shoes-/63889/i.html\',' + \
-'     \'http://www.facebook.com\'' + \
-'    ]}, {' + \
 '    type: \'cycle\',' + \
-'    name: \'email\',' + \
+'    name: \'web\',' + \
 '    start: seconds(1),' + \
-'    duration: minutes(60),' + \
-'    delay: minutes(5),' + \
-'    timeout: seconds(10),' + \
-'    focus: true,' + \
-'    urls: [' + \
-'     \'http://gmail.com\',' + \
-'     \'http://mail.google.com\'' + \
-'    ]}, {' + \
-'    type: \'cycle\',' + \
-'    name: \'audio\',' + \
-'    start: 0,' + \
 '    duration: minutes(60),' + \
 '    delay: minutes(12),' + \
 '    timeout: seconds(10),' + \
-'    focus: false,' + \
+'    focus: true,' + \
 '    urls: [' + \
-'     \'http://www.bbc.co.uk/worldservice/audioconsole/?stream=live\',' + \
-'     \'http://www.npr.org/templates/player/mediaPlayer.html?action=3&t=live1\',' + \
-'     \'http://www.cbc.ca/radio2/channels/popup.html?stream=classical\'' + \
+'\'' + \
+args[0] + \
+'\'' + \
 ']}]'
-
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

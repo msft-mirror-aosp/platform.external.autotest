@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -398,7 +399,7 @@ class Suspender(object):
                 else:
                     dev[phase] = secs
 
-        for dev_key, dev in dev_details.iteritems():
+        for dev_key, dev in dev_details.items():
             total_secs = sum(dev.values())
             self.device_times[-1][dev_key] = total_secs
             report = '%s: %f TOT' % (dev_key, total_secs)

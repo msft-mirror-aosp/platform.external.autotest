@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -516,8 +517,7 @@ class KbdBacklight(object):
         @param percent: float value in the range [0.0, 100.0]
                         to set keyboard backlight to.
         """
-        cmd = ('backlight_tool --keyboard --set_brightness_percent=' +
-               str(percent))
+        cmd = 'backlight_tool --keyboard --set_brightness_percent=%f' % percent
         utils.system(cmd)
 
     def set_level(self, level):
@@ -526,7 +526,7 @@ class KbdBacklight(object):
         Args:
         @param level: level to set keyboard backlight to.
         """
-        cmd = 'backlight_tool --keyboard --set_brightness=' + str(level)
+        cmd = 'backlight_tool --keyboard --set_brightness=%d' % level
         utils.system(cmd)
 
 

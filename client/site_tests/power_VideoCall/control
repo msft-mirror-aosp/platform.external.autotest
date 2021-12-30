@@ -1,18 +1,12 @@
 AUTHOR = "puthik"
-NAME = "power_VideoCall.25min"
+NAME = "power_VideoCall"
 PURPOSE = "Simulates video call multitasking."
-
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 CRITERIA = "This test is a benchmark."
 TIME = "LENGTHY"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:power_monitoring"
+PY_VERSION = 3
 
 DOC = """
 This test simulates video call multitasking and record power related statistic.
@@ -22,10 +16,9 @@ Workload
 - Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
 - Google Doc with emulated typing.
 
-The version runs for 25 minutes as it is common duration of the video call.
+The run time is 2 hours to allow the DUT to heat up to steady state.
 """
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
-job.run_test('power_VideoCall', pdash_note=pdash_note, duration=1500,
-             tag=NAME.split('.')[1])
+job.run_test('power_VideoCall', pdash_note=pdash_note)

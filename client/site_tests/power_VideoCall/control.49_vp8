@@ -1,24 +1,19 @@
 AUTHOR = "puthik"
-NAME = "power_VideoCall.16_vp9"
+NAME = "power_VideoCall.49_vp8"
 PURPOSE = "Simulates video call."
-
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 CRITERIA = "This test is a benchmark."
 TIME = "MEDIUM"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This test simulates video call and record power related statistic.
 
 Workload
-- Camera preview in 270p using VP8 codec.
-- 16 270p 24fps VP9 video playback.
+- Camera preview in 135p using VP8 codec.
+- 49 135p 15fps VP8 video playback.
 
 The run time is 3 minutes.
 """
@@ -28,5 +23,5 @@ video_url = 'http://crospower.page.link/power_VideoCall_' + NAME.split('.')[1]
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_VideoCall', pdash_note=pdash_note, tag=NAME.split('.')[1],
-             video_url=video_url, num_video=17, duration=180, seconds_period=5,
+             video_url=video_url, num_video=50, duration=180, seconds_period=5,
              multitask=False)

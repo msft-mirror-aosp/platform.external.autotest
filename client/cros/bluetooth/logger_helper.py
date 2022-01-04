@@ -85,7 +85,7 @@ class LogManager(object):
             msg = 'Log became smaller unexpectedly'
             raise LogManager.LoggingException(msg)
 
-        with open(self.log_path, 'r') as mf:
+        with open(self.log_path, 'r', encoding='utf-8') as mf:
             # Skip to the point where we started recording
             mf.seek(self.initial_log_size)
 
@@ -124,7 +124,7 @@ class LogManager(object):
         initial_size = self._GetSize()
         rm_pattern = re.compile(rm_reg_exp)
 
-        with open(self.log_path, 'r+') as mf:
+        with open(self.log_path, 'r+', encoding='utf-8') as mf:
             lines = mf.readlines()
             mf.seek(0)
             for line in lines:

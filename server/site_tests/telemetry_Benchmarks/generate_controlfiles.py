@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 """
 This file generates all telemetry_Benchmarks control files from a main list.

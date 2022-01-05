@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -20,6 +20,7 @@ from __future__ import print_function
 import argparse
 import json
 import os
+import six
 import sys
 
 
@@ -61,10 +62,10 @@ def main():
         sys.stderr.write(cmd['stderr'])
 
     if cmd.get('files_to_write'):
-        for path, data in cmd['files_to_write'].iteritems():
+        for path, data in six.iteritems(cmd['files_to_write']):
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
-                os.makedirs(dirname, 0o0755)
+                os.makedirs(dirname, 0o755)
             with open(path, 'w') as f:
                 f.write(data)
 

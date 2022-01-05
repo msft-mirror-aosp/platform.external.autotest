@@ -2,19 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
-NAME = "servo_ConsoleStress"
-PURPOSE = "Verify console."
+NAME = "servo_ConsoleStress.cr50"
+PURPOSE = "Verify cr50 console."
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
+PY_VERSION = 3
 
 DOC = """Run the control a bunch. Make sure the output doesn't change
 
@@ -32,8 +28,8 @@ def run(machine):
 
     iterations = int(args_dict.get("iterations", 1))
     attempts = int(args_dict.get("attempts", 1000))
-    cmd_type = args_dict.get("cmd_type", "ec")
-    cmd = args_dict.get("cmd", "version")
+    cmd_type = args_dict.get("cmd_type", "cr50")
+    cmd = args_dict.get("cmd", "pinmux")
 
     job.run_test("servo_ConsoleStress", host=host, cmdline_args=args,
                  full_args=args_dict, iterations=iterations,

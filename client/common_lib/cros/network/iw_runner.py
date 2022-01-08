@@ -48,6 +48,9 @@ WIDTH_HT40_MINUS = _PrintableWidth('HT40-')
 WIDTH_VHT80 = _PrintableWidth('VHT80')
 WIDTH_VHT160 = _PrintableWidth('VHT160')
 WIDTH_VHT80_80 = _PrintableWidth('VHT80+80')
+WIDTH_HE40 = _PrintableWidth('HE40')
+WIDTH_HE80 = _PrintableWidth('HE80')
+WIDTH_HE160 = _PrintableWidth('HE160')
 
 VHT160_CENTER_CHANNELS = ('50','114')
 
@@ -55,8 +58,11 @@ SECURITY_OPEN = 'open'
 SECURITY_WEP = 'wep'
 SECURITY_WPA = 'wpa'
 SECURITY_WPA2 = 'wpa2'
+SECURITY_WPA3 = 'wpa3'
 # Mixed mode security is WPA2/WPA
 SECURITY_MIXED = 'mixed'
+# mixed3 mode security is WPA2/WPA3
+SECURITY_MIXED3 = 'mixed3'
 
 # Table of lookups between the output of item 'secondary channel offset:' from
 # iw <device> scan to constants.
@@ -81,10 +87,11 @@ IwTimedScan = collections.namedtuple('IwTimedScan', ['time', 'bss_list'])
 #   features: List of strings containing nl80211 features supported, such as
 #          "T-DLS".
 #   max_scan_ssids: Maximum number of SSIDs which can be scanned at once.
-IwPhy = collections.namedtuple(
-    'Phy', ['name', 'bands', 'modes', 'commands', 'features',
-            'max_scan_ssids', 'avail_tx_antennas', 'avail_rx_antennas',
-            'supports_setting_antenna_mask', 'support_vht'])
+IwPhy = collections.namedtuple('Phy', [
+        'name', 'bands', 'modes', 'commands', 'features', 'max_scan_ssids',
+        'avail_tx_antennas', 'avail_rx_antennas',
+        'supports_setting_antenna_mask', 'support_vht', 'support_he'
+])
 
 DEFAULT_COMMAND_IW = 'iw'
 
@@ -320,10 +327,12 @@ class IwRunner(object):
         ssid = None
         ht = None
         vht = None
+        he = None
         signal = None
         security = None
         supported_securities = []
         bss_list = []
+        chan_width_subfield = 0
         # TODO(crbug.com/1032892): The parsing logic here wasn't really designed
         # for the presence of multiple information elements like HT, VHT, and
         # (eventually) HE. We should eventually update it to check that we are
@@ -337,9 +346,9 @@ class IwRunner(object):
                 if bss != None:
                     security = self.determine_security(supported_securities)
                     iwbss = IwBss(bss, frequency, ssid, security,
-                                  vht if vht else ht, signal)
+                                  he if he else vht if vht else ht, signal)
                     bss_list.append(iwbss)
-                    bss = frequency = ssid = security = ht = vht = None
+                    bss = frequency = ssid = security = ht = vht = he = None
                     supported_securities = []
                 bss = bss_match.group(1)
             if line.startswith('freq:'):
@@ -368,13 +377,27 @@ class IwRunner(object):
                         vht = WIDTH_VHT160
                     elif center_chan_two != '0':
                         vht = WIDTH_VHT80_80
+            # checking HE channel width, they are printed in order
+            # last HE_PHY is the configured channel width
+            if line.startswith(HE_PHY_5HE40_80):
+                if chan_width_subfield == '0':
+                    he = WIDTH_HE40
+                else:
+                    he = WIDTH_HE80
+            if line.startswith(HE_PHY_5HE160):
+                he = WIDTH_HE160
+
             if line.startswith('WPA'):
                 supported_securities.append(SECURITY_WPA)
-            if line.startswith('RSN'):
-                supported_securities.append(SECURITY_WPA2)
+            if line.startswith('* Authentication suites: '):
+                if 'PSK' in line:
+                    supported_securities.append(SECURITY_WPA2)
+                if 'SAE' in line:
+                    supported_securities.append(SECURITY_WPA3)
         security = self.determine_security(supported_securities)
-        bss_list.append(IwBss(bss, frequency, ssid, security,
-                              vht if vht else ht, signal))
+        bss_list.append(
+                IwBss(bss, frequency, ssid, security,
+                      he if he else vht if vht else ht, signal))
         return bss_list
 
 
@@ -702,16 +725,18 @@ class IwRunner(object):
                                  dict(band.frequency_flags),
                                  tuple(band.mcs_indices))
                           for band in pending_phy_bands)
-            new_phy = IwPhy(pending_phy_name,
-                            bands,
-                            tuple(pending_phy_modes),
-                            tuple(pending_phy_commands),
-                            tuple(pending_phy_features),
-                            pending_phy_max_scan_ssids,
-                            pending_phy_tx_antennas,
-                            pending_phy_rx_antennas,
-                            pending_phy_tx_antennas and pending_phy_rx_antennas,
-                            pending_phy_support_vht)
+            new_phy = IwPhy(
+                    pending_phy_name,
+                    bands,
+                    tuple(pending_phy_modes),
+                    tuple(pending_phy_commands),
+                    tuple(pending_phy_features),
+                    pending_phy_max_scan_ssids,
+                    pending_phy_tx_antennas,
+                    pending_phy_rx_antennas,
+                    pending_phy_tx_antennas and pending_phy_rx_antennas,
+                    pending_phy_support_vht,
+                    pending_phy_support_he)
             all_phys.append(new_phy)
 
         for line in output.splitlines():
@@ -728,6 +753,7 @@ class IwRunner(object):
                 pending_phy_tx_antennas = 0
                 pending_phy_rx_antennas = 0
                 pending_phy_support_vht = False
+                pending_phy_support_he = False
                 continue
 
             match_section = re.match('\s*(\w.*):\s*$', line)
@@ -768,6 +794,12 @@ class IwRunner(object):
                 current_section.startswith('VHT Capabilities') and
                 pending_phy_name):
                 pending_phy_support_vht = True
+                continue
+
+            if (current_section is not None
+                        and current_section.startswith('HE MAC Capabilities')
+                        and pending_phy_name):
+                pending_phy_support_he = True
                 continue
 
             match_avail_antennas = re.match('\s*Available Antennas: TX (\S+)'
@@ -845,13 +877,24 @@ class IwRunner(object):
     def determine_security(self, supported_securities):
         """Determines security from the given list of supported securities.
 
+        This function won't consider WPA when WPA3 presents. Although TKIP
+        hasn't been deprecated by Chromium OS, WPA/WPA3 or WPA/WPA2/WPA3
+        mixed modes won't be tested due to their extremely uncommon usage.
+
         @param supported_securities: list of supported securities from scan
+
+        @return one of open/wpa/wpa2/mixed/wpa3/mixed3
 
         """
         if not supported_securities:
             security = SECURITY_OPEN
         elif len(supported_securities) == 1:
             security = supported_securities[0]
+        elif SECURITY_WPA3 in supported_securities:
+            if SECURITY_WPA2 in supported_securities:
+                security = SECURITY_MIXED3
+            else:
+                security = SECURITY_WPA3
         else:
             security = SECURITY_MIXED
         return security
@@ -1121,7 +1164,6 @@ class IwRunner(object):
 
         if match:
             return int(match.group(1))
-
         return None
 
 

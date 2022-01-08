@@ -87,12 +87,16 @@ class IwRunnerTest(unittest.TestCase):
                                     iw_runner.WIDTH_HT40_MINUS, -42.00)
 
     HT40_ABOVE = str('BSS bb:bb:bb:bb:bb:bb (on wlan0)\n'
-        '    freq: 5180\n'
-        '    signal: -55.00 dBm\n'
-        '    SSID: support_ht40_above\n'
-        '    RSN:          * Version: 1\n'
-        '    HT operation:\n'
-        '         * secondary channel offset: above\n')
+                     '    freq: 5180\n'
+                     '    signal: -55.00 dBm\n'
+                     '    SSID: support_ht40_above\n'
+                     '    RSN:          * Version: 1\n'
+                     '        * Group cipher: CCMP\n'
+                     '        * Pairwise ciphers: CCMP\n'
+                     '        * Authentication suites: PSK\n'
+                     '        * Capabilities: 1-PTKSA-RC 1-GTKSA-RC (0x0000)\n'
+                     '    HT operation:\n'
+                     '         * secondary channel offset: above\n')
 
     HT40_ABOVE_IW_BSS = iw_runner.IwBss('bb:bb:bb:bb:bb:bb', 5180,
                                         'support_ht40_above',
@@ -100,13 +104,17 @@ class IwRunnerTest(unittest.TestCase):
                                         iw_runner.WIDTH_HT40_PLUS, -55.00)
 
     HT40_BELOW = str('BSS cc:cc:cc:cc:cc:cc (on wlan0)\n'
-        '    freq: 2462\n'
-        '    signal: -44.00 dBm\n'
-        '    SSID: support_ht40_below\n'
-        '    RSN:          * Version: 1\n'
-        '    WPA:          * Version: 1\n'
-        '    HT operation:\n'
-        '        * secondary channel offset: below\n')
+                     '    freq: 2462\n'
+                     '    signal: -44.00 dBm\n'
+                     '    SSID: support_ht40_below\n'
+                     '    RSN:          * Version: 1\n'
+                     '        * Group cipher: CCMP\n'
+                     '        * Pairwise ciphers: CCMP\n'
+                     '        * Authentication suites: PSK\n'
+                     '        * Capabilities: 1-PTKSA-RC 1-GTKSA-RC (0x0000)\n'
+                     '    WPA:          * Version: 1\n'
+                     '    HT operation:\n'
+                     '        * secondary channel offset: below\n')
 
     HT40_BELOW_IW_BSS = iw_runner.IwBss('cc:cc:cc:cc:cc:cc', 2462,
                                         'support_ht40_below',
@@ -584,6 +592,47 @@ class IwRunnerTest(unittest.TestCase):
         '                HE160/5GHz\n')
 
 
+    HE80_WPA2_WPA3 = str(
+            'BSS f0:2f:74:2d:7c:38(on wlan0)\n'
+            '    last seen: 6069846.339s [boottime]\n'
+            '    TSF: 10123925887 usec (0d, 02:48:43)\n'
+            '    freq: 5765\n'
+            '    beacon interval: 100 TUs\n'
+            '    capability: ESS Privacy SpectrumMgmt RadioMeasure (0x1111)\n'
+            '    signal: -6.00 dBm\n'
+            '    last seen: 4491 ms ago\n'
+            '    Information elements from Probe Response frame:\n'
+            '    SSID: support_he80_wpa2_wpa3\n'
+            '    Supported rates: 6.0* 9.0 12.0* 18.0 24.0* 36.0 48.0 54.0\n'
+            '    Power constraint: 0 dB\n'
+            '    TPC report: TX power: 24 dBm\n'
+            '    RSN:     * Version: 1\n'
+            '         * Group cipher: CCMP\n'
+            '         * Pairwise ciphers: CCMP\n'
+            '         * Authentication suites: PSK/SHA-256 SAE\n'
+            '         * Capabilities: 16-PTKSA-RC 1-GTKSA-RC MFP-required MFP-capable (0x00cc)\n'
+            '    VHT operation:\n'
+            '         * channel width: 1 (80 MHz)\n'
+            '         * center freq segment 1: 155\n'
+            '         * center freq segment 2: 0\n'
+            '         * VHT basic MCS set: 0x0000\n'
+            '    HE capabilities:\n'
+            '        HE MAC Capabilities (0x000512081000):\n'
+            '            +HTC HE Supported\n'
+            '            TWT Responder\n'
+            '            BSR\n'
+            '            OM Control\n'
+            '            Maximum A-MPDU Length Exponent: 2\n'
+            '            OM Control UL MU Data Disable RX\n'
+            '        HE PHY Capabilities: (0x442002c00f439518000c00):\n'
+            '            HE40/HE80/5GHz\n'
+            '            242 tone RUs/5GHz\n')
+
+    HE80_WPA2_WPA3_IW_BSS = iw_runner.IwBss('f0:2f:74:2d:7c:38', 5765,
+                                            'support_he80_wpa2_wpa3',
+                                            iw_runner.SECURITY_MIXED3,
+                                            iw_runner.WIDTH_HE80, -6.00)
+
     def verify_values(self, iw_bss_1, iw_bss_2):
         """Checks all of the IWBss values
 
@@ -783,6 +832,12 @@ class IwRunnerTest(unittest.TestCase):
         host = self.host(self.HE_IW_INFO)
         runner = iw_runner.IwRunner(remote_host=host)
         self.assertEquals(runner.he_supported(), True)
+
+
+    def test_wpa3_supported(self):
+        """Test WPA3 and WPA2/WPA3 support parsing."""
+        scan_output = self.HE80_WPA2_WPA3
+        self.search_by_bss(scan_output, self.HE80_WPA2_WPA3_IW_BSS)
 
 
 if __name__ == '__main__':

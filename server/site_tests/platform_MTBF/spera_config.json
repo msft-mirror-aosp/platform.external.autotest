@@ -121,6 +121,13 @@
       "name": "extended-display-meet",
       "tool": "tast",
       "test_expr": "ui.ExtendedDisplayCUJ.premium_meet_large",
+      "attributes": ["premium"],
+      "deps": ["external_display", "premium"]
+    },
+    {
+      "name": "extended-display-video",
+      "tool": "tast",
+      "test_expr": "ui.ExtendedDisplayCUJ.plus_video_youtube_web",
       "attributes": ["plus"],
       "deps": ["external_display", "plus"]
     },
@@ -236,6 +243,7 @@
         {"test": "everyday-basic-ytmusic", "repeats": 1},
         {"test": "everyday-plus-ytmusic", "repeats": 1},
         {"test": "extended-display-meet", "repeats": 1},
+        {"test": "extended-display-video", "repeats":1},
         {"test": "zoom-basic-two", "repeats": 1},
         {"test": "zoom-basic-small", "repeats": 1},
         {"test": "zoom-basic-large", "repeats": 1},

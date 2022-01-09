@@ -182,10 +182,10 @@
       "attributes": ["premium"]
     },
     {
-      "name": "msoffice-basic",
+      "name": "msoffice-plus",
       "tool": "tast",
-      "test_expr": "ui.MicrosoftOfficeWebCUJ.basic",
-      "attributes": ["basic"]
+      "test_expr": "ui.MicrosoftOfficeWebCUJ.plus",
+      "attributes": ["plus"]
     },
     {
       "name": "msoffice-premium",
@@ -245,7 +245,7 @@
         {"test": "zoom-premium-large", "repeats": 1},
         {"test": "gdocs-basic", "repeats": 1},
         {"test": "gdocs-premium", "repeats": 1},
-        {"test": "msoffice-basic", "repeats": 1},
+        {"test": "msoffice-plus", "repeats": 1},
         {"test": "msoffice-premium", "repeats": 1}
       ]
     },

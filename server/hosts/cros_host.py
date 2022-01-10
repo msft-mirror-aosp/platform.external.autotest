@@ -457,13 +457,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     self._pdtester_host.get_servod_server_proxy())
         else:
             self.pdtester = None
-        try:
-            logging.debug('Telemetry Status on host %s pre test:\n%s',
-                          self.hostname,
-                          self.run('ls /usr/local/telemetry').stdout)
-        except Exception:
-            logging.debug('Telemetry Folder not found on host pre test %s',
-                          self.hostname)
 
 
     def initialize_btpeer(self, btpeer_args=[]):
@@ -1472,13 +1465,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     def close(self):
         """Close connection."""
-        try:
-            logging.debug('Telemetry Status on host %s Post test:\n%s',
-                          self.hostname,
-                          self.run('ls /usr/local/telemetry').stdout)
-        except Exception:
-            logging.debug('Telemetry Folder not found on host post test %s',
-                          self.hostname)
         super(CrosHost, self).close()
 
         if self._chameleon_host:

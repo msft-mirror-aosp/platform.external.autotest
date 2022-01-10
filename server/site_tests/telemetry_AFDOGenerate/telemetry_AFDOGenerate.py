@@ -22,7 +22,6 @@ Example invocation:
   telemetry_AFDOGenerate
 """
 
-from __future__ import print_function
 
 import bz2
 import logging
@@ -289,7 +288,7 @@ class telemetry_AFDOGenerate(test.test):
         # Ignored servo arguments.
         ignored_options = ('servo_host', 'servo_port')
 
-        for option_name, value in args.iteritems():
+        for option_name, value in args.items():
             if option_name == 'arch':
                 self._arch = value
             elif option_name == 'gs_test_location':

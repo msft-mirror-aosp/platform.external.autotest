@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server import utils as server_utils
 
@@ -17,6 +12,7 @@ TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "performance"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
+PY_VERSION = 3
 
 DOC = """
 This runs various Telemetry performance tests under the crosperf script.
@@ -35,4 +31,3 @@ def run_telemetry_Crosperf(machine):
 # run the test in multiple machines
 
 job.parallel_simple(run_telemetry_Crosperf, machines)
-

@@ -1,5 +1,6 @@
 import os
 import re
+import six
 import sys
 
 # This must run on Python versions less than 2.4.
@@ -117,7 +118,8 @@ def _insert_site_packages(root):
     # running as a client.
     # This is primarily for the benefit of frontend and tko so that they
     # may use libraries other than those available as system packages.
-    sys.path.insert(0, os.path.join(root, 'site-packages'))
+    if six.PY2:
+        sys.path.insert(0, os.path.join(root, 'site-packages'))
 
 
 import importlib

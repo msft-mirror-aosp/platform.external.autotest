@@ -9,7 +9,6 @@ from __future__ import division
 
 import os
 import json
-import string
 import base64
 import logging
 
@@ -265,7 +264,7 @@ class ServoTopology(object):
         base_path = os.path.dirname(servo_path)
         root_servo_tail = os.path.basename(servo_path)
         # Removing last port as
-        servo_hub_tail = string.join(root_servo_tail.split('.')[:-1], '.')
+        servo_hub_tail = '.'.join(root_servo_tail.split('.')[:-1])
         return os.path.join(base_path, servo_hub_tail)
 
     def get_root_servo(self):
@@ -314,7 +313,7 @@ class ServoTopology(object):
         if device and device.is_good():
             return device
         logging.debug('Trying to verify present of the hub!')
-        hub_folder = string.join(device_fs_port.split('.')[:-1], '.')
+        hub_folder = '.'.join(device_fs_port.split('.')[:-1])
         logging.debug('servo_hub_folder=%s', hub_folder)
         hub_product = os.path.join(self.SERVOS_BASE_PATH, hub_folder,
                                    'product')

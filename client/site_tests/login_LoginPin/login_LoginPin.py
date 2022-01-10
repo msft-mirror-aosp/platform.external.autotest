@@ -8,9 +8,8 @@ from gi.repository import GObject
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.cros import cryptohome
-from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import error, lsbrelease_utils
 from autotest_lib.client.common_lib.cros import chrome, session_manager
-
 
 class login_LoginPin(test.test):
     """Sets up a PIN for user and then logs in using the pin."""
@@ -24,6 +23,11 @@ class login_LoginPin(test.test):
                  login_pin=True):
         """Test body."""
         if not cryptohome.is_low_entropy_credentials_supported():
+            if lsbrelease_utils.get_current_board() == 'hatch':
+                # Fail on a board where LEC must work so bisection could be run.
+                raise error.TestFail(
+                        'low entropy credentials must be ' +
+                        'supported on hatch, are the cryptohome utils wrong?')
             raise error.TestNAError(
                     'Skip test: No hardware support for PIN login')
 

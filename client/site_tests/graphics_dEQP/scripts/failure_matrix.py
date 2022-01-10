@@ -78,7 +78,7 @@ def get_problem_count(dict, gpu):
       if status in dict[gpu]:
         count = count + len((dict[gpu])[status])
   else:
-    print 'Warning: %s not found in dict!' % gpu
+    print('Warning: %s not found in dict!' % gpu)
   return count
 
 
@@ -113,16 +113,16 @@ for gpu in gpu_list:
 
 tests = get_problem_tests(dict)
 
-print 'Legend:'
+print('Legend:')
 for key in status_dict:
-  print '%s  -->  %s' % (status_dict[key], key)
-print
+  print('%s  -->  %s' % (status_dict[key], key))
+print()
 
 offset = ''
 for gpu in gpu_list:
-  print '%s%s' % (offset, gpu)
+  print('%s%s' % (offset, gpu))
   offset = '%s    |    ' % offset
-print offset
+print(offset)
 
 text_count = ''
 text_del = ''
@@ -134,9 +134,9 @@ for gpu in gpu_list:
     text_count = '%s%5d    ' % (text_count, problem_count)
   text_del = '%s=========' % text_del
 text_count = '%s  Total failure count (Fail + Flaky)' % text_count
-print text_del
-print text_count
-print text_del
+print(text_del)
+print(text_count)
+print(text_del)
 
 for test in tests:
   text = ''
@@ -145,9 +145,8 @@ for test in tests:
     status = status_dict[result]
     text = '%s  %s  ' % (text, status)
   text = '%s  %s' % (text, test)
-  print text
+  print(text)
 
-print text_del
-print '%s repeated' % text_count
-print text_del
-
+print(text_del)
+print('%s repeated' % text_count)
+print(text_del)

@@ -50,8 +50,8 @@ def get_metadata(s):
   hasty = False
   if re.search(_HASTY_MODE_REGEX, s):
     hasty = True
-  print('Found results from %s for GPU = %s, filter = %s and hasty = %r.' %
-        (board, gpu, filter, hasty))
+  print(('Found results from %s for GPU = %s, filter = %s and hasty = %r.' %
+        (board, gpu, filter, hasty)))
   return board, gpu, filter, hasty
 
 
@@ -103,7 +103,7 @@ def get_not_passing_tests(text):
 def load_expectation_dict(json_file):
   data = {}
   if os.path.isfile(json_file):
-    print 'Loading file ' + json_file
+    print('Loading file ' + json_file)
     with open(json_file, 'r') as f:
       text = f.read()
       data = json.loads(text)
@@ -123,7 +123,7 @@ def expectation_list_to_dict(tests):
   data = {}
   tests = list(set(tests))
   for test, result in tests:
-    if data.has_key(result):
+    if result in data:
       new_list = list(set(data[result].append(test)))
       data.pop(result)
       data[result] = new_list
@@ -158,26 +158,24 @@ def process_flaky(status_dict):
   """Figure out duplicates and move them to Flaky result set/list."""
   clean_dict = {}
   flaky = set([])
-  if status_dict.has_key('Flaky'):
+  if 'Flaky' in status_dict:
     flaky = status_dict['Flaky']
 
   # FLaky tests are tests with 2 distinct results.
-  for key1 in status_dict.keys():
-    for key2 in status_dict.keys():
+  for key1 in list(status_dict.keys()):
+    for key2 in list(status_dict.keys()):
       if key1 != key2:
         flaky |= status_dict[key1] & status_dict[key2]
 
   # Remove Flaky tests from other status and convert to dict of list.
-  for key in status_dict.keys():
+  for key in list(status_dict.keys()):
     if key != 'Flaky':
-      not_flaky = list(status_dict[key] - flaky)
-      not_flaky.sort()
-      print 'Number of "%s" is %d.' % (key, len(not_flaky))
+      not_flaky = sorted(status_dict[key] - flaky)
+      print('Number of "%s" is %d.' % (key, len(not_flaky)))
       clean_dict[key] = not_flaky
 
   # And finally process flaky list/set.
-  flaky_list = list(flaky)
-  flaky_list.sort()
+  flaky_list = sorted(flaky)
   clean_dict['Flaky'] = flaky_list
 
   return clean_dict
@@ -189,15 +187,15 @@ def merge_expectation_list(expectation_path, tests):
   if os.access(expectation_json, os.R_OK):
     status_dict = load_expectations(expectation_json)
   else:
-    print 'Could not load', expectation_json
+    print('Could not load', expectation_json)
   for test, result in tests:
-    if status_dict.has_key(result):
+    if result in status_dict:
       new_set = status_dict[result]
       new_set.add(test)
       status_dict.pop(result)
       status_dict[result] = new_set
     else:
-      status_dict[result] = set([test])
+      status_dict[result] = {test}
   clean_dict = process_flaky(status_dict)
   save_expectation_dict(expectation_path, clean_dict)
 
@@ -234,12 +232,12 @@ def process_logs(logs):
   for log in logs:
     text = load_log(log.name)
     if text:
-      print '================================================================'
-      print 'Loading %s...' % log.name
+      print('================================================================')
+      print('Loading %s...' % log.name)
       try:
         _, gpu, filter, hasty = get_metadata(text)
         tests = get_all_tests(text)
-        print 'Found %d test results.' % len(tests)
+        print('Found %d test results.' % len(tests))
         if all_passing(tests):
           # Delete logs that don't contain failures.
           os.remove(log.name)
@@ -253,7 +251,7 @@ def process_logs(logs):
             expectation_path = os.path.join(output_path, filter + '.hasty')
           merge_expectation_list(expectation_path, tests)
       except:
-        print 'Error processing %s' % log.name
+        print('Error processing %s' % log.name)
 
 
 JOB_TAGS_ALL = (
@@ -285,14 +283,14 @@ def get_result_paths_from_autotest_db(host, user, password, build_from,
     # Skip over unrelated sql spew (really first line only):
     if line and 'chromeos-test' in line:
       paths.append(_AUTOTEST_RESULT_TAG_TEMPLATE % line.rstrip())
-  print 'Found %d potential results in the database.' % len(paths)
+  print('Found %d potential results in the database.' % len(paths))
   return paths
 
 
 def copy_logs_from_gs_paths(paths):
   i = 1
   for gs_path in paths:
-    print '[%d/%d] %s' % (i, len(paths), gs_path)
+    print('[%d/%d] %s' % (i, len(paths), gs_path))
     copy_logs_from_gs_path(gs_path)
     i = i+1
 
@@ -320,7 +318,7 @@ argparser.add_argument(
 
 args = argparser.parse_args()
 
-print pprint.pformat(args)
+print(pprint.pformat(args))
 # This is somewhat optional. Remove existing expectations to start clean, but
 # feel free to process them incrementally.
 execute(['rm', '-rf', _EXPECTATIONS_DIR])

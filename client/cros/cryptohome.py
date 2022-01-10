@@ -127,11 +127,11 @@ def get_fwmp(cleared_fwmp=False):
 
     status = {}
     for field in fields:
-        match = re.search('%s: (\S+)\n' % field, out)
+        match = re.search('%s: (\S+)\s' % field, out)
         if not match:
             raise ChromiumOSError('Invalid FWMP field %s: "%s".' %
                                   (field, out))
-        status[field] = match.group(1)
+        status[field] = match.group(1).strip()
     return status
 
 

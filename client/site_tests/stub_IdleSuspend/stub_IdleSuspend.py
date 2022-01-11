@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -37,7 +38,7 @@ class stub_IdleSuspend(test.test):
         with chrome.Chrome():
             # Just idle while power_SuspendStress does all the work. Existence
             # of the HWCLOCK_FILE tells us when it starts and when it's done.
-            for _ in xrange(self._TEST_START_TIMEOUT):
+            for _ in range(self._TEST_START_TIMEOUT):
                 time.sleep(1)
                 if os.path.exists(power_suspend.Suspender.HWCLOCK_FILE):
                     break

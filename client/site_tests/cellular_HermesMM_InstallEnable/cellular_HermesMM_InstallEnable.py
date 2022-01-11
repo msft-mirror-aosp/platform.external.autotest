@@ -10,7 +10,7 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.cellular import cellular_logging
 from autotest_lib.client.cros.cellular import hermes_utils
-from autotest_lib.client.cros.networking import mm1_proxy
+from autotest_lib.client.cros.cellular import mm1_constants
 
 log = cellular_logging.SetupCellularLogging('HermesMMInstallEnable')
 
@@ -59,10 +59,8 @@ class cellular_HermesMM_InstallEnable(test.test):
                 raise error.TestFail('Validation of profile installation on MM'
                                     ' failed as no euicc enumerated')
 
-            # Resume Modem Manager
-            hermes_utils.mm_inhibit(False, self.mm_proxy)
-            self.mm_proxy = mm1_proxy.ModemManager1Proxy.get_proxy()
-            modem_proxy = self.mm_proxy.get_modem()
+            modem_proxy = self.mm_proxy.wait_for_modem(
+                    mm1_constants.MM_MODEM_POLL_TIME)
             if not modem_proxy:
                 logging.info('No modem object yet can not validate')
                 raise error.TestFail('Validation of profile installation on MM'
@@ -82,8 +80,6 @@ class cellular_HermesMM_InstallEnable(test.test):
                 raise error.TestFail('Validation of profile Installation on MM'
                                     ' failed:' + self.installed_iccid)
 
-            # Suspend Modem Manager to make any subsequent Hermes DBus calls
-            hermes_utils.mm_inhibit(True,self.mm_proxy)
             return True
         except dbus.DBusException as e:
             logging.error('Resulted Modem Manager Validation error:%s', e)

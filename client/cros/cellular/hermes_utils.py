@@ -9,7 +9,6 @@ import random
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.cellular import hermes_constants
-from autotest_lib.client.cros.cellular import mm1_constants
 from autotest_lib.client.cros.networking import hermes_proxy
 from autotest_lib.client.cros.networking import mm1_proxy
 
@@ -50,27 +49,6 @@ def request_installed_profiles(euicc_path, hermes_manager):
     if not installed_profiles:
         logging.info('No installed profiles on euicc:%s', euicc_path)
     return euicc, installed_profiles
-
-def mm_inhibit(is_inhibit, mm_proxy):
-    """
-    Suspend/Resume modemmanager DBus daemon
-
-    @param is_inhibit: true if to suspend MM, false to reconnect MM
-    @device: modem 'Device' value obtained or None, sysfs path of the device
-    Ex:/virtual/fake for trogdor
-    @raise error.TestFail if any dbus exception happens
-
-    """
-    try:
-        logging.info('Modem Manager Inhibit/UnInhibit start')
-        # This wait prevents inhibit call in middle of slot switches
-        # triggered by chromium. They can happen on new build at first boot
-        if is_inhibit:
-            mm_proxy.wait_for_modem(mm1_constants.MM_MODEM_POLL_TIME)
-
-        mm_proxy.inhibit_device(dbus.Boolean(is_inhibit))
-    except dbus.exceptions.DBusException as error:
-        raise error.TestFail('mm_inhibit failed. error:', error)
 
 def install_profile(euicc_path, hermes_manager, is_prod_ci):
     """
@@ -138,8 +116,6 @@ def initialize_test(is_prod_ci_test):
     """
     logging.info('===initialize_test started===')
     mm_proxy = mm1_proxy.ModemManager1Proxy.get_proxy()
-    # Do MM inhibit. uninhibit happens automatically after the test exit.
-    mm_inhibit(True, mm_proxy)
 
     logging.info('Connect to Hermes')
     hermes_manager = connect_to_hermes()

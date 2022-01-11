@@ -2,13 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = 'arowa'
-NAME = 'network_WiFi_AttenuatedPerf.vht80_ch155'
+NAME = 'network_WiFi_AttenuatedPerf.vht80_ch042'
 ATTRIBUTES = "suite:wifi_atten_perf"
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
@@ -33,11 +28,11 @@ def run(machine):
     ac_mode = hostap_config.HostapConfig.MODE_11AC_PURE
     channel_width_80_mhz = hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80
     ap_config = hostap_config.HostapConfig(
-                    channel=157,
+                    channel=44,
                     mode=ac_mode,
                     n_capabilities=n_caps,
                     vht_channel_width=channel_width_80_mhz,
-                    vht_center_channel=155,
+                    vht_center_channel=42,
                     ac_capabilities=ac_caps)
     attenuation_increment = 6
     final_attenuation = 100

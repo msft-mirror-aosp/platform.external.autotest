@@ -125,6 +125,10 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
         """
         local_path = os.path.join(self._RAMDISK, os.path.basename(url))
         tab = cr.browser.tabs[0]
+        # Ensure the tab is activated because Chrome sometimes starts with
+        # and focus on another "What's new" tab.
+        tab.Activate()
+
         tab.Navigate(cr.browser.platform.http_server.UrlOf(local_path))
         tab.WaitForDocumentReadyStateToBeComplete()
         tab.EvaluateJavaScript(

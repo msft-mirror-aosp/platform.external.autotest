@@ -65,6 +65,9 @@ class power_VideoDRMPlayback(power_videotest.power_VideoTest):
         @param url: url of video file to play.
         """
         tab = cr.browser.tabs[0]
+        # Ensure the tab is activated because Chrome sometimes starts with
+        # and focus on another "What's new" tab.
+        tab.Activate()
 
         # Chrome prevents making an element fullscreen if the request doesn't
         # initiated by user gesture. https://CrOSPower.page.link/noFullScreen
@@ -100,4 +103,3 @@ class power_VideoDRMPlayback(power_videotest.power_VideoTest):
 
         super(power_VideoDRMPlayback, self).run_once(
             videos, secs_per_video, use_hw_decode)
-

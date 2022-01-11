@@ -111,7 +111,8 @@ class power_VideoTest(power_test.power_Test):
 
         with chrome.Chrome(extra_browser_args=extra_browser_args,
                            init_network_controller=True) as self.cr:
-            tab = self.cr.browser.tabs.New()
+            # Chrome always starts with an empty tab, so we just use that one.
+            tab = self.cr.browser.tabs[0]
             tab.Activate()
 
             # Just measure power in full-screen.

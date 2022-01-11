@@ -2,17 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.arc-data-snapshot'
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:arc-data-snapshot_per-build'
 MAX_RESULT_SIZE_KB = 50 * 1024
+PY_VERSION = 3
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True

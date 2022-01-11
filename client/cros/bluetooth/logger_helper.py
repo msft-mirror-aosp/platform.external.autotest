@@ -18,6 +18,8 @@ SYSLOG_PATH = '/var/log/messages'
 class LogManager(object):
     """The LogManager class helps to collect logs without a listening thread"""
 
+    DEFAULT_ENCODING = 'utf-8'
+
     class LoggingException(Exception):
         """A stub exception class for LogManager class."""
         pass
@@ -40,7 +42,7 @@ class LogManager(object):
         self.log_path = log_path
 
         self.ResetLogMarker()
-        self.log_contents = []
+        self._bin_log_contents = []
 
     def _LogErrorToSyslog(self, message):
         """Create a new syslog file and add a message to syslog."""
@@ -64,7 +66,7 @@ class LogManager(object):
     def StartRecording(self):
         """Mark initial log size for later comparison"""
 
-        self.log_contents = []
+        self._bin_log_contents = []
 
     def StopRecording(self):
         """Gather the logs since StartRecording was called
@@ -85,12 +87,12 @@ class LogManager(object):
             msg = 'Log became smaller unexpectedly'
             raise LogManager.LoggingException(msg)
 
-        with open(self.log_path, 'r', encoding='utf-8') as mf:
+        with open(self.log_path, 'rb') as mf:
             # Skip to the point where we started recording
             mf.seek(self.initial_log_size)
 
             readsize = now_size - self.initial_log_size
-            self.log_contents = mf.read(readsize).split('\n')
+            self._bin_log_contents = mf.read(readsize).split(b'\n')
 
         # Re-set start of log marker
         self.ResetLogMarker(now_size)
@@ -104,9 +106,9 @@ class LogManager(object):
         @returns: True if search_str was located in the collected log contents,
                 False otherwise
         """
-
-        for line in self.log_contents:
-            if re.search(search_str, line):
+        pattern = re.compile(search_str.encode(self.DEFAULT_ENCODING))
+        for line in self._bin_log_contents:
+            if pattern.search(line):
                 return True
 
         return False
@@ -122,9 +124,9 @@ class LogManager(object):
 
         rm_line_cnt = 0
         initial_size = self._GetSize()
-        rm_pattern = re.compile(rm_reg_exp)
+        rm_pattern = re.compile(rm_reg_exp.encode(self.DEFAULT_ENCODING))
 
-        with open(self.log_path, 'r+', encoding='utf-8') as mf:
+        with open(self.log_path, 'rb+') as mf:
             lines = mf.readlines()
             mf.seek(0)
             for line in lines:
@@ -170,8 +172,10 @@ class InterleaveLogger(LogManager):
         """ Initialize object
         """
         self.reset()
-        self.state_pattern = re.compile(self.STATE_PATTERN)
-        self.cancel_pattern = re.compile(self.CANCEL_PATTERN)
+        self.state_pattern = re.compile(
+                self.STATE_PATTERN.encode(self.DEFAULT_ENCODING))
+        self.cancel_pattern = re.compile(
+                self.CANCEL_PATTERN.encode(self.DEFAULT_ENCODING))
         super(InterleaveLogger, self).__init__()
 
     def reset(self):
@@ -228,18 +232,22 @@ class InterleaveLogger(LogManager):
 
             return time.mktime(dt.timetuple()) + dt.microsecond * (10**-6)
 
-        for line in self.log_contents:
-            line = line.strip().replace('\\r\\n', '')
+        for line in self._bin_log_contents:
+            line = line.strip().replace(b'\\r\\n', b'')
             state_pattern = self.state_pattern.search(line)
             cancel_pattern = self.cancel_pattern.search(line)
 
             if cancel_pattern:
-                time_str = cancel_pattern.groups()[0]
+                time_str = cancel_pattern.groups()[0].decode(
+                        self.DEFAULT_ENCODING)
                 time_sec = sys_time_to_timestamp(time_str)
                 self.cancel_events.append(time_sec)
 
             if state_pattern:
-                time_str, state = state_pattern.groups()
+                time_str, state = [
+                        x.decode(self.DEFAULT_ENCODING)
+                        for x in state_pattern.groups()
+                ]
                 time_sec = sys_time_to_timestamp(time_str)
                 self.records.append({'time': time_sec, 'state': state})
 

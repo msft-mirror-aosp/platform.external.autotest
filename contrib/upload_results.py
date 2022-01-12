@@ -119,10 +119,15 @@ def parse_arguments(argv):
             required=True,
             help="The directory of non-Moblab test results.")
     upload_parser.add_argument(
-            "--dry_run",
+            "--parse_only",
             action='store_true',
             help="Generate job.serialize locally but do not upload test "
             "directories and not send pubsub messages.")
+    upload_parser.add_argument(
+            "--upload_only",
+            action='store_true',
+            help="Leave existing protobuf files as-is, only upload "
+            "directories and send pubsub messages.")
     upload_parser.add_argument(
             "-f",
             "--force",
@@ -176,7 +181,7 @@ def _configure_environment(parsed_args):
 
     if os.path.exists(UPLOAD_CONFIG) and not parsed_args.force:
         logging.error("Environment already configured, run with --force")
-        exit()
+        exit(1)
 
     # call the gsutil config tool to set up accounts
     if os.path.exists(DEFAULT_BOTO_CONFIG + ".bak"):
@@ -234,7 +239,7 @@ def _load_config():
 
     if not os.path.exists(UPLOAD_CONFIG):
         logging.error("Missing mandatory config file, run config command")
-        exit()
+        exit(1)
     with open(UPLOAD_CONFIG, "r") as cf:
         settings = json.load(cf)
 
@@ -330,7 +335,7 @@ class ResultsManager:
     def annotate_results_with_bugid(self, bug_id):
         self.bug_id = bug_id
 
-    def parse_all_results(self):
+    def parse_all_results(self, upload_only: bool = False):
         self.results = []
         self.enumerate_all_directories()
 
@@ -338,7 +343,8 @@ class ResultsManager:
             if self.bug_id is not None:
                 self.results_parser.write_bug_id(result_dir, self.bug_id)
             self.results.append(
-                    (result_dir, self.results_parser.parse(result_dir)))
+                    (result_dir,
+                     self.results_parser.parse(result_dir, upload_only)))
 
     def upload_all_results(self, force):
         for result in self.results:
@@ -361,7 +367,7 @@ class ResultsParserClass:
     def job_tag(self, job_id, machine):
         return str(job_id) + "-moblab/" + str(machine)
 
-    def parse(self, path):
+    def parse(self, path, upload_only: bool):
         #temporarily assign a fake job id until parsed
         fake_job_id = 1234
         fake_machine = "localhost"
@@ -383,7 +389,8 @@ class ResultsParserClass:
         job.suite = self.parse_suite_name(path)
         job.build_version = self.get_build_version(job.tests)
         name = self.job_tag(job_id, job.machine)
-        export_tko_job_to_file(job, name, path + "/job.serialize")
+        if not upload_only:
+            export_tko_job_to_file(job, name, path + "/job.serialize")
 
         # autotest_lib appends additional global logger handlers
         # remove these handlers to avoid affecting logging for the google
@@ -710,8 +717,13 @@ def main(args):
 
     if parsed_args.bug:
         results_manager.annotate_results_with_bugid(parsed_args.bug)
-    results_manager.parse_all_results()
-    if not parsed_args.dry_run:
+    if parsed_args.parse_only:
+        results_manager.parse_all_results()
+    elif parsed_args.upload_only:
+        results_manager.parse_all_results(upload_only=True)
+        results_manager.upload_all_results(force=parsed_args.force)
+    else:
+        results_manager.parse_all_results()
         results_manager.upload_all_results(force=parsed_args.force)
 
 

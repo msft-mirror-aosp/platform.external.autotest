@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 # This file is not auto-generated. Don't delete it.
 
 # Boring.
@@ -92,6 +87,7 @@ JOB_RETRIES = 0
 TEST_TYPE = 'server'
 TIME = 'LONG'
 MAX_RESULT_SIZE_KB = 256000
+PY_VERSION = 3
 DOC = 'Run a test of the Android Compatibility Test Suite (CTS) in ARC++'
 
 # And launch.

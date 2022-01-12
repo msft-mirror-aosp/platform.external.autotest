@@ -172,6 +172,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
            'RESET_FLAG_RBOX'             : 1 << 16,
            'RESET_FLAG_SECURITY'         : 1 << 17,
     }
+    FIPS_RE = r' ([^ ]*)approved.*allowed: (1|0)'
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.
@@ -1252,3 +1253,15 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             return False
         self._servo.set_dts_mode(orig_dts)
         return True
+
+    def fips_crypto_allowed(self):
+        """Return 1 if fips crypto is enabled."""
+        if not self.has_command('fips'):
+            return 0
+
+        rv = self.send_command_retry_get_output('fips', [self.FIPS_RE])
+        logging.info('FIPS: %r', rv)
+        _, approved, allowed = rv[0]
+        if int(approved == '') != int(allowed):
+            raise error.TestFail('Approved does not match allowed %r' % rv)
+        return int(allowed)

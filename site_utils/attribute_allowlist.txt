@@ -277,6 +277,7 @@ suite:powerplay
 suite:printscan
 suite:push_to_prod
 suite:pvs-audio
+suite:pvs-bvt-inline
 suite:pvs-display
 suite:pvs-graphics
 suite:pvs-kernel

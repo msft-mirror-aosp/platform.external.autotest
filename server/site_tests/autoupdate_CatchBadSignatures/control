@@ -10,7 +10,7 @@ TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:bvt-inline, suite:satlab-qual-bvt-inline"
+ATTRIBUTES = "suite:bvt-inline, suite:pvs-bvt-inline, suite:satlab-qual-bvt-inline"
 JOB_RETRIES = 2
 PY_VERSION = 3
 

@@ -1,0 +1,47 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'network_WiFi_Perf.he80'
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    # iperf and netperf are used to measure the throughput.
+    # Network: open HE80 802.11ax
+    'criteria': 'Measure and verify the maximal receiving and transmitting throughput on a DUT',
+    'hw_agnostic': False,
+}
+ATTRIBUTES = 'suite:wifi_perf_openwrt'
+TIME = 'SHORT'
+MAX_RESULT_SIZE_KB = 512000
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'wificell'
+
+
+from autotest_lib.server.cros.network import hostap_config
+
+
+def run(machine):
+    n_caps = [hostap_config.HostapConfig.N_CAPABILITY_HT40_PLUS]
+    ac_caps = [hostap_config.HostapConfig.AC_CAPABILITY_SHORT_GI_80,
+               hostap_config.HostapConfig.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP6]
+    host = hosts.create_host(machine)
+    configs = [hostap_config.HostapConfig(
+                    channel=channel,
+                    mode=hostap_config.HostapConfig.MODE_11AX_MIXED,
+                    n_capabilities=n_caps,
+                    vht_channel_width=hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80,
+                    vht_center_channel=he_center_channel,
+                    ac_capabilities=ac_caps,
+                    he_channel_width=hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80,
+                    he_center_channel=he_center_channel,
+                    ax_capabilities=[])
+               for channel, he_center_channel in [(44, 42), (157, 155)]]
+    use_iperf = True
+    job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
+                 host=host, raw_cmdline_args=args,
+                 additional_params=(configs, use_iperf))
+
+
+parallel_simple(run, machines)

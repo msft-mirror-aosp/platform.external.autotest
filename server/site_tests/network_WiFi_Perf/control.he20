@@ -1,0 +1,42 @@
+# Copyright (c) 2023 The Chromium OS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'network_WiFi_Perf.he20'
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    # iperf and netperf are used to measure the throughput.
+    # Network: open HE20 802.11ax
+    'criteria': 'Measure and verify the maximal receiving and transmitting throughput on a DUT',
+    'hw_agnostic': False,
+}
+ATTRIBUTES = 'suite:wifi_perf_openwrt'
+TIME = 'SHORT'
+MAX_RESULT_SIZE_KB = 512000
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'wificell'
+
+
+from autotest_lib.server.cros.network import hostap_config
+
+
+def run(machine):
+    host = hosts.create_host(machine)
+    configs = [hostap_config.HostapConfig(
+                        channel=channel,
+                        mode=hostap_config.HostapConfig.MODE_11AX_PURE,
+                        n_capabilities=[hostap_config.HostapConfig.N_CAPABILITY_HT20],
+                        vht_channel_width=hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20,
+                        ac_capabilities=[],
+                        ax_capabilities=[],
+                        he_channel_width=hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20)
+              for channel in (1, 36, 157)]
+    use_iperf = True
+    job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
+                 host=host, raw_cmdline_args=args,
+                 additional_params=(configs, use_iperf))
+
+
+parallel_simple(run, machines)

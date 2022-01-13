@@ -8,12 +8,12 @@ AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterEPHealth.ep_check_set_allowlist'
 PURPOSE = ('Batch of Bluetooth enterprise policy health tests')
 CRITERIA = 'Pass the health test'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_standalone'
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
+DEPENDENCIES = 'bluetooth_state:NORMAL'
 PY_VERSION = 3
 
 DOC = """

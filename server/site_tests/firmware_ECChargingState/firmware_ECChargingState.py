@@ -35,9 +35,11 @@ class firmware_ECChargingState(FirmwareTest):
     STATUS_FULLY_CHARGED = 0x20
     STATUS_DISCHARGING = 0x40
     STATUS_TERMINATE_CHARGE_ALARM = 0x4000
-    # TERMINATE_CHARGE_ALARM is an alarm that shows up during normal use.
+    STATUS_OVER_CHARGED_ALARM = 0x8000
+    # TERMINATE_CHARGE_ALARM and OVER_CHARGED_ALARM are alarms that shows up during normal use.
     # Other alarms should not appear during testing.
-    STATUS_ALARM_MASK = (0xFF00 & ~STATUS_TERMINATE_CHARGE_ALARM)
+    STATUS_ALARM_MASK = (0xFF00 & ~STATUS_TERMINATE_CHARGE_ALARM
+                         & ~STATUS_OVER_CHARGED_ALARM)
 
     def initialize(self, host, cmdline_args):
         super(firmware_ECChargingState, self).initialize(host, cmdline_args)

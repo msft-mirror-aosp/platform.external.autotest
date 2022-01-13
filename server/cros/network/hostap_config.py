@@ -17,6 +17,9 @@ from autotest_lib.server.cros.network import packet_capturer
 class HostapConfig(object):
     """Parameters for router configuration."""
 
+    BAND_2G = object()
+    BAND_5G = object()
+
     # A mapping of frequency to channel number.  This includes some
     # frequencies used outside the US.
     CHANNEL_MAP = {2412: 1,
@@ -83,6 +86,8 @@ class HostapConfig(object):
     MODE_11N_PURE = 'n-only'
     MODE_11AC_MIXED = 'ac-mixed'
     MODE_11AC_PURE = 'ac-only'
+    MODE_11AX_MIXED = 'ax-mixed'
+    MODE_11AX_PURE = 'ax-only'
 
     N_CAPABILITY_HT20 = object()
     N_CAPABILITY_HT40 = object()
@@ -161,6 +166,17 @@ class HostapConfig(object):
             AC_CAPABILITY_RX_ANTENNA_PATTERN: '[RX-ANTENNA-PATTERN]',
             AC_CAPABILITY_TX_ANTENNA_PATTERN: '[TX-ANTENNA-PATTERN]'}
 
+    # 11ax caps
+    # they are placeholders, hostapd haven't implemented them
+    # see https://w1.fi/cgit/hostap/tree/hostapd/hostapd.conf
+    AX_CAPABILITY_HE160 = object()
+    AX_CAPABILITY_HE160_80PLUS80 = object()
+    AX_CAPABILITIES_MAPPING = {
+            AX_CAPABILITY_HE160: '[HE160]',
+            AX_CAPABILITY_HE160_80PLUS80: '[HE160-80PLUS80]',
+    }
+    # end 11ax caps
+
     HT_CHANNEL_WIDTH_20 = object()
     HT_CHANNEL_WIDTH_40_PLUS = object()
     HT_CHANNEL_WIDTH_40_MINUS = object()
@@ -184,6 +200,21 @@ class HostapConfig(object):
             VHT_CHANNEL_WIDTH_80: 'VHT80',
             VHT_CHANNEL_WIDTH_160: 'VHT160',
             VHT_CHANNEL_WIDTH_80_80: 'VHT80+80',
+    }
+
+    HE_CHANNEL_WIDTH_20 = object()
+    HE_CHANNEL_WIDTH_40 = object()
+    HE_CHANNEL_WIDTH_80 = object()
+    HE_CHANNEL_WIDTH_160 = object()
+    HE_CHANNEL_WIDTH_80_80 = object()
+
+    # Human readable names for these channel widths.
+    HE_NAMES = {
+            HE_CHANNEL_WIDTH_20: 'HE20',
+            HE_CHANNEL_WIDTH_40: 'HE40',
+            HE_CHANNEL_WIDTH_80: 'HE80',
+            HE_CHANNEL_WIDTH_160: 'HE160',
+            HE_CHANNEL_WIDTH_80_80: 'HE80+80',
     }
 
     # This is a loose merging of the rules for US and EU regulatory
@@ -300,6 +331,16 @@ class HostapConfig(object):
 
 
     @property
+    def _hostapd_he_capabilities(self):
+        """@return string suitable for the he_capab= line in a hostapd config.
+        """
+        ret = []
+        for cap in self.AX_CAPABILITIES_MAPPING.keys():
+            if cap in self._ax_capabilities:
+                ret.append(self.AX_CAPABILITIES_MAPPING[cap])
+        return ''.join(ret)
+
+    @property
     def _require_ht(self):
         """@return True iff clients should be required to support HT."""
         return self._mode == self.MODE_11N_PURE
@@ -310,6 +351,10 @@ class HostapConfig(object):
         """@return True iff clients should be required to support VHT."""
         return self._mode == self.MODE_11AC_PURE
 
+    @property
+    def require_he(self):
+        """@return True iff clients should be required to support HE."""
+        return self._mode == self.MODE_11AX_PURE
 
     @property
     def _hw_mode(self):
@@ -320,11 +365,11 @@ class HostapConfig(object):
             return self.MODE_11B
         if self._mode == self.MODE_11G:
             return self.MODE_11G
-        if self._is_11n or self.is_11ac:
+        if self._is_11n or self.is_11ac or self.is_11ax:
             # For their own historical reasons, hostapd wants it this way.
+            # For 11ax on 2.4G, 5G and 6G, see wpa_supplicant/tests/hwsim/test_he.py
             if self._frequency > 5000:
                 return self.MODE_11A
-
             return self.MODE_11G
 
         raise error.TestFail('Invalid mode.')
@@ -341,6 +386,12 @@ class HostapConfig(object):
               None for these rate.
         """
         ht_channel_width = self._ht_mode
+        if self.he_channel_width is not None:
+            if (self.he_channel_width == self.HE_CHANNEL_WIDTH_40
+                        or self.he_channel_width == self.HE_CHANNEL_WIDTH_20):
+                if ht_channel_width == self.HT_CHANNEL_WIDTH_20:
+                    return self.HE_CHANNEL_WIDTH_20
+            return self.he_channel_width
         if self.vht_channel_width is not None:
             if (
                     self.vht_channel_width == self.VHT_CHANNEL_WIDTH_40
@@ -363,6 +414,11 @@ class HostapConfig(object):
         """@return True iff we're trying to host an 802.11ac network."""
         return self._mode in (self.MODE_11AC_MIXED, self.MODE_11AC_PURE)
 
+
+    @property
+    def is_11ax(self):
+        """@return True iff we're trying to host an 802.11ax network."""
+        return self._mode in (self.MODE_11AX_MIXED, self.MODE_11AX_PURE)
 
     @property
     def channel(self):
@@ -424,7 +480,7 @@ class HostapConfig(object):
                                 HT_CHANNEL_WIDTH_40_MINUS,
                                 HT_CHANNEL_WIDTH_20)
         """
-        if self._is_11n or self.is_11ac:
+        if self._is_11n or self.is_11ac or self.is_11ax:
             if self._ht40_plus_allowed:
                 return self.HT_CHANNEL_WIDTH_40_PLUS
             if self._ht40_minus_allowed:
@@ -447,6 +503,9 @@ class HostapConfig(object):
         @return object width_type parameter from packet_capturer.
 
         """
+        # 11ax capturing is not implemented
+        if not self.he_channel_width or self.is_11ax:
+            raise error.TestNAError("Not implemented")
 
         if (not self.vht_channel_width
                     or self.vht_channel_width == self.VHT_CHANNEL_WIDTH_40
@@ -482,6 +541,9 @@ class HostapConfig(object):
     @property
     def printable_mode(self):
         """@return human readable mode string."""
+
+        if self.he_channel_width is not None:
+            return self.HE_NAMES[self.he_channel_width]
 
         if self.vht_channel_width is not None:
             return self.VHT_NAMES[self.vht_channel_width]
@@ -554,6 +616,9 @@ class HostapConfig(object):
                  vht_channel_width=None,
                  vht_center_channel=None,
                  ac_capabilities=None,
+                 he_channel_width=None,
+                 he_center_channel=None,
+                 ax_capabilities=None,
                  spectrum_mgmt_required=None,
                  scenario_name=None,
                  supported_rates=None,
@@ -597,6 +662,9 @@ class HostapConfig(object):
         @param vht_channel_width object channel width
         @param vht_center_channel int center channel of segment 0.
         @param ac_capabilities list of AC_CAPABILITY_x defined above.
+        @param he_channel_width object channel width
+        @param he_center_channel int center channel of segment 0.
+        @param ax_capabilities list of AX_CAPABILITY_x defined above.
         @param spectrum_mgmt_required True if we require the DUT to support
             spectrum management.
         @param scenario_name string to be included in file names, instead
@@ -624,6 +692,8 @@ class HostapConfig(object):
             n_capabilities = []
         if ac_capabilities is None:
             ac_capabilities = []
+        if ax_capabilities is None:
+            ax_capabilities = []
         self._wmm_enabled = False
         unknown_caps = [cap for cap in n_capabilities
                         if cap not in self.ALL_N_CAPABILITIES]
@@ -680,6 +750,28 @@ class HostapConfig(object):
         elif vht_channel_width is not None:
             raise error.TestFail('Invalid channel width')
         self.vht_channel_width = vht_channel_width
+
+        # 11ax channel width is defined the same as 11ac
+        if (he_channel_width == self.HE_CHANNEL_WIDTH_20
+                    or he_channel_width == self.HE_CHANNEL_WIDTH_40):
+            self._he_oper_chwidth = 0
+        elif he_channel_width == self.HE_CHANNEL_WIDTH_80:
+            self._he_oper_chwidth = 1
+        elif he_channel_width == self.HE_CHANNEL_WIDTH_160:
+            self._he_oper_chwidth = 2
+        elif he_channel_width == self.HE_CHANNEL_WIDTH_80_80:
+            self._he_oper_chwidth = 3
+        elif he_channel_width is not None:
+            raise error.TestFail('Invalid channel width')
+        self.he_channel_width = he_channel_width
+
+        # It's impossible to support channel wider than 40MHz on 2.4G
+        if self.frequency < 5000 and he_channel_width and self._he_oper_chwidth > 0:
+            raise error.TestFail('Invalid HE channel width on 2.4G')
+
+        self._he_oper_centr_freq_seg0_idx = he_center_channel
+        self._ax_capabilities = set(ax_capabilities)
+
         # TODO(zqiu) Add checking for center channel based on the channel width
         # and operating channel.
         self._vht_oper_centr_freq_seg0_idx = vht_center_channel
@@ -704,7 +796,8 @@ class HostapConfig(object):
 
     def __repr__(self):
         return ('%s(mode=%r, channel=%r, frequency=%r, '
-                'n_capabilities=%r, hide_ssid=%r, beacon_interval=%r, '
+                'n_capabilities=%r, ac_capabilities=%r, ax_capabilities=%r, '
+                'hide_ssid=%r, beacon_interval=%r, '
                 'dtim_period=%r, frag_threshold=%r, ssid=%r, bssid=%r, '
                 'wmm_enabled=%r, security_config=%r, '
                 'spectrum_mgmt_required=%r)' % (
@@ -713,6 +806,8 @@ class HostapConfig(object):
                         self.channel,
                         self.frequency,
                         self._n_capabilities,
+                        self._ac_capabilities,
+                        self._ax_capabilities,
                         self._hide_ssid,
                         self._beacon_interval,
                         self._dtim_period,
@@ -814,6 +909,17 @@ class HostapConfig(object):
                 conf['vht_oper_centr_freq_seg0_idx'] = \
                         self._vht_oper_centr_freq_seg0_idx
             conf['vht_capab'] = self._hostapd_vht_capabilities
+        if self.is_11ax:
+            conf['ieee80211ax'] = 1
+            conf['he_oper_chwidth'] = self._he_oper_chwidth
+            if self._he_oper_centr_freq_seg0_idx is not None:
+                conf['he_oper_centr_freq_seg0_idx'] = \
+                        self._he_oper_centr_freq_seg0_idx
+            # he_capab require_he are not implemented in upstream hostapd.conf
+            # so don't output them to conf file in order to avoid side effect.
+            # conf['he_capab'] = self._hostapd_he_capabilities
+            # if self.require_he:
+            #   conf['require_he'] = 1
         if self._wmm_enabled:
             conf['wmm_enabled'] = 1
         if self._require_ht:

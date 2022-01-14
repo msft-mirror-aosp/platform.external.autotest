@@ -86,17 +86,17 @@ def read_google_cloud_file(filename):
         return None
 
 
-def is_update_needed(peer, latest_commit):
+def is_update_needed(peer, target_commit):
     """ Check if update is required
 
     Update if the commit hash doesn't match
 
     @returns: True/False
     """
-    return not is_commit_hash_equal(peer, latest_commit)
+    return not is_commit_hash_equal(peer, target_commit)
 
 
-def is_commit_hash_equal(peer, latest_commit):
+def is_commit_hash_equal(peer, target_commit):
     """ Check if chameleond commit hash is the expected one"""
     try:
         commit = peer.get_bt_commit_hash()
@@ -106,11 +106,22 @@ def is_commit_hash_equal(peer, latest_commit):
         return True
 
     logging.debug('commit %s found on peer %s', commit, peer.host)
-    return commit == latest_commit
+    return commit == target_commit
 
 
-def perform_update(peer, target_commit):
+def perform_update(peer, target_commit, latest_commit):
     """ Update the chameleond on the peer"""
+
+    # Only update the system when the target commit is the latest.
+    # Since system packages are backward compatible so it's safe to keep
+    # it the latest.
+    needs_system_update = (target_commit == latest_commit)
+    if needs_system_update:
+        logging.info("Update system packages on the peer.")
+        needs_system_update = 'true'
+    else:
+        logging.debug("Skip updating system packages on the peer.")
+        needs_system_update = 'false'
 
     logging.info('copy the file over to the peer')
     try:
@@ -144,10 +155,11 @@ def perform_update(peer, target_commit):
            'cd %s && find -exec touch -c {} \; &&'
            'make install REMOTE_INSTALL=TRUE '
            'HOST_NOW="%s" BUNDLE_VERSION=%s '
-           'CHAMELEON_BOARD=%s %s && rm %s%s' %
-           (cur_dir, BUNDLE_DIR, bundle, BUNDLE_DIR, HOST_NOW,
-            BUNDLE_VERSION, CHAMELEON_BOARD, py_version_option,
-            cur_dir, bundle))
+           'CHAMELEON_BOARD=%s NEEDS_SYSTEM_UPDATE=%s '
+           '%s && rm %s%s' %
+           (cur_dir, BUNDLE_DIR, bundle, BUNDLE_DIR, HOST_NOW, BUNDLE_VERSION,
+            CHAMELEON_BOARD, needs_system_update, py_version_option, cur_dir,
+            bundle))
     logging.info(cmd)
     status, _ = run_cmd(peer, cmd)
     if not status:
@@ -181,11 +193,13 @@ def restart_check_chameleond(peer):
     return status and expected_output in output
 
 
-def update_peer(peer, latest_commit):
+def update_peer(peer, target_commit, latest_commit):
     """Update the chameleond on peer devices if required
 
     @params peer: btpeer to be updated
-    @params latest_commit: target git commit
+    @params target_commit: target git commit
+    @params latest_commit: the latest git commit in the lab_commit_map, which
+                           is defined in the bluetooth_commits.yaml
 
     @returns: (True, None) if update succeeded
               (False, reason) if update failed
@@ -195,13 +209,13 @@ def update_peer(peer, latest_commit):
         logging.error('Unsupported peer %s',str(peer.host))
         return False, 'Unsupported peer'
 
-    if not perform_update(peer, latest_commit):
+    if not perform_update(peer, target_commit, latest_commit):
         return False, 'Update failed'
 
     if not restart_check_chameleond(peer):
         return False, 'Unable to start chameleond'
 
-    if is_update_needed(peer, latest_commit):
+    if is_update_needed(peer, target_commit):
         return False, 'Commit not updated after upgrade'
 
     logging.info('updating chameleond succeded')
@@ -235,8 +249,12 @@ def _update_all_peers(host):
     try:
         build = host.get_release_version()
         target_commit = get_target_commit(host.hostname, build)
+        latest_commit = get_target_commit(hostname='', host_build='9999999')
         if target_commit is None:
             return 'Unable to get current commit'
+
+        if latest_commit is None:
+            return 'Unable to get latest commit'
 
         if host.btpeer_list == []:
             return 'Bluetooth Peer not present'
@@ -257,7 +275,7 @@ def _update_all_peers(host):
         # TODO(b:160782273) Make this parallel
         failed_peers = []
         for peer in peers_to_update:
-            updated, reason = update_peer(peer, target_commit)
+            updated, reason = update_peer(peer, target_commit, latest_commit)
             if updated:
                 logging.info('peer %s updated successfully', str(peer.host))
             else:
@@ -288,18 +306,25 @@ def get_target_commit(hostname, host_build):
       - chromeos15-row8-rack5-host1
       - chromeos15-row5-rack7-host7
       - chromeos15-row5-rack1-host4
+    lab_commit_map:
+      - build_version: 14461.0.0
+        chameleon_commit: 87bed79
+      - build_version: 00000.0.0
+        chameleon_commit: 881f0e0
 
     The lab_next_commit will be used only when 3 conditions are satisfied
     - the lab_next_commit is non-empty
     - the hostname of the DUT can be found in lab_next_hosts
     - the host_build of the DUT is the same as lab_next_build
 
-    Tests of next build will go back to lab_curr_commit automatically.
-    The purpose is that in case lab_next_commit is not stable, the DUTs will
-    go back to use the supposed stable lab_curr_commit.
+    Tests of next build will go back to the commits in the lab_commit_map
+    automatically. The purpose is that in case lab_next_commit is not stable,
+    the DUTs will go back to use the supposed stable commit according to the
+    lab_commit_map. Test server will choose the biggest build_version in the
+    lab_commit_map which is smaller than the host_build.
 
     On the other hand, if lab_next_commit is stable by juding from the lab
-    dashboard, someone can then copy lab_next_build to lab_curr_commit manually.
+    dashboard, someone can then copy lab_next_build to lab_commit_map manually.
 
     @params hostname: the client hostname;
                       can be a DNS name or a numerical IP address
@@ -321,7 +346,17 @@ def get_target_commit(hostname, host_build):
             logging.info('Next btpeer commit of %s: %s', hostname, commit)
         else:
             # Otherwise, use the current commit.
-            commit = content.get('lab_curr_commit')
+            host_build = int(host_build.replace(".", ""))
+            lab_commit_map = content.get('lab_commit_map')
+            commit = None
+
+            for item in lab_commit_map:
+                build = item['build_version']
+
+                if host_build >= int(build.replace(".", "")):
+                    commit = item['chameleon_commit']
+                    break
+
             logging.info('Current btpeer commit of %s: %s', hostname, commit)
     except Exception as e:
         logging.error('exception %s in get_target_commit', str(e))

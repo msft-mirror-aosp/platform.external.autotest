@@ -1,8 +1,9 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import hashlib, logging, multiprocessing, os, re, time
+import hashlib, logging, multiprocessing, os, time
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.power import sys_power
@@ -18,7 +19,7 @@ PROC_STAT_CPU_IDLE_FIELDS = ['idle', 'iowait']
 SYSFS_CPUQUIET_ENABLE = '/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/enable'
 
 def cpu_stress():
-    sha512_hash = open('/dev/urandom', 'r').read(64)
+    sha512_hash = open('/dev/urandom', 'rb').read(64)
     while True:
         sha512_hash = hashlib.sha512(sha512_hash).digest()
 

@@ -153,8 +153,9 @@ class TestManager(object):
     def register_csv_logger(self, file_path):
         if os.path.exists(file_path):
             os.remove(file_path)
-        self.log_functions.append(partial(self.csv_logger,
-                                          file_path=file_path))
+        print_to_csv = partial(self.csv_logger, file_path=file_path)
+        self.log_functions.append(print_to_csv)
+        print_to_csv('suite,test\n')
 
     def initialize_from_fs(self, locations):
         self.tests, self.suites = self.test_parser.get_all_test_objects(

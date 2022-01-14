@@ -46,6 +46,7 @@ class LinuxSystem(object):
     CAPABILITY_SEND_MANAGEMENT_FRAME = 'send_management_frame'
     CAPABILITY_TDLS = 'tdls'
     CAPABILITY_VHT = 'vht'
+    CAPABILITY_HE = 'he'
     CAPABILITY_SME = 'sme'
     CAPABILITY_SUPPLICANT_ROAMING = "supplicant_roaming"
     BRIDGE_INTERFACE_NAME = 'br0'
@@ -430,6 +431,8 @@ class LinuxSystem(object):
                 caps.add(self.CAPABILITY_SME)
             if phy.support_vht:
                 caps.add(self.CAPABILITY_VHT)
+            if phy.support_he:
+                caps.add(self.CAPABILITY_HE)
             if 'roaming' not in phy.features:
                 caps.add(self.CAPABILITY_SUPPLICANT_ROAMING)
         if any([iw_runner.DEV_MODE_IBSS in phy.modes

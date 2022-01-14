@@ -42,6 +42,9 @@ WIDTH_HT40_MINUS = iw_runner.WIDTH_HT40_MINUS
 WIDTH_VHT80 = iw_runner.WIDTH_VHT80
 WIDTH_VHT160 = iw_runner.WIDTH_VHT160
 WIDTH_VHT80_80 = iw_runner.WIDTH_VHT80_80
+WIDTH_HE40 = iw_runner.WIDTH_HE40
+WIDTH_HE80 = iw_runner.WIDTH_HE80
+WIDTH_HE160 = iw_runner.WIDTH_HE160
 
 _WIDTH_STRINGS = {
     WIDTH_HT20: 'HT20',
@@ -50,6 +53,9 @@ _WIDTH_STRINGS = {
     WIDTH_VHT80: '80',
     WIDTH_VHT160: '160',
     WIDTH_VHT80_80: '80+80',
+    WIDTH_HE40: 'HE40',
+    WIDTH_HE80: 'HE80',
+    WIDTH_HE160: 'HE160',
 }
 
 def _get_width_string(width):
@@ -300,10 +306,10 @@ class PacketCapturer(object):
                 raise error.TestError('Invalid width type: %r' % width_type)
             if width_type == WIDTH_VHT80_80:
                 raise error.TestError('VHT80+80 packet capture not supported')
-            if width_type == WIDTH_VHT80:
+            if width_type == WIDTH_VHT80 or width_type == WIDTH_HE80:
                 width_string = '%s %d' % (width_string,
                                           _get_center_freq_80(frequency))
-            elif width_type == WIDTH_VHT160:
+            elif width_type == WIDTH_VHT160 or width_type == WIDTH_HE160:
                 width_string = '%s %d' % (width_string,
                                           _get_center_freq_160(frequency))
             channel_args = '%s %s' % (channel_args, width_string)

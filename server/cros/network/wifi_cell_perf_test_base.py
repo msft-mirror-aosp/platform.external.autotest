@@ -65,6 +65,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         # same results at 802.11n/HT40 in that case.
         if ap_config.is_11ac and not self.context.client.is_vht_supported():
             raise error.TestNAError('Client does not have AC support')
+        if ap_config.is_11ax and not self.context.client.is_he_supported():
+            raise error.TestNAError('Client does not have AX support')
         return super(WiFiCellPerfTestBase,
                      self).configure_and_connect_to_ap(ap_config)
 

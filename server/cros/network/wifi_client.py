@@ -401,6 +401,10 @@ class WiFiClient(site_linux_system.LinuxSystem):
         return self.CAPABILITY_VHT in self.capabilities
 
 
+    def is_he_supported(self):
+        """Returns True if HE supported; False otherwise"""
+        return self.CAPABILITY_HE in self.capabilities
+
     def is_5ghz_supported(self):
         """Returns True if 5Ghz bands are supported; False otherwise."""
         return self.CAPABILITY_5GHZ in self.capabilities

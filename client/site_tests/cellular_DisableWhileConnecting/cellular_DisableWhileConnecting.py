@@ -13,7 +13,6 @@ import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros.cellular import modem_utils
 from autotest_lib.client.cros.mainloop import ExceptionForward
 from autotest_lib.client.cros.mainloop import GenericTesterMainLoop
 from autotest_lib.client.cros.networking import shill_proxy
@@ -70,8 +69,6 @@ class DisableTester(GenericTesterMainLoop):
     """Called by GenericTesterMainLoop after the main loop has exited."""
     enabled = self._enabled()
     logging.info('Modem enabled: %s', enabled)
-    # Will return happily if no Gobi present
-    modem_utils.ClearGobiModemFaultInjection()
 
 
 class ShillDisableTester(DisableTester):
@@ -277,11 +274,8 @@ class cellular_DisableWhileConnecting(test.test):
       shill_level_test.run(**kwargs)
 
     with test_env:
-      try:
-        logging.info('Modem-level test')
-        modem_level_test = ModemDisableTester(self,
-                                              gobject_main_loop,
-                                              timeout_s=timeout_s)
-        modem_level_test.run(**kwargs)
-      finally:
-        modem_utils.ClearGobiModemFaultInjection()
+      logging.info('Modem-level test')
+      modem_level_test = ModemDisableTester(self,
+                                            gobject_main_loop,
+                                            timeout_s=timeout_s)
+      modem_level_test.run(**kwargs)

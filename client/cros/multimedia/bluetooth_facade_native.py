@@ -784,7 +784,7 @@ class BluetoothBaseFacadeNative(object):
                 return 'USB'
             elif transport == 'hci_uart':
                 return 'UART'
-            elif transport == 'btmrvl_sdio':
+            elif transport in ['btmrvl_sdio', 'btmtksdio']:
                 return 'SDIO'
             else:
                 return None

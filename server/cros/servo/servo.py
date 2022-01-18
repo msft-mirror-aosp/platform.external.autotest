@@ -1020,17 +1020,21 @@ class Servo(object):
                 return ''
             raise
 
-    def get_ec_board(self):
-        """Get the board name from EC."""
+    def get_active_device_prefix(self):
+        """Return ccd_(gsc|cr50) or '' if the main device is active."""
+        active_device = ''
         if self.has_control('active_dut_controller'):
             # If servo v4 is allowing dual_v4 devices, then choose the
             # active device.
             active_device = self.get('active_dut_controller')
             if active_device == self.get_main_servo_device():
                 active_device = ''
-        else:
-            active_device = ''
-        return self.get('ec_board', prefix=active_device)
+        return active_device
+
+    def get_ec_board(self):
+        """Get the board name from EC."""
+
+        return self.get('ec_board', prefix=self.get_active_device_prefix())
 
     def get_ec_active_copy(self):
         """Get the active copy of the EC image."""

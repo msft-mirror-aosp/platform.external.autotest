@@ -74,6 +74,7 @@ class login_OobeLocalization(test.test):
         cros_ui.stop()
         utils.run('rm /home/chronos/Local\ State', ignore_status=True)
         utils.run('dump_vpd_log --clean')
+        utils.run('dump_vpd_log')
 
 
     def _run_with_chrome(self, func, *args):
@@ -154,6 +155,7 @@ class login_OobeLocalization(test.test):
             for line in vpd_log:
                 # Extract "key"="value" pair.
                 key, _, value = line.replace('"', '').partition('=')
+                value = value.rstrip("\n")
                 vpd[key] = value
 
             vpd.update(vpd_settings);

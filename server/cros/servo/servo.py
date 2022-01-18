@@ -408,17 +408,9 @@ class _PowerStateController(object):
 
 class _Uart(object):
     """Class to capture UART streams of CPU, EC, Cr50, etc."""
-    _UartToCapture = (
-        'cpu',
-        'cr50',
-        'ec',
-        'servo_micro',
-        'servo_v4',
-        'usbpd',
-        'ccd_cr50.ec',
-        'ccd_cr50.cpu',
-        'ccd_cr50.cr50'
-    )
+    _UartToCapture = ('cpu', 'cr50', 'ec', 'servo_micro', 'servo_v4', 'usbpd',
+                      'ccd_cr50.ec', 'ccd_cr50.cpu', 'ccd_cr50.cr50'
+                      'ccd_gsc.ec', 'ccd_gsc.cpu', 'ccd_gsc.cr50')
 
 
     def __init__(self, servo):
@@ -1386,7 +1378,7 @@ class Servo(object):
     def main_device_is_ccd(self):
         """Whether the main servo device (no prefixes) is a ccd device."""
         servo = self.get_servo_type()
-        return 'ccd_cr50' in servo and not self.main_device_is_flex()
+        return 'ccd' in servo and not self.main_device_is_flex()
 
 
     def main_device_is_flex(self):
@@ -1411,7 +1403,7 @@ class Servo(object):
             # support a dual role. Only those setups now support legacy and ccd.
             return True
         active_device = self.get('active_dut_controller')
-        return 'ccd_cr50' not in active_device
+        return 'ccd' not in active_device
 
     def _initialize_programmer(self, rw_only=False):
         """Initialize the firmware programmer.

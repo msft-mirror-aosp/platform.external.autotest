@@ -32,12 +32,6 @@ except ImportError:
 
 from autotest_lib.utils.frozen_chromite.lib import timeout_util
 
-try:
-    import docker
-except ImportError:
-    logging.info("Docker API is not installed in this environment")
-
-
 def ignore_exception_for_non_cros_host(func):
     """
     Decorator to ignore ControlUnavailableError if servo host is not cros host.
@@ -529,8 +523,7 @@ class _Cr50ConsoleVerifier(hosts.Verifier):
     def _is_applicable(self, host):
         # Only when DUT is running through ccd.
         # TODO(coconutruben): replace with ccd API when available in servo.py
-        return (host.get_servo()
-                and host.get_servo().get_main_servo_device() == 'ccd_cr50')
+        return host.get_servo() and host.get_servo().main_device_is_ccd()
 
     @property
     def description(self):
@@ -551,8 +544,8 @@ class _CCDTestlabVerifier(hosts.Verifier):
     def verify(self, host):
         if not host.get_servo().has_control('cr50_testlab'):
             raise hosts.AutoservVerifyError(
-                'cr50 has to be supported when use servo with '
-                'ccd_cr50/type-c connection')
+                    'gsc has to be supported when use servo with '
+                    'ccd_*/type-c connection')
 
         status = host.get_servo().get('cr50_testlab')
         # check by 'on' to fail when get unexpected value
@@ -566,8 +559,7 @@ class _CCDTestlabVerifier(hosts.Verifier):
     def _is_applicable(self, host):
         # Only when DUT is running through ccd.
         # TODO(coconutruben): replace with ccd API when available in servo.py
-        return (host.get_servo()
-                and host.get_servo().get_main_servo_device() == 'ccd_cr50')
+        return host.get_servo() and host.get_servo().main_device_is_ccd()
 
     @property
     def description(self):
@@ -1190,7 +1182,7 @@ class _ToggleCCLineRepair(hosts.RepairAction):
         if host.get_dut_host_info():
             servo_type = host.get_dut_host_info().get_label_value(
                     servo_constants.SERVO_TYPE_LABEL_PREFIX)
-            return 'ccd_cr50' in servo_type
+            return 'ccd' in servo_type
         return False
 
     @property
@@ -1245,7 +1237,7 @@ class _FakedisconnectRepair(hosts.RepairAction):
         if host.get_dut_host_info():
             servo_type = host.get_dut_host_info().get_label_value(
                     servo_constants.SERVO_TYPE_LABEL_PREFIX)
-            return 'ccd_cr50' in servo_type
+            return 'ccd' in servo_type
         return False
 
     @property

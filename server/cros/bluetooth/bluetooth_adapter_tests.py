@@ -52,6 +52,7 @@ CHIPSET_TO_VIDPID = {
         'MVL-8997': [(('0x1b4b', '0x2b42'), 'USB')],
         'QCA-6174A-5-USB': [(('0x168c', '0x003e'), 'USB')],
         'QCA-6174A-3-UART': [(('0x0271', '0x050a'), 'UART')],
+        'QCA-WCN6856': [(('0x17cb', '0x1103'), 'USB')],
         'Intel-AX200': [(('0x8086', '0x2723'), 'USB')],  # CcP2
         'Intel-AX201': [
                 (('0x8086', '0x02f0'), 'USB'),

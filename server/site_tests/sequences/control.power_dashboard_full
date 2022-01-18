@@ -2,56 +2,44 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "puthik"
-NAME = "power_Dashboard.fast"
+NAME = "power_Dashboard.full"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "suite"
 TEST_TYPE = "server"
+PY_VERSION = 3
 
 DOC = """
-Sequence to make sure that power_Dashboard tests work fine.
+Sequence for upload common power test data to dashboard.
 """
 
 import datetime
 from autotest_lib.client.common_lib import utils
 
-# Need separate list for client and server test due to how these test work.
 CLIENT_TESTS = [
-    ('power_Standby', {
-        'tag' : '36sec', 'sample_hours' : 0.01, 'test_hours' : 0.01,
-        'bypass_check' : True}),
     ('power_LoadTest', {
-        'tag' : 'fast', 'loop_time' : 180, 'loop_count' : 1,
-        'test_low_batt_p' : 6, 'check_network': False, 'ac_ok' : True,
-        'gaia_login' : False}),
-    ('power_Idle', {
-        'tag' : 'fast', 'warmup_secs' : 2, 'idle_secs' : 10}),
+        'tag' : '1hour', 'loop_time' : 3600, 'loop_count' : 1,
+        'test_low_batt_p' : 6}),
+    ('power_Idle', {}),
+    ('power_VideoPlayback', {}),
     ('power_VideoPlayback', {
-        'tag' : 'fast', 'secs_per_video' : 10, 'fast' : True }),
-    ('power_VideoPlayback', {
-        'tag' : 'sw_decoder_fast', 'use_hw_decode' : False,
-        'secs_per_video' : 10, 'fast' : True }),
-    ('power_Display', {
-        'tag' : 'fast', 'secs_per_page' : 2}),
-    ('power_WebGL', {
-        'tag' : 'fast', 'duration' : 10}),
+        'tag' : 'sw_decoder', 'use_hw_decode' : False}),
+    ('power_Display', {}),
+    ('power_WebGL', {}),
+    ('power_Standby', {
+        'tag' : 'fast', 'sample_hours' : 0.334, 'test_hours' : 0.334}),
 ]
 
 # Tagged test name and sweetberry interval
 SWEETBERRY_TESTS = [
-    ('power_Standby.36sec', 1),
-    ('power_LoadTest.fast', 1),
-    ('power_Idle.fast', 1),
-    ('power_VideoPlayback.fast', 1),
-    ('power_VideoPlayback.sw_decoder_fast', 1),
-    ('power_Display.fast', 1),
-    ('power_WebGL.fast', 1),
+    ('power_Standby.fast', 1),
+    ('power_LoadTest.1hour', 20),
+    ('power_Idle', 1),
+    ('power_VideoPlayback', 5),
+    ('power_VideoPlayback.sw_decoder', 5),
+    ('power_Display', 5),
+    ('power_WebGL', 5),
 ]
 
 POWERLOG_TESTNAME = 'power_PowerlogWrapper'
@@ -67,6 +55,7 @@ except NameError:
 pdash_note = args_dict.get('pdash_note',
                            NAME + '_' + datetime.datetime.utcnow().isoformat())
 sweetberry_serial = args_dict.get('sweetberry_serial', None)
+
 
 def run_client_test(machine):
     client = hosts.create_host(machine)
@@ -86,7 +75,6 @@ def run_sweetberry_wrapper_test(machine):
             'sweetberry_interval': sweetberry_interval,
         }
         job.run_test(POWERLOG_TESTNAME, host=client, config=argv, tag=test)
-
 
 if sweetberry_serial:
     parallel_simple(run_sweetberry_wrapper_test, machines)

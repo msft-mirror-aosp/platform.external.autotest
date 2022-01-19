@@ -303,8 +303,11 @@ def lowpass_filter(path_src, channels_src, bits_src, rate_src,
     cmd_utils.execute(sox_cmd)
 
 
-def trim_silence_from_wav_file(path_src, path_dst, new_duration, volume=1,
-                               duration_threshold=0):
+def trim_silence_from_wav_file(path_src,
+                               path_dst,
+                               new_duration,
+                               volume=1,
+                               duration_threshold=0.1):
     """Trim silence from beginning of a file.
 
     Trim silence from beginning of file, and trim remaining audio to
@@ -317,7 +320,7 @@ def trim_silence_from_wav_file(path_src, path_dst, new_duration, volume=1,
                    which sox will consider silence, defaults to 1 (1%).
     @param duration_threshold: [Optional] A float of the duration in seconds of
                                sound above volume parameter required to consider
-                               end of silence. Defaults to 0 (0 seconds).
+                               end of silence. Defaults to 0.1 (0.1 seconds).
     """
     mins, secs = divmod(new_duration, 60)
     hrs, mins = divmod(mins, 60)

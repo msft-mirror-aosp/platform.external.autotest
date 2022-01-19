@@ -29,7 +29,8 @@ var tasks = [
      'https://news.google.com',
      'https://www.reddit.com',
      'https://www.amazon.com',
-     'https://www.facebook.com/facebook'
+     // b/215156393 Facebook consumes extra cpu power recently, switch to Instgram
+     'https://www.instagram.com/instagram'
     ]
   },
   {

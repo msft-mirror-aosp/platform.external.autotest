@@ -1,29 +1,35 @@
-# Copyright (c) 2020 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
+# TEST WILL BE DISABLED UNTIL MIGRATED TO PYTHON 3.
 # For instructions on how to: go/tauto-py3-migration
 # To re-enable migrate to Python 3.
 # If the test is not migrated by 1/14/22 it will be deleted.
 
-AUTHOR = "puthik"
-NAME = "power_Idle.default"
+AUTHOR = "Chrome OS Team"
+NAME = "power_Idle.1sec"
 PURPOSE = "Measure power usage when system is idle."
 CRITERIA = "This test is a benchmark."
 TIME = "SHORT"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:crosbolt_perf_perbuild"
 
 DOC = """
 This test records power related statistics while the system is idling.
 
-This version tests only the default state of the DUT for 2 minutes.
+    Current tests,
+
+      | test# | seconds | display   | bluetooth |
+      -------------------------------------------
+      | 1     | 120     | off       | off       |
+      | 2     | 120     | default   | off       |
+      | 3     | 120     | default   | on - idle |
+      | 4     | 120     | off       | on - idle |
 """
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
-job.run_test('power_Idle', pdash_note=pdash_note, tag=NAME.split('.')[1],
-             default_only=True, force_discharge='optional')
+job.run_test('power_Idle', pdash_note=pdash_note, seconds_period=1,
+             tag=NAME.split('.')[1])

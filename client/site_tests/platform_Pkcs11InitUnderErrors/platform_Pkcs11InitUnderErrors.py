@@ -1,8 +1,9 @@
+# Lint as: python2, python3
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging, os, shutil
+import os, shutil
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
@@ -47,4 +48,3 @@ class platform_Pkcs11InitUnderErrors(test.test):
     def run_once(self):
         self.__test_chaps_init()
         return
-

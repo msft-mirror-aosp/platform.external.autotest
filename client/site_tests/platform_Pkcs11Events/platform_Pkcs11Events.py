@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -38,16 +39,16 @@ class platform_Pkcs11Events(test.test):
             token = random.choice(token_list)
             event = random.choice(['login', 'logout'])
             if event == 'login':
-              utils.system('chaps_client --load --path=%s --auth=%s' %
-                           (token, token))
-              # Note: This won't necessarily test the token we just loaded but
-              # we do know there should be at least one token available.
-              result = utils.system('p11_replay --replay_wifi',
-                                    ignore_status=True)
-              if result != 0:
-                  raise error.TestFail('At least one token is not functional.')
+                utils.system('chaps_client --load --path=%s --auth=%s' %
+                             (token, token))
+                # Note: This won't necessarily test the token we just loaded but
+                # we do know there should be at least one token available.
+                result = utils.system('p11_replay --replay_wifi',
+                                      ignore_status=True)
+                if result != 0:
+                    raise error.TestFail('At least one token is not functional.')
             else:
-              utils.system('chaps_client --unload --path=%s' % token)
+                utils.system('chaps_client --unload --path=%s' % token)
 
         # See if each token is still functional.
         for token in token_list:

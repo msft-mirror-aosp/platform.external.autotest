@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -32,4 +33,3 @@ class platform_Pkcs11InitOnLogin(test.test):
                     'The PKCS #11 token is no longer available.')
             if not pkcs11.test_and_cleanup_key():
                 raise error.TestFail('The PKCS #11 key is no longer valid.')
-

@@ -2,23 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "Chromium OS Authors"
 NAME = "platform_Pkcs11Events"
 PURPOSE = "Tests the response of the PKCS #11 system to login events."
 CRITERIA = "Fails if the PKCS #11 system does not respond correctly to events."
-ATTRIBUTES = "suite:regression"
+ATTRIBUTES = "suite:experimental"
 TIME = "SHORT"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "platform"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This tests the response of the PKCS #11 system to login events.
 """
 
-job.run_test('platform_Pkcs11Events', num_tokens=7, num_events=200)
+job.run_test('platform_Pkcs11Events', num_tokens=2, num_events=20)

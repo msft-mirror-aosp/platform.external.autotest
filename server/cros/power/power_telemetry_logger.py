@@ -368,7 +368,7 @@ class ServodTelemetryLogger(PowerTelemetryLogger):
         self._vbat_rate = float(config.get('vbat_rate', self.DEFAULT_VBAT_RATE))
         self._pm = measure_power.PowerMeasurement(host=self._servo_host,
                                                   port=self._servo_port,
-                                                  ina_rate=self._ina_rate,
+                                                  adc_rate=self._ina_rate,
                                                   vbat_rate=self._vbat_rate)
 
     def _start_measurement(self):

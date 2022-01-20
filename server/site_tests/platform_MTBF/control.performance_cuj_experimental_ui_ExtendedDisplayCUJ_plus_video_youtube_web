@@ -3,17 +3,17 @@
 # found in the LICENSE file.
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = 'ui_ExtendedDisplayCUJ_premium_meet_large'
+NAME = 'ui_ExtendedDisplayCUJ_plus_video_youtube_web'
 ATTRIBUTES = 'suite:performance_cuj_experimental'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
-PRIORITY = 4982
+PRIORITY = 4981
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 5
 REQUIRE_SSP = True
-DEPENDENCIES = 'external_display, premium'
+DEPENDENCIES = 'external_display, plus'
 PY_VERSION = 3
 
 DOC = '''
@@ -43,7 +43,7 @@ test_args['test_version'] = 1
 
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
-  labels['test'] = 'ui.ExtendedDisplayCUJ.premium_meet_large'
+  labels['test'] = 'ui.ExtendedDisplayCUJ.plus_video_youtube_web'
   labels['test_iteration'] = '1'
   utils.write_keyval(job.resultdir, labels)
   # Try to retrieve and report DUT HWID and serial number.
@@ -101,7 +101,7 @@ def run(machine):
                     allow_unicode=True)
       job.run_test('tast',
                   host=host,
-                  test_exprs=['ui.ExtendedDisplayCUJ.premium_meet_large'],
+                  test_exprs=['ui.ExtendedDisplayCUJ.plus_video_youtube_web'],
                   ignore_test_failures=False,
                   max_run_sec=3600,
                   command_args=args,

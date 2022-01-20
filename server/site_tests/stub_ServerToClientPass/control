@@ -8,7 +8,7 @@ TIME = 'SHORT'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'stub'
 TEST_TYPE = 'server'
-ATTRIBUTES = 'suite:infra_qual'
+ATTRIBUTES = 'suite:infra_qual, suite:py3-beta'
 PY_VERSION = 3
 
 DOC = """

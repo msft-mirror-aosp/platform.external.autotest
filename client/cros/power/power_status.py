@@ -2204,7 +2204,26 @@ class BatteryTempMeasurement(TempMeasurement):
             float, temperature in degrees Celsius.
         """
         result = utils.run(self._path, timeout=5, ignore_status=True)
-        return float(result.stdout)
+
+        value = float(result.stdout)
+
+        # `battery_temp` return in celsius unit.
+        if 0 < value < 100:
+            return round(value, 1)
+
+        # `battery_temp` return in kelvin unit.
+        if 273 < value < 373:
+            return round(value - 273.15, 1)
+
+        # `battery_temp` return in millicelsius unit.
+        if 1000 < value < 100000:
+            return round(value / 1000., 1)
+
+        # The command return value in millikelvin unit.
+        if 273150 < value < 373150:
+            return round(value / 1000. - 273.15, 1)
+
+        raise ValueError
 
 
 def has_battery_temp():

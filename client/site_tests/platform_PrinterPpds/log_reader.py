@@ -40,7 +40,7 @@ class LogReader():
 
         @param lines_count: a number of lines to read
 
-        @returns a list of lines
+        @returns a list of lines (as strings)
 
         """
         assert lines_count > 0

@@ -373,10 +373,10 @@ class platform_PrinterPpds(test.test):
                             self._archivers[doc_name].save_file(
                                     ppd_name, '.out', doc, apply_gzip=True)
                             self._archivers[doc_name].save_file(
-                                    ppd_name, '.log', logs)
+                                    ppd_name, '.log', logs.encode())
                             if pipeline is not None:
                                 self._archivers[doc_name].save_file(
-                                        ppd_name, '.sh', pipeline)
+                                        ppd_name, '.sh', pipeline.encode())
                             # Set new digest
                             self._new_digests[doc_name][ppd_name] = digest
                             self._new_sizes[doc_name][ppd_name] = len(doc)

@@ -21,7 +21,7 @@ def main():
         pass
 
     # Another test - let's try to send something
-    message = 'lkds;fsdjfsdjflsdjfsd;lfsad;adfsfa324dsfcxvdsvdf'
+    message = b'lkds;fsdjfsdjflsdjfsd;lfsad;adfsfa324dsfcxvdsvdf'
     port = 12345
     with FakePrinter(port) as printer:
         # Opens a socket and sends the message

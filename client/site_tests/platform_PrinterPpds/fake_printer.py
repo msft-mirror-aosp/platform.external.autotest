@@ -129,7 +129,7 @@ class FakePrinter():
                     return None
 
         # Reads document
-        document = ''
+        document = bytearray()
         while True:
             try:
                 data = connection.recv(_BUF_SIZE)
@@ -138,7 +138,7 @@ class FakePrinter():
                     # we got the whole document - exit the loop
                     break
                 # save chunk of the document and return to the loop
-                document += data
+                document.extend(data)
             except socket.timeout:
                 # exit if the printer was stopped, else return to the loop
                 if self._stopped:
@@ -147,7 +147,7 @@ class FakePrinter():
 
         # Closes connection & returns document
         connection.close()
-        return document
+        return bytes(document)
 
 
     def _thread_read_docs(self):

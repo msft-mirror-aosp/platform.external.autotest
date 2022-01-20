@@ -2,7 +2,7 @@ brother-20200615-DCP9030CDN.ppd.gz	d75691f2bbce8bda2d037b4a6f69efaa	679569
 brother-20200615-DCPL8410CDW.ppd.gz	d75691f2bbce8bda2d037b4a6f69efaa	679569
 brother-20200615-HLL3210CW.ppd.gz	d75691f2bbce8bda2d037b4a6f69efaa	679569
 brother-20200615-MFC9350CDW.ppd.gz	d75691f2bbce8bda2d037b4a6f69efaa	679569
-cups-20170101-Generic-PDF_Printer-PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2781
+cups-20170101-Generic-PDF_Printer-PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2780
 dymo-20200714-lw300.ppd.gz	9914e5abc675577223a126e6ee8e55bd	15933
 dymo-20200714-lw315.ppd.gz	9914e5abc675577223a126e6ee8e55bd	15933
 dymo-20200714-lw320.ppd.gz	9740dcd4e1d942028cece540011b58b6	29521
@@ -229,7 +229,7 @@ epson-20210703-Epson-L1210_Series-epson-escpr-en.ppd.gz	9da96b2142e2e429d4a45ef0
 foomatic-20190909-Ricoh-IM_430_PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2756
 foomatic-20190909-Ricoh-IM_C4500_PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2917
 foomatic-20191029-Apollo-P-1200-pcl3.ppd.gz	eedaf1e0d1387e1db9226744951fb195	51702
-foomatic-20191029-Gestetner-Pro_C5200S_PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2941
+foomatic-20191029-Gestetner-Pro_C5200S_PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2940
 foomatic-20191029-Lanier-Pro_8200S_PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2894
 foomatic-20191029-Lanier-Pro_8210_PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2894
 foomatic-20191029-Lanier-Pro_C7200S_Light_PDF.ppd.gz	01cb55c1a74a40739f0b2cdb2319cb1f	2966

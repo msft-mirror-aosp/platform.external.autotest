@@ -110,7 +110,7 @@ class Archiver():
         @param prefix: prefix of filename that the new file will be saved with
         @param name: the rest of the filename of the new file; in summary, the
                 resultant filename of the new file will be prefix+name
-        @param content: a content of the file
+        @param content: a content of the file (bytes)
         @param apply_gzip: if true, the added file will be gzipped, the suffix
                 .gz will be added to its resultant filename
 

@@ -9,8 +9,8 @@ from autotest_lib.client.cros.power import power_status
 
 
 class power_StatsCPUFreq(test.test):
+    """ Gather CPU frequency statistics """
     version = 1
-
 
     def run_once(self, test_time=60):
         cpufreq_stats = power_status.CPUFreqStats()

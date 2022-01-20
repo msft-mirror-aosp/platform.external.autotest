@@ -221,6 +221,7 @@ suite:gts
 suite:hotrod
 suite:hotrod-remora
 suite:hps_perf_perbuild
+suite:hps_sweetberry_perf_perbuild
 suite:hwqual
 suite:infra_qual
 suite:infra_qual_cellular

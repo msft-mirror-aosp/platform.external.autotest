@@ -52,7 +52,7 @@ class power_VideoEncode(power_test.power_Test):
         with chrome.Chrome(init_network_controller=True,
                            extra_browser_args=extra_browser_args) as cr:
 
-            tab = cr.browser.tabs.New()
+            tab = cr.browser.tabs[0]
             tab.Activate()
 
             # Just measure power in full-screen.

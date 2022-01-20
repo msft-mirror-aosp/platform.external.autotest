@@ -2,17 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "Chrome OS Team"
-NAME = "power_Standby.fast_suspend_to_ram"
-TIME = "MEDIUM"
+NAME = "power_Standby.6min"
+TIME = "SHORT"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This test measures the power draw during suspend.
@@ -23,10 +19,11 @@ total standby time of test_hours.  The suspend to S0 transitions are added to
   2. Guarantee that suspend was maintained (no external/false wake)
   3. Create transitions which more closely model user's interaction.
 
-This test also force suspend to ram regardless of platform setting.
+The 5 minutes version is intended to use with power measurement telemetry device
+as the battery gas gauge would not be accurate enough to measure power this low.
 """
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
-job.run_test('power_Standby', sample_hours=0.334, test_hours=0.334,
-             tag=NAME.split('.')[1], suspend_state='mem', pdash_note=pdash_note)
+job.run_test('power_Standby', sample_hours=0.1, test_hours=0.1,
+             tag=NAME.split('.')[1], pdash_note=pdash_note)

@@ -4,12 +4,17 @@
 # found in the LICENSE file.
 """Helper class for power autotests that force DUT to discharge with EC."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import logging
 import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import ec
 from autotest_lib.client.cros.power import power_utils
+from six.moves import range
 
 _FORCE_DISCHARGE_SETTINGS = ['false', 'true', 'optional']
 

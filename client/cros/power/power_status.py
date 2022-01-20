@@ -3,6 +3,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import collections
 import contextlib
 import ctypes
@@ -28,6 +32,7 @@ from autotest_lib.client.cros import kernel_trace
 from autotest_lib.client.cros.power import power_utils
 from collections import namedtuple
 from six.moves import range
+from six.moves import zip
 
 BatteryDataReportType = autotest_enum.AutotestEnum('CHARGE', 'ENERGY')
 
@@ -1738,7 +1743,7 @@ class CheckpointLogger(object):
                 self._start_time = min(
                         ts_pair[0]
                         for ts_pair in itertools.chain.from_iterable(
-                                self.checkpoint_data.values()))
+                                list(self.checkpoint_data.values())))
         except Exception as exc:
             logging.warning('Failed to load checkpoint data from json file %s, '
                             'see exception: %s', fname, exc)
@@ -2095,7 +2100,7 @@ class CPUStatsLogger(MeasurementLogger):
         count = self._refresh_count
         ret = []
         for stat in self._stats:
-            ret.extend(stat.refresh().values())
+            ret.extend(list(stat.refresh().values()))
             wavg = stat.weighted_average()
             if wavg:
                 if stat.incremental:

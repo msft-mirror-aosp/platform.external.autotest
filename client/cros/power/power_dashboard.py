@@ -3,6 +3,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import collections
 import json
 import logging
@@ -11,6 +15,7 @@ import operator
 import os
 import re
 import time
+from six.moves import range
 from six.moves import urllib
 
 from autotest_lib.client.bin import utils
@@ -19,6 +24,7 @@ from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
+from six.moves import zip
 
 _HTML_CHART_STR = '''
 <!DOCTYPE html>
@@ -611,15 +617,16 @@ class KeyvalLoggerDashboard(MeasurementLoggerDashboard):
                  self._logger._start_ts) if self._logger._fixed_end_ts else
                 (self._logger._updating_end_ts - self._logger._start_ts),
                 'average':
-                dict(zip(self._logger.keys, self._logger.values)),
+                dict(list(zip(self._logger.keys, self._logger.values))),
                 'data':
                 dict(
-                        zip(self._logger.keys,
-                            ([v, v] for v in self._logger.values))),
+                        list(
+                                zip(self._logger.keys,
+                                    ([v, v] for v in self._logger.values)))),
                 'unit':
-                dict(zip(self._logger.keys, self._logger.units)),
+                dict(list(zip(self._logger.keys, self._logger.units))),
                 'type':
-                dict(zip(self._logger.keys, self._logger.types)),
+                dict(list(zip(self._logger.keys, self._logger.types))),
                 'checkpoint': [[self._testname], [self._testname]],
         }
         return power_dict

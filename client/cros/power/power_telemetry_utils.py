@@ -5,10 +5,15 @@
 
 """Helper class for power autotests requiring telemetry devices."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import logging
 import time
 
 import numpy
+from six.moves import range
 
 CUSTOM_START = 'PowerTelemetryLogger custom start.'
 CUSTOM_END = 'PowerTelemetryLogger custom end.'
@@ -94,7 +99,7 @@ def interpolate_missing_data(data, max_nan_ratio=None, max_sample_gap=None,
     if not len(sample_idx):
         raise TelemetryUtilsError('Data has no valid readings. Cannot '
                                   'interpolate.')
-    output = numpy.interp(range(len(data)), sample_idx, sample_vals)
+    output = numpy.interp(list(range(len(data))), sample_idx, sample_vals)
     return [round(x, INTERPOLATION_RESOLUTION) for x in output]
 
 def log_event_ts(message=None, timestamp=None, offset=0):

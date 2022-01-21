@@ -20,14 +20,14 @@ class stub_IdleSuspend(test.test):
     version = 1
 
     _IDLE_TIMINGS = {
-        'disable_idle_suspend': 0,
-        'ignore_external_policy': 1,
-        'unplugged_dim_ms': 4000,
-        'unplugged_off_ms': 6000,
-        'unplugged_suspend_ms': 8000,
-        'plugged_dim_ms': 4000,
-        'plugged_off_ms': 6000,
-        'plugged_suspend_ms': 8000,
+            'disable_idle_suspend': 0,
+            'ignore_external_policy': 1,
+            'unplugged_dim_ms': 8000,
+            'unplugged_off_ms': 12000,
+            'unplugged_suspend_ms': 8000,
+            'plugged_dim_ms': 8000,
+            'plugged_off_ms': 12000,
+            'plugged_suspend_ms': 8000,
     }
 
     # Don't wait longer than this to start... if power_SuspendStress died before

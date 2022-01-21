@@ -600,6 +600,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
     def run_once(self,
                  host,
                  num_iterations=1,
+                 peer_required=True,
                  args_dict=None,
                  test_name=None,
                  flag='Quick Health'):
@@ -612,7 +613,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
         # Initialize and run the test batch or the requested specific test
         self.quick_test_init(host,
-                             use_btpeer=True,
+                             use_btpeer=peer_required,
                              flag=flag,
                              args_dict=args_dict)
         self.ep_health_batch_run(num_iterations, test_name)

@@ -28,6 +28,7 @@ def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterEPHealth', host=host,
                  num_iterations=1, args_dict=args_dict,
+                 peer_required=False,
                  test_name=NAME.split('.')[1])
 
 parallel_simple(run, machines)

@@ -271,6 +271,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                   skip_chipsets=[],
                                   skip_common_errors=False,
                                   shared_devices_count=0,
+                                  supports_floss=False,
                                   use_all_peers=False):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
@@ -300,11 +301,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                       whole test (i.e. advertising) and any
                                       outside failure will cause the test to
                                       fail.
-           @param use_all_peers: Set number of devices to be used to the
-                                 maximum available. This is used for tests
-                                 like bluetooth_PeerVerify which uses all
-                                 available peers. Specify only one device type
-                                 if this is set to true
+          @param supports_floss: Does this test support running on Floss?
+          @param use_all_peers: Set number of devices to be used to the
+                                maximum available. This is used for tests
+                                like bluetooth_PeerVerify which uses all
+                                available peers. Specify only one device type
+                                if this is set to true
         """
 
         def decorator(test_method):
@@ -322,8 +324,13 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     logging.info('flag %s not in %s', self.flag, flags)
                     self._print_delimiter()
                     return False
-                return True
 
+                # If the current test was to run with Floss, the test must
+                # support running with Floss.
+                if self.floss:
+                    return supports_floss
+
+                return True
 
             def _is_enough_peers_present(self):
                 """Check if enough peer devices are available."""

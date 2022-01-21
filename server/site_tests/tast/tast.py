@@ -190,7 +190,8 @@ class tast(test.test):
                    maybemissingvars='',
                    use_camera_box=False,
                    vars_gs_path='',
-                   retries=0):
+                   retries=0,
+                   ephemeraldevserver=None):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -234,6 +235,7 @@ class tast(test.test):
             yaml file. The local file name is then appended to |-varsfiles|.
         @param use_camera_box: Bring the IP address of chart device in CameraBox
             to tast tests.
+        @param ephemeraldevserver: A value to pass to -ephemeraldevserver
 
         When the F20 breadcrumb is detected, it is assumed we are running in
             the F20 container, meaning we will force disable SSP (though the
@@ -275,6 +277,7 @@ class tast(test.test):
         self._use_camera_box = use_camera_box
         self._retries = retries
         self._f20_container = f20_container
+        self._ephemeraldevserver = ephemeraldevserver
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -610,6 +613,9 @@ class tast(test.test):
                     self._host.hostname, prefer_local_devserver=False)
         logging.info('Using devservers: %s', ', '.join(devservers))
         self._devserver_args = ['-devservers=%s' % ','.join(devservers)]
+        if self._ephemeraldevserver is not None:
+            self._devserver_args.append('-ephemeraldevserver=%s' %
+                                        self._ephemeraldevserver)
 
     def _log_version(self):
         """Runs the tast command locally to log its version."""

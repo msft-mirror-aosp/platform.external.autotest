@@ -43,6 +43,7 @@ def run(machine):
                  test_exprs=['("group:firmware" && firmware_smoke && firmware_usb)'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=command_args,
-                 varslist=varslist)
+                 varslist=varslist,
+                 ephemeraldevserver='false')
 
 parallel_simple(run, machines)

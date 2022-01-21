@@ -19,7 +19,7 @@ TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-# PY_VERSION = 3 #Attenuator related code is not python 3 ready yet
+PY_VERSION = 3 # Attenuator related code is not python 3 ready yet
 
 DOC = """
 Vary attenuation from minimum to maximum and display the RSSI. This is used

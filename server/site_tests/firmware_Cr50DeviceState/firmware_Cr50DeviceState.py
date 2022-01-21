@@ -128,6 +128,13 @@ class firmware_Cr50DeviceState(Cr50Test):
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
 
+        # If the TPM is reset in S0i3, the CR50 may enter deep sleep during S0i3.
+        # Cr50 may enter deep sleep an extra time, because of how the test
+        # collects taskinfo counts. So the range is set conservatively to 0-2.
+        if self.check_cr50_capability(['deep_sleep_in_s0i3']):
+            irq_s0ix_deep_sleep_key = 'S0ix' + self.DEEP_SLEEP_STEP_SUFFIX
+            self.EXPECTED_IRQ_COUNT_RANGE[irq_s0ix_deep_sleep_key] = [0, 2]
+
         self.generate_suspend_commands()
 
 

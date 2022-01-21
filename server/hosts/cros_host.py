@@ -1847,6 +1847,40 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     'chromeos/autotest/autoserv/reboot_duration').add(
                     duration, fields=metric_fields)
 
+    def _default_suspend_cmd(self, suspend_time=60, delay_seconds=0):
+        """
+        Return the default suspend command
+
+        @param suspend_time: How long to suspend as integer seconds.
+        @param suspend_cmd: Suspend command to execute.
+
+        @returns formatted suspend_cmd string to execute
+        """
+        suspend_cmd = ' && '.join([
+            'echo 0 > /sys/class/rtc/rtc0/wakealarm',
+            'echo +%d > /sys/class/rtc/rtc0/wakealarm' % suspend_time,
+            'powerd_dbus_suspend --delay=%d' % delay_seconds])
+        return suspend_cmd
+
+    def suspend_bg(self, suspend_time=60, delay_seconds=0,
+                suspend_cmd=None):
+        """
+        This function suspends the site host and returns right away.
+
+        Note: use this when you need to perform work *while* the host is
+        suspended.
+
+        @param suspend_time: How long to suspend as integer seconds.
+        @param suspend_cmd: Suspend command to execute.
+
+        @exception AutoservSuspendError: if |suspend_cmd| fails
+        """
+        if suspend_cmd is None:
+            suspend_cmd = self._default_suspend_cmd(suspend_time, delay_seconds)
+        try:
+            self.run_background(suspend_cmd)
+        except error.AutoservRunError:
+            raise error.AutoservSuspendError("suspend command failed")
 
     def suspend(self, suspend_time=60, delay_seconds=0,
                 suspend_cmd=None, allow_early_resume=False):
@@ -1863,10 +1897,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
 
         if suspend_cmd is None:
-            suspend_cmd = ' && '.join([
-                'echo 0 > /sys/class/rtc/rtc0/wakealarm',
-                'echo +%d > /sys/class/rtc/rtc0/wakealarm' % suspend_time,
-                'powerd_dbus_suspend --delay=%d' % delay_seconds])
+            suspend_cmd = self._default_suspend_cmd(suspend_time, delay_seconds)
         super(CrosHost, self).suspend(suspend_time, suspend_cmd,
                                       allow_early_resume);
 

@@ -313,7 +313,14 @@ class servo_LabstationVerification(test.test):
     def _byteify(self, data, ignore_dicts=False):
         """Helper method to convert unicode to string.
         """
-        if isinstance(data, str):
+        # In python2 we need to convert unicode into str, however in python3
+        # unicode renamed to str so json.load will load data into str by
+        # default so run encode with a str in python3 will actually convert
+        # the data into bytes which we don't want. To make the test compatible
+        # to both python2 and python3, we check data type != dict, list, str
+        # for now. # TODO(xianuowang@): remove this method once we fully
+        # migrated to python3.
+        if type(data) not in {dict, list, str}:
             return data.encode('utf-8')
         if isinstance(data, list):
             return [self._byteify(item, ignore_dicts=True) for item in data]

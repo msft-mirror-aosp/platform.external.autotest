@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 TIME='MEDIUM'
 AUTHOR = 'The Chromium OS Authors'
 PURPOSE = 'Stress test hardware devices 10 minutes'
@@ -31,5 +26,6 @@ ATTRIBUTES = "suite:hwqual"
 TEST_CLASS = 'hardware'
 TEST_CATEGORY = 'Stress'
 TEST_TYPE = 'client'
+PY_VERSION = 3
 
 job.run_test('hardware_SAT', seconds=600)

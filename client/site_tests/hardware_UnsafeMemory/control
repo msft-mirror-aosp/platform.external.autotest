@@ -2,16 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 NAME = 'hardware_UnsafeMemory'
 AUTHOR = 'drewry'
 PURPOSE = 'Check for unsafe memory with https://code.google.com/a/google.com/p/rowhammer-test/'
@@ -25,6 +15,7 @@ TEST_TYPE = 'client'
 JOB_RETRIES = 0
 ATTRIBUTES = "suite:memory_qual2"
 EXTENDED_TIMEOUT = 19800 # 5.5 hours
+PY_VERSION = 3
 
 DOC = """
 This test uses rowhammer-test to find memory faults that may lead to violations

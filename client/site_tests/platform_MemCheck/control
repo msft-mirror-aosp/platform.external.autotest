@@ -2,11 +2,6 @@ NAME = 'platform_MemCheck'
 PURPOSE = 'Verify memory values look reasonable.'
 CRITERIA = """
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 This test will fail if unexpected values are found for:
   - Total Memory
   - Free Memory
@@ -22,6 +17,8 @@ TEST_TYPE = 'client'
 JOB_RETRIES = 2
 ATTRIBUTES = "suite:bvt-perbuild, suite:memory_qual2"
 DEPENDENCIES = 'cleanup-reboot'
+PY_VERSION = 3
+
 DOC = """
 Verifies that memory levels look valid.
 

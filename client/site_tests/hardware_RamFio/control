@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 NAME = 'hardware_RamFio'
 AUTHOR = 'puthik'
 PURPOSE = 'test ram speed'
@@ -21,5 +16,3 @@ Create ram disk and use hardware_StorageFio to test for ram throughput
 """
 
 job.run_test('hardware_RamFio', requirements=[('ram_suite', [])])
-
-

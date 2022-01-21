@@ -71,12 +71,6 @@ class BluetoothDevice(object):
             # If remote facade wasn't already created, connect directly here
             self._proxy = self._connect_xmlrpc_directly()
 
-        # Get some static information about the bluetooth adapter.
-        properties = self.get_adapter_properties()
-        self.bluez_version = properties.get('Name')
-        self.address = properties.get('Address')
-        self.bluetooth_class = properties.get('Class')
-
     def __getattr__(self, name):
         """Override default attribute behavior to call proxy methods.
 
@@ -119,18 +113,6 @@ class BluetoothDevice(object):
         """Is the current facade running Floss?"""
         return self.floss
 
-    def update_adapter_properties(self):
-        """Refresh the cached adapter properties"""
-        properties = self.get_adapter_properties()
-
-        if not properties:
-            logging.error('Failed to get DUT adapter properties')
-            return
-
-        self.bluez_version = properties.get('Name')
-        self.address = properties.get('Address')
-        self.bluetooth_class = properties.get('Class')
-
     def _connect_xmlrpc_directly(self):
         """Connects to the bluetooth facade directly via xmlrpc."""
         # When the xmlrpc server is already created (using the
@@ -153,6 +135,24 @@ class BluetoothDevice(object):
 
         self._bt_direct_proxy = proxy
         return proxy
+
+    @property
+    @proxy_thread_safe
+    def address(self):
+        """Get the adapter address."""
+        return self._proxy.get_address()
+
+    @property
+    @proxy_thread_safe
+    def bluez_version(self):
+        """Get the bluez version."""
+        return self._proxy.get_bluez_version()
+
+    @property
+    @proxy_thread_safe
+    def bluetooth_class(self):
+        """Get the bluetooth class."""
+        return self._proxy.get_bluetooth_class()
 
     @proxy_thread_safe
     def set_debug_log_levels(self, bluez_vb, kernel_vb):
@@ -254,27 +254,6 @@ class BluetoothDevice(object):
         """
         return self._proxy.is_bluetoothd_proxy_valid()
 
-
-    @proxy_thread_safe
-    def reset_on(self):
-        """Reset the adapter and settings and power up the adapter.
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.reset_on()
-
-
-    @proxy_thread_safe
-    def reset_off(self):
-        """Reset the adapter and settings, leave the adapter powered off.
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.reset_off()
-
-
     @proxy_thread_safe
     def has_adapter(self):
         """@return True if an adapter is present, False if not."""
@@ -298,28 +277,6 @@ class BluetoothDevice(object):
         return self._proxy.set_wake_enabled(value)
 
 
-    @proxy_thread_safe
-    def set_powered(self, powered):
-        """Set the adapter power state.
-
-        @param powered: adapter power state to set (True or False).
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.set_powered(powered)
-
-
-    def is_powered_on(self):
-        """Is the adapter powered on?
-
-        @returns: True if the adapter is powered on
-
-        """
-        properties = self.get_adapter_properties()
-        return bool(properties.get(u'Powered'))
-
-
     def get_hci(self):
         """Get hci of the adapter; normally, it is 'hci0'.
 
@@ -330,39 +287,6 @@ class BluetoothDevice(object):
         hci = (dev_info[1] if isinstance(dev_info, list) and
                len(dev_info) > 1 else None)
         return hci
-
-
-    def get_address(self):
-        """Get the bluetooth address of the adapter.
-
-        An example of the bluetooth address of the adapter: '6C:29:95:1A:D4:6F'
-
-        @returns: the bluetooth address of the adapter.
-
-        """
-        return self.address
-
-
-    def get_bluez_version(self):
-        """Get bluez version.
-
-        An exmaple of bluez version: 'BlueZ 5.39'
-
-        @returns: the bluez version
-
-        """
-        return self.bluez_version
-
-
-    def get_bluetooth_class(self):
-        """Get the bluetooth class of the adapter.
-
-        An example of the bluetooth class of a chromebook: 4718852
-
-        @returns: the bluetooth class.
-
-        """
-        return self.bluetooth_class
 
 
     def get_UUIDs(self):
@@ -467,14 +391,14 @@ class BluetoothDevice(object):
         return self._proxy.set_pairable(pairable)
 
 
+    @proxy_thread_safe
     def is_pairable(self):
         """Is the adapter in the pairable state?
 
         @return True if pairable. False otherwise.
 
         """
-        properties = self.get_adapter_properties()
-        return properties.get('Pairable') == 1
+        return self._proxy.get_pairable()
 
     @proxy_thread_safe
     def set_adapter_alias(self, alias):
@@ -651,7 +575,7 @@ class BluetoothDevice(object):
 
         prop_val = self._proxy.get_device_property(address, prop_name)
 
-        # Handle dbus error case returned by xmlrpc_server.dbus_safe decorator
+        # Handle dbus error case returned by dbus_safe decorator
         if prop_val is None:
             return None
 
@@ -671,38 +595,6 @@ class BluetoothDevice(object):
         """
 
         return self._proxy.get_battery_property(address, prop_name)
-
-    @proxy_thread_safe
-    def start_discovery(self):
-        """Start discovery of remote devices.
-
-        Obtain the discovered device information using get_devices(), called
-        stop_discovery() when done.
-
-        @return (True, None) on success, (False, <error>) otherwise.
-
-        """
-        return self._proxy.start_discovery()
-
-
-    @proxy_thread_safe
-    def stop_discovery(self):
-        """Stop discovery of remote devices.
-
-        @return (True, None) on success, (False, <error>) otherwise.
-
-        """
-        return self._proxy.stop_discovery()
-
-
-    def is_discovering(self):
-        """Is it discovering?
-
-        @return True if it is discovering. False otherwise.
-
-        """
-        return self.get_adapter_properties().get('Discovering') == 1
-
 
     @proxy_thread_safe
     def get_dev_info(self):

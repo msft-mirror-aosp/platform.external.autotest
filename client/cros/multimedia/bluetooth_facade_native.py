@@ -33,6 +33,8 @@ import re
 import subprocess
 import functools
 import time
+import threading
+import traceback
 
 import common
 from autotest_lib.client.bin import utils
@@ -50,6 +52,9 @@ from autotest_lib.client.cros.bluetooth import advertisement
 from autotest_lib.client.cros.bluetooth import adv_monitor_helper
 from autotest_lib.client.cros.bluetooth import output_recorder
 from autotest_lib.client.cros.bluetooth import logger_helper
+from autotest_lib.client.cros.bluetooth.floss.adapter_client import FlossAdapterClient
+from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
+from autotest_lib.client.cros.bluetooth.floss.utils import GLIB_THREAD_NAME
 from autotest_lib.client.cros.power import sys_power
 import six
 from six.moves import map
@@ -182,7 +187,7 @@ class UpstartClient:
             'com.ubuntu.Upstart0_6.Error.AlreadyStarted')
 
     @classmethod
-    def _get_job(cls, job_name: str):
+    def _get_job(cls, job_name):
         """Get job by name."""
         bus = pydbus.SystemBus()
         obj = bus.get(cls.UPSTART_MANAGER_SERVICE, cls.UPSTART_MANAGER_PATH)
@@ -192,12 +197,12 @@ class UpstartClient:
                        job_path)[cls.UPSTART_JOB_IFACE]
 
     @staticmethod
-    def _convert_instance_args(source: Dict[str, str]) -> List[str]:
+    def _convert_instance_args(source):
         """Convert instance args dict to array."""
-        return [f'{k}={v}' for k, v in source.items()]
+        return ['{}={}'.format(k, v) for k, v in source.items()]
 
     @classmethod
-    def start(cls, job_name: str, instance_args: Dict[str, str] = {}) -> bool:
+    def start(cls, job_name, instance_args = {}):
         """Starts a job.
 
         @param job_name: Name of upstart job to start.
@@ -224,7 +229,7 @@ class UpstartClient:
         return True
 
     @classmethod
-    def stop(cls, job_name: str, instance_args: Dict[str, str] = {}) -> bool:
+    def stop(cls, job_name, instance_args = {}):
         """Stops a job.
 
         @param job_name: Name of upstart job to stop.
@@ -273,12 +278,64 @@ class BluetoothBaseFacadeNative(object):
     # This is the standard format that we will use.
     OUT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
+    # Upstart job name for the Floss Manager daemon
+    MANAGER_JOB = "btmanagerd"
+
     def __init__(self):
         # Initialize a messages object to record general logging.
         self.messages = logger_helper.LogManager()
 
         # Set up cras test client for audio tests
         self._cras_test_client = cras_utils.CrasTestClient()
+
+    def configure_floss(self, enabled):
+        """Start and configure the Floss manager daemon.
+
+        In order to manage whether we use bluez or floss, we need to start the
+        Floss manager daemon and then set floss enabled. This exists in the base
+        implementation because bluez tests will need to start the manager to
+        disable Floss.
+
+        @param enabled: Whether to enable Floss
+
+        @return Whether Floss was configured successfully.
+        """
+        # Start manager daemon or exit early
+        if not UpstartClient.start(self.MANAGER_JOB):
+            return False
+
+        # Since we've just started the manager daemon, we also need to recreate
+        # the client.
+        self.manager_client = FlossManagerClient(self.bus)
+
+        # Wait for the manager daemon to come up
+        try:
+            utils.poll_for_condition(
+                    condition=(lambda: self.manager_client.has_proxy()),
+                    desc='Wait for manager daemon to come up',
+                    sleep_interval=0.5,
+                    timeout=self.MGR_DAEMON_TIMEOUT)
+        except Exception as e:
+            logging.error('timeout: error starting manager daemon: %s', e)
+
+        # We need to observe callbacks for proper operation.
+        if not self.manager_client.register_callbacks():
+            logging.error('manager_client: Failed to register callbacks')
+            return False
+
+        # Floss may not yet be enabled so make sure to enable it here.
+        if self.manager_client.get_floss_enabled() != enabled:
+            self.manager_client.set_floss_enabled(enabled)
+            default_adapter = self.manager_client.get_default_adapter()
+            try:
+              utils.poll_for_condition(condition=(lambda: self.manager_client.get_adapter_enabled(default_adapter) == enabled),
+                                      desc='Wait for set floss enabled to complete',
+                                      sleep_interval=0.5,
+                                      timeout=self.MGR_DAEMON_TIMEOUT)
+            except Exception as e:
+              logging.error('timeout: error waiting for set_floss_enabled')
+
+        return True
 
     def log_message(self, msg):
         """ log a message to /var/log/messages."""
@@ -660,8 +717,7 @@ class BluetoothBaseFacadeNative(object):
         This will walk through all parents of the hci0 sysfs path and write the
         value to the first one it finds.
 
-        Args:
-            value: Sets power/wakeup to "enabled" if value is true, else
+        @param value: Sets power/wakeup to "enabled" if value is true, else
                    "disabled"
 
         @return True if it wrote value to a power/wakeup, False otherwise
@@ -671,10 +727,9 @@ class BluetoothBaseFacadeNative(object):
     def wait_for_hid_device(self, device_address, timeout, sleep_interval):
         """Waits for hid device with given device address.
 
-        Args:
-            device_address: Peripheral address
-            timeout: maximum number of seconds to wait
-            sleep_interval: time to sleep between polls
+        @param device_address: Peripheral address
+        @param timeout: maximum number of seconds to wait
+        @param sleep_interval: time to sleep between polls
 
         @return True if hid device found, False otherwise
         """
@@ -1604,6 +1659,9 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
                   False otherwise.
 
         """
+        # Always start bluez tests with Floss disabled
+        self.configure_floss(enabled=False)
+
         # Start the daemon and exit if that fails.
         if not UpstartClient.start(self.BLUETOOTHD_JOB):
             return False
@@ -3906,6 +3964,270 @@ class FlossFacadeNative(BluetoothBaseFacadeNative):
     future calls.
     """
 
+    # Default to this adapter during init. We will initialize to the correct
+    # default adapter after the manager client is initialized.
+    DEFAULT_ADAPTER = 0
+
+    # How long we wait for the manager daemon to come up after we start it
+    MGR_DAEMON_TIMEOUT = 5
+
+    # How long we wait for the adapter to come up after we start it
+    ADAPTER_DAEMON_TIMEOUT = 20
+
     def __init__(self):
         # Init the BaseFacade first
         super(FlossFacadeNative, self).__init__()
+
+        # Start mainloop thread in background. This will also initialize a few
+        # other variables (self.bus, self.mainloop, self.event_context) that may
+        # be necessary for proper operation.
+        self.mainloop_quit = threading.Event()
+        self.mainloop_ready = threading.Event()
+        self.thread = threading.Thread(
+                name=GLIB_THREAD_NAME,
+                target=FlossFacadeNative.mainloop_thread,
+                args=(self, ))
+        self.thread.start()
+
+        # Wait for mainloop to be ready
+        if not self.mainloop_ready.wait(timeout=5):
+            raise Exception('Unable to initialize GLib mainloop')
+
+        # Always initialize the manager client since there is a single instance.
+        self.manager_client = FlossManagerClient(self.bus)
+        self.adapter_client = FlossAdapterClient(self.bus,
+                                                 self.DEFAULT_ADAPTER)
+
+        self.is_clean = False
+
+    def __del__(self):
+        if not self.is_clean:
+            self.cleanup()
+
+    def cleanup(self):
+        # Clean up the mainloop thread
+        self.mainloop_quit.set()
+        self.mainloop.quit()
+        self.is_clean = True
+
+    @staticmethod
+    def mainloop_thread(self):
+        """Runs GLib mainloop until we signal that we should quit."""
+
+        # Set up mainloop. All subsequent buses and connections will use this
+        # mainloop. We also use a separate main context to avoid multithreading
+        # issues.
+        #self.event_context = GLib.MainContext()
+        #self.mainloop = GLib.MainLoop(context=self.event_context)
+        GLib.threads_init()
+        self.mainloop = GLib.MainLoop()
+
+        # Set up bus connection
+        self.bus = pydbus.SystemBus()
+
+        # Set thread ready
+        self.mainloop_ready.set()
+
+        while not self.mainloop_quit.is_set():
+            self.mainloop.run()
+
+    def get_floss_enabled(self):
+        """Is Floss enabled right now?
+
+        Returns:
+            True if Floss is enabled, False if Bluez is enabled.
+        """
+        return self.manager_client.get_floss_enabled()
+
+    def set_floss_enabled(self, enabled):
+        """Enable or disable Floss."""
+        self.manager_client.set_floss_enabled(enabled)
+
+    def start_bluetoothd(self):
+        """Starts Floss. This includes enabling the adapter.
+
+        Returns:
+            True if default adapter is enabled successfully. False otherwise.
+        """
+        # Start manager and enable Floss
+        if not self.configure_floss(enabled=True):
+            return False
+
+        # Restarts the default adapter
+        if not self.reset_on():
+            return False
+
+        # If we need to wait for any other interfaces, add below here:
+        # ------------------------------------------------------------
+
+        return True
+
+    def is_bluetoothd_proxy_valid(self):
+        """Checks whether the proxy objects for Floss are ok."""
+        return all([
+                self.manager_client.has_proxy(),
+                self.adapter_client.has_proxy()
+        ])
+
+    def has_adapter(self):
+        """Checks whether an adapter exists."""
+        return len(self.manager_client.get_available_adapters()) > 0
+
+    def set_debug_log_levels(self, bluez_vb, kernel_vb):
+        """Enables verbose logging."""
+        # TODO(abps) - This will be necessary for Floss but may not need to
+        #              touch the kernel. This needs to be implemented at the
+        #              daemon level still.
+        return False
+
+    def start_discovery(self):
+        """Start discovery of remote devices."""
+        if not self.adapter_client.has_proxy():
+            return (False, 'Adapter not found')
+
+        return (self.adapter_client.start_discovery(), '')
+
+    def stop_discovery(self):
+        """Stop discovery of remote deviecs."""
+        if not self.adapter_client.has_proxy():
+            return (False, 'Adapter not found')
+
+        return (self.adapter_client.stop_discovery(), '')
+
+    def is_discovering(self):
+        """Check if adapter is discovering."""
+        return self.adapter_client.is_discovering()
+
+    def is_powered_on(self):
+        """Gets whether the default adapter is enabled."""
+        default_adapter = self.manager_client.get_default_adapter()
+        return self.manager_client.get_adapter_enabled(default_adapter)
+
+    def set_powered(self, powered):
+        """Sets the default adapter's enabled state."""
+        default_adapter = self.manager_client.get_default_adapter()
+
+        if powered and not self.manager_client.has_default_adapter():
+            logging.warning('set_powered: Default adapter not available.')
+            return False
+
+        if powered:
+            self.manager_client.start(default_adapter)
+        else:
+            self.manager_client.stop(default_adapter)
+
+        return True
+
+    def reset_on(self):
+        """Reset the default adapter into an ON state."""
+        return self.do_reset(True)
+
+    def reset_off(self):
+        """Reset the default adapter into an OFF state."""
+        return self.do_reset(False)
+
+    def do_reset(self, power_on):
+        """Resets the default adapter."""
+        # Start manager and enable Floss if not already up
+        if not self.configure_floss(enabled=True):
+            return False
+
+        default_adapter = self.manager_client.get_default_adapter()
+
+        def is_adapter_down(client):
+            return lambda: not client.has_proxy()
+
+        def is_adapter_ready(client):
+            return lambda: client.has_proxy() and client.get_address()
+
+        self.manager_client.stop(default_adapter)
+        try:
+            condition = is_adapter_down(self.adapter_client)
+            utils.poll_for_condition(condition=condition,
+                                     desc='Wait for adapter stop',
+                                     sleep_interval=0.5,
+                                     timeout=self.ADAPTER_DAEMON_TIMEOUT)
+        except Exception as e:
+            logging.error('timeout: error stopping adapter daemon: %s', e)
+            logging.error(traceback.format_exc())
+            return False
+
+        if not power_on:
+            logging.debug('do_reset: Completed with power_on=False')
+            return True
+
+        # Start the client again
+        self.manager_client.start(default_adapter)
+        self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
+
+        try:
+            condition = is_adapter_ready(self.adapter_client)
+            utils.poll_for_condition(condition=condition,
+                                     desc='Wait for adapter start',
+                                     sleep_interval=0.5,
+                                     timeout=self.ADAPTER_DAEMON_TIMEOUT)
+        except Exception as e:
+            logging.error('timeout: error starting adapter daemon: %s', e)
+            logging.error(traceback.format_exc())
+            return False
+
+        # We need to observe callbacks for proper operation.
+        if not self.adapter_client.register_callbacks():
+            logging.error('adapter_client: Failed to register callbacks')
+            return False
+
+        logging.debug('do_reset: Completed with power_on=True')
+        return True
+
+    def policy_get_service_allow_list(self):
+        # TODO(abps) - Actually implement this
+        return []
+
+    def policy_set_service_allow_list(self, uuids):
+        # TODO(abps) - Actually implement this
+        return (True, '')
+
+    def get_address(self):
+        """Gets the default adapter address."""
+        return self.adapter_client.get_address()
+
+    def has_device(self, address):
+        """Checks if adapter knows the device."""
+        return self.adapter_client.has_device(address)
+
+    def remove_device_object(self, address):
+        """Removes a known device object."""
+        return self.adapter_client.forget_device(address)
+
+    def connect_device(self, address):
+        """Connect a specific address."""
+        return self.adapter_client.connect_all_enabled_profiles(address)
+
+    def disconnect_device(self, address):
+        """Disconnect a specific address."""
+        return self.adapter_client.disconnect_all_enabled_profiles(address)
+
+    def get_device_property(self, address, prop_name):
+        """Read a property from a remote device.
+
+        @param address: Address of the device to query
+        @param prop_name: Property to be queried
+
+        @return Base64 encoded json if property exists or None.
+        """
+        prop_val = None
+
+        if self.adapter_client.has_device(address):
+            prop_val = self.adapter_client.get_property(prop_name)
+
+        return self._encode_base64_json(prop_val)
+
+    def set_pairable(self, pairable):
+        """Sets default adapter as pairable.
+
+        @param pairable: Control pairable property of the adapter.
+
+        @return True on success.
+        """
+        # TODO(abps) - Control pairable setting on adapter
+        pass

@@ -224,7 +224,7 @@ class FirmwareTest(test.test):
         gsc = None
         if self.servo.has_control('ti50_version'):
             gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
-        if self.servo.has_control('cr50_version'):
+        elif self.servo.has_control('cr50_version'):
             gsc = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
         if gsc:
             try:

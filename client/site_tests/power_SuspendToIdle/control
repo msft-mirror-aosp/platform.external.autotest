@@ -2,23 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "Chrome OS Team"
-NAME = "power_SuspendToIdle.force"
+NAME = "power_SuspendToIdle"
 PURPOSE = "Verify the suspend to idle is working."
 TIME = "SHORT"
 TEST_CATEGORY = "Logging"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
+ATTRIBUTES = "suite:power_daily"
+PY_VERSION = 3
 
 DOC = """
 Test functionality of Suspend to Idle.
 
-Force system to use suspend to idle even if it not the default config.
+Raise TestNAError if default config is not suspend to idle.
 
 This test uses the following confidence check to verify that S0ix is working.
 1. DMC Firmware is loaded successfully.
@@ -29,5 +26,4 @@ This test uses the following confidence check to verify that S0ix is working.
 6. GPU RC6 state residency counter is increased.
 """
 
-job.run_test('power_SuspendToIdle', force_suspend_to_idle=True,
-             tag=NAME.split('.')[1])
+job.run_test('power_SuspendToIdle')

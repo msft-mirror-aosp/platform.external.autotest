@@ -944,7 +944,7 @@ class BluetoothAdapterTests(test.test):
                     device = gen_device_func(btpeer)()
                     if device.CheckSerialConnection():
                         self.btpeer_group[device_type].append(btpeer)
-                        logging.info('%d-th btpeer find device %s', \
+                        logging.debug('%d-th btpeer find device %s', \
                                      idx, device_type)
                         # Create copy of btpeer_group
                         self.btpeer_group_copy[device_type].append(btpeer)
@@ -1773,16 +1773,18 @@ class BluetoothAdapterTests(test.test):
         session failed and wait for a new session if it did.
         """
         initially_ok = self.bluetooth_facade.is_bluetoothd_valid()
-        bluez_started = initially_ok or self.bluetooth_facade.start_bluetoothd()
-
-        if not initially_ok:
-            self.bluetooth_facade.update_adapter_properties()
+        daemon_started = initially_ok or self.bluetooth_facade.start_bluetoothd(
+        )
+        eventually_ok = initially_ok or self.bluetooth_facade.is_bluetoothd_valid(
+        )
 
         self.results = {
                 'initially_ok': initially_ok,
-                'bluez_started': bluez_started
+                'eventually_ok': eventually_ok,
+                'daemon_started': daemon_started,
         }
-        return all(self.results.values())
+        return all(
+                [self.results[x] for x in ['eventually_ok', 'daemon_started']])
 
 
     @test_retry_and_log(False)

@@ -1,14 +1,9 @@
-# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "Chrome OS Team"
-NAME = "power_Resume"
+NAME = "power_Resume.iterations"
 PURPOSE = "Measure the amount of time it takes to resume from suspend."
 CRITERIA = "This test is a benchmark."
 ATTRIBUTES = "suite:crosbolt_perf_perbuild"
@@ -16,6 +11,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Logging"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
 This test will search /var/log/messages for pertinent strings to determine if
@@ -27,4 +23,4 @@ network interface is UP after it has resumed.
 
 job.add_sysinfo_command('cbmem -c', logfile='bios_log', on_every_test=True)
 job.add_sysinfo_command('cbmem -t', logfile='bios_times', on_every_test=True)
-job.run_test('power_Resume', ignore_kernel_warns=True)
+job.run_test('power_Resume', ignore_kernel_warns=True, suspend_iterations=50, iteration_delay=10)

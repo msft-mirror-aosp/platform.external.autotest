@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "mqg"
 NAME = "power_Speedometer2"
 PURPOSE = "Run Speedometer2 test and collect power data."
@@ -16,6 +11,7 @@ TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
 ATTRIBUTES = "suite:power_daily"
+PY_VERSION = 3
 
 DOC = """
 Run Speedometer2 test and collect power data. Test should be ~3 minutes.

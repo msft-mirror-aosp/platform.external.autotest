@@ -20,12 +20,14 @@ class firmware_MiniosMenu(FirmwareTest):
     def initialize(self, host, cmdline_args, older_version):
         super(firmware_MiniosMenu, self).initialize(host, cmdline_args)
 
+        self.test_skipped = True
         if not self.menu_switcher:
             raise error.TestNAError('Test skipped for menuless UI')
         if not self.faft_config.chrome_ec:
             raise error.TestNAError('Cannot check power state without EC')
         if not self.faft_config.minios_enabled:
             raise error.TestNAError('MiniOS is not enabled for this board')
+        self.test_skipped = False
 
         self.host = host
         # SSH to MiniOS is only available in developer mode
@@ -34,10 +36,11 @@ class firmware_MiniosMenu(FirmwareTest):
         self.older_version = older_version
 
     def cleanup(self):
-        try:
-            self.switcher.trigger_minios_to_dev()
-        except Exception as e:
-            logging.error('Caught exception: %s', str(e))
+        if not self.test_skipped:
+            try:
+                self.switcher.trigger_minios_to_dev()
+            except Exception as e:
+                logging.error('Caught exception: %s', str(e))
         super(firmware_MiniosMenu, self).cleanup()
 
     def run_once(self):

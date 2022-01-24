@@ -262,6 +262,7 @@ class ResultsManager:
         self.results_parser = results_parser
         self.results_sender = results_sender
         self.bug_id = None
+        self.suite_name = ""
 
         self.moblab_id = self.get_fake_moblab_id()
 
@@ -342,6 +343,9 @@ class ResultsManager:
                             fake_moblab_id_path, e)
         return fake_moblab_id
 
+    def overwrite_suite_name(self, suite_name):
+        self.suite_name = suite_name
+
     def annotate_results_with_bugid(self, bug_id):
         self.bug_id = bug_id
 
@@ -354,7 +358,9 @@ class ResultsManager:
                 self.results_parser.write_bug_id(result_dir, self.bug_id)
             self.results.append(
                     (result_dir,
-                     self.results_parser.parse(result_dir, upload_only)))
+                     self.results_parser.parse(result_dir,
+                                               upload_only,
+                                               suite_name=self.suite_name)))
 
     def upload_all_results(self, force):
         for result in self.results:
@@ -377,7 +383,7 @@ class ResultsParserClass:
     def job_tag(self, job_id, machine):
         return str(job_id) + "-moblab/" + str(machine)
 
-    def parse(self, path, upload_only: bool):
+    def parse(self, path, upload_only: bool, suite_name=""):
         #temporarily assign a fake job id until parsed
         fake_job_id = 1234
         fake_machine = "localhost"
@@ -396,7 +402,10 @@ class ResultsParserClass:
         job.board = job.tests[0].attributes['host-board']
         job_id = int(job.started_time.timestamp() * 1000)
         job.afe_parent_job_id = job_id + 1
-        job.suite = self.parse_suite_name(path)
+        if suite_name == "":
+            job.suite = self.parse_suite_name(path)
+        else:
+            job.suite = suite_name
         job.build_version = self.get_build_version(job.tests)
         name = self.job_tag(job_id, job.machine)
         if not upload_only:
@@ -727,6 +736,8 @@ def main(args):
 
     if parsed_args.bug:
         results_manager.annotate_results_with_bugid(parsed_args.bug)
+    if parsed_args.suite:
+        results_manager.overwrite_suite_name(parsed_args.suite)
     if parsed_args.parse_only:
         results_manager.parse_all_results()
     elif parsed_args.upload_only:

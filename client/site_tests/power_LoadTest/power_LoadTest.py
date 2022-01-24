@@ -623,6 +623,7 @@ class power_LoadTest(arc.ArcTest):
 
         if self.task_monitor_file:
             self.task_monitor_file.close()
+            self._generate_task_monitor_html()
 
         if self._shill_proxy:
             if self._force_wifi:
@@ -876,6 +877,79 @@ class power_LoadTest(arc.ArcTest):
                 if idx in handler.server._form_entries:
                     del handler.server._form_entries[idx]
         handler.send_response(200)
+
+
+    def _generate_task_monitor_html(self):
+        json_decoder = json.JSONDecoder()
+        # regex pattern to simplify the url
+        pattern = re.compile(r'.*https?://(www[.])?(?P<site>[^.]*[.][^/]*)')
+        data = []
+        min_ts = None
+        process_dict = {}
+        process_id = 1
+        with open(os.path.join(self.resultsdir, 'task-monitor.json'),
+                  'r') as f:
+            json_strs = f.read().splitlines()
+            for json_str in json_strs[1:]:
+                if len(json_str) < 10:
+                    continue
+                entry_dict, _ = json_decoder.raw_decode(json_str, 0)
+                if not min_ts:
+                    min_ts = entry_dict['timestamp']
+                ts = (entry_dict['timestamp'] - min_ts) / 1000
+
+                items = {}
+                for p in entry_dict['processes']:
+                    if 'cpu' not in p:
+                        continue
+                    tab = p['tasks'][0]
+                    key = tab['title']
+                    if 'tabId' in tab:
+                        tabInfo = [
+                                t for t in entry_dict['tabInfo']
+                                if t['tabId'] == tab['tabId']
+                        ]
+                        url = tabInfo[0]['url']
+                        key = 'Tab: ' + pattern.search(url).group('site')
+
+                    if key.startswith('Service Worker'):
+                        key = 'Service Worker: ' + \
+                            pattern.search(key).group('site')
+
+                    items[key] = p['cpu']
+                    if key not in process_dict:
+                        process_dict[key] = process_id
+                        process_id += 1
+
+                data.append((ts, items))
+
+        cols = ['timestamp'] + list(process_dict.keys())
+        rows = [cols]
+
+        # This data is logged every seconds but graph would be too dense.
+        # So we average data in |avg_window| seconds window.
+        avg_window = 3
+        if len(data) > 1000:
+            avg_window = 20
+
+        for index, (ts, items) in enumerate(data):
+            if index % avg_window == 0:
+                row = [0] * len(cols)
+                row[0] = ts
+            for name, cpu in items.items():
+                row[process_dict[name]] += cpu / avg_window
+            if index % avg_window == avg_window - 1:
+                rows.append(row)
+
+        row_indent = ' ' * 12
+        data_str = ',\n'.join([row_indent + json.dumps(row) for row in rows])
+
+        out_str = power_dashboard._HTML_CHART_STR.format(
+                data=data_str, unit='percent', type='process cpu usage')
+
+        with open(os.path.join(self.resultsdir, 'task-monitor.html'),
+                  'w') as f:
+            f.write(out_str)
 
 
 def alphanum_key(s):

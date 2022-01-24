@@ -1,12 +1,6 @@
 # Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 #
 # Test expects to be run on a jailbroken device in developer mode.
 
@@ -20,6 +14,7 @@ TEST_CLASS = "power"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 ATTRIBUTES = "suite:power_build"
+PY_VERSION = 3
 
 DOC = """
 Tests the following

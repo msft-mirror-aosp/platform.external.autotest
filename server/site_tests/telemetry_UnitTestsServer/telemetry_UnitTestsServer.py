@@ -5,6 +5,16 @@
 import logging
 import os
 import os.path
+import sys
+
+# TODO (b/206008069), remove this when migrated to new env
+sys.path.insert(0,
+                '/usr/local/lib/python2.7/dist-packages/six-1.16.0-py2.7.egg')
+try:
+    import six
+    logging.debug("six version is {}".format(six.__version__))
+except ImportError as e:
+    logging.warning("Could not import six due to %s", e)
 
 from autotest_lib.server import autotest
 from autotest_lib.server import test

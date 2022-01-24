@@ -31,10 +31,6 @@ FULL_WAKE_SOURCES = [
 # List of wake sources expected to cause a dark resume.
 DARK_RESUME_SOURCES = ['RTC', 'AC_CONNECTED', 'AC_DISCONNECTED']
 
-# Max time taken by the device to resume. This gives enough time for the device
-# to establish network connection with the autotest server
-SECS_FOR_RESUMING = 15
-
 # Time in future after which RTC goes off when testing wake due to RTC alarm.
 RTC_WAKE_SECS = 20
 
@@ -274,11 +270,10 @@ class power_WakeSources(test.test):
         # fully suspend.
         time.sleep(SECS_FOR_SUSPENDING)
         self._trigger_wake(wake_source)
-        # Wait at least |SECS_FOR_RESUMING| secs for the device to
-        # resume.
-        time.sleep(SECS_FOR_RESUMING)
 
-        if not self._host.is_up_fast():
+        # Wait until it would be unclear if the RTC or wake_source triggered the
+        # wake.
+        if not self._host.wait_up(timeout=RTC_WAKE_SECS - 1):
             logging.error(
                     'Device did not resume from suspend for %s.'
                     ' Waking system with power button then RTC.', wake_source)

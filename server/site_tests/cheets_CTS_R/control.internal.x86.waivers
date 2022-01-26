@@ -27,7 +27,6 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=10,
-        needs_push_media=True,
         tag='internal.x86.waivers',
         test_name='cheets_CTS_R.internal.x86.waivers',
         run_template=['run', 'commandAndExit', 'cts', '--subplan', 'waivers'],
@@ -37,7 +36,6 @@ def run_TS(machine):
         load_waivers=False,
         bundle='x86',
         uri='DEV_WAIVER',
-        precondition_commands=['adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass)), 'adb shell cmd wifi connect-network %s' % pipes.quote(ssid), 'adb shell dumpsys wifi transports -eth'],
         use_jdk9=True,
         timeout=14400)
 

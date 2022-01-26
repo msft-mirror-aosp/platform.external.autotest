@@ -42,6 +42,11 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
             '(Capabilities:.*(?P<Capabilities>%s))' % \
             (self.CAP_FORMAT.join(self.CAP_NAMES) + self.CAP_FORMAT)
 
+    # Return None for now, until Ti50 version output is fixed to include
+    # board_id info (b/215776772).
+    def get_active_board_id_str(self):
+        return None
+
     def set_ccd_level(self, level, password=''):
         if level == 'unlock':
             raise error.TestError(

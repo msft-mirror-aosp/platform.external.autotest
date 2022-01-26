@@ -22,14 +22,13 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     idle deep sleep count.
 
     @param suspend_count: The number of times to reboot or suspend the device.
-    @param reset_type: a str with the cycle type: 'mem' or 'reboot'
+    @param reset_type: a str with the cycle type: 'freeze', 'mem', or 'reboot'
     """
     version = 1
 
     SLEEP_DELAY = 20
     MIN_RESUME = 15
     MIN_SUSPEND = 15
-    MEM = 'mem'
     # Initialize the FWMP with a non-zero value. Use 100, because it's an
     # unused flag and it wont do anything like lock out dev mode or ccd.
     FWMP_FLAGS = '0x100'
@@ -176,10 +175,11 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         return rv
 
 
-    def run_suspend_resume(self, suspend_count):
+    def run_suspend_resume(self, suspend_count, suspend_type):
         """Suspend the device the requested number of times
 
         @param suspend_count: the number of times to suspend the device.
+        @param suspend_type: the type of suspend to issue("mem" or "freeze")
         """
         # Disable CCD so Cr50 can enter deep sleep
         rv = self.wait_for_client_after_changing_ccd(False)
@@ -192,13 +192,14 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         client_at = autotest.Autotest(self.host)
         # Duration is set to 0, because it is required but unused when
         # iterations is given.
-        client_at.run_test('power_SuspendStress', tag='idle',
+        client_at.run_test('power_SuspendStress',
+                           tag='idle',
                            duration=0,
                            min_suspend=self.MIN_SUSPEND,
                            min_resume=self.MIN_RESUME,
                            check_connection=False,
                            suspend_iterations=suspend_count,
-                           suspend_state=self.MEM,
+                           suspend_state=suspend_type,
                            check_client_result=True)
 
 
@@ -270,20 +271,22 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     def run_once(self, host, suspend_count, reset_type):
         """Verify deep sleep after suspending for the given number of cycles
 
-        The test either suspends to s3 or reboots the device depending on
-        reset_type. There are two valid reset types: mem and reboot. The test
-        will make sure that the device is off or in s3 long enough to ensure
-        Cr50 should be able to enter deep sleep. At the end of the test, it
-        checks that Cr50 entered deep sleep the same number of times it
-        suspended.
+        The test either suspends to s0i3/s3 or reboots the device depending on
+        reset_type. There are three valid reset types: freeze, mem, and reboot.
+        The test will make sure that the device is off or in s0i3/s3 long enough
+        to ensure Cr50 should be able to enter the corresponding suspend state.
+        At the end of the test, it checks that Cr50 entered the suspend state
+        the same number of times the DUT suspended.
 
         @param host: the host object representing the DUT.
         @param suspend_count: The number of cycles to suspend or reboot the
                 device.
-        @param reset_type: a str with the cycle type: 'mem' or 'reboot'
+        @param reset_type: a str with the cycle type: 'freeze', 'mem' or
+                'reboot'
         """
-        if reset_type not in ['reboot', 'mem']:
-            raise error.TestNAError('Invalid reset_type. Use "mem" or "reboot"')
+        if reset_type not in ['reboot', 'freeze', 'mem']:
+            raise error.TestNAError('Invalid reset_type. Use "freeze", "mem" '
+                                    'or "reboot"')
         if self.MIN_SUSPEND + self.MIN_RESUME < self.SLEEP_DELAY:
             logging.info('Minimum suspend-resume cycle is %ds. This is '
                          'shorter than the Cr50 idle timeout. Cr50 may not '
@@ -294,13 +297,50 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         original_flog = cr50_utils.DumpFlog(self.host).strip()
         logging.debug('Initial FLOG output:\n%s', original_flog)
 
+        suspend_type = reset_type
+
         # x86 devices should suspend once per reset. ARM will only suspend
         # if the device enters s5.
         if reset_type == 'reboot':
             self._enters_deep_sleep = True
         else:
             is_arm = self.check_ec_capability(['arm'], suppress_warning=True)
-            self._enters_deep_sleep = not is_arm
+
+            # Check if the device supports S0ix.
+            self.s0ix_supported = not self.host.run(
+                    'check_powerd_config --suspend_to_idle',
+                    ignore_status=True).exit_status
+
+            # Check if the device supports S3.
+            self.s3_supported = not self.host.run(
+                    'grep -q deep /sys/power/mem_sleep',
+                    ignore_status=True).exit_status
+
+            if not self.s0ix_supported and not self.s3_supported:
+                raise error.TestError(
+                        'S3 and S0ix unsupported, can not run test')
+
+            if not self.s0ix_supported and \
+               self.check_cr50_capability(['deep_sleep_in_s0i3']):
+                raise error.TestError(
+                        'Invalid configuration, S0ix not supported, but '
+                        'deep_sleep_in_s0i3 is true')
+
+            if self.check_cr50_capability(['deep_sleep_in_s0i3']) and \
+               self.s0ix_supported and not self.s3_supported:
+                logging.info('Switching suspend type from "mem" to "freeze" '
+                             'to support s0ix(S3 unsupported)')
+                suspend_type = 'freeze'
+
+            # Check if the Cr50 enters deep sleep on this device.
+            # This variable is used to determine error checks to be performed
+            # at the end of testing(Suspend/Resume count vs Cr50 Deep Sleep)
+            # Cr50 does not deep sleep on ARM
+            # Cr50 does deep sleep in S3
+            # Cr50 will only deep sleep in S0i3 on select systems.
+            self._enters_deep_sleep = not is_arm and \
+                ((suspend_type != 'freeze' or \
+                self.check_cr50_capability(['deep_sleep_in_s0i3'])))
 
         self.create_fwmp()
 
@@ -308,8 +348,11 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         try:
             if reset_type == 'reboot':
                 self.run_reboots(suspend_count)
-            elif reset_type == 'mem':
-                self.run_suspend_resume(suspend_count)
+            elif reset_type == 'mem' or reset_type == 'freeze':
+                self.run_suspend_resume(suspend_count, suspend_type)
+            else:
+                raise error.TestError('Test can only be run with reset types:'
+                                      'reboot, mem, or freeze')
         except Exception as e:
             main_error = e
 

@@ -1265,3 +1265,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if int(approved == '') != int(allowed):
             raise error.TestFail('Approved does not match allowed %r' % rv)
         return int(allowed)
+
+    def unlock_is_supported(self):
+        return True

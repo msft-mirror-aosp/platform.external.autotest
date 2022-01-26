@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 NAME = "power_LowMemorySuspend"
 PURPOSE = "Low memory suspension tests."
 CRITERIA = """Fails if system hang or reboot during this test."""
@@ -17,6 +12,7 @@ TEST_CATEGORY = "Stress"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
 EXTENDED_TIMEOUT = 4500
+PY_VERSION = 3
 DOC = """
 This is a suspending stress test. It suspends the system many times
 when memory is low. It simulates the memory fragmentation by creating

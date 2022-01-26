@@ -9,7 +9,7 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
-from autotest_lib.client.common_lib.cros import arc_util
+from autotest_lib.client.common_lib.cros import power_load_util
 from autotest_lib.client.cros.power import sys_power
 
 
@@ -115,7 +115,8 @@ class power_LowMemorySuspend(test.test):
     def run_once(self, switches_per_suspend=15, total_suspend_duration=2400,
                  suspend_seconds=10, additional_sleep=10):
         """Runs the test once."""
-        username, password = arc_util.get_test_account_info()
+        username = power_load_util.get_username()
+        password = power_load_util.get_password()
         with chrome.Chrome(gaia_login=True, username=username,
                            password=password) as cr:
             tabs = self.create_tabs(cr)

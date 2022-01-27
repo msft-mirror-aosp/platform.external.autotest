@@ -583,11 +583,12 @@ class power_LoadTest(arc.ArcTest):
                 logger.add_item(log_name, val, 'point', 'perf')
 
         # Add ext_ms_page_load_time_mean to power dashboard
-        vals = (float(x)
-                for x in keyvals['ext_ms_page_load_time_mean'].split('_'))
-        for index, val in enumerate(vals):
-            log_name = 'loop%02d_ms_page_load_time' % index
-            logger.add_item(log_name, val, 'point', 'perf')
+        if 'ext_ms_page_load_time_mean' in keyvals:
+            vals = (float(x)
+                    for x in keyvals['ext_ms_page_load_time_mean'].split('_'))
+            for index, val in enumerate(vals):
+                log_name = 'loop%02d_ms_page_load_time' % index
+                logger.add_item(log_name, val, 'point', 'perf')
 
         # Add battery life and power to power dashboard
         for key in ('minutes_battery_life_tested', 'minutes_battery_life',

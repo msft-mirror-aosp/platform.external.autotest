@@ -288,7 +288,8 @@ class power_LoadTest(arc.ArcTest):
             self._wh_energy_start = self._power_status.battery.energy
 
         self.task_monitor_file = open(os.path.join(self.resultsdir,
-                                      'task-monitor.json'), 'wt')
+                                                   'task-monitor.json'),
+                                      mode='wt', encoding='utf8')
 
 
     def run_once(self):

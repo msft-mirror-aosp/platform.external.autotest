@@ -16,7 +16,7 @@ from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
 class firmware_Cr50DeepSleepStress(FirmwareTest):
-    """Verify cr50 deep sleep after running power_SuspendStress.
+    """Verify Cr50 deep sleep after running power_SuspendStress.
 
     Cr50 should enter deep sleep every suspend. Verify that by checking the
     idle deep sleep count.
@@ -39,7 +39,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     TOLERATED_ERROR = 0.05
 
     def initialize(self, host, cmdline_args, suspend_count, reset_type):
-        """Make sure the test is running with access to the cr50 console"""
+        """Make sure the test is running with access to the Cr50 console"""
         self.host = host
         super(firmware_Cr50DeepSleepStress, self).initialize(host, cmdline_args)
         if not hasattr(self, 'cr50'):
@@ -53,7 +53,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         # Reset the device
         self.host.reset_via_servo()
 
-        # Save the original version, so we can make sure cr50 doesn't rollback.
+        # Save the original version, so we can make sure Cr50 doesn't rollback.
         self.original_cr50_version = self.cr50.get_active_version_info()
         self._suspend_diff = 0
 
@@ -203,13 +203,13 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
 
     def check_cr50_deep_sleep(self, suspend_count):
-        """Verify cr50 has entered deep sleep the correct number of times.
+        """Verify Cr50 has entered deep sleep the correct number of times.
 
         Also print ccdstate and sleepmask output to get some basic information
-        about the cr50 state.
-        - sleepmask will show what may be preventing cr50 from entering sleep.
-        - ccdstate will show what cr50 thinks the AP state is. If the AP is 'on'
-          cr50 won't enter deep sleep.
+        about the Cr50 state.
+        - sleepmask will show what may be preventing Cr50 from entering sleep.
+        - ccdstate will show what Cr50 thinks the AP state is. If the AP is 'on'
+          Cr50 won't enter deep sleep.
         All of these functions log the state, so no need to log the return
         values.
 
@@ -240,7 +240,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         if exp_count and not hibernate:
             errors.append('reset during suspend')
 
-        # Use the absolute value, because cr50 shouldn't suspend more or less
+        # Use the absolute value, because Cr50 shouldn't suspend more or less
         # than expected.
         if abs(act_diff) > tolerated_diff:
             errors.append('count mismatch expected %d got %d' % (exp_count,

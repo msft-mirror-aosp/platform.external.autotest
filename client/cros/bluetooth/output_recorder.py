@@ -15,6 +15,7 @@ import os
 import pty
 import re
 import subprocess
+import sys
 import threading
 import time
 
@@ -22,6 +23,15 @@ import time
 class OutputRecorderError(Exception):
     """An exception class for output_recorder module."""
     pass
+
+
+def _may_append_encoding_kwargs(kwargs):
+    """Appends encoding kwarg if it is run in Python 3+.
+
+    @param kwargs: dict of kwargs.
+    """
+    if sys.version_info.major > 2:
+        kwargs['encoding'] = 'utf-8'
 
 
 class OutputRecorder(object):
@@ -78,7 +88,9 @@ class OutputRecorder(object):
 
         # Use pseudo terminal to prevent buffering of the program output.
         self._main, self._node = pty.openpty()
-        self._output = os.fdopen(self._main)
+        fdopen_kwargs = {}
+        _may_append_encoding_kwargs(fdopen_kwargs)
+        self._output = os.fdopen(self._main, **fdopen_kwargs)
 
         # Set non-blocking flag.
         fcntl.fcntl(self._output, fcntl.F_SETFL, os.O_NONBLOCK)
@@ -88,15 +100,18 @@ class OutputRecorder(object):
         """Record the output of the cmd."""
         logging.info('Recording output of "%s".', ' '.join(self.cmd))
         try:
-            self._recorder = subprocess.Popen(
-                    self.cmd, stdout=self._node, stderr=self._node)
+            popen_kwargs = {'stdout': self._node, 'stderr': self._node}
+            _may_append_encoding_kwargs(popen_kwargs)
+            self._recorder = subprocess.Popen(self.cmd, **popen_kwargs)
         except:
             raise OutputRecorderError('Failed to run "%s"' %
                                       ' '.join(self.cmd))
 
         ansi_escape_re = re.compile(r'\x1b\[[^m]*m')
 
-        with open(self.save_file, self.open_mode) as output_f:
+        open_kwargs = {}
+        _may_append_encoding_kwargs(open_kwargs)
+        with open(self.save_file, self.open_mode, **open_kwargs) as output_f:
             output_f.write(os.linesep + '*' * 80 + os.linesep)
             while True:
                 try:

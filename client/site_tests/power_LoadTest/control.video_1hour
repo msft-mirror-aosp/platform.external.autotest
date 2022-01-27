@@ -58,11 +58,11 @@ tasks = """
     duration: minutes(60),
     focus: false,
     tabs: [
-      'http://www.google.com',
-      'http://news.google.com',
-      'http://www.reddit.com',
-      'http://clothing.shop.ebay.com/Womens-Shoes-/63889/i.html',
-      'http://www.facebook.com',
+      'https://www.google.com/search?q=google',
+      'https://news.google.com',
+      'https://www.reddit.com',
+      'https://www.amazon.com',
+      'https://www.instagram.com/instagram',
     ],
   },
   {

@@ -131,7 +131,7 @@ class power_LoadTest(arc.ArcTest):
         self._force_wifi = force_wifi
         self._use_cellular_network = use_cellular_network
         self._testServer = None
-        self._tasks = tasks.replace(' ','')
+        self._tasks = tasks
         self._backchannel = None
         self._shill_proxy = None
         self._volume_level = volume_level

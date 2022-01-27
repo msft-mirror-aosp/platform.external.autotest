@@ -49,29 +49,34 @@ loop_count = 1
 # tabs: list of urls for the window type
 # urls: list of urls to cycle through for the cycle type
 
-tasks='[{' + \
-'    type: \'window\',' + \
-'    name: \'background\',' + \
-'    start: 0,' + \
-'    duration: 3600000,' + \
-'    focus: false,' + \
-'    tabs: [' + \
-'     \'http://www.google.com\',' + \
-'     \'http://news.google.com\',' + \
-'     \'http://www.reddit.com\',' + \
-'     \'http://clothing.shop.ebay.com/Womens-Shoes-/63889/i.html\',' + \
-'     \'http://www.facebook.com\'' + \
-'    ]}, {' + \
-'    type: \'window\',' + \
-'    name: \'video\',' + \
-'    start: 1000,' + \
-'    duration: 3600000,' + \
-'    focus: true,' + \
-'    tabs: [' + \
-'     \'http://www.youtube.com/embed/YE7VzlLtp-4?autoplay=1&loop=1&' + \
-'playlist=YE7VzlLtp-4\'' + \
-'    ]}]'
-
+tasks = """
+[
+  {
+    type: 'window',
+    name: 'background',
+    start: 0,
+    duration: minutes(60),
+    focus: false,
+    tabs: [
+      'http://www.google.com',
+      'http://news.google.com',
+      'http://www.reddit.com',
+      'http://clothing.shop.ebay.com/Womens-Shoes-/63889/i.html',
+      'http://www.facebook.com',
+    ],
+  },
+  {
+    type: 'window',
+    name: 'video',
+    start: seconds(1),
+    duration: minutes(60),
+    focus: true,
+    tabs: [
+      'http://www.youtube.com/embed/YE7VzlLtp-4?autoplay=1&loop=1&playlist=YE7VzlLtp-4',
+    ],
+  },
+]
+"""
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

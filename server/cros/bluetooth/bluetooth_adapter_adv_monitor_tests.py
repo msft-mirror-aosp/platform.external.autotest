@@ -1448,7 +1448,9 @@ class BluetoothAdapterAdvMonitorTests(
         # Register the app, should not fail.
         self.test_register_app(app1)
 
-        monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
+        monitor1.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+        ])
         self.test_add_monitor(monitor1, expected_activate=True)
 
         # DeviceFound should get triggered only once per device.
@@ -1466,22 +1468,6 @@ class BluetoothAdapterAdvMonitorTests(
         # DeviceLost should get triggered for another device.
         self.test_stop_peer_device_adv(self.peer_mouse, duration=10)
         self.test_device_lost(monitor1, count=2)
-
-        self.test_remove_monitor(monitor1)
-
-        monitor1.update_rssi([self.HIGH_RSSI, 10, self.LOW_RSSI, 10])
-        self.test_add_monitor(monitor1, expected_activate=True)
-
-        # Device was online for short period of time, so DeviceFound should
-        # not get triggered.
-        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
-        self.test_device_found(monitor1, count=0)
-
-        # Device did not come back online, DeviceFound should not get triggered.
-        # No device was found earlier, so DeviceLost should not get triggered.
-        self.test_stop_peer_device_adv(self.peer_keybd, duration=15)
-        self.test_device_found(monitor1, count=0)
-        self.test_device_lost(monitor1, count=0)
 
         self.test_remove_monitor(monitor1)
 
@@ -1513,25 +1499,14 @@ class BluetoothAdapterAdvMonitorTests(
         # Register the app, should not fail.
         self.test_register_app(app1)
 
-        monitor1.update_rssi([self.HIGH_RSSI, 10, self.LOW_RSSI, 10])
+        monitor1.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 10,
+        ])
         self.test_add_monitor(monitor1, expected_activate=True)
 
-        # DeviceFound should not get triggered before timeout.
+        # DeviceFound should get triggered once the peer starts advertising.
         self.test_start_peer_device_adv(self.peer_keybd, duration=5)
-        self.test_device_found(monitor1, count=0)
-
-        # DeviceFound should not get triggered as device went offline.
-        # No device was found earlier, so DeviceLost should not get triggered.
-        self.test_stop_peer_device_adv(self.peer_keybd, duration=11)
-        self.test_device_found(monitor1, count=0)
-        self.test_device_lost(monitor1, count=0)
-
-        # Timer should get reset, so DeviceFound should not get triggered.
-        self.test_start_peer_device_adv(self.peer_keybd, duration=5)
-        self.test_device_found(monitor1, count=0)
-
-        # DeviceFound should get triggered once timer completes.
-        self.test_device_found(monitor1, count=1, delay=10)
+        self.test_device_found(monitor1, count=1)
 
         # DeviceLost should not get triggered before timeout.
         self.test_stop_peer_device_adv(self.peer_keybd, duration=5)
@@ -1584,7 +1559,9 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x03, [0x12, 0x18]],
                 [0, 0x19, [0xc1, 0x03]],
         ])
-        monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
+        monitor1.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+        ])
 
         monitor2 = TestMonitor(app2)
         monitor2.update_type('or_patterns')
@@ -1592,7 +1569,9 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x03, [0x12, 0x18]],
                 [0, 0x19, [0xc1, 0x03]],
         ])
-        monitor2.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
+        monitor2.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+        ])
 
         # Activate should get invoked.
         self.test_add_monitor(monitor1, expected_activate=True)
@@ -1613,14 +1592,18 @@ class BluetoothAdapterAdvMonitorTests(
         monitor3.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
         ])
-        monitor3.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
+        monitor3.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+        ])
 
         monitor4 = TestMonitor(app2)
         monitor4.update_type('or_patterns')
         monitor4.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
         ])
-        monitor4.update_rssi([self.HIGH_RSSI, 10, self.LOW_RSSI, 10])
+        monitor4.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 10,
+        ])
 
         # Activate should get invoked.
         self.test_add_monitor(monitor3, expected_activate=True)
@@ -1630,11 +1613,7 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_start_peer_device_adv(self.peer_mouse, duration=5)
         self.test_device_found(monitor2, count=2)
         self.test_device_found(monitor3, count=1)
-
-        # Since the RSSI timeouts are different for monitor4, DeviceFound
-        # event should get triggered after total of 10 seconds.
-        self.test_device_found(monitor4, count=0)
-        self.test_device_found(monitor4, count=1, delay=5)
+        self.test_device_found(monitor4, count=1)
         self.test_stop_peer_device_adv(self.peer_mouse)
 
         # Unregister both apps, should not fail.

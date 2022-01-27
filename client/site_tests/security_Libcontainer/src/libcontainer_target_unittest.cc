@@ -11,7 +11,6 @@
 #include <base/files/file_util.h>
 #include <base/files/scoped_file.h>
 #include <base/files/scoped_temp_dir.h>
-#include <base/macros.h>
 #include <base/stl_util.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/stringprintf.h>
@@ -37,6 +36,9 @@ class ScopedCaptureStdout {
     CHECK(close(pipe_fds[1]) != -1);
   }
 
+  ScopedCaptureStdout(const ScopedCaptureStdout&) = delete;
+  ScopedCaptureStdout& operator=(const ScopedCaptureStdout&) = delete;
+
   ~ScopedCaptureStdout() {
     CHECK(dup2(original_stdout_fd_.get(), STDOUT_FILENO) != -1);
   }
@@ -52,8 +54,6 @@ class ScopedCaptureStdout {
  private:
   base::ScopedFD read_fd_;
   base::ScopedFD original_stdout_fd_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScopedCaptureStdout);
 };
 
 }  // namespace
@@ -61,6 +61,9 @@ class ScopedCaptureStdout {
 class LibcontainerTargetTest : public ::testing::Test {
  public:
   LibcontainerTargetTest() = default;
+  LibcontainerTargetTest(const LibcontainerTargetTest&) = delete;
+  LibcontainerTargetTest& operator=(const LibcontainerTargetTest&) = delete;
+
   ~LibcontainerTargetTest() override = default;
 
   void SetUp() override {
@@ -102,8 +105,6 @@ class LibcontainerTargetTest : public ::testing::Test {
   base::ScopedTempDir temp_dir_;
   struct container* container_ = nullptr;
   struct container_config* config_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(LibcontainerTargetTest);
 };
 
 TEST_F(LibcontainerTargetTest, AddHookRedirectTest) {

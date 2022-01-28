@@ -11,9 +11,16 @@ This test fails if device fails to obtain dhcp through ethernet.
 PY_VERSION = 3
 
 # Note: This test is currently only intended for manual runs in
-# a "well controlled" enviroment. In other words, document the
-# configuration (DUT mfg/model, Ethernet mfg/model, OS version, etc.)
-# and test results (histogram).
+# a "well controlled" enviroment.  This test is primarily intended for
+# use in Ethernet AVL qual and the "records" should land in a related bug.
+# Compare the information recorded with later runs if there is a problem.
+#
+# I strongly encourage users to record the configuration (DUT mfg/model,
+# Ethernet mfg/model, Chrome OS version, BIOS Version, etc.) and test
+# results (histogram of the time to restore link) in a spreadsheet.
+# One can then use the spreadsheet to track differences when there
+# is a regression in a "known" configuration.
+#
 TIME = "SHORT"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "network"

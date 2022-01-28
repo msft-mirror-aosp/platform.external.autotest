@@ -28,6 +28,18 @@ def run(machine):
                 '!"name:video.DecodeAccelVD.vp8_odd_dimension" && ' # http://b/202188074
                 '!"name:video.DecodeAccelVD.vp9_odd_dimension" && ' # http://b/202188074
                 '!"name:video.PlatformDecoding.vaapi_vp9_0_svc" && ' # http://b/202188074
+                '!"name:video.EncodeAccel.h264_180p" && ' # http://b/215462119
+                '!"name:video.MemCheck.h264_hw_switch" && ' # http://b/215462119
+                '!"name:video.PlatformDecoding.vaapi_vp9_0_level5_0_buf" && ' # http://b/215462119
+                '!"name:video.PlatformDecoding.vaapi_vp9_0_level5_0_gf_dist" && ' # http://b/215462119
+                '!"name:video.DecodeAccelPerf.h264_2160p_60fps" && ' # http://b/215462119
+                '!"name:video.DecodeAccelPerf.vp8_2160p_60fps" && ' # http://b/215462119
+                '!"name:video.DecodeAccelPerf.vp9_2160p_30fps" && ' # http://b/215462119
+                '!"name:video.DecodeAccelPerf.vp9_2160p_60fps" && ' # http://b/215462119
+                '!"name:video.DecodeAccelVDPerf.h264_2160p_60fps" && ' # http://b/215462119
+                '!"name:video.DecodeAccelVDPerf.vp8_2160p_60fps" && ' # http://b/215462119
+                '!"name:video.PlatformDecoding.vaapi_vp9_0_level5_0_odd_size" && ' # http://b/215462119
+                '!"name:video.PlatformDecoding.vaapi_vp9_0_level5_0_sub8x8" && ' # http://b/215462119
                 '('
                   ' "name:video.Capability" || '
                   ' "name:video.CDMOEMCrypto.*" || '

@@ -167,7 +167,7 @@ class BluetoothAdapterPairingTests(
         # crbug:905374
         # self.test_stop_discovery()
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
-        self.test_pairing(device.address, device.pin, trusted=True)
+        self.test_pairing(device.address, device.pin, trusted=False)
 
         # Verify device is now connected
         self.test_device_is_connected(device.address)

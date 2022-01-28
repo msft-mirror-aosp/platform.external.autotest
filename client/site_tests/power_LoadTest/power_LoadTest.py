@@ -909,8 +909,9 @@ class power_LoadTest(arc.ArcTest):
                                 t for t in entry_dict['tabInfo']
                                 if t['tabId'] == tab['tabId']
                         ]
-                        url = tabInfo[0]['url']
-                        key = 'Tab: ' + pattern.search(url).group('site')
+                        if len(tabInfo) > 0 and 'url' in tabInfo[0]:
+                            url = tabInfo[0]['url']
+                            key = 'Tab: ' + pattern.search(url).group('site')
 
                     if key.startswith('Service Worker'):
                         key = 'Service Worker: ' + \

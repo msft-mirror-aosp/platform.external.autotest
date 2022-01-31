@@ -224,11 +224,33 @@ class Cr50Test(FirmwareTest):
             logging.info('Running qual image. No update needed.')
             return
         logging.info('Cr50 qual update required.')
-        filesystem_util.make_rootfs_writable(self.host)
+        self.make_rootfs_writeable()
         self._update_device_images_and_running_cr50_firmware(
                 qual_state, qual_path, prod_path, prepvt_path)
         logging.info("Recording qual device state as 'original' device state")
         self._save_original_state(qual_path)
+
+    def make_rootfs_writeable(self):
+        """Make rootfs writeable. Recover the dut if necessary."""
+        path = None
+        try:
+            filesystem_util.make_rootfs_writable(self.host)
+            return
+        except error.AutoservRunError as e:
+            if 'cannot remount' not in e.result_obj.stderr:
+                raise
+            path = e.result_obj.stderr.partition(
+                    'cannot remount')[2].split()[0]
+        # This shouldn't be possible.
+        if not path:
+            raise error.TestError('Need path to repair filesystem')
+        logging.info('repair %s', path)
+        # Repair the block. Assume yes to all questions. The exit status will be
+        # 3, so ignore errors. make_rootfs_writable will fail if something
+        # actually went wrong.
+        self.host.run('e2fsck -y %s' % path, ignore_status=True)
+        self.host.reboot()
+        filesystem_util.make_rootfs_writable(self.host)
 
     def _saved_cr50_state(self, state):
         """Returns True if the test has saved the given state

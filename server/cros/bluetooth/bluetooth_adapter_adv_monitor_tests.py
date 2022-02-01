@@ -1739,22 +1739,30 @@ class BluetoothAdapterAdvMonitorTests(
         monitor1 = TestMonitor(app1)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
-        monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
+        monitor1.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+        ])
 
         monitor2 = TestMonitor(app1)
         monitor2.update_type('or_patterns')
         monitor2.update_patterns([ [0, 0x19, [0xc2, 0x03]], ])
-        monitor2.update_rssi([self.HIGH_RSSI, 10, self.LOW_RSSI, 10])
+        monitor2.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 10,
+        ])
 
         monitor3 = TestMonitor(app2)
         monitor3.update_type('or_patterns')
         monitor3.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
-        monitor3.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
+        monitor3.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+        ])
 
         monitor4 = TestMonitor(app2)
         monitor4.update_type('or_patterns')
-        monitor4.update_patterns([ [0, 0x19, [0xc2, 0x03]], ])
-        monitor4.update_rssi([self.HIGH_RSSI, 15, self.LOW_RSSI, 15])
+        monitor4.update_patterns([ [0, 0x19, [0xc1, 0x03]], ])
+        monitor4.update_rssi([
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 15,
+        ])
 
         # Activate should get invoked.
         self.test_add_monitor(monitor1, expected_activate=True)
@@ -1762,32 +1770,40 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_add_monitor(monitor3, expected_activate=True)
         self.test_add_monitor(monitor4, expected_activate=True)
 
-        # DeviceFound for mouse should get triggered only for monitors
-        # satisfying the RSSI timers.
+        # DeviceFound for mouse should get triggered only for matched monitors
         self.test_start_peer_device_adv(self.peer_mouse, duration=5)
         self.test_device_found(monitor1, count=1)
-        self.test_device_found(monitor2, count=0)
+        self.test_device_found(monitor2, count=1)
         self.test_device_found(monitor3, count=1)
         self.test_device_found(monitor4, count=0)
 
         # Initiate suspend/resume.
         self.suspend_resume()
 
+        # DeviceLost should get triggered for tracked devices on resume.
+        self.test_device_lost(monitor1, count=1)
+        self.test_device_lost(monitor2, count=1)
+        self.test_device_lost(monitor3, count=1)
+        self.test_device_lost(monitor4, count=0)
+
+        # DeviceFound should get triggered again for matched monitors on resume.
+        self.test_device_found(monitor1, count=2)
+        self.test_device_found(monitor2, count=2)
+        self.test_device_found(monitor3, count=2)
+        self.test_device_found(monitor4, count=0)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+
         # Remove a monitor from one app, shouldn't affect working of other
         # monitors or apps.
         self.test_remove_monitor(monitor1)
-
-        # DeviceFound should get triggered for monitors with higher RSSI timers.
-        self.test_device_found(monitor2, count=1, delay=10)
-        self.test_device_found(monitor4, count=1, delay=5)
-        self.test_stop_peer_device_adv(self.peer_mouse)
 
         # Terminate an app, shouldn't affect working of monitors in other apps.
         self.test_exit_app(app1)
 
         # DeviceFound should get triggered for keyboard.
         self.test_start_peer_device_adv(self.peer_keybd, duration=5)
-        self.test_device_found(monitor3, count=2)
+        self.test_device_found(monitor3, count=3)
+        self.test_device_found(monitor4, count=1)
         self.test_stop_peer_device_adv(self.peer_keybd)
 
         # Unregister the running app, should not fail.

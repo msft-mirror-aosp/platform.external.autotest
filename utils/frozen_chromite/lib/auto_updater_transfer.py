@@ -620,13 +620,18 @@ class LabEndToEndPayloadTransfer(LabTransfer):
 
   def _TransferUpdateUtilsPackage(self):
     """Transfer update-utils package to work directory of the remote device."""
-    logging.notice('Copying update script to device...')
-    source_dir = os.path.join(self._tempdir, 'src')
-    osutils.SafeMakedirs(source_dir)
-    nebraska_wrapper.RemoteNebraskaWrapper.GetNebraskaSrcFile(source_dir)
+    try:
+      logging.notice('Copying update script to device from googlesource...')
+      source_dir = os.path.join(self._tempdir, 'src')
+      osutils.SafeMakedirs(source_dir)
+      nebraska_wrapper.RemoteNebraskaWrapper.GetNebraskaSrcFile(
+        source_dir, force_download=True)
 
-    # Make sure the device.work_dir exists after any installation and reboot.
-    self._EnsureDeviceDirectory(self._device.work_dir)
-    # Python packages are plain text files.
-    self._device.CopyToWorkDir(source_dir, mode=_SCP, log_output=True,
-                               **self._cmd_kwargs)
+      # Make sure the device.work_dir exists after any installation and reboot.
+      self._EnsureDeviceDirectory(self._device.work_dir)
+      # Python packages are plain text files.
+      self._device.CopyToWorkDir(source_dir, mode=_SCP, log_output=True,
+                                 **self._cmd_kwargs)
+    except Exception as e:
+      logging.exception('Falling back to getting nebraska from devserver')
+      super(LabEndToEndPayloadTransfer, self)._TransferUpdateUtilsPackage()

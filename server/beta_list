@@ -1,5 +1,5 @@
 stub_Pass
 tast
 firmware_FAFTRPC.all
-bluetooth_AdapterSAHealth.sa_basic_test
 stub_ServerToClientPass
+bluetooth_e2e

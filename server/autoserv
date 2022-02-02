@@ -26,6 +26,8 @@ elif "--control-name" in sys.argv:
         test_name = sys.argv[sys.argv.index('--control-name') + 1]
     except IndexError:
         raise Exception("No test name followed --control-name flag")
+
+# Match the name or suite_name to the betalist
 if test_name and (test_name in betalist or 'tast.' in test_name):
     os.environ["PY_VERSION"] = "3"
     v = 3
@@ -33,7 +35,19 @@ elif suite_name and suite_name in betalist:
     os.environ["PY_VERSION"] = "3"
     v = 3
 else:
-    os.environ["PY_VERSION"] = "2"
-    v = 2
+    # If the test is not on the betalist, but we provided a py_version, eg
+    # local env, respect the version flag.
+    if '--py_version' in sys.argv:
+        try:
+            py_version = sys.argv[sys.argv.index('--py_version') + 1]
+            os.environ["PY_VERSION"] = str(py_version)
+            v = int(py_version)
+        except Exception:
+            # If there was an issue, just default to 3
+            os.environ["PY_VERSION"] = "3"
+            v = 3
+    else:
+        os.environ["PY_VERSION"] = "2"
+        v = 2
 
 os.system("python{} {} {}".format(v, os.path.join(dir_name, '_autoserv'), ' '.join(sys.argv[1:])))

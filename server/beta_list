@@ -3,3 +3,11 @@ tast
 firmware_FAFTRPC.all
 stub_ServerToClientPass
 bluetooth_e2e
+telemetry_AFDOGenerate
+telemetry_Crosperf
+telemetry_unit_server
+telemetry_Benchmarks.backdrop_filter.rendering.desktop
+telemetry_Benchmarks.blink_perf.image_decoder
+telemetry_Benchmarks.loading.desktop
+telemetry_Benchmarks.rendering.desktop
+telemetry_Benchmarks.speedometer2

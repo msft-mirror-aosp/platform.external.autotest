@@ -728,6 +728,8 @@ class Servo(object):
         # chromeos-ci-legacy-us-central1-b-x32-55-u8zc // builder information
         # For debugging purposes, we mainly care about the version, and the
         # timestamp.
+        if type(sversion) == type(b' '):
+            sversion = sversion.decode("utf-8")
         return ' '.join(sversion.split()[1:4])
 
     def power_long_press(self):

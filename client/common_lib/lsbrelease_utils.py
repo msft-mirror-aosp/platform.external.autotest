@@ -31,6 +31,9 @@ def _lsbrelease_search(regex, group_id=0, lsb_release_content=None):
     if lsb_release_content is None:
         with open(constants.LSB_RELEASE) as lsb_release_file:
             lsb_release_content = lsb_release_file.read()
+
+    if type(lsb_release_content) == type(b' '):
+        lsb_release_content = lsb_release_content.decode("utf-8")
     for line in lsb_release_content.split('\n'):
         m = re.match(regex, line)
         if m:

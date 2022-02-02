@@ -24,7 +24,6 @@ import tempfile
 import time
 import six
 import six.moves.xmlrpc_client
-import socket
 
 try:
     import docker
@@ -1202,6 +1201,8 @@ class ServoHost(base_servohost.BaseServoHost):
             return None
         fname = os.path.basename(res.stdout.strip())
         # From the fname, ought to extract the timestamp using the TS_EXTRACTOR
+        if type(fname) == type(b' '):
+          fname = fname.decode("utf-8")
         ts_match = self.TS_EXTRACTOR.match(fname)
         if not ts_match:
             logging.warning('Failed to extract timestamp from servod log file '

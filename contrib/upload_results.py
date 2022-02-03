@@ -312,14 +312,12 @@ class ResultsManager:
         Returns:
             A string representing a fake moblab id.
         """
-        script_dir = os.path.realpath(
-                os.path.join(os.getcwd(), "config", os.path.dirname(__file__)))
-        fake_moblab_id_path = os.path.join(script_dir, FAKE_MOBLAB_ID_FILE)
+        script_dir = os.path.dirname(__file__)
+        fake_moblab_id_path = os.path.join(script_dir, "config",
+                                           FAKE_MOBLAB_ID_FILE)
 
         # Migrate from prior moblab ID location into config directory if possible
-        old_moblab_id_file = os.path.realpath(
-                os.path.join(os.getcwd(), os.path.dirname(__file__),
-                             FAKE_MOBLAB_ID_FILE))
+        old_moblab_id_file = os.path.join(script_dir, FAKE_MOBLAB_ID_FILE)
         if os.path.exists(old_moblab_id_file):
             logging.info(
                     'Found an existing moblab ID outside config directory, migrating now'

@@ -11,3 +11,6 @@ telemetry_Benchmarks.blink_perf.image_decoder
 telemetry_Benchmarks.loading.desktop
 telemetry_Benchmarks.rendering.desktop
 telemetry_Benchmarks.speedometer2
+bluetooth_standalone
+network_WiFi_Perf.ht20
+network_WiFi_AttenuatedPerf.ht40_ch001

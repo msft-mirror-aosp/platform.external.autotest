@@ -163,19 +163,19 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         @returns True if present else False
 
         """
-        # Check if me_rw.metadata present FW_MAIN region
-        logging.info("Checking if me_rw.metadata file " \
+        # Check if me_rw.version present FW_MAIN region
+        logging.info("Checking if me_rw.version file " \
                      "present in image : %s", image_path )
         command = "cbfstool %s print -r FW_MAIN_A " \
-                            "| grep me_rw.metadata" % image_path
+                            "| grep me_rw.version" % image_path
         output = self.faft_client.system.run_shell_command_get_output(
                     command, True)
         if output:
             available = True
-            logging.info("me_rw.metadata present in image")
+            logging.info("me_rw.version present in image")
         else:
             available = False
-            logging.info("me_rw.metadata not present in image")
+            logging.info("me_rw.version not present in image")
 
         return available
 
@@ -184,22 +184,18 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         Extract me_rw version from given me_rw blob. Version is first 8
         bytes in the blob
 
-        @param me_blob: me_rw blob (old fmap) or me_rw_metadata blob
+        @param me_blob: me_rw blob (old fmap) or me_rw.version blob
         @param version_offset: version filed offset in the blob
         @returns the CSME RW version string
 
         """
         ver_res = ""
         logging.info("Extracting version field from ME blob")
-        command = ("hexdump -n 8 -s %s %s | cut -c 9- |sed 's/ //g' |" \
-                   "sed 's/.\{4\}/&./g;s/ $//' | head -c19" % ( \
-                    str(int(version_offset)), me_blob))
+
+        command = ("hexdump -C %s |  cut -c 9- | cut -d'|' -f 2"%me_blob )
         output = self.faft_client.system.run_shell_command_get_output(
                     command, True)
-        for each_word in output[0].split("."):
-            version = (int(each_word, 16))
-            ver_res = "".join((ver_res, "".join((str(version),"."))))
-        ver_res = ver_res[:-1]
+        ver_res = output[0].strip(".")
         logging.info("Version : %s", ver_res)
         return ver_res
 
@@ -215,8 +211,8 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         @returns the CSME RW version string
 
         """
-        # Extract me_rw.metadata and check version.
-        cbfs_name = "me_rw.metadata"
+        # Extract me_rw.version and check version.
+        cbfs_name = "me_rw.version"
         temp_dir = self.faft_client.system.create_temp_dir()
         me_blob = os.path.join(temp_dir, cbfs_name)
 

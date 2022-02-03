@@ -145,6 +145,9 @@ SUSPEND_POWER_DOWN_CHIPSETS = ['Realtek-RTL8822C-USB', 'MVL-8897', 'MVL-8997']
 # include RTL8822, which would reset regardless of the peer.
 SUSPEND_RESET_IF_NO_PEER_CHIPSETS = ['Realtek-RTL8852A-USB']
 
+# Models to skip since they power down on suspend.
+SUSPEND_POWER_DOWN_MODELS = ['dru', 'druwl', 'dumo']
+
 KERNEL_LOG_LEVEL = {
         'EMERG': 0,
         'ALERT': 1,

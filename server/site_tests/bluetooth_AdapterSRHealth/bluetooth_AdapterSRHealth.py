@@ -37,7 +37,7 @@ import time
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         TABLET_MODELS, SUSPEND_POWER_DOWN_CHIPSETS,
-        SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
+        SUSPEND_RESET_IF_NO_PEER_CHIPSETS, SUSPEND_POWER_DOWN_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -243,7 +243,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID',
                   devices={'MOUSE': 1},
-                  skip_models=TABLET_MODELS + ['bob', 'dru'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
+                  ['bob'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
@@ -256,7 +257,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=TABLET_MODELS + ['bob', 'dru'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
+                  ['bob'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
@@ -269,7 +271,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID',
                   devices={'MOUSE': 1},
-                  skip_models=TABLET_MODELS + ['bob', 'dru'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
+                  ['bob'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def sr_peer_wake_classic_hid_stress(self):
         """ Use classic HID device to wake from suspend. """
@@ -283,7 +286,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=TABLET_MODELS + ['bob', 'dru'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
+                  ['bob'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def sr_peer_wake_le_hid_stress(self):
         """ Use LE HID device to wake from suspend. """
@@ -314,7 +318,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Suspend while discovering',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=['dru'],
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
     def sr_while_discovering(self):
@@ -371,7 +375,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Suspend while advertising',
                   devices={'MOUSE': 1},
-                  skip_models=['dru'],
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
     def sr_while_advertising(self):

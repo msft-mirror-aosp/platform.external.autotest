@@ -9,8 +9,9 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests \
      import BluetoothAdapterQuickTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
      import BluetoothAdapterAdvMonitorTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests \
-     import SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_RESET_IF_NO_PEER_CHIPSETS
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
+        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
+        SUSPEND_POWER_DOWN_MODELS)
 
 
 class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
@@ -85,7 +86,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
                   },
-                  skip_models=['dru'],
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
                   flags=['Quick Health'])
@@ -98,7 +99,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
     #                     removes all the monitors.
     @test_wrapper('Interleave Scan Tests',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=['dru'],
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
     def advmon_interleaved_scan_tests(self):

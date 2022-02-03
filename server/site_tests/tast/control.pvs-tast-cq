@@ -29,9 +29,10 @@ def run(machine):
                              '!informational && '
                              '!"name:printer.AddBrotherPrinter" && '     # b/192458034
                              '!"name:printer.ResolutionBrother.*" && '   # b/192458034
-                             '!"name:typec.Basic"' # typec.Basic requires a servo, which may not be available for PVS testing.
+                             '!"name:typec.Basic" && ' # typec.Basic requires a servo, which may not be available for PVS testing.
+                             '!"name:hwsec.AttestationNoExternalServer"' # b/217752622
                              ')'],
-                 ignore_test_failures=False, max_run_sec=3600,
+                 ignore_test_failures=False, max_run_sec=10800,
                  command_args=args,
 		 clear_tmp=True,
          retries=2)

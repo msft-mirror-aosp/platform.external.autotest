@@ -31,7 +31,7 @@ For partner-facing docs, see https://chromeos.google.com/partner/dlm/docs/PVS/pv
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['max_runtime_mins'] = 60
+args_dict['max_runtime_mins'] = 180
 args_dict['add_experimental'] = True
 args_dict['name'] = NAME
 args_dict['job'] = job

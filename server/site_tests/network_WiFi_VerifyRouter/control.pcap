@@ -7,7 +7,7 @@ NAME = 'network_WiFi_VerifyRouter.pcap'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
-ATTRIBUTES = 'suite:bluetooth_wifi_testbed_update'
+ATTRIBUTES = 'suite:bluetooth_wifi_testbed_update, suite:wificell_dut_validation'
 PY_VERSION = 3
 
 DOC = """

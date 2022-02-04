@@ -360,6 +360,7 @@ suite:wifi_release
 suite:wifi_stress
 suite:wifi_tdls_cast
 suite:wificell-cq
+suite:wificell_dut_validation
 suite:wifichaos
 suite:wilco_bve
 suite:wilco_bve_dock

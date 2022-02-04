@@ -77,6 +77,7 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsFileSystemTestCases': 3.0,
         'CtsHardwareTestCases': 2.0,
         'CtsIcuTestCases': 2.0,
+        'CtsKeystoreTestCases': 2.0,
         'CtsLibcoreOjTestCases': 2.0,
         'CtsMediaStressTestCases': 5.0,
         'CtsMediaTestCases': 10.0,

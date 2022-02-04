@@ -1030,6 +1030,11 @@ class ImageServerBase(DevServer):
             else:
                 response = cls.run_ssh_call(
                         call, readline=readline, timeout=timeout)
+
+            # six.ensure_str would be nice, but its not in all the envs, so
+            # this is what we are left with for now.
+            if isinstance(response, bytes):
+                response = response.decode()
             # Retry if devserver service is temporarily down, e.g. in a
             # devserver push.
             if ERR_MSG_FOR_DOWN_DEVSERVER in response:

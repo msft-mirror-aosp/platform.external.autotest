@@ -745,6 +745,9 @@ class ServoHost(base_servohost.BaseServoHost):
             exit_code, output = container.exec_run(
                     cmd="servodtool instance wait-for-active -p 9999",
                     stdout=True)
+            # b/217780680, Make this compatible with python3,
+            if isinstance(output, bytes):
+                output = output.decode(errors='replace')
             if exit_code != 0 or ready_output not in output:
                 logging.debug(
                         'Failed to start servod process inside container,'

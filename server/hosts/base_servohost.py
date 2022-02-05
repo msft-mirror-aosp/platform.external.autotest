@@ -610,6 +610,9 @@ class BaseServoHost(ssh_host.SSHHost):
             try:
                 (exit_code,
                  output) = container.exec_run("bash -c '%s'" % command)
+                # b/217780680, Make this compatible with python3,
+                if isinstance(output, bytes):
+                    output = output.decode(errors='replace')
             except docker.errors.APIError:
                 logging.exception("Failed to run command %s", command)
                 for line in container.logs().split(b'\n'):

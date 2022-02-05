@@ -44,7 +44,7 @@ class bluetooth_AdapterControllerRoleTests(
 
         self.test_discover_device(device.address)
         time.sleep(self.TEST_SLEEP_SECS)
-        self.test_pairing(device.address, device.pin, trusted=True)
+        self.test_pairing(device.address, device.pin, trusted=False)
         self.test_disconnection_by_adapter(device.address)
 
 
@@ -56,7 +56,7 @@ class bluetooth_AdapterControllerRoleTests(
         """
         logging.info('Setting up secondary device')
         self.test_discover_device(device.address)
-        self.test_pairing(device.address, device.pin, trusted=True)
+        self.test_pairing(device.address, device.pin, trusted=False)
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_connection_by_adapter(device.address)
         time.sleep(self.TEST_SLEEP_SECS)

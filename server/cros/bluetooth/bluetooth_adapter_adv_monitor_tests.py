@@ -431,6 +431,7 @@ class BluetoothAdapterAdvMonitorTests(
             if not supported_features:
                 logging.error('Controller support missing on %s', chipset)
                 raise error.TestFail('Controller offloading not supported')
+            logging.info('Controller offloading supported on %s', chipset)
 
 
     def test_is_adv_monitoring_supported(self):

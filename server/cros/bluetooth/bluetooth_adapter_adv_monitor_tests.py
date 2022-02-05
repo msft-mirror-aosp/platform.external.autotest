@@ -1644,10 +1644,7 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x03, [0x12, 0x18]],
         ])
         monitor1.update_rssi([
-                self.UNSET_RSSI,
-                self.UNSET_TIMEOUT,
-                self.UNSET_RSSI,
-                self.UNSET_TIMEOUT
+                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
         ])
 
         # Register the app, should not fail.
@@ -1670,7 +1667,7 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_reset_event_count(monitor1)
         self.test_start_peer_device_adv(self.peer_keybd, duration=5)
         self.test_device_found(monitor1, count=self.MULTIPLE_EVENTS)
-        self.test_stop_peer_device_adv(self.peer_keybd)
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=5)
 
         # Start foreground scanning.
         self.test_start_discovery()
@@ -1691,7 +1688,7 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_reset_event_count(monitor1)
         self.test_start_peer_device_adv(self.peer_keybd, duration=10)
         self.test_device_found(monitor1, count=self.MULTIPLE_EVENTS)
-        self.test_stop_peer_device_adv(self.peer_keybd)
+        self.test_stop_peer_device_adv(self.peer_keybd, duration=5)
 
         # Stop foreground scanning.
         self.test_stop_discovery()

@@ -30,7 +30,7 @@ def run(machine):
     host.reboot()
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:graphics" && graphics_weekly && !graphics_igt && !graphics_trace && !graphics_video)'],
+                 test_exprs=['("group:graphics" && graphics_weekly && !graphics_igt && !graphics_opencl && !graphics_trace && !graphics_video)'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=args)
 

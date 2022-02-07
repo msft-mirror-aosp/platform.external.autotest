@@ -14,16 +14,26 @@ env_vars = os.environ
 # Default docker socker.
 DOCKER_SOCKET = env_vars.get('DOCKER_SOCKET', '/var/run/docker.sock')
 
+# This the default IP where the docker daemon is running on the Satlab.
+DEFAULT_DOCKER_SERVER_IP = '192.168.231.1'
+# This the default IP where the docker daemon is listening on the Satlab.
+DEFAULT_DOCKER_TCP_SERVER_PORT = '2375'
 # Optional docker tcp ip address/port dockerd listens to.
-DOCKER_TCP_SERVER_IP = env_vars.get('DOCKER_TCP_SERVER_IP', '192.168.231.1')
-DOCKER_TCP_SERVER_PORT = env_vars.get('DOCKER_TCP_SERVER_PORT', '2375')
+DOCKER_TCP_SERVER_IP = env_vars.get('DOCKER_TCP_SERVER_IP',
+                                    DEFAULT_DOCKER_SERVER_IP)
+DOCKER_TCP_SERVER_PORT = env_vars.get('DOCKER_TCP_SERVER_PORT',
+                                      DEFAULT_DOCKER_TCP_SERVER_PORT)
 
 
 def get_docker_client(timeout=300):
     """
     Get the client of the host Docker server either via default Docker socket or TCP connection.
     """
-    if os.path.exists(DOCKER_SOCKET):
+    # Use default TCP connection IP to create docker client if docker socket(
+    # /var/run/docker.sock) doesn't exists on the machine or when TCP connection IP
+    # is not default IP, otherwise use docker socket file to create docker client.
+    if os.path.exists(DOCKER_SOCKET
+                      ) and DEFAULT_DOCKER_SERVER_IP == DOCKER_TCP_SERVER_IP:
         client = docker.from_env(timeout=timeout)
     else:
         tcp_connection = "tcp://{}:{}".format(DOCKER_TCP_SERVER_IP,

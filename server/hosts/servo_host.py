@@ -759,15 +759,18 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def start_containerized_servod(self, with_servod=True):
         """Start the servod process on servohost."""
-        logging.info("Starting servod container %s.", self.hostname)
+        logging.info("Starting servod container %s.",
+                     self.servod_container_name)
         client = docker_utils.get_docker_client()
+        logging.debug("Docker deamon ping %s", client.ping())
         try:
             if self.is_up():
                 logging.warning("Container already exists - not starting")
                 return
             self.stop_containerized_servod()
         except docker.errors.NotFound:
-            logging.info("Servod container %s not found", self.hostname)
+            logging.info("Servod container %s not found",
+                         self.servod_container_name)
             pass
         except docker.errors.APIError:
             # Container exists but is not running
@@ -790,7 +793,6 @@ class ServoHost(base_servohost.BaseServoHost):
                 "SERIAL=%s" % self.servo_serial,
                 "PORT=%s" % self.servo_port,
         ]
-
         # Start servod with dual_v4 based on servo_setup.
         if self.is_dual_setup():
             environment.append("DUAL_V4=1")
@@ -813,15 +815,15 @@ class ServoHost(base_servohost.BaseServoHost):
                     image,
                     remove=False,
                     privileged=True,
-                    name=self.hostname,
-                    hostname=self.hostname,
+                    name=self.servod_container_name,
+                    hostname=self.servod_container_name,
                     network=container_network,
                     cap_add=["NET_ADMIN"],
                     detach=True,
                     volumes=[
                             "/dev:/dev",
                             "%s_log:/var/log/servod_%s/" %
-                            (self.hostname, self.servo_port)
+                            (self.servod_container_name, self.servo_port)
                     ],
                     environment=environment,
                     command=start_cmds,
@@ -829,7 +831,8 @@ class ServoHost(base_servohost.BaseServoHost):
             # Wait for 60 sec, probing servod ready state fails.
             if not self.wait_for_init_servod_in_container(container):
                 time.sleep(servo_constants.SERVOD_STARTUP_TIMEOUT)
-            logging.info("Servod container %s up and running.", self.hostname)
+            logging.info("Servod container %s up and running.",
+                         self.servod_container_name)
         except docker.errors.ContainerError as e:
             logging.exception("Failed to start servod container. %s", e)
             raise
@@ -838,17 +841,18 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def stop_containerized_servod(self, remove_container=True):
         """Stop the container running servod."""
-        logging.info("Stopping servod container %s.", self.hostname)
+        logging.info("Stopping servod container %s.",
+                     self.servod_container_name)
         client = docker_utils.get_docker_client()
         try:
-            cont = client.containers.get(self.hostname)
+            cont = client.containers.get(self.servod_container_name)
         except docker.errors.NotFound:
             logging.info("Servod container %s not found no need to stop it.",
-                         self.hostname)
+                         self.servod_container_name)
         except docker.errors.APIError:
             logging.exception(
                     "Stopping servod container %s caused a docker error.",
-                    self.hostname)
+                    self.servod_container_name)
         else:
             if remove_container == True:
                 cont.remove(force=True)
@@ -1262,7 +1266,7 @@ class ServoHost(base_servohost.BaseServoHost):
         try:
             if self.is_containerized_servod():
                 client = docker_utils.get_docker_client()
-                container = client.containers.get(self.hostname)
+                container = client.containers.get(self.servod_container_name)
                 file_stream, stat = container.get_archive(files)
                 tf = tempfile.NamedTemporaryFile(delete=False)
                 for block in file_stream:

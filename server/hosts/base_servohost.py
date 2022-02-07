@@ -63,6 +63,7 @@ class BaseServoHost(ssh_host.SSHHost):
                     hostname,
                     is_in_lab=None,
                     servo_host_ssh_port=None,
+                    servod_docker=None,
                     *args,
                     **dargs):
         """Construct a BaseServoHost object.
@@ -78,7 +79,15 @@ class BaseServoHost(ssh_host.SSHHost):
         super(BaseServoHost, self)._initialize(hostname=hostname,
                                                *args, **dargs)
 
-        self._is_containerized_servod = self.hostname.endswith('docker_servod')
+        self.servod_container_name = None
+        self._is_containerized_servod = False
+        if bool(servod_docker):
+            self._is_containerized_servod = True
+            self.servod_container_name = servod_docker
+        elif self.hostname.endswith('docker_servod'):
+            # For backward compatibility
+            self.servod_container_name = self.hostname
+            self._is_containerized_servod = True
 
         self._is_localhost = (self.hostname == 'localhost'
                               and servo_host_ssh_port is None)
@@ -606,7 +615,7 @@ class BaseServoHost(ssh_host.SSHHost):
         elif self.is_containerized_servod():
             logging.debug("Trying to run the command %s", command)
             client = docker_utils.get_docker_client(timeout=timeout)
-            container = client.containers.get(self.hostname)
+            container = client.containers.get(self.servod_container_name)
             try:
                 (exit_code,
                  output) = container.exec_run("bash -c '%s'" % command)

@@ -14,33 +14,29 @@ readonly _BOARD="$(cros_config /fingerprint board || true)"
 if [[ "${_BOARD}" == "bloonchipper" ]]; then
   readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x0000040f wp_gpio_asserted ro_at_boot ro_now rollback_now all_now
-Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000000
 SETVAR
   )"
 else
   readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x0000000b wp_gpio_asserted ro_at_boot ro_now
-Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000004 all_now
 SETVAR
   )"
 fi
 
-if [[ "${_BOARD}" == "bloonchipper" ]]; then
-  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="$(cat <<SETVAR
+readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="$(cat <<SETVAR
 Flash protect flags: 0x0000000b wp_gpio_asserted ro_at_boot ro_now
 Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
 Writable flags:      0x00000004 all_now
 SETVAR
-  )"
-else
-  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="${_FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED}"
-fi
+)"
 
 readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_DISABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000000
-Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000001 ro_at_boot
 SETVAR
 )"
@@ -49,14 +45,14 @@ SETVAR
 if [[ "${_BOARD}" == "bloonchipper" ]]; then
   readonly _FLASHPROTECT_OUTPUT_HW_WRITE_PROTECT_DISABLED_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000407 ro_at_boot ro_now rollback_now all_now
-Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000000
 SETVAR
 )"
 else
   readonly _FLASHPROTECT_OUTPUT_HW_WRITE_PROTECT_DISABLED_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000003 ro_at_boot ro_now
-Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
+Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000000
 SETVAR
   )"

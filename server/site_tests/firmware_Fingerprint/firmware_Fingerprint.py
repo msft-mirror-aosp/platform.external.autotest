@@ -68,12 +68,12 @@ class firmware_Fingerprint(FingerprintTest):
         if self.get_fp_board() == 'bloonchipper':
             _HW_WP_OFF_AND_SW_WP_ON = (
                     'Flash protect flags: 0x00000407 ro_at_boot ro_now rollback_now all_now\n'
-                    'Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT\n'
+                    'Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR\n'
                     'Writable flags:      0x00000000\n')
         else:
             _HW_WP_OFF_AND_SW_WP_ON = (
                     'Flash protect flags: 0x00000003 ro_at_boot ro_now\n'
-                    'Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT\n'
+                    'Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR\n'
                     'Writable flags:      0x00000000\n')
 
         logging.info('Running test to validate RDP level 1')
@@ -105,7 +105,7 @@ class firmware_Fingerprint(FingerprintTest):
         """
         _HW_AND_SW_WP_OFF = (
                 'Flash protect flags: 0x00000000\n'
-                'Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT\n'
+                'Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR\n'
                 'Writable flags:      0x00000001 ro_at_boot\n')
 
         logging.info('Running test to validate RDP level 0')

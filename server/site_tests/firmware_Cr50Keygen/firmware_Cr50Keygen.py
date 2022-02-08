@@ -79,6 +79,13 @@ class firmware_Cr50Keygen(FirmwareTest):
         self.host = host
         self.key_type = key_type.upper()
 
+        # TODO(b/218492933) : find better way to disable rddkeepalive
+        # Disable rddkeepalive, so the test can disable ccd.
+        self.cr50.send_command('ccd testlab open')
+        self.cr50.send_command('rddkeepalive disable')
+        # Lock cr50 so the console will be restricted
+        self.cr50.set_ccd_level('lock')
+
         self.wait_for_client_after_changing_ccd(False)
 
         cmd = self.get_keygen_cmd()

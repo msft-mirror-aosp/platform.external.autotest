@@ -102,6 +102,11 @@ class Cr50Test(FirmwareTest):
         # Clear the FWMP, so it can't disable CCD.
         self.clear_fwmp()
 
+        # TODO(b/218492933) : find better way to disable rddkeepalive
+        # Disable rddkeepalive, so the test can disable ccd.
+        self.cr50.send_command('ccd testlab open')
+        self.cr50.send_command('rddkeepalive disable')
+
         if self.can_set_ccd_level:
             # Lock cr50 so the console will be restricted
             self.cr50.set_ccd_level('lock')

@@ -56,6 +56,12 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         self.original_cr50_version = self.cr50.get_active_version_info()
         self._suspend_diff = 0
 
+        # TODO(b/218492933) : find better way to disable rddkeepalive
+        # Disable rddkeepalive, so the test can disable ccd.
+        self.cr50.send_command('ccd testlab open')
+        self.cr50.send_command('rddkeepalive disable')
+        # Lock cr50 so the console will be restricted
+        self.cr50.set_ccd_level('lock')
 
     def cleanup(self):
         """Clear the fwmp."""

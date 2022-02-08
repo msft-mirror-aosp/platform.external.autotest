@@ -157,6 +157,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
                 each element is True if the ep_test_method is expected to pass.
                 The default value is a single value of True.
         """
+        has_audio_device = False
+
         if uuids is not None:
             self.test_check_set_allowlist(uuids, True)
 
@@ -169,11 +171,23 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         for device, expected_pass in zip(devices, expected_passes):
             if device.device_type == 'BLUETOOTH_AUDIO':
                 self.initialize_bluetooth_audio(device, A2DP)
+                has_audio_device = True
             pre_test_method(device, expected_pass)
 
         for device, expected_pass in zip(devices, expected_passes):
             self.check_if_affected_by_policy(device, not expected_pass)
             verifier = self.get_device_verifier(device, expected_pass)
+
+            # TODO(b:219398837) Remove this once b/219398837 is fixed.
+            # There is an issue on chameleon when a DUT connects to multiple
+            # peers with at least one emulated as an audio device, the other
+            # connections might be dropped for a few seconds then reconnect.
+            # Polling the connection status as a workaround.
+            # The details of the issue is described in b/210379084#comment3
+            # and b/172381798
+            if len(devices) >= 2 and has_audio_device and expected_pass:
+                self.test_device_is_connected(device.address)
+
             # Whether the test should pass or fail depends on expected_pass.
             self.expect_test(expected_pass, verifier, device)
 

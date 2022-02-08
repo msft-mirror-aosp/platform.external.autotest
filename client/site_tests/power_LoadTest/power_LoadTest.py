@@ -890,7 +890,8 @@ class power_LoadTest(arc.ArcTest):
         process_dict = {}
         process_id = 1
         with open(os.path.join(self.resultsdir, 'task-monitor.json'),
-                  'r') as f:
+                  'r',
+                  encoding='utf-8') as f:
             json_strs = f.read().splitlines()
             for json_str in json_strs[1:]:
                 if len(json_str) < 10:

@@ -1053,9 +1053,9 @@ def guess_type(filename):
             return 'Data'
 
     # ASCII, do some text tests
-    if string.find('The', data, 0, 8192) > -1:
+    if data.find('The', 0, 8192) > -1:
         return 'English text'
-    if string.find('def', data, 0, 8192) > -1:
+    if data.find('def', 0, 8192) > -1:
         return 'Python Source'
     return 'ASCII text'
 

@@ -656,7 +656,7 @@ def update_version(srcdir, preserve_srcdir, new_version, install,
     versionfile = os.path.join(srcdir, '.version')
     install_needed = True
 
-    if os.path.exists(versionfile):
+    if os.path.exists(versionfile) and os.path.getsize(versionfile) > 0:
         old_version = pickle.load(open(versionfile, 'rb'))
         if old_version == new_version:
             install_needed = False
@@ -666,7 +666,7 @@ def update_version(srcdir, preserve_srcdir, new_version, install,
             shutil.rmtree(srcdir)
         install(*args, **dargs)
         if os.path.exists(srcdir):
-            pickle.dump(new_version, open(versionfile, 'w'))
+            pickle.dump(new_version, open(versionfile, 'wb'))
 
 
 def get_stderr_level(stderr_is_expected, stdout_level=DEFAULT_STDOUT_LEVEL):

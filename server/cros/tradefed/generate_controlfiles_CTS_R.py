@@ -379,14 +379,10 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'android.app.cts.SystemFeaturesTest'
         ],
         'CtsCameraTestCases.NativeCameraDeviceTest': [
-                '--include-filter',
-                'CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest',
-                '--include-filter',
-                'CtsCameraTestCases[instant] android.hardware.camera2.cts.NativeCameraDeviceTest',
-                '--include-filter',
-                'CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]',
-                '--include-filter',
-                'CtsCameraTestCases[instant] android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]',
+                '--module',
+                'CtsCameraTestCases',
+                '--test',
+                'android.hardware.camera2.cts.NativeCameraDeviceTest',
         ],
         'CtsDeqpTestCases.dEQP-EGL': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',

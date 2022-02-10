@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os, time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import cros_ui, upstart
@@ -24,10 +23,10 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
         return uptime_seconds
 
 
-    # This test has a critical tast counterpart, but the tast version only
-    # performs one of the two functions that this test does. In particular,
-    # the tast variant does not verify that crash reporter state is valid before
-    # any tests run and re-initialize crash reporter.
+    # This test has a tast counterpart, but the tast version only performs a
+    # slightly different function. Specifically, the tast variant does not
+    # verify that crash reporter state is valid before any tests run and
+    # re-initialize crash reporter.
     # TODO(https://crbug.com/1085194): Write a tast test to verify that crash
     # reporter's state is good on a "clean" system.
     def _test_reporter_startup(self):
@@ -41,25 +40,6 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
             raise error.TestFail('core pattern should have been %s, not %s' %
                                  (expected_core_pattern, output))
 
-        # Check that we wrote out the file indicating that crash_reporter is
-        # enabled AFTER the system was booted. This replaces the old technique
-        # of looking for the log message which was flakey when the logs got
-        # flooded.
-        # NOTE: This technique doesn't need to be highly accurate, we are only
-        # verifying that the flag was written after boot and there are multiple
-        # seconds between those steps, and a file from a prior boot will almost
-        # always have been written out much further back in time than our
-        # current boot time.
-        if not os.path.isfile(_CRASH_REPORTER_ENABLED_PATH):
-            raise error.TestFail(
-                'crash reporter enabled file flag is not present at %s' %
-                _CRASH_REPORTER_ENABLED_PATH)
-        flag_time = time.time() - os.path.getmtime(_CRASH_REPORTER_ENABLED_PATH)
-        uptime = self._get_uptime()
-        if (flag_time > uptime):
-            raise error.TestFail(
-                'user space crash handling was not started during last boot')
-
 
     # This test has a critical tast counterpart, but we leave it here because
     # it verifies that the in_progress_integration_test variable will be set in
@@ -70,17 +50,6 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
                 'chronos',
                 extra_meta_contents='upload_var_in_progress_integration_test='
                 'logging_UserCrash')
-
-
-    def _test_chronos_crasher_no_consent(self):
-        """Test that without consent no files are stored."""
-        results = self._check_crashing_process('chronos', consent=False)
-
-
-
-    def _test_root_crasher_no_consent(self):
-        """Test that without consent no files are stored."""
-        results = self._check_crashing_process('root', consent=False)
 
 
     def initialize(self):
@@ -103,8 +72,5 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
                               initialize_crash_reporter=False,
                               must_run_all=False)
 
-        self.run_crash_tests([
-                'reporter_startup', 'chronos_crasher',
-                'chronos_crasher_no_consent', 'root_crasher_no_consent'
-        ],
+        self.run_crash_tests(['reporter_startup', 'chronos_crasher'],
                              initialize_crash_reporter=True)

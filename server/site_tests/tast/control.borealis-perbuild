@@ -30,7 +30,7 @@ def run(machine):
     host.reboot()
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:borealis" && borealis_perbuild)'],
+                 test_exprs=['("group:borealis" && borealis_perbuild || "group:borealis" && informational && borealis_cq)'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=args)
 

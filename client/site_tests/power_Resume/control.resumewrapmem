@@ -1,0 +1,48 @@
+# Copyright 2017 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "Chrome OS Team"
+NAME = "power_ResumeWrapMem"
+PURPOSE = "Measure the amount of time it takes to resume from suspend."
+CRITERIA = "This test is a benchmark."
+ATTRIBUTES = ""
+TIME = "SHORT"
+TEST_CATEGORY = "Logging"
+TEST_CLASS = "power"
+TEST_TYPE = "server"
+PY_VERSION = 3
+
+DOC = """
+This test will search /var/log/messages for pertinent strings to determine if
+the cpu is sleeping. It will wait for a number of seconds before suspending to
+ram. It will then calculate how many seconds the system was suspended, and
+how many seconds it took to resume. It will also parse the ARC logcat to measure
+how many seconds it took for ARC to suspend and then resume. As a precaution it
+will ensure your network interface is UP after it has resumed.
+
+In addition to calling the UiResume test, this test will also accept the textproto
+formatted pass criteria to verify that the test passes the requisite criteria
+for the given run.
+"""
+
+from autotest_lib.server import utils
+from autotest_lib.server.cros.pvs import wrapper_job_with_name
+
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+TEST_NAME = "power_Resume"
+TEST_ARGS = {"suspend_state":"mem"}
+
+def run(machine):
+    # Setup the client machine.
+    host = hosts.create_host(machine, servo_args=servo_args)
+    wrapper_job = wrapper_job_with_name.wrapper_job_with_name(job=job,
+                                    job_name=NAME,
+                                    wrapper_url="power_QualTestSimple",
+                                    args_dict=args_dict,
+                                    default_pass_criteria={})
+    wrapper_job.run(host=host, test_to_wrap=TEST_NAME, wrap_args=TEST_ARGS)
+
+parallel_simple(run, machines)

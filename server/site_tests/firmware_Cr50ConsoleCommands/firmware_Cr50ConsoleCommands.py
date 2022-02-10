@@ -65,8 +65,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
             ],
     ]
     GUC_BRANCH_STR = 'cr50_v1.9308_26_0.'
-    MP_BRANCH_STR = 'cr50_v1.9308_87_mp.'
-    MP_BRANCH_STR_NEW = 'cr50_v1.9311'
+    MP_BRANCH_STR = 'cr50_v2.94_mp'
     PREPVT_BRANCH_STR = 'cr50_v2.94_pp'
     TOT_STR = 'cr50_v2.0.'
     OPTIONAL_EXT = '_optional'
@@ -211,7 +210,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
             # TOT isn't that controlled. It may include prepvt, mp, or guc
             # changes. Don't exclude any branches.
             self.include.append('tot')
-        elif self.MP_BRANCH_STR in version or self.MP_BRANCH_STR_NEW in version:
+        elif self.MP_BRANCH_STR in version:
             self.include.append('mp')
 
             self.exclude.append('prepvt')

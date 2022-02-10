@@ -4,6 +4,7 @@
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
+from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.generic'
@@ -32,10 +33,13 @@ Autotest.
 Examples:
     test_that --args=tast_expr=example.Pass ${DUT} tast.generic
     test_that --args=tast_expr='("group:mainline")' ${DUT} tast.generic
+    test_that --args='tast_expr=example.RuntimeVars tast.example.strvar="Hello_World"' ${DUT} tast.generic
 '''
 
+command_args, varslist = tast.split_arguments(args)
+
 def run(machine):
-    args_dict = utils.args_to_dict(args)
+    args_dict = utils.args_to_dict(command_args)
     try:
         expr = args_dict['tast_expr']
     except KeyError:
@@ -45,6 +49,7 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=[expr],
                  ignore_test_failures=False, max_run_sec=3600,
-                 command_args=args)
+                 command_args=command_args,
+                 varslist=varslist)
 
 parallel_simple(run, machines)

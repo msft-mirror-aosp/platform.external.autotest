@@ -38,6 +38,9 @@ def run(machine):
                  bind_from=chameleon_audio_ids.ChameleonIds.LINEOUT,
                  bind_to=chameleon_audio_ids.CrosIds.EXTERNAL_MIC,
                  audio_nodes=(None, ['MIC']),
-                 plug_status=plug_status, tag = "external_mic")
+                 plug_status=plug_status, tag = "external_mic",
+                 blocked_boards=['lars',    # Pending fix for b/147647051
+                                 'lars-kernelnext']
+)
 
 parallel_simple(run, machines)

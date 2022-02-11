@@ -46,8 +46,10 @@ class audio_InternalCardNodes(audio_test.AudioTest):
             nodes[1].append('ECHO_REFERENCE')
         return nodes
 
-    def run_once(self, plug=True):
+    def run_once(self, plug=True, blocked_boards=[]):
         """Runs InternalCardNodes test."""
+        if self.host.get_board().split(':')[1] in blocked_boards:
+            raise error.TestNAError('Board not applicable to test!')
         if not audio_test_utils.has_audio_jack(self.host):
             audio_test_utils.check_plugged_nodes(
                     self.facade, self.get_expected_nodes(False))

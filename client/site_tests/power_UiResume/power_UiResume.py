@@ -29,14 +29,19 @@ class power_UiResume(arc.ArcTest):
         in Chrome browser.
 
         """
+        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
+        # so that each test run does not remember info from last test run.
+        extra_browser_args = ['--disable-sync']
+
         # TODO(b/191251229): Only enable ARC if ARC is available and it is not
         # running ARCVM.
         self._enable_arc = (utils.is_arc_available() and not utils.is_arcvm()
                             and not no_arc)
         if self._enable_arc:
-            super(power_UiResume, self).initialize()
+            super(power_UiResume,
+                  self).initialize(extra_browser_args=extra_browser_args)
         else:
-            self._chrome = chrome.Chrome()
+            self._chrome = chrome.Chrome(extra_browser_args=extra_browser_args)
 
 
     def run_once(self, max_devs_returned=10, seconds=0,

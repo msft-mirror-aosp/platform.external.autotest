@@ -105,7 +105,9 @@ class power_VideoTest(power_test.power_Test):
         @param secs_per_video: time in seconds to play video and measure power.
         @param use_hw_decode: if False, disable hw video decoding.
         """
-        extra_browser_args = []
+        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
+        # so that each test run does not remember info from last test run.
+        extra_browser_args = ['--disable-sync']
         if not use_hw_decode:
             extra_browser_args.append(self._DISABLE_HW_VIDEO_DECODE_ARGS)
 

@@ -57,7 +57,10 @@ class power_Idle(power_test.power_Test):
         bt_device = bluetooth_device_xmlrpc_server \
             .BluetoothDeviceXmlRpcDelegate()
 
-        with chrome.Chrome() as self.cr:
+        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
+        # so that each test run does not remember info from last test run.
+        extra_browser_args = ['--disable-sync']
+        with chrome.Chrome(extra_browser_args=extra_browser_args) as self.cr:
             self.is_first_test = True
 
             # Measure power in full-screen blank tab

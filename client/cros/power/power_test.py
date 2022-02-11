@@ -103,7 +103,11 @@ class power_Test(test.test):
                 # Prefer using constant frame rate for camera streaming.
                 '--enable-features=PreferConstantFrameRate',
                 # Bypass HID detection for Chromebox / Chromebase.
-                '--disable-hid-detection-on-oobe'
+                '--disable-hid-detection-on-oobe',
+                # Disable test account info sync, eg. Wi-Fi credentials,
+                # so that each test run does not remember info from last test
+                # run.
+                '--disable-sync'
         ]
 
         # Use fake camera for DUT without camera, e.g. chromebox.

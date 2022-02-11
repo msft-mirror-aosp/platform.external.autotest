@@ -41,7 +41,11 @@ class power_Display(power_test.power_Test):
         shutil.copytree(file_path, dest_path)
         http_path = 'file://' + dest_path
 
-        with chrome.Chrome(init_network_controller=True) as self.cr:
+        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
+        # so that each test run does not remember info from last test run.
+        extra_browser_args = ['--disable-sync']
+        with chrome.Chrome(init_network_controller=True,
+                           extra_browser_args=extra_browser_args) as self.cr:
             tab = self.cr.browser.tabs[0]
             tab.Activate()
 

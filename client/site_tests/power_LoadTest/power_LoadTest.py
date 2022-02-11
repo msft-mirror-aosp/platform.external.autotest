@@ -328,12 +328,17 @@ class power_LoadTest(arc.ArcTest):
         if utils.is_arc_available():
             arc_mode = arc_common.ARC_MODE_ENABLED
 
+        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
+        # so that each test run does not remember info from last test run.
+        extra_browser_args = ['--disable-sync']
         try:
-            self._browser = chrome.Chrome(extension_paths=[ext_path],
-                                          gaia_login=self._gaia_login,
-                                          username=self._username,
-                                          password=self._password,
-                                          arc_mode=arc_mode)
+            self._browser = chrome.Chrome(
+                    extension_paths=[ext_path],
+                    extra_browser_args=extra_browser_args,
+                    gaia_login=self._gaia_login,
+                    username=self._username,
+                    password=self._password,
+                    arc_mode=arc_mode)
         except exceptions.LoginException:
             # already failed guest login
             if not self._gaia_login:

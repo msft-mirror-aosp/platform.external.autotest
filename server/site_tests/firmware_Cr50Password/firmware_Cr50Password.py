@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
@@ -28,6 +30,10 @@ class firmware_Cr50Password(Cr50Test):
         self.cr50.send_command('ccd reset')
         if not self.cr50.password_is_reset():
             raise error.TestFail('ccd reset did not clear the password')
+        # Set OpenFromUSB to IfOpened, so the test will only be able to open
+        # ccd with a console command if the password is set. This is cleared
+        # in Cr50Test cleanup.
+        self.cr50.set_cap('OpenFromUSB', 'IfOpened')
 
         # Set the password again while cr50 is open.
         self.set_ccd_password(self.CCD_PASSWORD)
@@ -37,6 +43,20 @@ class firmware_Cr50Password(Cr50Test):
         # The password can't be changed once it's set.
         # It needs to be cleared first.
         self.set_ccd_password(self.NEW_PASSWORD, expect_error=True)
+
+        self.cr50.reboot()
+        if self.cr50.password_is_reset():
+            raise error.TestFail('Password cleared after reboot')
+
+        # Verify ccd can't be opened with the wrong password.
+        try:
+            self.cr50.set_ccd_level('open', self.NEW_PASSWORD)
+            raise error.TestFail('Opened ccd with incorrect password')
+        except error.TestFail as e:
+            logging.info('Cr50 successfully rejected ccd open')
+
+        # Verify ccd can be opened with the correct password.
+        self.cr50.set_ccd_level('open', self.CCD_PASSWORD)
 
         self.cr50.set_ccd_level('lock')
         # The password can't be cleared while the console is locked.

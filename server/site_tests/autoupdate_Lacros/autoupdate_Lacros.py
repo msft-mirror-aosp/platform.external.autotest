@@ -5,8 +5,9 @@
 
 import logging
 
-from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -17,7 +18,11 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
     def cleanup(self):
         super(autoupdate_Lacros, self).cleanup()
 
-    def run_once(self, full_payload, job_repo_url=None, running_at_desk=False):
+    def run_once(self,
+                 full_payload,
+                 job_repo_url=None,
+                 m2n=False,
+                 running_at_desk=False):
         """
         Performs autoupdate with Nebraska and checks rootfs-lacros.
 
@@ -28,6 +33,21 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
                                 Flag does not work with M2N tests.
 
         """
+        if m2n:
+            # Provision latest stable build for the current board.
+            build_name = self._get_latest_serving_stable_build()
+            logging.debug('build name is %s', build_name)
+
+            # Install the matching build with quick provision.
+            autotest_devserver = dev_server.ImageServer.resolve(
+                    build_name, self._host.hostname)
+            update_url = autotest_devserver.get_update_url(build_name)
+            logging.info('Installing source image with update url: %s',
+                         update_url)
+            provisioner.ChromiumOSProvisioner(
+                    update_url, host=self._host,
+                    is_release_bucket=True).run_provision()
+
         # Login and check rootfs-lacros version
         self._run_client_test_and_check_result('desktopui_RootfsLacros',
                                                tag='before')
@@ -61,8 +81,3 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
         after_version = self._host.run(['cat',
                                         '/tmp/lacros_version.txt']).stdout
         logging.info('rootfs-lacros version after update: %s', after_version)
-
-        if before_version != after_version:
-            raise error.TestFail(
-                    'rootfs-lacros versions before and after update do not match'
-            )

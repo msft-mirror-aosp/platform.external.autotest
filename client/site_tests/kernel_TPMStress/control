@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 NAME = "kernel_TPMStress"
 AUTHOR = "The Chromium OS Authors"
 PURPOSE = "Stress test of communication with the TPM"
@@ -16,6 +11,7 @@ TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "kernel"
 TEST_TYPE = "client"
+PY_VERSION = 3
 
 DOC = """
     Sends commands to the TPM in a tight loop for some length of time, in

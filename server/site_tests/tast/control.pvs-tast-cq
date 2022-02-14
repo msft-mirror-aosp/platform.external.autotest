@@ -30,7 +30,29 @@ def run(machine):
                              '!"name:printer.AddBrotherPrinter" && '     # b/192458034
                              '!"name:printer.ResolutionBrother.*" && '   # b/192458034
                              '!"name:typec.Basic" && ' # typec.Basic requires a servo, which may not be available for PVS testing.
-                             '!"name:hwsec.AttestationNoExternalServer"' # b/217752622
+                             '!"name:hwsec.AttestationNoExternalServer" && ' # b/217752622
+                             '!"name:apps.LaunchHelpApp.clamshell_logged_in_stable" && ' #b/218705871
+                             '!"name:apps.LaunchHelpApp.clamshell_oobe_stable" && ' #b/218705871
+                             '!"name:apps.LaunchHelpApp.tablet_logged_in_stable" && ' #b/218705871
+                             '!"name:apps.LaunchHelpApp.tablet_oobe_stable" && ' #b/218705871
+                             '!"name:arc.Drivefs" && ' #b/218705871
+                             '!"name:arc.Drivefs.vm" && ' #b/218705871
+                             '!"name:arc.Optin" && ' #b/218705871
+                             '!"name:arc.Optin.vm" && ' #b/218705871
+                             '!"name:arc.OptinNetworkError" && ' #b/218705871
+                             '!"name:example.SecretVars" && ' #b/218705871
+                             '!"name:filemanager.DrivefsUI" && ' #b/218705871
+                             '!"name:inputs.VirtualKeyboardOOBE" && ' #b/218705871
+                             '!"name:login.AuthError" && ' #b/218705871
+                             '!"name:login.ChangePassword" && ' #b/218705871
+                             '!"name:login.ChromeGAIA" && ' #b/218705871
+                             '!"name:login.ExistingUser" && ' #b/218705871
+                             '!"name:login.Offline" && ' #b/218705871
+                             '!"name:login.ProfileExtension" && ' #b/218705871
+                             '!"name:platform.Drivefs" && ' #b/218705871
+                             '!"name:quicksettings.SignInScreen.audio" && ' #b/218705871
+                             '!"name:quicksettings.SignInScreen.battery" && ' #b/218705871
+                             '!"name:quicksettings.SignInScreen.noaudio_nobattery"' #b/218705871
                              ')'],
                  ignore_test_failures=False, max_run_sec=10800,
                  command_args=args,

@@ -1,3 +1,4 @@
+# Lint as: python2, python3
 # Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -169,8 +170,8 @@ class platform_BootPerf(test.test):
                     logging.warning("Waited %d seconds for bootstat file: %s", cnt, filename)
 
             with open(filename) as statfile:
-                values = map(lambda l: float(l.split()[fieldnum]),
-                             statfile.readlines())
+                values = list(map(lambda l: float(l.split()[fieldnum]),
+                             statfile.readlines()))
             return values
         except IOError:
             raise error.TestFail('Failed to read bootstat file "%s"' %

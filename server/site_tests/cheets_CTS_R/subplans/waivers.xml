@@ -8,6 +8,7 @@
   -->
   <Entry include="CtsAppTestCases android.app.cts.DisplayTest#testRotation" />
   <Entry include="CtsAppTestCases[instant] android.app.cts.DisplayTest#testRotation" />
+  <Entry include="CtsAutoFillServiceTestCases android.autofillservice.cts.MultiWindowLoginActivityTest#testSplitWindow" />
   <Entry include="CtsStatsdHostTestCases android.cts.statsd.metric.MetricActivationTests#testMultipleActivations" />
   <Entry include="CtsStatsdHostTestCases[instant] android.cts.statsd.metric.MetricActivationTests#testMultipleActivations" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testSameConfigurationSplitFullSplitRelaunch" />

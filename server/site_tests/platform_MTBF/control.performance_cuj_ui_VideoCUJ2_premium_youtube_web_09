@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = 'ui_VideoCUJ2_plus_youtube_web_09'
+NAME = 'ui_VideoCUJ2_premium_youtube_web_09'
 ATTRIBUTES = 'suite:performance_cuj'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
@@ -13,7 +13,7 @@ PRIORITY = 4862
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 5
 REQUIRE_SSP = True
-DEPENDENCIES = 'plus'
+DEPENDENCIES = 'premium'
 PY_VERSION = 3
 
 DOC = '''
@@ -43,7 +43,7 @@ test_args['test_version'] = 1
 
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
-  labels['test'] = 'ui.VideoCUJ2.plus_youtube_web'
+  labels['test'] = 'ui.VideoCUJ2.premium_youtube_web'
   labels['test_iteration'] = '9'
   utils.write_keyval(job.resultdir, labels)
   # Try to retrieve and report DUT HWID and serial number.
@@ -101,7 +101,7 @@ def run(machine):
                     allow_unicode=True)
       job.run_test('tast',
                   host=host,
-                  test_exprs=['ui.VideoCUJ2.plus_youtube_web'],
+                  test_exprs=['ui.VideoCUJ2.premium_youtube_web'],
                   ignore_test_failures=False,
                   max_run_sec=3600,
                   command_args=args,

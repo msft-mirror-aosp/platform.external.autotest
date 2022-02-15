@@ -291,9 +291,6 @@ class Backlight(object):
     Public methods:
        set_level: Set backlight level to the given brightness.
        set_percent: Set backlight level to the given brightness percent.
-       set_resume_level: Set backlight level on resume to the given brightness.
-       set_resume_percent: Set backlight level on resume to the given brightness
-                           percent.
        set_default: Set backlight to CrOS default.
 
        get_level: Get backlight level currently.
@@ -390,22 +387,6 @@ class Backlight(object):
           percent: float between 0 and 100
         """
         self._try_bl_cmd('--set_brightness_percent=%f' % (percent))
-
-    def set_resume_level(self, level):
-        """Set backlight level on resume to the given brightness.
-
-        Args:
-          level: integer of brightness to set
-        """
-        self._try_bl_cmd('--set_resume_brightness=%d' % (level))
-
-    def set_resume_percent(self, percent):
-        """Set backlight level on resume to the given brightness percent.
-
-        Args:
-          percent: float between 0 and 100
-        """
-        self._try_bl_cmd('--set_resume_brightness_percent=%f' % (percent))
 
     def set_default(self):
         """Set backlight to CrOS default.

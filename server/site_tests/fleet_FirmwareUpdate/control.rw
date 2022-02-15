@@ -5,6 +5,7 @@
 AUTHOR = "Chrome Fleet Software team"
 NAME = "fleet_FirmwareUpdate"
 PURPOSE = "Update OS bundled firmware and verify DUT is good"
+ATTRIBUTES = "suite:fleet_firmware_update"
 CRITERIA = "This test will fail if the device failed to boot after update firmware"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"

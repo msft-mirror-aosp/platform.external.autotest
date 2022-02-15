@@ -37,9 +37,9 @@ _BUNDLE_MAP = {
         ('LATEST', 'x86'):
         _INTERNAL_CTS + 'android-cts-9.0_r18-linux_x86-x86.zip',
         ('DEV', 'arm'):
-        _INTERNAL_CTS + 'android-cts-7915399-linux_x86-arm.zip',
+        _INTERNAL_CTS + 'android-cts-8151358-linux_x86-arm.zip',
         ('DEV', 'x86'):
-        _INTERNAL_CTS + 'android-cts-7915399-linux_x86-x86.zip',
+        _INTERNAL_CTS + 'android-cts-8151358-linux_x86-x86.zip',
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'

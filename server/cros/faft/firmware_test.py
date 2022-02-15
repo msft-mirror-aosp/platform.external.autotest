@@ -2414,7 +2414,7 @@ class FirmwareTest(test.test):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
 
-        if self.servo.main_device_is_ccd():
+        if self.servo.main_device_is_ccd() and not self.cr50.testlab_is_on():
             error_txt = 'because the main servo device is CCD.'
             if enable_testlab:
                 raise error.TestNAError('Cannot enable testlab: %s' % error_txt)

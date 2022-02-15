@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import pprint
 import logging
+import pprint
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
@@ -99,18 +99,21 @@ class firmware_Cr50CheckCap(Cr50Test):
         """Check cr50 capabilities work correctly."""
         self.fast_ccd_open(enable_testlab=True)
 
+
+        # Check servo monitoring before changing the active device. There's no
+        # need for servo detection if ccd is the only device.
+        servo_detect_ok = (self.servo.main_device_is_ccd()
+                           or self.cr50.check_servo_monitor())
+
+        set_ccd = self.servo.enable_ccd_servo_device()
         self._ec_prefix = self.servo.get_active_device_prefix()
         # Only check EC uart if the board has a working EC and cr50 can detect
         # servo connect/disconnect.
         self.check_ec_uart = (
-                self.check_ec_capability(suppress_warning=True) and
-                self.cr50.check_servo_monitor() and
-                self.servo.has_control('ec_board', self._ec_prefix))
-        if self.check_ec_uart and self._ec_prefix:
-            try:
-                self.servo.set('active_dut_controller', self._ec_prefix)
-            except:
-                self.check_ec_uart = False
+                set_ccd and servo_detect_ok
+                and self.check_ec_capability(suppress_warning=True)
+                and self.servo.active_device_is_ccd()
+                and self.servo.has_control('ec_board', self._ec_prefix))
 
         # Make sure factory reset sets all capabilities to Always
         self.check_cap_command('ccd reset factory', True, False)

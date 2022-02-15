@@ -1379,6 +1379,29 @@ class Servo(object):
             return
         self.set('active_dut_controller', self.get_main_servo_device())
 
+    def get_ccd_servo_device(self):
+        """Return the ccd servo device or '' if no ccd devices are connected."""
+        servo_type = self.get_servo_type()
+        if 'ccd' not in servo_type:
+            return ''
+        return servo_type.split('_with_')[-1].split('_and_')[-1]
+
+    def active_device_is_ccd(self):
+        """Returns True if a ccd device is active."""
+        return 'ccd' in self.get_servo_version(active=True)
+
+    def enable_ccd_servo_device(self):
+        """Make sure the ccd device has control of the dut.
+
+        Returns True if the ccd device is in control of the dut.
+        """
+        if self.active_device_is_ccd():
+            return True
+        ccd_device = self.get_ccd_servo_device()
+        if not self.has_control('active_dut_controller') or not ccd_device:
+            return False
+        self.set('active_dut_controller', ccd_device)
+        return True
 
     def main_device_is_ccd(self):
         """Whether the main servo device (no prefixes) is a ccd device."""

@@ -6,6 +6,7 @@
 """A Batch of Bluetooth AUdio Health tests"""
 
 import time
+import logging
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
@@ -15,6 +16,8 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
+from autotest_lib.client.cros.chameleon.audio_test_utils import (
+        has_internal_speaker)
 
 
 class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
@@ -99,6 +102,11 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                   flags=['Quick Health'])
     def au_a2dp_playback_and_connect_test(self):
         """Connect then disconnect an A2DP device while playing stream."""
+        if not has_internal_speaker(self.host):
+            logging.info('SKIPPING TEST A2DP playback and connect test')
+            raise error.TestNAError(
+                    'The DUT does not have an internal speaker')
+
         device = self.devices['BLUETOOTH_AUDIO'][0]
         test_profile = A2DP_MEDIUM
         test_sequence = lambda: self.playback_and_connect(device, test_profile)

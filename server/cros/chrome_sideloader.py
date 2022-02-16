@@ -9,6 +9,10 @@ import string
 # Shell command to force unmount a mount point if it is mounted
 FORCED_UMOUNT_DIR_IF_MOUNTPOINT_CMD = (
         'if mountpoint -q %(dir)s; then umount -l %(dir)s; fi')
+# Shell command to set exec and suid flags
+SET_MOUNT_FLAGS_CMD = 'mount -o remount,exec,suid %s'
+# Shell command to send SIGHUP to dbus daemon
+DBUS_RELOAD_COMMAND = 'killall -HUP dbus-daemon'
 
 
 def extract_from_image(host, image_name, dest_dir):
@@ -40,7 +44,7 @@ def extract_from_image(host, image_name, dest_dir):
 
     # Create directories from scratch
     host.run(['rm', '-rf', dest_dir])
-    host.run(['mkdir', '-p', dest_dir, image_mount_point])
+    host.run(['mkdir', '-p', '--mode', '0755', dest_dir, image_mount_point])
 
     try:
         # Mount image and copy content to the destination directory
@@ -96,6 +100,15 @@ def _mount_chrome(host, chrome_dir, chrome_mount_point):
     # Mount chrome to the desired chrome directory
     # Upon restart, this version of chrome will be used instead.
     host.run(['mount', '--rbind', chrome_dir, chrome_mount_point])
+
+    # Chrome needs partition to have exec and suid flags set
+    host.run(SET_MOUNT_FLAGS_CMD % chrome_mount_point)
+
+    # Send SIGHUP to dbus-daemon to tell it to reload its configs. This won't
+    # pick up major changes (bus type, logging, etc.), but all we care about is
+    # getting the latest policy from /opt/google/chrome/dbus so that Chrome will
+    # be authorized to take ownership of its service names.
+    host.run(DBUS_RELOAD_COMMAND, ignore_status=True)
 
     if chrome_stopped:
         host.run('start ui', ignore_status=True)

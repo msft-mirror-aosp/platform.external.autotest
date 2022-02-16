@@ -302,7 +302,10 @@ class Backlight(object):
        restore: Restore backlight to initial level when instance created.
 
     Public attributes:
-        default_brightness_percent: float of default brightness
+        default_brightness_percent: float of default brightness.
+        force_battery: bool; if True, force backlight_tool to assume that the
+                       device is on battery and have AC disconnected; if False,
+                       use the device's real power source.
 
     Private methods:
         _try_bl_cmd: run a backlight command.
@@ -316,7 +319,7 @@ class Backlight(object):
     # See http://www.chromium.org/chromium-os/testing/power-testing for more
     # details.
 
-    def __init__(self, default_brightness_percent=0):
+    def __init__(self, default_brightness_percent=0, force_battery=False):
         """Constructor.
 
         attributes:
@@ -335,14 +338,16 @@ class Backlight(object):
             return
 
         if not self.default_brightness_percent:
-            cmd = \
-                "backlight_tool --get_initial_brightness --lux=150 2>/dev/null"
+            force_battery_arg = "--force_battery " if force_battery else ""
+            cmd = ("backlight_tool --get_initial_brightness --lux=150 " +
+                   force_battery_arg + "2>/dev/null")
             try:
                 level = float(utils.system_output(cmd).rstrip())
                 self.default_brightness_percent = \
                     (level / self.get_max_level()) * 100
-                logging.info("Default backlight brightness percent = %f",
-                             self.default_brightness_percent)
+                logging.info("Default backlight brightness percent = %f%s",
+                             self.default_brightness_percent,
+                             " with force battery" if force_battery else "")
             except error.CmdError:
                 self.default_brightness_percent = 40.0
                 logging.warning("Unable to determine default backlight "

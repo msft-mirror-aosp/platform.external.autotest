@@ -244,7 +244,8 @@ class power_LoadTest(arc.ArcTest):
             self._shill_proxy.wait_for_cellular_service_object()
 
         # record the max backlight level
-        self._backlight = power_utils.Backlight()
+        self._backlight = power_utils.Backlight(
+                force_battery=self._force_discharge_success)
         self._tmp_keyvals['level_backlight_max'] = \
             self._backlight.get_max_level()
 

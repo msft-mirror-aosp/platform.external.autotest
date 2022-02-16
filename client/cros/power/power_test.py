@@ -57,8 +57,6 @@ class power_Test(test.test):
         @var _meas_logs: list of power_status.MeasurementLoggers
         """
         super(power_Test, self).initialize()
-        self.backlight = power_utils.Backlight()
-        self.backlight.set_default()
         self.keyvals = dict()
         self.status = power_status.get_status()
 
@@ -67,6 +65,9 @@ class power_Test(test.test):
 
         self._force_discharge_success = force_discharge_utils.process(
                 force_discharge, self.status)
+        self.backlight = power_utils.Backlight(
+                force_battery=self._force_discharge_success)
+        self.backlight.set_default()
 
         ifaces = [iface for iface in interface.get_interfaces()
                 if (not iface.is_wifi_device() and

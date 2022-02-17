@@ -28,13 +28,13 @@ _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/P/'
 _BUNDLE_MAP = {
         (None, 'arm'):
-        _PUBLIC_CTS + 'android-cts_instant-9.0_r18-linux_x86-arm.zip',
+        _PUBLIC_CTS + 'android-cts_instant-9.0_r19-linux_x86-arm.zip',
         (None, 'x86'):
-        _PUBLIC_CTS + 'android-cts_instant-9.0_r18-linux_x86-x86.zip',
+        _PUBLIC_CTS + 'android-cts_instant-9.0_r19-linux_x86-x86.zip',
         ('LATEST', 'arm'):
-        _INTERNAL_CTS + 'android-cts_instant-9.0_r18-linux_x86-arm.zip',
+        _INTERNAL_CTS + 'android-cts_instant-9.0_r19-linux_x86-arm.zip',
         ('LATEST', 'x86'):
-        _INTERNAL_CTS + 'android-cts_instant-9.0_r18-linux_x86-x86.zip',
+        _INTERNAL_CTS + 'android-cts_instant-9.0_r19-linux_x86-x86.zip',
         # No 'DEV' job for CTS_Instant for now.
 }
 _CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'

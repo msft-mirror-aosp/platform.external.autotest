@@ -93,6 +93,10 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
                     extension_paths=[cros_constants.AUDIO_TEST_EXTENSION],
                     autotest_ext=True) as cr:
                 audio_facade = audio_facade_native.AudioFacadeNative(cr)
+                # Chrome will select nodes after created. Sleep for a while
+                # before setting nodes to make sure the nodes will not be
+                # switched by Chrome later.
+                time.sleep(10)
                 audio_facade.set_chrome_active_node_type(
                         self.ALOOP_CRAS_NODE_TYPE, self.ALOOP_CRAS_NODE_TYPE)
 

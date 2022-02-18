@@ -9,6 +9,7 @@ import logging
 import numpy
 import os
 import re
+import sys
 import time
 
 from autotest_lib.client.bin import utils
@@ -290,7 +291,8 @@ class power_LoadTest(arc.ArcTest):
 
         self.task_monitor_file = open(os.path.join(self.resultsdir,
                                                    'task-monitor.json'),
-                                      mode='wt', encoding='utf8')
+                                      mode='wt',
+                                      **_encoding_kwargs())
 
 
     def run_once(self):
@@ -895,9 +897,8 @@ class power_LoadTest(arc.ArcTest):
         min_ts = None
         process_dict = {}
         process_id = 1
-        with open(os.path.join(self.resultsdir, 'task-monitor.json'),
-                  'r',
-                  encoding='utf-8') as f:
+        with open(os.path.join(self.resultsdir, 'task-monitor.json'), 'r',
+                  **_encoding_kwargs()) as f:
             json_strs = f.read().splitlines()
             for json_str in json_strs[1:]:
                 if len(json_str) < 10:
@@ -1111,3 +1112,13 @@ def _loop_keyname(loop, keyname):
     if loop != None:
         return "%s_%s" % (_loop_prefix(loop), keyname)
     return keyname
+
+
+# TODO(b/220192766): Remove when Python 2 completely phase out.
+def _encoding_kwargs():
+    """Use encoding kwarg if it is running in Python 3+.
+    """
+    if sys.version_info.major > 2:
+        return {'encoding': 'utf-8'}
+    else:
+        return {}

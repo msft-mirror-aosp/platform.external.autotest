@@ -604,13 +604,8 @@ class tast(test.test):
 
         The result is saved as self._devserver_args.
         """
-        logging.info('All devservers: %s',
-                     ', '.join(dev_server.ImageServer.servers()))
-        devservers, can_retry = dev_server.ImageServer.get_available_devservers(
-                self._host.hostname, prefer_local_devserver=True)
-        if not devservers and can_retry:
-            devservers, can_retry = dev_server.ImageServer.get_available_devservers(
-                    self._host.hostname, prefer_local_devserver=False)
+        devservers, _ = dev_server.ImageServer.get_available_devservers(
+            self._host.hostname, prefer_local_devserver=True)
         logging.info('Using devservers: %s', ', '.join(devservers))
         self._devserver_args = ['-devservers=%s' % ','.join(devservers)]
         if self._ephemeraldevserver is not None:

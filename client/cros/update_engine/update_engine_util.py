@@ -68,6 +68,7 @@ class UpdateEngineUtil(object):
     _UPDATE_ENGINE_LOG_DIR = '/var/log/update_engine/'
     _CUSTOM_LSB_RELEASE = '/mnt/stateful_partition/etc/lsb-release'
     _UPDATE_ENGINE_PREFS_DIR = '/var/lib/update_engine/prefs/'
+    _STATEFUL_MOUNT_DIR = '/mnt/stateful_partition/'
 
     # Update engine prefs
     _UPDATE_CHECK_RESPONSE_HASH = 'update-check-response-hash'

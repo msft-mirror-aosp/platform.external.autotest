@@ -72,6 +72,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     _CORRUPT_STATEFUL_PATH = '/mnt/stateful_partition/.corrupt_stateful'
 
+    _STATEFUL_ARCHIVE_NAME = 'stateful.tgz'
+
     def initialize(self, host=None):
         """
         Sets default variables for the test.
@@ -380,16 +382,22 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return self._get_stateful_uri(build_uri)
 
 
-    def _copy_payload_to_public_bucket(self, payload_url):
+    def _copy_payload_to_public_bucket(self,
+                                       payload_url,
+                                       destination_filename=None):
         """
         Copy payload and make link public (if not already there).
 
         @param payload_url: Payload URL on Google Storage.
+        @param destination_filename: Filename of payload on public bucket if it
+            should be different from the source filename.
 
         @returns The payload URL that is now publicly accessible.
 
         """
         payload_filename = payload_url.rpartition('/')[2]
+        if destination_filename:
+            payload_filename = destination_filename
         new_gs_url = self._CELLULAR_BUCKET + payload_filename
         public_url = new_gs_url.replace('gs://',
                                         'https://storage.googleapis.com/')
@@ -405,10 +413,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         except error.CmdError:
             logging.warning('No existing payload exists. Copying payload...')
 
-        utils.run([
-                'gsutil', 'cp', '-n',
-                '%s*' % payload_url, self._CELLULAR_BUCKET
-        ])
+        utils.run(['gsutil', 'cp', '-n', '%s*' % payload_url, new_gs_url])
         utils.run(['gsutil', 'acl', 'ch', '-u', 'AllUsers:R',
                    '%s*' % new_gs_url])
         return public_url
@@ -738,8 +743,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Tries to update stateful without clobbering it.
         return self._restore_stateful(clobber_stateful=False)
 
-    def _restore_stateful(self, clobber_stateful=True):
-        """Restore the stateful partition after a destructive test."""
+    def _restore_stateful(self, clobber_stateful=True, public_bucket=False):
+        """
+        Restore the stateful partition after a destructive test.
+
+        @param clobber_stateful: True to wipe clobber user state.
+        @param public_bucket: True to restore from a public bucket.
+
+        """
         # Test failed before job_repo_url was set. No need to fix stateful.
         if not self._job_repo_url:
             return
@@ -748,26 +759,16 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._run(['touch', self._CORRUPT_STATEFUL_PATH])
 
         # Stage stateful payload.
-        ds_url, build = tools.get_devserver_build_from_package_url(
-                self._job_repo_url)
-        self._autotest_devserver = dev_server.ImageServer(ds_url)
-        self._autotest_devserver.stage_artifacts(build, ['stateful'])
+        statefuldev_url = self._stage_stateful(public_bucket)
 
         logging.info('Restoring stateful partition...')
         # Setup local dir.
         self._run(['mkdir', '-p', '-m', '1777', '/usr/local/tmp'])
 
         # Download and extract the stateful payload.
-        update_url = self._autotest_devserver.get_update_url(build)
-        statefuldev_url = update_url.replace('update', 'static')
-        statefuldev_url += '/stateful.tgz'
-        cmd = [
-                'curl', '--silent', '--show-error', '--max-time', '600',
-                statefuldev_url, '|', 'tar', '--ignore-command-error',
-                '--overwrite', '--directory', '/mnt/stateful_partition', '-xz'
-        ]
         try:
-            self._run(cmd)
+            self._download_and_extract_stateful(statefuldev_url,
+                                                self._STATEFUL_MOUNT_DIR)
         except error.AutoservRunError as e:
             err_str = 'Failed to restore the stateful partition'
             raise error.TestFail('%s: %s' % (err_str, str(e)))
@@ -789,6 +790,49 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         logging.info('Stateful restored successfully.')
 
+
+    def _download_and_extract_stateful(self,
+                                       stateful_url,
+                                       destination,
+                                       keep_symlinks=False):
+        """
+        Download and extract the stateful partition.
+
+        @param stateful_url: The url of the stateful archive.
+        @param destination: The directory that the stateful archive will be
+            extracted into.
+        @param keep_symlinks: Don't overwrite symlinks in destination directory.
+
+        """
+        cmd = [
+                'curl', '--silent', '--show-error', '--max-time', '600',
+                stateful_url, '|', '/bin/tar', '--ignore-command-error',
+                '--overwrite', '--directory', destination, '-xz'
+        ]
+        if keep_symlinks:
+            cmd += ['--keep-directory-symlink']
+        self._run(cmd)
+
+    def _stage_stateful(self, public_bucket=False):
+        """
+        Stage the stateful archive for download.
+
+        @param public_bucket: True to return archive on a public bucket.
+
+        """
+        if public_bucket:
+            statefuldev_url = self._get_stateful_url_on_public_bucket()
+        else:
+            # Stage stateful payload.
+            ds_url, build = tools.get_devserver_build_from_package_url(
+                    self._job_repo_url)
+            self._autotest_devserver = dev_server.ImageServer(ds_url)
+            self._autotest_devserver.stage_artifacts(build, ['stateful'])
+
+            update_url = self._autotest_devserver.get_update_url(build)
+            statefuldev_url = update_url.replace('update', 'static')
+            statefuldev_url += '/stateful.tgz'
+        return statefuldev_url
 
     def verify_update_events(self, source_release, hostlog_filename,
                              target_release=None):
@@ -845,6 +889,29 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('Public update URL: %s', url)
         return url
 
+
+    def _get_stateful_url_on_public_bucket(self):
+        """
+        Get the google storage URL of the payload stateful in a public bucket.
+
+        We will be copying the payload to a public google storage bucket
+        (similar location to updates via autest command).
+
+        """
+        payload_url = self._get_payload_url()
+        stateful_url = '/'.join(
+                [payload_url.rpartition('/')[0], self._STATEFUL_ARCHIVE_NAME])
+        # We have a flat directory structure in the public directory. Therefore
+        # we need to disambiguate the stateful archive by prepending full
+        # payload name.
+        stateful_filename = '_'.join([
+                os.path.splitext(payload_url.rpartition('/')[2])[0],
+                self._STATEFUL_ARCHIVE_NAME
+        ])
+        url = self._copy_payload_to_public_bucket(stateful_url,
+                                                  stateful_filename)
+        logging.info('Public stateful URL: %s', url)
+        return url
 
     def get_payload_for_nebraska(self, job_repo_url=None, full_payload=True,
                                  public_bucket=False, is_dlc=False):

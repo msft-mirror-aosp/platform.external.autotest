@@ -249,6 +249,7 @@ suite:moblab
 suite:moblab_quick
 suite:moblab_storage_qual
 suite:mtp
+suite:nbr
 suite:nearby-share
 suite:nearby-share-remote
 suite:network_nightly

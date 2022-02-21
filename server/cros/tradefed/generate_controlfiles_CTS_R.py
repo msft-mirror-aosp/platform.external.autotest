@@ -203,7 +203,7 @@ _WIFI_CONNECT_COMMANDS_V2 = [
 
 _DISPLAY_REFRESH_COMMANDS = [
         "'sleep 20'",  # Wait for the intent helper mojo connection established
-        "'android-sh -c \\'am start -a android.intent.action.VIEW -d https://webglsamples.org/aquarium/aquarium.html\\''"
+        "'android-sh -c \\'am start -a android.intent.action.VIEW -d https://webglsamples.org/electricflower/electricflower.html\\''"
 ]
 
 # Preconditions applicable to public and internal tests.
@@ -379,10 +379,14 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'android.app.cts.SystemFeaturesTest'
         ],
         'CtsCameraTestCases.NativeCameraDeviceTest': [
-                '--module',
-                'CtsCameraTestCases',
-                '--test',
-                'android.hardware.camera2.cts.NativeCameraDeviceTest',
+                '--include-filter',
+                'CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest',
+                '--include-filter',
+                'CtsCameraTestCases[instant] android.hardware.camera2.cts.NativeCameraDeviceTest',
+                '--include-filter',
+                'CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]',
+                '--include-filter',
+                'CtsCameraTestCases[instant] android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]',
         ],
         'CtsDeqpTestCases.dEQP-EGL': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',

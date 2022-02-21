@@ -484,6 +484,12 @@ class ChameleonBoard(object):
         """
         return self._chameleond_proxy.bluetooth_keyboard
 
+    def get_ble_fast_pair(self):
+        """Gets the emulated Bluetooth Fast Pair device on Chameleon.
+
+        @return: A RaspiBLEFastPair object.
+        """
+        return self._chameleond_proxy.ble_fast_pair
 
     def get_bluetooth_ref_controller(self):
         """Gets the emulated BluetoothRefController.

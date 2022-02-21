@@ -94,22 +94,24 @@ RESUME_DELTA = -5
 
 # Delay binding the methods since host is only available at run time.
 SUPPORTED_DEVICE_TYPES = {
-    'MOUSE': lambda btpeer: btpeer.get_bluetooth_hid_mouse,
-    'KEYBOARD': lambda btpeer: btpeer.get_bluetooth_hid_keyboard,
-    'BLE_MOUSE': lambda btpeer: btpeer.get_ble_mouse,
-    'BLE_KEYBOARD': lambda btpeer: btpeer.get_ble_keyboard,
-    # Tester allows us to test DUT's discoverability, etc. from a peer
-    'BLUETOOTH_TESTER': lambda btpeer: btpeer.get_bluetooth_tester,
-    # This is a base object that does not emulate any Bluetooth device.
-    # This object is preferred when only a pure XMLRPC server is needed
-    # on the btpeer host, e.g., to perform servod methods.
-    'BLUETOOTH_BASE': lambda btpeer: btpeer.get_bluetooth_base,
-    # on the chameleon host, e.g., to perform servod methods.
-    'BLUETOOTH_BASE': lambda chameleon: chameleon.get_bluetooth_base,
-    # A phone device that supports Bluetooth
-    'BLE_PHONE': lambda chameleon: chameleon.get_ble_phone,
-    # A Bluetooth audio device emulating a headphone
-    'BLUETOOTH_AUDIO': lambda chameleon: chameleon.get_bluetooth_audio,
+        'MOUSE': lambda btpeer: btpeer.get_bluetooth_hid_mouse,
+        'KEYBOARD': lambda btpeer: btpeer.get_bluetooth_hid_keyboard,
+        'BLE_MOUSE': lambda btpeer: btpeer.get_ble_mouse,
+        'BLE_KEYBOARD': lambda btpeer: btpeer.get_ble_keyboard,
+        # Tester allows us to test DUT's discoverability, etc. from a peer
+        'BLUETOOTH_TESTER': lambda btpeer: btpeer.get_bluetooth_tester,
+        # This is a base object that does not emulate any Bluetooth device.
+        # This object is preferred when only a pure XMLRPC server is needed
+        # on the btpeer host, e.g., to perform servod methods.
+        'BLUETOOTH_BASE': lambda btpeer: btpeer.get_bluetooth_base,
+        # on the chameleon host, e.g., to perform servod methods.
+        'BLUETOOTH_BASE': lambda chameleon: chameleon.get_bluetooth_base,
+        # A phone device that supports Bluetooth
+        'BLE_PHONE': lambda chameleon: chameleon.get_ble_phone,
+        # A Bluetooth audio device emulating a headphone
+        'BLUETOOTH_AUDIO': lambda chameleon: chameleon.get_bluetooth_audio,
+        # A Bluetooth device that implements the Fast Pair protocol.
+        'BLE_FAST_PAIR': lambda chameleon: chameleon.get_ble_fast_pair,
 }
 
 COMMON_FAILURES = {
@@ -147,6 +149,14 @@ SUSPEND_RESET_IF_NO_PEER_CHIPSETS = ['Realtek-RTL8852A-USB']
 
 # Models to skip since they power down on suspend.
 SUSPEND_POWER_DOWN_MODELS = ['dru', 'druwl', 'dumo']
+
+# Chipsets which do not support Bluetooth Hardware Filtering.
+UNSUPPORTED_BT_HW_FILTERING_CHIPSETS = [
+        'MVL-8897', 'MVL-8997', 'QCA-6174A-5-USB', 'QCA-6174A-3-UART',
+        'QCA-WCN6856', 'Intel-AC7260', 'Intel-AC7265', 'Realtek-RTL8822C-USB',
+        'Realtek-RTL8822C-UART', 'Realtek-RTL8852A-USB',
+        'Mediatek-MTK7921-USB', 'Mediatek-MTK7921-SDIO'
+]
 
 KERNEL_LOG_LEVEL = {
         'EMERG': 0,
@@ -776,15 +786,17 @@ class BluetoothAdapterTests(test.test):
     USBMON_NUM_OF_ROTATE_FILE = 2
 
     # The agent capability of various device types.
-    # Currently all is set to NoInputNoOutput since currently we don't have
-    # a way to report the displayed passkey to the device in case of
-    # Passkey Entry. Therefore, use 'Just Works'.
+    # Currently all non-Fast Pair are set to NoInputNoOutput since currently
+    # we don't have a way to report the displayed passkey to the device in case
+    # of Passkey Entry. Therefore, use 'Just Works'.
+    # Fast Pair uses DisplayYesNo because this is expected by that protocol.
     # TODO(b/181945748) update the capabilities when Passkey Entry is supported.
     AGENT_CAPABILITY = {
             'BLE_MOUSE': 'NoInputNoOutput',
             'BLE_KEYBOARD': 'NoInputNoOutput',
             'BLE_PHONE': 'NoInputNoOutput',
             'BLUETOOTH_AUDIO': 'NoInputNoOutput',
+            'FAST_PAIR': 'DisplayYesNo',
             'KEYBOARD': 'NoInputNoOutput',
             'MOUSE': 'NoInputNoOutput',
     }

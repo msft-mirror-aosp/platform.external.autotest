@@ -299,11 +299,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                       whole test (i.e. advertising) and any
                                       outside failure will cause the test to
                                       fail.
-          @param use_all_peers: Set number of devices to be used to the
-                                maximum available. This is used for tests
-                                like bluetooth_PeerVerify which uses all
-                                available peers. Specify only one device type
-                                if this is set to true
+           @param use_all_peers: Set number of devices to be used to the
+                                 maximum available. This is used for tests
+                                 like bluetooth_PeerVerify which uses all
+                                 available peers. Specify only one device type
+                                 if this is set to true
         """
 
         def decorator(test_method):

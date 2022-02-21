@@ -60,13 +60,24 @@ class Chrome(object):
     BROWSER_TYPE_GUEST = 'system-guest'
     AUTOTEST_EXT_ID = 'behllobkkfkfnphdnhnkndlbkcpglgmj'
 
-    def __init__(self, logged_in=True, extension_paths=None, autotest_ext=False,
-                 num_tries=3, extra_browser_args=None,
-                 clear_enterprise_policy=True, expect_policy_fetch=False,
-                 dont_override_profile=False, disable_gaia_services=True,
-                 disable_default_apps=True, auto_login=True, gaia_login=False,
-                 username=None, password=None, gaia_id=None,
-                 arc_mode=None, arc_timeout=None,
+    def __init__(self,
+                 logged_in=True,
+                 extension_paths=None,
+                 autotest_ext=False,
+                 num_tries=3,
+                 extra_browser_args=None,
+                 clear_enterprise_policy=True,
+                 expect_policy_fetch=False,
+                 dont_override_profile=False,
+                 disable_gaia_services=True,
+                 disable_default_apps=True,
+                 auto_login=True,
+                 gaia_login=False,
+                 username=None,
+                 password=None,
+                 gaia_id=None,
+                 arc_mode=None,
+                 arc_timeout=None,
                  enable_web_app_auto_install=False,
                  disable_arc_opt_in=True,
                  disable_arc_opt_in_verification=True,
@@ -80,7 +91,8 @@ class Chrome(object):
                  init_network_controller=False,
                  mute_audio=False,
                  proxy_server=None,
-                 login_delay=0):
+                 login_delay=0,
+                 enable_features=None):
         """
         Constructor of telemetry wrapper.
 
@@ -152,6 +164,7 @@ class Chrome(object):
             default proxy-server is disabled
         @param login_delay: Time for idle in login screen to simulate the time
                             required for password typing.
+        @param enable_features: Comma separated list of features to enable.
         """
         self._autotest_ext_path = None
 
@@ -210,6 +223,10 @@ class Chrome(object):
         if extra_browser_args:
             finder_options.browser_options.AppendExtraBrowserArgs(
                 extra_browser_args)
+
+        if enable_features:
+            finder_options.browser_options.AppendExtraBrowserArgs(
+                    ['--enable-features=%s' % enable_features])
 
         # finder options must be set before parse_args(), browser options must
         # be set before Create().

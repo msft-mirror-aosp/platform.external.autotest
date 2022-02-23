@@ -20,6 +20,8 @@ import random
 
 import six
 
+import common
+
 from autotest_lib.client.cros.cellular.pseudomodem import bearer
 from autotest_lib.client.cros.cellular.pseudomodem import dbus_std_ifaces
 from autotest_lib.client.cros.cellular.pseudomodem import messaging
@@ -29,8 +31,6 @@ from autotest_lib.client.cros.cellular.pseudomodem import pm_errors
 from autotest_lib.client.cros.cellular.pseudomodem import sms_handler
 from autotest_lib.client.cros.cellular.pseudomodem import state_machine_factory as smf
 from autotest_lib.client.cros.cellular.pseudomodem import utils
-from autotest_lib.client.cros.cellular.pseudomodem import common
-
 
 from autotest_lib.client.cros.cellular import mm1_constants
 from autotest_lib.client.cros.cellular import net_interface

@@ -11,6 +11,9 @@ import logging
 import os
 from optparse import OptionParser
 
+# TODO (tij@): b/223618058: Migrate this to Python 3 ASAP.
+os.environ["PY_VERSION"] = "2"
+
 import common
 from autotest_lib.client.cros import xmlrpc_server
 from autotest_lib.client.cros.faft.utils import os_interface

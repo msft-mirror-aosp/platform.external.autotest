@@ -170,7 +170,7 @@ class subcommand(object):
 
         if self.pid:                            # I am the parent
             os.close(w)
-            self.result_pickle = os.fdopen(r, 'r')
+            self.result_pickle = os.fdopen(r, 'rb')
             return
         else:
             os.close(r)

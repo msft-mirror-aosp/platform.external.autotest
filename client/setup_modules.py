@@ -13,7 +13,7 @@ sys.path.pop(0)
 
 def _get_pyversion_from_args():
     """Extract, format, & pop the current py_version from args, if provided."""
-    py_version = 2
+    py_version = 3
     py_version_re = re.compile(r'--py_version=(\w+)\b')
 
     version_found = False
@@ -44,7 +44,7 @@ def _desired_version():
     a process created a subprocess.
 
     Otherwise, parse & pop the sys.argv for the '--py_version' flag. If no
-    flag is set, default to python 2 (for now).
+    flag is set, default to python 3.
 
     """
     # Even if the arg is in the env vars, we will attempt to get it from the

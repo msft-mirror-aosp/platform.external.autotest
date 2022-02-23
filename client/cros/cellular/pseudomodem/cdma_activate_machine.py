@@ -4,13 +4,15 @@
 
 import logging
 
+import common
+
 # AU tests use ToT client code, but ToT -3 client version.
 try:
     from gi.repository import GObject
 except ImportError:
     import gobject as GObject
-import pm_errors
-import state_machine
+from . import pm_errors
+from . import state_machine
 
 from autotest_lib.client.cros.cellular import mm1_constants
 

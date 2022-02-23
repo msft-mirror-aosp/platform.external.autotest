@@ -11,9 +11,9 @@ except ImportError:
     import gobject as GObject
 import logging
 
-import pm_errors
-import pm_constants
-import utils
+from . import pm_errors
+from . import pm_constants
+from . import utils
 
 from autotest_lib.client.cros.cellular import mm1_constants
 

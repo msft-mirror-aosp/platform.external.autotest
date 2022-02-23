@@ -5,9 +5,10 @@
 
 import logging, os, shutil, tempfile
 
+import common
+
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotemp, error
-from autotest_lib.client.cros import common
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros import cros_ui
 from autotest_lib.client.cros import cryptohome

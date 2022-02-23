@@ -17,8 +17,9 @@ import six
 
 from six.moves import input
 
+import common
+
 from autotest_lib.client.cros.cellular.pseudomodem import pm_constants
-from autotest_lib.client.cros.cellular.pseudomodem import common
 
 from autotest_lib.client.cros.cellular import mm1_constants
 

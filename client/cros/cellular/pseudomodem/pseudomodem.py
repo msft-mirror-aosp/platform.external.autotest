@@ -30,6 +30,8 @@ import sys
 import traceback
 from six.moves import range
 
+import common
+
 from autotest_lib.client.cros.cellular import mm1_constants
 from autotest_lib.client.cros.cellular.pseudomodem import testing
 from autotest_lib.client.cros.cellular.pseudomodem import logging_setup
@@ -38,7 +40,6 @@ from autotest_lib.client.cros.cellular.pseudomodem import modem_3gpp
 from autotest_lib.client.cros.cellular.pseudomodem import modemmanager
 from autotest_lib.client.cros.cellular.pseudomodem import sim
 from autotest_lib.client.cros.cellular.pseudomodem import state_machine_factory as smf
-from autotest_lib.client.cros.cellular.pseudomodem import common
 
 # Flags used by pseudomodem modules only that are defined below in
 # ParserArguments.

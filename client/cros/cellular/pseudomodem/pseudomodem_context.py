@@ -27,7 +27,7 @@ import sys
 import subprocess
 import tempfile
 
-from autotest_lib.client.cros.cellular.pseudomodem import common
+import common
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error

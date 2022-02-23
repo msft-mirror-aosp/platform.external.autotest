@@ -1,9 +1,9 @@
-# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'Chromium OS team'
-NAME = 'tast.graphics-perbuild'
+AUTHOR = 'Chromium OS Display team'
+NAME = 'tast.graphics-drm-per-build'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:graphics_per-build'
@@ -14,13 +14,16 @@ PY_VERSION = 3
 REQUIRE_SSP = True
 
 DOC = '''
-Run the Tast graphics test suite.
+Run the Tast graphics-drm test suite.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
 more information.
 
-This test runs Tast-based graphics tests against a remote DUT.
+This test runs drm tests against a remote DUT.
+Separate control files are needed because Tast doesn't isolate tests from each
+other and a clean device state is needed by rebooting before running a
+different graphics suite.
 
 See http://go/tast-failures for information about investigating failures.
 '''
@@ -30,8 +33,8 @@ def run(machine):
     host.reboot()
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:graphics" && graphics_perbuild && !graphics_igt && !graphics_opencl && !graphics_drm && !graphics_trace && !graphics_video)'],
-                 ignore_test_failures=True, max_run_sec=10800,
+                 test_exprs=['("group:graphics" && graphics_perbuild && graphics_drm)'],
+                 ignore_test_failures=True, max_run_sec=21600,
                  command_args=args)
 
 parallel_simple(run, machines)

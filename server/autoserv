@@ -12,7 +12,7 @@ def py2_exception(test_name):
         return False
     EXCEPTIONS = ['telemetry']
     for e in EXCEPTIONS:
-        if test_name in e:
+        if e in test_name:
             return True
     return False
 

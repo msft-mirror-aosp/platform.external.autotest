@@ -113,10 +113,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_run_test_sequence(device, test_sequence, test_profile)
 
 
-    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('A2DP playback and disconnect test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_a2dp_playback_and_disconnect_test(self):
         """Check the playback stream is still alive after BT disconnected."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -138,10 +136,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_run_test_sequence(device, test_sequence, test_profile)
 
 
-    # Remove flags=['Quick Health'] when this test is migrated to stable test.
-    @test_wrapper('A2DP pinned playback test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+    @test_wrapper('A2DP pinned playback test', devices={'BLUETOOTH_AUDIO': 1})
     def au_a2dp_pinned_playback_test(self):
         """Pinned playback stream test."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -289,10 +284,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_WBS)
 
 
-    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Switch A2DP to HFP NBS test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_a2dp_to_hfp_nbs_dut_as_source_test(self):
         """Switch A2DP to HFP NBS test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -311,10 +304,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_WBS_MEDIUM)
 
 
-    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Switch HFP NBS to A2DP test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_hfp_nbs_to_a2dp_dut_as_source_test(self):
         """Switch HFP NBS to A2DP test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]

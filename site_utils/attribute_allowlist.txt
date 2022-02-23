@@ -162,6 +162,7 @@ suite:cross-device
 suite:cts
 suite:cts-hardware
 suite:cts_P
+suite:cuj
 suite:cups_weekly
 suite:debug_kernel_testing
 suite:deqp

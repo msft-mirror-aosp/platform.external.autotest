@@ -174,22 +174,34 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
                 has_audio_device = True
             pre_test_method(device, expected_pass)
 
+        # TODO(b:219398837) Remove this once b/219398837 is fixed.
+        # There is an issue on chameleon when a DUT connects to multiple peers
+        # with at least one emulated as an audio device, the other connections
+        # might be dropped for a few seconds then reconnect.
+        # Ensures only one device is connected at a time as a workaround.
+        # The details of the issue is described in b/210379084#comment3
+        # and b/172381798
+        multi_conn_workaround = len(devices) >= 2 and has_audio_device
+        if multi_conn_workaround:
+            for device, expected_pass in zip(devices, expected_passes):
+                # Only disconnect expected_pass devices, since the expected_fail
+                # devices could be disconnected as they don't have connectable
+                # profiles.
+                if expected_pass:
+                    self.test_disconnection_by_adapter(device.address)
+
         for device, expected_pass in zip(devices, expected_passes):
             self.check_if_affected_by_policy(device, not expected_pass)
             verifier = self.get_device_verifier(device, expected_pass)
 
-            # TODO(b:219398837) Remove this once b/219398837 is fixed.
-            # There is an issue on chameleon when a DUT connects to multiple
-            # peers with at least one emulated as an audio device, the other
-            # connections might be dropped for a few seconds then reconnect.
-            # Polling the connection status as a workaround.
-            # The details of the issue is described in b/210379084#comment3
-            # and b/172381798
-            if len(devices) >= 2 and has_audio_device and expected_pass:
-                self.test_device_is_connected(device.address)
+            if multi_conn_workaround:
+                self.test_connection_by_adapter(device.address)
 
             # Whether the test should pass or fail depends on expected_pass.
             self.expect_test(expected_pass, verifier, device)
+
+            if multi_conn_workaround:
+                self.test_disconnection_by_adapter(device.address)
 
         for device in devices:
             self.post_test_method(device)

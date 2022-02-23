@@ -14,7 +14,7 @@ PY_VERSION = 3
 REQUIRE_SSP = True
 
 DOC = '''
-Run the Tast graphics-igt test suite.
+Run the Tast graphics-opencl test suite.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for

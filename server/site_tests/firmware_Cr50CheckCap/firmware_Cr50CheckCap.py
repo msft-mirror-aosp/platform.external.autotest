@@ -66,6 +66,11 @@ class firmware_Cr50CheckCap(Cr50Test):
         Raises:
             TestFail if expect_accessible doesn't match the accessibility state.
         """
+
+        if (ccd_level == 'unlock' or cap_setting == 'UnlessLocked') \
+            and not self.cr50.unlock_is_supported():
+            return
+
         # Run testlab open, so we won't have to do physical presence stuff.
         self.cr50.send_command('ccd testlab open')
 

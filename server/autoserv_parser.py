@@ -253,6 +253,11 @@ class autoserv_parser(object):
                                  type=str,
                                  dest='companion_hosts',
                                  help='list of companion hosts for the test.')
+        self.parser.add_argument('--dut_servers',
+                                 action='store',
+                                 type=str,
+                                 dest='dut_servers',
+                                 help='list of DUT servers for the test.')
 
         #
         # Warning! Please read before adding any new arguments!

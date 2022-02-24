@@ -19,7 +19,6 @@ from __future__ import print_function
 import errno
 import fcntl
 import getpass
-import itertools
 import logging
 import os
 import pickle
@@ -242,7 +241,13 @@ class server_job(base_job.base_job):
     _STATUS_VERSION = 1
 
     # TODO crbug.com/285395 eliminate ssh_verbosity_flag
-    def __init__(self, control, args, resultdir, label, user, machines,
+    def __init__(self,
+                 control,
+                 args,
+                 resultdir,
+                 label,
+                 user,
+                 machines,
                  machine_dict_list,
                  client=False,
                  ssh_user=host_factory.DEFAULT_SSH_USER,
@@ -251,12 +256,15 @@ class server_job(base_job.base_job):
                  ssh_verbosity_flag=host_factory.DEFAULT_SSH_VERBOSITY,
                  ssh_options=host_factory.DEFAULT_SSH_OPTIONS,
                  group_name='',
-                 tag='', disable_sysinfo=False,
+                 tag='',
+                 disable_sysinfo=False,
                  control_filename=SERVER_CONTROL_FILENAME,
-                 parent_job_id=None, in_lab=False,
+                 parent_job_id=None,
+                 in_lab=False,
                  use_client_trampoline=False,
                  sync_offload_dir='',
-                 companion_hosts=None):
+                 companion_hosts=None,
+                 dut_servers=None):
         """
         Create a server side job object.
 
@@ -300,6 +308,8 @@ class server_job(base_job.base_job):
                 for the and provided to test. NOTE: these are different than
                 machines, where each host is a host that the test would be run
                 on.
+        @param dut_servers: a str or list of hosts to be used as DUT servers
+                provided to test.
         """
         super(server_job, self).__init__(resultdir=resultdir)
         self.control = control
@@ -333,6 +343,7 @@ class server_job(base_job.base_job):
         self._disable_sysinfo = disable_sysinfo
         self._use_client_trampoline = use_client_trampoline
         self._companion_hosts = companion_hosts
+        self._dut_servers = dut_servers
 
         # Parse the release number from the label to setup sysinfo.
         version = re.findall('release/R(\d+)-', label)
@@ -857,6 +868,8 @@ class server_job(base_job.base_job):
                 logging.info("Processing control file")
                 if self._companion_hosts:
                     namespace['companion_hosts'] = self._companion_hosts
+                if self._dut_servers:
+                    namespace['dut_servers'] = self._dut_servers
                 namespace['use_packaging'] = use_packaging
                 namespace['synchronous_offload_dir'] = sync_dir
                 namespace['extended_timeout'] = self.extended_timeout

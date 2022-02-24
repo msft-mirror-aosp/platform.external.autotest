@@ -168,6 +168,10 @@ def _parse_arguments_internal(argv):
                         action='store',
                         default=None,
                         help='Companion duts for the test.')
+    parser.add_argument('--dut_servers',
+                        action='store',
+                        default=None,
+                        help='DUT servers for the test.')
     parser.add_argument('--minus',
                         dest='minus',
                         nargs='*',
@@ -342,7 +346,8 @@ def _main_for_local_run(argv, arguments):
                 pretend=arguments.pretend,
                 job_retry=arguments.retry,
                 companion_hosts=arguments.companion_hosts,
-                minus=arguments.minus)
+                minus=arguments.minus,
+                dut_servers=arguments.dut_servers)
 
 
 def _main_for_lab_run(argv, arguments):

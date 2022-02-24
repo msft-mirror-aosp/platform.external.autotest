@@ -253,10 +253,20 @@ def run_provisioning_job(provision_label, host, info, autotest_path,
     return results_directory
 
 
-def run_job(job, host, info, autotest_path, results_directory, fast_mode,
-            id_digits=1, ssh_verbosity=0, ssh_options=None,
-            args=None, pretend=False,
-            autoserv_verbose=False, companion_hosts=None):
+def run_job(job,
+            host,
+            info,
+            autotest_path,
+            results_directory,
+            fast_mode,
+            id_digits=1,
+            ssh_verbosity=0,
+            ssh_options=None,
+            args=None,
+            pretend=False,
+            autoserv_verbose=False,
+            companion_hosts=None,
+            dut_servers=None):
     """
     Shell out to autoserv to run an individual test job.
 
@@ -279,6 +289,7 @@ def run_job(job, host, info, autotest_path, results_directory, fast_mode,
                     running them.
     @param autoserv_verbose: If true, pass the --verbose flag to autoserv.
     @param companion_hosts: Companion hosts for the test.
+    @param dut_servers: DUT servers for the test.
 
     @returns: a tuple, return code of the job and absolute path of directory
               where results were stored.
@@ -302,16 +313,20 @@ def run_job(job, host, info, autotest_path, results_directory, fast_mode,
 
         command = autoserv_utils.autoserv_run_job_command(
                 os.path.join(autotest_path, 'server'),
-                machines=host, job=job, verbose=autoserv_verbose,
+                machines=host,
+                job=job,
+                verbose=autoserv_verbose,
                 results_directory=results_directory,
-                fast_mode=fast_mode, ssh_verbosity=ssh_verbosity,
+                fast_mode=fast_mode,
+                ssh_verbosity=ssh_verbosity,
                 ssh_options=ssh_options,
                 extra_args=extra_args,
                 no_console_prefix=True,
                 use_packaging=False,
                 host_attributes=info.attributes,
                 host_info_subdir=_HOST_INFO_SUBDIR,
-                companion_hosts=companion_hosts)
+                companion_hosts=companion_hosts,
+                dut_servers=dut_servers)
 
         code = _run_autoserv(command, pretend)
         return code, results_directory
@@ -476,7 +491,8 @@ def perform_local_run(autotest_path,
                       host_attributes={},
                       job_retry=True,
                       companion_hosts=None,
-                      minus=[]):
+                      minus=[],
+                      dut_servers=None):
     """Perform local run of tests.
 
     This method enforces satisfaction of test dependencies for tests that are
@@ -506,6 +522,7 @@ def perform_local_run(autotest_path,
     @param host_attributes: Dict of host attributes to pass into autoserv.
     @param job_retry: If False, tests will not be retried at all.
     @param companion_hosts: companion hosts for the test.
+    @param dut_servers: dut servers for the test.
 
     @returns: A list of return codes each job that has run. Or [1] if
               provision failed prior to running any jobs.
@@ -564,21 +581,10 @@ def perform_local_run(autotest_path,
         job_id_digits = len(str(job.id))
         logging.debug('Running job %s of test %s', job.id, (job.name))
 
-        code, abs_dir = run_job(
-                job,
-                remote,
-                info,
-                autotest_path,
-                results_directory,
-                fast_mode,
-                job_id_digits,
-                ssh_verbosity,
-                ssh_options,
-                args,
-                pretend,
-                autoserv_verbose,
-                companion_hosts
-        )
+        code, abs_dir = run_job(job, remote, info, autotest_path,
+                                results_directory, fast_mode, job_id_digits,
+                                ssh_verbosity, ssh_options, args, pretend,
+                                autoserv_verbose, companion_hosts, dut_servers)
         codes.append(code)
         logging.debug("Code: %s, Results in %s", code, abs_dir)
 
@@ -733,7 +739,8 @@ def perform_run_from_autotest_root(autotest_path,
                                    host_attributes={},
                                    job_retry=True,
                                    companion_hosts=None,
-                                   minus=[]):
+                                   minus=[],
+                                   dut_servers=None):
     """
     Perform a test_that run, from the |autotest_path|.
 
@@ -768,6 +775,7 @@ def perform_run_from_autotest_root(autotest_path,
     @param host_attributes: Dict of host attributes to pass into autoserv.
     @param job_retry: If False, tests will not be retried at all.
     @param companion_hosts: companion hosts for the test.
+    @param dut_servers: dut servers for the test.
 
     @return: A return code that test_that should exit with.
     """
@@ -806,7 +814,8 @@ def perform_run_from_autotest_root(autotest_path,
                               host_attributes=host_attributes,
                               job_retry=job_retry,
                               companion_hosts=companion_hosts,
-                              minus=minus)
+                              minus=minus,
+                              dut_servers=dut_servers)
     if pretend:
         logging.info('Finished pretend run. Exiting.')
         return 0

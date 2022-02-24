@@ -316,7 +316,9 @@ class BgJob(object):
 
         data = os.read(pipe.fileno(), 1024)
         if isinstance(data, bytes) and six.PY3:
-            return data.decode()
+            # On rare occasion, an invalid byte will be read, causing this to
+            # crash. Ignoring these errors seems like the best option for now.
+            return data.decode(errors='ignore')
         return data
 
     def cleanup(self):

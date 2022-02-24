@@ -95,7 +95,7 @@ class firmware_FAFTSetup(FirmwareTest):
 
         if self.faft_config.mode_switcher_type in (
                 'menu_switcher',
-                'keyboard_dev_switcher'):
+                'keyboard_dev_switcher') and not self.faft_config.is_detachable:
             logging.info("Check keyboard simulation")
             self.check_state(self.keyboard_checker)
         else:

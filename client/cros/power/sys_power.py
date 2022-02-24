@@ -70,6 +70,10 @@ class FirmwareError(SuspendFailure):
         ('^eve', r'Card did not respond to voltage select!'),
         # b/187561710#comment6: waive mcache error from volteer
         ('^volteer', r'mcache overflow, should increase CBFS_MCACHE size!'),
+        # b/221113302: Guybrush do not save firmware log to cbmem during
+        #              resume, so all errors seen actually occurred during boot.
+        #              This workaround can be removed when b/221231786 is fixed.
+        ('^guybrush', r'.*'),
     ]
 
 

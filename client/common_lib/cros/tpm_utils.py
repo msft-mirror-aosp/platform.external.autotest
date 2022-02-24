@@ -49,28 +49,15 @@ def TPMStatus(client):
     return status
 
 
-def IsTPMAvailable(client):
-    """Returns True if the TPM is unowned and enabled.
-
-    @param client: client object to run commands on.
-    """
-    status = TPMStatus(client)
-    return status['is_enabled'] and not status['is_owned']
-
-
 def ClearTPMServer(client, out_dir):
     """Clears the TPM and reboots from a server-side autotest.
 
     @param client: client object to run commands on.
     @param out_dir: temporary directory.
     """
-    if IsTPMAvailable(client):
-        logging.debug('TPM is not owned')
-        return
-
     client.run('stop ui')
-    client.run('crossystem clear_tpm_owner_request=1')
-    CleanupAndReboot(client)
+    ClearTPMOwnerRequest(client)
+
 
 def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
     """Clears the TPM using crossystem command.
@@ -79,6 +66,12 @@ def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
     @param wait_for_ready: wait until the TPM status is ready
     @param timeout: number of seconds to wait for the TPM to become ready.
     """
+    ownership_id = client.run('hwsec-ownership-id id')
+    if not ownership_id.exit_status == 0:
+        raise error.TestFail('Unable to get ownership ID.')
+
+    ownership_id = ownership_id.stdout.strip()
+
     if not client.run('crossystem clear_tpm_owner_request=1',
                       ignore_status=True).exit_status == 0:
         raise error.TestFail('Unable to clear TPM.')
@@ -86,18 +79,14 @@ def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
     CleanupAndReboot(client)
 
     if wait_for_ready:
-        status = ''
+        status = 1
         end_time = time.time() + timeout
-        # Wait for tpm_manager to send a successful reply.
-        while 'STATUS_SUCCESS' not in status and time.time() < end_time:
-            status = client.run('tpm_manager_client status --nonsensitive',
-                                ignore_status=True).stdout.strip()
-            logging.debug(status)
+        # Wait for the ownership ID changed.
+        while status != 0 and time.time() < end_time:
+            status = client.run('hwsec-ownership-id diff id=' + ownership_id,
+                                ignore_status=True).exit_status
             time.sleep(1)
-        # Verify if the TPM is unowned.
-        tpm_status = TPMStatus(client)
-        logging.info('TPM status: %s', tpm_status)
-        if tpm_status['is_owned']:
+        if status != 0:
             raise error.TestFail('Failed to clear TPM.')
 
 

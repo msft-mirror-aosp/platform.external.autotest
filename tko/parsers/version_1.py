@@ -328,6 +328,7 @@ class parser(base.parser):
         started_time_stack = [None]
         subdir_stack = [None]
         testname_stack = [None]
+        running_client = None
         running_test = None
         running_reasons = set()
         ignored_lines = []

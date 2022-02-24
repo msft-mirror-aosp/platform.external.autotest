@@ -197,6 +197,11 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
             if multi_conn_workaround:
                 self.test_connection_by_adapter(device.address)
 
+            # Make sure hid device was created before using it
+            if device.device_type in ['KEYBOARD', 'MOUSE']:
+                self.expect_test(expected_pass, self.test_hid_device_created,
+                                 device.address)
+
             # Whether the test should pass or fail depends on expected_pass.
             self.expect_test(expected_pass, verifier, device)
 

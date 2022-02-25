@@ -510,15 +510,17 @@ class FirmwareTest(test.test):
                                 "connection error.")
 
         # Perhaps it's kernel that's broken. Let's try restoring it.
-        if self.is_kernel_saved():
-            self._ensure_client_in_recovery()
-            logging.info('Try restoring the original kernel...')
-            try:
-                if self.restore_kernel():
-                    return
-            except ConnectionError:
-                logging.warning("Restoring kernel didn't help, still "
-                                "connection error.")
+        for kernel_type, kernel_name in self.KERNEL_TYPE_NAME_MAP.items():
+            if self.is_kernel_saved(kernel_type):
+                self._ensure_client_in_recovery()
+                logging.info('Try restoring the original %s...', kernel_name)
+                try:
+                    if self.restore_kernel(kernel_type=kernel_type):
+                        return
+                except ConnectionError:
+                    logging.warning(
+                            "Restoring %s didn't help, still "
+                            "connection error.", kernel_name)
 
         # DUT may be broken by a corrupted OS image. Restore OS image.
         self._ensure_client_in_recovery()

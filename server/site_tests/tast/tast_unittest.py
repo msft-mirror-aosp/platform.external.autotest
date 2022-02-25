@@ -232,6 +232,7 @@ class TastTest(unittest.TestCase):
                   run_private_tests=False,
                   varsfiles=[],
                   download_data_lazily=False,
+                  clear_tpm=False,
                   totalshards=1,
                   shardindex=0,
                   companion_duts={},
@@ -255,6 +256,7 @@ class TastTest(unittest.TestCase):
              in |-varsfile| arguments.
         @param download_data_lazily: Whether to download external data files
             lazily.
+        @param clear_tpm: clear the TPM first before running the tast tests.
         @param varslist: list of strings to pass to tast run command as |-vars|
             arguments. Each string should be formatted as "name=value".
         @param maybemissingvars: a regex to pass to tast run command as
@@ -273,6 +275,7 @@ class TastTest(unittest.TestCase):
                               run_private_tests=run_private_tests,
                               varsfiles=varsfiles,
                               download_data_lazily=download_data_lazily,
+                              clear_tpm=clear_tpm,
                               totalshards=totalshards,
                               shardindex=shardindex,
                               companion_duts=companion_duts,

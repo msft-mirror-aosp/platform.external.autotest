@@ -42,6 +42,8 @@ def run(machine):
         expr_b64 = args_dict.get('tast_expr_b64')
         if expr_b64:
             expr = base64.b64decode(expr_b64)
+    if isinstance(expr, bytes):
+        expr = expr.decode()
     if not expr:
         raise TestFail(
                 'Attribute expression is unspecified; set tast_expr in --args.\n'

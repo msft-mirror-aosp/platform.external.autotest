@@ -1202,7 +1202,7 @@ class ServoHost(base_servohost.BaseServoHost):
         fname = os.path.basename(res.stdout.strip())
         # From the fname, ought to extract the timestamp using the TS_EXTRACTOR
         if type(fname) == type(b' '):
-          fname = fname.decode("utf-8")
+            fname = fname.decode("utf-8")
         ts_match = self.TS_EXTRACTOR.match(fname)
         if not ts_match:
             logging.warning('Failed to extract timestamp from servod log file '
@@ -1274,14 +1274,15 @@ class ServoHost(base_servohost.BaseServoHost):
             if self.is_containerized_servod():
                 client = docker_utils.get_docker_client()
                 container = client.containers.get(self.servod_container_name)
-                file_stream, stat = container.get_archive(files)
-                tf = tempfile.NamedTemporaryFile(delete=False)
-                for block in file_stream:
-                    tf.write(block)
-                tf.close()
-                pw_tar = tarfile.TarFile(tf.name)
-                pw_tar.extractall(log_dir)
-                os.remove(tf.name)
+                for f in files:
+                    file_stream, stat = container.get_archive(f)
+                    tf = tempfile.NamedTemporaryFile(delete=False)
+                    for block in file_stream:
+                        tf.write(block)
+                    tf.close()
+                    pw_tar = tarfile.TarFile(tf.name)
+                    pw_tar.extractall(log_dir)
+                    os.remove(tf.name)
             else:
                 self.get_file(files, log_dir, try_rsync=False)
 
@@ -1290,6 +1291,9 @@ class ServoHost(base_servohost.BaseServoHost):
                              '%r again.', log_dir)
                 os.rmdir(log_dir)
                 return
+        except docker.errors.NotFound:
+            logging.info("Servod container %s not found no need to stop it.",
+                         self.hostname)
         except error.AutoservRunError as e:
             result = e.result_obj
             if result.exit_status != 0:
@@ -1377,6 +1381,15 @@ class ServoHost(base_servohost.BaseServoHost):
         # to call is_up() later since check_cached_up_status() is ping based check
         # and not guarantee the servohost is sshable.
         servo_host_ready = self.check_cached_up_status() and self.is_up()
+
+        # If the dockerized servod is in used, we can start a new servod container
+        # with out the servod process for log collection.
+        if not servo_host_ready and self.is_containerized_servod():
+            logging.info(
+                    'Start servod container without servod for log collection.'
+            )
+            self.start_containerized_servod(with_servod=False)
+            servo_host_ready = True
 
         if servo_host_ready:
             instance_ts = self.get_instance_logs_ts()

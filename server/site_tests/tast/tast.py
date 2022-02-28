@@ -305,7 +305,8 @@ class tast(test.test):
             tpm_utils.ClearTPMOwnerRequest(self._host, wait_for_ready=True)
 
         self._log_version()
-        self._find_devservers()
+        if not self._f20_container:
+            self._find_devservers()
 
         self._ensure_bundles()
 
@@ -313,7 +314,11 @@ class tast(test.test):
         if not self._get_tests_to_run():
             return
 
-        self._pull_varsfile_from_gs()
+        # TODO(b/221333999): There are no devservers in CFT (F20), so this
+        # would likely error. Once full CFT is done tast.py will be deprecated
+        # and this won't be needed.
+        if not self._f20_container:
+            self._pull_varsfile_from_gs()
 
         run_failed = False
         run_failed_msg = None
@@ -689,7 +694,8 @@ class tast(test.test):
                                self._get_path(self._SSP_DEFAULT_VARS_DIR_PATH))
             if self._run_private_tests:
                 cmd.append('-downloadprivatebundles=true')
-        cmd.extend(self._devserver_args)
+        if not self._f20_container:
+            cmd.extend(self._devserver_args)
         cmd.extend(extra_subcommand_args)
         cmd.append('%s%s' % (self._host.hostname, ':%d' %
                              self._host.port if self._host.port else ''))
@@ -774,6 +780,9 @@ class tast(test.test):
             args = ['-resultsdir=' + temp_dir] + self._get_cloud_storage_info()
             for role, dut in sorted(self._companion_duts.items()):
                 args.append('-companiondut=%s:%s' % (role, dut))
+
+            for var in self._varslist:
+                args.append('-var=%s' % var)
 
             # Start "tast run" with an attribute expression matching no test
             # to trigger a private test bundle download.

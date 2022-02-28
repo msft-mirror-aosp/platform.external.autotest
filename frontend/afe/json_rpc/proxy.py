@@ -142,6 +142,9 @@ class ServiceProxy(object):
             respdata = _raw_http_request(url_with_args, self.__headers,
                                          postdata, min_rpc_timeout)
 
+        if isinstance(respdata, bytes):
+            respdata = respdata.decode('utf-8')
+
         try:
             resp = decoder.JSONDecoder().decode(respdata)
         except ValueError:

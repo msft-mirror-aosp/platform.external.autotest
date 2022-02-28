@@ -212,7 +212,7 @@ class WithRetry(object):
           if not self._handler(e):
             logging.debug('ending retries with error: %s(%s)', e.__class__, e)
             break
-          logging.debug('%s(%s)', e.__class__, e)
+          logging.exception('func call has failed')
         else:
           # Run callback in outside of try's main block, in order to avoid
           # accidental capture of an Exception which may be raised in callback.

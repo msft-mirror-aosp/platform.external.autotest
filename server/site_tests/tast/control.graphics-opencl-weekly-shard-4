@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS Display team'
-NAME = 'tast.graphics-opencl-weekly'
+NAME = 'tast.graphics-opencl-weekly-shard-4'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:graphics_per-week'
@@ -35,6 +35,8 @@ def run(machine):
                  host=host,
                  test_exprs=['("group:graphics" && graphics_weekly && graphics_opencl)'],
                  ignore_test_failures=True, max_run_sec=21600,
+                 totalshards=10,
+                 shardindex=4,
                  command_args=args)
 
 parallel_simple(run, machines)

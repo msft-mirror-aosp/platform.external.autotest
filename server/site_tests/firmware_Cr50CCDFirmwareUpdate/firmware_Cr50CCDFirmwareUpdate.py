@@ -36,7 +36,7 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         self.fw_path = fw_path
         self.b_ver = ''
         servo_type = self.servo.get_servo_version()
-        if 'ccd_cr50' not in servo_type:
+        if 'ccd' not in servo_type:
             raise error.TestNAError('unsupported servo type: %s' % servo_type)
 
         if eval(full_args.get('backup_fw', 'False')):
@@ -134,12 +134,8 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
 
         # Fast open cr50 and check if testlab is enabled.
         self.fast_ccd_open(enable_testlab=True)
-        if self.servo.has_control('active_dut_controller'):
-            try:
-                self.servo.set('active_dut_controller', 'ccd_cr50')
-            except error.TestFail as e:
-                raise error.TestNAError('cannot change active_v4_device: %s' %
-                                        str(e))
+        if not self.servo.enable_ccd_servo_device():
+            raise error.TestNAError('Cannot make ccd active')
         # TODO(b/196824029): remove when servod supports using the power state
         # controller with the ccd device.
         try:

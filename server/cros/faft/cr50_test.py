@@ -81,7 +81,7 @@ class Cr50Test(FirmwareTest):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
         # TODO(b/149948314): remove when dual-v4 is sorted out.
-        if 'ccd_cr50' in self.servo.get_servo_version():
+        if 'ccd' in self.servo.get_servo_version():
             self.servo.disable_ccd_watchdog_for_test()
 
         logging.info('Test Args: %r', full_args)

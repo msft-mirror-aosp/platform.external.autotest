@@ -179,7 +179,7 @@ class FlashromProgrammer(_BaseProgrammer):
                 servo_micro_serial = self._servo_serials.get('servo_micro')
                 programmer = servo_v4_with_micro_programmer
                 programmer += ':serial=%s' % servo_micro_serial
-            elif 'with_ccd_cr50' in self._servo_version:
+            elif 'with_ccd' in self._servo_version:
                 ccd_serial = self._servo_serials.get('ccd')
                 programmer = servo_v4_with_ccd_programmer
                 programmer += ',serial=%s' % ccd_serial
@@ -240,7 +240,7 @@ class FlashromProgrammer(_BaseProgrammer):
         self._servo_version = self._servo.get_servo_version(active=True)
 
         # CCD takes care holding AP/EC. Don't need the following steps.
-        if 'with_ccd_cr50' not in self._servo_version:
+        if 'with_ccd' not in self._servo_version:
             faft_config = FAFTConfig(self._servo.get_board())
             self._servo_prog_state_delay = faft_config.servo_prog_state_delay
             self._servo_prog_state = (

@@ -840,7 +840,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                device_test=None,
                                iterations=1,
                                should_wake=True,
-                               should_pair=True):
+                               should_pair=True,
+                               keep_paired=False):
         """ Uses paired peer device to wake the device from suspend.
 
         @param device_type: the device type (used to determine if it's LE)
@@ -853,6 +854,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                             should be false.
         @param should_pair: Pair and connect the device first before running
                             the wakeup test.
+        @param keep_paired: Keep the paried devices after test.
         """
         boot_id = self.host.get_boot_id()
 
@@ -948,5 +950,5 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         device_test(device)
 
         finally:
-            if should_pair:
+            if should_pair and not keep_paired:
                 self.test_remove_pairing(device.address)

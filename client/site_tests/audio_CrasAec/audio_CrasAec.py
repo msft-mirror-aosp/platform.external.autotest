@@ -24,12 +24,12 @@ class audio_CrasAec(test.test):
     # (sample rate, channels, rms threshold)
     # The rms_threshold value is determined by experiments.
     TEST_DATA = [
-            (48000, 1, 0.008),
-            (44100, 1, 0.008),
-            (16000, 1, 0.008),
-            (44100, 2, 0.008),
-            (48000, 2, 0.008),
-            (16000, 2, 0.008),
+            (48000, 1, 0.015),
+            (44100, 1, 0.015),
+            (16000, 1, 0.015),
+            (44100, 2, 0.015),
+            (48000, 2, 0.015),
+            (16000, 2, 0.015),
     ]
 
     def play_sound(self):

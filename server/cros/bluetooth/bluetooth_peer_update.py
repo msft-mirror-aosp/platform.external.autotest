@@ -208,39 +208,69 @@ def update_peer(peer, latest_commit):
     return True, ''
 
 
-def update_peers(host, latest_commit):
-    """Update the chameleond on alll peer devices of an host"""
+def update_all_peers(host, raise_error=False):
+    """Update the chameleond on all peer devices of the given host
 
-    if host.btpeer_list == []:
-        raise error.TestError('Bluetooth Peer not present')
+    @param host: the DUT, usually a chromebook
+    @param raise_error: set this to True to raise an error if any
 
-    status = {}
-    for peer in host.btpeer_list:
-        #TODO(b:160782273) Make this parallel
-        status[peer] = {}
-        status[peer]['update_needed'] = is_update_needed(peer,latest_commit)
+    @returns: True if _update_all_peers success
+              False if raise_error=False and _update_all_peers failed
 
-    logging.debug(status)
-    if not any([v['update_needed'] for v in status.values()]):
-        logging.info("Update not needed on any of the peers")
-        return
-    for peer in host.btpeer_list:
-        if status[peer]['update_needed']:
-            status[peer]['updated'], status[peer]['reason'] = \
-            update_peer(peer, latest_commit)
+    @raises: error.TestFail if raise_error=True and _update_all_peers failed
+    """
+    fail_reason = _update_all_peers(host)
 
-    logging.debug(status)
-    # If any of the peers failed update, raise failure with the reason
-    if not all([v['updated'] for v in status.values() if v['update_needed']]):
-        for peer, v in status.items():
-            if v['update_needed']:
-                if not v['updated']:
-                    logging.error('updating peer %s failed %s', str(peer.host),
-                                  v['reason'])
-        raise error.TestFail()
+    if fail_reason:
+        if raise_error:
+            raise error.TestFail(fail_reason)
+        logging.error(fail_reason)
+        return False
+    else:
+        return True
 
-    logging.info('%s peers updated',len([v['updated'] for v in status.values()
-                                         if v['update_needed']]))
+
+def _update_all_peers(host):
+    """Update the chameleond on all peer devices of an host"""
+    try:
+        build = host.get_release_version()
+        target_commit = get_target_commit(host.hostname, build)
+        if target_commit is None:
+            return 'Unable to get current commit'
+
+        if host.btpeer_list == []:
+            return 'Bluetooth Peer not present'
+
+        peers_to_update = [
+                p for p in host.btpeer_list
+                if is_update_needed(p, target_commit)
+        ]
+
+        if not peers_to_update:
+            logging.info('No peer needed update')
+            return
+        logging.debug('At least one peer needs update')
+
+        if not download_installation_files(host, target_commit):
+            return 'Unable to download installation files'
+
+        # TODO(b:160782273) Make this parallel
+        failed_peers = []
+        for peer in peers_to_update:
+            updated, reason = update_peer(peer, target_commit)
+            if updated:
+                logging.info('peer %s updated successfully', str(peer.host))
+            else:
+                failed_peers.append((str(peer.host), reason))
+
+        if failed_peers:
+            return 'peer update failed (host, reason): %s' % failed_peers
+
+    except Exception as e:
+        return 'Exception raised in _update_all_peers: %s' % e
+    finally:
+        if not cleanup(host, target_commit):
+            return 'Update peer cleanup failed'
 
 
 def get_target_commit(hostname, host_build):
@@ -297,18 +327,6 @@ def get_target_commit(hostname, host_build):
         logging.error('exception %s in get_target_commit', str(e))
         commit = None
     return commit
-
-
-def get_latest_commit():
-    """Get the current chameleon bundle commit deployed in the lab.
-
-    This function exists for backward compatibility.
-    Remove this function once the bluetooth_PeerUpdate test is removed.
-
-    @returns the current commit in case of success; None in case of failure
-    """
-    commit = get_target_commit(hostname='', host_build='')
-    return bool(commit), commit
 
 
 def download_installation_files(host, commit):

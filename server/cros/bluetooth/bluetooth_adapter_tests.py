@@ -28,7 +28,6 @@ from autotest_lib.client.bin.input import input_event_recorder as recorder
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.cros.chameleon import chameleon
-from autotest_lib.server.cros.bluetooth import bluetooth_peer_update
 from autotest_lib.server.cros.bluetooth import bluetooth_test_utils
 from autotest_lib.server import test
 
@@ -4804,70 +4803,6 @@ class BluetoothAdapterTests(test.test):
 
         # The count of registered advertisements.
         self.count_advertisements = 0
-
-
-    def update_btpeer(self):
-        """ Check and update the chameleond bundle on Bluetooth peer
-        Latest chameleond bundle and git commit is stored in the google cloud
-        This function compares the git commit of the Bluetooth peers and update
-        the peer if the commit does not match
-
-        @returns True: If all peer are updated to (or currently) in latest
-                       commit. False if any update fails
-
-        """
-        def _update_btpeer():
-            status = {}
-            for peer in self.host.btpeer_list:
-                status[peer] = {}
-                status[peer]['update_needed'] = \
-                    bluetooth_peer_update.is_update_needed(peer, commit)
-
-            logging.debug(status)
-            if not any([v['update_needed'] for v in status.values()]):
-                logging.info('No peer needed update')
-                return True
-            logging.debug('Atleast one peer needs update')
-
-            if not bluetooth_peer_update.download_installation_files(self.host,
-                                                                     commit):
-                logging.error('Unable to download installation files ')
-                return False
-
-            # TODO(b:160782273) Make this parallel
-            for peer in self.host.btpeer_list:
-                if status[peer]['update_needed']:
-                    status[peer]['updated'], status[peer]['reason'] = \
-                        bluetooth_peer_update.update_peer(peer, commit)
-
-            for peer, v in status.items():
-                if not v['update_needed']:
-                    logging.debug('peer %s did not need update', str(peer.host))
-                elif not v['updated']:
-                    logging.error('update peer %s failed %s', str(peer.host),
-                                  v['reason'])
-                else:
-                    logging.debug('peer %s updated successfully',
-                                  str(peer.host))
-
-            return all([v['updated'] for v in status.values()
-                        if v['update_needed']])
-
-        try:
-            build = self.host.get_release_version()
-            commit = bluetooth_peer_update.get_target_commit(
-                    self.host.hostname, build)
-            if commit is None:
-                logging.error('Unable to get current commit')
-                return False
-
-            return _update_btpeer()
-        except Exception as e:
-            logging.error('Exception %s in update_btpeer', str(e))
-            return False
-        finally:
-            if not bluetooth_peer_update.cleanup(self.host, commit):
-                logging.error('Update peer cleanup failed')
 
 
     def get_chipset_name(self):

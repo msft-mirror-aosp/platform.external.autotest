@@ -21,6 +21,7 @@ import time
 import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import site_utils
+from autotest_lib.server.cros.bluetooth import bluetooth_peer_update
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.bluetooth import bluetooth_attenuator
 from autotest_lib.server.cros.multimedia import remote_facade_factory
@@ -201,7 +202,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
             # Check the chameleond version on the peer and update if necessary
             if update_btpeers:
-                if not self.update_btpeer():
+                if not bluetooth_peer_update.update_all_peers(self.host):
                     logging.error('Updating btpeers failed. Ignored')
             else:
                 logging.info('No attempting peer update.')

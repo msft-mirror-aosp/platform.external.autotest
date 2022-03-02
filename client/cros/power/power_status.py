@@ -1446,7 +1446,8 @@ def get_available_cpu_stats():
     cpufreq_stat_class = CPUFreqStats
     # assumes cpufreq driver for CPU0 is the same as the others.
     cpufreq_driver = '/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver'
-    if utils.read_one_line(cpufreq_driver) == 'intel_pstate':
+    if (os.path.exists(cpufreq_driver) and
+        utils.read_one_line(cpufreq_driver) == 'intel_pstate'):
         logging.debug('intel_pstate driver active')
         cpufreq_stat_class = CPUFreqStatsPState
 

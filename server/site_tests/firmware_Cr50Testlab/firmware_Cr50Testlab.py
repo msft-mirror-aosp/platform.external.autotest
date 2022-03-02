@@ -6,6 +6,7 @@ import logging
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
+from autotest_lib.server.cros.servo import chrome_ti50
 
 
 class firmware_Cr50Testlab(Cr50Test):
@@ -25,6 +26,10 @@ class firmware_Cr50Testlab(Cr50Test):
                                     'access to the Cr50 console')
         if self.servo.main_device_is_ccd():
             raise error.TestNAError('Use a flex cable instead of CCD cable.')
+
+        if isinstance(self.cr50, chrome_ti50.ChromeTi50):
+            self.BASIC_ERROR = 'Command \'ccd\' failed'
+            self.INVALID_PARAM = 'Param2'
 
         # Get the current reset count, so we can check that there haven't been
         # any cr50 resets at any point during the test.

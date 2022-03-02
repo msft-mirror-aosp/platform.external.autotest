@@ -502,25 +502,23 @@ class FirmwareTest(test.test):
         if self.is_firmware_saved():
             self._ensure_client_in_recovery()
             logging.info('Try restoring the original firmware...')
-            if self.is_firmware_changed():
-                try:
-                    self.restore_firmware()
+            try:
+                if self.restore_firmware():
                     return
-                except ConnectionError:
-                    logging.warning("Restoring firmware didn't help, still "
-                                    "connection error.")
+            except ConnectionError:
+                logging.warning("Restoring firmware didn't help, still "
+                                "connection error.")
 
         # Perhaps it's kernel that's broken. Let's try restoring it.
         if self.is_kernel_saved():
             self._ensure_client_in_recovery()
             logging.info('Try restoring the original kernel...')
-            if self.is_kernel_changed():
-                try:
-                    self.restore_kernel()
+            try:
+                if self.restore_kernel():
                     return
-                except ConnectionError:
-                    logging.warning("Restoring kernel didn't help, still "
-                                    "connection error.")
+            except ConnectionError:
+                logging.warning("Restoring kernel didn't help, still "
+                                "connection error.")
 
         # DUT may be broken by a corrupted OS image. Restore OS image.
         self._ensure_client_in_recovery()
@@ -1994,9 +1992,10 @@ class FirmwareTest(test.test):
 
         @param kernel_type: The type name of kernel ('KERN' or 'MINIOS').
         @param suffix: a string appended to backup file name.
+        @return: True if kernel needed to be restored
         """
         if not self.is_kernel_changed(kernel_type):
-            return
+            return False
 
         # Backup current corrupted kernel.
         self.backup_kernel(suffix='.corrupt', kernel_type=kernel_type)
@@ -2017,6 +2016,7 @@ class FirmwareTest(test.test):
 
         self.switcher.mode_aware_reboot()
         logging.info('Successfully restored %s.', kernel_type)
+        return True
 
     def backup_cgpt_attributes(self):
         """Backup CGPT partition table attributes."""

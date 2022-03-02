@@ -2,33 +2,27 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
 AUTHOR = "puthik"
-NAME = "power_LW.power_LoadTest_1hour"
-TIME = "LONG"
+NAME = "power_LW.power_VideoPlayback_sw_decoder"
+TIME = "MEDIUM"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:power_dashboard"
+PY_VERSION = 3
 
 DOC = """
-Control file for running power_LoadTest.1hour in power lab.
+Control file for running power_VideoPlayback.sw_decoder in power lab.
 """
 
 from autotest_lib.client.common_lib import utils
 
 args_dict = utils.args_to_dict(args)
-test = 'power_LoadTest'
+test = 'power_VideoPlayback'
 args = {
     'pdash_note': args_dict.get('pdash_note', ''),
-    'tag' : '1hour_PLW',
-    'loop_time' : 3600,
-    'loop_count' : 1,
-    'test_low_batt_p' : 6,
+    'tag' : 'sw_decoder_PLW',
+    'use_hw_decode' : False,
 }
 
 def run(machine):

@@ -41,8 +41,9 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  ignore_test_failures=False, max_run_sec=3600,
-		 test_exprs=['meta.LocalPass'],
+		         test_exprs=['meta.LocalPass'],
                  command_args=command_args,
-                 varslist=varslist)
+                 varslist=varslist,
+                 is_cft=is_cft)
 
 parallel_simple(run, machines)

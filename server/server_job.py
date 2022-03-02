@@ -264,7 +264,8 @@ class server_job(base_job.base_job):
                  use_client_trampoline=False,
                  sync_offload_dir='',
                  companion_hosts=None,
-                 dut_servers=None):
+                 dut_servers=None,
+                 is_cft=False):
         """
         Create a server side job object.
 
@@ -344,6 +345,7 @@ class server_job(base_job.base_job):
         self._use_client_trampoline = use_client_trampoline
         self._companion_hosts = companion_hosts
         self._dut_servers = dut_servers
+        self._is_cft = is_cft
 
         # Parse the release number from the label to setup sysinfo.
         version = re.findall('release/R(\d+)-', label)
@@ -873,6 +875,7 @@ class server_job(base_job.base_job):
                 namespace['use_packaging'] = use_packaging
                 namespace['synchronous_offload_dir'] = sync_dir
                 namespace['extended_timeout'] = self.extended_timeout
+                namespace['is_cft'] = self._is_cft
                 os.environ[OFFLOAD_ENVVAR] = sync_dir
                 self._execute_code(server_control_file, namespace)
                 logging.info("Finished processing control file")

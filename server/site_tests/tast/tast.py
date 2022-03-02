@@ -191,7 +191,8 @@ class tast(test.test):
                    use_camera_box=False,
                    vars_gs_path='',
                    retries=0,
-                   ephemeraldevserver=None):
+                   ephemeraldevserver=None,
+                   is_cft=False):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -276,7 +277,7 @@ class tast(test.test):
         self._vars_gs_path = vars_gs_path
         self._use_camera_box = use_camera_box
         self._retries = retries
-        self._f20_container = f20_container
+        self._f20_container = f20_container or is_cft
         self._ephemeraldevserver = ephemeraldevserver
 
         # List of JSON objects describing tests that will be run. See Test in

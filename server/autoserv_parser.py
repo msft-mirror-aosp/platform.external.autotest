@@ -188,6 +188,12 @@ class autoserv_parser(object):
         self.parser.add_argument('--lab', action='store', type=str,
                                  dest='lab', default='',
                                  help=argparse.SUPPRESS)
+        self.parser.add_argument('--CFT',
+                                 action='store_true',
+                                 dest='cft',
+                                 default=False,
+                                 help=('If running in, or mocking, '
+                                       'the CFT env.'))
         self.parser.add_argument('--cloud_trace_context', type=str, default='',
                                  action='store', dest='cloud_trace_context',
                                  help=('Global trace context to configure '

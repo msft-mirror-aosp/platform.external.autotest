@@ -182,7 +182,11 @@ def _parse_arguments_internal(argv):
                         help='Python version to use, passed '
                         'to Autotest modules, defaults to 2.',
                         default=None)
-
+    parser.add_argument('--CFT',
+                        action='store_true',
+                        default=False,
+                        dest='CFT',
+                        help="If running in, or mocking, the CFT env.")
     return parser.parse_args(argv), remote_argv
 
 
@@ -347,7 +351,8 @@ def _main_for_local_run(argv, arguments):
                 job_retry=arguments.retry,
                 companion_hosts=arguments.companion_hosts,
                 minus=arguments.minus,
-                dut_servers=arguments.dut_servers)
+                dut_servers=arguments.dut_servers,
+                is_cft=arguments.CFT)
 
 
 def _main_for_lab_run(argv, arguments):

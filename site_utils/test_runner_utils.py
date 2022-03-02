@@ -266,7 +266,8 @@ def run_job(job,
             pretend=False,
             autoserv_verbose=False,
             companion_hosts=None,
-            dut_servers=None):
+            dut_servers=None,
+            is_cft=False):
     """
     Shell out to autoserv to run an individual test job.
 
@@ -326,7 +327,8 @@ def run_job(job,
                 host_attributes=info.attributes,
                 host_info_subdir=_HOST_INFO_SUBDIR,
                 companion_hosts=companion_hosts,
-                dut_servers=dut_servers)
+                dut_servers=dut_servers,
+                is_cft=is_cft)
 
         code = _run_autoserv(command, pretend)
         return code, results_directory
@@ -492,7 +494,8 @@ def perform_local_run(autotest_path,
                       job_retry=True,
                       companion_hosts=None,
                       minus=[],
-                      dut_servers=None):
+                      dut_servers=None,
+                      is_cft=False):
     """Perform local run of tests.
 
     This method enforces satisfaction of test dependencies for tests that are
@@ -584,7 +587,8 @@ def perform_local_run(autotest_path,
         code, abs_dir = run_job(job, remote, info, autotest_path,
                                 results_directory, fast_mode, job_id_digits,
                                 ssh_verbosity, ssh_options, args, pretend,
-                                autoserv_verbose, companion_hosts, dut_servers)
+                                autoserv_verbose, companion_hosts, dut_servers,
+                                is_cft)
         codes.append(code)
         logging.debug("Code: %s, Results in %s", code, abs_dir)
 
@@ -740,7 +744,8 @@ def perform_run_from_autotest_root(autotest_path,
                                    job_retry=True,
                                    companion_hosts=None,
                                    minus=[],
-                                   dut_servers=None):
+                                   dut_servers=None,
+                                   is_cft=False):
     """
     Perform a test_that run, from the |autotest_path|.
 
@@ -815,7 +820,8 @@ def perform_run_from_autotest_root(autotest_path,
                               job_retry=job_retry,
                               companion_hosts=companion_hosts,
                               minus=minus,
-                              dut_servers=dut_servers)
+                              dut_servers=dut_servers,
+                              is_cft=is_cft)
     if pretend:
         logging.info('Finished pretend run. Exiting.')
         return 0

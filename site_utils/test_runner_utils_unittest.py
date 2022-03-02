@@ -249,7 +249,7 @@ class TestRunnerUnittests(unittest.TestCase):
                 TypeMatcher(host_info.HostInfo), self.autotest_path,
                 self.results_dir, self.fast_mode,
                 self.id_digits, self.ssh_verbosity, self.ssh_options,
-                TypeMatcher(str), False, False, None, None)
+                TypeMatcher(str), False, False, None, None, False)
 
     def test_perform_local_run_missing_deps(self):
         """Test a local run with missing dependencies. No tests should run."""
@@ -319,7 +319,8 @@ class TestRunnerUnittests(unittest.TestCase):
                 results_directory=self.results_dir,
                 job_retry=self.retry,
                 ignore_deps=False,
-                minus=[self.suite_control_files[0]])
+                minus=[self.suite_control_files[0]],
+                is_cft=True)
 
         from mock import call
 
@@ -331,7 +332,7 @@ class TestRunnerUnittests(unittest.TestCase):
                          TypeMatcher(host_info.HostInfo), self.autotest_path,
                          self.results_dir, self.fast_mode,
                          self.id_digits, self.ssh_verbosity, self.ssh_options,
-                         TypeMatcher(str), False, False, None, None))
+                         TypeMatcher(str), False, False, None, None, True))
 
         run_job_mock.assert_has_calls(calls, any_order=True)
         assert run_job_mock.call_count == len(calls)

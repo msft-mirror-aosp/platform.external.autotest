@@ -35,7 +35,8 @@ def autoserv_run_job_command(autoserv_directory,
                              use_virtualenv=False,
                              host_info_subdir='',
                              companion_hosts=None,
-                             dut_servers=None):
+                             dut_servers=None,
+                             is_cft=False):
     """
     Construct an autoserv command from a job or host queue entry.
 
@@ -164,6 +165,9 @@ def autoserv_run_job_command(autoserv_directory,
 
     if in_lab:
         command.extend(['--lab', 'True'])
+
+    if is_cft:
+        command.append('--CFT')
 
     py_version = os.getenv('PY_VERSION')
     if py_version:

@@ -378,7 +378,7 @@ def get_supported_key_policies(host=None):
 
 
 def is_low_entropy_credentials_supported(host=None):
-    """ Returns True if low entropy credenitals are supported."""
+    """ Returns True if low entropy credentials are supported."""
     key_policies = get_supported_key_policies(host)
     return LEC_KEY in key_policies and key_policies[LEC_KEY]
 

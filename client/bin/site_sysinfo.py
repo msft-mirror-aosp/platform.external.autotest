@@ -200,8 +200,18 @@ class diffable_logdir(logdir):
                 full_path = os.path.join(root, f)
                 # Only list regular files or symlinks to those (os.stat follows
                 # symlinks)
-                if stat.S_ISREG(os.stat(full_path).st_mode):
-                    yield full_path
+                try:
+                    if stat.S_ISREG(os.stat(full_path).st_mode):
+                        yield full_path
+                except OSError:
+                    # Semi-often a source of a symlink will get deleted, which
+                    # causes a crash when `stat`d, thus breaks the the hook.
+                    # Instead of quietly crashing, we will just not collect
+                    # the missing of file.
+                    logging.debug(
+                            'File {} could not stat & will not be collected'.
+                            format(full_path))
+                    continue
 
 
     def _copy_new_data_in_file(self, file_path, src_dir, dest_dir):
@@ -257,7 +267,6 @@ class diffable_logdir(logdir):
 
         for src_file in self._get_all_files(src_dir):
             self._copy_new_data_in_file(src_file, src_dir, dest_dir)
-
 
     def run(self, log_dir, collect_init_status=True, collect_all=False):
         """Copies new content from self.dir to the destination log_dir.

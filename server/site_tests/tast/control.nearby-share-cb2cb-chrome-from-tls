@@ -63,7 +63,7 @@ def run(machine):
 
     job.run_test('tast',
                  host=primary_dut,
-                 test_exprs=['("group:nearby-share-remote")'],
+                 test_exprs=['("group:nearby-share-cq")'],
                  download_data_lazily=False,
                  ignore_test_failures=False,
                  max_run_sec=3600,

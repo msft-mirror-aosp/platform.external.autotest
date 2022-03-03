@@ -165,6 +165,14 @@ class BluetoothDevice(object):
         return self._proxy.set_debug_log_levels(bluez_vb, kernel_vb)
 
     @proxy_thread_safe
+    def set_quality_debug_log(self, enable):
+        """Enable or disable bluez quality debug log in the DUT
+        @param enable: True to enable all of the debug log,
+                       False to disable all of the debug log.
+        """
+        return self._proxy.set_quality_debug_log(enable)
+
+    @proxy_thread_safe
     def log_message(self, msg, dut=True, peer=True):
         """ Log a message in DUT log and peer logs with timestamp.
 

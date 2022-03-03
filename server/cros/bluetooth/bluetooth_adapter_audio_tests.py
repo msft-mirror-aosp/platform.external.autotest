@@ -231,6 +231,15 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         device.ScpToDut(src_file, dest_file, ip)
 
+    def check_wbs_capability(self):
+        """Check if the DUT supports WBS capability.
+
+        @raises: TestNAError if the dut does not support wbs.
+        """
+        capabilities, err = self.bluetooth_facade.get_supported_capabilities()
+        return err is None and bool(capabilities.get('wide band speech'))
+
+
     def initialize_bluetooth_audio(self, device, test_profile):
         """Initialize the Bluetooth audio task.
 
@@ -612,7 +621,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         check_audio_frames_legitimacy = True
         check_primary_frequencies = True
         for i in range(nchunks):
-            logging.info('Check chunk %d', i)
+            logging.debug('Check chunk %d', i)
 
             recorded_file = self.handle_one_chunk(device, chunk_in_secs, i,
                                                   test_profile)

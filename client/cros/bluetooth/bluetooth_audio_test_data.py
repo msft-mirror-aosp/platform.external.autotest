@@ -401,7 +401,7 @@ hfp_wbs_medium_test_data = {
     # Device side data used by StartPlayingAudioSubprocess function in
     # bluetooth_audio.py.
     'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
-                                'sine_7000hz_rate16000_ch1_60secs.raw'),
+                                'sine_7000hz_rate16000_ch1_60secs.wav'),
     # Device side data used by HandleOneChunk function in bluetooth_audio.py.
     'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
                                'hfp_wbs_medium_recorded_by_peer_%d.raw'),

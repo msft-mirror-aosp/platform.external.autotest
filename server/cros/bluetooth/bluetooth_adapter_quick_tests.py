@@ -240,7 +240,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(
                                                     self.USBMON_DIR_LOG_PATH))
 
-        self.start_new_btmon()
+        self.dut_btmon_log_path = self.start_new_btmon()
         self.start_new_usbmon()
 
         self.flag = flag

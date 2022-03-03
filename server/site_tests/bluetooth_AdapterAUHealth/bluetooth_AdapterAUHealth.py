@@ -147,15 +147,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_run_test_sequence(device, test_sequence, test_profile)
 
 
-    def check_wbs_capability(self):
-        """Check if the DUT supports WBS capability.
-
-        @raises: TestNAError if the dut does not support wbs.
-        """
-        capabilities, err = self.bluetooth_facade.get_supported_capabilities()
-        return err is None and bool(capabilities.get('wide band speech'))
-
-
     def au_hfp_run_method(self, device, test_method, test_profile):
         """Run an HFP test with the specified test method.
 

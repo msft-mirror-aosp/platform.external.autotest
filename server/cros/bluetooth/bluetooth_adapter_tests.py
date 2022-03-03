@@ -1509,6 +1509,12 @@ class BluetoothAdapterTests(test.test):
         level = int(enable)
         self.bluetooth_facade.set_debug_log_levels(level, level)
 
+    def enable_disable_quality_debug_log(self, enable):
+        """Enable or disable bluez quality debug log in the DUT
+        @param enable: True to enable all of the debug log,
+                       False to disable all of the debug log.
+        """
+        self.bluetooth_facade.set_quality_debug_log(bool(enable))
 
     def start_new_btmon(self):
         """ Start a new btmon process and save the log """
@@ -1522,8 +1528,10 @@ class BluetoothAdapterTests(test.test):
         # Time format. Ex, 2020_02_20_17_52_45
         now = time.strftime("%Y_%m_%d_%H_%M_%S")
         file_name = 'btsnoop_%s' % now
-        self.host.run_background('btmon -SAw %s/%s' % (self.BTMON_DIR_LOG_PATH,
-                                                       file_name))
+
+        path = os.path.join(self.BTMON_DIR_LOG_PATH, file_name)
+        self.host.run_background(f'btmon -SAw {path}')
+        return path
 
     def start_new_usbmon(self, reboot=False):
         """ Start a new USBMON process and save the log

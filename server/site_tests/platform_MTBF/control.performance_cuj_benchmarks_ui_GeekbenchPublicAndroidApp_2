@@ -11,7 +11,7 @@ TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
 PRIORITY = 4999
 MAX_RESULT_SIZE_KB = 1024 * 1024
-JOB_RETRIES = 2
+JOB_RETRIES = 5
 REQUIRE_SSP = True
 DEPENDENCIES = ''
 PY_VERSION = 3
@@ -89,7 +89,7 @@ def stage_config(host):
         parse_config(devserver_url + '/static/' + config_path + config_file)
 
 def run(machine):
-  with tempfile.NamedTemporaryFile(suffix='.yaml') as temp_file:
+  with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', suffix='.yaml') as temp_file:
       host=hosts.create_host(machine)
       report_host_info(host)
       stage_config(host)

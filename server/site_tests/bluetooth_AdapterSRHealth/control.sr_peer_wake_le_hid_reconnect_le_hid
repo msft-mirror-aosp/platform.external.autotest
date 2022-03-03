@@ -8,7 +8,8 @@ AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_peer_wake_le_hid_reconnect_le_hid'
 PURPOSE = ('Single run of a test')
 CRITERIA = 'Pass test'
-ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
+# Adding this test to all bluetooth suite as a temporary measure to get more runs
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e, suite:bluetooth_flaky, suite:bluetooth_mtbf'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

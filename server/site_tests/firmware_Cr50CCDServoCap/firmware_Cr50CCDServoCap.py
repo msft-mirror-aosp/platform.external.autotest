@@ -131,9 +131,12 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         self.cr50.set_cap('UartGscTxECRx', 'Always')
         self.ec_efs_support = (
                 self.cr50.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT'))
+        self._ccd_prefix = ('' if self.servo.main_device_is_ccd() else
+                            self.servo.get_ccd_servo_device())
         # Check EC uart if servo has ccd controls and the board has an EC.
-        self.check_ec_uart = (self.servo.has_control('ccd_cr50.ec_board') and
-                              self.check_ec_capability(suppress_warning=True))
+        self.check_ec_uart = (
+                self.servo.has_control('ec_board', prefix=self._ccd_prefix)
+                and self.check_ec_capability(suppress_warning=True))
 
 
     def cleanup(self):
@@ -171,7 +174,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
     def ccd_ec_uart_works(self):
         """Returns True if the CCD ec uart works."""
         try:
-            self.servo.get('ccd_cr50.ec_board')
+            self.servo.get('ec_board', prefix=self._ccd_prefix)
             logging.info('ccd ec console is responsive')
             return True
         except:

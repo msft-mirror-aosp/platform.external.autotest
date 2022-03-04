@@ -9,7 +9,7 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib.cros import system_metrics_collector
 from autotest_lib.client.common_lib.cros import webrtc_utils
 from autotest_lib.client.cros.graphics import graphics_utils
-from autotest_lib.client.cros.multimedia import system_facade_native
+from autotest_lib.client.cros.multimedia import system_facade
 from autotest_lib.client.cros.video import helper_logger
 from telemetry.util import image_util
 
@@ -299,7 +299,7 @@ class WebRtcPeerConnectionPerformanceTest(WebRtcPeerConnectionTest):
                   iteration_delay_millis,
                   perf_before_start_hook)
           self.collector = system_metrics_collector.SystemMetricsCollector(
-                system_facade_native.SystemFacadeNative())
+                system_facade.SystemFacadeNative())
           # TODO(crbug/784365): If this proves to work fine, move to a separate
           # module and make more generic.
           delay = 5

@@ -19,22 +19,22 @@ from autotest_lib.client.common_lib import logging_config
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros import xmlrpc_server
-from autotest_lib.client.cros.multimedia import assistant_facade_native
-from autotest_lib.client.cros.multimedia import audio_facade_native
-from autotest_lib.client.cros.multimedia import browser_facade_native
-from autotest_lib.client.cros.multimedia import cfm_facade_native
-from autotest_lib.client.cros.multimedia import display_facade_native
+from autotest_lib.client.cros.multimedia import assistant_facade
+from autotest_lib.client.cros.multimedia import audio_facade
+from autotest_lib.client.cros.multimedia import browser_facade
+from autotest_lib.client.cros.multimedia import cfm_facade
+from autotest_lib.client.cros.multimedia import display_facade
 from autotest_lib.client.cros.multimedia import facade_resource
-from autotest_lib.client.cros.multimedia import graphics_facade_native
-from autotest_lib.client.cros.multimedia import input_facade_native
-from autotest_lib.client.cros.multimedia import kiosk_facade_native
-from autotest_lib.client.cros.multimedia import system_facade_native
-from autotest_lib.client.cros.multimedia import usb_facade_native
-from autotest_lib.client.cros.multimedia import video_facade_native
+from autotest_lib.client.cros.multimedia import graphics_facade
+from autotest_lib.client.cros.multimedia import input_facade
+from autotest_lib.client.cros.multimedia import kiosk_facade
+from autotest_lib.client.cros.multimedia import system_facade
+from autotest_lib.client.cros.multimedia import usb_facade
+from autotest_lib.client.cros.multimedia import video_facade
 
 # Python3 required for the following:
 if sys.version_info[0] >= 3:
-    from autotest_lib.client.cros.multimedia import bluetooth_facade_native
+    from autotest_lib.client.cros.multimedia import bluetooth_facade
 
 
 class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
@@ -54,38 +54,38 @@ class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         self._facades = {
                 'assistant':
-                assistant_facade_native.AssistantFacadeNative(resource),
+                assistant_facade.AssistantFacadeNative(resource),
                 'audio':
-                audio_facade_native.AudioFacadeNative(resource,
+                audio_facade.AudioFacadeNative(resource,
                                                       arc_resource=arc_res),
                 'video':
-                video_facade_native.VideoFacadeNative(resource,
+                video_facade.VideoFacadeNative(resource,
                                                       arc_resource=arc_res),
                 'display':
-                display_facade_native.DisplayFacadeNative(resource),
+                display_facade.DisplayFacadeNative(resource),
                 'system':
-                system_facade_native.SystemFacadeNative(),
+                system_facade.SystemFacadeNative(),
                 'usb':
-                usb_facade_native.USBFacadeNative(),
+                usb_facade.USBFacadeNative(),
                 'browser':
-                browser_facade_native.BrowserFacadeNative(resource),
+                browser_facade.BrowserFacadeNative(resource),
                 'input':
-                input_facade_native.InputFacadeNative(),
+                input_facade.InputFacadeNative(),
                 'cfm_main_screen':
-                cfm_facade_native.CFMFacadeNative(resource, 'hotrod'),
+                cfm_facade.CFMFacadeNative(resource, 'hotrod'),
                 'cfm_mimo_screen':
-                cfm_facade_native.CFMFacadeNative(resource, 'control'),
+                cfm_facade.CFMFacadeNative(resource, 'control'),
                 'kiosk':
-                kiosk_facade_native.KioskFacadeNative(resource),
+                kiosk_facade.KioskFacadeNative(resource),
                 'graphics':
-                graphics_facade_native.GraphicsFacadeNative()
+                graphics_facade.GraphicsFacadeNative()
         }
 
         # Limit some facades to python3
         if sys.version_info[0] >= 3:
             self._facades[
-                    'bluetooth'] = bluetooth_facade_native.BluezFacadeNative()
-            self._facades['floss'] = bluetooth_facade_native.FlossFacadeNative(
+                    'bluetooth'] = bluetooth_facade.BluezFacadeNative()
+            self._facades['floss'] = bluetooth_facade.FlossFacadeNative(
             )
 
     def __exit__(self, exception, value, traceback):

@@ -9,7 +9,7 @@ import glob
 import os
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.cros.multimedia import display_facade_native
+from autotest_lib.client.cros.multimedia import display_facade
 from autotest_lib.client.cros.video import builtin_html5_player
 
 
@@ -52,7 +52,7 @@ class VideoFacadeNative(object):
         self._resource = resource
         self._player = None
         self._arc_resource = arc_resource
-        self._display_facade = display_facade_native.DisplayFacadeNative(
+        self._display_facade = display_facade.DisplayFacadeNative(
                 resource)
         self.bindir = os.path.dirname(os.path.realpath(__file__))
 

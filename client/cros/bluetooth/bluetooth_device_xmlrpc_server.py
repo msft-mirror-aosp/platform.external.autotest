@@ -14,11 +14,11 @@ import logging.handlers
 import common
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros import xmlrpc_server
-from autotest_lib.client.cros.multimedia import bluetooth_facade_native
+from autotest_lib.client.cros.multimedia import bluetooth_facade
 
 
 class BluetoothDeviceXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate,
-                                    bluetooth_facade_native.BluezFacadeNative):
+                                    bluetooth_facade.BluezFacadeNative):
     """Exposes DUT methods called remotely during Bluetooth autotests.
 
     The delegate inherits from BluezFacadeNative where all native calls

@@ -18,7 +18,7 @@ from autotest_lib.client.cros.audio import check_quality
 from autotest_lib.client.cros.audio import cmd_utils
 from autotest_lib.client.cros.audio import cras_utils
 from autotest_lib.client.cros.audio import sox_utils
-from autotest_lib.client.cros.multimedia import audio_facade_native
+from autotest_lib.client.cros.multimedia import audio_facade
 
 
 CheckQualityArgsClass = collections.namedtuple(
@@ -92,18 +92,18 @@ class audio_AudioInputGain(audio_helper.cras_rms_test):
             with chrome.Chrome(
                     extension_paths=[cros_constants.AUDIO_TEST_EXTENSION],
                     autotest_ext=True) as cr:
-                audio_facade = audio_facade_native.AudioFacadeNative(cr)
+                audio_facade_local = audio_facade.AudioFacadeNative(cr)
                 # Chrome will select nodes after created. Sleep for a while
                 # before setting nodes to make sure the nodes will not be
                 # switched by Chrome later.
                 time.sleep(10)
-                audio_facade.set_chrome_active_node_type(
+                audio_facade_local.set_chrome_active_node_type(
                         self.ALOOP_CRAS_NODE_TYPE, self.ALOOP_CRAS_NODE_TYPE)
 
                 rms_value = []
                 for gain in [self.LOW_GAIN, self.HIGH_GAIN]:
                     logging.debug('Start testing loopback with gain %d.', gain)
-                    audio_facade.set_chrome_active_input_gain(gain)
+                    audio_facade_local.set_chrome_active_input_gain(gain)
                     recorded_file = cras_playback_record(gain)
                     args = CheckQualityArgsClass(filename=recorded_file,
                                                  rate=48000,

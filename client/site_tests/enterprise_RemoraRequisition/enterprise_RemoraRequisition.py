@@ -6,7 +6,7 @@ import logging, os
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib.cros import chrome, enrollment
-from autotest_lib.client.cros.multimedia import cfm_facade_native
+from autotest_lib.client.cros.multimedia import cfm_facade
 
 
 class enterprise_RemoraRequisition(test.test):
@@ -29,5 +29,5 @@ class enterprise_RemoraRequisition(test.test):
                 disable_gaia_services=False,
                 extra_browser_args="--force-devtools-available") as cr:
             enrollment.RemoraEnrollment(cr.browser, user_id, password)
-            self.cfm_facade = cfm_facade_native.CFMFacadeNative(cr, 'hotrod')
+            self.cfm_facade = cfm_facade.CFMFacadeNative(cr, 'hotrod')
             self.cfm_facade.check_hangout_extension_context()

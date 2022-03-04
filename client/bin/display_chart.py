@@ -26,7 +26,7 @@ sys.path.append('/usr/local/autotest/bin')
 import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros import constants
-from autotest_lib.client.cros.multimedia import display_facade_native
+from autotest_lib.client.cros.multimedia import display_facade
 from autotest_lib.client.cros.multimedia import facade_resource
 from autotest_lib.client.common_lib.cros import chrome
 
@@ -130,7 +130,7 @@ def display(chart_path, display_level):
 
         logging.info('Set fullscreen.')
         facade = facade_resource.FacadeResource(cr)
-        display_facade = display_facade_native.DisplayFacadeNative(facade)
+        display_facade = display_facade.DisplayFacadeNative(facade)
         display_facade.set_fullscreen(True)
 
         logging.info('Fix screen rotation %d.', DISPLAY_ORIENTATION)

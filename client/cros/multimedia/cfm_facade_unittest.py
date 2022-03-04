@@ -1,9 +1,9 @@
 """
-Unit tests for cfm_facade_native.py.
+Unit tests for cfm_facade.py.
 
 To execute them run:
 utils/unittest_suite.py \
-    autotest_lib.client.cros.multimedia.cfm_facade_native_unittest
+    autotest_lib.client.cros.multimedia.cfm_facade_unittest
 """
 
 # pylint: disable=missing-docstring
@@ -19,7 +19,7 @@ graphics_mock = mock.Mock()
 modules = {'autotest_lib.client.common_lib.cros': cros_mock,
            'autotest_lib.client.cros.graphics': graphics_mock}
 with mock.patch.dict('sys.modules', modules):
-    from autotest_lib.client.cros.multimedia import cfm_facade_native
+    from autotest_lib.client.cros.multimedia import cfm_facade
 
 BACKGROUD_PAGE = '_generated_background_page.html'
 HANGOUT_WINDOW_0 = 'hangoutswindow.html?windowid=0'
@@ -37,12 +37,12 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         self.facade_resource = mock.Mock()
         self.browser = self.facade_resource._browser
         self.screen = 'hotrod'
-        self.cfm_facade = cfm_facade_native.CFMFacadeNative(
+        self.cfm_facade = cfm_facade.CFMFacadeNative(
             self.facade_resource, self.screen)
-        cfm_facade_native.CFMFacadeNative._DEFAULT_TIMEOUT = 1
+        cfm_facade.CFMFacadeNative._DEFAULT_TIMEOUT = 1
         self.extension_path = 'chrome-extension://' + self.cfm_facade._EXT_ID
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_check_hangout_extension_context(self, mock_kiosk_utils):
         stub_ctx = create_mock_context('foo.bar?screen=stub')
         stub_ctx.EvaluateJavaScript.return_value = (
@@ -53,7 +53,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         mock_kiosk_utils.wait_for_kiosk_ext.assert_called_with(self.browser,
             self.cfm_facade._EXT_ID)
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_webview_context_property(self, mock_kiosk_utils):
         stub_ctx = create_mock_context('foo.bar?screen=stub')
         hotrod_ctx = create_mock_context('www.qbc?screen=%s' % self.screen)
@@ -64,7 +64,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         mock_kiosk_utils.get_webview_contexts.assert_called_with(self.browser,
             self.cfm_facade._EXT_ID)
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_get_webview_context_by_screen_two_screens(self, mock_kiosk_utils):
         screen_param = 'foo'
         stub_ctx = create_mock_context('foo.bar?screen=stub')
@@ -75,7 +75,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         found_ctx = self.cfm_facade._get_webview_context_by_screen(screen_param)
         self.assertEqual(found_ctx, hotrod_ctx)
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_get_webview_context_by_screen_only_hotrod_screen(self,
                                                               mock_kiosk_utils):
         screen_param = 'foo'
@@ -85,7 +85,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         found_ctx = self.cfm_facade._get_webview_context_by_screen(screen_param)
         self.assertEqual(found_ctx, hotrod_ctx)
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_get_webview_context_by_screen_with_mimo_and_main_screen(
             self, mock_kiosk_utils):
         screen_param = 'foo'
@@ -96,7 +96,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         found_ctx = self.cfm_facade._get_webview_context_by_screen(screen_param)
         self.assertEqual(found_ctx, hotrod_ctx)
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_get_webview_context_during_oobe_with_two_screens(self,
                                                               mock_kiosk_utils):
         screen_param = 'foo'
@@ -109,7 +109,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         found_ctx = self.cfm_facade._get_webview_context_by_screen(screen_param)
         self.assertEqual(found_ctx, main_screen_ctx)
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_get_webview_context_no_screen_found(self, mock_kiosk_utils):
         foo_ctx = create_mock_context('node.screen.com?screen=foo')
         bar_ctx = create_mock_context('mimo.screen.com?screen=bar')
@@ -117,7 +117,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         with self.assertRaises(error.TestFail):
             self.cfm_facade._get_webview_context_by_screen('unknown_param')
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_reboot_device_with_chrome_api(self, mock_kiosk_utils):
         stub_ctx = create_mock_context('foo.bar?screen=stub')
         stub_ctx.EvaluateJavaScript.return_value = (
@@ -127,7 +127,7 @@ class CfmFacadeNativeUnitTest(unittest.TestCase):
         stub_ctx.ExecuteJavaScript.assert_called_with(
                 'chrome.runtime.restart();')
 
-    @mock.patch.object(cfm_facade_native, 'kiosk_utils')
+    @mock.patch.object(cfm_facade, 'kiosk_utils')
     def test_large_integers_in_media_info_data_points(self, mock_kiosk_utils):
         hotrod_ctx = create_mock_context('www.qbc?screen=%s' % self.screen)
         mock_kiosk_utils.get_webview_contexts.return_value = [hotrod_ctx]

@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
+from autotest_lib.server.cros.servo import chrome_ti50
 
 
 class firmware_Cr50CCDServoCap(Cr50Test):
@@ -210,10 +211,11 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         if ccd_mode_is_asserted:
             if output_enabled and self.state_is_on(ccdstate, 'Servo'):
                 mismatch.append('CCD output is enabled with servo attached')
-            if ap_uart_enabled != self.state_is_on(ccdstate, 'AP UART'):
-                mismatch.append('AP UART enabled without AP UART on')
-            if ec_uart_enabled != self.state_is_on(ccdstate, 'EC'):
-                mismatch.append('EC UART enabled without EC on')
+            if not isinstance(self.cr50, chrome_ti50.ChromeTi50):
+                if ap_uart_enabled != self.state_is_on(ccdstate, 'AP UART'):
+                    mismatch.append('AP UART enabled without AP UART on')
+                if ec_uart_enabled != self.state_is_on(ccdstate, 'EC'):
+                    mismatch.append('EC UART enabled without EC on')
             if self.check_ec_uart:
                 ccd_ec_uart_works = self.ccd_ec_uart_works()
                 if (self.servo.get('ec_uart_en') == 'off'

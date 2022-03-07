@@ -167,6 +167,7 @@ def raw_dbus_call_sync(bus,
 
 
 def unpack_if_variant(value):
+    """If given value is GLib.Variant, unpack it to the actual type."""
     if isinstance(value, GLib.Variant):
         return value.unpack()
 
@@ -328,12 +329,15 @@ class BluetoothBaseFacadeNative(object):
             self.manager_client.set_floss_enabled(enabled)
             default_adapter = self.manager_client.get_default_adapter()
             try:
-              utils.poll_for_condition(condition=(lambda: self.manager_client.get_adapter_enabled(default_adapter) == enabled),
-                                      desc='Wait for set floss enabled to complete',
-                                      sleep_interval=0.5,
-                                      timeout=self.MGR_DAEMON_TIMEOUT)
+                utils.poll_for_condition(
+                        condition=(lambda: self.manager_client.
+                                   get_adapter_enabled(default_adapter
+                                                       ) == enabled),
+                        desc='Wait for set floss enabled to complete',
+                        sleep_interval=0.5,
+                        timeout=self.MGR_DAEMON_TIMEOUT)
             except Exception as e:
-              logging.error('timeout: error waiting for set_floss_enabled')
+                logging.error('timeout: error waiting for set_floss_enabled')
 
         return True
 
@@ -2166,6 +2170,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         return json.dumps(self._get_adapter_properties())
 
     def is_powered_on(self):
+        """Checks whether the adapter is currently powered."""
         return bool(self._get_adapter_properties().get('Powered'))
 
     def get_address(self):
@@ -4005,7 +4010,7 @@ class FlossFacadeNative(BluetoothBaseFacadeNative):
             self.cleanup()
 
     def cleanup(self):
-        # Clean up the mainloop thread
+        """Clean up the mainloop thread."""
         self.mainloop_quit.set()
         self.mainloop.quit()
         self.is_clean = True
@@ -4134,15 +4139,15 @@ class FlossFacadeNative(BluetoothBaseFacadeNative):
 
         default_adapter = self.manager_client.get_default_adapter()
 
-        def is_adapter_down(client):
+        def _is_adapter_down(client):
             return lambda: not client.has_proxy()
 
-        def is_adapter_ready(client):
+        def _is_adapter_ready(client):
             return lambda: client.has_proxy() and client.get_address()
 
         self.manager_client.stop(default_adapter)
         try:
-            condition = is_adapter_down(self.adapter_client)
+            condition = _is_adapter_down(self.adapter_client)
             utils.poll_for_condition(condition=condition,
                                      desc='Wait for adapter stop',
                                      sleep_interval=0.5,
@@ -4161,7 +4166,7 @@ class FlossFacadeNative(BluetoothBaseFacadeNative):
         self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
 
         try:
-            condition = is_adapter_ready(self.adapter_client)
+            condition = _is_adapter_ready(self.adapter_client)
             utils.poll_for_condition(condition=condition,
                                      desc='Wait for adapter start',
                                      sleep_interval=0.5,
@@ -4180,10 +4185,12 @@ class FlossFacadeNative(BluetoothBaseFacadeNative):
         return True
 
     def policy_get_service_allow_list(self):
+        """Gets the service allow list for enterprise policy."""
         # TODO(abps) - Actually implement this
         return []
 
     def policy_set_service_allow_list(self, uuids):
+        """Sets the service allow list for enterprise policy."""
         # TODO(abps) - Actually implement this
         return (True, '')
 

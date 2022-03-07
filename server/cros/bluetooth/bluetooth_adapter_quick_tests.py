@@ -919,11 +919,11 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     self.test_device_wake_not_allowed(device.address)
 
                 # Trigger suspend, asynchronously wake and wait for resume
+                adapter_address = self.bluetooth_facade.address
                 self.test_suspend_and_wait_for_sleep(suspend,
                                                      sleep_timeout=SUSPEND_SEC)
 
                 # Trigger peer wakeup
-                adapter_address = self.bluetooth_facade.address
                 peer_wake = self.device_connect_async(device_type,
                                                       device,
                                                       adapter_address,

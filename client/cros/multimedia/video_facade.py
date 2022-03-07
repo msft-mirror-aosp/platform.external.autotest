@@ -13,29 +13,29 @@ from autotest_lib.client.cros.multimedia import display_facade
 from autotest_lib.client.cros.video import builtin_html5_player
 
 
-class VideoFacadeNativeError(Exception):
-    """Error in VideoFacadeNative."""
+class VideoFacadeLocalError(Exception):
+    """Error in VideoFacadeLocal."""
     pass
 
 
 def check_arc_resource(func):
-    """Decorator function for ARC related functions in VideoFacadeNative."""
+    """Decorator function for ARC related functions in VideoFacadeLocal."""
     @functools.wraps(func)
     def wrapper(instance, *args, **kwargs):
         """Wrapper for the methods to check _arc_resource.
 
         @param instance: Object instance.
 
-        @raises: VideoFacadeNativeError if there is no ARC resource.
+        @raises: VideoFacadeLocalError if there is no ARC resource.
 
         """
         if not instance._arc_resource:
-            raise VideoFacadeNativeError('There is no ARC resource.')
+            raise VideoFacadeLocalError('There is no ARC resource.')
         return func(instance, *args, **kwargs)
     return wrapper
 
 
-class VideoFacadeNative(object):
+class VideoFacadeLocal(object):
     """Facede to access the video-related functionality.
 
     The methods inside this class only accept Python native types.
@@ -52,7 +52,7 @@ class VideoFacadeNative(object):
         self._resource = resource
         self._player = None
         self._arc_resource = arc_resource
-        self._display_facade = display_facade.DisplayFacadeNative(
+        self._display_facade = display_facade.DisplayFacadeLocal(
                 resource)
         self.bindir = os.path.dirname(os.path.realpath(__file__))
 

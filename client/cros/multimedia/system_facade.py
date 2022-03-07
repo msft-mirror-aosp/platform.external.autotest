@@ -13,12 +13,12 @@ import time
 from autotest_lib.client.bin import utils
 
 
-class SystemFacadeNativeError(Exception):
-    """Error in SystemFacadeNative."""
+class SystemFacadeLocalError(Exception):
+    """Error in SystemFacadeLocal."""
     pass
 
 
-class SystemFacadeNative(object):
+class SystemFacadeLocal(object):
     """Facede to access the system-related functionality.
 
     The methods inside this class only accept Python native types.
@@ -50,13 +50,13 @@ class SystemFacadeNative(object):
 
         """
         if mode not in self.SCALING_GOVERNOR_MODES:
-            raise SystemFacadeNativeError('mode %s is invalid' % mode)
+            raise SystemFacadeLocalError('mode %s is invalid' % mode)
 
         governor_path = os.path.join(
                 '/sys/devices/system/cpu/cpu%d' % index,
                 'cpufreq/scaling_governor')
         if not os.path.exists(governor_path):
-            raise SystemFacadeNativeError(
+            raise SystemFacadeLocalError(
                     'scaling governor of CPU %d is not available' % index)
 
         original_mode = utils.read_one_line(governor_path)
@@ -164,7 +164,7 @@ class SystemFacadeNative(object):
         Returns the output collected so far since the last call to this method.
         """
         if self._bg_worker is None:
-            SystemFacadeNativeError('Background worker has not been started.')
+            SystemFacadeLocalError('Background worker has not been started.')
 
         return self._bg_worker.get_and_discard_output()
 
@@ -173,7 +173,7 @@ class SystemFacadeNative(object):
         Stop the worker.
         """
         if self._bg_worker is None:
-            SystemFacadeNativeError('Background worker has not been started.')
+            SystemFacadeLocalError('Background worker has not been started.')
 
         self._bg_worker.stop()
         self._bg_worker = None
@@ -240,5 +240,5 @@ class BackgroundWorker(object):
         utils.nuke_subprocess(self._bg_job.sp)
         utils.join_bg_jobs([self._bg_job])
         if self._bg_job.result.exit_status > 0:
-            raise SystemFacadeNativeError('Background job failed: %s' %
+            raise SystemFacadeLocalError('Background job failed: %s' %
                                           self._bg_job.result.command)

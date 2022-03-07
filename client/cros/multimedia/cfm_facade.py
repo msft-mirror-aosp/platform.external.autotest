@@ -31,7 +31,7 @@ class TimeoutException(Exception):
     pass
 
 
-class CFMFacadeNative(object):
+class CFMFacadeLocal(object):
     """Facade to access the CFM functionality.
 
     The methods inside this class only accept Python native types.
@@ -49,7 +49,7 @@ class CFMFacadeNative(object):
 
 
     def __init__(self, resource, screen):
-        """Initializes a CFMFacadeNative.
+        """Initializes a CFMFacadeLocal.
 
         @param resource: A FacadeResource object.
         """

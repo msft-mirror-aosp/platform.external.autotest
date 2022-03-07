@@ -12,10 +12,10 @@ except ImportError:
     logging.error("Failed to import assistant_util_private")
 
 class AssistantNativeError(Exception):
-    """Error in AssistantFacadeNative."""
+    """Error in AssistantFacadeLocal."""
     pass
 
-class AssistantFacadeNative(object):
+class AssistantFacadeLocal(object):
     """Facade to access the assistant-related functionality.
 
     The methods inside this class only accept Python native types.

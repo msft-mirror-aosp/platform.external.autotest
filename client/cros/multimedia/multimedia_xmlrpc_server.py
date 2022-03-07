@@ -54,38 +54,38 @@ class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         self._facades = {
                 'assistant':
-                assistant_facade.AssistantFacadeNative(resource),
+                assistant_facade.AssistantFacadeLocal(resource),
                 'audio':
-                audio_facade.AudioFacadeNative(resource,
+                audio_facade.AudioFacadeLocal(resource,
                                                       arc_resource=arc_res),
                 'video':
-                video_facade.VideoFacadeNative(resource,
+                video_facade.VideoFacadeLocal(resource,
                                                       arc_resource=arc_res),
                 'display':
-                display_facade.DisplayFacadeNative(resource),
+                display_facade.DisplayFacadeLocal(resource),
                 'system':
-                system_facade.SystemFacadeNative(),
+                system_facade.SystemFacadeLocal(),
                 'usb':
-                usb_facade.USBFacadeNative(),
+                usb_facade.USBFacadeLocal(),
                 'browser':
-                browser_facade.BrowserFacadeNative(resource),
+                browser_facade.BrowserFacadeLocal(resource),
                 'input':
-                input_facade.InputFacadeNative(),
+                input_facade.InputFacadeLocal(),
                 'cfm_main_screen':
-                cfm_facade.CFMFacadeNative(resource, 'hotrod'),
+                cfm_facade.CFMFacadeLocal(resource, 'hotrod'),
                 'cfm_mimo_screen':
-                cfm_facade.CFMFacadeNative(resource, 'control'),
+                cfm_facade.CFMFacadeLocal(resource, 'control'),
                 'kiosk':
-                kiosk_facade.KioskFacadeNative(resource),
+                kiosk_facade.KioskFacadeLocal(resource),
                 'graphics':
-                graphics_facade.GraphicsFacadeNative()
+                graphics_facade.GraphicsFacadeLocal()
         }
 
         # Limit some facades to python3
         if sys.version_info[0] >= 3:
             self._facades[
-                    'bluetooth'] = bluetooth_facade.BluezFacadeNative()
-            self._facades['floss'] = bluetooth_facade.FlossFacadeNative(
+                    'bluetooth'] = bluetooth_facade.BluezFacadeLocal()
+            self._facades['floss'] = bluetooth_facade.FlossFacadeLocal(
             )
 
     def __exit__(self, exception, value, traceback):
@@ -100,7 +100,7 @@ class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         We turn off allow_dotted_names option. The method handles the dot
         and dispatches the method to the proper native facade, like
-        DisplayFacadeNative.
+        DisplayFacadeLocal.
 
         """
         try:

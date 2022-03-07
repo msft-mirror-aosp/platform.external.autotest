@@ -130,7 +130,7 @@ def display(chart_path, display_level):
 
         logging.info('Set fullscreen.')
         facade = facade_resource.FacadeResource(cr)
-        display_facade = display_facade.DisplayFacadeNative(facade)
+        display_facade = display_facade.DisplayFacadeLocal(facade)
         display_facade.set_fullscreen(True)
 
         logging.info('Fix screen rotation %d.', DISPLAY_ORIENTATION)

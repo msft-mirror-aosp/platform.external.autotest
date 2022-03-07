@@ -8,7 +8,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.graphics import graphics_utils
 
 
-class GraphicsFacadeNative(object):
+class GraphicsFacadeLocal(object):
     """Facade to access graphics utilities for catching GPU hangs."""
 
 

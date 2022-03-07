@@ -6,13 +6,13 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kiosk_utils
 
 
-class KioskFacadeNative(object):
+class KioskFacadeLocal(object):
     """Facade to access the Kiosk functionality."""
 
 
     def __init__(self, resource):
         """
-        Initializes a KioskFacadeNative.
+        Initializes a KioskFacadeLocal.
 
         @param resource: A FacadeResource object.
 

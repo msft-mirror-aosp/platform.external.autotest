@@ -76,7 +76,7 @@ class graphics_HwOverlays(graphics_utils.GraphicsTest):
                            autotest_ext=True,
                            init_network_controller=True) as cr:
             facade = facade_resource.FacadeResource(cr)
-            display_facade = display_facade.DisplayFacadeNative(facade)
+            display_facade = display_facade.DisplayFacadeLocal(facade)
             # TODO(crbug.com/927103): Run on an external monitor if one is
             # present.
             if not display_facade.has_internal_display():

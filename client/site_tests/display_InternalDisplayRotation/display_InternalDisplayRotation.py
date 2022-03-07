@@ -34,7 +34,7 @@ class display_InternalDisplayRotation(test.test):
         """Test to rotate internal display"""
         facade = facade_resource.FacadeResource()
         facade.start_default_chrome()
-        self.display_facade = display_facade.DisplayFacadeNative(facade)
+        self.display_facade = display_facade.DisplayFacadeLocal(facade)
         self.internal_display_id = self.display_facade.get_internal_display_id()
         logging.info("Internal display ID is %s", self.internal_display_id)
         rotation_before_starts = self.display_facade.get_display_rotation(

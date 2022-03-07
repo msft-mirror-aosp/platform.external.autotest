@@ -258,7 +258,7 @@ class UpstartClient:
         return True
 
 
-class BluetoothBaseFacadeNative(object):
+class BluetoothBaseFacadeLocal(object):
     """Base facade shared by Bluez and Floss daemons. This takes care of any
     functionality that is common across the two daemons.
     """
@@ -1537,7 +1537,7 @@ class BluezPairingAgent:
         return True
 
 
-class BluezFacadeNative(BluetoothBaseFacadeNative):
+class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     """Exposes DUT methods called remotely during Bluetooth autotests for the
     Bluez daemon.
 
@@ -1586,7 +1586,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
 
     def __init__(self):
         # Init the BaseFacade first
-        super(BluezFacadeNative, self).__init__()
+        super(BluezFacadeLocal, self).__init__()
 
         # Open the Bluetooth Raw socket to the kernel which provides us direct,
         # raw, access to the HCI controller.
@@ -3962,7 +3962,7 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         }
 
 
-class FlossFacadeNative(BluetoothBaseFacadeNative):
+class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     """Exposes DUT methods called remotely during Bluetooth autotests for the
     Floss daemon.
 
@@ -3984,7 +3984,7 @@ class FlossFacadeNative(BluetoothBaseFacadeNative):
 
     def __init__(self):
         # Init the BaseFacade first
-        super(FlossFacadeNative, self).__init__()
+        super(FlossFacadeLocal, self).__init__()
 
         # Start mainloop thread in background. This will also initialize a few
         # other variables (self.bus, self.mainloop, self.event_context) that may
@@ -3993,7 +3993,7 @@ class FlossFacadeNative(BluetoothBaseFacadeNative):
         self.mainloop_ready = threading.Event()
         self.thread = threading.Thread(
                 name=GLIB_THREAD_NAME,
-                target=FlossFacadeNative.mainloop_thread,
+                target=FlossFacadeLocal.mainloop_thread,
                 args=(self, ))
         self.thread.start()
 

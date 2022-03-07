@@ -14,12 +14,12 @@ from autotest_lib.client.cros.audio import cras_dbus_utils
 from autotest_lib.client.cros.audio import cras_utils
 
 
-class USBFacadeNativeError(Exception):
-    """Error in USBFacadeNative."""
+class USBFacadeLocalError(Exception):
+    """Error in USBFacadeLocal."""
     pass
 
 
-class USBFacadeNative(object):
+class USBFacadeLocal(object):
     """Facade to access the USB-related functionality.
 
     Property:

@@ -15,12 +15,12 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.graphics import graphics_utils
 
 
-class InputFacadeNativeError(Exception):
-    """Error in InputFacadeNative."""
+class InputFacadeLocalError(Exception):
+    """Error in InputFacadeLocal."""
     pass
 
 
-class InputFacadeNative(object):
+class InputFacadeLocal(object):
     """Facade to access the record input events."""
 
     def __init__(self):

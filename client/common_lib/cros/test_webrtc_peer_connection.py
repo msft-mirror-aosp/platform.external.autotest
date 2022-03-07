@@ -299,7 +299,7 @@ class WebRtcPeerConnectionPerformanceTest(WebRtcPeerConnectionTest):
                   iteration_delay_millis,
                   perf_before_start_hook)
           self.collector = system_metrics_collector.SystemMetricsCollector(
-                system_facade.SystemFacadeNative())
+                system_facade.SystemFacadeLocal())
           # TODO(crbug/784365): If this proves to work fine, move to a separate
           # module and make more generic.
           delay = 5

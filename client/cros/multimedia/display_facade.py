@@ -42,7 +42,7 @@ _retry_display_call = retry.retry(
         delay_sec=_FLAKY_DISPLAY_CALL_RETRY_DELAY_SEC)
 
 
-class DisplayFacadeNative(object):
+class DisplayFacadeLocal(object):
     """Facade to access the display-related functionality.
 
     The methods inside this class only accept Python core types.
@@ -54,7 +54,7 @@ class DisplayFacadeNative(object):
     MAX_TYPEC_PORT = 6
 
     def __init__(self, resource):
-        """Initializes a DisplayFacadeNative.
+        """Initializes a DisplayFacadeLocal.
 
         @param resource: A FacadeResource object.
         """

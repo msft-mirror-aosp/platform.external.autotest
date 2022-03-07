@@ -276,7 +276,7 @@ class SystemMetricsCollector(object):
         Initialize with facade and metric classes.
 
         @param system_facade The system facade to use for querying the system,
-                e.g. system_facade.SystemFacadeNative for client tests.
+                e.g. system_facade.SystemFacadeLocal for client tests.
         @param metrics List of metric instances. If None, the default set will
                 be created.
         """

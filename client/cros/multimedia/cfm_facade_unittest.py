@@ -31,15 +31,15 @@ def create_mock_context(url):
     return ctx
 
 
-class CfmFacadeNativeUnitTest(unittest.TestCase):
+class CfmFacadeLocalUnitTest(unittest.TestCase):
 
     def setUp(self):
         self.facade_resource = mock.Mock()
         self.browser = self.facade_resource._browser
         self.screen = 'hotrod'
-        self.cfm_facade = cfm_facade.CFMFacadeNative(
+        self.cfm_facade = cfm_facade.CFMFacadeLocal(
             self.facade_resource, self.screen)
-        cfm_facade.CFMFacadeNative._DEFAULT_TIMEOUT = 1
+        cfm_facade.CFMFacadeLocal._DEFAULT_TIMEOUT = 1
         self.extension_path = 'chrome-extension://' + self.cfm_facade._EXT_ID
 
     @mock.patch.object(cfm_facade, 'kiosk_utils')

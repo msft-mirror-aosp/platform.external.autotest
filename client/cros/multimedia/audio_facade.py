@@ -20,24 +20,24 @@ from autotest_lib.client.cros.audio import alsa_utils
 from autotest_lib.client.cros.multimedia import audio_extension_handler
 
 
-class AudioFacadeNativeError(Exception):
-    """Error in AudioFacadeNative."""
+class AudioFacadeLocalError(Exception):
+    """Error in AudioFacadeLocal."""
     pass
 
 
 def check_arc_resource(func):
-    """Decorator function for ARC related functions in AudioFacadeNative."""
+    """Decorator function for ARC related functions in AudioFacadeLocal."""
     @functools.wraps(func)
     def wrapper(instance, *args, **kwargs):
         """Wrapper for the methods to check _arc_resource.
 
         @param instance: Object instance.
 
-        @raises: AudioFacadeNativeError if there is no ARC resource.
+        @raises: AudioFacadeLocalError if there is no ARC resource.
 
         """
         if not instance._arc_resource:
-            raise AudioFacadeNativeError('There is no ARC resource.')
+            raise AudioFacadeLocalError('There is no ARC resource.')
         return func(instance, *args, **kwargs)
     return wrapper
 
@@ -52,7 +52,7 @@ def file_contains_all_zeros(path):
         return not np.any(np_array)
 
 
-class AudioFacadeNative(object):
+class AudioFacadeLocal(object):
     """Facede to access the audio-related functionality.
 
     The methods inside this class only accept Python native types.
@@ -231,14 +231,14 @@ class AudioFacadeNative(object):
 
         @returns: True.
 
-        @raises: AudioFacadeNativeError if data format is not supported.
+        @raises: AudioFacadeLocalError if data format is not supported.
 
         """
-        logging.info('AudioFacadeNative playback file: %r. format: %r',
+        logging.info('AudioFacadeLocal playback file: %r. format: %r',
                      file_path, data_format)
 
         if data_format != self._PLAYBACK_DATA_FORMAT:
-            raise AudioFacadeNativeError(
+            raise AudioFacadeLocalError(
                     'data format %r is not supported' % data_format)
 
         device_id = None
@@ -276,27 +276,27 @@ class AudioFacadeNative(object):
 
         @returns: True
 
-        @raises: AudioFacadeNativeError if data format is not supported, no
+        @raises: AudioFacadeLocalError if data format is not supported, no
                  active selected node or the specified node is occupied.
 
         """
-        logging.info('AudioFacadeNative record format: %r', data_format)
+        logging.info('AudioFacadeLocal record format: %r', data_format)
 
         if data_format not in self._CAPTURE_DATA_FORMATS:
-            raise AudioFacadeNativeError(
+            raise AudioFacadeLocalError(
                     'data format %r is not supported' % data_format)
 
         if node_type is None:
             device_id = None
             node_type = cras_utils.get_selected_input_device_type()
             if node_type is None:
-                raise AudioFacadeNativeError('No active selected input node.')
+                raise AudioFacadeLocalError('No active selected input node.')
         else:
             device_id = int(cras_utils.get_device_id_from_node_type(
                     node_type, True))
 
         if node_type in self._recorders:
-            raise AudioFacadeNativeError(
+            raise AudioFacadeLocalError(
                     'Node %s is already ocuppied' % node_type)
 
         self._recorders[node_type] = Recorder()
@@ -314,21 +314,21 @@ class AudioFacadeNative(object):
         @returns: The path to the recorded file.
                   None if capture device is not functional.
 
-        @raises: AudioFacadeNativeError if no recording is started on
+        @raises: AudioFacadeLocalError if no recording is started on
                  corresponding node.
         """
         if node_type is None:
             device_id = None
             node_type = cras_utils.get_selected_input_device_type()
             if node_type is None:
-                raise AudioFacadeNativeError('No active selected input node.')
+                raise AudioFacadeLocalError('No active selected input node.')
         else:
             device_id = int(cras_utils.get_device_id_from_node_type(
                     node_type, True))
 
 
         if node_type not in self._recorders:
-            raise AudioFacadeNativeError(
+            raise AudioFacadeLocalError(
                     'No recording is started on node %s' % node_type)
 
         recorder = self._recorders[node_type]
@@ -360,13 +360,13 @@ class AudioFacadeNative(object):
 
         @returns: True
 
-        @raises: AudioFacadeNativeError if data format is not supported.
+        @raises: AudioFacadeLocalError if data format is not supported.
 
         """
-        logging.info('AudioFacadeNative record format: %r', data_format)
+        logging.info('AudioFacadeLocal record format: %r', data_format)
 
         if data_format not in self._LISTEN_DATA_FORMATS:
-            raise AudioFacadeNativeError(
+            raise AudioFacadeLocalError(
                     'data format %r is not supported' % data_format)
 
         self._listener = Listener()
@@ -451,7 +451,7 @@ class AudioFacadeNative(object):
 
         """
         if self._counter:
-            raise AudioFacadeNativeError('There is an ongoing counting.')
+            raise AudioFacadeLocalError('There is an ongoing counting.')
         self._counter = cras_dbus_utils.CrasDBusBackgroundSignalCounter()
         self._counter.start(signal_name)
 
@@ -464,7 +464,7 @@ class AudioFacadeNative(object):
 
         """
         if not self._counter:
-            raise AudioFacadeNativeError('Should start counting signal first')
+            raise AudioFacadeLocalError('Should start counting signal first')
         result = self._counter.stop()
         self._counter = None
         return result

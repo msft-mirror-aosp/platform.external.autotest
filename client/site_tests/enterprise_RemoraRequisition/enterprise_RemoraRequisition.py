@@ -29,5 +29,5 @@ class enterprise_RemoraRequisition(test.test):
                 disable_gaia_services=False,
                 extra_browser_args="--force-devtools-available") as cr:
             enrollment.RemoraEnrollment(cr.browser, user_id, password)
-            self.cfm_facade = cfm_facade.CFMFacadeNative(cr, 'hotrod')
+            self.cfm_facade = cfm_facade.CFMFacadeLocal(cr, 'hotrod')
             self.cfm_facade.check_hangout_extension_context()

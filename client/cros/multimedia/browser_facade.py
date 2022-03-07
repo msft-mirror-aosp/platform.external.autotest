@@ -6,12 +6,12 @@
 
 import logging
 
-class BrowserFacadeNativeError(Exception):
-    """Error in BrowserFacadeNative."""
+class BrowserFacadeLocalError(Exception):
+    """Error in BrowserFacadeLocal."""
     pass
 
 
-class BrowserFacadeNative(object):
+class BrowserFacadeLocal(object):
     """Facade to access the browser-related functionality."""
 
     def __init__(self, resource):

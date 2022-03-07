@@ -1420,8 +1420,7 @@ class BluetoothBaseFacadeNative(object):
         @param length: length in micro seconds.
 
         """
-        length_dict = {'length': GLib.Variant('x', length)}
-        return self._cras_test_client.set_player_length(length_dict)
+        return self._cras_test_client.set_player_length(length)
 
     def select_input_device(self, device_name):
         """Select the audio input device.

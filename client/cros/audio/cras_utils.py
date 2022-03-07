@@ -993,6 +993,19 @@ class CrasTestClient(object):
         return True
 
 
+    def _encode_length_for_dbus(self, length):
+        """Encode length as Int64 for |SetPlayerMetadata|."""
+        try:
+            import dbus
+        except ImportError as e:
+            logging.exception(
+                    'Can not import dbus: %s. This method should only be '
+                    'called on Cros device.', e)
+            raise
+
+        length_variant = dbus.types.Int64(length, variant_level=1)
+        return dbus.Dictionary({'length': length_variant}, signature='sv')
+
     def set_player_length(self, length):
         """Set metadata length for the registered media player.
 
@@ -1001,11 +1014,12 @@ class CrasTestClient(object):
         be int32 by default. Separate it from the metadata function to help
         prepare the data differently.
 
-        @param metadata: DBUS dictionary that contains a variant of int64.
+        @param length: Integer value that will be encoded for dbus.
 
         """
         try:
-            get_cras_control_interface().SetPlayerMetadata(length)
+            length_dbus = self._encode_length_for_dbus(length)
+            get_cras_control_interface().SetPlayerMetadata(length_dbus)
         except Exception as e:
             logging.error('Failed to set player length: %s', e)
             return False

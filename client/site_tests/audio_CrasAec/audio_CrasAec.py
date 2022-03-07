@@ -9,6 +9,7 @@ import subprocess
 import time
 
 from autotest_lib.client.bin import test
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.audio import sox_utils
@@ -53,34 +54,14 @@ class audio_CrasAec(test.test):
         self._record_aec_proc = subprocess.Popen(cmd)
         return file_name
 
-    def aecdump(self, rate, channels):
+    def aecdump(self, stream_id, rate, channels):
         """Do the AEC dump parallelly."""
-        proc = subprocess.Popen(['cras_test_client', '--dump_a'],
-                                stdout=subprocess.PIPE)
-        output, err = proc.communicate()
-        lines = output.decode().split('\n')
-        # Filter through the summary lines by effects 0x0001 to find
-        # the stream id.
-        for line in lines:
-            words = line.split(' ')
-            if words[0] != 'Summary:':
-                continue
-
-            logging.debug("audio dump summaries: %s", line)
-            if words[8] == '0x0001':
-                stream_id = words[3]
-                break
-        else:
-            # Possibly error has occurred in capture proess.
-            audio_helper.dump_audio_diagnostics(
-                    os.path.join(self.resultsdir, "audio_diagnostics.txt"))
-            raise error.TestFail("Fail to find aec stream's id")
 
         file_name = os.path.join(self.resultsdir,
                                  'aecdump-%d-ch%d.raw' % (rate, channels))
         cmd = [
                 'cras_test_client', '--aecdump', file_name, '--stream_id',
-                str(int(stream_id, 16)), '--duration',
+                str(stream_id), '--duration',
                 str(10)
         ]
         self._dump_aec_proc = subprocess.Popen(cmd)
@@ -100,6 +81,25 @@ class audio_CrasAec(test.test):
         if self._play_sound_proc:
             self._play_sound_proc.kill()
 
+    def get_aec_stream_id(self):
+        """Gets the first AEC stream id in decimal. """
+        proc = subprocess.Popen(['cras_test_client', '--dump_a'],
+                                stdout=subprocess.PIPE)
+        output, err = proc.communicate()
+        lines = output.decode().split('\n')
+        # Filter through the summary lines by effects 0x0001 to find
+        # the stream id.
+        for line in lines:
+            words = line.split(' ')
+            if words[0] != 'Summary:':
+                continue
+
+            logging.debug("audio dump summaries: %s", line)
+            if words[8] == '0x0001':
+                return int(words[3], 16)
+
+        return None
+
     def test_sample_rate_and_channels(self, rate, channels):
         """
         Configures CRAS to use aloop as input and output option.
@@ -117,9 +117,19 @@ class audio_CrasAec(test.test):
         try:
             self.play_sound()
             recorded_file = self.record_aec(rate, channels)
-            time.sleep(0.3)
-            self.aecdump(rate, channels)
+
+            # Wait at most 2 seconds for AEC stream to be ready for aecdump.
+            stream_id = utils.poll_for_condition(self.get_aec_stream_id,
+                                                 timeout=2,
+                                                 sleep_interval=0.1)
+
+            self.aecdump(stream_id, rate, channels)
             time.sleep(3)
+        except utils.TimeoutError:
+            # Possibly error has occurred in capture proess.
+            audio_helper.dump_audio_diagnostics(
+                    os.path.join(self.resultsdir, "audio_diagnostics.txt"))
+            raise error.TestFail("Fail to find aec stream's id")
         finally:
             self.cleanup_test_procs()
 

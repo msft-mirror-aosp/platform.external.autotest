@@ -5,8 +5,10 @@
 import base64
 import logging
 import os
+
 from autotest_lib.client.common_lib.error import TestFail
 from autotest_lib.server import utils
+from autotest_lib.server.cros import chrome_sideloader
 
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.lacros'
@@ -18,6 +20,9 @@ PY_VERSION = 3
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
+
+# Location to put the sideloaded chrome artifacts
+CHROME_DIR = '/usr/local/lacros'
 
 DOC = '''
 Run the lacros test.
@@ -59,21 +64,11 @@ def run(machine):
 
     # Because this wrapper servers Chromium/Chrome CI builders, the Chrome version
     # should be always fresher than the rootfs Chrome bundled in OS.
-    try:
-        host.run('mkdir -p /tmp/lacros /usr/local/lacros && '
-                 'imageloader --mount --mount_component=lacros'
-                 ' --mount_point=/tmp/lacros && '
-                 # The provisioned path of squashfs file will be cleared by
-                 # clear_tpm, so we do hard copy after the mount.
-                 'cp -r /tmp/lacros/* /usr/local/lacros/')
-    except Exception as e:
-        raise TestFail('Exception while mount lacros artifact: %s', e)
-    finally:
-        host.run('imageloader --unmount --mount_point=/tmp/lacros;'
-                 'rm -rf /tmp/lacros')
+    chrome_sideloader.setup_host(host, CHROME_DIR, None)
+
     # lacrosDeployedBinary expects to set the directory containing chrome executable.
     # If chrome is not under squashfs root, specify the relative path by exe_rel_path.
-    path_to_chrome = os.path.join('/usr/local/lacros',
+    path_to_chrome = os.path.join(CHROME_DIR,
                                   args_dict.get('exe_rel_path', 'chrome'))
     assert host.path_exists(path_to_chrome), (
             'lacros artifact is not provisioned at expected path, %s'
@@ -84,10 +79,7 @@ def run(machine):
     )
 
     def cleanup():
-        try:
-            host.run('rm -rf /usr/local/lacros')
-        except Exception as e:
-            logging.exception('Exception while clear lacros: %s', e)
+        chrome_sideloader.cleanup_host(host, CHROME_DIR, None)
 
     job.add_post_run_hook(cleanup)
 

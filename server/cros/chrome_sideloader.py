@@ -155,7 +155,9 @@ def setup_host(host, chrome_dir, chrome_mount_point):
     logging.info("Setting up host:%s", host)
     try:
         extract_from_image(host, 'lacros', chrome_dir)
-        _mount_chrome(host, '%s/out/Release' % chrome_dir, chrome_mount_point)
+        if chrome_mount_point:
+            _mount_chrome(host, '%s/out/Release' % chrome_dir,
+                          chrome_mount_point)
     except Exception as e:
         raise Exception(
                 'Exception while mounting %s on host %s' %
@@ -174,7 +176,8 @@ def cleanup_host(host, chrome_dir, chrome_mount_point):
     """
     logging.info("Unmounting chrome on host: %s", host)
     try:
-        _umount_chrome(host, chrome_mount_point)
+        if chrome_mount_point:
+            _umount_chrome(host, chrome_mount_point)
         host.run(['rm', '-rf', chrome_dir])
     except Exception as e:
         raise Exception('Exception during cleanup on host %s' % host, e)

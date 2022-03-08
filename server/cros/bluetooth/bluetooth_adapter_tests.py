@@ -4734,10 +4734,19 @@ class BluetoothAdapterTests(test.test):
         @returns: true if battery reporting is received
         """
 
-        percentage = self.bluetooth_facade.get_battery_property(
-                device.address, 'Percentage')
+        def _get_battery_percentage():
+            return self.bluetooth_facade.get_battery_property(
+                    device.address, 'Percentage')
 
-        return percentage > 0
+        # Sometimes the battery interface isn't available on the device
+        # right away. Wait for it to become available.
+        utils.poll_for_condition(
+                condition=lambda: _get_battery_percentage() is not None,
+                timeout=self.ADAPTER_WAIT_DEFAULT_TIMEOUT_SECS,
+                sleep_interval=self.ADAPTER_POLLING_DEFAULT_SLEEP_SECS,
+                desc='Waiting for battery on %s' % device.address)
+
+        return _get_battery_percentage() > 0
 
     def _apply_new_adapter_alias(self, alias):
         """ Sets new system alias and applies discoverable setting

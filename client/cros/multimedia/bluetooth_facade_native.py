@@ -2521,8 +2521,12 @@ class BluezFacadeNative(BluetoothBaseFacadeNative):
         """
         path = self._get_device_path(address)
         if path:
-            obj = self.bus.get(self.BLUEZ_SERVICE_NAME, path)
-            return obj[self.BLUEZ_BATTERY_IFACE]
+            try:
+                obj = self.bus.get(self.BLUEZ_SERVICE_NAME, path)
+                if obj[self.BLUEZ_BATTERY_IFACE] is not None:
+                    return obj
+            except:
+                pass
         logging.info('Battery not found')
         return None
 

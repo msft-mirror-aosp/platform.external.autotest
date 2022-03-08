@@ -55,7 +55,7 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         self.test_discover_by_device(device)
 
 
-    @test_wrapper('Pairing Test', devices={"MOUSE":1})
+    @test_wrapper('Pairing Test', devices={"MOUSE": 1}, supports_floss=True)
     def cl_adapter_pairing_test(self):
         """Performs pairing test with mouse peripheral"""
         device = self.devices['MOUSE'][0]
@@ -263,7 +263,8 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                  num_iterations=1,
                  args_dict=None,
                  test_name=None,
-                 flag='Quick Health'):
+                 flag='Quick Health',
+                 floss=False):
         """Run the batch of Bluetooth Classic health tests
 
         @param host: the DUT, usually a chromebook
@@ -275,6 +276,7 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         self.quick_test_init(host,
                              use_btpeer=True,
                              flag=flag,
-                             args_dict=args_dict)
+                             args_dict=args_dict,
+                             floss=floss)
         self.cl_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -55,7 +55,9 @@ from autotest_lib.client.cros.bluetooth import advertisement
 from autotest_lib.client.cros.bluetooth import adv_monitor_helper
 from autotest_lib.client.cros.bluetooth import output_recorder
 from autotest_lib.client.cros.bluetooth import logger_helper
-from autotest_lib.client.cros.bluetooth.floss.adapter_client import FlossAdapterClient
+from autotest_lib.client.cros.bluetooth.floss.adapter_client import (
+        FlossAdapterClient, BluetoothCallbacks, BluetoothConnectionCallbacks,
+        BondState, SspVariant, Transport)
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import GLIB_THREAD_NAME
 from autotest_lib.client.cros.power import sys_power
@@ -102,6 +104,7 @@ def dbus_safe(default_return_value, return_error=False):
             the |default_return_value| or a tuple(default_return_value,
             str(error))
     """
+
     def decorator(wrapped_function):
         """Call a function and catch DBus errors.
 
@@ -109,6 +112,7 @@ def dbus_safe(default_return_value, return_error=False):
         @return function return value or default_return_value on failure.
 
         """
+
         @functools.wraps(wrapped_function)
         def wrapper(*args, **kwargs):
             """Pass args and kwargs to a dbus safe function.
@@ -632,6 +636,7 @@ class BluetoothBaseFacadeLocal(object):
            Precondition:
                  1) enable_wrt_logs has been called
         """
+
         def _collect_logs():
             """Execute command to collect wrt logs."""
             try:
@@ -775,6 +780,7 @@ class BluetoothBaseFacadeLocal(object):
 
         @return True if hid device found, False otherwise
         """
+
         def _match_hid_to_device(hidpath, device_address):
             """Check if given hid syspath is for the given device address """
             # If the syspath has a uniq property that matches the peripheral
@@ -1538,6 +1544,7 @@ class BluezPairingAgent:
     supported later.
 
     """
+
     def __init__(self, bus, path, pin):
         """Constructor.
 
@@ -1776,6 +1783,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
                   False otherwise.
 
         """
+
         def bluez_stopped():
             """Checks the bluetooth daemon status.
 
@@ -2212,6 +2220,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
             the value False otherwise.
 
         """
+
         @dbus_safe({})
         def get_props():
             """Get props from dbus."""
@@ -2384,6 +2393,19 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         # Note that bluetooth facade now runs in Python 3.
         # Refer to crrev.com/c/3268347.
         return self._encode_json(devices)
+
+    def get_num_connected_devices(self):
+        """ Return number of remote devices currently connected to the DUT.
+
+        @returns: The number of devices known to bluez with the Connected
+            property active
+        """
+        num_connected_devices = 0
+        for dev in self._get_devices():
+            if dev and dev.get('Connected', False):
+                num_connected_devices += 1
+
+        return num_connected_devices
 
     @dbus_safe(None)
     def get_device_property(self, address, prop_name):
@@ -2721,7 +2743,8 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         """
         try:
             properties = device[self.DBUS_PROP_IFACE]
-            properties.Set(self.BLUEZ_DEVICE_IFACE, 'Trusted', GLib.Variant('b', trusted))
+            properties.Set(self.BLUEZ_DEVICE_IFACE, 'Trusted',
+                           GLib.Variant('b', trusted))
             return True
         except Exception as e:
             logging.error('_set_trusted_by_device: %s', e)
@@ -2784,6 +2807,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @returns: True on success. False otherwise.
 
         """
+
         def connect_reply():
             """Handler when connect succeeded."""
             logging.info('Device connected: %s', device_path)
@@ -3011,6 +3035,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
                   an error string if the dbus method fails or exception occurs
 
         """
+
         def successful_cb():
             """Called when the dbus_method completed successfully."""
             reply_handler()
@@ -3868,6 +3893,14 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
             logging.error('get_connection_info: unexpected error')
         return None
 
+    def has_connection_info(self, address):
+        """Checks whether the address has connection info.
+
+        @param address: The MAC address of the device.
+        @returns True if connection info can be found.
+        """
+        return self.get_connection_info(address) is not None
+
     @dbus_safe(False)
     def set_le_connection_parameters(self, address, parameters):
         """Set the LE connection parameters.
@@ -4085,6 +4118,10 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                                                  self.DEFAULT_ADAPTER)
 
         self.is_clean = False
+
+        # Cache some mock properties for testing. These may be properties that
+        # are required in bluez but don't carry over well into Floss.
+        self.mock_properties = {}
 
     def __del__(self):
         if not self.is_clean:
@@ -4306,9 +4343,18 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         prop_val = None
 
         if self.adapter_client.has_device(address):
-            prop_val = self.adapter_client.get_property(prop_name)
+            prop_val = self.adapter_client.get_remote_property(
+                    address, prop_name)
 
         return self._encode_base64_json(prop_val)
+
+    def get_pairable(self):
+        """Gets whether the default adapter is pairable.
+
+        @return True if default adapter is pairable.
+        """
+        # TODO(abps) - Control pairable setting on adapter
+        return self.mock_properties.get('Pairable', False)
 
     def set_pairable(self, pairable):
         """Sets default adapter as pairable.
@@ -4318,4 +4364,175 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success.
         """
         # TODO(abps) - Control pairable setting on adapter
-        pass
+        self.mock_properties['Pairable'] = pairable
+        return True
+
+    def pair_legacy_device(self, address, pin, trusted, timeout=60):
+        """Pairs a peer device.
+
+        @param address: BT address of the peer device.
+        @param pin: What pin to use for pairing.
+        @param trusted: Unused by Floss.
+        @param timeout: How long to wait for pairing to complete.
+        """
+
+        class PairingObserver(BluetoothCallbacks,
+                              BluetoothConnectionCallbacks):
+            """Observer of certain callbacks for pairing."""
+
+            def __init__(self, adapter_client, done_event, address, pin):
+                self.adapter_client = adapter_client
+                self.adapter_client.register_callback_observer(
+                        'PairingObserver', self)
+
+                # Event to trigger once we are paired and connected.
+                self.done_event = done_event
+                self.address = address
+                self.pin = pin
+                self.bond_state = BondState.NOT_BONDED
+                self.connected = self.adapter_client.is_connected(address)
+
+            def __del__(self):
+                """Destructor"""
+                self.adapter_client.unregister_callback_observer(
+                        'PairingObserver', self)
+
+            def on_bond_state_changed(self, status, device_address, state):
+                """Handle bond state change."""
+                logging.info('[%s] bond state=%d', device_address, state)
+
+                if device_address != self.address:
+                    return
+
+                # If we have a non-zero status, bonding failed in some way.
+                # Report it and unblock the main thread.
+                if status != 0:
+                    logging.error('[%s] failed to bond. Status=%d, State=%d',
+                                  device_address, status, state)
+                    self.done_event.set()
+                    return
+
+                self.bond_state = state
+                logging.info('[%s] bond state=%d', device_address, state)
+
+                # We've completed bonding. Make sure to connect
+                if state == BondState.BONDED:
+                    # If not connected, connect profiles and wait for connected
+                    # callback. Else, unblock the main thread.
+                    if not self.connected:
+                        if not self.adapter_client.connect_all_enabled_profiles(
+                                self.address):
+                            logging.error(
+                                    '[%s] failed on connect_all_enabled_profiles',
+                                    self.address)
+                            self.done_event.set()
+                    else:
+                        self.done_event.set()
+
+            def on_ssp_request(self, remote_device, class_of_device, variant,
+                               passkey):
+                """Handle SSP request."""
+                (remote_address, remote_name) = remote_device
+
+                if remote_address != self.address:
+                    return
+
+                logging.info('Ssp: [%s: %s]: Class=%d, Variant=%d, Passkey=%d',
+                             remote_address, remote_name, class_of_device,
+                             variant, passkey)
+
+                if variant == int(SspVariant.CONSENT):
+                    self.adapter_client.set_pairing_confirmation(
+                            remote_address,
+                            True,
+                            method_callback=self.on_set_pairing_confirmation)
+
+                logging.info('Exited ssp request.')
+
+            def on_set_pairing_confirmation(self, err, result):
+                """Handle async method result from set pairing confirmation."""
+                if err or not result:
+                    logging.error(
+                            'Pairing confirmation failed: err[%s], result[%s]',
+                            err, result)
+                    self.done_event.set()
+
+            def on_device_connected(self, remote_device):
+                """Handle device connection."""
+                (remote_address, _) = remote_device
+
+                logging.info('[%s] connected', remote_address)
+
+                if remote_address != self.address:
+                    return
+
+                self.connected = True
+
+                # If we're already bonded, unblock the main thread.
+                if self.bond_state == BondState.BONDED:
+                    self.done_event.set()
+
+        # Start pairing process in main thread
+
+        done_evt = threading.Event()
+
+        # First we need an observer that watches for callbacks
+        pairing_observer = PairingObserver(self.adapter_client, done_evt,
+                                           address, pin)
+
+        # Pair and connect. If either action fails, mark the done event so that
+        # we fall through without blocking.
+        if not self.device_is_paired(address):
+            if not self.adapter_client.create_bond(address, Transport.AUTO):
+                done_evt.set()
+        elif not self.device_is_connected(address):
+            if not self.adapter_client.connect_all_enabled_profiles(address):
+                done_evt.set()
+
+        done_evt.wait(timeout=timeout)
+        if not done_evt.is_set():
+            logging.error('Timed out waiting for pairing to complete.')
+
+        is_paired = self.device_is_paired(address)
+        is_connected = self.device_is_connected(address)
+
+        logging.info('Pairing result: paired(%s) connected(%s)', is_paired,
+                     is_connected)
+
+        return is_paired and is_connected
+
+    def device_is_connected(self, address):
+        """Checks whether a device is connected.
+
+        @param address: BT address of peer device.
+        @return True if connected.
+        """
+        return self.adapter_client.is_connected(address)
+
+    def has_connection_info(self, address):
+        """Same as |device_is_connected| on Floss.
+
+        Bluez has a separate ConnectionInfo tuple that is read from the kernel
+        but Floss doesn't have this. We have this function simply for
+        compatibility.
+
+        @param address: BT address of peer device.
+        @return True if connected.
+        """
+        return self.device_is_connected(address)
+
+    def get_num_connected_devices(self):
+        """ Return number of remote devices currently connected to the DUT.
+
+        @returns: The number of devices known to bluez with the Connected
+            property active
+        """
+        return self.adapter_client.get_connected_devices_count()
+
+    def device_is_paired(self, address):
+        """Checks if a device is paired.
+
+        @param address: address of the device.
+        @returns: True if device is paired. False otherwise.
+        """
+        return self.adapter_client.is_bonded(address)

@@ -8,7 +8,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from enum import Enum
+from enum import IntEnum
+from gi.repository import GLib
 import logging
 import math
 import random
@@ -18,11 +19,27 @@ from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
                                                             glib_callback,
                                                             PropertySet)
 
-class BondState(Enum):
+
+class BondState(IntEnum):
     """Bluetooth bonding state."""
     NOT_BONDED = 0
     BONDING = 1
     BONDED = 2
+
+
+class Transport(IntEnum):
+    """Bluetooth transport type."""
+    AUTO = 0
+    BREDR = 1
+    LE = 2
+
+
+class SspVariant(IntEnum):
+    """Bluetooth SSP variant type."""
+    PASSKEY_CONFIRMATION = 0
+    PASSKEY_ENTRY = 1
+    CONSENT = 2
+    PASSKEY_NOTIFICATION = 3
 
 
 class BluetoothCallbacks:
@@ -137,9 +154,15 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                     <arg type="u" name="variant" direction="in" />
                     <arg type="u" name="passkey" direction="in" />
                 </method>
+                <method name="OnBondStateChanged">
+                    <arg type="u" name="status" direction="in" />
+                    <arg type="s" name="address" direction="in" />
+                    <arg type="u" name="state" direction="in" />
+                </method>
             </interface>
         </node>
         """
+
         def __init__(self):
             """Construct exported callbacks object.
             """
@@ -181,6 +204,11 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 observer.on_ssp_request(remote_device, class_of_device,
                                         variant, passkey)
 
+        def OnBondStateChanged(self, status, address, state):
+            """Handle bond state changed callbacks."""
+            for observer in self.observers.values():
+                observer.on_bond_state_changed(status, address, state)
+
     class ExportedConnectionCallbacks(ObserverBase):
         """
         <node>
@@ -194,6 +222,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             </interface>
         </node>
         """
+
         def __init__(self, bus, object_path):
             """Construct exported connection callbacks object.
             """
@@ -245,6 +274,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         # Initialize properties when registering callbacks (we know proxy is
         # valid at this point).
         self.properties = None
+        self.remote_properties = None
 
     def __del__(self):
         """Destructor"""
@@ -292,7 +322,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             # Filter known devices to currently bonded or connected devices
             self.known_devices = {
                     key: value
-                    for key, value in self.known_devices
+                    for key, value in self.known_devices.items()
                     if value.get('bond_state', 0) > 0
                     or value.get('connected', False)
             }
@@ -332,6 +362,12 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         else:
             self.known_devices[address]['connected'] = False
 
+    def _make_dbus_device(self, address, name):
+        return {
+                'address': GLib.Variant('s', address),
+                'name': GLib.Variant('s', name)
+        }
+
     @glib_call(False)
     def has_proxy(self):
         """Checks whether adapter proxy can be acquired."""
@@ -345,24 +381,56 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
     def register_properties(self):
         """Registers a property set for this client."""
         self.properties = PropertySet({
-                'Address': {(self.proxy().GetAddress, None)},
-                'Name': {(self.proxy().GetName, self.proxy().SetName)},
-                'Class': {(self.proxy().GetBluetoothClass,
-                           self.proxy().SetBluetoothClass)},
-                'Uuids': {(self.proxy().GetUuids, None)},
+                'Address': (self.proxy().GetAddress, None),
+                'Name': (self.proxy().GetName, self.proxy().SetName),
+                'Class': (self.proxy().GetBluetoothClass,
+                          self.proxy().SetBluetoothClass),
+                'Uuids': (self.proxy().GetUuids, None),
+        })
+
+        self.remote_properties = PropertySet({
+                'Name': (self.proxy().GetRemoteName, None),
+                'Type': (self.proxy().GetRemoteType, None),
+                'Alias': (self.proxy().GetRemoteAlias, None),
+                'Class': (self.proxy().GetRemoteClass, None)
         })
 
     @glib_call(False)
     def register_callbacks(self):
+        """Registers callbacks for this client.
+
+        This will also initialize properties and populate the list of bonded
+        devices since this should be the first thing that gets called after we
+        know that the adapter client has a valid proxy object.
+        """
         # Make sure properties are registered
         if not self.properties:
             self.register_properties()
 
+        # Prevent callback registration multiple times
         if self.callbacks and self.connection_callbacks:
             return True
 
         # Generate a random number between 1-1000
         rnumber = math.floor(random.random() * 1000 + 1)
+
+        # Reset known devices to just bonded devices and their connection
+        # states.
+        self.known_devices.clear()
+        bonded_devices = self.proxy().GetBondedDevices()
+        for device in bonded_devices:
+            (success, devtuple) = FlossAdapterClient.parse_dbus_device(device)
+            if success:
+                (address, name) = devtuple
+                cstate = self.proxy().GetConnectionState(
+                        self._make_dbus_device(address, name))
+                logging.info('[%s:%s] initially bonded. Connected = %d',
+                             address, name, cstate)
+                self.known_devices[address] = self._make_device(
+                        address,
+                        name,
+                        bond_state=BondState.BONDED,
+                        connected=bool(cstate > 0))
 
         if not self.callbacks:
             # Create and publish callbacks
@@ -386,6 +454,24 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
 
         return True
 
+    def register_callback_observer(self, name, observer):
+        """Add an observer for all callbacks.
+
+        @param name: Name of the observer.
+        @param observer: Observer that implements all callback classes.
+        """
+        self.callbacks.add_observer(name, observer)
+        self.connection_callbacks.add_observer(name, observer)
+
+    def unregister_callback_observer(self, name, observer):
+        """Remove an observer for all callbacks.
+
+        @param name: Name of the observer.
+        @param observer: Observer that implements all callback classes.
+        """
+        self.callbacks.remove_observer(name, observer)
+        self.connection_callbacks.remove_observer(name, observer)
+
     @glib_call('')
     def get_address(self):
         """Gets the adapter's current address."""
@@ -400,6 +486,31 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
     def get_property(self, prop_name):
         """Gets property by name."""
         return self.properties.get(prop_name)
+
+    @glib_call(None)
+    def get_remote_property(self, address, prop_name):
+        """Gets remote device property by name."""
+        name = 'Test device'
+        if address in self.known_devices:
+            name = self.known_devices[address]['name']
+
+        remote_device = self._make_dbus_device(address, name)
+        return self.remote_properties.get(prop_name, remote_device)
+
+    @glib_call(None)
+    def set_property(self, prop_name, value):
+        """Sets property by name."""
+        self.properties.set(prop_name, value)
+
+    @glib_call(None)
+    def set_remote_property(self, address, prop_name, value):
+        """Sets remote property by name."""
+        name = 'Test device'
+        if address in self.known_devices:
+            name = self.known_devices[address]['name']
+
+        remote_device = self._make_dbus_device(address, name)
+        self.properties.set(prop_name, remote_device, value)
 
     @glib_call(False)
     def start_discovery(self):
@@ -421,6 +532,51 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         """Checks to see if device with address is known."""
         return address in self.known_devices
 
+    def is_bonded(self, address):
+        """Checks if the given address is currently fully bonded."""
+        return address in self.known_devices and self.known_devices[
+                address].get('bond_state',
+                             BondState.NOT_BONDED) == BondState.BONDED
+
+    @glib_call(False)
+    def create_bond(self, address, transport):
+        """Creates bond with target address.
+        """
+        name = 'Test bond'
+        if address in self.known_devices:
+            name = self.known_devices[address]['name']
+
+        remote_device = self._make_dbus_device(address, name)
+        return bool(self.proxy().CreateBond(remote_device, int(transport)))
+
+    @glib_call(False)
+    def cancel_bond(self, address):
+        """Call cancel bond with no additional checks. Prefer |forget_device|.
+
+        @param address: Device to cancel bond.
+        @returns Result of |CancelBondProcess|.
+        """
+        name = 'Test bond'
+        if address in self.known_devices:
+            name = self.known_devices[address]['name']
+
+        remote_device = self._make_dbus_device(address, name)
+        return bool(self.proxy().CancelBond(remote_device))
+
+    @glib_call(False)
+    def remove_bond(self, address):
+        """Call remove bond with no additional checks. Prefer |forget_device|.
+
+        @param address: Device to remove bond.
+        @returns Result of |RemoveBond|.
+        """
+        name = 'Test bond'
+        if address in self.known_devices:
+            name = self.known_devices[address]['name']
+
+        remote_device = self._make_dbus_device(address, name)
+        return bool(self.proxy().RemoveBond(remote_device))
+
     @glib_call(False)
     def forget_device(self, address):
         """Forgets device from local cache and removes bonding.
@@ -428,7 +584,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         If a device is currently bonding or bonded, it will cancel or remove the
         bond to totally remove this device.
 
-        Returns:
+        @return
             True if device was known and was removed.
             False if device was unknown or removal failed.
         """
@@ -439,7 +595,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         device = self.known_devices[address]
         del self.known_devices[address]
 
-        remote_device = {'address': device['address'], 'name': device['name']}
+        remote_device = self._make_dbus_device(device['address'],
+                                               device['name'])
 
         # Extra actions if bond state is not NOT_BONDED
         if device['bond_state'] == BondState.BONDING:
@@ -450,21 +607,43 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         return True
 
     @glib_call(False)
+    def set_pairing_confirmation(self, address, accept):
+        """Confirm that a pairing should be completed on a bonding device."""
+        # Device should be known or already `Bonding`
+        if address not in self.known_devices:
+            logging.debug('[%s] Unknown device in set_pairing_confirmation',
+                          address)
+            return False
+
+        device = self.known_devices[address]
+        remote_device = self._make_dbus_device(address, device['name'])
+
+        return bool(self.proxy().SetPairingConfirmation(remote_device, accept))
+
+    def get_connected_devices_count(self):
+        """Gets the number of known, connected devices."""
+        return sum([
+                1 for x in self.known_devices.values()
+                if x.get('connected', False)
+        ])
+
+    def is_connected(self, address):
+        """Checks whether a device is connected."""
+        return address in self.known_devices and self.known_devices[
+                address].get('connected', False)
+
+    @glib_call(False)
     def connect_all_enabled_profiles(self, address):
         """Connect all enabled profiles for target address."""
-        device = {
-                'address': address,
-                'name': self.known_devices.get(address,
-                                               {}).get('name', 'Test device')
-        }
+        device = self._make_dbus_device(
+                address,
+                self.known_devices.get(address, {}).get('name', 'Test device'))
         return bool(self.proxy().ConnectAllEnabledProfiles(device))
 
     @glib_call(False)
     def disconnect_all_enabled_profiles(self, address):
         """Disconnect all enabled profiles for target address."""
-        device = {
-                'address': address,
-                'name': self.known_devices.get(address,
-                                               {}).get('name', 'Test device')
-        }
+        device = self._make_dbus_device(
+                address,
+                self.known_devices.get(address, {}).get('name', 'Test device'))
         return bool(self.proxy().DisconnectAllEnabledProfiles(device))

@@ -11,13 +11,6 @@ from __future__ import print_function
 import functools
 from gi.repository import GLib
 import logging
-
-# TODO(b/215715213) - Wait until ebuild runs as python3 to remove this try
-try:
-    import pydbus
-except:
-    pydbus = {}
-
 import threading
 
 # All GLIB method calls should wait this many seconds by default
@@ -51,8 +44,10 @@ def glib_call(default_result=None,
     @param timeout: How long to wait for the method call to complete.
     @param thread_name: Name of the thread that should be running GLib.Mainloop.
     """
+
     def decorator(method):
         """Internal wrapper."""
+
         def call_and_signal(data):
             """Calls a function and signals completion.
 
@@ -70,23 +65,45 @@ def glib_call(default_result=None,
                                              data['args'], data['kwargs'])
             logging.info('%s: Running %s',
                          threading.current_thread().name, str(method))
+            err = None
             try:
                 data['result'] = method(*args, **kwargs)
             except Exception as e:
                 logging.error('Exception during %s: %s', str(method), str(e))
+                err = e
 
             event.set()
+
+            # If method callback is set, this will call that method with results
+            # of this method call and any error that may have resulted.
+            if 'method_callback' in data:
+                data['method_callback'](err, data['result'])
+
             return False
 
         @functools.wraps(method)
         def wrapper(*args, **kwargs):
             """Sends method call to GLib and waits for its completion.
+
+            @param args: Positional arguments to method.
+            @param kwargs: Keyword arguments to method. Some special keywords:
+                |method_callback|: Returns result via callback without blocking.
             """
+            method_callback = None
+            # If a method callback is given, we will not block on the completion
+            # of the call but expect the response in the callback instead. The
+            # callback has the signature: def callback(err, result)
+            if 'method_callback' in kwargs:
+                method_callback = kwargs['method_callback']
+                del kwargs['method_callback']
+
             # Make sure we're not scheduling in the GLib thread since that'll
-            # cause a deadlock.
+            # cause a deadlock. An exception is if we have a method callback
+            # which is async.
             current_thread_name = threading.current_thread().name
-            if current_thread_name is thread_name:
-                raise GlibDeadlockException('{} called in GLib thread'.format(method))
+            if current_thread_name is thread_name and not method_callback:
+                raise GlibDeadlockException(
+                        '{} called in GLib thread'.format(method))
 
             done_event = threading.Event()
             data = {
@@ -96,13 +113,18 @@ def glib_call(default_result=None,
                     'kwargs': kwargs,
                     'result': default_result,
             }
+            if method_callback:
+                data['method_callback'] = method_callback
+
             logging.info('%s: Adding %s to GLib.idle_add',
                          threading.current_thread().name, str(method))
             GLib.idle_add(call_and_signal, data)
 
-            # Wait for the result from the GLib call
-            if not done_event.wait(timeout=timeout):
-                logging.warn('%s timed out after %d s', str(method), timeout)
+            if not method_callback:
+                # Wait for the result from the GLib call
+                if not done_event.wait(timeout=timeout):
+                    logging.warn('%s timed out after %d s', str(method),
+                                 timeout)
 
             return data['result']
 
@@ -114,9 +136,10 @@ def glib_call(default_result=None,
 def glib_callback(thread_name=GLIB_THREAD_NAME):
     """Marks callbacks that are called by GLib and checks for errors.
     """
-    def decorator(method):
+
+    def _decorator(method):
         @functools.wraps(method)
-        def wrapper(*args, **kwargs):
+        def _wrapper(*args, **kwargs):
             current_thread_name = threading.current_thread().name
             if current_thread_name is not thread_name:
                 raise GlibDeadlockException(
@@ -124,13 +147,14 @@ def glib_callback(thread_name=GLIB_THREAD_NAME):
 
             return method(*args, **kwargs)
 
-        return wrapper
+        return _wrapper
 
-    return decorator
+    return _decorator
 
 
 class PropertySet:
     """Helper class with getters and setters for properties. """
+
     class MissingProperty(Exception):
         """Raised when property is missing in PropertySet."""
         pass
@@ -153,24 +177,40 @@ class PropertySet:
         """
         self.pset = property_set
 
-    def get(self, prop_name):
+    def get(self, prop_name, *args):
+        """Calls the getter function for a property if it exists.
+
+        @param prop_name: The property name to call the getter function on.
+        @param args: Any positional arguments to pass to getter function.
+
+        @return Result from calling the getter function with given args.
+        """
         if prop_name not in self.pset:
-            raise MissingProperty('{} is unknown.'.format(prop_name))
+            raise self.MissingProperty('{} is unknown.'.format(prop_name))
 
         (getter, _) = self.pset[prop_name]
 
         if not getter:
-            raise PropertyGetterMissing('{} has no getter.'.format(prop_name))
+            raise self.PropertyGetterMissing(
+                    '{} has no getter.'.format(prop_name))
 
-        return getter()
+        return getter(*args)
 
-    def set(self, prop_name, value):
+    def set(self, prop_name, *args):
+        """Calls the setter function for a property if it exists.
+
+        @param prop_name: The property name to call the setter function on.
+        @param args: Any positional arguments to pass to the setter function.
+
+        @return Result from calling the setter function with given args.
+        """
         if prop_name not in self.pset:
-            raise MissingProperty('{} is unknown.'.format(prop_name))
+            raise self.MissingProperty('{} is unknown.'.format(prop_name))
 
         (_, setter) = self.pset[prop_name]
 
         if not setter:
-            raise PropertySetterMissing('{} has no getter.'.format(prop_name))
+            raise self.PropertySetterMissing(
+                    '{} has no getter.'.format(prop_name))
 
-        return setter(value)
+        return setter(*args)

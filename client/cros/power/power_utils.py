@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import shutil
+import sys
 import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input.input_device import InputDevice
@@ -279,6 +280,16 @@ def get_core_keyvals(keyvals):
                          .*cpu(idle|pkg)[ABD-Za-z0-9_\-]+C[^0].*
                          """, re.X)
     return {k: v for k, v in keyvals.items() if not matcher.match(k)}
+
+
+# TODO(b/220192766): Remove when Python 2 completely phase out.
+def encoding_kwargs():
+    """Use encoding kwarg if it is running in Python 3+.
+    """
+    if sys.version_info.major > 2:
+        return {'encoding': 'utf-8'}
+    else:
+        return {}
 
 
 class BacklightException(Exception):

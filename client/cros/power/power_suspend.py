@@ -224,7 +224,9 @@ class Suspender(object):
         """Throw away cached log lines and reset log pointer to current end."""
         if self._log_file:
             self._log_file.close()
-        self._log_file = open('/var/log/messages')
+        self._log_file = open('/var/log/messages',
+                              mode='r+',
+                              **power_utils.encoding_kwargs())
         self._log_file.seek(0, os.SEEK_END)
         self._logs = []
 

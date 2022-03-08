@@ -89,12 +89,15 @@ class bluetooth_FastPairUI(graphics_utils.GraphicsTest):
                                       notification to show"""),
                 timeout=self.NOTIFICATION_WAIT_TIMEOUT)
 
-    def run_once(self, iteration_count=3):
+    def run_once(self, username, password):
         """Click through the Fast Pair pairing flow UI"""
         try:
             # (b/221155928) Remove enable_features when it is on by default.
             with chrome.Chrome(autotest_ext=True,
-                               enable_features='FastPair') as cr:
+                               enable_features='FastPair',
+                               gaia_login=True,
+                               username=username,
+                               password=password) as cr:
                 ui = ui_utils.UI_Handler()
                 ui.start_ui_root(cr)
                 self._cr = cr

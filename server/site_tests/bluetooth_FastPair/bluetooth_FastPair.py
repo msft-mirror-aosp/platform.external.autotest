@@ -36,8 +36,22 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
     UI_TEST = 'bluetooth_FastPairUI'
 
     KEY_PEM_ARG_KEY = 'fast_pair_antispoofing_key_pem'
+    ACCOUNT_KEY_ARG_KEY = 'fast_pair_account_key'
+    USERNAME_ARG_KEY = 'fast_pair_username'
+    PASSWORD_ARG_KEY = 'fast_pair_password'
 
     _key_pem = None
+    _account_key = None
+    _username = None
+    _password = None
+
+    def run_ui_test(self):
+        """Runs the UI client test, which clicks through the Fast Pair UI"""
+        client_at = autotest.Autotest(self._host)
+        client_at.run_test(self.UI_TEST,
+                           username=self._username,
+                           password=self._password)
+        client_at._check_client_test_result(self._host, self.UI_TEST)
 
     @test_wrapper('Fast Pair Initial Pairing',
                   devices={'BLE_FAST_PAIR': 1},
@@ -55,14 +69,37 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
             device.SetDiscoverable(True)
 
             # Run UI test, which clicks through the pairing UI flow.
-            client_at = autotest.Autotest(self._host)
-            client_at.run_test(self.UI_TEST)
-            client_at._check_client_test_result(self._host, self.UI_TEST)
-
+            self.run_ui_test()
             # Verify device is paired.
             return self.bluetooth_facade.device_is_paired(device.address)
         except Exception as e:
             logging.error('exception in fast_pair_initial_pairing_test %s',
+                          str(e))
+            return False
+
+    @test_wrapper('Fast Pair Subsequent Pairing',
+                  devices={'BLE_FAST_PAIR': 1},
+                  skip_chipsets=UNSUPPORTED_BT_HW_FILTERING_CHIPSETS)
+    def fast_pair_subsequent_pairing_test(self):
+        """Test the Fast Pair subsequent pairing scenario"""
+        try:
+            # Setup the Fast Pair device.
+            device = self.devices['BLE_FAST_PAIR'][0]
+            device.SetAntispoofingKeyPem(None)
+            device.AddAccountKey(self._account_key)
+
+            # Toggling discoverable here ensures the device starts
+            # advertising during this test.
+            device.SetDiscoverable(False)
+            device.SetDiscoverable(True)
+
+            # Run UI test, which clicks through the pairing UI flow.
+            self.run_ui_test()
+
+            # Verify device is paired.
+            return self.bluetooth_facade.device_is_paired(device.address)
+        except Exception as e:
+            logging.error('exception in fast_pair_subsequent_pairing_test %s',
                           str(e))
             return False
 
@@ -78,7 +115,43 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
             raise error.TestError('Valid %s arg is missing' %
                                   self.KEY_PEM_ARG_KEY)
 
-    def run_once(self, host, args_dict=None):
+    def set_account_key(self, args_dict):
+        if imported_password_util:
+            self._account_key = b64decode(
+                    password_util.get_fast_pair_account_key())
+
+        elif args_dict is not None and self.ACCOUNT_KEY_ARG_KEY in args_dict:
+            self._account_key = b64decode(args_dict[self.ACCOUNT_KEY_ARG_KEY])
+
+        if self._account_key is None:
+            raise error.TestError('Valid %s arg is missing' %
+                                  self.ACCOUNT_KEY_ARG_KEY)
+
+    def set_username(self, args_dict):
+        if imported_password_util:
+            self._username = (
+                    password_util.get_fast_pair_user_credentials().username)
+
+        elif args_dict is not None and self.USERNAME_ARG_KEY in args_dict:
+            self._username = args_dict[self.USERNAME_ARG_KEY]
+
+        if self._username is None:
+            raise error.TestError('Valid %s arg is missing' %
+                                  self.USERNAME_ARG_KEY)
+
+    def set_password(self, args_dict):
+        if imported_password_util:
+            self._password = (
+                    password_util.get_fast_pair_user_credentials().password)
+
+        elif args_dict is not None and self.PASSWORD_ARG_KEY in args_dict:
+            self._password = args_dict[self.PASSWORD_ARG_KEY]
+
+        if self._password is None:
+            raise error.TestError('Valid %s arg is missing' %
+                                  self.PASSWORD_ARG_KEY)
+
+    def run_once(self, host, args_dict):
         """Running Fast Pair tests.
 
         @param host: the DUT, usually a chromebook
@@ -88,8 +161,12 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
 
         # First set required args
         self.set_key_pem(args_dict)
+        self.set_account_key(args_dict)
+        self.set_username(args_dict)
+        self.set_password(args_dict)
 
         self._host = host
         self.quick_test_init(host, use_btpeer=True, args_dict=args_dict)
         self.fast_pair_initial_pairing_test()
+        self.fast_pair_subsequent_pairing_test()
         self.quick_test_cleanup()

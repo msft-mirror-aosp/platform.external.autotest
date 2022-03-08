@@ -26,6 +26,9 @@ client test to click through the UI and attempt to pair the device.
 
 If running locally, required args:
   - fast_pair_antispoofing_key_pem: Base64 encoded EC Key Pem for the BT peer.
+  - fast_pair_account_key: Base64 encoded account key linked to user.
+  - fast_pair_username: Username to log in to.
+  - fast_pair_password: Password for log in.
 """
 
 args_dict = utils.args_to_dict(args)

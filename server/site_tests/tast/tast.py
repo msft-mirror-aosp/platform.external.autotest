@@ -185,7 +185,8 @@ class tast(test.test):
                    vars_gs_path='',
                    retries=0,
                    ephemeraldevserver=None,
-                   is_cft=False):
+                   is_cft=False,
+                   exclude_missing=False):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -230,6 +231,8 @@ class tast(test.test):
         @param use_camera_box: Bring the IP address of chart device in CameraBox
             to tast tests.
         @param ephemeraldevserver: A value to pass to -ephemeraldevserver
+        @param exclude_missing: This option will exclude tests that are requested, but not found in
+        `tast list` command
 
         When the F20 breadcrumb is detected, it is assumed we are running in
             the F20 container, meaning we will force disable SSP (though the
@@ -272,6 +275,7 @@ class tast(test.test):
         self._retries = retries
         self._f20_container = f20_container or is_cft
         self._ephemeraldevserver = ephemeraldevserver
+        self._exclude_missing = exclude_missing
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.
@@ -860,11 +864,21 @@ class tast(test.test):
                     (role, dut.hostname, ':%d' % dut.port if dut.port else ''))
 
         logging.info('Running tests with timeout of %d sec', self._max_run_sec)
-        self._run_tast('run',
-                       args,
-                       self._test_exprs,
-                       self._max_run_sec + tast._RUN_EXIT_SEC,
-                       log_stdout=True)
+        # This option will exclude tests that are requested, but not found in
+        # `tast list` command
+        if self._exclude_missing:
+            tests_to_run_list = [test["name"] for test in self._tests_to_run]
+            self._run_tast('run',
+                           args,
+                           tests_to_run_list,
+                           self._max_run_sec + tast._RUN_EXIT_SEC,
+                           log_stdout=True)
+        else:
+            self._run_tast('run',
+                           args,
+                           self._test_exprs,
+                           self._max_run_sec + tast._RUN_EXIT_SEC,
+                           log_stdout=True)
 
     def _read_run_error(self):
         """Reads a global run error message written by the tast command."""

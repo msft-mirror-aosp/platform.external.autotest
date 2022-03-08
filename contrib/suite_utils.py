@@ -57,12 +57,16 @@ class TestObject(object):
                 for sub_node in n.body:
                     if sub_node.__class__ != ast.Expr:
                         continue
-                    if sub_node.value.func.value.id != 'job':
+                    try:
+                        fn_name = sub_node.value.func.value.id
+                        if fn_name != 'job':
+                            continue
+                    except:
                         continue
                     if sub_node.value.func.attr != 'run_test':
                         continue
                     for keyword in sub_node.value.keywords:
-                        if keyword.arg == 'test_exprs':
+                        if keyword.arg == 'test_exprs' and keyword.value.__class__ == ast.List:
                             test_exprs = []
                             regex_list = False
                             for elem in keyword.value.elts:
@@ -90,6 +94,7 @@ class TestObject(object):
 
     def enumerate_tests_from_tast_exprs(self, dut):
         tests = []
+        print(self.tast_exprs)
         for expr in self.tast_exprs:
             en = subprocess.check_output(
                     ['tast', 'list', str(dut),

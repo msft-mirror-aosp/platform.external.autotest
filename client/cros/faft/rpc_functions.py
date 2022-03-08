@@ -11,7 +11,7 @@ These will be exposed via an xmlrpc server running on the DUT.
 from __future__ import print_function
 
 import binascii
-import httplib
+from six.moves import http_client as httplib
 import logging
 import os
 import signal
@@ -19,7 +19,7 @@ import six
 import sys
 import tempfile
 import traceback
-import xmlrpclib
+from six.moves import xmlrpc_client as xmlrpclib
 
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import cros_config
@@ -473,7 +473,7 @@ class CgptServicer(object):
         """Set kernel attributes for either partition (or both)."""
         partitions = {'A': a, 'B': b}
         rootdev = self._os_if.get_root_dev()
-        modifiable_attributes = self._cgpt_handler.ATTR_TO_COMMAND.keys()
+        modifiable_attributes = list(self._cgpt_handler.ATTR_TO_COMMAND.keys())
         for partition_name in partitions.keys():
             partition = partitions[partition_name]
             if partition is None:

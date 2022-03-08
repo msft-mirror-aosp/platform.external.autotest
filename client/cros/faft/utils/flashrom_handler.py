@@ -316,7 +316,7 @@ class FlashromHandler(object):
 
         self.os_if.create_dir(self.section_file())
 
-        for section in self.fv_sections.itervalues():
+        for section in self.fv_sections.values():
             for subsection_name in section.names():
                 if not subsection_name:
                     continue
@@ -403,7 +403,7 @@ class FlashromHandler(object):
         exception with the appropriate error message text.
         """
 
-        for section in self.fv_sections.itervalues():
+        for section in self.fv_sections.values():
             if section.get_sig_name():
                 cmd = 'vbutil_firmware --verify %s --signpubkey %s  --fv %s' % (
                         self.section_file(section.get_sig_name()),

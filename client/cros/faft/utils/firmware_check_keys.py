@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import glob
 import logging
 import pprint
@@ -22,7 +24,7 @@ class firmwareCheckKeys(object):
         for evdev in glob.glob("/dev/input/event*"):
             device = InputDevice(evdev)
             if device.is_keyboard():
-                print 'keyboard device %s' % evdev
+                print('keyboard device %s' % evdev)
                 self.device = device
 
     def _keyboard_input(self):
@@ -31,8 +33,8 @@ class firmwareCheckKeys(object):
         while True:
             self.ev.read(self.device.f)
             if self.ev.code != KEY_RESERVED:
-                print "EventCode is %d value is %d" % (self.ev.code,
-                                                       self.ev.value)
+                print("EventCode is %d value is %d" %
+                      (self.ev.code, self.ev.value))
                 if self.ev.type == 0 or self.ev.type == 1:
                     self.actual_output.append(self.ev.code)
                     index = index + 1
@@ -61,7 +63,7 @@ class firmwareCheckKeys(object):
                 uniq_actual_output.append(key)
 
         if uniq_actual_output != expected_sequence:
-            print 'Keys mismatched %s' % pprint.pformat(uniq_actual_output)
+            print('Keys mismatched %s' % pprint.pformat(uniq_actual_output))
             return -1
-        print 'Key match expected: %s' % pprint.pformat(uniq_actual_output)
+        print('Key match expected: %s' % pprint.pformat(uniq_actual_output))
         return len(uniq_actual_output)

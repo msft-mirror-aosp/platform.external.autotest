@@ -8,6 +8,7 @@ See FirmwareUpdater object below.
 import array
 import json
 import os
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chip_utils
@@ -526,7 +527,7 @@ class FirmwareUpdater(object):
         def _has_emulate(option):
             return option == '--emulate' or option.startswith('--emulate=')
 
-        if self.os_if.test_mode and not filter(_has_emulate, options):
+        if self.os_if.test_mode and not list(filter(_has_emulate, options)):
             # if in test mode, forcibly use --emulate, if not already used.
             fake_bios = os.path.join(self._temp_path, 'rpc-test-fake-bios.bin')
             if not os.path.exists(fake_bios):
@@ -820,7 +821,7 @@ class FirmwareUpdater(object):
         @type filename: str
         @rtype: str
         """
-        if not isinstance(filename, basestring):
+        if not isinstance(filename, six.string_types):
             raise FirmwareUpdaterError("Filename must be a string: %s" %
                                        repr(filename))
         src_bios = os.path.join(self._work_path, self._bios_path)
@@ -880,4 +881,3 @@ class FirmwareUpdater(object):
             handler = self._get_handler('bios')
         handler.set_gbb_flags(flags)
         handler.dump_whole(filename)
-

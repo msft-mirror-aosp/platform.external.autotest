@@ -694,7 +694,8 @@ def create_results_directory(results_directory=None, board_name=None):
 def generate_report(directory,
                     allow_chrome_crashes=False,
                     just_status_code=False,
-                    html_report=False):
+                    html_report=False,
+                    is_cft=False):
     """Parse the test result files in the given directory into a report.
 
     @param directory: string, the absolute path of the directory to look in
@@ -707,6 +708,8 @@ def generate_report(directory,
                                         'generate_test_report')]
     # Experimental test results do not influence the exit code.
     test_report_command.append('--ignore_experimental_tests')
+    if is_cft:
+        test_report_command.append('--cft')
     if html_report:
         test_report_command.append('--html')
         test_report_command.append('--html-report-dir=%s' % directory)
@@ -828,7 +831,8 @@ def perform_run_from_autotest_root(autotest_path,
 
     final_result = generate_report(results_directory,
                                    allow_chrome_crashes=allow_chrome_crashes,
-                                   html_report=True)
+                                   html_report=True,
+                                   is_cft=is_cft)
     try:
         os.unlink(_LATEST_RESULTS_DIRECTORY)
     except OSError:

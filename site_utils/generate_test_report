@@ -964,7 +964,9 @@ class ReportGenerator(object):
                 continue
             if not d['status'] or (
                     self._options.crash_detection and d['crashes']):
-                sys.exit(1)
+                # When a test fails, but autotest doesn't crash, do not exit(1)
+                if not self._options.is_cft:
+                    sys.exit(1)
 
 
 def main():
@@ -1021,6 +1023,11 @@ def main():
                       dest='just_status_code',
                       action='store_true', default=False,
                       help='Skip generating a report, just return status code.')
+    parser.add_option('--cft',
+                      dest='is_cft',
+                      action='store_true', default=False,
+                      help='If set: will not return 1 on test failure')
+
 
     (options, args) = parser.parse_args()
 

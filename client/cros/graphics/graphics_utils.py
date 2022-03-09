@@ -1156,13 +1156,12 @@ class GraphicsStateChecker(object):
             if not self._run_on_sw_rasterizer and is_sw_rasterizer():
                 raise error.TestFail('Refusing to run on SW rasterizer.')
             logging.info('Initialize: Checking for old GPU hangs...')
-            messages = open(self._MESSAGES_FILE, 'r')
-            for line in messages:
-                for hang in self._HANGCHECK:
-                    if hang in line:
-                        logging.info(line)
-                        self.existing_hangs[line] = line
-            messages.close()
+            with open(self._MESSAGES_FILE, 'r', encoding='utf-8') as messages:
+                for line in messages:
+                    for hang in self._HANGCHECK:
+                        if hang in line:
+                            logging.info(line)
+                            self.existing_hangs[line] = line
 
     def finalize(self):
         """
@@ -1175,21 +1174,22 @@ class GraphicsStateChecker(object):
         new_gpu_warning = False
         if utils.get_cpu_arch() != 'arm':
             logging.info('Cleanup: Checking for new GPU hangs...')
-            messages = open(self._MESSAGES_FILE, 'r')
-            for line in messages:
-                for hang in self._HANGCHECK:
-                    if hang in line:
-                        if not line in list(self.existing_hangs.keys()):
-                            logging.info(line)
-                            for warn in self._HANGCHECK_WARNING:
-                                if warn in line:
-                                    new_gpu_warning = True
-                                    logging.warning(
-                                        'Saw GPU hang warning during test.')
-                                else:
-                                    logging.warning('Saw GPU hang during test.')
-                                    new_gpu_hang = True
-            messages.close()
+            with open(self._MESSAGES_FILE, 'r', encoding='utf-8') as messages:
+                for line in messages:
+                    for hang in self._HANGCHECK:
+                        if hang in line:
+                            if not line in list(self.existing_hangs.keys()):
+                                logging.info(line)
+                                for warn in self._HANGCHECK_WARNING:
+                                    if warn in line:
+                                        new_gpu_warning = True
+                                        logging.warning(
+                                                'Saw GPU hang warning during test.'
+                                        )
+                                    else:
+                                        logging.warning(
+                                                'Saw GPU hang during test.')
+                                        new_gpu_hang = True
 
             if not self._run_on_sw_rasterizer and is_sw_rasterizer():
                 logging.warning('Finished test on SW rasterizer.')

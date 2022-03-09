@@ -159,14 +159,15 @@ class firmware_ECCharging(FirmwareTest):
         # chg_ctl_mode may look like: chg_ctl_mode = 2
         # or: chg_ctl_mode = DISCHARGE (2)
         # The regex needs to match either one.
-        output = self._retry_send_cmd(
-                "chgstate",
-                [r"ac\s*=\s*(\d)\s*", r"chg_ctl_mode\s*=.*\(?(\d)\)?\s*"])
+        output = self._retry_send_cmd("chgstate", [
+                r"ac\s*=\s*(\d)\s*",
+                r"chg_ctl_mode\s*=\s*(\S* \(\d+\)|\d+)\r\n"
+        ])
         ac_state = int(output[0][1])
-        chg_ctl_mode = int(output[1][1])
+        chg_ctl_mode = output[1][1]
         if ac_state == 0:
             return True
-        if chg_ctl_mode == 2:  # CHARGE_CONTROL_DISCHARGE
+        if chg_ctl_mode == "2" or chg_ctl_mode == "DISCHARGE (2)":
             return True
         return False
 

@@ -9,8 +9,7 @@ NAME = 'tast.critical-parallels-shard-2'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-# TODO: Enable again after b/223389866 is resolved.
-#ATTRIBUTES = 'suite:bvt-tast-parallels-cq'
+ATTRIBUTES = 'suite:bvt-tast-parallels-cq'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

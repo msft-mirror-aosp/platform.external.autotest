@@ -18,6 +18,7 @@ try:
     from autotest_lib.server.hosts.chameleon_host import ChameleonHost
     from autotest_lib.server.hosts.servo_host import ServoHost
     from autotest_lib.server.hosts.labstation_host import LabstationHost
+    from autotest_lib.server.hosts.android_host import AndroidHost
 
     # factory function
     from autotest_lib.server.hosts.factory import create_host
@@ -35,6 +36,7 @@ except ImportError:
     from chameleon_host import ChameleonHost
     from servo_host import ServoHost
     from labstation_host import LabstationHost
+    from android_host import AndroidHost
 
     # factory function
     from factory import create_host

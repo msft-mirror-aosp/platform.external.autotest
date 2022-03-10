@@ -16,6 +16,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.dynamic_suite import constants
+from autotest_lib.server.hosts import android_host
 from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import jetstream_host
@@ -44,10 +45,13 @@ _started_hostnames = set()
 host_types = [cros_host.CrosHost, labstation_host.LabstationHost,
               moblab_host.MoblabHost, jetstream_host.JetstreamHost,
               gce_host.GceHost]
-OS_HOST_DICT = {'cros': cros_host.CrosHost,
-                'jetstream': jetstream_host.JetstreamHost,
-                'moblab': moblab_host.MoblabHost,
-                'labstation': labstation_host.LabstationHost}
+OS_HOST_DICT = {
+        'android': android_host.AndroidHost,
+        'cros': cros_host.CrosHost,
+        'jetstream': jetstream_host.JetstreamHost,
+        'moblab': moblab_host.MoblabHost,
+        'labstation': labstation_host.LabstationHost
+}
 
 LOOKUP_DICT = {
         'CrosHost': cros_host.CrosHost,
@@ -241,6 +245,7 @@ def create_host(machine, host_class=None, connectivity_class=None, **args):
     for label in info_store.labels:
         if label.startswith(full_os_prefix):
             host_os = label[len(full_os_prefix):]
+            logging.debug('Detected host os: %s from info_store.', host_os)
             break
 
     connectivity_class = _choose_connectivity_class(hostname, args['port'])

@@ -935,7 +935,9 @@ class ReportGenerator(object):
             res['tests'].append(
                 {'verdict': test_info['full_status'],
                  'testname': self._test_name_from_dir(test_info['testdir']),
-                 'errmsg': test_info['full_err']})
+                 'errmsg': test_info['full_err'],
+                 'resultspath': test_info['testdir']
+                 })
         return res
 
     def _write_simple_json(self):

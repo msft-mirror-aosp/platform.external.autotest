@@ -90,6 +90,20 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.test_pairable()
 
 
+    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('Stand Alone power reset test', flags=['Quick Health'])
+    def sa_power_reset(self):
+        """Adapter power reset test
+
+        Repeatedly reset adapter power to expect that bluetoothd is running.
+        Note that the test takes about 2 minutes to complete and is suitable
+        to run in function verification test suite.
+        """
+        for _ in range(20):
+            self.test_reset_on_adapter()
+            self.test_bluetoothd_running()
+
+
     # TODO(b/182172118) - Winky has suspend test issues
     @test_wrapper('Adapter suspend resume test', skip_models=['winky'])
     def sa_adapter_suspend_resume_test(self):
@@ -245,6 +259,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.sa_default_state_test()
         self.sa_valid_address_test()
         self.sa_dbus_api_tests()
+        self.sa_power_reset()
 
 
     def run_once(self,

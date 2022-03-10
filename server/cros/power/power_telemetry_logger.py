@@ -17,8 +17,10 @@ import logging
 import numpy
 import os
 import re
+import shutil
 import six
 import string
+import subprocess
 import threading
 import time
 
@@ -350,6 +352,134 @@ class PowerTelemetryLogger(object):
                     resultsdir=self._resultsdir,
                     uploadurl=self.DASHBOARD_UPLOAD_URL, note=self._pdash_note)
             pdash.upload()
+
+
+class PacTelemetryLogger(PowerTelemetryLogger):
+    """This logger class measures power via pacman debugger."""
+
+    def __init__(self, config, resultsdir, host):
+        """Init PacTelemetryLogger.
+
+        @param config: the args argument from test_that in a dict. Settings for
+                       power telemetry devices.
+                       required data:
+                       {'test': 'test_TestName.tag',
+                        'config': PAC address and sense resistor .py file location,
+                        'mapping: DUT power rail mapping csv file,
+                        'gpio': gpio}
+        @param resultsdir: path to directory where current autotest results are
+                           stored, e.g. /tmp/test_that_results/
+                           results-1-test_TestName.tag/test_TestName.tag/
+                           results/
+        @param host: CrosHost object representing the DUT.
+
+        @raises error.TestError if problem running pacman.py
+        """
+        super(PacTelemetryLogger, self).__init__(config, resultsdir, host)
+        required_args = ['config', 'mapping', 'gpio']
+        for arg in required_args:
+            if arg not in config:
+                msg = 'Missing required arguments for PacTelemetryLogger: %s' % arg
+                raise error.TestError(msg)
+        self._pac_config_file = config['config']
+        self._pac_mapping_file = config['mapping']
+        self._pac_gpio_file = config['gpio']
+        self.pac_path = self._get_pacman_install_path()
+        self.pac_data_path = os.path.join(self.pac_path, 'Data',
+                                          str(time.time()))
+        # Check if pacman is able to run
+        try:
+            subprocess.check_output('pacman.py', timeout=5, cwd=self.pac_path)
+        except subprocess.CalledProcessError as e:
+            msg = 'Error running pacman.py '\
+                  'Check dependencies have been installed'
+            logging.error(msg)
+            logging.error(e.output)
+            raise error.TestError(e)
+
+    def _start_measurement(self):
+        """Start a pacman thread with the given config, mapping, and gpio files."""
+
+        self._pacman_args = [
+                '--config',
+                self._pac_config_file,
+                '--mapping',
+                self._pac_mapping_file,
+                '--gpio',
+                self._pac_gpio_file,
+                '--output',
+                self.pac_data_path,
+        ]
+
+        logging.debug('Starting pacman process')
+        cmds = ['pacman.py'] + self._pacman_args
+        logging.debug(cmds)
+
+        self._pacman_process = subprocess.Popen(cmds, cwd=self.pac_path)
+
+    def _end_measurement(self):
+        """Stop pacman thread. This will dump and process the accumulators."""
+        self._pacman_process.send_signal(2)
+        self._pacman_process.wait(timeout=10)
+
+    def _get_pacman_install_path(self):
+        """Return the absolute path of pacman on the host.
+
+        @raises error.TestError if pacman is not in PATH
+        """
+        pac_path = shutil.which('pacman.py')
+        if pac_path == None:
+            msg = 'Unable to locate pacman.py \n'\
+                  'Check pacman.py is in PATH'
+            logging.error(msg)
+            raise error.TestNAError(msg)
+        return os.path.dirname(pac_path)
+
+    def _load_and_trim_data(self, start_ts, end_ts):
+        """Load data and trim data.
+
+        Load and format data recorded by power telemetry devices. Trim data if
+        necessary.
+
+        @param start_ts: start timestamp in seconds since epoch, None if no
+                         need to trim data.
+        @param end_ts: end timestamp in seconds since epoch, None if no need to
+                       trim data.
+        @return a list of loggers, where each logger contains raw power data and
+                statistics.
+
+        logger format:
+        {
+            'sample_count' : 60,
+            'sample_duration' : 60,
+            'data' : {
+                'domain_1' : [ 111.11, 123.45 , ... , 99.99 ],
+                ...
+                'domain_n' : [ 3999.99, 4242.42, ... , 4567.89 ]
+            },
+            'average' : {
+                'domain_1' : 100.00,
+                ...
+                'domain_n' : 4300.00
+            },
+            'unit' : {
+                'domain_1' : 'milliwatt',
+                ...
+                'domain_n' : 'milliwatt'
+            },
+            'type' : {
+                'domain_1' : 'servod',
+                ...
+                'domain_n' : 'servod'
+            },
+        }
+        """
+        return []
+
+    def _export_data_locally(self, client_test_dir, checkpoint_data=None):
+        """Slot for the logger to export measurements locally."""
+        shutil.copytree(self.pac_data_path,
+                        os.path.join(client_test_dir, 'pacman_data'))
 
 
 class ServodTelemetryLogger(PowerTelemetryLogger):

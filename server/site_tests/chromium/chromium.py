@@ -39,6 +39,8 @@ class chromium(test.test):
             test_args_b64 = args_dict.get('test_args_b64')
             if test_args_b64:
                 test_args = base64.b64decode(test_args_b64)
+        if isinstance(test_args, bytes):
+            test_args = test_args.decode()
         self.test_args = test_args
 
         self.shard_number = args_dict.get('shard_number', 1)

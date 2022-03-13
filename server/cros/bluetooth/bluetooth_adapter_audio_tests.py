@@ -512,8 +512,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                           node_type)
             return selected == node_type
 
-        if not self.bluetooth_facade.select_output_node(node_type):
-            raise error.TestError('select_output_node failed')
+        desc = 'waiting for bluetooth_facade.select_output_node()'
+        self._poll_for_condition(
+                lambda: self.bluetooth_facade.select_output_node(node_type),
+                desc=desc)
 
         desc = 'waiting for %s as active cras audio output node type' % node_type
         logging.debug(desc)

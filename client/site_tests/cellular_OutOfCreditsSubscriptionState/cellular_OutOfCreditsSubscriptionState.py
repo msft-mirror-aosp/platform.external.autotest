@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import logging
+import six
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
@@ -45,7 +46,10 @@ class cellular_OutOfCreditsSubscriptionState(test.test):
 
 
     def _is_out_of_credits(self, cellular_service):
-        properties = cellular_service.GetProperties(utf8_strings=True)
+        if six.PY2:
+            properties = cellular_service.GetProperties(utf8_strings=True)
+        else:
+            properties = cellular_service.GetProperties()
         return properties[cellular_proxy.CellularProxy.
                           DEVICE_PROPERTY_OUT_OF_CREDITS]
 

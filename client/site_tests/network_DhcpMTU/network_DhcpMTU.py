@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import interface
@@ -32,7 +33,10 @@ class network_DhcpMTU(dhcp_test_base.DhcpTestBase):
                 {'Name': self.ethernet_pair.peer_interface_name})
         if device is None:
             raise error.TestFail('Device was not found.')
-        device_properties = device.GetProperties(utf8_strings=True)
+        if six.PY2:
+            device_properties = device.GetProperties(utf8_strings=True)
+        else:
+            device_properties = device.GetProperties()
         ipconfig_path = device_properties['IPConfigs'][0]
         ipconfig = proxy.get_dbus_object('org.chromium.flimflam.IPConfig',
                                          ipconfig_path)

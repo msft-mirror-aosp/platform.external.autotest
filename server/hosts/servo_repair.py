@@ -81,7 +81,8 @@ class _UpdateVerifier(hosts.Verifier):
         # We don't want failure from update block DUT repair action.
         # See crbug.com/1029950.
         except Exception as e:
-            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+            six.reraise(hosts.AutoservNonCriticalVerifyError,
+                        hosts.AutoservNonCriticalVerifyError(e),
                         sys.exc_info()[2])
 
     def _is_applicable(self, host):
@@ -487,7 +488,8 @@ class _ServodControlVerifier(hosts.Verifier):
         try:
             host.initialize_dut_for_servo()
         except Exception as e:
-            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+            six.reraise(hosts.AutoservNonCriticalVerifyError,
+                        hosts.AutoservNonCriticalVerifyError(e),
                         sys.exc_info()[2])
 
     @property
@@ -517,7 +519,8 @@ class _Cr50ConsoleVerifier(hosts.Verifier):
                     # Response of command is not important.
                     host.get_servo().get(command)
         except Exception as e:
-            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+            six.reraise(hosts.AutoservNonCriticalVerifyError,
+                        hosts.AutoservNonCriticalVerifyError(e),
                         sys.exc_info()[2])
 
     def _is_applicable(self, host):
@@ -858,7 +861,9 @@ class _TopologyVerifier(hosts.Verifier):
                               dual_set=host.is_dual_setup(),
                               compare=True)
         except servo_topology.ServoTopologyError as e:
-            six.reraise(hosts.AutoservVerifyError, str(e), sys.exc_info()[2])
+            six.reraise(hosts.AutoservVerifyError,
+                        hosts.AutoservVerifyError(e),
+                        sys.exc_info()[2])
 
     def _is_applicable(self, host):
         if host.is_localhost():
@@ -896,7 +901,8 @@ class _PowerButtonVerifier(hosts.Verifier):
         try:
             button = host.get_servo().get('pwr_button')
         except Exception as e:
-            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+            six.reraise(hosts.AutoservNonCriticalVerifyError,
+                        hosts.AutoservNonCriticalVerifyError(e),
                         sys.exc_info()[2])
 
         if button != 'release':
@@ -979,7 +985,8 @@ class _LidVerifier(hosts.Verifier):
         try:
             lid_open = host.get_servo().get('lid_open')
         except Exception as e:
-            six.reraise(hosts.AutoservNonCriticalVerifyError, str(e),
+            six.reraise(hosts.AutoservNonCriticalVerifyError,
+                        hosts.AutoservNonCriticalVerifyError(e),
                         sys.exc_info()[2])
 
         if lid_open != 'yes' and lid_open != 'not_applicable':

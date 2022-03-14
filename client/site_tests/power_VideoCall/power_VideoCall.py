@@ -127,8 +127,8 @@ class power_VideoCall(power_test.power_Test):
 
         Preset will be determined using this logic.
         - Newer Intel Core U-series CPU with fan -> 'high'
-        - AMD Ryzen CPU with fan -> 'high'
         - Above without fan -> 'medium'
+        - AMD Ryzen CPU -> 'medium'
         - High performance ARM -> 'medium'
         - Other Intel Core CPU -> 'medium'
         - AMD APU -> 'low'
@@ -139,11 +139,11 @@ class power_VideoCall(power_test.power_Test):
         HIGH_IF_HAS_FAN_REGEX = r'''
             Intel[ ]Core[ ]i[357]-[6-9][0-9]{3}U|     # Intel Core i7-8650U
             Intel[ ]Core[ ]i[357]-1[0-9]{4}U|         # Intel Core i7-10510U
-            AMD[ ]Ryzen[ ][357][ ][3-9][0-9]{3}C|     # AMD Ryzen 7 3700C
             Genuine[ ]Intel[ ]0000|                   # Unreleased Intel CPU
             AMD[ ]Eng[ ]Sample                        # Unreleased AMD CPU
         '''
         MEDIUM_REGEX = r'''
+            AMD[ ]Ryzen[ ][357][ ][3-9][0-9]{3}|     # AMD Ryzen 7 3700
             Intel[ ]Core[ ][im][357]-[0-9]{4,5}[UY]|  # Intel Core i5-8200Y
             Intel[ ]Core[ ][im][357]-[67]Y[0-9]{2}|   # Intel Core m7-6Y75
             Intel[ ]Pentium[ ][0-9]{4,5}[UY]|         # Intel Pentium 6405U

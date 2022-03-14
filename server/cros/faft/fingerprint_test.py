@@ -889,7 +889,7 @@ class FingerprintTest(test.test):
         # Sync the filesystem in case we need to reboot the AP soon.
         self.run_cmd('sync')
 
-    def run_server_cmd(self, command, timeout=60):
+    def run_server_cmd(self, command, timeout=65):
         """Runs command on server; return result with output and exit code."""
         logging.info('Server execute: %s', command)
         result = utils.run(command, timeout=timeout, ignore_status=True)

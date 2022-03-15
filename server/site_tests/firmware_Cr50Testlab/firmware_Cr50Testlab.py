@@ -26,6 +26,9 @@ class firmware_Cr50Testlab(Cr50Test):
                                     'access to the Cr50 console')
         if self.servo.main_device_is_ccd():
             raise error.TestNAError('Use a flex cable instead of CCD cable.')
+        if self.servo.main_device_uses_gsc_drv():
+            raise error.TestNAError('Cannot run with c2d2 until cold_reset '
+                                    'issue is resolved')
 
         if isinstance(self.cr50, chrome_ti50.ChromeTi50):
             self.BASIC_ERROR = 'Command \'ccd\' failed'

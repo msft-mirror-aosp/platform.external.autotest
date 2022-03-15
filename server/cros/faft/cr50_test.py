@@ -108,6 +108,10 @@ class Cr50Test(FirmwareTest):
         # Disable rddkeepalive, so the test can disable ccd.
         self.cr50.send_command('ccd testlab open')
         self.cr50.send_command('rddkeepalive disable')
+        # faft-cr50 locks and reopens ccd. This will restrict some capabilities
+        # c2d2 uses to control the duts. Set the capabilities to Always, so
+        # individiual tests don't need to care that much.
+        self.cr50.enable_servo_control_caps()
 
         if self.can_set_ccd_level:
             # Lock cr50 so the console will be restricted

@@ -1581,8 +1581,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     # after reset.
     ADAPTER_TIMEOUT = 30
 
-    # How long we should wait for property update signal before we cancel it
+    # How long we should wait for property update signal before we cancel it.
     PROPERTY_UPDATE_TIMEOUT_MILLI_SECS = 5000
+
+    # How often we should check for property update exit.
+    PROPERTY_UPDATE_CHECK_MILLI_SECS = 500
 
     def __init__(self):
         # Init the BaseFacade first
@@ -3648,8 +3651,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         proxy = self.bus.get(self.BLUEZ_SERVICE_NAME, rx_object_path)[self.DBUS_PROP_IFACE]
         self._signal_watch = proxy.PropertiesChanged.connect(self._property_changed)
 
+        # Start timeout source
+        self._timeout_start = time.time()
+        self._timeout_early = False
         self._timeout_id = GObject.timeout_add(
-                self.PROPERTY_UPDATE_TIMEOUT_MILLI_SECS,
+                self.PROPERTY_UPDATE_CHECK_MILLI_SECS,
                 self._property_wait_timeout)
 
         write_value = _b64_string_to_dbus_byte_array(value)
@@ -3661,7 +3667,9 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
 
     def _property_changed(self, *args, **kwargs):
         """Handler for properties changed signal."""
-        GObject.source_remove(self._timeout_id)
+        # We don't cancel the timeout here due to a problem with the GLib
+        # mainloop. See |_property_wait_timeout| for a full explanation.
+        self._timeout_early = True
         self._signal_watch.disconnect()
         changed_prop = args
 
@@ -3673,6 +3681,17 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
 
     def _property_wait_timeout(self):
         """Timeout handler when waiting for properties update signal."""
+        # Sometimes, GLib.Mainloop doesn't exit after |mainloop.quit()| is
+        # called. This seems to occur only if a timeout source was active and
+        # was removed before it had a chance to run. To mitigate this, we don't
+        # cancel the timeout but mark an early completion instead.
+        # See b/222364364#comment3 for more information.
+        if not self._timeout_early and int(
+                (time.time() - self._timeout_start) *
+                1000) <= self.PROPERTY_UPDATE_TIMEOUT_MILLI_SECS:
+            # Returning True means this will be called again.
+            return True
+
         self._signal_watch.disconnect()
         if self._dbus_mainloop.is_running():
             logging.warning("quit main loop due to timeout")

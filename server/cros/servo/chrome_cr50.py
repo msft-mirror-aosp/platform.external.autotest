@@ -95,8 +95,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CAP_SETTING = 1
     CAP_REQ = 2
     GET_CAP_TRIES = 20
+    CAP_ALWAYS = 'Always'
     # Regex to match the valid capability settings.
-    CAP_STATES = '(Always|Default|IfOpened|UnlessLocked)'
+    CAP_STATES = '(%s|Default|IfOpened|UnlessLocked)' % CAP_ALWAYS
     # List of all cr50 ccd capabilities. Same order of 'ccd' output
     CAP_NAMES = [
             'UartGscRxAPTx', 'UartGscTxAPRx', 'UartGscRxECTx', 'UartGscTxECRx',
@@ -173,6 +174,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
            'RESET_FLAG_SECURITY'         : 1 << 17,
     }
     FIPS_RE = r' ([^ ]*)approved.*allowed: (1|0)'
+    # CCD Capabilities used for c2d2 control drivers.
+    SERVO_DRV_CAPS = ['OverrideWP', 'GscFullConsole', 'RebootECAP']
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.
@@ -1270,10 +1273,48 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Returns True if GSC supports the ccd unlock state."""
         return True
 
-    def ccd_reset_factory (self):
+    def cap_is_always_on(self, cap):
+        """Returns True if the capability is set to Always"""
+        rv = self.send_command_retry_get_output('ccd',
+                                                [cap + self.CAP_FORMAT])[0]
+        # The third field could be Default or "Always". If it's Default,
+        # "Always" must show up in the third field.
+        return self.CAP_ALWAYS in rv[2] or self.CAP_ALWAYS in rv[3]
+
+    def servo_drv_enabled(self):
+        """Check if the caps  are accessible on boards wigh gsc controls."""
+        if not self._servo.main_device_uses_gsc_drv():
+            return True
+        for cap in self.SERVO_DRV_CAPS:
+            # If any capability isn't accessible, return False.
+            if not self.cap_is_always_on(cap):
+                return False
+        return True
+
+    def enable_servo_control_caps(self):
+        """Set all servo control capabilities to Always."""
+        # Nothing do do if servo doesn't use gsc for any controls.
+        if not self._servo.main_device_uses_gsc_drv():
+            return
+        logging.info('Setting servo caps to Always')
+        self.send_command('ccd testlab open')
+        for cap in self.SERVO_DRV_CAPS:
+            self.send_command('ccd set %s Always' % cap)
+        return self.servo_drv_enabled()
+
+    def ccd_reset_factory(self):
         """Enable factory mode."""
         self.send_command('ccd reset factory')
 
-    def ccd_reset(self):
+    def ccd_reset(self, servo_en=True):
         """Reset ccd capabilities."""
+        servo_uses_gsc = self._servo.main_device_uses_gsc_drv()
+        # If testlab mode is enabled, capabilities can be restored. It's
+        # ok to reset ccd.
+        if not servo_en and servo_uses_gsc and not self.testlab_is_on():
+            raise error.TestError(
+                    'Board uses ccd drivers. Enable testlab mode '
+                    'before ccd reset')
         self.send_command('ccd reset')
+        if servo_en:
+            self.enable_servo_control_caps()

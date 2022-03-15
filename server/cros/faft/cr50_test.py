@@ -584,7 +584,7 @@ class Cr50Test(FirmwareTest):
                 # Even if we can't open cr50, do our best to reset the rest of
                 # the system state. Log a warning here.
                 logging.warning('Unable to Open cr50', exc_info=True)
-            self.cr50.ccd_reset()
+            self.cr50.ccd_reset(servo_en=False)
             if not self.cr50.ccd_is_reset():
                 raise error.TestFail('Could not reset ccd')
 

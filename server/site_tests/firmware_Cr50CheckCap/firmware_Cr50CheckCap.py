@@ -24,7 +24,9 @@ class firmware_Cr50CheckCap(Cr50Test):
         if enable_factory:
             self.cr50.ccd_reset_factory()
         else:
-            self.cr50.ccd_reset()
+            # Testlab mode is enabled, so it's ok to reset ccd without enabling
+            # capabilities necessary for ccd.
+            self.cr50.ccd_reset(servo_en=False)
         caps = self.cr50.get_cap_dict()
         logging.info(caps)
         in_factory_mode, is_reset = self.cr50.get_cap_overview(caps)
@@ -138,7 +140,9 @@ class firmware_Cr50CheckCap(Cr50Test):
 
         # Set the password so we can change the ccd level from the console
         self.cr50.send_command('ccd testlab open')
-        self.cr50.ccd_reset()
+        # Testlab mode is enabled, so it's ok to reset ccd without enabling
+        # capabilities necessary for ccd.
+        self.cr50.ccd_reset(servo_en=False)
         self.set_ccd_password(self.CCD_PASSWORD)
 
         # Make sure ccd accessiblity behaves as expected based on the cap

@@ -44,7 +44,7 @@ def check_arc_resource(func):
 
 def file_contains_all_zeros(path):
     """Reads a file and checks whether the file contains all zeros."""
-    with open(path) as f:
+    with open(path, 'rb') as f:
         binary = f.read()
         # Assume data is in 16 bit signed int format. The real format
         # does not matter though since we only care if there is nonzero data.

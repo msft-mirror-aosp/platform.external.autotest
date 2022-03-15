@@ -156,7 +156,18 @@ def _setup_client_symlink(base_path):
     if os.path.isdir(autotest_lib_dir):
         if os.path.islink(os.path.join(autotest_lib_dir, 'client')):
             return
-        _create_client_symlink()
+        try:
+            _create_client_symlink()
+
+        # Its possible 2 autotest processes are running at once, and one
+        # creates the symlink in the time between checking and creating.
+        # Thus if the symlink DNE, and we cannot create it, check for its
+        # existence and exit if it exists.
+        except FileExistsError as e:
+            if os.path.islink(os.path.join(autotest_lib_dir, 'client')):
+                return
+            raise e
+
         return
     os.mkdir(autotest_lib_dir)
     _create_client_symlink()

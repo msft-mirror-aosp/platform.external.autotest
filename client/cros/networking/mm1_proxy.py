@@ -225,7 +225,7 @@ class ModemProxy(object):
     """A wrapper around a DBus proxy for ModemManager1 modem object."""
 
     # Amount of time to wait for a state transition.
-    STATE_TRANSITION_WAIT_SECONDS = 10
+    STATE_TRANSITION_WAIT_SECONDS = 60
 
     def __init__(self, bus, path):
         self._bus = bus

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import logging
 import random
 import string
@@ -181,3 +182,42 @@ def cleanup_host(host, chrome_dir, chrome_mount_point):
         host.run(['rm', '-rf', chrome_dir])
     except Exception as e:
         raise Exception('Exception during cleanup on host %s' % host, e)
+
+
+def get_tast_expr(args_dict):
+    """
+    Get Tast expression from argument dictionary.
+    Users have options of using tast_expr or tast_expr_b64 in dictionary.
+    tast_expr_b64 expects a base64 encoded tast_expr, for instance:
+      tast_expr = '("group:mainline" && "dep:lacros")'
+      tast_expr_b64 = base64.b64encode(s.encode('utf-8')).decode('ascii')
+
+    @param args_dict: Argument dictionary
+
+    """
+    expr = args_dict.get('tast_expr')
+    if expr:
+        return expr
+
+    expr_b64 = args_dict.get('tast_expr_b64')
+    if expr_b64:
+        try:
+            expr = base64.b64decode(expr_b64).decode()
+            return expr
+        except Exception as e:
+            raise Exception('Failed to decode tast_expr_b64: %s' %
+                            expr_b64) from e
+
+    raise Exception(
+            '''Tast expression is unspecified: set tast_expr or tast_expr_b64 in --args.\n'''
+            '''  Example: test_that --args="tast_expr=lacros.Basic"\n'''
+            '''  If the expression contains spaces, consider transforming it to\n'''
+            '''  base64 and passing it via tast_expr_b64 flag.\n'''
+            '''  Example:\n'''
+            '''    In Python:\n'''
+            '''      tast_expr = '("group:mainline" && "dep:lacros")'\n'''
+            '''      # Yields 'KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=='\n'''
+            '''      tast_expr_b64 = base64.b64encode(s.encode('utf-8')).decode('ascii')\n'''
+            '''    Then in Autotest CLI:\n'''
+            '''      test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'''
+            '''  More details at go/lacros-on-skylab.''')

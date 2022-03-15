@@ -1267,4 +1267,13 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return int(allowed)
 
     def unlock_is_supported(self):
+        """Returns True if GSC supports the ccd unlock state."""
         return True
+
+    def ccd_reset_factory (self):
+        """Enable factory mode."""
+        self.send_command('ccd reset factory')
+
+    def ccd_reset(self):
+        """Reset ccd capabilities."""
+        self.send_command('ccd reset')

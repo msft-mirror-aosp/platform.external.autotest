@@ -30,7 +30,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
             raise error.TestNAError('Cannot run test without bpforce')
         self.fast_ccd_open(enable_testlab=True)
         # Reset ccd completely.
-        self.cr50.send_command('ccd reset')
+        self.cr50.ccd_reset()
 
         # If we can fake battery connect/disconnect, then we can test the vendor
         # command.
@@ -170,7 +170,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
         # make sure all of the ccd stuff is reset
         self.cr50.send_command('ccd testlab open')
         # Run ccd reset to make sure all ccd state is cleared
-        self.cr50.send_command('ccd reset')
+        self.cr50.ccd_reset()
         # Clear the TPM owner, so we can set the ccd password and
         # create the FWMP
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)

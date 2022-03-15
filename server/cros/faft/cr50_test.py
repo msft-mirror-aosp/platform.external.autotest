@@ -584,7 +584,7 @@ class Cr50Test(FirmwareTest):
                 # Even if we can't open cr50, do our best to reset the rest of
                 # the system state. Log a warning here.
                 logging.warning('Unable to Open cr50', exc_info=True)
-            self.cr50.send_command('ccd reset')
+            self.cr50.ccd_reset()
             if not self.cr50.ccd_is_reset():
                 raise error.TestFail('Could not reset ccd')
 
@@ -721,7 +721,7 @@ class Cr50Test(FirmwareTest):
             logging.warning('Ignored exception enabling ccd %r', str(e))
         self.cr50.send_command('ccd testlab open')
         self.cr50.send_command('rddkeepalive disable')
-        self.cr50.send_command('ccd reset')
+        self.cr50.ccd_reset()
         self.cr50.send_command('wp follow_batt_pres atboot')
 
     def _restore_ccd_settings(self):

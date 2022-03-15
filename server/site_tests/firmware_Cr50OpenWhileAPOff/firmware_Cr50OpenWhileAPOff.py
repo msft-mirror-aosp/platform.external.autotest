@@ -52,7 +52,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
 
         self.fast_ccd_open(enable_testlab=True)
         # make sure password is cleared.
-        self.cr50.send_command('ccd reset')
+        self.cr50.ccd_reset()
         # Set GscFullConsole to Always, so we can always use gpioset.
         self.cr50.set_cap('GscFullConsole', 'Always')
         # You can only open cr50 from the console if a password is set. Set

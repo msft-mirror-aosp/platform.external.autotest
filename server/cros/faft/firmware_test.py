@@ -2454,7 +2454,7 @@ class FirmwareTest(test.test):
                 self.cr50.set_ccd_testlab('on')
 
         if reset_ccd:
-            self.cr50.send_command('ccd reset')
+            self.cr50.ccd_reset()
 
         # In default, the device should be in normal mode. After opening cr50,
         # the TPM should be cleared and the device should automatically reset to

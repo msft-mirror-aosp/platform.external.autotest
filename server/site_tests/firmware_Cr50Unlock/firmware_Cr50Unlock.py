@@ -31,7 +31,7 @@ class firmware_Cr50Unlock(Cr50Test):
         # Make sure testlab mode is enabled, so we can guarantee the password
         # can be cleared.
         self.fast_ccd_open(enable_testlab=True)
-        self.cr50.send_command('ccd reset')
+        self.cr50.ccd_reset()
         # Set the password
         self.set_ccd_password(self.CCD_PASSWORD)
         if self.cr50.password_is_reset():

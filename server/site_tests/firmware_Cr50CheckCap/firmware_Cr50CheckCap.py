@@ -19,16 +19,19 @@ class firmware_Cr50CheckCap(Cr50Test):
     EXPECTED_REQ_PREPVT = 'Always'
     EXPECTED_REQ_PROD = 'IfOpened'
 
-    def check_cap_command(self, command, enable_factory, reset_caps):
+    def check_cap_command(self, enable_factory, reset_caps):
         """Verify the cr50 cap response after running the given command"""
-        self.cr50.send_command(command)
+        if enable_factory:
+            self.cr50.ccd_reset_factory()
+        else:
+            self.cr50.ccd_reset()
         caps = self.cr50.get_cap_dict()
         logging.info(caps)
         in_factory_mode, is_reset = self.cr50.get_cap_overview(caps)
         if reset_caps and not is_reset:
-            raise error.TestFail('%r did not reset capabilities' % command)
+            raise error.TestFail('did not reset capabilities')
         if enable_factory and not in_factory_mode:
-            raise error.TestFail('%r did not enable factory mode' % command)
+            raise error.TestFail('did not enable factory mode')
 
 
     def check_cap_req(self, cap_dict, cap, expected_req):
@@ -121,10 +124,10 @@ class firmware_Cr50CheckCap(Cr50Test):
                 and self.servo.has_control('ec_board', self._ec_prefix))
 
         # Make sure factory reset sets all capabilities to Always
-        self.check_cap_command('ccd reset factory', True, False)
+        self.check_cap_command(True, False)
 
-        # Make sure ccd reset sets all capabilites to Default
-        self.check_cap_command('ccd reset', False, True)
+        # Make sure ccd reset sets all capabilities to Default
+        self.check_cap_command(False, True)
 
         expected_req = (self.EXPECTED_REQ_PROD if ccd_open_restricted else
                         self.EXPECTED_REQ_PREPVT)
@@ -135,7 +138,7 @@ class firmware_Cr50CheckCap(Cr50Test):
 
         # Set the password so we can change the ccd level from the console
         self.cr50.send_command('ccd testlab open')
-        self.cr50.send_command('ccd reset')
+        self.cr50.ccd_reset()
         self.set_ccd_password(self.CCD_PASSWORD)
 
         # Make sure ccd accessiblity behaves as expected based on the cap

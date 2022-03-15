@@ -66,7 +66,7 @@ class firmware_FWMPDisableCCD(Cr50Test):
         """
         # Clear the password and relock the console
         self.cr50.send_command('ccd testlab open')
-        self.cr50.send_command('ccd reset')
+        self.cr50.ccd_reset()
         # Set this so when we run the open test, it won't clear the FWMP
         self.cr50.set_cap('OpenNoTPMWipe', 'Always')
 

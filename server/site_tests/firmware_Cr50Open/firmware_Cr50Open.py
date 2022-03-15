@@ -26,7 +26,7 @@ class firmware_Cr50Open(Cr50Test):
 
         self.ccd_open_restricted = ccd_open_restricted
         self.fast_ccd_open(enable_testlab=True)
-        self.cr50.send_command('ccd reset')
+        self.cr50.ccd_reset()
         self.cr50.set_ccd_level('lock')
 
 

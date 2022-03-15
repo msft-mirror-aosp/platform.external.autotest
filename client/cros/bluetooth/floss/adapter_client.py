@@ -386,6 +386,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 'Class': (self.proxy().GetBluetoothClass,
                           self.proxy().SetBluetoothClass),
                 'Uuids': (self.proxy().GetUuids, None),
+                'Discoverable':
+                (self.proxy().GetDiscoverable, self.proxy().SetDiscoverable),
         })
 
         self.remote_properties = PropertySet({
@@ -498,19 +500,19 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         return self.remote_properties.get(prop_name, remote_device)
 
     @glib_call(None)
-    def set_property(self, prop_name, value):
+    def set_property(self, prop_name, *args):
         """Sets property by name."""
-        self.properties.set(prop_name, value)
+        return self.properties.set(prop_name, *args)
 
     @glib_call(None)
-    def set_remote_property(self, address, prop_name, value):
+    def set_remote_property(self, address, prop_name, *args):
         """Sets remote property by name."""
         name = 'Test device'
         if address in self.known_devices:
             name = self.known_devices[address]['name']
 
         remote_device = self._make_dbus_device(address, name)
-        self.properties.set(prop_name, remote_device, value)
+        return self.properties.set(prop_name, remote_device, *args)
 
     @glib_call(False)
     def start_discovery(self):

@@ -2087,6 +2087,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return True
 
     @dbus_safe(False)
+    def is_discoverable(self):
+        """Returns whether the adapter is discoverable."""
+        return bool(self._get_adapter_properties().get('Discoverable') == 1)
+
+    @dbus_safe(False)
     def set_powered(self, powered):
         """Set the adapter power state.
 
@@ -4536,3 +4541,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @returns: True if device is paired. False otherwise.
         """
         return self.adapter_client.is_bonded(address)
+
+    def is_discoverable(self):
+        """Return whether the adapter is currently discoverable."""
+        return self.adapter_client.get_property('Discoverable')
+
+    def set_discoverable(self, discoverable, duration=60):
+        """Sets the adapter as discoverable for given duration in seconds."""
+        return self.adapter_client.set_property('Discoverable', discoverable,
+                                                duration)

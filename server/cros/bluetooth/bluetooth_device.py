@@ -312,51 +312,6 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def set_discoverable(self, discoverable):
-        """Set the adapter discoverable state.
-
-        @param discoverable: adapter discoverable state to set (True or False).
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.set_discoverable(discoverable)
-
-
-    def is_discoverable(self):
-        """Is the adapter in the discoverable state?
-
-        @return True if discoverable. False otherwise.
-
-        """
-        properties = self.get_adapter_properties()
-        return properties.get('Discoverable') == 1
-
-
-    @proxy_thread_safe
-    def set_discoverable_timeout(self, discoverable_timeout):
-        """Set the adapter DiscoverableTimeout.
-
-        @param discoverable_timeout: adapter DiscoverableTimeout
-                value to set in seconds (Integer).
-
-        @return True on success, False otherwise.
-
-        """
-        return self._proxy.set_discoverable_timeout(discoverable_timeout)
-
-
-    @proxy_thread_safe
-    def get_discoverable_timeout(self):
-        """Get the adapter DiscoverableTimeout.
-
-        @return Value of property DiscoverableTimeout in seconds (Integer).
-
-        """
-        return self._proxy.get_discoverable_timeout()
-
-
-    @proxy_thread_safe
     def set_pairable_timeout(self, pairable_timeout):
         """Set the adapter PairableTimeout.
 

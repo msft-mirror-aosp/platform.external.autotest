@@ -33,7 +33,7 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    @test_wrapper('Discovery Test', devices={"MOUSE":1})
+    @test_wrapper('Discovery Test', devices={"MOUSE": 1}, supports_floss=True)
     def cl_adapter_discovery_test(self):
         """Performs pairing test with mouse peripheral"""
         device = self.devices['MOUSE'][0]
@@ -42,7 +42,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         self.test_device_name(device.address, device.name)
 
 
-    @test_wrapper('Discoverable Test', devices={"MOUSE":1})
+    @test_wrapper('Discoverable Test',
+                  devices={"MOUSE": 1},
+                  supports_floss=True)
     def cl_adapter_discoverable_test(self):
         """Verifies that DUT can become discoverable and be discovered"""
 
@@ -64,7 +66,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                           self.test_mouse_right_click)
 
 
-    @test_wrapper('keyboard Pairing Test', devices={"KEYBOARD":1})
+    @test_wrapper('keyboard Pairing Test',
+                  devices={"KEYBOARD": 1},
+                  supports_floss=True)
     def cl_adapter_keyboard_pairing_test(self):
         """Performs pairing test with keyboard peripheral"""
         device = self.devices['KEYBOARD'][0]
@@ -93,7 +97,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                           pairing_twice=True)
 
 
-    @test_wrapper('HID Reports Test', devices={"MOUSE":1})
+    @test_wrapper('HID Reports Test',
+                  devices={"MOUSE": 1},
+                  supports_floss=True)
     def cl_HID_reports_test(self):
         """Performs HID report test with mouse peripheral"""
         device = self.devices['MOUSE'][0]
@@ -102,7 +108,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                           self.test_mouse_right_click)
 
 
-    @test_wrapper('HID keyboard Reports Test', devices={'KEYBOARD':1})
+    @test_wrapper('HID keyboard Reports Test',
+                  devices={'KEYBOARD': 1},
+                  supports_floss=True)
     def cl_HID_keyboard_reports_test(self):
         """Performs HID report test with keyboard peripheral"""
         device = self.devices['KEYBOARD'][0]

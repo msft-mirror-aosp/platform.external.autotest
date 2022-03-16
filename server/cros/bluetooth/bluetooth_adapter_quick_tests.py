@@ -396,7 +396,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         raise error.TestNAError(
                                 'Test not supported on this model')
 
-                    chipset = self.get_chipset_name()
+                    chipset = self.bluetooth_facade.get_chipset_name()
                     logging.debug('Bluetooth module name is %s', chipset)
                     if chipset in skip_chipsets:
                         logging.info('SKIPPING TEST %s on chipset %s',

@@ -423,7 +423,7 @@ class BluetoothAdapterAdvMonitorTests(
                  Offloading but the support is missing.
 
         """
-        chipset = self.get_chipset_name()
+        chipset = self.bluetooth_facade.get_chipset_name()
         if chipset in ADVMON_UNSUPPORTED_CHIPSETS:
             logging.warning('Controller support check skipped for %s', chipset)
         else:

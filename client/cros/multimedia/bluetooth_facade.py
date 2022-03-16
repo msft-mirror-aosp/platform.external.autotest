@@ -1761,8 +1761,9 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         """
 
         try:
-            return bool(self._objmgr_proxy) and bool(
-                    self._objmgr_proxy.GetManagedObjects())
+            return self.is_bluetoothd_running() and bool(
+                    self._objmgr_proxy) and bool(
+                            self._objmgr_proxy.GetManagedObjects())
         except GLib.Error:
             return False
 

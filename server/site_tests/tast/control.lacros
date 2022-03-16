@@ -2,11 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
 import logging
 import os
 
-from autotest_lib.client.common_lib.error import TestFail
 from autotest_lib.server import utils
 from autotest_lib.server.cros import chrome_sideloader
 
@@ -42,21 +40,7 @@ def run(machine):
     host=hosts.create_host(machine)
     varslist = []
     args_dict = utils.args_to_dict(args)
-    expr = args_dict.get('tast_expr')
-    if not expr:
-        expr_b64 = args_dict.get('tast_expr_b64')
-        if expr_b64:
-            expr = base64.b64decode(expr_b64)
-    if isinstance(expr, bytes):
-        expr = expr.decode()
-    if not expr:
-        raise TestFail(
-                'Attribute expression is unspecified; set tast_expr in --args.\n'
-                '  Example: test_that --args="tast_expr=lacros.Basic"\n'
-                '  If the expression contains spaces, consider transforming it to\n'
-                '  base64 and passing it via tast_expr_b64 flag.\n'
-                '  Example: test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'
-                '  More details at go/lacros-on-skylab.')
+    expr = chrome_sideloader.get_tast_expr(args_dict)
     logging.info('Tast expr: %s', expr)
 
     assert host.path_exists('/var/lib/imageloader/lacros'), ('lacros artifact'

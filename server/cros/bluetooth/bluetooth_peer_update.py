@@ -64,7 +64,7 @@ def read_google_cloud_file(filename):
 
     Read the contents of the Googlle cloud file.
 
-    @params filename: the filename of the Google cloud file
+    @param filename: the filename of the Google cloud file
 
     @returns: the contexts of the file if successful; None otherwise.
     """
@@ -109,18 +109,32 @@ def is_commit_hash_equal(peer, target_commit):
     return commit == target_commit
 
 
-def perform_update(peer, target_commit, latest_commit):
-    """ Update the chameleond on the peer"""
+def perform_update(force_system_packages_update, peer, target_commit,
+                   latest_commit):
+    """ Update the chameleond on the peer
+
+    @param force_system_packages_update: True to update system packages of the
+                                          peer.
+    @param peer: btpeer to be updated
+    @param target_commit: target git commit
+    @param latest_commit: the latest git commit in the lab_commit_map, which
+                           is defined in the bluetooth_commits.yaml
+
+    @returns: True if the update process is success, False otherwise
+    """
 
     # Only update the system when the target commit is the latest.
     # Since system packages are backward compatible so it's safe to keep
     # it the latest.
-    needs_system_update = (target_commit == latest_commit)
-    if needs_system_update:
-        logging.info("Update system packages on the peer.")
-        needs_system_update = 'true'
+    needs_system_update = 'true'
+    if force_system_packages_update:
+        logging.info("Forced system packages update on the peer.")
+    elif target_commit == latest_commit:
+        logging.info(
+                "Perform system packages update as the peer's "
+                "target_commit is the latest one %s", target_commit)
     else:
-        logging.debug("Skip updating system packages on the peer.")
+        logging.info("Skip updating system packages on the peer.")
         needs_system_update = 'false'
 
     logging.info('copy the file over to the peer')
@@ -193,12 +207,15 @@ def restart_check_chameleond(peer):
     return status and expected_output in output
 
 
-def update_peer(peer, target_commit, latest_commit):
+def update_peer(force_system_packages_update, peer, target_commit,
+                latest_commit):
     """Update the chameleond on peer devices if required
 
-    @params peer: btpeer to be updated
-    @params target_commit: target git commit
-    @params latest_commit: the latest git commit in the lab_commit_map, which
+    @param force_system_packages_update: True to update system packages of the
+                                          peer
+    @param peer: btpeer to be updated
+    @param target_commit: target git commit
+    @param latest_commit: the latest git commit in the lab_commit_map, which
                            is defined in the bluetooth_commits.yaml
 
     @returns: (True, None) if update succeeded
@@ -209,7 +226,8 @@ def update_peer(peer, target_commit, latest_commit):
         logging.error('Unsupported peer %s',str(peer.host))
         return False, 'Unsupported peer'
 
-    if not perform_update(peer, target_commit, latest_commit):
+    if not perform_update(force_system_packages_update, peer, target_commit,
+                          latest_commit):
         return False, 'Update failed'
 
     if not restart_check_chameleond(peer):
@@ -225,7 +243,7 @@ def update_peer(peer, target_commit, latest_commit):
 def update_all_peers(host, raise_error=False):
     """Update the chameleond on all peer devices of the given host
 
-    @param host: the DUT, usually a chromebook
+    @param host: the DUT, usually a Chromebook
     @param raise_error: set this to True to raise an error if any
 
     @returns: True if _update_all_peers success
@@ -247,9 +265,9 @@ def update_all_peers(host, raise_error=False):
 def _update_all_peers(host):
     """Update the chameleond on all peer devices of an host"""
     try:
-        build = host.get_release_version()
-        target_commit = get_target_commit(host.hostname, build)
-        latest_commit = get_target_commit(hostname='', host_build='9999999')
+        target_commit = get_target_commit(host)
+        latest_commit = get_latest_commit(host)
+
         if target_commit is None:
             return 'Unable to get current commit'
 
@@ -274,8 +292,10 @@ def _update_all_peers(host):
 
         # TODO(b:160782273) Make this parallel
         failed_peers = []
+        host_is_in_lab_next_hosts = is_in_lab_next_hosts(host)
         for peer in peers_to_update:
-            updated, reason = update_peer(peer, target_commit, latest_commit)
+            updated, reason = update_peer(host_is_in_lab_next_hosts, peer,
+                                          target_commit, latest_commit)
             if updated:
                 logging.info('peer %s updated successfully', str(peer.host))
             else:
@@ -291,8 +311,98 @@ def _update_all_peers(host):
             return 'Update peer cleanup failed'
 
 
-def get_target_commit(hostname, host_build):
-    """ Get the target commit per the DUT hostname
+def get_bluetooth_commits_yaml(host, method='from_cloud'):
+    """Get the bluetooth_commit.yaml file
+
+    This function has the side effect that it will set the attribute,
+    host.bluetooth_commits_yaml for caching.
+
+    @param host: the DUT, usually a Chromebook
+    @param method: from_cloud: download the YAML file from the Google Cloud
+                                Storage
+                    from_local: download the YAML file from local, this option
+                                is convienent for testing
+    @returns: bluetooth_commits.yaml file if exists
+
+    @raises: error.TestFail if failed to get the yaml file
+    """
+    try:
+        if not hasattr(host, 'bluetooth_commits_yaml'):
+            if method == 'from_cloud':
+                src = GS_PUBLIC + COMMITS_FILENAME
+                host.bluetooth_commits_yaml = yaml.safe_load(
+                        read_google_cloud_file(src))
+            elif method == 'from_local':
+                yaml_file_path = os.path.dirname(os.path.realpath(__file__))
+                yaml_file_path = os.path.join(yaml_file_path,
+                                              'bluetooth_commits.yaml')
+                with open(yaml_file_path) as f:
+                    yaml_file = f.read()
+                    host.bluetooth_commits_yaml = yaml.safe_load(yaml_file)
+            else:
+                raise error.TestError('invalid YAML download method: %s',
+                                      method)
+            logging.info('content of yaml file: %s',
+                         host.bluetooth_commits_yaml)
+    except Exception as e:
+        logging.error('Error getting bluetooth_commits.yaml: %s', e)
+
+    return host.bluetooth_commits_yaml
+
+
+def is_in_lab_next_hosts(host):
+    """Check if the host is in the lab_next_hosts
+
+    This function has the side effect that it will set the attribute,
+    host.is_in_lab_next_hosts for caching.
+
+    @param host: the DUT, usually a Chromebook
+
+    @returns: True if the host is in the lab_next_hosts, False otherwise.
+    """
+    if not hasattr(host, 'is_in_lab_next_hosts'):
+        host_build = host.get_release_version()
+        content = get_bluetooth_commits_yaml(host)
+
+        if (host_name(host) in content.get('lab_next_hosts')
+                    and host_build == content.get('lab_next_build')):
+            host.is_in_lab_next_hosts = True
+        else:
+            host.is_in_lab_next_hosts = False
+    return host.is_in_lab_next_hosts
+
+
+def get_latest_commit(host):
+    """ Get the latest_commmit in the bluetooth_commits.yaml
+
+    @param host: the DUT, usually a Chromebook
+
+    @returns: the latest commit hash if exists
+    """
+    try:
+        content = get_bluetooth_commits_yaml(host)
+        latest_commit = content.get('lab_commit_map')[0]['chameleon_commit']
+        logging.info('The latest commit is: %s', latest_commit)
+    except Exception as e:
+        logging.error('Exception in get_latest_commit(): ', str(e))
+    return latest_commit
+
+
+def host_name(host):
+    """ Get the name of a host
+
+    @param host: the DUT, usually a Chromebook
+
+    @returns: the hostname if exists, None otherwise
+    """
+    if hasattr(host, 'hostname'):
+        return host.hostname.rstrip('.cros')
+    else:
+        return None
+
+
+def get_target_commit(host):
+    """ Get the target commit per the DUT
 
     Download the yaml file containing the commits, parse its contents,
     and cleanup.
@@ -326,40 +436,38 @@ def get_target_commit(hostname, host_build):
     On the other hand, if lab_next_commit is stable by juding from the lab
     dashboard, someone can then copy lab_next_build to lab_commit_map manually.
 
-    @params hostname: the client hostname;
-                      can be a DNS name or a numerical IP address
-    @params host_build: the image build number of the host
+    @param host: the DUT, usually a Chromebook
 
     @returns commit in case of success; None in case of failure
     """
-    # The hostname may have a suffix of '.cros' if the test server
-    # is located out of the lab. Remove the suffix for consistency.
-    hostname = hostname.rstrip('.cros')
-    try:
-        src = GS_PUBLIC + COMMITS_FILENAME
-        content = yaml.safe_load(read_google_cloud_file(src))
-        logging.info('content of %s: %s', src, content)
-        commit = content.get('lab_next_commit')
-        if (hostname in content.get('lab_next_hosts') and
-            host_build == content.get('lab_next_build') and
-            bool(commit)):
-            logging.info('Next btpeer commit of %s: %s', hostname, commit)
-        else:
-            # Otherwise, use the current commit.
-            host_build = int(host_build.replace(".", ""))
-            lab_commit_map = content.get('lab_commit_map')
-            commit = None
+    hostname = host_name(host)
 
+    try:
+        content = get_bluetooth_commits_yaml(host)
+
+        lab_next_commit = content.get('lab_next_commit')
+        if (is_in_lab_next_hosts(host) and bool(lab_next_commit)):
+            commit = lab_next_commit
+            logging.info(
+                    'target commit of the host %s is: %s from the '
+                    'lab_next_commit', hostname, commit)
+        else:
+            host_build = int(host.get_release_version().replace(".", ""))
+            lab_commit_map = content.get('lab_commit_map')
             for item in lab_commit_map:
                 build = item['build_version']
-
                 if host_build >= int(build.replace(".", "")):
                     commit = item['chameleon_commit']
                     break
+            else:
+                logging.error('lab_commit_map is corrupted')
+                commit = None
+            logging.info(
+                    'target commit of the host %s is: %s from the '
+                    'lab_commit_map', hostname, commit)
 
-            logging.info('Current btpeer commit of %s: %s', hostname, commit)
     except Exception as e:
-        logging.error('exception %s in get_target_commit', str(e))
+        logging.error('Exception %s in get_target_commit()', str(e))
         commit = None
     return commit
 

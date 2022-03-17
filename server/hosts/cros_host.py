@@ -459,6 +459,13 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         else:
             self.pdtester = None
 
+        try:
+            logging.debug('Pre test lsb-release {}'.format(
+                    self._get_lsb_release_content()))
+        except Exception as e:
+            logging.debug(
+                    'Could not get lsb-release on SSH connection because %s',
+                    e)
 
     def initialize_btpeer(self, btpeer_args=[]):
         """ Initialize the Bluetooth peers
@@ -1468,6 +1475,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Close connection."""
         super(CrosHost, self).close()
 
+        logging.debug('Post test lsb-release {}'.format(
+                self._get_lsb_release_content()))
+
         if self._chameleon_host:
             self._chameleon_host.close()
 
@@ -1829,6 +1839,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                'error' : ''}
 
         t0 = time.time()
+        logging.debug('Pre reboot lsb-release {}'.format(
+                self._get_lsb_release_content()))
         try:
             super(CrosHost, self).reboot(**dargs)
         except Exception as e:
@@ -1838,6 +1850,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             raise
         finally:
             duration = int(time.time() - t0)
+            logging.debug('Post reboot lsb-release {}'.format(
+                    self._get_lsb_release_content()))
+
             metrics.Counter(
                     'chromeos/autotest/autoserv/reboot_count').increment(
                     fields=metric_fields)

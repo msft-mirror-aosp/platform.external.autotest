@@ -381,6 +381,9 @@ class BluetoothBaseFacadeLocal(object):
             except Exception as e:
                 logging.error('timeout: error waiting for set_floss_enabled')
 
+        # Also configure cras to enable/disable floss
+        cras_utils.set_floss_enabled(enabled)
+
         return True
 
     def log_message(self, msg):
@@ -4196,6 +4199,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 self.manager_client.has_proxy(),
                 self.adapter_client.has_proxy()
         ])
+
+    def is_bluetoothd_running(self):
+        """Checks whether Floss daemon is running."""
+        # This api doesn't enforce that the adapter is powered so we only check
+        # that the manager proxy is up.
+        return self.manager_client.has_proxy()
 
     def has_adapter(self):
         """Checks whether an adapter exists."""

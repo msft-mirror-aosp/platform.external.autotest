@@ -718,6 +718,14 @@ def set_bypass_block_noise_cancellation(bypass):
     get_cras_control_interface().SetBypassBlockNoiseCancellation(bypass)
 
 
+def set_floss_enabled(enabled):
+    """Sets whether CRAS stack expects to use Floss.
+
+    @param enabled: True for Floss, False for Bluez.
+    """
+    get_cras_control_interface().SetFlossEnabled(enabled)
+
+
 class CrasTestClient(object):
     """An object to perform cras_test_client functions."""
 

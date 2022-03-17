@@ -80,7 +80,9 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                            test_profile)
 
 
-    @test_wrapper('A2DP sinewave test', devices={'BLUETOOTH_AUDIO':1})
+    @test_wrapper('A2DP sinewave test',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_a2dp_test(self):
         """A2DP test with sinewaves on the two channels."""
         self._au_a2dp_test(A2DP)
@@ -397,7 +399,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                  num_iterations=1,
                  args_dict=None,
                  test_name=None,
-                 flag='Quick Health'):
+                 flag='Quick Health',
+                 floss=False):
         """Run the batch of Bluetooth stand health tests
 
         @param host: the DUT, usually a chromebook
@@ -409,6 +412,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.quick_test_init(host,
                              use_btpeer=True,
                              flag=flag,
-                             args_dict=args_dict)
+                             args_dict=args_dict,
+                             floss=floss)
         self.au_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

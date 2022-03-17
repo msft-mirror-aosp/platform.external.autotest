@@ -45,6 +45,17 @@ class JobMatcher(object):
                 and self.name in other.name)
 
 
+class hostinfoMatcher(object):
+    """Match hostinfo stuff"""
+
+    def __init__(self, labels, attributes):
+        self.labels = labels
+        self.attributes = attributes
+
+    def __eq__(self, other):
+        return self.labels == other.labels and self.attributes == other.attributes
+
+
 class ContainsMatcher:
     """Matcher for object contains attr."""
 
@@ -307,6 +318,9 @@ class TestRunnerUnittests(unittest.TestCase):
 
         test_runner_utils_mock.side_effect = [minus_tests, all_tests]
         run_job_mock.side_effect = [(0, 'fakedir') for _ in range(3)]
+        test_labels = ['a', 'test', 'label']
+        test_attributes = {"servo": "yes"}
+
         res = test_runner_utils.perform_local_run(
                 self.autotest_path, ['suite:' + self.suite_name],
                 self.remote,
@@ -317,22 +331,27 @@ class TestRunnerUnittests(unittest.TestCase):
                 ssh_options=self.ssh_options,
                 args=self.args,
                 results_directory=self.results_dir,
+                host_attributes=test_attributes,
                 job_retry=self.retry,
                 ignore_deps=False,
                 minus=[self.suite_control_files[0]],
-                is_cft=True)
+                is_cft=True,
+                host_labels=test_labels)
 
         from mock import call
 
         calls = []
         for name in self.suite_control_files[1:]:
             calls.append(
-                    call(JobMatcher(test_runner_utils.SimpleJob,
-                                    name=name), self.remote,
-                         TypeMatcher(host_info.HostInfo), self.autotest_path,
-                         self.results_dir, self.fast_mode,
-                         self.id_digits, self.ssh_verbosity, self.ssh_options,
-                         TypeMatcher(str), False, False, None, None, True))
+                    call(
+                            JobMatcher(test_runner_utils.SimpleJob,
+                                       name=name), self.remote,
+                            hostinfoMatcher(labels=test_labels,
+                                            attributes=test_attributes),
+                            self.autotest_path, self.results_dir,
+                            self.fast_mode, self.id_digits,
+                            self.ssh_verbosity, self.ssh_options,
+                            TypeMatcher(str), False, False, None, None, True))
 
         run_job_mock.assert_has_calls(calls, any_order=True)
         assert run_job_mock.call_count == len(calls)
@@ -391,6 +410,30 @@ class TestRunnerUnittests(unittest.TestCase):
         finally:
             # In the event something breaks, reset the pre-test version.
             os.environ['PY_VERSION'] = starting_version
+
+    def test_host_info_write(self):
+
+        dirpath = tempfile.mkdtemp()
+
+        info = host_info.HostInfo(['some', 'labels'], {'attrib1': '1'})
+        import pathlib
+        expected_path = os.path.join(
+                pathlib.Path(__file__).parent.absolute(),
+                'host_info_store_testfile')
+        try:
+
+            test_runner_utils._write_host_info(dirpath, 'host_info_store',
+                                               'localhost:1234', info)
+            test_path = os.path.join(dirpath, 'host_info_store',
+                                     'localhost:1234.store')
+            with open(test_path, 'r') as rf:
+                test_data = rf.read()
+            with open(expected_path, 'r') as rf:
+                expected_data = rf.read()
+            self.assertEqual(test_data, expected_data)
+
+        finally:
+            shutil.rmtree(dirpath)
 
 
 if __name__ == '__main__':

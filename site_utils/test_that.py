@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import json
 import os
 import signal
 import subprocess
@@ -89,6 +90,12 @@ def validate_arguments(arguments):
     else:
         if arguments.web:
             raise ValueError('--web flag not supported when running locally')
+
+    try:
+        json.loads(arguments.host_attributes)
+    except TypeError:
+        raise ValueError("--host_attributes must be quoted dict, got: %s" %
+                         arguments.host_attributes)
 
 
 def parse_arguments(argv):
@@ -187,6 +194,15 @@ def _parse_arguments_internal(argv):
                         default=False,
                         dest='CFT',
                         help="If running in, or mocking, the CFT env.")
+    parser.add_argument('--host_attributes',
+                        action='store',
+                        default='{}',
+                        help='host_attributes')
+    parser.add_argument('--host_labels',
+                        action='store',
+                        default=[],
+                        nargs='+',
+                        help='host_labels')
     return parser.parse_args(argv), remote_argv
 
 
@@ -352,7 +368,9 @@ def _main_for_local_run(argv, arguments):
                 companion_hosts=arguments.companion_hosts,
                 minus=arguments.minus,
                 dut_servers=arguments.dut_servers,
-                is_cft=arguments.CFT)
+                is_cft=arguments.CFT,
+                host_attributes=json.loads(arguments.host_attributes),
+                host_labels=arguments.host_labels)
 
 
 def _main_for_lab_run(argv, arguments):

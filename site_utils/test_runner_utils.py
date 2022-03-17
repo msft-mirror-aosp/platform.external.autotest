@@ -495,7 +495,8 @@ def perform_local_run(autotest_path,
                       companion_hosts=None,
                       minus=[],
                       dut_servers=None,
-                      is_cft=False):
+                      is_cft=False,
+                      host_labels=None):
     """Perform local run of tests.
 
     This method enforces satisfaction of test dependencies for tests that are
@@ -533,20 +534,18 @@ def perform_local_run(autotest_path,
     args = _set_default_servo_args(args)
 
     # version doesn't really matter for local runs...
-    # NOTE: when F20 local env is implemented this will need to be re-addressed
-    labels = [
-            u'cros-version:ad_hoc_build',
-            u'board:%s' % board,
-            u'model:%s' % model
-    ]
+    if not host_labels:
+        host_labels = [
+                u'cros-version:ad_hoc_build',
+                u'board:%s' % board,
+                u'model:%s' % model
+        ]
+        if not ignore_deps:
+            logging.info('Auto-detecting labels for %s', remote)
+            # Auto-detected labels may duplicate explicitly set ones.
+            host_labels += list(set(_auto_detect_labels(remote)))
 
-    if not ignore_deps:
-        logging.info('Auto-detecting labels for %s', remote)
-        # Auto-detected labels may duplicate explicitly set ones.
-        labels += list(set(_auto_detect_labels(remote)))
-
-    info = host_info.HostInfo(labels, host_attributes)
-
+    info = host_info.HostInfo(host_labels, host_attributes)
     job_queue = []
     test_num = 0
 
@@ -573,7 +572,7 @@ def perform_local_run(autotest_path,
                 job.set_control_file(control)
                 if ignore_deps:
                     job_queue.append(job)
-                elif job.deps_satisfied(labels):
+                elif job.deps_satisfied(host_labels):
                     job_queue.append(job)
     _set_pyversion(job_queue)
     codes = []
@@ -748,7 +747,8 @@ def perform_run_from_autotest_root(autotest_path,
                                    companion_hosts=None,
                                    minus=[],
                                    dut_servers=None,
-                                   is_cft=False):
+                                   is_cft=False,
+                                   host_labels=None):
     """
     Perform a test_that run, from the |autotest_path|.
 
@@ -824,7 +824,8 @@ def perform_run_from_autotest_root(autotest_path,
                               companion_hosts=companion_hosts,
                               minus=minus,
                               dut_servers=dut_servers,
-                              is_cft=is_cft)
+                              is_cft=is_cft,
+                              host_labels=host_labels)
     if pretend:
         logging.info('Finished pretend run. Exiting.')
         return 0

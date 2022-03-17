@@ -66,8 +66,6 @@ _CONTROLFILE_TEMPLATE = Template(
     DOC = '{{DOC}}'
     {%- if servo_support_needed %}
 
-    # For local debugging, if your test setup doesn't have servo, REMOVE these
-    # two lines.
     args_dict = server_utils.args_to_dict(args)
     servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
@@ -79,8 +77,6 @@ _CONTROLFILE_TEMPLATE = Template(
     {% else %}
     def {{test_func_name}}(machine):
         {%- if servo_support_needed %}
-        # REMOVE 'servo_args=servo_args' arg for local debugging if your test
-        # setup doesn't have servo.
         try:
             host_list = [hosts.create_host(machine, servo_args=servo_args)]
         except:
@@ -139,7 +135,7 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- for arg in extra_args %}
             {{arg}},
     {%- endfor %}
-    {%- if servo_support_needed %}
+    {%- if needs_power_cycle %}
             hard_reboot_on_failure=True,
     {%- endif %}
     {%- if camera_facing %}
@@ -301,6 +297,14 @@ def get_doc(modules, abi, is_public):
 
 def servo_support_needed(modules, is_public=True):
     """Determines if servo support is needed for a module."""
+    servo_modules = set(
+            CONFIG.get('NEEDS_DISK_EJECT', []) +
+            CONFIG.get('NEEDS_POWER_CYCLE', []))
+    return not is_public and modules.intersection(servo_modules)
+
+
+def needs_power_cycle(modules, is_public=True):
+    """Determines if powercycling is needed for a module."""
     return not is_public and any(module in CONFIG['NEEDS_POWER_CYCLE']
                                  for module in modules)
 
@@ -960,6 +964,7 @@ def get_controlfile_content(combined,
             uri=uri,
             DOC=get_doc(modules, abi, is_public),
             servo_support_needed=servo_support_needed(modules, is_public),
+            needs_power_cycle=needs_power_cycle(modules, is_public),
             wifi_info_needed=wifi_info_needed(modules, is_public),
             max_retries=get_max_retries(modules, abi, suites, is_public),
             timeout=calculate_timeout(modules, suites),

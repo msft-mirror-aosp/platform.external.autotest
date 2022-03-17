@@ -16,14 +16,10 @@ MAX_RESULT_SIZE_KB = 512000
 PY_VERSION = 3
 DOC = 'Run module CtsAdminPackageInstallerTestCases, CtsAdminTestCases, CtsAlarmClockTestCases, CtsAlarmManagerTestCases, CtsAndroidAppTestCases, CtsAndroidTestBase27ApiSignatureTestCases, CtsAndroidTestMockCurrentApiSignatureTestCases, CtsAndroidTestRunnerCurrentApiSignatureTestCases, CtsAnimationTestCases, CtsApacheHttpLegacy27ApiSignatureTestCases, CtsApacheHttpLegacyCurrentApiSignatureTestCases, CtsApacheHttpLegacyUsesLibraryApiSignatureTestCases, CtsAppComponentFactoryTestCases, CtsAppSecurityHostTestCases, CtsAppTestCases, CtsAppUsageHostTestCases, CtsAppWidgetTestCases, CtsAslrMallocTestCases, CtsAssistTestCases, CtsAtraceHostTestCases, CtsAutoFillServiceTestCases, CtsBackgroundRestrictionsTestCases, CtsBackupHostTestCases, CtsBackupTestCases, CtsBatterySavingTestCases, CtsBionicTestCases, CtsBluetoothTestCases, CtsBootStatsTestCases, CtsCalendarcommon2TestCases, CtsCameraApi25TestCases of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
-# For local debugging, if your test setup doesn't have servo, REMOVE these
-# two lines.
 args_dict = server_utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run_TS(machine):
-    # REMOVE 'servo_args=servo_args' arg for local debugging if your test
-    # setup doesn't have servo.
     try:
         host_list = [hosts.create_host(machine, servo_args=servo_args)]
     except:
@@ -43,7 +39,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
-        login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
         prerequisites=['bluetooth'],
         hard_reboot_on_failure=True,
         timeout=88200)

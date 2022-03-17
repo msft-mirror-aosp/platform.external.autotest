@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 # This file has been automatically generated. Do not edit!
+from autotest_lib.server import utils as server_utils
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_R.internal.arm.all.CtsFragmentTestCases_-_CtsJobSchedulerTestCases'
@@ -15,8 +16,15 @@ MAX_RESULT_SIZE_KB = 512000
 PY_VERSION = 3
 DOC = 'Run module CtsFragmentTestCases, CtsFragmentTestCasesSdk26, CtsFragmentTestCasesSdk26[instant], CtsFragmentTestCasesSdk26[secondary_user], CtsFragmentTestCases[instant], CtsFragmentTestCases[secondary_user], CtsFsMgrTestCases, CtsFsMgrTestCases[secondary_user], CtsGestureTestCases, CtsGestureTestCases[instant], CtsGestureTestCases[secondary_user], CtsGpuProfilingDataTestCases, CtsGpuProfilingDataTestCases[secondary_user], CtsGpuToolsHostTestCases, CtsGpuToolsHostTestCases[secondary_user], CtsGraphicsTestCases, CtsGraphicsTestCases[instant], CtsGraphicsTestCases[secondary_user], CtsGwpAsanTestCases, CtsGwpAsanTestCases[instant], CtsGwpAsanTestCases[secondary_user], CtsHardwareTestCases, CtsHardwareTestCases[secondary_user], CtsHarmfulAppWarningHostTestCases, CtsHarmfulAppWarningHostTestCases[secondary_user], CtsHdmiCecHostTestCases, CtsHdmiCecHostTestCases[secondary_user], CtsHiddenApiBlacklistApi27TestCases, CtsHiddenApiBlacklistApi27TestCases[secondary_user], CtsHiddenApiBlacklistApi28TestCases, CtsHiddenApiBlacklistApi28TestCases[secondary_user], CtsHiddenApiBlacklistCurrentApiTestCases, CtsHiddenApiBlacklistCurrentApiTestCases[secondary_user], CtsHiddenApiBlacklistDebugClassTestCases, CtsHiddenApiBlacklistDebugClassTestCases[secondary_user], CtsHiddenApiBlacklistTestApiTestCases, CtsHiddenApiBlacklistTestApiTestCases[secondary_user], CtsHiddenApiKillswitchDebugClassTestCases, CtsHiddenApiKillswitchDebugClassTestCases[instant], CtsHiddenApiKillswitchDebugClassTestCases[secondary_user], CtsHiddenApiKillswitchWhitelistTestCases, CtsHiddenApiKillswitchWhitelistTestCases[instant], CtsHiddenApiKillswitchWhitelistTestCases[secondary_user], CtsHiddenApiKillswitchWildcardTestCases, CtsHiddenApiKillswitchWildcardTestCases[instant], CtsHiddenApiKillswitchWildcardTestCases[secondary_user], CtsHostTzDataTests, CtsHostTzDataTests[secondary_user], CtsHostsideNetworkTests, CtsHostsideNetworkTests[instant], CtsHostsideNetworkTests[secondary_user], CtsHostsideNumberBlockingTestCases, CtsHostsideNumberBlockingTestCases[secondary_user], CtsHostsideTvTests, CtsHostsideTvTests[secondary_user], CtsHostsideWebViewTests, CtsHostsideWebViewTests[instant], CtsHostsideWebViewTests[secondary_user], CtsIcuTestCases, CtsIcuTestCases[secondary_user], CtsIdentityTestCases, CtsIdentityTestCases[secondary_user], CtsIkeTestCases, CtsIkeTestCases[secondary_user], CtsIncidentHostTestCases, CtsIncidentHostTestCases[instant], CtsIncrementalInstallHostTestCases, CtsIncrementalInstallHostTestCases[secondary_user], CtsInitTestCases, CtsInitTestCases[secondary_user], CtsInlineMockingTestCases, CtsInlineMockingTestCases[instant], CtsInlineMockingTestCases[secondary_user], CtsInputMethodServiceHostTestCases, CtsInputMethodServiceHostTestCases[instant], CtsInputMethodServiceHostTestCases[secondary_user], CtsInputMethodTestCases, CtsInputMethodTestCases[instant], CtsInputMethodTestCases[secondary_user], CtsInstantAppTests, CtsInstantAppTests[secondary_user], CtsIntentSignatureTestCases, CtsIntentSignatureTestCases[secondary_user], CtsJdwpSecurityHostTestCases, CtsJdwpSecurityHostTestCases[secondary_user], CtsJdwpTestCases, CtsJdwpTestCases[instant], CtsJdwpTestCases[secondary_user], CtsJdwpTunnelHostTestCases, CtsJdwpTunnelHostTestCases[secondary_user], CtsJniTestCases, CtsJniTestCases[instant], CtsJniTestCases[secondary_user], CtsJobSchedulerSharedUidTestCases, CtsJobSchedulerSharedUidTestCases[secondary_user], CtsJobSchedulerTestCases, CtsJobSchedulerTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
 
+args_dict = server_utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
 def run_TS(machine):
-    host_list = [hosts.create_host(machine)]
+    try:
+        host_list = [hosts.create_host(machine, servo_args=servo_args)]
+    except:
+        # Just ignore any servo setup flakiness.
+        host_list = [hosts.create_host(machine)]
     job.run_test(
         'cheets_CTS_R',
         hosts=host_list,
@@ -30,7 +38,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
-        login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
         use_jdk9=True,
         timeout=172800)
 

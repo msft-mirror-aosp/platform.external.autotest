@@ -191,6 +191,13 @@ class TradefedTest(test.test):
                 bundle)
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
+        # Make sure USB key is invisible to the device.
+        if self._hosts[0].servo:
+            logging.error("usb off by servo")
+            self._hosts[0].servo.switch_usbkey('off')
+        else:
+            logging.error("no servo")
+
     def _output_perf(self):
         """Output performance values."""
         base = self._default_tradefed_base_dir()

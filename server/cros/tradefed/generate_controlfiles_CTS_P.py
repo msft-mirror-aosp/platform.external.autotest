@@ -155,6 +155,14 @@ CONFIG['BVT_PERBUILD'] = [
     'CtsVoiceSettingsTestCases',
 ]
 
+CONFIG['NEEDS_DISK_EJECT'] = [
+        'CtsAppSecurityHostTestCases',
+        'CtsJobSchedulerTestCases',
+        'CtsMediaTestCases',
+        'CtsOsTestCases',
+        'CtsProviderTestCases',
+]
+
 CONFIG['NEEDS_POWER_CYCLE'] = [
     'CtsBluetoothTestCases',
 ]
@@ -199,17 +207,9 @@ CONFIG['ENABLE_DEFAULT_APPS'] = [
     'CtsContentTestCases',
 ]
 
-# Run `eject` for (and only for) each device with RM=1 in lsblk output.
-_EJECT_REMOVABLE_DISK_COMMAND = (
-    "\'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject\'")
 # Behave more like in the verififed mode.
 _SECURITY_PARANOID_COMMAND = (
     "\'echo 3 > /proc/sys/kernel/perf_event_paranoid\'")
-# TODO(kinaba): Come up with a less hacky way to handle the situation.
-# {0} is replaced with the retry count. Writes either 1 (required by
-# CtsSimpleperfTestCases) or 3 (CtsSecurityHostTestCases).
-_ALTERNATING_PARANOID_COMMAND = (
-    "\'echo $(({0} % 2 * 2 + 1)) > /proc/sys/kernel/perf_event_paranoid\'")
 # Expose /proc/config.gz
 _CONFIG_MODULE_COMMAND = "\'modprobe configs\'"
 
@@ -235,11 +235,6 @@ CONFIG['PRECONDITION'] = {
         'CtsNetTestCases': [_START_MDNS_COMMAND],
 }
 CONFIG['LOGIN_PRECONDITION'] = {
-    'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
-    'CtsJobSchedulerTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
-    'CtsMediaTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
-    'CtsOsTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
-    'CtsProviderTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
 }
 
 _WIFI_CONNECT_COMMANDS = [

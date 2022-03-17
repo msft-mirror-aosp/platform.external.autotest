@@ -455,6 +455,32 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return self.get_ref_and_deg_files(trimmed_file, test_profile, test_data)
 
 
+    def handle_one_chunk(self, device, chunk_in_secs, index, test_profile):
+        """Handle one chunk of audio data by calling chameleon api."""
+
+        ip = self.host.ip
+        # Localhost is unlikely to be the correct ip target so take the local
+        # host ip if it exists.
+        if self.host.ip == '127.0.0.1' and self.local_host_ip:
+            ip = self.local_host_ip
+            logging.info('Using local host ip = %s', ip)
+
+        # TODO(b/207046142): Remove the old version fallback after the new
+        # Chameleon bundle is deployed.
+        try:
+            recorded_file = device.HandleOneChunk(chunk_in_secs, index, ip)
+        except Exception as e:
+            logging.debug("Unable to use new version of HandleOneChunk;"
+                          "fall back to use the old one.")
+            try:
+                recorded_file = device.HandleOneChunk(chunk_in_secs, index,
+                                                      test_profile, ip)
+            except Exception as e:
+                raise error.TestError('Failed to handle chunk (%s)', e)
+
+        return recorded_file
+
+
     # ---------------------------------------------------------------
     # Definitions of all bluetooth audio test cases
     # ---------------------------------------------------------------
@@ -578,20 +604,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         for i in range(nchunks):
             logging.info('Check chunk %d', i)
 
-            # TODO(b/207046142): Remove the old version fallback after the new
-            # Chameleon bundle is deployed.
-            try:
-                recorded_file = device.HandleOneChunk(chunk_in_secs, i,
-                                                      self.host.ip)
-            except Exception as e:
-                logging.debug("Unable to use new version of HandleOneChunk;"
-                              "fall back to use the old one.")
-                try:
-                    recorded_file = device.HandleOneChunk(
-                            chunk_in_secs, i, test_profile, self.host.ip)
-                except Exception as e:
-                    raise error.TestError('Failed to handle chunk (%s)', e)
-
+            recorded_file = self.handle_one_chunk(device, chunk_in_secs, i,
+                                                  test_profile)
             if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
 
@@ -658,20 +672,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         for i in range(nchunks):
             logging.info('Check chunk %d', i)
 
-            # TODO(b/207046142): Remove the old version fallback after the new
-            # Chameleon bundle is deployed.
-            try:
-                recorded_file = device.HandleOneChunk(chunk_in_secs, i,
-                                                      self.host.ip)
-            except Exception as e:
-                logging.debug("Unable to use new version of HandleOneChunk;"
-                              "fall back to use the old one.")
-                try:
-                    recorded_file = device.HandleOneChunk(
-                            chunk_in_secs, i, test_profile, self.host.ip)
-                except Exception as e:
-                    raise error.TestError('Failed to handle chunk (%s)', e)
-
+            recorded_file = self.handle_one_chunk(device, chunk_in_secs, i,
+                                                  test_profile)
             if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
 

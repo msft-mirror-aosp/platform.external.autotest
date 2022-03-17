@@ -152,6 +152,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.start_browser = start_browser
         self.use_btpeer = use_btpeer
         self.floss = floss
+        self.local_host_ip = None
 
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
@@ -160,6 +161,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         btpeer_args = []
         if args_dict is not None:
             btpeer_args = self.host.get_btpeer_arguments(args_dict)
+            ip_args = self.host.get_local_host_ip(args_dict)
+            if ip_args:
+                self.local_host_ip = ip_args['local_host_ip']
+
         #factory can not be declared as local variable, otherwise
         #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
         # server, which log out the user.

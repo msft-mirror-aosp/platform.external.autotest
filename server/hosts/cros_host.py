@@ -304,6 +304,24 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     @staticmethod
+    def get_local_host_ip(args_dict):
+        """Ip address of DUT in the local LAN.
+
+        When using port forwarding during testing, the host ip is 127.0.0.1 and
+        can't be used by any peer devices (for example to scp). A local IP
+        should be given in this case so peripherals can access the DUT in the
+        local LAN.
+
+        The argument should be given with the key |local_host_ip|.
+
+        @params args_dict: Dictionary from which to extract the local host ip.
+        """
+        return {
+                key: args_dict[key]
+                for key in ('local_host_ip', ) if key in args_dict
+        }
+
+    @staticmethod
     def get_pdtester_arguments(args_dict):
         """Extract chameleon options from `args_dict` and return the result.
 

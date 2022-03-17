@@ -7,6 +7,7 @@ import re
 import time
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_status
@@ -80,6 +81,7 @@ class power_VideoCall(power_test.power_Test):
                     tab_left, num_video=num_video)
             self.keyvals['video_init_time'] = video_init_time
 
+            tab_right = None
             if multitask:
                 # Open Google Doc on right half
                 logging.info('Navigating right window to %s', self.doc_url)
@@ -103,6 +105,13 @@ class power_VideoCall(power_test.power_Test):
                     keys.press_key('number_block')
                 else:
                     time.sleep(60)
+
+                if not tab_left.IsAlive():
+                    raise error.TestFail("Video tab crashed")
+
+                if tab_right and not tab_right.IsAlive():
+                    raise error.TestFail("Doc tab crashed")
+
                 self.status.refresh()
                 if self.status.is_low_battery():
                     logging.info(

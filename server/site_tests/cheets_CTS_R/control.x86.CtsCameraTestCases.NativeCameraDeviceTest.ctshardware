@@ -24,7 +24,7 @@ def run_TS(machine):
         iterations=1,
         tag='x86.CtsCameraTestCases.NativeCameraDeviceTest.ctshardware',
         test_name='cheets_CTS_R.x86.CtsCameraTestCases.NativeCameraDeviceTest.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest', '--include-filter', 'CtsCameraTestCases[instant] android.hardware.camera2.cts.NativeCameraDeviceTest', '--include-filter', 'CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]', '--include-filter', 'CtsCameraTestCases[instant] android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest', '--include-filter', 'CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsCameraTestCases',
         target_plan=None,

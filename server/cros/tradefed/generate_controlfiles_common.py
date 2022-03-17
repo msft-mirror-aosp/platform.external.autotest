@@ -676,26 +676,33 @@ def _format_modules_cmd(is_public,
 
         special_cmd = _get_special_command_line(modules, is_public)
         if special_cmd:
-            # For hardware suite we want to exclude [instant] modules.
-            # For that purpose, replace --module by --include-filter works.
             if is_hardware:
-                try:
-                    i = special_cmd.index('--module')
-                    if i + 3 < len(special_cmd) and special_cmd[i +
-                                                                2] == '--test':
+                # For hardware suite we want to exclude [instant] modules.
+                filtered = []
+                i = 0
+                while i < len(special_cmd):
+                    if (special_cmd[i] == '--include-filter'
+                                and '[instant]' in special_cmd[i + 1]):
+                        i += 2
+                    elif (special_cmd[i] == '--module'
+                          and i + 3 < len(special_cmd)
+                          and special_cmd[i + 2] == '--test'):
                         # [--module, x, --test, y] ==> [--include-filter, "x y"]
-                        special_cmd = special_cmd[:i] + [
-                                '--include-filter',
+                        # because --module implicitly include [instant] modules
+                        filtered.append('--include-filter')
+                        filtered.append(
                                 '%s %s' %
-                                (special_cmd[i + 1], special_cmd[i + 3])
-                        ] + special_cmd[i + 4:]
-                    else:
+                                (special_cmd[i + 1], special_cmd[i + 3]))
+                        i += 4
+                    elif special_cmd[i] == '--module':
                         # [--module, x] ==> [--include-filter, x]
-                        special_cmd = special_cmd[:i] + [
-                                '--include-filter'
-                        ] + special_cmd[i + 1:]
-                except:
-                    pass
+                        filtered.append('--include-filter')
+                        filtered.append(special_cmd[i + 1])
+                        i += 2
+                    else:
+                        filtered.append(special_cmd[i])
+                        i += 1
+                special_cmd = filtered
             cmd.extend(special_cmd)
         elif _ALL in modules:
             pass

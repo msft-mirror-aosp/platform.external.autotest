@@ -152,25 +152,29 @@ def _setup_client_symlink(base_path):
         os.symlink('../', 'client')
 
     autotest_lib_dir = os.path.join(base_path, 'autotest_lib')
+    link_path = os.path.join(autotest_lib_dir, 'client')
 
-    if os.path.isdir(autotest_lib_dir):
-        if os.path.islink(os.path.join(autotest_lib_dir, 'client')):
-            return
+    # TODO: Use os.makedirs(..., exist_ok=True) after switching to Python 3
+    if not os.path.isdir(autotest_lib_dir):
         try:
-            _create_client_symlink()
-
-        # Its possible 2 autotest processes are running at once, and one
-        # creates the symlink in the time between checking and creating.
-        # Thus if the symlink DNE, and we cannot create it, check for its
-        # existence and exit if it exists.
+            os.mkdir(autotest_lib_dir)
         except FileExistsError as e:
-            if os.path.islink(os.path.join(autotest_lib_dir, 'client')):
-                return
-            raise e
+            if not os.path.isdir(autotest_lib_dir):
+                raise e
 
+    if os.path.islink(link_path):
         return
-    os.mkdir(autotest_lib_dir)
-    _create_client_symlink()
+
+    try:
+        _create_client_symlink()
+    # It's possible 2 autotest processes are running at once, and one
+    # creates the symlink in the time between checking and creating.
+    # Thus if the symlink DNE, and we cannot create it, check for its
+    # existence and exit if it exists.
+    except FileExistsError as e:
+        if os.path.islink(link_path):
+            return
+        raise e
 
 
 def _symlink_check(base_path, root_dir):

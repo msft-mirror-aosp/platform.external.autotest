@@ -68,7 +68,7 @@ else:
         del os.environ['AUTOTEST_NO_RESTART']
     check_version.check_python_version(desired_version)
 
-import glob, traceback, types
+import glob, traceback
 
 
 def import_module(module, from_where):

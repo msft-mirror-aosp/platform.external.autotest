@@ -175,7 +175,7 @@ class tast(test.test):
                    run_private_tests=True,
                    varsfiles=[],
                    download_data_lazily=True,
-                   clear_tpm=True,
+                   clear_tpm=False,
                    totalshards=1,
                    shardindex=0,
                    companion_duts={},

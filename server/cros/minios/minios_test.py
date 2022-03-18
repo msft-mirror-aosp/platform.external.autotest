@@ -156,8 +156,6 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
         # Clean-up unused files to save memory.
         self._run(['rm', '-rf', self._MINIOS_TEMP_STATEFUL_DIR])
-        # Make sure installed binaries are usable by updating ld cache.
-        self._run(['ldconfig'])
 
     def _start_nebraska(self, payload_url=None):
         """

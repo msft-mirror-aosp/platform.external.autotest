@@ -58,7 +58,10 @@ class network_WiFi_BluetoothScanPerf(wifi_cell_test_base.WiFiCellTestBase):
 
         """
         get_ping_config = lambda period: ping_runner.PingConfig(
-                self.context.get_wifi_addr(), interval=1, count=period)
+                self.context.get_wifi_addr(),
+                interval=1,
+                count=period,
+                source_iface=self.context.client.wifi_if)
 
         logging.info('testing config %s, ap_config %s, BT:%s',
                      config.tag, ap_config_tag, bt_tag)
@@ -132,4 +135,3 @@ class network_WiFi_BluetoothScanPerf(wifi_cell_test_base.WiFiCellTestBase):
 
         end_time = time.time()
         logging.info('Running time %0.1f seconds.', end_time - start_time)
-

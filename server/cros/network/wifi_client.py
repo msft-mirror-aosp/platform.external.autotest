@@ -1030,8 +1030,13 @@ class WiFiClient(site_linux_system.LinuxSystem):
             logging.info('Reassociate time: %.2f seconds', reassociate_time)
 
 
-    def wait_for_connection(self, ssid, timeout_seconds=30, freq=None,
-                            ping_ip=None, desired_subnet=None):
+    def wait_for_connection(self,
+                            ssid,
+                            timeout_seconds=30,
+                            freq=None,
+                            ping_ip=None,
+                            desired_subnet=None,
+                            source_iface=None):
         """Verifies a connection to network ssid, optionally verifying
         frequency, ping connectivity and subnet.
 
@@ -1089,7 +1094,8 @@ class WiFiClient(site_linux_system.LinuxSystem):
                     return False
 
             if ping_ip:
-                ping_config = ping_runner.PingConfig(ping_ip)
+                ping_config = ping_runner.PingConfig(ping_ip,
+                                                     source_iface=source_iface)
                 self.ping(ping_config)
 
             return ConnectTime(state[0], conn_time)

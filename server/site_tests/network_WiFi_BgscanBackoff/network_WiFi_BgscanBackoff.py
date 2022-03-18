@@ -60,7 +60,8 @@ class network_WiFi_BgscanBackoff(wifi_cell_test_base.WiFiCellTestBase):
         get_ping_config = lambda period: ping_runner.PingConfig(
                 self.context.get_wifi_addr(),
                 interval=self.PING_INTERVAL_SECONDS,
-                count=int(period / self.PING_INTERVAL_SECONDS))
+                count=int(period / self.PING_INTERVAL_SECONDS),
+                source_iface=self.context.client.wifi_if)
         self.context.configure(self._config_first_ap)
         bgscan_config = xmlrpc_datatypes.BgscanConfiguration(
                 short_interval=self.CONFIGURED_BGSCAN_INTERVAL_SECONDS,

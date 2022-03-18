@@ -44,10 +44,12 @@ class network_WiFi_PTK(wifi_cell_test_base.WiFiCellTestBase):
                 ssid=self.context.router.get_ssid(),
                 security_config=wpa_config)
         self.context.assert_connect_wifi(assoc_params)
-        ping_config = ping_runner.PingConfig(self.context.get_wifi_addr(),
-                                             count=self.PING_COUNT,
-                                             interval=self.PING_INTERVAL,
-                                             ignore_result=True)
+        ping_config = ping_runner.PingConfig(
+                self.context.get_wifi_addr(),
+                count=self.PING_COUNT,
+                interval=self.PING_INTERVAL,
+                source_iface=self.context.client.wifi_if,
+                ignore_result=True)
         logging.info('Pinging DUT for %d seconds and rekeying '
                      'every %d seconds.',
                      self.PING_COUNT * self.PING_INTERVAL,

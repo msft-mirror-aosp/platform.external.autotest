@@ -25,7 +25,9 @@ class network_WiFi_WMM(wifi_cell_test_base.WiFiCellTestBase):
         self.context.assert_connect_wifi(assoc_params)
         for qos in ('BE', 'BK', 'VI', 'VO'):
             client_ping_config = ping_runner.PingConfig(
-                    self.context.get_wifi_addr(), qos=qos)
+                    self.context.get_wifi_addr(),
+                    qos=qos,
+                    source_iface=self.context.client.wifi_if)
             server_ping_config = ping_runner.PingConfig(
                     self.context.client.wifi_ip, qos=qos)
             self.context.assert_ping_from_dut(ping_config=client_ping_config)

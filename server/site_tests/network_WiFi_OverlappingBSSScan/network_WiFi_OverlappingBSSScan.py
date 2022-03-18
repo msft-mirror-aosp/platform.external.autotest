@@ -59,7 +59,8 @@ class network_WiFi_OverlappingBSSScan(wifi_cell_test_base.WiFiCellTestBase):
         get_ping_config = lambda period: ping_runner.PingConfig(
                 self.context.get_wifi_addr(),
                 interval=self.PING_INTERVAL_SECONDS,
-                count=int(period / self.PING_INTERVAL_SECONDS))
+                count=int(period / self.PING_INTERVAL_SECONDS),
+                source_iface=self.context.client.wifi_if)
         # Gather some statistics about ping latencies without scanning going on.
         self.context.configure(self.get_ap_config('obss_disabled', False))
         self.context.assert_connect_wifi(get_assoc_params())

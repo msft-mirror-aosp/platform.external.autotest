@@ -38,7 +38,8 @@ class network_WiFi_CSA(wifi_cell_test_base.WiFiCellTestBase):
             assoc_params.ssid = self.context.router.get_ssid()
             self.context.assert_connect_wifi(assoc_params)
             ping_config = ping_runner.PingConfig(
-                    self.context.get_wifi_addr(ap_num=0))
+                    self.context.get_wifi_addr(ap_num=0),
+                    source_iface=self.context.client.wifi_if)
             client_mac = self.context.client.wifi_mac
             for _ in range(10):
                 # Since the client might be in power-save, we are not
@@ -60,8 +61,10 @@ class network_WiFi_CSA(wifi_cell_test_base.WiFiCellTestBase):
                 # client pings.  This should fail at some point.
                 ping_config = ping_runner.PingConfig(
                         self.context.get_wifi_addr(ap_num=0),
-                        count=3, ignore_status=True,
-                        ignore_result=True)
+                        count=3,
+                        ignore_status=True,
+                        ignore_result=True,
+                        source_iface=self.context.client.wifi_if)
                 result = self.context.client.ping(ping_config)
                 if result.loss > 60:
                     break

@@ -85,11 +85,11 @@ from autotest_lib.client.common_lib import autotemp, revision_control
 # Do a basic check to see if pylint is even installed.
 try:
     import pylint
-    from pylint.__pkginfo__ import version as pylint_version
+    from pylint import __version__ as pylint_version
 except ImportError:
     print ("Unable to import pylint, it may need to be installed."
            " Run 'sudo aptitude install pylint' if you haven't already.")
-    sys.exit(1)
+    raise
 
 pylint_version_parsed = tuple(map(int, pylint_version.split('.')))
 
@@ -347,7 +347,7 @@ def check_dir(dir_path, base_opts):
     """
     files = []
 
-    os.path.walk(dir_path, visit, files)
+    os.walk(dir_path, visit, files)
 
     return batch_check_files(files, base_opts)
 

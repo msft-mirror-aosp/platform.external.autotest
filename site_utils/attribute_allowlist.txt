@@ -169,6 +169,7 @@ suite:debug_kernel_testing
 suite:deqp
 suite:dev_drone_image_test
 suite:display
+suite:distributed_lab_qual_faft
 suite:dpanel-end2end_per-build
 suite:drivefs-cq
 suite:dummy_server

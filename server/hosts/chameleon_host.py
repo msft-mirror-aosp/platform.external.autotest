@@ -8,12 +8,12 @@
 import logging
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.server.cros import dnsname_mangler
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.server.hosts import ssh_host
-
 
 # Names of the host attributes in the database that represent the values for
 # the chameleon_host and chameleon_port for a servo connected to the DUT.
@@ -171,10 +171,16 @@ def create_chameleon_host(dut, chameleon_args):
             if utils.host_is_in_lab_zone(chameleon_hostname):
                 # Be more tolerant on chameleon in the lab because
                 # we don't want dead chameleon blocks non-chameleon tests.
-                if utils.ping(chameleon_hostname, deadline=3):
+                # We use ssh ping here as BeyondCorp-only hosts cannot make ICMP
+                # ping to chameleon test devices.
+                try:
+                    ssh_host.SSHHost(chameleon_hostname).ssh_ping()
+                except (error.AutoservSSHTimeout,
+                        error.AutoservSshPermissionDeniedError,
+                        error.AutoservSshPingHostError) as e:
                     logging.warning(
                             'Chameleon %s is not accessible. Please file a bug'
-                            ' to test lab', chameleon_hostname)
+                            ' to test lab: %s', chameleon_hostname, e)
                     return None
                 return ChameleonHost(chameleon_host=chameleon_hostname)
         if chameleon_args:

@@ -1384,7 +1384,8 @@ class ServoHost(base_servohost.BaseServoHost):
 
         # If the dockerized servod is in used, we can start a new servod container
         # with out the servod process for log collection.
-        if not servo_host_ready and self.is_containerized_servod():
+        if (not self.is_localhost() and not servo_host_ready
+                    and self.is_containerized_servod()):
             logging.info(
                     'Start servod container without servod for log collection.'
             )

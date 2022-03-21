@@ -26,7 +26,10 @@ import os
 # TODO(b/215715213) - Wait until ebuild runs as python3 to remove this try
 try:
     import pydbus
-except:
+except Exception as e:
+    import platform
+    logging.error('Unable to import pydbus at version=%s: %s',
+                  platform.python_version(), e)
     pydbus = {}
 
 import re

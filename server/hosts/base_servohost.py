@@ -611,17 +611,7 @@ class BaseServoHost(ssh_host.SSHHost):
             'verbose'             : verbose,
             'args'                : args,
         }
-        if self.is_localhost():
-            if self._sudo_required:
-                run_args['command'] = 'sudo -n sh -c "%s"' % utils.sh_escape(
-                    command)
-            try:
-                return utils.run(**run_args)
-            except error.CmdError as e:
-                logging.error(e)
-                raise error.AutoservRunError('command execution error',
-                                             e.result_obj)
-        elif self.is_containerized_servod():
+        if self.is_containerized_servod():
             logging.debug("Trying to run the command %s", command)
             client = docker_utils.get_docker_client(timeout=timeout)
             container = client.containers.get(self.servod_container_name)
@@ -641,6 +631,16 @@ class BaseServoHost(ssh_host.SSHHost):
             return utils.CmdResult(command=command,
                                    stdout=output,
                                    exit_status=exit_code)
+        elif self.is_localhost():
+            if self._sudo_required:
+                run_args['command'] = 'sudo -n sh -c "%s"' % utils.sh_escape(
+                        command)
+            try:
+                return utils.run(**run_args)
+            except error.CmdError as e:
+                logging.error(e)
+                raise error.AutoservRunError('command execution error',
+                                             e.result_obj)
         else:
             run_args['connect_timeout'] = connect_timeout
             run_args['options'] = options

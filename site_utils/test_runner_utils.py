@@ -545,6 +545,8 @@ def perform_local_run(autotest_path,
             # Auto-detected labels may duplicate explicitly set ones.
             host_labels += list(set(_auto_detect_labels(remote)))
 
+    else:
+        host_labels = host_labels.split(" ")
     info = host_info.HostInfo(host_labels, host_attributes)
     job_queue = []
     test_num = 0

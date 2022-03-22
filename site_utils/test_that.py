@@ -200,9 +200,8 @@ def _parse_arguments_internal(argv):
                         help='host_attributes')
     parser.add_argument('--host_labels',
                         action='store',
-                        default=[],
-                        nargs='+',
-                        help='host_labels')
+                        default="",
+                        help='host_labels, quoted space seperated strings')
     return parser.parse_args(argv), remote_argv
 
 

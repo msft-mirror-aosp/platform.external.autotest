@@ -49,7 +49,7 @@ class hostinfoMatcher(object):
     """Match hostinfo stuff"""
 
     def __init__(self, labels, attributes):
-        self.labels = labels
+        self.labels = labels.split(' ')
         self.attributes = attributes
 
     def __eq__(self, other):
@@ -318,7 +318,7 @@ class TestRunnerUnittests(unittest.TestCase):
 
         test_runner_utils_mock.side_effect = [minus_tests, all_tests]
         run_job_mock.side_effect = [(0, 'fakedir') for _ in range(3)]
-        test_labels = ['a', 'test', 'label']
+        test_labels = "'a' 'test' 'label'"
         test_attributes = {"servo": "yes"}
 
         res = test_runner_utils.perform_local_run(

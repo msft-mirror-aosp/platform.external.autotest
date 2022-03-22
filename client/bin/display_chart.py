@@ -13,7 +13,6 @@ import select
 import signal
 import sys
 import tempfile
-import time
 
 # Set chart process preferred logging format before overridden by importing
 # common package.
@@ -68,6 +67,7 @@ class Fifo:
         return self._path
 
     def read(self):
+        """Read json format command from fifo."""
         while self._ready:
             with os.fdopen(os.open(self._path, os.O_RDONLY | os.O_NONBLOCK),
                            'r') as fd:
@@ -81,6 +81,12 @@ class Fifo:
 
 @contextlib.contextmanager
 def control_brightness():
+    """Help to programmatically control the brightness.
+
+    Returns:
+      A function which can set brightness between [0.0, 100.0].
+    """
+
     def set_brightness(display_level):
         utils.system('backlight_tool --set_brightness_percent=%s' %
                      display_level)
@@ -97,10 +103,29 @@ def control_brightness():
     set_brightness(original_display_level)
 
 
-def display(chart_path, display_level):
-    """Display chart on device by using telemetry."""
+@contextlib.contextmanager
+def control_display(cr):
+    """Fix the display orientation instead of using gyro orientation."""
     DISPLAY_ORIENTATION = 90
 
+    logging.info('Set fullscreen.')
+    facade = facade_resource.FacadeResource(cr)
+    display_facade = display_facade_lib.DisplayFacadeLocal(facade)
+    display_facade.set_fullscreen(True)
+
+    logging.info('Fix screen rotation %d.', DISPLAY_ORIENTATION)
+    internal_display_id = display_facade.get_internal_display_id()
+    original_display_orientation = display_facade.get_display_rotation(
+            internal_display_id)
+    display_facade.set_display_rotation(internal_display_id,
+                                        rotation=DISPLAY_ORIENTATION)
+    yield
+    display_facade.set_display_rotation(internal_display_id,
+                                        rotation=original_display_orientation)
+
+
+def display(chart_path, display_level):
+    """Display chart on device by using telemetry."""
     chart_path = os.path.abspath(chart_path)
     if os.path.isfile(chart_path):
         first_chart_name = os.path.basename(chart_path)
@@ -125,18 +150,9 @@ def display(chart_path, display_level):
             autotest_ext=True,
             init_network_controller=True) as cr, \
             control_brightness() as set_brightness, \
+            control_display(cr), \
             Fifo() as fifo:
         set_brightness(display_level)
-
-        logging.info('Set fullscreen.')
-        facade = facade_resource.FacadeResource(cr)
-        display_facade = display_facade_lib.DisplayFacadeLocal(facade)
-        display_facade.set_fullscreen(True)
-
-        logging.info('Fix screen rotation %d.', DISPLAY_ORIENTATION)
-        internal_display_id = display_facade.get_internal_display_id()
-        display_facade.set_display_rotation(internal_display_id,
-                                            rotation=DISPLAY_ORIENTATION)
 
         cr.browser.platform.SetHTTPServerDirectories(chart_dir_path)
         if first_chart_name is not None:

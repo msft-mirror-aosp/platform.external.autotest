@@ -4193,6 +4193,38 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         return True
 
+    def stop_bluetoothd(self):
+        """Stops Floss. This includes disabling btmanagerd.
+
+        Returns:
+            True if adapter daemon and manager daemon are both off.
+        """
+        # First power off the adapter
+        if not self.reset_off():
+            logging.warn('Failed to stop btadapterd')
+            return False
+
+        if not UpstartClient.stop(self.MANAGER_JOB):
+            logging.warn('Failed to stop btmanagerd')
+            return False
+
+        def _daemon_stopped():
+            return all([
+                    not self.manager_client.has_proxy(),
+                    not self.adapter_client.has_proxy(),
+            ])
+
+        try:
+            utils.poll_for_condition(condition=_daemon_stopped,
+                                     desc='Bluetooth daemons have stopped',
+                                     timeout=self.MGR_DAEMON_TIMEOUT)
+            daemon_stopped = True
+        except Exception as e:
+            logging.error('timeout: error stopping floss daemons: %s', e)
+            daemon_stopped = False
+
+        return daemon_stopped
+
     def is_bluetoothd_proxy_valid(self):
         """Checks whether the proxy objects for Floss are ok."""
         return all([
@@ -4509,6 +4541,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         is_paired = self.device_is_paired(address)
         is_connected = self.device_is_connected(address)
+
+        # If pairing and hci connection is complete, also trigger all profile
+        # connections here. This is necessary because device connection doesn't
+        # always imply profile connection.
+        if is_paired and is_connected:
+            self.adapter_client.connect_all_enabled_profiles(address)
 
         logging.info('Pairing result: paired(%s) connected(%s)', is_paired,
                      is_connected)

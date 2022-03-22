@@ -38,7 +38,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    @test_wrapper('Discovery Test', devices={"BLE_MOUSE":1})
+    @test_wrapper('Discovery Test',
+                  devices={"BLE_MOUSE": 1},
+                  supports_floss=True)
     def le_discovery_test(self):
         """Performs discovery test with mouse peripheral"""
         device = self.devices['BLE_MOUSE'][0]
@@ -82,7 +84,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('HID Reconnect Speed',
                   devices={'BLE_MOUSE': 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  supports_floss=True)
     def le_hid_reconnect_speed(self):
         """Test the speed of a LE HID device reconnect to DUT"""
 
@@ -102,10 +105,10 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                 check_connected_method=self.test_mouse_move_in_xy,
                 reboot=True)
 
-
     @test_wrapper('HID Report Restart',
                   devices={'BLE_MOUSE': 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  supports_floss=True)
     def le_hid_reports_restart(self):
         """Performs HID report test over bluetoothd restart with BLE mouse
            peripheral
@@ -118,7 +121,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                 restart=True)
 
 
-    @test_wrapper('Mouse Reports', devices={'BLE_MOUSE':1})
+    @test_wrapper('Mouse Reports',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def le_mouse_reports(self):
         """Run all bluetooth mouse reports tests"""
 
@@ -135,7 +140,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         self.run_mouse_tests(device=device)
 
 
-    @test_wrapper('Keyboard Reports', devices={'BLE_KEYBOARD':1})
+    @test_wrapper('Keyboard Reports',
+                  devices={'BLE_KEYBOARD': 1},
+                  supports_floss=True)
     def le_keyboard_reports(self):
         """Run all bluetooth keyboard reports tests"""
 
@@ -164,7 +171,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
         self.run_battery_reporting_tests(device=device)
 
-    @test_wrapper('Auto Reconnect', devices={'BLE_MOUSE':1})
+    @test_wrapper('Auto Reconnect',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def le_auto_reconnect(self):
         """LE reconnection loop by reseting HID and check reconnection"""
 
@@ -452,7 +461,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                  num_iterations=1,
                  args_dict=None,
                  test_name=None,
-                 flag='Quick Health'):
+                 flag='Quick Health',
+                 floss=False):
         """Run the batch of Bluetooth LE health tests
 
         @param host: the DUT, usually a chromebook
@@ -464,6 +474,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         self.quick_test_init(host,
                              use_btpeer=True,
                              flag=flag,
-                             args_dict=args_dict)
+                             args_dict=args_dict,
+                             floss=floss)
         self.le_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

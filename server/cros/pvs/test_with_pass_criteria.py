@@ -144,7 +144,8 @@ class test_with_pass_criteria(test.test):
         for c in self._pass_criteria:
             self._criteria_to_keyvals[c] = []
             for key in self._perf_dict.keys():
-                if re.match(c, key):
+                if re.fullmatch(c, key):
+                    logging.info('adding %s as matched key', key)
                     self._criteria_to_keyvals[c].append(key)
 
     def _verify_criteria(self):

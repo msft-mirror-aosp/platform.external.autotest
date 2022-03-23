@@ -88,6 +88,8 @@ class base_test(object):
         # Flag to indicate if the test has succeeded or failed.
         self.success = False
 
+        # Flag to indicate if test results should be gathered when pass.
+        self.collect_full_logs = False
 
     def configure_crash_handler(self):
         pass
@@ -895,6 +897,8 @@ def runtest(job,
 
     try:
         mytest = global_namespace['mytest']
+        if hasattr(job, 'force_full_log_collection'):
+            mytest.force_full_log_collection = job.force_full_log_collection
         if override_test_in_prog_file:
             mytest.test_in_prog_file = override_test_in_prog_file
         mytest.success = False

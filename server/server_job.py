@@ -267,7 +267,8 @@ class server_job(base_job.base_job):
                  sync_offload_dir='',
                  companion_hosts=None,
                  dut_servers=None,
-                 is_cft=False):
+                 is_cft=False,
+                 force_full_log_collection=False):
         """
         Create a server side job object.
 
@@ -313,6 +314,8 @@ class server_job(base_job.base_job):
                 on.
         @param dut_servers: a str or list of hosts to be used as DUT servers
                 provided to test.
+        @param force_full_log_collection: bool; force full log collection even
+                when test passes.
         """
         super(server_job, self).__init__(resultdir=resultdir)
         self.control = control
@@ -348,6 +351,7 @@ class server_job(base_job.base_job):
         self._companion_hosts = companion_hosts
         self._dut_servers = dut_servers
         self._is_cft = is_cft
+        self.force_full_log_collection = force_full_log_collection
 
         # Parse the release number from the label to setup sysinfo.
         version = re.findall('release/R(\d+)-', label)
@@ -362,11 +366,13 @@ class server_job(base_job.base_job):
         self.profilers = profilers.profilers(self)
         self._sync_offload_dir = sync_offload_dir
 
-        job_data = {'label' : label, 'user' : user,
-                    'hostname' : ','.join(machines),
-                    'drone' : platform.node(),
-                    'status_version' : str(self._STATUS_VERSION),
-                    'job_started' : str(int(time.time()))}
+        job_data = {
+                'user': user,
+                'hostname': ','.join(machines),
+                'drone': platform.node(),
+                'status_version': str(self._STATUS_VERSION),
+                'job_started': str(int(time.time()))
+        }
         # Save parent job id to keyvals, so parser can retrieve the info and
         # write to tko_jobs record.
         if parent_job_id:

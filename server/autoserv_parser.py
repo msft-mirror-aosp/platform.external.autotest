@@ -264,6 +264,11 @@ class autoserv_parser(object):
                                  type=str,
                                  dest='dut_servers',
                                  help='list of DUT servers for the test.')
+        self.parser.add_argument('--force_full_log_collection',
+                                 action='store_true',
+                                 dest='force_full_log_collection',
+                                 default=False,
+                                 help='Force full log collection on tests.')
 
         #
         # Warning! Please read before adding any new arguments!

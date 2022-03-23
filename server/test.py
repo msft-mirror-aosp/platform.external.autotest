@@ -41,6 +41,7 @@ mytest = test.test(job, '', %r)
 # success is passed in so diffable_logdir can decide if or not to collect
 # full log content.
 mytest.success = %s
+mytest.collect_full_logs = %s
 sysinfo_pickle = os.path.join(mytest.outputdir, 'sysinfo.pickle')
 if os.path.exists(sysinfo_pickle):
     try:
@@ -228,7 +229,8 @@ class _sysinfo_logger(object):
     def after_hook(self, mytest, host, at, outputdir):
         self._push_pickle(host, outputdir);
         # run the post-test sysinfo script
-        at.run(_sysinfo_after_test_script % (outputdir, mytest.success),
+        at.run(_sysinfo_after_test_script %
+               (outputdir, mytest.success, mytest.force_full_log_collection),
                results_dir=self.job.resultdir)
 
         self._pull_sysinfo_keyval(host, outputdir, mytest)

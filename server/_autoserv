@@ -512,6 +512,7 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
     companion_hosts = _get_companions(parser)
     dut_servers = _get_dutservers(parser)
     is_cft = parser.options.cft
+    force_full_log_collection = parser.options.force_full_log_collection
 
     # can't be both a client and a server side test
     if client and server:
@@ -601,7 +602,8 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
                     use_shadow_store=not parser.options.local_only_host_info,
                     host_attributes=parser.options.host_attributes),
             'dut_servers': dut_servers,
-            'is_cft': is_cft
+            'is_cft': is_cft,
+            'force_full_log_collection': force_full_log_collection
     }
     if parser.options.parent_job_id:
         job_kwargs['parent_job_id'] = int(parser.options.parent_job_id)

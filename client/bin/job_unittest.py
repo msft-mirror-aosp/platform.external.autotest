@@ -60,9 +60,14 @@ class test_find_base_directories(
 class abstract_test_init(base_job_unittest.test_init.generic_tests):
     """Generic client job mixin used when defining variations on the
     job.__init__ generic tests."""
+
+    PUBLIC_ATTRIBUTES = (
+            base_job_unittest.test_init.generic_tests.PUBLIC_ATTRIBUTES -
+            set(['force_full_log_collection']))
+
     OPTIONAL_ATTRIBUTES = (
-        base_job_unittest.test_init.generic_tests.OPTIONAL_ATTRIBUTES
-        - set(['control', 'harness']))
+            base_job_unittest.test_init.generic_tests.OPTIONAL_ATTRIBUTES -
+            set(['control', 'harness', 'force_full_log_collection']))
 
 
 class test_init_minimal_options(abstract_test_init, job_test_case):
@@ -101,6 +106,7 @@ class test_init_minimal_options(abstract_test_init, job_test_case):
             log = False
             args = ''
             output_dir = ''
+
         self.god.stub_function_to_return(job.utils, 'drop_caches', None)
 
         self.job._job_state = base_job_unittest.stub_job_state

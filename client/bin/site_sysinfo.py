@@ -400,8 +400,9 @@ class site_sysinfo(base_sysinfo.base_sysinfo):
         test_sysinfodir = self._get_sysinfodir(test.outputdir)
 
         for log in self.diffable_loggables:
-            log.run(log_dir=test_sysinfodir, collect_init_status=False,
-                    collect_all=not test.success)
+            log.run(log_dir=test_sysinfodir,
+                    collect_init_status=False,
+                    collect_all=not test.success or test.collect_full_logs)
 
 
     def _get_chrome_version(self):

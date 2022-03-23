@@ -497,6 +497,14 @@ class AudioFacadeLocal(object):
         cras_utils.set_bypass_block_noise_cancellation(bypass)
 
 
+    def set_noise_cancellation_enabled(self, enabled):
+        """Sets the state to enable or disable Noise Cancellation.
+
+        @param enabled: True to enable; False to disable.
+
+        """
+        cras_utils.set_noise_cancellation_enabled(enabled)
+
     @check_arc_resource
     def start_arc_recording(self):
         """Starts recording using microphone app in container."""

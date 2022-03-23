@@ -334,6 +334,61 @@ def trim_silence_from_wav_file(path_src,
     cmd_utils.execute(sox_cmd)
 
 
+def mix_two_wav_files(path_src1, path_src2, path_dst, input_volume=None):
+    """Generate the mixed WAV file from two input WAV files.
+
+    Use "man sox" for more details on the mixing.
+
+    @param path_src1: Path to the first source.
+    @param path_src2: Path to the second source.
+    @param path_dst: Path for the generated mixed file.
+    @param input_volume: The volume (0.0~1.0) of input sources on mixing. If not
+                         given, the default value for sox is 1 / (# of sources).
+    """
+    sox_cmd = [SOX_PATH]
+    sox_cmd += ['--combine', 'mix']
+
+    if isinstance(input_volume, (int, float)):
+        input_volume = min(1.0, max(0.0, input_volume))
+        sox_cmd += ['-v', '{:.3f}'.format(input_volume)]
+
+    sox_cmd += [path_src1, path_src2, path_dst]
+
+    cmd_utils.execute(sox_cmd)
+
+
+def get_infos_from_wav_file(file_path):
+    """Get the information set from the header of the input WAV file.
+
+    It returns None if the input file is not WAV format.
+
+    @param file_path: Path to the WAV file.
+
+    @returns: A dict with the following elements:
+        'duration': The length of the audio (in seconds).
+        'channels': The number of channels.
+        'bits': The number of bits of each sample.
+        'rate': The sampling rate.
+    """
+    sox_cmd = [SOX_PATH]
+    sox_cmd += ['--i', None, file_path]  # sox_cmd[2] is placeholder
+
+    def _execute_sox_cmd_info(info_arg):
+        sox_cmd_info = sox_cmd[:2] + [info_arg] + sox_cmd[3:]
+        return cmd_utils.execute(
+                sox_cmd_info, stdout=subprocess.PIPE).decode('utf-8').strip()
+
+    format_output = _execute_sox_cmd_info('-t')
+    if format_output != 'wav':
+        logging.error('the input file format: %s', format_output)
+        return None
+
+    return dict(duration=float(_execute_sox_cmd_info('-D')),
+                channels=int(_execute_sox_cmd_info('-c')),
+                bits=int(_execute_sox_cmd_info('-b')),
+                rate=int(_execute_sox_cmd_info('-r')))
+
+
 def get_file_length(file_path, channels, bits, rate):
     """Get the length in seconds of an audio file.
 

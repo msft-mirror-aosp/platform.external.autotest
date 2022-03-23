@@ -35,7 +35,7 @@ def parse_visqol_output(stdout, stderr, log_dir):
 
     # Log verbose VISQOL output:
     log_file = os.path.join(log_dir, 'VISQOL_LOG.txt')
-    with open(log_file, 'w+') as f:
+    with open(log_file, 'a+') as f:
         f.write('String Error:\n{}\n'.format(stderr))
         f.write('String Out:\n{}\n'.format(stdout))
 

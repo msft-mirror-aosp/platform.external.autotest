@@ -718,6 +718,14 @@ def set_bypass_block_noise_cancellation(bypass):
     get_cras_control_interface().SetBypassBlockNoiseCancellation(bypass)
 
 
+def set_noise_cancellation_enabled(enabled):
+    """Sets the state to enable or disable Noise Cancellation.
+
+    @param enabled: True to enable; False to disable.
+    """
+    get_cras_control_interface().SetNoiseCancellationEnabled(enabled)
+
+
 def set_floss_enabled(enabled):
     """Sets whether CRAS stack expects to use Floss.
 

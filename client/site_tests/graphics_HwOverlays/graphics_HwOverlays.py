@@ -11,7 +11,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.graphics import graphics_utils
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros import constants
-from autotest_lib.client.cros.multimedia import display_facade
+from autotest_lib.client.cros.multimedia import display_facade as display_facade_lib
 from autotest_lib.client.cros.multimedia import facade_resource
 
 EXTRA_BROWSER_ARGS = ['--enable-experimental-web-platform-features',
@@ -76,7 +76,7 @@ class graphics_HwOverlays(graphics_utils.GraphicsTest):
                            autotest_ext=True,
                            init_network_controller=True) as cr:
             facade = facade_resource.FacadeResource(cr)
-            display_facade = display_facade.DisplayFacadeLocal(facade)
+            display_facade = display_facade_lib.DisplayFacadeLocal(facade)
             # TODO(crbug.com/927103): Run on an external monitor if one is
             # present.
             if not display_facade.has_internal_display():

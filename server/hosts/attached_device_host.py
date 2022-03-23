@@ -266,10 +266,12 @@ class AttachedDeviceHost(ssh_host.SSHHost):
             time.sleep(diff)
 
     def close(self):
-        if self._is_locked:
-            try:
+        try:
+            if self._is_locked:
                 self._unlock()
-            except error.AutoservSSHTimeout:
-                logging.error('Unlock attached device host failed due to ssh'
-                              ' timeout. It may caused by the host went down'
-                              ' during the task.')
+        except error.AutoservSSHTimeout:
+            logging.error('Unlock attached device host failed due to ssh'
+                          ' timeout. It may caused by the host went down'
+                          ' during the task.')
+        finally:
+            super(AttachedDeviceHost, self).close()

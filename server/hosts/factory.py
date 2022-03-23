@@ -64,7 +64,7 @@ LOOKUP_DICT = {
 _CONNECTIVITY_CHECK_TIMEOUT_S = 10
 
 
-def _get_host_arguments(machine):
+def _get_host_arguments(machine, **args):
     """Get parameters to construct a host object.
 
     There are currently 2 use cases for creating a host.
@@ -73,6 +73,8 @@ def _get_host_arguments(machine):
        are available as the variables ssh_user, ssh_pass etc.
     2. Directly through factory.create_host, in which case we use
        the same defaults as used in the server job to create a host.
+    3. Through neither of the above, in which case args can be provided
+       and should be respected if a globa
 
     @param machine: machine dict
     @return: A dictionary containing arguments for host specifically hostname,
@@ -85,16 +87,29 @@ def _get_host_arguments(machine):
     info = host_info_store.get()
 
     g = globals()
-    user = info.attributes.get('ssh_user', g.get('ssh_user', DEFAULT_SSH_USER))
+
+    # For each arg, try to fetch the arg from the globals...
+    # If its not there, then try to get it from **args.
+    # If its not there, use the default.
+    default_user = DEFAULT_SSH_USER if 'user' not in args else args['user']
+    user = info.attributes.get('ssh_user', g.get('ssh_user', default_user))
+
+    default_pass = DEFAULT_SSH_PASS if 'ssh_pass' not in args else args['ssh_pass']
     password = info.attributes.get('ssh_pass', g.get('ssh_pass',
-                                                     DEFAULT_SSH_PASS))
-    port = info.attributes.get('ssh_port', g.get('ssh_port', DEFAULT_SSH_PORT))
+                                                     default_pass))
+
+    default_port = DEFAULT_SSH_PORT if 'ssh_port' not in args else args['ssh_port']
+    port = info.attributes.get('ssh_port', g.get('ssh_port', default_port))
+
+    default_verbosity = DEFAULT_SSH_VERBOSITY if 'ssh_verbosity_flag' not in args else args['ssh_verbosity_flag']
     ssh_verbosity_flag = info.attributes.get('ssh_verbosity_flag',
                                              g.get('ssh_verbosity_flag',
-                                                   DEFAULT_SSH_VERBOSITY))
+                                                   default_verbosity))
+
+    default_options = DEFAULT_SSH_OPTIONS if 'ssh_options' not in args else args['ssh_options']
     ssh_options = info.attributes.get('ssh_options',
                                       g.get('ssh_options',
-                                            DEFAULT_SSH_OPTIONS))
+                                            default_options))
 
     hostname, user, password, port = server_utils.parse_machine(hostname, user,
                                                                 password, port)
@@ -234,7 +249,7 @@ def create_host(machine, host_class=None, connectivity_class=None, **args):
         deprecation.warn('server.create_hosts:connectivity_class')
         connectivity_class = None
 
-    detected_args = _get_host_arguments(machine)
+    detected_args = _get_host_arguments(machine, **args)
     hostname = detected_args.pop('hostname')
     afe_host = detected_args['afe_host']
     info_store = detected_args['host_info_store'].get()
@@ -275,6 +290,8 @@ def create_host(machine, host_class=None, connectivity_class=None, **args):
     # create a custom host class for this machine and return an instance of it
     classes = (host_class, connectivity_class)
     custom_host_class = type("%s_host" % hostname, classes, {})
+
+    logging.info('creating host class for {} w/ {}||'.format(hostname, args))
     host_instance = custom_host_class(hostname, **args)
 
     # call job_start if this is the first time this host is being used

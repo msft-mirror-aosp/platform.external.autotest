@@ -31,40 +31,43 @@ from autotest_lib.site_utils import test_runner_utils
 _QUICKMERGE_SCRIPTNAME = '/mnt/host/source/chromite/bin/autotest_quickmerge'
 
 
-def _get_board_from_host(remote):
-    """Get the board of the remote host.
+def _get_info_from_host(remote, board=None, model=None, ssh_options=''):
+    """Get the info of the remote host if needed.
 
     @param remote: string representing the IP of the remote host.
+    @param board: board arg from CLI.
+    @param model: model arg from CLI.
 
-    @return: A string representing the board of the remote host.
+    @return: board, model string representing the board, model
+        of the remote host.
     """
-    logging.info('Board unspecified, attempting to determine board from host.')
-    host = factory.create_host(remote)
-    try:
-        board = host.get_board().replace(constants.BOARD_PREFIX, '')
-    except error.AutoservRunError:
-        raise test_runner_utils.TestThatRunError(
-                'Cannot determine board, please specify a --board option.')
-    logging.info('Detected host board: %s', board)
-    return board
 
+    if board and model:
+        return board, model
 
-def _get_model_from_host(remote):
-    """Get the model of the remote host.
+    host = factory.create_host(remote, ssh_options=ssh_options)
 
-    @param remote: string representing the IP of the remote host.
+    if not board:
+        logging.info(
+                'Board unspecified, attempting to determine board from host.')
+        try:
+            board = host.get_board().replace(constants.BOARD_PREFIX, '')
+        except error.AutoservRunError:
+            raise test_runner_utils.TestThatRunError(
+                    'Cannot determine board, please specify a --board option.')
+        logging.info('Detected host board: %s', board)
 
-    @return: A string representing the board of the remote host.
-   """
-    logging.info('Model unspecified, attempting to determine model from host.')
-    host = factory.create_host(remote)
-    try:
-        model = host.get_platform()
-    except error.AutoservRunError:
-        raise test_runner_utils.TestThatRunError(
-                'Cannot determine model, please specify a --model option.')
-    logging.info('Detected host model: %s', model)
-    return model
+    if not model:
+        logging.info(
+                'Model unspecified, attempting to determine model from host.')
+        try:
+            model = host.get_platform()
+        except error.AutoservRunError:
+            raise test_runner_utils.TestThatRunError(
+                    'Cannot determine model, please specify a --model option.')
+        logging.info('Detected host model: %s', model)
+
+    return board, model
 
 
 def validate_arguments(arguments):
@@ -304,13 +307,13 @@ def _main_for_local_run(argv, arguments):
     # --model, and is not set in the default_board file, determine the board by
     # ssh-ing into the host. Also prepend it to argv so we can re-use it when we
     # run test_that from the sysroot.
-    if arguments.board is None:
-        arguments.board = _get_board_from_host(arguments.remote)
-        argv = ['--board=%s' % (arguments.board,)] + argv
-
-    if arguments.model is None:
-        arguments.model = _get_model_from_host(arguments.remote)
-        argv = ['--model=%s' % (arguments.model, )] + argv
+    arguments.board, arguments.model = _get_info_from_host(
+            arguments.remote,
+            arguments.board,
+            arguments.model,
+            ssh_options=arguments.ssh_options)
+    argv = ['--board=%s' % (arguments.board, )] + argv
+    argv = ['--model=%s' % (arguments.model, )] + argv
 
     if arguments.autotest_dir:
         autotest_path = arguments.autotest_dir

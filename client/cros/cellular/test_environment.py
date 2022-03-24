@@ -278,12 +278,27 @@ class CellularTestEnvironment(object):
         self._system_service_order = self._get_service_order()
         self._set_service_order(self._test_service_order)
 
+    def _modem_should_skip_reset(self):
+        # b/191089189 - FM350 reset is flaky and blocks all autotests.
+        SKIP_RESET_DEVICE_IDS = ['pci:14c3']
+        modem_device = self._get_shill_cellular_device_object()
+        modem_device_id = modem_device.GetProperties()['Cellular.DeviceID']
+
+        for dev_id in SKIP_RESET_DEVICE_IDS:
+            if dev_id in modem_device_id:
+                logging.info(
+                        'Skipping reset on incompatible device ID {}'.format(
+                                modem_device_id))
+                return True
+
+        return False
+
     def _initialize_modem_components(self):
         """Reset the modem and get access to modem components."""
         # Enable modem first so shill initializes the modemmanager proxies so
         # we can call reset on it.
         self._enable_modem()
-        if not self._skip_modem_reset:
+        if not self._skip_modem_reset and not self._modem_should_skip_reset():
             self._reset_modem()
 
         # PickOneModem() makes sure there's a modem manager and that there is

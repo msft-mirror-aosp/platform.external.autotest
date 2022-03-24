@@ -408,4 +408,4 @@ class WiFiTestContextManager(object):
                                                freq=freq,
                                                ping_ip=wifi_ip,
                                                desired_subnet=desired_subnet,
-                                               source_if=wifi_if)
+                                               source_iface=wifi_if)

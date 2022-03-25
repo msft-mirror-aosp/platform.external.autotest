@@ -606,6 +606,26 @@ class Cr50Test(FirmwareTest):
         elif self.original_ccd_level != self.cr50.get_ccd_level():
             self.cr50.set_ccd_level(self.original_ccd_level)
 
+    def fast_ccd_open(self,
+                      enable_testlab=False,
+                      reset_ccd=True,
+                      dev_mode=False):
+        """Check for watchdog resets after opening ccd.
+
+        Args:
+            enable_testlab: If True, enable testlab mode after cr50 is open.
+            reset_ccd: If True, reset ccd after open.
+            dev_mode: True if the device should be in dev mode after ccd is
+                      is opened.
+        """
+        try:
+            super(Cr50Test, self).fast_ccd_open(enable_testlab, reset_ccd,
+                                                dev_mode)
+        except Exception as e:
+            # Check for cr50 watchdog resets.
+            self._get_cr50_stats_from_uart_capture()
+            raise
+
     def cleanup(self):
         """Attempt to cleanup the cr50 state. Then run firmware cleanup"""
         try:

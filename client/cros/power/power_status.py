@@ -2457,6 +2457,31 @@ class FanRpmLogger(MeasurementLogger):
         return super(FanRpmLogger, self).calc(mtype)
 
 
+class FreeMemoryLogger(MeasurementLogger):
+    """Class to measure free memory from /proc/meminfo in KB unit."""
+
+    def __init__(self, seconds_period=1.0, checkpoint_logger=None):
+        """Initialize a FreeMemoryLogger."""
+        super(FreeMemoryLogger, self).__init__([], seconds_period,
+                                               checkpoint_logger)
+        self.domains = ['MemFree', 'MemAvailable']
+        self.refresh()
+
+    def refresh(self):
+        return [
+                utils.read_from_meminfo('MemFree'),
+                utils.read_from_meminfo('MemAvailable')
+        ]
+
+    def save_results(self, resultsdir, fname_prefix=None):
+        if not fname_prefix:
+            fname_prefix = 'free_memory_results_%.0f' % time.time()
+        super(FreeMemoryLogger, self).save_results(resultsdir, fname_prefix)
+
+    def calc(self, mtype='kB'):
+        return super(FreeMemoryLogger, self).calc(mtype)
+
+
 def create_measurement_loggers(seconds_period=20.0, checkpoint_logger=None):
     """Create loggers for power test that is not test-specific.
 
@@ -2468,9 +2493,10 @@ def create_measurement_loggers(seconds_period=20.0, checkpoint_logger=None):
         list of loggers created.
     """
     loggers = [
-        PowerLogger(None, seconds_period, checkpoint_logger),
-        TempLogger(None, seconds_period, checkpoint_logger),
-        CPUStatsLogger(seconds_period, checkpoint_logger),
+            PowerLogger(None, seconds_period, checkpoint_logger),
+            TempLogger(None, seconds_period, checkpoint_logger),
+            CPUStatsLogger(seconds_period, checkpoint_logger),
+            FreeMemoryLogger(seconds_period, checkpoint_logger),
     ]
     if has_fan():
         loggers.append(FanRpmLogger(seconds_period, checkpoint_logger))

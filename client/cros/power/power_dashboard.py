@@ -741,6 +741,19 @@ class FanRpmLoggerDashboard(MeasurementLoggerDashboard):
         self._unit = 'rpm'
         self._type = 'fan'
 
+
+class FreeMemoryLoggerDashboard(MeasurementLoggerDashboard):
+    """Dashboard class for power_status.FreeMemoryLogger."""
+
+    def __init__(self, logger, testname, resultsdir, uploadurl, note):
+        # Don't upload to dashboard
+        uploadurl = None
+        super(FreeMemoryLoggerDashboard,
+              self).__init__(logger, testname, resultsdir, uploadurl, note)
+        self._unit = 'point'
+        self._type = 'mem'
+
+
 dashboard_factory = None
 def get_dashboard_factory():
     global dashboard_factory
@@ -752,12 +765,13 @@ class LoggerDashboardFactory(object):
     """Class to generate client test dashboard object from logger."""
 
     loggerToDashboardDict = {
-        power_status.CPUStatsLogger: CPUStatsLoggerDashboard,
-        power_status.PowerLogger:    PowerLoggerDashboard,
-        power_status.TempLogger:     TempLoggerDashboard,
-        power_status.VideoFpsLogger: VideoFpsLoggerDashboard,
-        power_status.FanRpmLogger:   FanRpmLoggerDashboard,
-        KeyvalLogger:                KeyvalLoggerDashboard,
+            power_status.CPUStatsLogger: CPUStatsLoggerDashboard,
+            power_status.PowerLogger: PowerLoggerDashboard,
+            power_status.TempLogger: TempLoggerDashboard,
+            power_status.VideoFpsLogger: VideoFpsLoggerDashboard,
+            power_status.FanRpmLogger: FanRpmLoggerDashboard,
+            power_status.FreeMemoryLogger: FreeMemoryLoggerDashboard,
+            KeyvalLogger: KeyvalLoggerDashboard,
     }
 
     def registerDataType(self, logger_type, dashboard_type):

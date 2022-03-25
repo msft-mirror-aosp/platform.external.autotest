@@ -21,9 +21,11 @@ from datetime import datetime, timedelta
 from xml.etree import ElementTree
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.client.cros import constants
 from autotest_lib.client.cros.update_engine import dlc_util
 from autotest_lib.client.cros.update_engine import update_engine_event as uee
 from autotest_lib.client.cros.update_engine import update_engine_util
@@ -91,13 +93,38 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Utilities for DLC management
         self._dlc_util = dlc_util.DLCUtil(self._run)
 
+        # URL pointing to the autotest package on a lab cache server. It is
+        # used by lab runs to select the right board+build when finding the
+        # update payloads. The cache server will also be used for downloading
+        # the update.
         self._job_repo_url = None
+
+        # The target build for the update. Uses the release builder path
+        # format, ex: octopus-release/R102-14650.0.0
+        self._build = None
+
+        # Flag to indicate that the test has progressed far enough that
+        # stateful should be restored on failure.
+        self._should_restore_stateful = False
 
     def cleanup(self):
         """Clean up update_engine autotests."""
         if self._host:
             self._host.get_file(self._UPDATE_ENGINE_LOG, self.resultsdir)
 
+
+    def _get_release_builder_path(self):
+        """
+        Returns the release builder path currently provisioned on the device
+        which can be used to get the current board and build number.
+        Ex: octopus-release/R102-14650.0.0
+        """
+        lsb_release_content = self._run(['cat', constants.LSB_RELEASE]).stdout
+        builder_path = lsbrelease_utils.get_chromeos_release_builder_path(
+                lsb_release_content)
+        logging.info("Current release builder path on the DUT is %s",
+                     builder_path)
+        return builder_path
 
     def _get_expected_events_for_rootfs_update(self, source_release):
         """
@@ -288,26 +315,22 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return autotest_devserver
 
 
-    def _get_payload_url(self, build=None, full_payload=True, is_dlc=False):
+    def _get_payload_url(self, full_payload=True, is_dlc=False):
         """
-        Gets the GStorage URL of the full or delta payload for this build, for
-        either platform or DLC payloads.
+        Gets the GStorage URL of the full or delta payload for the target
+        update version for either platform or DLC payloads.
 
-        @param build: build string e.g eve-release/R85-13265.0.0.
         @param full_payload: True for full payload. False for delta.
         @param is_dlc: True to get the payload URL for sample-dlc.
 
-        @returns the payload URL.
+        @returns the payload URL. For example, a full payload URL looks like:
+        gs://chromeos-image-archive/octopus-release/R102-14650.0.0/chromeos_R102-14650.0.0_octopus_full_dev.bin
 
         """
-        if build is None:
-            if self._job_repo_url is None:
-                self._job_repo_url = self._get_job_repo_url()
-            ds_url, build = tools.get_devserver_build_from_package_url(
-                self._job_repo_url)
-            self._autotest_devserver = dev_server.ImageServer(ds_url)
-
-        gs = dev_server._get_image_storage_server()
+        image_path = global_config.global_config.get_config_value(
+                'CROS', 'image_storage_server', type=str)
+        # This forces a trailing '/'' if not there yet.
+        gs = os.path.join(image_path, '')
 
         # Example payload names (AU):
         # chromeos_R85-13265.0.0_eve_full_dev.bin
@@ -322,11 +345,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         regex = payload_prefix % ('full' if full_payload else 'delta')
 
-        payload_url_regex = gs + build + '/' + regex
+        payload_url_regex = gs + self._build + '/' + regex
         logging.debug('Trying to find payloads at %s', payload_url_regex)
         payloads = utils.gs_ls(payload_url_regex)
         if not payloads:
-            raise error.TestFail('Could not find payload for %s', build)
+            raise error.TestFail('Could not find payload for %s', self._build)
         logging.debug('Payloads found: %s', payloads)
         return payloads[0]
 
@@ -758,8 +781,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param public_bucket: True to restore from a public bucket.
 
         """
-        # Test failed before job_repo_url was set. No need to fix stateful.
-        if not self._job_repo_url:
+        # Test failed before any update preparations began. No need to fix stateful.
+        if not self._should_restore_stateful:
             return
 
         # Fallback to lab provisioning if this function fails to restore.
@@ -889,7 +912,13 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param is_dlc: True to get the payload URL for sample-dlc.
 
         """
-        self._job_repo_url = self._get_job_repo_url(job_repo_url)
+        if job_repo_url is not None:
+            self._job_repo_url = job_repo_url
+            _, build = tools.get_devserver_build_from_package_url(
+                    self._job_repo_url)
+            self._build = build
+            self._should_restore_stateful = True
+
         payload_url = self._get_payload_url(full_payload=full_payload,
                                             is_dlc=is_dlc)
         url = self._copy_payload_to_public_bucket(payload_url)
@@ -922,13 +951,21 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('Public stateful URL: %s', url)
         return url
 
-    def get_payload_for_nebraska(self, job_repo_url=None, full_payload=True,
-                                 public_bucket=False, is_dlc=False):
+    def get_payload_for_nebraska(self,
+                                 job_repo_url=None,
+                                 build=None,
+                                 full_payload=True,
+                                 public_bucket=False,
+                                 is_dlc=False):
         """
         Gets a platform or DLC payload URL to be used with a nebraska instance
         on the DUT.
 
-        @param job_repo_url: string url containing the current build.
+        @param job_repo_url: string url containing the current build and cache
+                             server to use.
+        @param build: string containing the build to use for the update,
+                      like R102-14644.0.0 (the milestone number is required).
+                      Only used for the public bucket update flow.
         @param full_payload: bool whether we want a full payload.
         @param public_bucket: True to return a payload on a public bucket.
         @param is_dlc: True to get the payload URL for sample-dlc.
@@ -936,15 +973,35 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @returns string URL of a payload staged on a lab devserver.
 
         """
+        self._job_repo_url = self._get_job_repo_url(job_repo_url)
+
+        if self._job_repo_url:
+            logging.info('Getting payload for the build in job_repo_url')
+            ds_url, build = tools.get_devserver_build_from_package_url(
+                    self._job_repo_url)
+            self._autotest_devserver = dev_server.ImageServer(ds_url)
+            self._build = build
+        elif build is not None:
+            logging.info('Getting payload for the build provided in test_that')
+            # self._build looks like this: octopus-release/R102-14650.0.0
+            # Replace the version with the one provided in test_that.
+            self._build = self._get_release_builder_path().rsplit(
+                    '/')[0] + '/' + build
+        else:
+            logging.info('Getting payload for the current build on the DUT')
+            self._build = self._get_release_builder_path()
+
+        logging.info("Getting payload for nebraska for build %s", self._build)
+
         if public_bucket:
             return self.get_payload_url_on_public_bucket(
-                job_repo_url, full_payload=full_payload, is_dlc=is_dlc)
+                    full_payload=full_payload, is_dlc=is_dlc)
 
-        self._job_repo_url = self._get_job_repo_url(job_repo_url)
         payload = self._get_payload_url(full_payload=full_payload,
                                         is_dlc=is_dlc)
         payload_url, _ = self._stage_payload_by_uri(payload)
         logging.info('Payload URL for Nebraska: %s', payload_url)
+        self._should_restore_stateful = True
         return payload_url
 
 

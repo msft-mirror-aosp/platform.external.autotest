@@ -255,6 +255,24 @@ To run multiple servo boards on the same servo host (labstation), use serial and
 - `$ sudo servod --board=$BOARD --port $port_number --serial $servo_serial_number`
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=localhost servo_port=$port_number faft_iterations=5000" f:.*firmware_ConsecutiveBoot/control`
 
+### Running Against DUTs With Tunnelled SSH
+
+If you have ssh tunnels setup for your DUT and servo host (for example, via
+[SSH watcher](https://chromium.googlesource.com/chromiumos/platform/dev-util/+/HEAD/contrib/sshwatcher),
+the syntax (with the assumption that your DUT's network interface and your servo
+host's network interface is tunnelled to 2203 and servod is listening on port
+9901 on your servo host) for running tests is:
+
+- `$ test_that localhost:2222 --args="servo_host=localhost servo_host_ssh_port=2223 servo_port=2223 --use_icmp_false" $TESTS`
+- `$ tast run -build=false -var=servo=127.0.0.1:9901:ssh:2223 127.0.0.1:2222  $TESTS`
+
+Note that for tast, you will likely need to manually start servod.  Note that
+the tast invocation is a bit unintuitive, as the servo port in the first port
+reference is the real servo port on the servo host, not the redirected one,
+because TAST ssh's to the servohost and tunnels it's own port.  If you don't
+need to run commands on the servo host you can also use
+servo=localhost:${LOCAL_SERVO_PORT}:nossh
+
 ## Running FAFT on a new kernel {#faft-kernel-next}
 
 The lab hosts shown in go/cros-testing-kernelnext provide a static environment

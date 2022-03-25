@@ -55,10 +55,19 @@ class bluetooth_AdapterControllerRoleTests(
         @param secondary_test_func: function handle to test connection
         """
         logging.info('Setting up secondary device')
-        self.test_discover_device(device.address)
-        self.test_pairing(device.address, device.pin, trusted=False)
+        if not self.test_discover_device(device.address):
+            logging.error('connect_and_test_secondary_device exits early as '
+                          'test_discover_device fails')
+            return
+        if not self.test_pairing(device.address, device.pin, trusted=False):
+            logging.error('connect_and_test_secondary_device exits early as '
+                          'test_pairing fails')
+            return
         time.sleep(self.TEST_SLEEP_SECS)
-        self.test_connection_by_adapter(device.address)
+        if not self.test_connection_by_adapter(device.address):
+            logging.error('connect_and_test_secondary_device exits early as '
+                          'test_connection_by_adapter fails')
+            return
         time.sleep(self.TEST_SLEEP_SECS)
         secondary_test_func(device)
 

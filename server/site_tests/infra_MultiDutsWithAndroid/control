@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'xianuowang'
+ATTRIBUTES = "suite:infra_multi_duts_with_android"
 NAME = 'infra_MultiDutsWithAndroid'
 TIME = 'SHORT'
 TEST_CATEGORY = 'General'

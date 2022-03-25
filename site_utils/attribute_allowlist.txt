@@ -227,6 +227,7 @@ suite:hotrod-remora
 suite:hps_perf_perbuild
 suite:hps_sweetberry_perf_perbuild
 suite:hwqual
+suite:infra_multi_duts_with_android
 suite:infra_qual
 suite:infra_qual_cellular
 suite:infra_qual_wifi

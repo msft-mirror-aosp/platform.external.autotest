@@ -252,6 +252,21 @@ class base_sysinfo(object):
                                         logf='uname',
                                         log_in_keyval=True))
 
+        # Log cpufreq parameters
+        self.boot_loggables.add(
+                command('cat /sys/bus/cpu/devices/cpu*/cpufreq/scaling_driver | sort -u',
+                        logf='scaling-driver',
+                        log_in_keyval=True))
+        self.boot_loggables.add(
+                command('cat /sys/bus/cpu/devices/cpu*/cpufreq/scaling_governor | sort -u',
+                        logf='scaling-governor',
+                        log_in_keyval=True))
+        # Will only get logged when using the ondemand governor
+        self.boot_loggables.add(
+                logfile('/sys/devices/system/cpu/cpufreq/ondemand/powersave_bias',
+                        logf='scaling-governor-ondemand-powersave-bias',
+                        log_in_keyval=True))
+
         # log contents of DLC directories with meaningful filenames
         self.boot_loggables.add(command('tree /var/cache/dlc',
                                         logf='dlc_images'))

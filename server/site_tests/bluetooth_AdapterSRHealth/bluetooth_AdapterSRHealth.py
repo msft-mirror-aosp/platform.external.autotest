@@ -57,15 +57,15 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     """Server side bluetooth adapter suspend resume test with peer."""
 
     def _test_keyboard_with_string(self, device):
-        self.test_hid_device_created(device.address)
-        return self.test_keyboard_input_from_trace(device, "simple_text")
+        return (self.test_hid_device_created(device.address)
+                and self.test_keyboard_input_from_trace(device, "simple_text"))
 
     def _test_mouse(self, device):
-        self.test_hid_device_created(device.address)
-        return self.test_mouse_left_click(device) and \
-               self.test_mouse_move_in_xy(device, -60, 100) and \
-               self.test_mouse_scroll_down(device, 70) and \
-               self.test_mouse_click_and_drag(device, 90, 30)
+        return (self.test_hid_device_created(device.address)
+                and self.test_mouse_left_click(device)
+                and self.test_mouse_move_in_xy(device, -60, 100)
+                and self.test_mouse_scroll_down(device, 70)
+                and self.test_mouse_click_and_drag(device, 90, 30))
 
     # ---------------------------------------------------------------
     # Reconnect after suspend tests

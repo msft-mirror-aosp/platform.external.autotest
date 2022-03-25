@@ -43,58 +43,68 @@ class BluetoothAdapterPairingTests(
         """Running Bluetooth adapter tests about pairing to a device."""
 
         # Reset the adapter to forget previously paired devices if any.
-        self.test_reset_on_adapter()
+        if not self.test_reset_on_adapter():
+            return
 
         # The adapter must be set to the pairable state.
-        self.test_pairable()
+        if not self.test_pairable():
+            return
 
         # Test if the adapter could discover the target device.
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
-        self.test_discover_device(device.address)
+        if not self.test_discover_device(device.address):
+            return
 
         # Test if the discovered device class of service is correct.
-        self.test_device_class_of_service(device.address,
-                                          device.class_of_service)
+        if not self.test_device_class_of_service(device.address,
+                                                 device.class_of_service):
+            return
 
         # Test if the discovered device class of device is correct.
-        self.test_device_class_of_device(device.address,
-                                         device.class_of_device)
+        if not self.test_device_class_of_device(device.address,
+                                                device.class_of_device):
+            return
 
         # Verify that the adapter could pair with the device.
         # Also set the device trusted when pairing is done.
         # Device will be connected at the end of pairing.
-        self.test_pairing(device.address, device.pin, trusted=True)
+        if not self.test_pairing(device.address, device.pin, trusted=True):
+            return
 
         # Test if the discovered device name is correct.
         # Sometimes, it takes quite a long time after discovering
         # the device (more than 60 seconds) to resolve the device name.
         # Hence, it is safer to test the device name after pairing and
         # connection is done.
-        self.test_device_name(device.address, device.name)
+        if not self.test_device_name(device.address, device.name):
+            return
 
         # Run hid test to make sure profile is connected
-        check_connected_method(device)
+        if not check_connected_method(device):
+            return
 
         # Test if the device is still connected after suspend/resume.
         if suspend_resume:
             self.suspend_resume()
 
             time.sleep(self.PAIR_TEST_SLEEP_SECS)
-            self.test_device_is_paired(device.address)
+            if not self.test_device_is_paired(device.address):
+                return
 
 
             # check if peripheral is connected after suspend resume
             if not self.ignore_failure(check_connected_method, device):
                 logging.info("device not connected after suspend_resume")
                 self.test_connection_by_device(device)
+                time.sleep(self.PAIR_TEST_SLEEP_SECS)
+                if not check_connected_method(device):
+                    return
             else:
                 logging.info("device remains connected after suspend_resume")
 
             time.sleep(self.PAIR_TEST_SLEEP_SECS)
-            check_connected_method(device)
-
-            time.sleep(self.PAIR_TEST_SLEEP_SECS)
-            self.test_device_name(device.address, device.name)
+            if not self.test_device_name(device.address, device.name):
+                return
 
         # Test if the device is still connected after reboot.
         # if reboot:
@@ -115,43 +125,58 @@ class BluetoothAdapterPairingTests(
         #     self.test_device_name(device.address, device.name)
 
         # Verify that the adapter could disconnect the device.
-        self.test_disconnection_by_adapter(device.address)
+        if not self.test_disconnection_by_adapter(device.address):
+            return
 
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
-        if device.can_init_connection:
-            # Verify that the device could initiate the connection.
-            self.test_connection_by_device(device)
 
-            # With raspberry pi peer, it takes a moment before the device is
-            # registered as an input device. Without delay, the input recorder
-            # doesn't find the device
-            time.sleep(1)
-            check_connected_method(device)
-        else:
-            # Reconnect so that we can test disconnection from the kit
-            self.test_connection_by_adapter(device.address)
+        def test_connection():
+            """Tests connection inited by either the device or the adapter"""
+            if device.can_init_connection:
+                # Verify that the device could initiate the connection.
+                if not self.test_connection_by_device(device):
+                    return False
 
-        # TODO(alent): Needs a new capability, but this is a good proxy
-        if device.can_init_connection:
-            # Verify that the device could initiate the disconnection.
-            self.test_disconnection_by_device(device)
-        else:
-            # Reconnect so that we can test disconnection from the kit
-            self.test_disconnection_by_adapter(device.address)
+                # With raspberry pi peer, it takes a moment before the device is
+                # registered as an input device. Without delay, the input recorder
+                # doesn't find the device
+                time.sleep(1)
+                return check_connected_method(device)
+            # Adapter inited connection.
+            # Reconnect so that we can test disconnection from the kit.
+            return self.test_connection_by_adapter(device.address)
+
+        if not test_connection():
+            return
+
+        def test_disconnection():
+            """Tests disconnection inited by either the device or the adapter"""
+            # TODO(alent): Needs a new capability, but this is a good proxy
+            if device.can_init_connection:
+                # Verify that the device could initiate the disconnection.
+                return self.test_disconnection_by_device(device)
+            # Adapter inited connection.
+            return self.test_disconnection_by_adapter(device.address)
+
+        if not test_disconnection():
+            return
 
         # Verify that the adapter could remove the paired device.
-        self.test_remove_pairing(device.address)
+        if not self.test_remove_pairing(device.address):
+            return
 
         # Check if the device could be re-paired after being forgotten.
         if pairing_twice:
             # Test if the adapter could discover the target device again.
             time.sleep(self.PAIR_TEST_SLEEP_SECS)
-            self.test_discover_device(device.address)
+            if not self.test_discover_device(device.address):
+                return
 
             # Verify that the adapter could pair with the device again.
             # Also set the device trusted when pairing is done.
             time.sleep(self.PAIR_TEST_SLEEP_SECS)
-            self.test_pairing(device.address, device.pin, trusted=True)
+            if not self.test_pairing(device.address, device.pin, trusted=True):
+                return
 
             # Verify that the adapter could remove the paired device again.
             time.sleep(self.PAIR_TEST_SLEEP_SECS)

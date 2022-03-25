@@ -144,6 +144,7 @@ suite:cellular_au_nightly
 suite:cellular_callbox
 suite:cellular_endtoend
 suite:cellular_mbim_compliance
+suite:cellular_modem_fw
 suite:cellular_modem_repair
 suite:cellular_ota
 suite:cellular_ota_flaky

@@ -479,17 +479,26 @@ class network_EthernetStressPlug(test.test):
             raise error.TestFail('Unable to parse ethtool output for %s.',
                                  self.interface)
 
-        # Ethtool output is ordered in terms of speed so this obtains the
-        # fastest speed supported by dongle.
-        # QCA ESS EDMA driver doesn't report "Supported link modes".
-        if ethtool_dict.get('Advertised link modes', None):
-            max_link = ethtool_dict['Advertised link modes'][-1]
-            return EthernetDongle(expect_speed=max_link['Speed'],
-                                  expect_duplex=max_link['Duplex'])
-        else:
-            # Pre-v5.13 cdc_ncm driver doesn't report speed or duplex.
-            # v5.13 (and later) will report speed, but not duplex.
-            return EthernetDongle(expect_speed=None, expect_duplex=None)
+        # We should normally have a link at this point. Use the reported link
+        # speed to verify the link comes up at the same speed on each iteration.
+        initial_speed = ethtool_dict.get('Speed')
+        initial_duplex = ethtool_dict.get('Duplex')
+
+        # Pre-v5.13 cdc_ncm driver doesn't report speed or duplex.
+        # v5.13 (and later) will report speed, but not duplex.
+        if initial_speed is None:
+
+            # Use max supported speed as the "expected" link rate.
+            # QCA ESS EDMA driver doesn't report "Supported link modes".
+            if ethtool_dict.get('Advertised link modes'):
+                # Ethtool output is ordered in terms of speed so this obtains
+                # the fastest speed supported by dongle.
+                max_link = ethtool_dict['Advertised link modes'][-1]
+                initial_speed = max_link['Speed']
+                initial_duplex = max_link['Duplex']
+
+        return EthernetDongle(expect_speed=initial_speed,
+                              expect_duplex=initial_duplex)
 
     def run_once(self, num_iterations=1):
         try:

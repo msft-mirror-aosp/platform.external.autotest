@@ -17,7 +17,7 @@ from xml.parsers import expat
 import six
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error, global_config
-from autotest_lib.client.common_lib.cros import retry, tpm_utils
+from autotest_lib.client.common_lib.cros import dev_server, retry, tpm_utils
 from autotest_lib.server import test
 from autotest_lib.server.cros import vboot_constants as vboot
 from autotest_lib.server.cros.faft import telemetry
@@ -29,6 +29,7 @@ from autotest_lib.server.cros.faft.utils.faft_checkers import FAFTCheckers
 from autotest_lib.server.cros.power import utils as PowerUtils
 from autotest_lib.server.cros.servo import (chrome_base_ec, chrome_cr50,
                                             chrome_ec, chrome_ti50, servo)
+from autotest_lib.site_utils import test_runner_utils
 
 # Experimentally tuned time in minutes to wait for partition device nodes on a
 # USB stick to be ready after plugging in the stick.
@@ -305,7 +306,7 @@ class FirmwareTest(test.test):
         @return: True if build is verified to be on USB key, False otherwise.
         """
         info = self._client.host_info_store.get()
-        if info.build:
+        if info.build and info.build != test_runner_utils.NO_BUILD:
             current_build = self._client._servo_host.validate_image_usbkey()
             if current_build != info.build:
                 logging.debug('Current build on USB: %s differs from test'
@@ -314,7 +315,8 @@ class FirmwareTest(test.test):
                 try:
                     self._client.stage_build_to_usb(info.build)
                     return True
-                except error.AutotestError as e:
+                except (error.AutotestError,
+                        dev_server.DevServerException) as e:
                     logging.warning(
                             'Stage build to USB failed, tests that require'
                             ' test image on Servo USB may fail: {}'.format(e))

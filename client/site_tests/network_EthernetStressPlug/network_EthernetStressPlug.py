@@ -15,7 +15,7 @@ import subprocess
 import sys
 import time
 
-from autotest_lib.client.bin import test, utils
+from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 
 
@@ -25,7 +25,6 @@ class EthernetDongle(object):
     def __init__(self, expect_speed='100', expect_duplex='full'):
         # Expected values for parameters.
         self.expected_parameters = {
-            'ifconfig_status': 0,
             'duplex': expect_duplex,
             'speed': expect_speed,
             'mac_address': None,
@@ -180,8 +179,6 @@ class network_EthernetStressPlug(test.test):
 
         eth_out = self.ParseEthTool()
         ethernet_status = {
-            'ifconfig_status': utils.system('ifconfig %s' % self.interface,
-                                            ignore_status=True),
             'duplex': eth_out.get('Duplex'),
             'speed': eth_out.get('Speed'),
             'mac_address': ReadEthVal('address'),

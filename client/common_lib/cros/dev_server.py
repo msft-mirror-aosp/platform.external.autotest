@@ -1103,37 +1103,38 @@ class ImageServerBase(DevServer):
                         'curl -s -S -f "%s"' % utils.sh_escape(remote_file)
                 ]
                 logging.debug("Running command %s", ssh_cmd)
-                cmd = subprocess.Popen(
-                        ssh_cmd,
-                        stdout=out_log,
-                        stdin=subprocess.DEVNULL,
-                        stderr=subprocess.PIPE,
-                )
+                with open(os.devnull) as devnull:
+                    cmd = subprocess.Popen(
+                            ssh_cmd,
+                            stdout=out_log,
+                            stdin=devnull,
+                            stderr=subprocess.PIPE,
+                    )
 
-                # Python 2.7 doesn't have Popen.wait(timeout), so start a timer
-                # and kill the ssh process if it takes too long.
-                def stop_process():
-                    """Kills the subprocess after the timeout."""
-                    cmd.kill()
-                    logging.error("ssh call timed out after %s secs",
-                                  timeout_seconds)
+                    # Python 2.7 doesn't have Popen.wait(timeout), so start a
+                    # timer and kill the ssh process if it takes too long.
+                    def stop_process():
+                        """Kills the subprocess after the timeout."""
+                        cmd.kill()
+                        logging.error("ssh call timed out after %s secs",
+                                      timeout_seconds)
 
-                t = Timer(timeout_seconds, stop_process)
-                try:
-                    t.start()
-                    cmd.wait()
-                finally:
-                    t.cancel()
-                error_output = cmd.stderr.read()
-                if error_output:
-                    logging.error("ssh call output: %s", error_output)
-                if cmd.returncode != 0:
-                    c = metrics.Counter(
-                            'chromeos/autotest/devserver/ssh_failure')
-                    c.increment(fields={'dev_server': server_name})
-                    raise DevServerException(
-                            "ssh call failed with exit code %s",
-                            cmd.returncode)
+                    t = Timer(timeout_seconds, stop_process)
+                    try:
+                        t.start()
+                        cmd.wait()
+                    finally:
+                        t.cancel()
+                    error_output = cmd.stderr.read()
+                    if error_output:
+                        logging.error("ssh call output: %s", error_output)
+                    if cmd.returncode != 0:
+                        c = metrics.Counter(
+                                'chromeos/autotest/devserver/ssh_failure')
+                        c.increment(fields={'dev_server': server_name})
+                        raise DevServerException(
+                                "ssh call failed with exit code %s",
+                                cmd.returncode)
 
 
     def _poll_is_staged(self, **kwargs):

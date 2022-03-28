@@ -6,7 +6,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server import test
 
 
-class infra_CompanionDuts(test.test):
+class infra_MultiDutsWithAndroid(test.test):
     """
     Verify the test can create correct host type for Android devices.
 

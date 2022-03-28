@@ -39,6 +39,23 @@ class network_EthernetStressPlug(test.test):
     """ base class for test """
     version = 1
 
+    def link_is_up(self, interface=None):
+        """ Determines and defines the bus information and interface info. """
+        sysnet = os.path.join('/', 'sys', 'class', 'net')
+        syslink = os.path.join(sysnet, interface, 'operstate')
+        link_status = None
+        try:
+            link_file = open(syslink)
+            link_status = link_file.readline().strip()
+            link_file.close()
+        except:
+            # It doesn't matter why reading link status fails since we should
+            # always be able to read link_status.
+            # If link_status isn't set to "up", return False.
+            pass
+
+        return "up" == link_status
+
     def initialize(self, interface=None):
         """ Determines and defines the bus information and interface info. """
 
@@ -46,7 +63,7 @@ class network_EthernetStressPlug(test.test):
         sysnet = os.path.join('/', 'sys', 'class', 'net')
 
         def get_ethernet_interface(interface):
-            """ Valid interface requires link and duplex status."""
+            """ Valid interface requires link status."""
             avail_eth_interfaces=[]
             if interface is None:
                 # This is not the (bridged) eth dev we are looking for.
@@ -60,34 +77,13 @@ class network_EthernetStressPlug(test.test):
                 if os.path.exists(sysdev):
                     avail_eth_interfaces.append(interface)
                 else:
-                    raise error.TestError('Network Interface %s is not a device ' % iface)
-
-            link_status = 'unknown'
-            duplex_status = 'unknown'
-            iface = 'unknown'
+                    raise error.TestError('Network Interface %s is not a device ' % interface)
 
             for iface in avail_eth_interfaces:
-                syslink = os.path.join(sysnet, iface, 'operstate')
-                try:
-                    link_file = open(syslink)
-                    link_status = link_file.readline().strip()
-                    link_file.close()
-                except:
-                    pass
-
-                sysduplex = os.path.join(sysnet, iface, 'duplex')
-                try:
-                    duplex_file = open(sysduplex)
-                    duplex_status = duplex_file.readline().strip()
-                    duplex_file.close()
-                except:
-                    pass
-
-                if link_status == 'up':
+                if self.link_is_up(iface):
                     return iface
 
-            raise error.TestError('Network Interface %s not usable (%s, %s)'
-                                  % (iface, link_status, duplex_status))
+            raise error.TestError('No Network Interface has a link: %s' % ','.join(avail_eth_interfaces))
 
         def get_net_device_path(device=''):
             """ Uses udev to get the path of the desired internet device.

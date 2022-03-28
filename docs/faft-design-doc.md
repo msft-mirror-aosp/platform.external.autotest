@@ -32,9 +32,9 @@ _Last updated: 2011/11/08_
 
 ## FAFT Related Documents
 
-- FAFT Setup Instructions: [http://goto/faft-setup](http://goto/faft-setup)
-- FAFT Test Coverage: [http://goto/faft-coverage](http://goto/faft-coverage)
-- FAFT Comparing Existing Manual Test Cases: [http://goto/faft-comparison](http://goto/faft-comparison)
+- [FAFT Setup Instructions](https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/faft-how-to-run-doc.md)  ([Google specific instructions](http://goto/faft-setup))
+- FAFT Test Coverage (Google internal only): [http://goto/faft-coverage](http://goto/faft-coverage)
+- FAFT Comparing Existing Manual Test Cases (Google internal only): [http://goto/faft-comparison](http://goto/faft-comparison)
 
 <a name="introduction" />
 
@@ -54,7 +54,7 @@ This document proposes a solution to the test problem. The advantages of FAFT:
 
 This document uses [U-Boot](http://en.wikipedia.org/wiki/Das_U-Boot) as an example to discuss the FAFT test approach. It can be also applied to [coreboot](http://en.wikipedia.org/wiki/Coreboot) and any proprietary BIOS in a similar way.
 
-The U-Boot software stack looks like the following graph: [cl/70339149](https://critique.corp.google.com/#review/70339149)
+The U-Boot software stack looks like the following graph:
 
 ![faft-u-boot-stack](assets/faft-u-boot-stack.png)
 
@@ -131,7 +131,7 @@ Simon proposed a U-Boot native test system to split the U-Boot components into p
 
 ### Test Environment
 
-We need a [Servo board](https://sites.google.com/a/google.com/chromeos-partner/hardware-control-and-debug/servo) to connect a DUT such that we can:
+We need a [Servo board](https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/HEAD/docs/servo.md) to connect a DUT such that we can:
 
 - flash a new firmware image;
 - run regression tests;

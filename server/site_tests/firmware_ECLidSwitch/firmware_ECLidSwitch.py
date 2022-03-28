@@ -46,6 +46,12 @@ class firmware_ECLidSwitch(FirmwareTest):
         # Only run in normal mode
         self.switcher.setup_mode('normal')
 
+    def cleanup(self):
+        self.faft_client.system.run_shell_command_get_status(
+                "rm -rf /tmp/power_manager")
+
+        return super().cleanup()
+
     def _open_lid(self):
         """Open lid by servo."""
         self.servo.set('lid_open', 'yes')
@@ -202,8 +208,12 @@ class firmware_ECLidSwitch(FirmwareTest):
         if lid switch event controls keycode and backlight as we expected.
         """
         ok = True
-        logging.info("Stopping powerd")
-        self.faft_client.system.run_shell_command('stop powerd')
+        logging.info("Disable use_lid in powerd")
+        self.faft_client.system.run_shell_command(
+                "mkdir -p /tmp/power_manager && "
+                "echo 0 > /tmp/power_manager/use_lid && "
+                "mount --bind /tmp/power_manager /var/lib/power_manager && "
+                "restart powerd")
         if not self.check_keycode():
             logging.error("check_keycode failed.")
             ok = False
@@ -211,7 +221,8 @@ class firmware_ECLidSwitch(FirmwareTest):
             logging.error("check_backlight failed.")
             ok = False
         logging.info("Restarting powerd")
-        self.faft_client.system.run_shell_command('start powerd')
+        self.faft_client.system.run_shell_command(
+                'umount /var/lib/power_manager && restart powerd')
         return ok
 
     def run_once(self):

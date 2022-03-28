@@ -384,13 +384,17 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     def _copy_payload_to_public_bucket(self,
                                        payload_url,
+                                       use_globbing=True,
                                        destination_filename=None):
         """
         Copy payload and make link public (if not already there).
 
         @param payload_url: Payload URL on Google Storage.
+        @param use_globbing: Use globbing with payload url as prefix.
         @param destination_filename: Filename of payload on public bucket if it
-            should be different from the source filename.
+            should be different from the source filename. Note that gsutil will
+            treat this as destination directory if `use_globbing` is true and
+            resolves to multiple files.
 
         @returns The payload URL that is now publicly accessible.
 
@@ -401,6 +405,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         new_gs_url = self._CELLULAR_BUCKET + payload_filename
         public_url = new_gs_url.replace('gs://',
                                         'https://storage.googleapis.com/')
+
+        src_url = '%s*' % payload_url if use_globbing else payload_url
+        dst_url = new_gs_url if destination_filename else self._CELLULAR_BUCKET
 
         # Check if public bucket already has the payload.
         try:
@@ -413,7 +420,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         except error.CmdError:
             logging.warning('No existing payload exists. Copying payload...')
 
-        utils.run(['gsutil', 'cp', '-n', '%s*' % payload_url, new_gs_url])
+        utils.run(['gsutil', 'cp', '-n', src_url, dst_url])
         utils.run(['gsutil', 'acl', 'ch', '-u', 'AllUsers:R',
                    '%s*' % new_gs_url])
         return public_url
@@ -908,8 +915,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 os.path.splitext(payload_url.rpartition('/')[2])[0],
                 self._STATEFUL_ARCHIVE_NAME
         ])
-        url = self._copy_payload_to_public_bucket(stateful_url,
-                                                  stateful_filename)
+        url = self._copy_payload_to_public_bucket(
+                stateful_url,
+                use_globbing=False,
+                destination_filename=stateful_filename)
         logging.info('Public stateful URL: %s', url)
         return url
 

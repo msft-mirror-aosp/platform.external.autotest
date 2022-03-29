@@ -1,5 +1,5 @@
 CtsAccountsHostTestCases: [all]
-CtsAdbHostTestCases: [all]
+CtsAdbHostTestCases: [shipatN, shipatP]
 CtsAngleIntegrationHostTestCases: [all]
 CtsAppPredictionServiceTestCases: [all]
 CtsAppWidgetTestCases: [all]

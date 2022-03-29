@@ -92,6 +92,7 @@ class power_Test(test.test):
             logging.debug('%s: %s', type(log).__name__, ", ".join(log.domains))
 
         self._pdash_note = pdash_note
+        self._failure_messages = []
 
     def get_extra_browser_args_for_camera_test(self):
         """Return Chrome args for camera power test."""
@@ -327,6 +328,9 @@ class power_Test(test.test):
         super(power_Test, self).postprocess_iteration()
         self.publish_dashboard()
         self._save_results()
+        if self._failure_messages:
+            raise error.TestFail('Test has failed with messages: %s' %
+                                 self._failure_messages)
 
     def cleanup(self):
         """Reverse setting change in initialization."""

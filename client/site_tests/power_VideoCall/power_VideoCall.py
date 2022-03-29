@@ -7,7 +7,6 @@ import re
 import time
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_status
@@ -107,10 +106,16 @@ class power_VideoCall(power_test.power_Test):
                     time.sleep(60)
 
                 if not tab_left.IsAlive():
-                    raise error.TestFail("Video tab crashed")
+                    msg = 'Video tab crashed'
+                    logging.error(msg)
+                    self._failure_messages.append(msg)
+                    break
 
                 if tab_right and not tab_right.IsAlive():
-                    raise error.TestFail("Doc tab crashed")
+                    msg = 'Doc tab crashed'
+                    logging.error(msg)
+                    self._failure_messages.append(msg)
+                    break
 
                 self.status.refresh()
                 if self.status.is_low_battery():

@@ -28,6 +28,7 @@ except ImportError:
     logging.error('Failed to import password_util from autotest-private')
 
 test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
+batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
 class bluetooth_FastPair(BluetoothAdapterQuickTests):
@@ -47,11 +48,11 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
 
     def run_ui_test(self):
         """Runs the UI client test, which clicks through the Fast Pair UI"""
-        client_at = autotest.Autotest(self._host)
+        client_at = autotest.Autotest(self.host)
         client_at.run_test(self.UI_TEST,
                            username=self._username,
                            password=self._password)
-        client_at._check_client_test_result(self._host, self.UI_TEST)
+        client_at._check_client_test_result(self.host, self.UI_TEST)
 
     @test_wrapper('Fast Pair Initial Pairing',
                   devices={'BLE_FAST_PAIR': 1},
@@ -151,11 +152,24 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
             raise error.TestError('Valid %s arg is missing' %
                                   self.PASSWORD_ARG_KEY)
 
-    def run_once(self, host, args_dict):
+    @batch_wrapper('Fast Pair')
+    def fast_pair_batch_run(self, num_iterations=1, test_name=None):
+        """ Batch of Fair Pair tests """
+        self.fast_pair_initial_pairing_test()
+        self.fast_pair_subsequent_pairing_test()
+
+    def run_once(self,
+                 host,
+                 num_iterations=1,
+                 args_dict=None,
+                 test_name=None,
+                 flag='Quick Health'):
         """Running Fast Pair tests.
 
         @param host: the DUT, usually a chromebook
-        @param args_dict: dictionary of args to use during test
+        @param num_iterations: the number of times to execute the test
+        @param test_name: the test to run or None for all tests
+        @param flag: run tests with this flag (default: Quick Health)
 
         """
 
@@ -165,8 +179,10 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
         self.set_username(args_dict)
         self.set_password(args_dict)
 
-        self._host = host
-        self.quick_test_init(host, use_btpeer=True, args_dict=args_dict)
-        self.fast_pair_initial_pairing_test()
-        self.fast_pair_subsequent_pairing_test()
+        # Initialize and run the test batch or the requested specific test
+        self.quick_test_init(host,
+                             use_btpeer=True,
+                             flag=flag,
+                             args_dict=args_dict)
+        self.fast_pair_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

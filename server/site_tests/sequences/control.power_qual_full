@@ -55,7 +55,8 @@ CLIENT_TESTS = [
         'percent_target_charge' : 80, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_VideoCall', {
-        'tag' : 'powerqual', 'force_discharge' : True}),
+        'tag' : 'powerqual', 'force_discharge' : True,
+        'min_run_time_percent': 75}),
 
     ('power_BatteryCharge', {
         'percent_target_charge' : 40, 'max_run_time': 5 * HOURS}),

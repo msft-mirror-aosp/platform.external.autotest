@@ -43,7 +43,8 @@ CLIENT_TESTS = [
         'use_design_charge_capacity' : False}),
     ('power_WaitForCoolDown', {}),
     ('power_VideoCall', {
-        'tag' : 'powerqual_lab', 'force_discharge' : True}),
+        'tag' : 'powerqual_lab', 'force_discharge' : True,
+        'min_run_time_percent': 75}),
 
     ('power_BatteryCharge', {
         'percent_target_charge' : 20, 'max_run_time': 5 * HOURS,

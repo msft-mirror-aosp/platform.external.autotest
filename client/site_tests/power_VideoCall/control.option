@@ -31,9 +31,11 @@ preset = str(args_dict.get('preset', ''))
 video_url = str(args_dict.get('video_url', ''))
 num_video = int(args_dict.get('num_video', 5))
 multitask = bool(args_dict.get('multitask', True))
+min_run_time_percent = bool(args_dict.get('min_run_time_percent', 100))
 
 pdash_note = args_dict.get('pdash_note', '')
 
 job.run_test('power_VideoCall', pdash_note=pdash_note, tag=NAME.split('.')[1],
              duration=duration, preset=preset, video_url=video_url,
-	     num_video=num_video,multitask=multitask)
+             num_video=num_video, multitask=multitask,
+             min_run_time_percent=min_run_time_percent)

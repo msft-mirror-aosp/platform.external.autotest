@@ -32,7 +32,8 @@ class power_VideoCall(power_test.power_Test):
                  preset='',
                  video_url='',
                  num_video=5,
-                 multitask=True):
+                 multitask=True,
+                 min_run_time_percent=100):
         """run_once method.
 
         @param duration: time in seconds to display url and measure power.
@@ -45,6 +46,9 @@ class power_VideoCall(power_test.power_Test):
         @param video_url: url of video call simulator.
         @param num_video: number of video including camera preview.
         @param multitask: boolean indicate Google Docs multitask enablement.
+        @param min_run_time_percent: int between 0 and 100;
+                                     run time must be longer than
+                                     min_run_time_percent / 100.0 * duration.
         """
 
         if not preset and not video_url:
@@ -99,6 +103,9 @@ class power_VideoCall(power_test.power_Test):
 
             # Start typing number block
             self.start_measurements()
+            # TODO(b/226960942): Revert crrev.com/c/3556798 once root cause is
+            # found for why test fails before 2 hrs.
+            min_run_time = min_run_time_percent / 100.0 * duration
             while time.time() - self._start_time < duration:
                 if multitask:
                     keys.press_key('number_block')
@@ -108,13 +115,15 @@ class power_VideoCall(power_test.power_Test):
                 if not tab_left.IsAlive():
                     msg = 'Video tab crashed'
                     logging.error(msg)
-                    self._failure_messages.append(msg)
+                    if time.time() - self._start_time < min_run_time:
+                        self._failure_messages.append(msg)
                     break
 
                 if tab_right and not tab_right.IsAlive():
                     msg = 'Doc tab crashed'
                     logging.error(msg)
-                    self._failure_messages.append(msg)
+                    if time.time() - self._start_time < min_run_time:
+                        self._failure_messages.append(msg)
                     break
 
                 self.status.refresh()

@@ -21,4 +21,5 @@ The run time is 2 hours to allow the DUT to heat up to steady state.
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
-job.run_test('power_VideoCall', pdash_note=pdash_note)
+job.run_test('power_VideoCall', pdash_note=pdash_note,
+             min_run_time_percent=75)

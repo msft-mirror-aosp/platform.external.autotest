@@ -16,8 +16,7 @@ from collections import OrderedDict
 import dateutil.parser
 import six
 import yaml
-from autotest_lib.client.common_lib import (base_job, config_vars, error,
-                                            lsbrelease_utils)
+from autotest_lib.client.common_lib import (base_job, config_vars, error)
 from autotest_lib.client.common_lib.cros import dev_server, tpm_utils
 from autotest_lib.server import test, utils
 from autotest_lib.server.cros.network import wifi_test_context_manager
@@ -611,7 +610,7 @@ class tast(test.test):
                      ', '.join(dev_server.ImageServer.servers()))
         devservers, can_retry = dev_server.ImageServer.get_available_devservers(
                 self._host.hostname, prefer_local_devserver=True)
-        if not devservers and can_retry and not lsbrelease_utils.is_moblab():
+        if not devservers and can_retry and self._host.is_satlab():
             devservers, can_retry = dev_server.ImageServer.get_available_devservers(
                     self._host.hostname, prefer_local_devserver=False)
         logging.info('Using devservers: %s', ', '.join(devservers))

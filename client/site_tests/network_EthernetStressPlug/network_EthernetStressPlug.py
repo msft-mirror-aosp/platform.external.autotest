@@ -49,10 +49,8 @@ class network_EthernetStressPlug(test.test):
             link_status = link_file.readline().strip()
             link_file.close()
         except:
-            # It doesn't matter why reading link status fails since we should
-            # always be able to read link_status.
-            # If link_status isn't set to "up", return False.
-            pass
+            # (re)authorized device might not be present yet - so open() fails
+            return False
 
         return "up" == link_status
 
@@ -77,7 +75,7 @@ class network_EthernetStressPlug(test.test):
                 if os.path.exists(sysdev):
                     avail_eth_interfaces.append(interface)
                 else:
-                    raise error.TestError('Network Interface %s is not a device ' % interface)
+                    raise error.TestError('Network Interface %s is not a device' % interface)
 
             for iface in avail_eth_interfaces:
                 if self.link_is_up(iface):
@@ -267,7 +265,7 @@ class network_EthernetStressPlug(test.test):
                      state change.
 
         Returns:
-            The time in seconds required for device to transfer to the desired
+            The time in seconds the device needed to transition to the requested
             state.
 
         Raises:
@@ -276,27 +274,44 @@ class network_EthernetStressPlug(test.test):
 
         start_time = time.time()
         end_time = start_time + timeout
+        link_down_cnt = 0
 
         power_str = ['off', 'on']
         self._PowerEthernet(power)
 
         while time.time() < end_time:
+            # If we turned on power but don't yet have a link, give the NIC
+            # time to negotiate one. Most GigE NICs are ready in < 1 second.
+            # "atlantic" 10GigE needs 4-5 seconds to negotiate normal gige link.
+            if power:
+                if self.link_is_up(self.interface):
+                    if link_down_cnt > 0:
+                        logging.debug('%s : Link up in %s seconds', self.interface,
+                                  link_down_cnt)
+                        link_down_cnt = 0
+                else:
+                    link_down_cnt += 1
+                    if link_down_cnt < 10:
+                        time.sleep(1)
+                        continue
+
             status = self.GetEthernetStatus()
 
-
-            # If GetEthernetStatus() detects the wrong link rate, "bouncing"
-            # the link _should_ recover. Keep count of how many times this
-            # happens. Test should fail if happens "frequently".
-            if power and not status and 'speed' in self.test_status['reason']:
-                self._PowerEthernet(0)
-                time.sleep(1)
-                self._PowerEthernet(power)
-                self.link_speed_failures += 1
-                logging.warning('Link Renegotiated %s',
-                                self.test_status['reason'])
+            if power and not status:
+                # If GetEthernetStatus() detects a "different" link rate,
+                # "bouncing" the link _should_ recover.
+                # Keep count of how many times this happens.
+                # Test should fail if happens "frequently".
+                if 'speed' in self.test_status['reason']:
+                    self._PowerEthernet(0)
+                    time.sleep(1)
+                    self._PowerEthernet(1)
+                    self.link_speed_failures += 1
+                    logging.warning('Link Renegotiated %s',
+                                    self.test_status['reason'])
 
             # If ethernet is enabled  and has an IP, OR
-            # if ethernet is disabled and does not have an IP,
+            # if ethernet is disabled and has no IP,
             # then we are in the desired state.
             # Return the number of "seconds" for this to happen.
             # (translated to an approximation of the number of seconds)
@@ -305,7 +320,7 @@ class network_EthernetStressPlug(test.test):
                 or \
                 (not power and not status and \
                 self.test_status['ipaddress'] is None):
-                return time.time()-start_time
+                return (time.time() - start_time)
 
             time.sleep(1)
 

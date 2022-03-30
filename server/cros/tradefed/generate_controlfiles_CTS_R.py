@@ -106,8 +106,8 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
         'A',  # A bookend to simplify partition algorithm.
         'CtsAccessibilityServiceTestCases',  # TODO(ihf) remove when b/121291711 fixed. This module causes problems. Put it into its own control file.
         'CtsAccessibilityServiceTestCasesz',
-        'CtsActivityManagerDevice',  # Runs long enough. (3h)
-        'CtsActivityManagerDevicez',
+        'CtsCameraTestCases',  # Flaky
+        'CtsCameraTestCasesz',
         'CtsDeqpTestCases',
         'CtsDeqpTestCasesz',  # Put Deqp in one control file. Long enough, fairly stable.
         'CtsFileSystemTestCases',  # Runs long enough. (3h)

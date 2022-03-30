@@ -378,6 +378,13 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         return self.bus.get(self.ADAPTER_SERVICE,
                             self.objpath)[self.ADAPTER_INTERFACE]
 
+    # TODO(b/227405934): Not sure we want GetRemoteRssi on adapter api since
+    #                    it's unlikely to be accurate over time. Use a mock for
+    #                    testing for now.
+    def get_mock_remote_rssi(self, device):
+        """Gets mock value for remote device rssi."""
+        return -50
+
     def register_properties(self):
         """Registers a property set for this client."""
         self.properties = PropertySet({
@@ -394,7 +401,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 'Name': (self.proxy().GetRemoteName, None),
                 'Type': (self.proxy().GetRemoteType, None),
                 'Alias': (self.proxy().GetRemoteAlias, None),
-                'Class': (self.proxy().GetRemoteClass, None)
+                'Class': (self.proxy().GetRemoteClass, None),
+                'RSSI': (self.get_mock_remote_rssi, None),
         })
 
     @glib_call(False)

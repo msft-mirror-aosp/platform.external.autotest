@@ -62,18 +62,22 @@ class KernelError(SuspendFailure):
 class FirmwareError(SuspendFailure):
     """String 'ERROR' found in firmware log after resume."""
     ALLOWLIST = [
-        # crosbug.com/36762: no one knows, but it has always been there
-        ('^stumpy', r'PNP: 002e\.4 70 irq size: 0x0000000001 not assigned'),
-        # crbug.com/221538: no one knows what ME errors mean anyway
-        ('^parrot', r'ME failed to respond'),
-        # b/64684441: eve SKU without eMMC
-        ('^eve', r'Card did not respond to voltage select!'),
-        # b/187561710#comment6: waive mcache error from volteer
-        ('^volteer', r'mcache overflow, should increase CBFS_MCACHE size!'),
-        # b/221113302: Guybrush do not save firmware log to cbmem during
-        #              resume, so all errors seen actually occurred during boot.
-        #              This workaround can be removed when b/221231786 is fixed.
-        ('^guybrush', r'.*'),
+            # crosbug.com/36762: no one knows, but it has always been there
+            ('^stumpy', r'PNP: 002e\.4 70 irq size: 0x0000000001 not assigned'
+             ),
+            # crbug.com/221538: no one knows what ME errors mean anyway
+            ('^parrot', r'ME failed to respond'),
+            # b/64684441: eve SKU without eMMC
+            ('^eve', r'Card did not respond to voltage select!'),
+            # b/187561710#comment6: waive mcache error from volteer
+            ('^volteer', r'mcache overflow, should increase CBFS_MCACHE size!'
+             ),
+            # b/221113302: Guybrush do not save firmware log to cbmem during
+            #              resume, so all errors seen actually occurred during boot.
+            #              This workaround can be removed when b/221231786 is fixed.
+            ('^guybrush', r'.*'),
+            # b/195336611: waive the eMMC error for the non-emmc sku
+            ('^brya', r'No known Realtek reader found'),
     ]
 
 

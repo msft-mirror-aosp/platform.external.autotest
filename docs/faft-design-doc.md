@@ -236,7 +236,7 @@ Besides, factory install shim, firmware AU, reset shim, RMA, etc, are more compl
 
 ### Scope 3: Monkey Test during Firmware/EC update
 
-Firmware/EC update is a risky thing and may brick the machine. For example, the bug [http://crosbug.com/p/4419](http://crosbug.com/p/4419) reported, during the EC update, a user presses Power Button at the same time that bricks the machine. It is because the powerd triggers the shutdown process immediately and the system goes to off, but it cannot be turned on again by power button (until a cold boot). Note that the EC is still in update mode now.
+Firmware/EC update is a risky thing and may brick the machine. For example, a [bug](https://b.corp.google.com/issues/35499945) reported, during the EC update, a user presses Power Button at the same time that bricks the machine. It is because the powerd triggers the shutdown process immediately and the system goes to off, but it cannot be turned on again by power button (until a cold boot). Note that the EC is still in update mode now.
 
 
 To catch bugs like that, we need a monkey test during firmware/EC update, like randomly switching GPIO, pressing Power Button, closing LID, pressing keyboard, plugging USB/SD disk, etc.

@@ -86,8 +86,8 @@ class LayoutScraper(object):
             if section_base <= base or section_end + 1 < section_base:
                 # Overlapped section is possible, like the fwid which is
                 # inside the main fw section.
-                self.os_if.log('overlapped section at 0x%x..0x%x' %
-                               (section_base, section_end))
+                logging.info('overlapped section at 0x%x..0x%x', section_base,
+                             section_end)
             base = section_end
         if base > file_size:
             raise TestError('Section end 0x%x exceeds file size %x' %
@@ -400,7 +400,7 @@ class flashrom_util(object):
     def dump_flash(self, filename):
         """Read the flash device's data into a file, but don't parse it."""
         cmd = 'flashrom %s -r "%s"' % (self._target_command, filename)
-        self.os_if.log('flashrom_util.dump_flash(): %s' % cmd)
+        logging.info('flashrom_util.dump_flash(): %s', cmd)
         self.os_if.run_shell_command(cmd)
 
     def read_whole(self):
@@ -410,7 +410,7 @@ class flashrom_util(object):
         """
         tmpfn = self._get_temp_filename('rd_')
         cmd = 'flashrom %s -r "%s"' % (self._target_command, tmpfn)
-        self.os_if.log('flashrom_util.read_whole(): %s' % cmd)
+        logging.info('flashrom_util.read_whole(): %s', cmd)
         self.os_if.run_shell_command(cmd)
         result = self.os_if.read_file(tmpfn)
         self.set_firmware_layout(tmpfn)
@@ -437,7 +437,7 @@ class flashrom_util(object):
         write_cmd = 'flashrom %s -l "%s" -i %s -w "%s"' % (
                 self._target_command, layout_fn, ' -i '.join(write_list),
                 tmpfn)
-        self.os_if.log('flashrom.write_partial(): %s' % write_cmd)
+        logging.info('flashrom.write_partial(): %s', write_cmd)
         self.os_if.run_shell_command(write_cmd, modifies_device=True)
 
         # clean temporary resources

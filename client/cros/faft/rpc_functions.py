@@ -16,7 +16,6 @@ import logging
 import os
 import signal
 import tempfile
-import traceback
 from six.moves import xmlrpc_client as xmlrpclib
 
 from autotest_lib.client.common_lib import lsbrelease_utils
@@ -118,7 +117,7 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         @type message: str
         @rtype: Exception
         """
-        self._os_if.log('Error: %s' % message)
+        logging.error(message)
         return xmlrpclib.Fault(fault_code, message)
 
     def _dispatch(self, called_method, params):
@@ -134,7 +133,7 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         @raise: xmlrpclib.Fault (using http error codes for fault codes)
         """
-        self._os_if.log('Called: %s%s' % (called_method, params))
+        logging.info('Called: %s%s', called_method, params)
 
         name_pieces = called_method.split('.')
 
@@ -192,17 +191,12 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
         except AttributeError as e:
             logging.exception(e)
-            self._os_if.log('Error: %s\n' % "".join(
-                    traceback.format_exception(e.__class__, e,
-                                               e.__traceback__)))
             raise
         try:
             return method(*params)
 
         except Exception as e:
-            self._os_if.log('Error: %s\n' % "".join(
-                    traceback.format_exception(e.__class__, e,
-                                               e.__traceback__)))
+            logging.exception(e)
             raise
 
 
@@ -339,8 +333,8 @@ class BiosServicer(object):
     def set_version(self, section, version):
         """Set firmware version of a section."""
         flags = self._bios_handler.get_section_flags(section)
-        self._os_if.log('Setting firmware section %s version to %d' %
-                        (section, version))
+        logging.info('Setting firmware section %s version to %d', section,
+                     version)
         self._bios_handler.set_section_version(section,
                                                version,
                                                flags,
@@ -476,7 +470,7 @@ class EcServicer(object):
                     '/usr/share/vboot/devkeys', 'ec')
 
         else:
-            self._os_if.log('No EC is reported by mosys (rc=%s).' % ec_status)
+            logging.info('No EC is reported by mosys (rc=%s).', ec_status)
 
     @property
     def _ec_handler(self):
@@ -669,8 +663,8 @@ class KernelServicer(object):
         """
         original_version = self._kernel_handler.get_version(section)
         new_version = original_version + delta
-        self._os_if.log('Setting kernel section %s version from %d to %d' %
-                        (section, original_version, new_version))
+        logging.info('Setting kernel section %s version from %d to %d',
+                     section, original_version, new_version)
         self._kernel_handler.set_version(section, new_version)
 
     def move_version_backward(self, section):

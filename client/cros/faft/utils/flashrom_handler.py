@@ -11,6 +11,7 @@ See docstring for FlashromHandler class below.
 """
 
 import hashlib
+import logging
 import os
 import struct
 import tempfile
@@ -274,9 +275,9 @@ class FlashromHandler(object):
                     % (self.target, self._unavailable_err))
 
         if image_file and allow_fallback and not os.path.isfile(image_file):
-            self.os_if.log(
-                    "Using %s flash contents instead of missing image: %s"
-                    % (self.target.upper(), image_file))
+            logging.info(
+                    "Using %s flash contents instead of missing image: %s",
+                    self.target.upper(), image_file)
             image_file = None
 
         self.new_image(image_file)
@@ -759,9 +760,9 @@ class FlashromHandler(object):
         """
         if (self.get_section_version(section) == version
                     and self.get_section_flags(section) == flags):
-            self.os_if.log(
-                    f"Nothing to do existing version {self.get_section_version(section)} flags {self.get_section_flags(section)}"
-            )
+            logging.info(f"Nothing to do existing "
+                         f"version {self.get_section_version(section)} "
+                         f"flags {self.get_section_flags(section)}")
             return  # No version or flag change, nothing to do.
         if version < 0:
             raise FlashromHandlerError(

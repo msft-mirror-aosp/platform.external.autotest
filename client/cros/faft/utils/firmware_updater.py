@@ -7,6 +7,7 @@ See FirmwareUpdater object below.
 """
 import array
 import json
+import logging
 import os
 import six
 
@@ -169,13 +170,13 @@ class FirmwareUpdater(object):
 
     def stop_daemon(self):
         """Stop update-engine daemon."""
-        self.os_if.log('Stopping %s...' % self.DAEMON)
+        logging.info('Stopping %s...', self.DAEMON)
         cmd = 'status %s | grep stop || stop %s' % (self.DAEMON, self.DAEMON)
         self.os_if.run_shell_command(cmd)
 
     def start_daemon(self):
         """Start update-engine daemon."""
-        self.os_if.log('Starting %s...' % self.DAEMON)
+        logging.info('Starting %s...', self.DAEMON)
         cmd = 'status %s | grep start || start %s' % (self.DAEMON, self.DAEMON)
         self.os_if.run_shell_command(cmd)
 
@@ -634,8 +635,8 @@ class FirmwareUpdater(object):
         try:
             self.os_if.run_shell_command(extract_cmd)
             if not self.os_if.path_exists(local_filename):
-                self.os_if.log("Warning: file does not exist after extracting:"
-                               " %s" % local_filename)
+                logging.warning("File does not exist after extracting:"
+                                " %s", local_filename)
             return os.path.abspath(local_filename)
         except error.CmdError:
             # already logged by run_shell_command()

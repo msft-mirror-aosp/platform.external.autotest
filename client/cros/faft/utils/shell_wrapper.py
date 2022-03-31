@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """A module to abstract the shell execution environment on DUT."""
 
+import logging
 import subprocess
 
 import time
@@ -37,7 +38,7 @@ class LocalShell(object):
                         'use block=True instead, '
                         'refer to b/172325331 for more details' % cmd)
             raise UnsupportedSuccessToken(errormsg)
-        self._os_if.log('Executing: %s' % cmd)
+        logging.debug('Executing: %s', cmd)
         process = subprocess.Popen(
                 cmd,
                 shell=True,
@@ -66,7 +67,7 @@ class LocalShell(object):
             returncode = process.returncode
             duration = time.time() - start_time
             result = utils.CmdResult(cmd, stdout, stderr, returncode, duration)
-            self._os_if.log('Command failed.\n%s' % result)
+            logging.error('Command failed.\n%s', result)
             raise error.CmdError(cmd, result)
 
     def run_command_get_result(self, cmd, ignore_status=False):
@@ -86,10 +87,10 @@ class LocalShell(object):
         result = utils.CmdResult(cmd, stdout, stderr, returncode, duration)
 
         if returncode and not ignore_status:
-            self._os_if.log('Command failed:\n%s' % result)
+            logging.error('Command failed:\n%s', result)
             raise error.CmdError(cmd, result)
 
-        self._os_if.log('Command result:\n%s' % result)
+        logging.info('Command result:\n%s', result)
         return result
 
     def run_command_check_output(self, cmd, success_token):
@@ -111,7 +112,7 @@ class LocalShell(object):
         if '\n' in success_token:
             raise UnsupportedSuccessToken()
         cmd_stdout = ''.join(self.run_command_get_output(cmd))
-        self._os_if.log('Checking for %s in %s' % (success_token, cmd_stdout))
+        logging.info('Checking for %s in %s', success_token, cmd_stdout)
         return success_token in cmd_stdout
 
     def run_command_get_status(self, cmd):

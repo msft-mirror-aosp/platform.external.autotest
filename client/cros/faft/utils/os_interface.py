@@ -88,7 +88,7 @@ class OSInterface(object):
         @raise autotest_lib.client.common_lib.error.CmdError: if command fails
         """
         if self.test_mode and modifies_device:
-            self.log('[SKIPPED] %s' % cmd)
+            logging.info('[SKIPPED] %s', cmd)
         else:
             self.shell.run_command(cmd, block=block)
 
@@ -182,13 +182,6 @@ class OSInterface(object):
         """Get a full path of a file in the state directory."""
         return os.path.join(self.state_dir, file_name)
 
-    def log(self, text):
-        """Write text to the log file and print it on the screen, if enabled.
-        """
-        logging.info('%s', text)
-        return
-
-
     def is_removable_device(self, device):
         """Check if a certain storage device is removable.
 
@@ -259,7 +252,7 @@ class OSInterface(object):
         magic, _, kb_size = struct.unpack_from(header_format, blob)
 
         if magic != b'CHROMEOS':
-            self.log(f"Incorrect magic string {magic}")
+            logging.error(f"Incorrect magic string {magic}")
             return -1  # This could be a corrupted version case.
 
         _, version = struct.unpack_from(preamble_format, blob, kb_size)
@@ -274,7 +267,7 @@ class OSInterface(object):
         header_format = '<8s96sQ'
         magic, _, version = struct.unpack_from(header_format, blob)
         if magic != b'CHROMEOS':
-            self.log(f"Incorrect magic string {magic}")
+            logging.error(f"Incorrect magic string {magic}")
             return -1  # This could be a corrupted version case.
         return version
 
@@ -289,7 +282,7 @@ class OSInterface(object):
         magic, _, kb_size = struct.unpack_from(header_format, blob)
 
         if magic != b'CHROMEOS':
-            self.log(f"Incorrect magic string {magic}")
+            logging.error(f"Incorrect magic string {magic}")
             return -1
 
         _, version = struct.unpack_from(preamble_format, blob, kb_size)
@@ -306,7 +299,7 @@ class OSInterface(object):
         magic, _, kb_size = struct.unpack_from(header_format, blob)
 
         if magic != b'CHROMEOS':
-            self.log(f"Incorrect magic string {magic}")
+            logging.error(f"Incorrect magic string {magic}")
             return -1  # This could be a corrupted version case.
 
         _, ver, subver, _, flags = struct.unpack_from(preamble_format, blob,

@@ -230,7 +230,7 @@ This sequence can be fully automated by FAFT. For example, in step 1, we require
 
 Moreover, there are many recovery mode variants, like normal recovery/devloper recovery, physical recovery button/keyboard simulated button, etc. It’d be easy to verify all variants by writing different test cases.
 
-Besides, factory install shim, firmware AU, reset shim, RMA, etc, are more complicated and have many variants. Factory install process currently will be tested by an automated script written by the factory team. Firmware AU still relies on manual tests, see the [test matrix](https://docs.google.com/a/google.com/spreadsheet/ccc?key=0AoHv3bO2oLIjdGQ5cnJ6eWc1ZnpjYzlaWFA4T0xlVVE&hl=en_US&authkey=CJWF8-gP#gid=8). Reset shim and RMA has no test yet. Actually, all these complicated flows can be tested in FAFT.
+Besides, factory install shim, firmware AU, reset shim, RMA, etc, are more complicated and have many variants. Factory install process currently will be tested by an automated script written by the factory team. Firmware AU still relies on manual tests. Reset shim and RMA has no test yet. Actually, all these complicated flows can be tested in FAFT.
 
 <a name="scope-4" />
 

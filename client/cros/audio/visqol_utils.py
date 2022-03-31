@@ -30,7 +30,8 @@ def parse_visqol_output(stdout, stderr, log_dir):
     @returns: A tuple of a float score and string representation of the
             srderr or None if there was no error.
     """
-    string_out = stdout or ''
+    stdout = '' if stdout is None else stdout.decode('utf-8')
+    stderr = '' if stderr is None else stderr.decode('utf-8')
 
     # Log verbose VISQOL output:
     log_file = os.path.join(log_dir, 'VISQOL_LOG.txt')
@@ -41,7 +42,7 @@ def parse_visqol_output(stdout, stderr, log_dir):
     # pattern matches first float or int after 'MOS-LQO:' in stdout,
     # e.g. it would match the line 'MOS-LQO       2.3' in the stdout
     score_pattern = re.compile(r'.*MOS-LQO:\s*(\d+.?\d*)')
-    score_search = re.search(score_pattern, string_out)
+    score_search = re.search(score_pattern, stdout)
 
     # re.search returns None if no pattern match found, otherwise the score
     # would be in the match object's group 1 matches just the float score

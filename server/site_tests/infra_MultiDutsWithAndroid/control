@@ -11,7 +11,8 @@ TEST_CLASS = 'stub'
 TEST_TYPE = 'server'
 PY_VERSION = 3
 DOC = """
-Verify the test can create correct host type for Android devices.
+Verify the test can create correct host type for Android devices and perform
+basic adb actions.
 """
 
 

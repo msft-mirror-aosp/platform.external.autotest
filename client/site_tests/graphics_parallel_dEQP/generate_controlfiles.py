@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """
 This script generates autotest control files for dEQP. It supports
 1) Generate control files for tests with Passing expectations.

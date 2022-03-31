@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 """A script that provides convertion between models.job and a protocol
 buffer object.

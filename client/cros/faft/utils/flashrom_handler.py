@@ -17,6 +17,8 @@ import tempfile
 
 import six
 
+import common
+
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chip_utils
 from autotest_lib.client.cros.faft.utils import saft_flashrom_util

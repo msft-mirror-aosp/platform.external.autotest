@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Copyright 2020 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,6 +9,8 @@ import json
 import time
 import logging
 import shutil
+
+import common
 
 from autotest_lib.server.cros.device_health_profile.profile_constants import *
 

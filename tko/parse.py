@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python3 -u
 
 from __future__ import absolute_import
 from __future__ import division

@@ -33,8 +33,8 @@ def terminate_old(script_name, sigterm_timeout=5, sigkill_timeout=3):
     line.  This should avoid including processes such as editors and 'tail' of
     logs, which might match a simple pkill.
 
-    exe=/usr/local/bin/python2.7
-    cmdline=['/usr/bin/python2', '-u', '/usr/local/autotest/.../rpc_server.py']
+    exe=/usr/local/bin/python3
+    cmdline=['/usr/bin/python3', '-u', '/usr/local/autotest/.../rpc_server.py']
 
     @param script_name: The filename of the main script, used to match processes
     @param sigterm_timeout: Wait N seconds after SIGTERM before trying SIGKILL.

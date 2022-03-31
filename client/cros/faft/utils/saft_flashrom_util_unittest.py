@@ -28,7 +28,7 @@ class TestFlashromUtil(unittest.TestCase):
         bad_flashrom = mock.Mock()
         attrs = {
                 'communicate.return_value':
-                ('broken flashrom stdout', 'broken flashrom stderr')
+                (b'broken flashrom stdout', b'broken flashrom stderr')
         }
         bad_flashrom.configure_mock(**attrs)
         bad_flashrom.returncode = 1
@@ -44,7 +44,7 @@ class TestFlashromUtil(unittest.TestCase):
         good_flashrom = mock.Mock()
         attrs = {
                 'communicate.return_value':
-                ('working flashrom stdout', 'working flashrom stderr')
+                (b'working flashrom stdout', b'working flashrom stderr')
         }
         good_flashrom.configure_mock(**attrs)
         good_flashrom.returncode = 0

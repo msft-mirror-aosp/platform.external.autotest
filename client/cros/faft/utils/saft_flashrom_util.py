@@ -222,7 +222,8 @@ class flashrom_util(object):
         ]
         layout_text.sort()  # XXX unstable if range exceeds 2^32
         tmpfn = self._get_temp_filename('lay_')
-        self.os_if.write_file(tmpfn, '\n'.join(layout_text) + '\n')
+        with open(tmpfn, "w") as file:
+            file.write('\n'.join(layout_text) + '\n')
         return tmpfn
 
     def check_target(self):
@@ -254,7 +255,7 @@ class flashrom_util(object):
         # the data to sign. Make it the same way as firmware creation.
         if section_name in ('FVMAIN', 'FVMAINB', 'ECMAINA', 'ECMAINB'):
             align = 4
-            pad = blob[-1]
+            pad = blob[-1:]
             blob = blob.rstrip(pad)
             blob = blob + ((align - 1) - (len(blob) - 1) % align) * pad
         return blob
@@ -273,7 +274,7 @@ class flashrom_util(object):
             if (len(data) < pos[1] - pos[0] + 1
                         and section_name in ('FVMAIN', 'FVMAINB', 'ECMAINA',
                                              'ECMAINB', 'RW_FWID')):
-                pad = base_image[pos[1]]
+                pad = base_image[pos[1]:pos[1] + 1]
                 data = data + pad * (pos[1] - pos[0] + 1 - len(data))
             else:
                 raise TestError('INTERNAL ERROR: unmatched data size.')

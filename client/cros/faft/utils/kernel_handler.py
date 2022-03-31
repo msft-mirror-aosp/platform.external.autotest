@@ -136,8 +136,8 @@ class KernelHandler(object):
         self.dump_kernel(section, self.dump_file_name)
         data = list(self.os_if.read_file(self.dump_file_name))
         if modification_type == KERNEL_BODY_MOD:
-            data[0] = '%c' % ((ord(data[0]) + delta) % 0x100)
-            self.os_if.write_file(self.dump_file_name, ''.join(data))
+            data[0] = (data[0] + delta) % 0x100
+            self.os_if.write_file(self.dump_file_name, bytes(data))
             kernel_to_write = self.dump_file_name
         elif modification_type == KERNEL_VERSION_MOD:
             new_version = delta

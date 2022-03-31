@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python3 -u
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -10,9 +10,6 @@ It launches an XMLRPC server and exposes the functions in RPCRouter().
 import logging
 import os
 from optparse import OptionParser
-
-# TODO (tij@): b/223618058: Migrate this to Python 3 ASAP.
-os.environ["PY_VERSION"] = "2"
 
 import common
 from autotest_lib.client.cros import xmlrpc_server

@@ -16,7 +16,9 @@ class TestLocalShell(unittest.TestCase):
         success_token = 'unexpected'
         mock_process = mock.Mock()
         mock_subproc_popen.return_value = mock_process
-        attrs = {'communicate.return_value': ('sucessfully executed foo', '')}
+        attrs = {
+                'communicate.return_value': (b'sucessfully executed foo', b'')
+        }
         mock_process.configure_mock(**attrs)
         os_if = mock.Mock()
         local_shell = shell_wrapper.LocalShell(os_if)
@@ -31,7 +33,7 @@ class TestLocalShell(unittest.TestCase):
         mock_subproc_popen.return_value = mock_process
         attrs = {
                 'communicate.return_value':
-                ('successfully executed bar. expected is expected.', '')
+                (b'successfully executed bar. expected is expected.', b'')
         }
         mock_process.configure_mock(**attrs)
         os_if = mock.Mock()
@@ -45,7 +47,9 @@ class TestLocalShell(unittest.TestCase):
         success_token = 'malformed token \n'
         mock_process = mock.Mock()
         mock_subproc_popen.return_value = mock_process
-        attrs = {'communicate.return_value': ('successfully executed baz', '')}
+        attrs = {
+                'communicate.return_value': (b'successfully executed baz', b'')
+        }
         mock_process.configure_mock(**attrs)
         os_if = mock.Mock()
         local_shell = shell_wrapper.LocalShell(os_if)

@@ -45,6 +45,8 @@ class LocalShell(object):
                 stderr=subprocess.PIPE)
         if block:
             stdout, stderr = process.communicate()
+            stdout = stdout.decode('utf-8')
+            stderr = stderr.decode('utf-8')
         return process, stdout, stderr
 
     def run_command(self, cmd, block=True):
@@ -134,15 +136,15 @@ class LocalShell(object):
 
     def read_file(self, path):
         """Read the content of the file."""
-        with open(path) as f:
+        with open(path, "rb") as f:
             return f.read()
 
     def write_file(self, path, data):
         """Write the data to the file."""
-        with open(path, 'w') as f:
+        with open(path, 'wb') as f:
             f.write(data)
 
     def append_file(self, path, data):
         """Append the data to the file."""
-        with open(path, 'a') as f:
+        with open(path, 'ab') as f:
             f.write(data)

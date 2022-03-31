@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -369,8 +369,9 @@ class FlashromHandler(object):
         except struct.error as e:
             raise FlashromHandlerError(e)
 
-        if sig != '$GBB' or (rootk_offs + rootk_size) > len(gbb_section):
-            raise FlashromHandlerError('Bad gbb header')
+        if sig != b'$GBB' or (rootk_offs + rootk_size) > len(gbb_section):
+            raise FlashromHandlerError("Bad gbb header sig:%s len:%s" %
+                                       (sig, len(gbb_section)))
 
         key_body_offset, key_body_size = struct.unpack_from(
                 pubk_header_format, gbb_section, rootk_offs)
@@ -387,7 +388,7 @@ class FlashromHandler(object):
 
         # All checks passed, let's store the key in a file.
         self.pub_key_file = self.os_if.state_dir_file(self.PUB_KEY_FILE_NAME)
-        with open(self.pub_key_file, 'w') as key_f:
+        with open(self.pub_key_file, 'wb') as key_f:
             key = gbb_section[rootk_offs:rootk_offs + key_body_offset +
                               key_body_size]
             key_f.write(key)
@@ -429,8 +430,8 @@ class FlashromHandler(object):
             raise FlashromHandlerError(
                     'Attempt at using an uninitialized object')
         blob = self.fum.get_section(self.image, subsection)
-        offset = len(blob) / 50
-        return offset, ord(blob[offset])
+        offset = len(blob) // 50
+        return offset, blob[offset]
 
     def get_firmware_sig_one_byte(self, section):
         """Get a specific byte of firmware signature of the section."""
@@ -449,9 +450,9 @@ class FlashromHandler(object):
                     'Attempt at using an uninitialized object')
         blob = self.fum.get_section(self.image, subsection)
         blob_list = list(blob)
-        blob_list[offset] = chr(value % 0x100)
+        blob_list[offset] = value % 0x100
         self.image = self.fum.put_section(self.image, subsection,
-                                          ''.join(blob_list))
+                                          bytes(blob_list))
         self.fum.write_partial(self.image, (subsection, ))
 
     def modify_firmware_sig(self, section, offset, value):
@@ -471,9 +472,9 @@ class FlashromHandler(object):
             raise FlashromHandlerError(
                     'Attempt at using an uninitialized object')
         blob = self.fum.get_section(self.image, subsection)
-        blob_list = [chr((ord(x) + self.DELTA) % 0x100) for x in blob]
+        blob_list = [(x + self.DELTA) % 0x100 for x in blob]
         self.image = self.fum.put_section(self.image, subsection,
-                                          ''.join(blob_list))
+                                          bytes(blob_list))
         self.fum.write_partial(self.image, (subsection, ))
 
     def corrupt_mrc_cache(self):
@@ -545,7 +546,7 @@ class FlashromHandler(object):
         if not self.image:
             raise FlashromHandlerError(
                     'Attempt at using an uninitialized object')
-        open(filename, 'w').write(self.image)
+        open(filename, 'wb').write(self.image)
 
     def dump_partial(self, subsection_name, filename):
         """Write the subsection part into a file."""
@@ -554,7 +555,7 @@ class FlashromHandler(object):
             raise FlashromHandlerError(
                     'Attempt at using an uninitialized object')
         blob = self.fum.get_section(self.image, subsection_name)
-        open(filename, 'w').write(blob)
+        open(filename, 'wb').write(blob)
 
     def dump_section_body(self, section, filename):
         """Write the body of a firmware section into a file"""
@@ -711,7 +712,7 @@ class FlashromHandler(object):
 
         @type section: str
         @type strip_null: bool
-        @rtype: str | None
+        @rtype: bytes | None
 
         """
         subsection_name = self.fv_sections[section].get_fwid_name()
@@ -719,7 +720,7 @@ class FlashromHandler(object):
             return None
         blob = self.fum.get_section(self.image, subsection_name)
         if strip_null:
-            blob = blob.rstrip('\0')
+            blob = blob.rstrip(b'\0')
         return blob
 
     def set_section_body(self, section, blob, write_through=False):
@@ -756,6 +757,9 @@ class FlashromHandler(object):
         """
         if (self.get_section_version(section) == version
                     and self.get_section_flags(section) == flags):
+            self.os_if.log(
+                    f"Nothing to do existing version {self.get_section_version(section)} flags {self.get_section_flags(section)}"
+            )
             return  # No version or flag change, nothing to do.
         if version < 0:
             raise FlashromHandlerError(
@@ -780,13 +784,13 @@ class FlashromHandler(object):
         self.os_if.run_shell_command(cmd)
 
         #  Pad the new signature.
-        with open(sig_name, 'a') as sig_f:
+        with open(sig_name, 'ab') as sig_f:
             f_size = os.fstat(sig_f.fileno()).st_size
-            pad = '\0' * (sig_size - f_size)
+            pad = b'\0' * (sig_size - f_size)
             sig_f.write(pad)
 
         # Inject the new signature block into the image
-        with open(sig_name, 'r') as sig_f:
+        with open(sig_name, 'rb') as sig_f:
             new_sig = sig_f.read()
         self.write_partial(fv_section.get_sig_name(), new_sig, write_through)
 
@@ -813,8 +817,8 @@ class FlashromHandler(object):
                     "FWID (%s, %s) is empty: %s" %
                     (self.target.upper(), section.upper(), repr(fwid)))
 
-        fwid = fwid.rstrip('\0')
-        suffix = self.FWID_MOD_DELIMITER + section.upper()
+        fwid = fwid.rstrip(b'\0')
+        suffix = bytes(self.FWID_MOD_DELIMITER + section.upper(), 'utf-8')
 
         if suffix in fwid:
             raise FlashromHandlerError(
@@ -826,7 +830,7 @@ class FlashromHandler(object):
             fwid = fwid[:fwid_size - len(suffix)]
         fwid += suffix
 
-        padded_fwid = fwid.ljust(fwid_size, '\0')
+        padded_fwid = fwid.ljust(fwid_size, b'\0')
         self.set_section_fwid(section, padded_fwid)
         return fwid
 
@@ -854,14 +858,15 @@ class FlashromHandler(object):
                     "FWID (%s, %s) is empty: %s" %
                     (self.target.upper(), section.upper(), repr(fwid)))
 
-        fwid = fwid.rstrip('\0')
-        mod_indicator = self.FWID_MOD_DELIMITER + section.upper()
+        fwid = fwid.rstrip(b'\0')
+        mod_indicator = bytes(self.FWID_MOD_DELIMITER + section.upper(),
+                              'utf-8')
 
         # Remove any suffix, and return the suffix if found.
         if mod_indicator in fwid:
             (stripped_fwid, remainder) = fwid.split(mod_indicator, 1)
 
-            padded_fwid = stripped_fwid.ljust(fwid_size, '\0')
+            padded_fwid = stripped_fwid.ljust(fwid_size, b'\0')
             self.set_section_fwid(section, padded_fwid, write_through)
 
             return fwid

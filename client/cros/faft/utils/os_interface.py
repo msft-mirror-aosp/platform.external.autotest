@@ -317,7 +317,7 @@ class OSInterface(object):
                     devicetype = '/sys/block/%s/device/type' % p.split('/')[2]
                     if (not self.path_exists(devicetype)
                         or self.read_file(devicetype).strip() != 'SD'):
-                         return p
+                        return p
             return '/dev/sda'
         else:
             return self.strip_part(device)
@@ -352,7 +352,8 @@ class OSInterface(object):
         preamble_format = '<40sQ'
         magic, _, kb_size = struct.unpack_from(header_format, blob)
 
-        if magic != 'CHROMEOS':
+        if magic != b'CHROMEOS':
+            self.log(f"Incorrect magic string {magic}")
             return -1  # This could be a corrupted version case.
 
         _, version = struct.unpack_from(preamble_format, blob, kb_size)
@@ -366,7 +367,8 @@ class OSInterface(object):
         """
         header_format = '<8s96sQ'
         magic, _, version = struct.unpack_from(header_format, blob)
-        if magic != 'CHROMEOS':
+        if magic != b'CHROMEOS':
+            self.log(f"Incorrect magic string {magic}")
             return -1  # This could be a corrupted version case.
         return version
 
@@ -380,7 +382,8 @@ class OSInterface(object):
         preamble_format = '<72sQ'
         magic, _, kb_size = struct.unpack_from(header_format, blob)
 
-        if magic != 'CHROMEOS':
+        if magic != b'CHROMEOS':
+            self.log(f"Incorrect magic string {magic}")
             return -1
 
         _, version = struct.unpack_from(preamble_format, blob, kb_size)
@@ -396,7 +399,8 @@ class OSInterface(object):
         preamble_format = '<32sII64sI'
         magic, _, kb_size = struct.unpack_from(header_format, blob)
 
-        if magic != 'CHROMEOS':
+        if magic != b'CHROMEOS':
+            self.log(f"Incorrect magic string {magic}")
             return -1  # This could be a corrupted version case.
 
         _, ver, subver, _, flags = struct.unpack_from(preamble_format, blob,

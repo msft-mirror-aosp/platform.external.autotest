@@ -15,8 +15,6 @@ from six.moves import http_client as httplib
 import logging
 import os
 import signal
-import six
-import sys
 import tempfile
 import traceback
 from six.moves import xmlrpc_client as xmlrpclib
@@ -111,47 +109,19 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         return self._ready
 
-    def _report_error(self, fault_code, message, exc_info=False):
-        """Raise the given RPC error text, including information about last
-        exception from sys.exc_info().  The log file gets the traceback in text;
-        the raised exception keeps the old traceback (but not in text).
-
-        Note: this must be called right after the original exception, or it may
-        report the wrong exception.
-
-        @raise: xmlrpclib.Fault
+    def _report_error(self, fault_code, message):
+        """Raise the given RPC error text.
 
         @param fault_code: the status code to use
         @param message: the string message to include before exception text
-        @param exc_info: true to use the tuple from sys.exc_info()
         @return the exception to raise
 
         @type fault_code: int
         @type message: str
-        @type exc_info: bool
         @rtype: Exception
         """
-        if exc_info:
-            tb = None
-            try:
-                (exc_class, exc, tb) = sys.exc_info()
-
-                tb_str = ''.join(
-                        traceback.format_exception(exc_class, exc, tb))
-                self._os_if.log('Error: %s.\n%s' % (message, tb_str.rstrip()))
-
-                if not isinstance(exc, xmlrpclib.Fault):
-                    exc_str = ''.join(
-                            traceback.format_exception_only(exc_class, exc))
-                    exc = xmlrpclib.Fault(
-                            fault_code, '%s. %s' % (message, exc_str.rstrip()))
-                six.reraise(exc, None, tb)
-            finally:
-                del exc_info
-                del tb
-        else:
-            self._os_if.log('Error: %s' % message)
-            return xmlrpclib.Fault(fault_code, message)
+        self._os_if.log('Error: %s' % message)
+        return xmlrpclib.Fault(fault_code, message)
 
     def _dispatch(self, called_method, params):
         """
@@ -222,18 +192,20 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         try:
             method = getattr(holder, method_name)
 
-        except AttributeError:
-            raise self._report_error(
-                    httplib.NOT_IMPLEMENTED,
-                    'RPC method not found: "%s"' % called_method, exc_info=True)
-
+        except AttributeError as e:
+            logging.exception(e)
+            self._os_if.log('Error: %s\n' % "".join(
+                    traceback.format_exception(e.__class__, e,
+                                               e.__traceback__)))
+            raise
         try:
             return method(*params)
 
-        except Exception:
-            raise self._report_error(
-                    httplib.INTERNAL_SERVER_ERROR,
-                    'RPC call failed: %s()' % called_method, exc_info=True)
+        except Exception as e:
+            self._os_if.log('Error: %s\n' % "".join(
+                    traceback.format_exception(e.__class__, e,
+                                               e.__traceback__)))
+            raise
 
 
 class BiosServicer(object):

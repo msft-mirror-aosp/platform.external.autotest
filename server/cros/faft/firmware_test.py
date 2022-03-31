@@ -409,8 +409,8 @@ class FirmwareTest(test.test):
             self.faft_client.updater.start_daemon()
             self.faft_client.updater.cleanup()
             self._remove_faft_lockfile()
-            self._record_faft_client_log()
             self.faft_client.quit()
+            self.faft_client.collect_logfiles(self.resultsdir)
 
         # Capture any new uart output, then discard log messages again.
         self._cleanup_uart_capture()
@@ -1292,13 +1292,6 @@ class FirmwareTest(test.test):
         block = False
         self.faft_client.system.run_shell_command(cmd, block)
         time.sleep(self.EC_SUSPEND_DELAY)
-
-    def _record_faft_client_log(self):
-        """Record the faft client log to the results directory."""
-        client_log = self.faft_client.system.dump_log(True)
-        client_log_file = os.path.join(self.resultsdir, 'faft_client.log')
-        with open(client_log_file, 'w') as f:
-            f.write(client_log)
 
     def _setup_gbb_flags(self):
         """Setup the GBB flags for FAFT test."""

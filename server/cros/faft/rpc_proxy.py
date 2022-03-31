@@ -65,6 +65,7 @@ class RPCProxy(object):
         """
         self.host = host
         self._faft_client = None
+        self.logfiles = []
 
     def __del__(self):
         self.disconnect()
@@ -99,14 +100,15 @@ class RPCProxy(object):
         """Connect the RPC server."""
         # Make sure Autotest dependency is there.
         autotest.Autotest(self.host).install()
+        logfile = "%s.%s" % (self._client_config.rpc_logfile, time.time())
+        self.logfiles.append(logfile)
         self._faft_client = self.host.rpc_server_tracker.xmlrpc_connect(
                 self._client_config.rpc_command,
                 self._client_config.rpc_port,
                 command_name=self._client_config.rpc_command_short,
                 ready_test_name=self._client_config.rpc_ready_call,
                 timeout_seconds=self._client_config.rpc_timeout,
-                logfile="%s.%s" %
-                (self._client_config.rpc_logfile, time.time()),
+                logfile=logfile,
                 server_desc=str(self),
                 request_timeout_seconds=self._client_config.
                 rpc_request_timeout,
@@ -141,6 +143,18 @@ class RPCProxy(object):
         self.host.rpc_server_tracker.disconnect(self._client_config.rpc_port,
                                                 pkill=need_pkill)
         self._faft_client = None
+
+    def collect_logfiles(self, dest):
+        """Download all logfiles from the DUT, then delete them."""
+        if self.logfiles:
+            for logfile in self.logfiles:
+                if self.host.run("test -f", args=[logfile],
+                                 ignore_status=True).exit_status == 0:
+                    self.host.get_file(logfile, dest)
+                    self.host.run("rm -f",
+                                  ignore_status=True,
+                                  args=self.logfiles)
+            self.logfiles.clear()
 
     def __repr__(self):
         """Return a description of the proxy object"""

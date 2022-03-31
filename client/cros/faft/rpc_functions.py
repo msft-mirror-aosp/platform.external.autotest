@@ -84,7 +84,6 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         """
         logging.debug("%s: Serving FAFT functions", self.__class__.__name__)
         self._ready = True
-        self._os_if.start_file_logging()
 
     def __exit__(self, exception, value, traceback):
         """Exit the delegate context (when XmlRpcServer.run() finishes).
@@ -93,7 +92,6 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         the wrong server when quitting one instance and starting another.
         """
         self._ready = False
-        self._os_if.stop_file_logging()
         logging.debug("%s: Done.", self.__class__.__name__)
 
     def quit(self):
@@ -796,14 +794,6 @@ class SystemServicer(object):
         @return: Always True.
         """
         return True
-
-    def dump_log(self, remove_log=False):
-        """Dump the log file.
-
-        @param remove_log: Remove the log file after dump.
-        @return: String of the log file content.
-        """
-        return self._os_if.dump_log(remove_log=remove_log)
 
     def run_shell_command(self, command, block=True):
         """Run shell command.

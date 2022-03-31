@@ -421,19 +421,6 @@ RPC_CATEGORIES = [
                                 "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
                         },
                         {
-                                "method_name": "dump_log",
-                                "passing_args": [
-                                        NO_ARGS,
-                                        (True, ),
-                                        (False, ),
-                                ],
-                                "failing_args": [
-                                        (True, False),
-                                ],
-                                "expected_return_type": str,
-                                "silence_result": True,
-                        },
-                        {
                                 "method_name":
                                 "run_shell_command",
                                 "passing_args": [("ls -l", ), ("ls -l", False),

@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """A module to provide interface to OS services."""
-import datetime
-import errno
 import logging
 import os
 import re
@@ -53,13 +51,12 @@ class Crossystem(object):
 class OSInterface(object):
     """An object to encapsulate OS services functions."""
 
-    def __init__(self, state_dir=None, log_file=None, test_mode=False):
+    def __init__(self, state_dir=None, test_mode=False):
         """Object initialization (side effect: creates the state_dir)
 
         @param state_dir: the name of the directory to use for storing state.
                             The contents of this directory persist over system
                             restarts and power cycles.
-        @param log_file: the name of the log file kept in the state directory.
         @param test_mode: if true, skip (and just log) any shell call
                           marked with modifies_device=True
         """
@@ -68,17 +65,8 @@ class OSInterface(object):
         if state_dir is None:
             state_dir = '/usr/local/tmp/faft'
 
-        if log_file is None:
-            log_file = 'faft_client.log'
-
-        if not os.path.isabs(log_file):
-            log_file = os.path.join(state_dir, log_file)
-
         self.state_dir = state_dir
-        self.log_file = log_file
         self.test_mode = test_mode
-
-        self._use_log_file = False
 
         self.shell = shell_wrapper.LocalShell(self)
         self.host_shell = None
@@ -196,92 +184,10 @@ class OSInterface(object):
 
     def log(self, text):
         """Write text to the log file and print it on the screen, if enabled.
-
-        The entire log (kept across reboots) can be found in self.log_file.
         """
-        if not self._use_log_file:
-            # Called during init, during shutdown, or after a log write fails.
-            logging.info('%s', text)
-            return
+        logging.info('%s', text)
+        return
 
-        timestamp = datetime.datetime.strftime(datetime.datetime.now(),
-                                               '%I:%M:%S %p:')
-
-        try:
-            with open(self.log_file, 'a') as log_f:
-                log_f.write('%s %s\n' % (timestamp, text))
-                log_f.flush()
-                os.fdatasync(log_f.fileno())
-        except EnvironmentError:
-            logging.info('%s', text)
-            logging.warning("Couldn't write RPC Log: %s", self.log_file,
-                         exc_info=True)
-            # Report error only once.
-            self._use_log_file = False
-
-    def start_file_logging(self):
-        """Create and start using using the log file (or report failure)"""
-        if self._use_log_file:
-            return
-
-        try:
-
-            with open(self.log_file, 'a'):
-                self._use_log_file = True
-
-            # log to stderr, showing the filename (extra newline to add a gap)
-            logging.debug('Begin RPC Log: %s\n', self.log_file)
-
-            # log into the file, to indicate the start time
-            self.log('Begin RPC Log: %s (this file)' % self.log_file)
-
-        except EnvironmentError:
-            logging.warning("Couldn't write RPC Log: %s", self.log_file,
-                         exc_info=True)
-            self._use_log_file = False
-
-    def stop_file_logging(self):
-        """Stop using the log file (switch back to stderr)."""
-        if not self._use_log_file:
-            return
-
-        # log to the file, to indicate when done (extra newline to add a gap)
-        self.log('End RPC Log.\n')
-
-        self._use_log_file = False
-
-        # log to stderr, to tie timestamps together
-        logging.debug('End RPC Log.')
-
-    def remove_log_file(self):
-        """Delete the log file."""
-        if not self.test_mode:
-            # Test mode shouldn't be able to actually remove the log.
-            try:
-                os.remove(self.log_file)
-            except EnvironmentError as e:
-                if e.errno != errno.ENOENT:
-                    self.log("Could not remove log file: %s" % e)
-
-    def dump_log(self, remove_log=False):
-        """Dump the log file.
-
-        @param remove_log: Remove the log file after dump
-        @return: String of the log file content.
-        """
-        if remove_log and not self.test_mode:
-            # Make sure "end RPC log" is printed before grabbing the log
-            self.stop_file_logging()
-
-        try:
-            with open(self.log_file, 'r') as f:
-                log = f.read()
-        except EnvironmentError as e:
-            log = '<%s>' % e
-
-        if remove_log and not self.test_mode:
-            self.remove_log_file()
-        return log
 
     def is_removable_device(self, device):
         """Check if a certain storage device is removable.

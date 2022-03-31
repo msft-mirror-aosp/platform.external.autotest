@@ -23,6 +23,7 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
     def run_once(self,
                  full_payload,
                  job_repo_url=None,
+                 build=None,
                  m2n=False,
                  running_at_desk=False,
                  pin_login=False):
@@ -32,6 +33,9 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         @param full_payload: True for full payload, False for delta
         @param job_repo_url: A url pointing to the devserver where the autotest
             package for this build should be staged.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. job_repo_url will override
+                      this value.
         @m2n: M -> N update. This means we install the current stable version
               of this board before updating to ToT.
         @param running_at_desk: Indicates test is run locally from workstation.
@@ -44,8 +48,15 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                 raise error.TestNAError(
                         'Skip test: No hardware support for PIN login')
 
+        # Get a payload to use for the test.
+        payload_url = self.get_payload_for_nebraska(
+                job_repo_url=job_repo_url,
+                build=build,
+                full_payload=full_payload,
+                public_bucket=running_at_desk)
+
         self._m2n = m2n
-        if self._m2n:
+        if self._m2n and not running_at_desk:
             if self._host.get_board().endswith("-kernelnext"):
                 raise error.TestNAError("Skipping test on kernelnext board")
 
@@ -70,12 +81,6 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         else:
             self._run_client_test_and_check_result(self._LOGIN_TEST,
                                                    tag='before')
-
-        # Get a payload to use for the test.
-        payload_url = self.get_payload_for_nebraska(
-                job_repo_url,
-                full_payload=full_payload,
-                public_bucket=running_at_desk)
 
         # Record DUT state before the update.
         active, inactive = kernel_utils.get_kernel_state(self._host)

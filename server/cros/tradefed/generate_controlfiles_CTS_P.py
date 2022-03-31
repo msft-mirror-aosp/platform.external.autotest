@@ -103,28 +103,30 @@ CONFIG['CTS_TIMEOUT'] = {
 CONFIG['BVT_TIMEOUT'] = 0.2
 
 CONFIG['QUAL_BOOKMARKS'] = sorted([
-    'A',  # A bookend to simplify partition algorithm.
-    'CtsAccessibilityServiceTestCases',  # TODO(ihf) remove when b/121291711 fixed. This module causes problems. Put it into its own control file.
-    'CtsAccessibilityServiceTestCasesz',
-    'CtsActivityManagerDevice',  # Runs long enough. (3h)
-    'CtsActivityManagerDevicez',
-    'CtsDeqpTestCases',
-    'CtsDeqpTestCasesz',  # Put Deqp in one control file. Long enough, fairly stable.
-    'CtsFileSystemTestCases',  # Runs long enough. (3h)
-    'CtsFileSystemTestCasesz',
-    'CtsMediaBitstreamsTestCases',  # Put each Media module in its own control file. Long enough.
-    'CtsMediaHostTestCases',
-    'CtsMediaStressTestCases',
-    'CtsMediaTestCases',
-    'CtsMediaTestCasesz',
-    'CtsJvmti',
-    'CtsSecurityHostTestCases',  # TODO(ihf): remove when passing cleanly.
-    'CtsSecurityHostTestCasesz',
-    'CtsSensorTestCases',  # TODO(ihf): Remove when not needing 30 retries.
-    'CtsSensorTestCasesz',
-    'CtsViewTestCases',  # TODO(b/126741318): Fix performance regression and remove this.
-    'CtsViewTestCasesz',
-    'zzzzz'  # A bookend to simplify algorithm.
+        'A',  # A bookend to simplify partition algorithm.
+        'CtsAccessibilityServiceTestCases',  # TODO(ihf) remove when b/121291711 fixed. This module causes problems. Put it into its own control file.
+        'CtsAccessibilityServiceTestCasesz',
+        'CtsActivityManagerDevice',  # Runs long enough. (3h)
+        'CtsActivityManagerDevicez',
+        'CtsCameraTestCases',  # Recurrenly becomes flaky and affects other tests.
+        'CtsCameraTestCasesz',
+        'CtsDeqpTestCases',
+        'CtsDeqpTestCasesz',  # Put Deqp in one control file. Long enough, fairly stable.
+        'CtsFileSystemTestCases',  # Runs long enough. (3h)
+        'CtsFileSystemTestCasesz',
+        'CtsMediaBitstreamsTestCases',  # Put each Media module in its own control file. Long enough.
+        'CtsMediaHostTestCases',
+        'CtsMediaStressTestCases',
+        'CtsMediaTestCases',
+        'CtsMediaTestCasesz',
+        'CtsJvmti',
+        'CtsSecurityHostTestCases',  # TODO(ihf): remove when passing cleanly.
+        'CtsSecurityHostTestCasesz',
+        'CtsSensorTestCases',  # TODO(ihf): Remove when not needing 30 retries.
+        'CtsSensorTestCasesz',
+        'CtsViewTestCases',  # TODO(b/126741318): Fix performance regression and remove this.
+        'CtsViewTestCasesz',
+        'zzzzz'  # A bookend to simplify algorithm.
 ])
 
 CONFIG['SMOKE'] = [

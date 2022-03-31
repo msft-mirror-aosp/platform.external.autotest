@@ -1354,9 +1354,9 @@ class TradefedTest(test.test):
             # TODO(kinaba): Make it a general config (per-model choice
             # of tablet,clamshell,default) if the code below works.
             if utils.is_in_container() and not client_utils.is_moblab():
-                # Force all hatch devices run the test in laptop mode,
+                # Force all hatch/dedede devices run the test in laptop mode,
                 # regardless of their physical placement.
-                if board == 'hatch' or board == 'hatch-arc-r':
+                if board.startswith('hatch') or board.startswith('dedede'):
                     self._run_commands(
                         ['inject_powerd_input_event --code=tablet --value=0'],
                         ignore_status=True)

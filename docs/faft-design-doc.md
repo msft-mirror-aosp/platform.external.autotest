@@ -13,7 +13,6 @@ _Last updated: 2011/11/08_
   - [State of the Art](#state-of-the-art)
     - [VBoot_Reference Library Tests](#vboot-reference-library-tests)
     - [U-Boot vbexport/vboot Tests](#u-boot-vbexport-vboot-tests)
-    - [SAFT (Semi Automated Firmware Test)](#saft-semi-automated-firmware-test)
     - [Factory Regression Testing Using Servo](#factory-regression-testing-using-servo)
     - [U-Boot Test System ](#u-boot-test-system)
   - [FAFT Implementation Details](#faft-implementation-details)
@@ -22,10 +21,9 @@ _Last updated: 2011/11/08_
     - [Software Architecture](#software-architecture)
     - [Test Case Example](#test-case-example)
   - [FAFT Scopes](#faft-scopes)
-    - [Scope 1: Enhance SAFT in Automated Way on Autotest Harness](#scope-1)
-    - [Scope 2: Test the Layer of VBExport APIs](#scope-2)
-    - [Scope 3: Verify Recovery, Factory Install, Firmware AU, RMA, and Many Complicated Flows](#scope-3)
-    - [Scope 4: Monkey Test during Firmware/EC update](#scope-4)
+    - [Scope 1: Test the Layer of VBExport APIs](#scope-2)
+    - [Scope 2: Verify Recovery, Factory Install, Firmware AU, RMA, and Many Complicated Flows](#scope-3)
+    - [Scope 3: Monkey Test during Firmware/EC update](#scope-4)
   - [Other Ideas](#other-ideas)
 
 <a name="faft-related-documents" />
@@ -92,18 +90,6 @@ Source: src/third_party/u-boot/files/common/cmd_vb*_test.c
 Almost all the U-Boot drivers are abstracted into couple of major APIs: VBExport APIs and main logic used driver APIs. U-Boot provides a CLI for manual diagnostic. We wrote some commands to test these APIs. For example, for testing the disk read/write functions, a test command is to write some patterns to the disk and read them back to verify. However, some of these tests needs human involved, like inserting an USB stick to check if it is detectable.
 
 ![faft-u-boot-vbexport-vboot-test](assets/faft-u-boot-vbexport-vboot-test.png)
-
-<a name="saft-semi-automated-firmware-test" />
-
-### SAFT (Semi Automated Firmware Test)
-
-Source: src/platform/saft
-
-First of all, SAFT only works on x86 and hasn’t ported to ARM yet.
-
-SAFT assumes the whole firmware as a black-box and tests the whole system from firmware, kernel, to rootfs. For example, it corrupts firmware RW A/B to see if it enters recovery mode success. However, SAFT also needs human involved in many cases.
-
-![faft-saft](assets/faft-saft.png)
 
 <a name="factory-regression-testing-using-servo" />
 
@@ -219,55 +205,9 @@ class firmware_DevModeTryB(FAFTSequence):
 
 There are several scopes about FAFT.
 
-<a name="scope-1" />
-
-### Scope 1: Enhance SAFT in Automated Way on Autotest Harness
-
-SAFT provides a complete set of libraries to access system info and corrupt/restore firmware and kernel. It also has a set of test cases and expected results. For example, in the SAFT main program, `saft_utility.py`:
-
-```
-TEST_STATE_SEQUENCE = (
-    ('1:1:1:0:3', FST.set_try_fw_b),                   # Step 0
-    ('1:2:1:0:3', None),
-    ('1:1:1:0:3', FST.corrupt_firmware, 'a'),
-    ('1:2:1:0:3', FST.restore_firmware, 'a'),
-    ('1:1:1:0:3', FST.corrupt_firmware, ('a', 'b')),
-    ('5:0:1:1:3', FST.restore_firmware, ('a', 'b')),   # Step 5
-    ('1:1:1:0:3', FST.corrupt_kernel, 'a'),
-    ('1:1:1:0:5', FST.corrupt_kernel, 'b'),
-    ('6:0:1:1:3', FST.restore_kernel, ('a', 'b')),
-    ('1:1:1:0:3', FST.request_recovery_boot),
-    ('8:0:1:1:3', FST.prepare_tpm_tests),              # Step 10
-    ('1:1:1:0:5', FST.move_kernel_backward, 'b'),
-    ('6:0:1:1:3', FST.jump_kernels_forward),
-    ('1:1:1:0:3', FST.move_firmware_backward, 'a'),
-    ('1:2:1:0:3', FST.move_firmware_backward, 'b'),
-    ('5:0:1:1:3', FST.jump_firmwares_forward),         # Step 15
-    ('1:1:1:0:3', FST.request_recovery_boot),
-    ('8:0:1:1:3', FST.terminate_tpm_tests),
-    ('*:*:*:*:*', cgpt_st.test_loop),
-    ('1:1:1:0:3', FST.revert_firmware),
-    ('1:1:1:0:3', None),                               # Step 20
-    )
-```
-
-It is good that we don’t need to reimplement the same work. FAFT still uses the original SAFT test cases and libraries in the first step and port them to Autotest harness. FAFT does a bit modification to makes all test cases automated by using the powerful Servo board functions.
-
-Current SAFT is a sequence of actions and expected results to test all firmware / kernel / recovery / tpm behaviors as a whole. SAFT does tests in this way because we want to simply the human actions, not easy to be confused. Since FAFT can simulate all human actions. We can separate the test sequence more isolated and one for a special test purpose.
-
-A demo of porting SAFT test cases on FAFT: [https://video.google.com/a/?pli=1#/Play/contentId=60bdda4552e4c6a2](https://video.google.com/a/?pli=1#/Play/contentId=60bdda4552e4c6a2)
-
-This demo presents the feasibility of the integration of SAFT library and FAFT framework. We still have a lot of work to make all the features completed. The tasks like:
-- Create a separated FAFT client and wrap all existing SAFT libraries into it;
-- Setup RPC to invoke FAFT client instead of using SSH tunnel like the demo;
-- Enhance the functions of FAFT server side utilities;
-- Make FAFT framework more generalized to fit any possible test cases;
-- Keep the state and backup firmware/kernel in the server side instead of USB;
-- Automatic setup DUT disk and USB image when given a buildbot image.
-
 <a name="scope-2" />
 
-### Scope 2: Test the Layer of VBExport APIs
+### Scope 1: Test the Layer of VBExport APIs
 
 In order to increase the test coverage and verify the underlying BIOS functions and drivers, a good entry is to re-run all existing vbexport / vboot tests in an automated way using our test framework!. See more detail in the State of the Art Section. We can catch bugs easily if any drivers changed or the BIOS source rebased.
 
@@ -275,7 +215,7 @@ In order to increase the test coverage and verify the underlying BIOS functions 
 
 <a name="scope-3" />
 
-### Scope 3: Verify Recovery, Factory Install, Firmware AU, RMA, and Many Complicated Flows
+### Scope 2: Verify Recovery, Factory Install, Firmware AU, RMA, and Many Complicated Flows
 
 The normal boot and developer boot can be verified by SAFT. However, we still missed the test of the whole Recovery process. The whole recovery sequence is complicated:
 1. DD the recovery shim image to a USB stick;
@@ -294,7 +234,7 @@ Besides, factory install shim, firmware AU, reset shim, RMA, etc, are more compl
 
 <a name="scope-4" />
 
-### Scope 4: Monkey Test during Firmware/EC update
+### Scope 3: Monkey Test during Firmware/EC update
 
 Firmware/EC update is a risky thing and may brick the machine. For example, the bug [http://crosbug.com/p/4419](http://crosbug.com/p/4419) reported, during the EC update, a user presses Power Button at the same time that bricks the machine. It is because the powerd triggers the shutdown process immediately and the system goes to off, but it cannot be turned on again by power button (until a cold boot). Note that the EC is still in update mode now.
 

@@ -10,6 +10,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import csv
 import datetime
 from distutils import sysconfig
 import json
@@ -448,6 +449,8 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         @return a list of loggers, where each logger contains raw power data and
                 statistics.
 
+        @raises TestError when unable to locate or open pacman accumulator results
+
         logger format:
         {
             'sample_count' : 60,
@@ -474,12 +477,57 @@ class PacTelemetryLogger(PowerTelemetryLogger):
             },
         }
         """
-        return []
+        loggers = list()
+        results_folders = os.listdir(self.pac_data_path)
+        if len(results_folders) > 1:
+            raise error.TestError('More than one results directory!')
+        results_directory = results_folders[0]
+        accumulator_path = os.path.join(*[
+                self.pac_data_path, results_directory, 'accumulatorData.csv'
+        ])
+        if not os.path.exists(accumulator_path):
+            raise error.TestError('Unable to locate pacman results!')
+        # Load resulting pacman csv file
+        try:
+            with open(accumulator_path, 'r') as csvfile:
+                reader = csv.reader(csvfile, delimiter=',')
+                # Capture the first line
+                schema = next(reader)
+                # First column is an index
+                schema[0] = 'index'
+                # Place data into a dictionary
+                accumulator_data = list()
+                for row in reader:
+                    measurement = dict(zip(schema, row))
+                    accumulator_data.append(measurement)
+        except OSError:
+            raise error.TestError('Unable to open pacman accumulator results!')
+
+        # Match required logger format
+        log = {
+                'sample_count': 1,
+                'sample_duration': float(accumulator_data[0]['tAccum']),
+                'data': {
+                        x['Rail']: [float(x['Average Power (w)'])]
+                        for x in accumulator_data
+                },
+                'average': {
+                        x['Rail']: float(x['Average Power (w)'])
+                        for x in accumulator_data
+                },
+                'unit': {x['Rail']: 'watts'
+                         for x in accumulator_data},
+                'type': {x['Rail']: 'pacman'
+                         for x in accumulator_data},
+        }
+        loggers.append(log)
+        return loggers
 
     def _export_data_locally(self, client_test_dir, checkpoint_data=None):
         """Slot for the logger to export measurements locally."""
-        shutil.copytree(self.pac_data_path,
-                        os.path.join(client_test_dir, 'pacman_data'))
+        self._local_pac_data_path = os.path.join(client_test_dir,
+                                                 'pacman_data')
+        shutil.copytree(self.pac_data_path, self._local_pac_data_path)
 
 
 class ServodTelemetryLogger(PowerTelemetryLogger):

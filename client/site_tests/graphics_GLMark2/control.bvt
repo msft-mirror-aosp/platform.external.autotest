@@ -6,7 +6,8 @@ PY_VERSION = 3
 NAME = 'graphics_GLMark2.bvt'
 AUTHOR = 'chromeos-gfx'
 PURPOSE = 'Benchmark the graphics library performance.'
-ATTRIBUTES = 'suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system, suite:infra_qual'
+# TODO(b/227756677) Add suite:infra_qual back to attributes
+ATTRIBUTES = 'suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system'
 TIME='MEDIUM'
 TEST_CATEGORY = 'Performance'
 TEST_CLASS = "gl"

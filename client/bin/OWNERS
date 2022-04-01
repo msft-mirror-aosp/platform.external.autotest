@@ -1,2 +1,1 @@
-include chromiumos/config:/owners/testservice
-include /INFRA_OWNERS
+include /HARNESS_OWNERS

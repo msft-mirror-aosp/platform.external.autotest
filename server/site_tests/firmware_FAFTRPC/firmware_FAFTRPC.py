@@ -952,9 +952,6 @@ RPC_CATEGORIES = [
                 "category_name":
                 "updater",
                 "test_cases": [
-                        # TODO (gredelston):
-                        # Uncomment the methods which write to flash memory,
-                        # once we are able to set the firmware_updater to "emulate" mode.
                         {
                                 "method_names": [
                                         "cleanup",

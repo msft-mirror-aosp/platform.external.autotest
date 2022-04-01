@@ -56,8 +56,8 @@ LOG_BUFFER_SIZE_BYTES = 64
 
 
 def _set_py_version():
-    """Return the py_version flag obtained from the set environmental var."""
-    return '--py_version=%s' % int(os.getenv('PY_VERSION'))
+    """As of ~R102 (aka when this merges), DUTs only have Python 3."""
+    return '--py_version=3'
 
 
 class AutodirNotFoundError(Exception):

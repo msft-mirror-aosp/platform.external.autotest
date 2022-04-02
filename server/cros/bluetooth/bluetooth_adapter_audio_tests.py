@@ -704,6 +704,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
 
+    @test_retry_and_log(False)
     def test_check_audio_file(self,
                               device,
                               test_profile,

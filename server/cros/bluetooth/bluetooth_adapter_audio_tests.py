@@ -220,6 +220,16 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         except Exception as e:
             raise error.TestError('Exception occurred when %s (%s)' % (desc, e))
 
+    def _scp_to_dut(self, device, src_file, dest_file):
+        """SCP file from peer device to DuT."""
+        ip = self.host.ip
+        # Localhost is unlikely to be the correct ip target so take the local
+        # host ip if it exists.
+        if self.host.ip == '127.0.0.1' and self.local_host_ip:
+            ip = self.local_host_ip
+            logging.info('Using local host ip = %s', ip)
+
+        device.ScpToDut(src_file, dest_file, ip)
 
     def initialize_bluetooth_audio(self, device, test_profile):
         """Initialize the Bluetooth audio task.
@@ -719,7 +729,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             logging.debug('Scp to DUT')
             try:
                 recorded_file = test_data[recording_device]
-                device.ScpToDut(recorded_file, recorded_file, self.host.ip)
+                self._scp_to_dut(device, recorded_file, recorded_file)
                 logging.debug('Recorded {} successfully'.format(recorded_file))
             except Exception as e:
                 raise error.TestError('Exception occurred when (%s)' % (e))
@@ -1403,7 +1413,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
             # Copy the recorded audio file to the DUT for spectrum analysis.
             recorded_file = test_file['recorded_by_peer']
-            device.ScpToDut(recorded_file, recorded_file, self.host.ip)
+            self._scp_to_dut(device, recorded_file, recorded_file)
 
             self.test_get_visqol_score(test_file, test_profile,
                                        'recorded_by_peer')

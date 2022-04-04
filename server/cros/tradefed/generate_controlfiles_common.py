@@ -1106,7 +1106,7 @@ def get_word_pattern(m, l=1):
     Break after l+1 CamelCase word.
     Example: CtsDebugTestCases -> CtsDebug.
     """
-    s = re.findall('^[a-z-]+|[A-Z]*[^A-Z0-9]*', m)[0:l + 1]
+    s = re.findall('^[a-z-_]+|[A-Z]*[^A-Z0-9]*', m)[0:l + 1]
     # Ignore Test or TestCases at the end as they don't add anything.
     if len(s) > l:
         if s[l].startswith('Test') or s[l].startswith('['):

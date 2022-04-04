@@ -162,6 +162,27 @@ class AndroidHost(object):
         """Stop adb server from the phone station."""
         self.phone_station.run("adb kill-server")
 
+    def setup_for_cross_device_tests(self):
+        """
+        Setup the Android phone for Cross Device tests.
+
+        Ensures the phone can connect to its labstation and sets up
+        adb-over-tcp.
+
+        Returns:
+            IP Address of Phone.
+        """
+        dut_out = self.phone_station.run('echo True').stdout.strip()
+        if dut_out != 'True':
+            raise error.TestError('phone station stdout != True (got: %s)',
+                                  dut_out)
+
+        self.restart_adb_server()
+        self.ensure_device_connectivity()
+        ip_address = self.get_wifi_ip_address()
+        self.adb_over_tcp()
+        return ip_address
+
     def close(self):
         """Clean up Android host and its phone station proxy host."""
         if self.closed:

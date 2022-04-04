@@ -81,6 +81,7 @@ class AttachedDeviceHost(ssh_host.SSHHost):
     def _lock(self):
         logging.debug('Locking host %s by touching %s file', self.hostname,
                       self._lock_file)
+        self.run('mkdir -p %s' % self.TEMP_FILE_DIR)
         self.run('touch %s' % self._lock_file)
         self._is_locked = True
 
@@ -260,7 +261,7 @@ class AttachedDeviceHost(ssh_host.SSHHost):
 
         Args:
             required_uptime: Minimum uptime in seconds that we can
-                             consdier a attached device host be ready.
+                             consider an attached device host be ready.
         """
         uptime = float(self.check_uptime())
         # To prevent unexpected output from check_uptime() that causes long

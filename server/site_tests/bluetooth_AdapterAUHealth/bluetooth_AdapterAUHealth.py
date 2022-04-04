@@ -205,7 +205,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('HFP NBS sinewave test with dut as source',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_hfp_nbs_dut_as_source_test(self):
         """HFP NBS test with sinewave streaming from dut to peer."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -213,7 +214,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('HFP NBS sinewave test with dut as sink',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_hfp_nbs_dut_as_sink_test(self):
         """HFP NBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]

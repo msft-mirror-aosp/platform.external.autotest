@@ -1498,7 +1498,7 @@ class BluetoothAdapterTests(test.test):
 
         @returns: True if cras was restart successfully, else False
         """
-        return self.restart_services(['cras', ])
+        return self.bluetooth_facade.restart_cras()
 
 
     def enable_disable_debug_log(self, enable):

@@ -288,6 +288,11 @@ class BluetoothBaseFacadeLocal(object):
 
     # Upstart job name for the Floss Manager daemon
     MANAGER_JOB = "btmanagerd"
+    # How long we wait for the manager daemon to come up after we start it
+    DAEMON_TIMEOUT_SEC = 5
+
+    # Upstart job name for ChromeOS Audio daemon
+    CRAS_JOB = "cras"
 
     CHIPSET_TO_VIDPID = {
             'MVL-8897': [(('0x02df', '0x912d'), 'SDIO')],
@@ -357,7 +362,7 @@ class BluetoothBaseFacadeLocal(object):
                     condition=(lambda: self.manager_client.has_proxy()),
                     desc='Wait for manager daemon to come up',
                     sleep_interval=0.5,
-                    timeout=self.MGR_DAEMON_TIMEOUT)
+                    timeout=self.DAEMON_TIMEOUT_SEC)
         except Exception as e:
             logging.error('timeout: error starting manager daemon: %s', e)
 
@@ -377,14 +382,44 @@ class BluetoothBaseFacadeLocal(object):
                                                        ) == enabled),
                         desc='Wait for set floss enabled to complete',
                         sleep_interval=0.5,
-                        timeout=self.MGR_DAEMON_TIMEOUT)
+                        timeout=self.DAEMON_TIMEOUT_SEC)
             except Exception as e:
                 logging.error('timeout: error waiting for set_floss_enabled')
 
         # Also configure cras to enable/disable floss
-        cras_utils.set_floss_enabled(enabled)
+        self.configure_cras_floss(enabled)
 
         return True
+
+    def configure_cras_floss(self, enabled):
+        """Configure whether CRAS has floss enabled."""
+        cras_utils.set_floss_enabled(enabled)
+
+    def _restart_cras(self, enable_floss=False):
+        """Restarts CRAS and sets whether Floss is enabled."""
+        UpstartClient.stop(self.CRAS_JOB)
+        started = UpstartClient.start(self.CRAS_JOB)
+
+        def _set_floss():
+            try:
+                self.configure_cras_floss(enable_floss)
+                return True
+            except:
+                return False
+
+        try:
+            if started:
+                utils.poll_for_condition(
+                        condition=_set_floss,
+                        desc='Wait for CRAS to come up and configure floss',
+                        sleep_interval=1,
+                        timeout=self.DAEMON_TIMEOUT_SEC)
+        except Exception as e:
+            logging.error('timeout: error waiting to set floss on cras')
+            return False
+
+        # Did we successfully start the cras daemon?
+        return started
 
     def log_message(self, msg):
         """ log a message to /var/log/messages."""
@@ -1821,6 +1856,10 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
             bluetoothd_stopped = False
 
         return bluetoothd_stopped
+
+    def restart_cras(self):
+        """Restarts the cras daemon."""
+        return self._restart_cras()
 
     def is_bluetoothd_running(self):
         """Is bluetoothd running?
@@ -4106,11 +4145,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     # default adapter after the manager client is initialized.
     DEFAULT_ADAPTER = 0
 
-    # How long we wait for the manager daemon to come up after we start it
-    MGR_DAEMON_TIMEOUT = 5
-
     # How long we wait for the adapter to come up after we start it
-    ADAPTER_DAEMON_TIMEOUT = 20
+    ADAPTER_DAEMON_TIMEOUT_SEC = 20
 
     def __init__(self):
         # Init the BaseFacade first
@@ -4228,13 +4264,17 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         try:
             utils.poll_for_condition(condition=_daemon_stopped,
                                      desc='Bluetooth daemons have stopped',
-                                     timeout=self.MGR_DAEMON_TIMEOUT)
+                                     timeout=self.DAEMON_TIMEOUT_SEC)
             daemon_stopped = True
         except Exception as e:
             logging.error('timeout: error stopping floss daemons: %s', e)
             daemon_stopped = False
 
         return daemon_stopped
+
+    def restart_cras(self):
+        """Restarts the cras daemon."""
+        self._restart_cras(enable_floss=True)
 
     def is_bluetoothd_proxy_valid(self):
         """Checks whether the proxy objects for Floss are ok."""
@@ -4326,7 +4366,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             utils.poll_for_condition(condition=condition,
                                      desc='Wait for adapter stop',
                                      sleep_interval=0.5,
-                                     timeout=self.ADAPTER_DAEMON_TIMEOUT)
+                                     timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
         except Exception as e:
             logging.error('timeout: error stopping adapter daemon: %s', e)
             logging.error(traceback.format_exc())
@@ -4345,7 +4385,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             utils.poll_for_condition(condition=condition,
                                      desc='Wait for adapter start',
                                      sleep_interval=0.5,
-                                     timeout=self.ADAPTER_DAEMON_TIMEOUT)
+                                     timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
         except Exception as e:
             logging.error('timeout: error starting adapter daemon: %s', e)
             logging.error(traceback.format_exc())
@@ -4608,3 +4648,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Sets the adapter as discoverable for given duration in seconds."""
         return self.adapter_client.set_property('Discoverable', discoverable,
                                                 duration)
+
+    def get_supported_capabilities(self):
+        """" Get supported capabilities of the adapter."""
+        return (json.dumps({}), 'Not yet implemented')

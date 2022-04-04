@@ -385,6 +385,7 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         self._pac_config_file = config['config']
         self._pac_mapping_file = config['mapping']
         self._pac_gpio_file = config['gpio']
+        self._resultsdir = resultsdir
         self.pac_path = self._get_pacman_install_path()
         self.pac_data_path = os.path.join(self.pac_path, 'Data',
                                           str(time.time()))
@@ -402,14 +403,9 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         """Start a pacman thread with the given config, mapping, and gpio files."""
 
         self._pacman_args = [
-                '--config',
-                self._pac_config_file,
-                '--mapping',
-                self._pac_mapping_file,
-                '--gpio',
-                self._pac_gpio_file,
-                '--output',
-                self.pac_data_path,
+                '--config', self._pac_config_file, '--mapping',
+                self._pac_mapping_file, '--gpio', self._pac_gpio_file,
+                '--output', self.pac_data_path
         ]
 
         logging.debug('Starting pacman process')
@@ -422,6 +418,8 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         """Stop pacman thread. This will dump and process the accumulators."""
         self._pacman_process.send_signal(2)
         self._pacman_process.wait(timeout=10)
+        self._load_and_trim_data(None, None)
+        self._export_data_locally(self._resultsdir)
 
     def _get_pacman_install_path(self):
         """Return the absolute path of pacman on the host.
@@ -478,13 +476,8 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         }
         """
         loggers = list()
-        results_folders = os.listdir(self.pac_data_path)
-        if len(results_folders) > 1:
-            raise error.TestError('More than one results directory!')
-        results_directory = results_folders[0]
-        accumulator_path = os.path.join(*[
-                self.pac_data_path, results_directory, 'accumulatorData.csv'
-        ])
+        accumulator_path = os.path.join(
+                *[self.pac_data_path, 'accumulatorData.csv'])
         if not os.path.exists(accumulator_path):
             raise error.TestError('Unable to locate pacman results!')
         # Load resulting pacman csv file
@@ -496,38 +489,57 @@ class PacTelemetryLogger(PowerTelemetryLogger):
                 # First column is an index
                 schema[0] = 'index'
                 # Place data into a dictionary
-                accumulator_data = list()
+                self._accumulator_data = list()
                 for row in reader:
                     measurement = dict(zip(schema, row))
-                    accumulator_data.append(measurement)
+                    self._accumulator_data.append(measurement)
         except OSError:
             raise error.TestError('Unable to open pacman accumulator results!')
 
         # Match required logger format
         log = {
                 'sample_count': 1,
-                'sample_duration': float(accumulator_data[0]['tAccum']),
+                'sample_duration': float(self._accumulator_data[0]['tAccum']),
                 'data': {
                         x['Rail']: [float(x['Average Power (w)'])]
-                        for x in accumulator_data
+                        for x in self._accumulator_data
                 },
                 'average': {
                         x['Rail']: float(x['Average Power (w)'])
-                        for x in accumulator_data
+                        for x in self._accumulator_data
                 },
                 'unit': {x['Rail']: 'watts'
-                         for x in accumulator_data},
+                         for x in self._accumulator_data},
                 'type': {x['Rail']: 'pacman'
-                         for x in accumulator_data},
+                         for x in self._accumulator_data},
         }
         loggers.append(log)
         return loggers
+
+    def output_pacman_aggregates(self, test):
+        """This outputs all the processed aggregate values to the results-chart.json
+
+        @param test: the test.test object to use when outputting the
+                    performance values to results-chart.json
+        """
+        for rail in self._accumulator_data:
+            test.output_perf_value(rail['Rail'],
+                                   float(rail['Average Power (w)']),
+                                   units='watts',
+                                   replace_existing_values=True)
 
     def _export_data_locally(self, client_test_dir, checkpoint_data=None):
         """Slot for the logger to export measurements locally."""
         self._local_pac_data_path = os.path.join(client_test_dir,
                                                  'pacman_data')
         shutil.copytree(self.pac_data_path, self._local_pac_data_path)
+
+    def _upload_data(self, loggers, checkpoint_logger):
+        """
+        _upload_data is defined as a pass as a hot-fix to external partners' lack
+        of access to the power_dashboard URL
+        """
+        pass
 
 
 class ServodTelemetryLogger(PowerTelemetryLogger):

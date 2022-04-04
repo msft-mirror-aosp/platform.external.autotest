@@ -31,5 +31,9 @@ class power_PacWrapper(power_base_wrapper.PowerBaseWrapper):
                            results-1-test_TestName.tag/test_TestName.tag/
                            results/
         """
-        return power_telemetry_logger.PacTelemetryLogger(
+        self._pacman_telemetry_logger = power_telemetry_logger.PacTelemetryLogger(
                 config, resultsdir, host)
+        return self._pacman_telemetry_logger
+
+    def postprocess(self):
+        self._pacman_telemetry_logger.output_pacman_aggregates(self)

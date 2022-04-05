@@ -5,18 +5,6 @@ import sys
 import subprocess
 
 
-def py2_exception(test_name):
-    # Basically, unless a test has a specific exception, it should run in py3.
-    # Add any exceptions to the EXCEPTIONS list...
-    if not test_name:
-        return False
-    EXCEPTIONS = ['telemetry']
-    for e in EXCEPTIONS:
-        if e in test_name:
-            return True
-    return False
-
-
 dir_name = os.path.dirname(os.path.abspath(__file__))
 test_name = None
 suite_name = None
@@ -37,11 +25,6 @@ elif "--control-name" in sys.argv:
     except IndexError:
         raise Exception("No test name followed --control-name flag")
 
-if py2_exception(test_name) or py2_exception(suite_name):
-    os.environ["PY_VERSION"] = "2"
-    v = "python2"
-else:
-    os.environ["PY_VERSION"] = "3"
-    v = "python3"
+os.environ["PY_VERSION"] = "3"
 
-exit(subprocess.call([v, os.path.join(dir_name, '_autoserv')] + sys.argv[1:]))
+exit(subprocess.call([os.path.join(dir_name, '_autoserv')] + sys.argv[1:]))

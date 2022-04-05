@@ -816,6 +816,8 @@ class ServoHost(base_servohost.BaseServoHost):
             if not with_servod:
                 # In some cases we do not need container without running servod.
                 start_cmds = ["tail", "-f", "/dev/null"]
+                logging.debug(
+                        'Attempting to start Servod container without servod')
             container = client.containers.run(
                     image,
                     remove=False,

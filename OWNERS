@@ -1,4 +1,4 @@
-include /INFRA_OWNERS
+include /HARNESS_OWNERS
 
 per-file site_utils/attribute_allowlist.txt = *
 

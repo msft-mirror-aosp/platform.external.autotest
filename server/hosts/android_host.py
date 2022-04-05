@@ -14,6 +14,7 @@ import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import attached_device_host
+from autotest_lib.server.hosts import android_constants
 
 
 class AndroidHost(object):
@@ -23,20 +24,31 @@ class AndroidHost(object):
     # adb auth key path on the phone_station.
     ADB_KEY_PATH = '/var/lib/android_keys'
 
-    def __init__(self, hostname, host_info_store=None, *args, **dargs):
+    def __init__(self,
+                 hostname,
+                 host_info_store=None,
+                 android_args=None,
+                 *args,
+                 **dargs):
         """Construct a AndroidHost object.
 
         Args:
             hostname: Hostname of the Android phone.
             host_info_store: Optional host_info.CachingHostInfoStore object
                              to obtain / update host information.
+            android_args: Android args for local test run.
         """
         self.hostname = hostname
         self.host_info_store = (host_info_store
                                 or host_info.InMemoryHostInfoStore())
         self.associated_hostname = None
         self.serial_number = None
-        self._read_essential_data_from_host_info_store()
+        self.phone_station_ssh_port = None
+        # For local test, android_args are passed in.
+        if android_args:
+            self._read_essential_data_from_args_dict(android_args)
+        else:
+            self._read_essential_data_from_host_info_store()
         # Since we won't be ssh into an Android device directly, all the
         # communication will be handled by run ADB CLI on the phone
         # station(chromebox or linux machine) that physically connected
@@ -51,7 +63,16 @@ class AndroidHost(object):
                      self.associated_hostname)
         return attached_device_host.AttachedDeviceHost(
                 hostname=self.associated_hostname,
-                serial_number=self.serial_number)
+                serial_number=self.serial_number,
+                phone_station_ssh_port=self.phone_station_ssh_port)
+
+    def _read_essential_data_from_args_dict(self, android_args):
+        self.associated_hostname = android_args.get(
+                android_constants.ANDROID_PHONE_STATION_ATTR)
+        self.phone_station_ssh_port = android_args.get(
+                android_constants.ANDROID_PHONE_STATION_SSH_PORT_ATTR)
+        self.serial_number = android_args.get(
+                android_constants.ANDROID_SERIAL_NUMBER_ATTR)
 
     def _read_essential_data_from_host_info_store(self):
         info = self.host_info_store.get()
@@ -155,3 +176,29 @@ class AndroidHost(object):
         if self.phone_station:
             self.phone_station.close()
         self.closed = True
+
+    @staticmethod
+    def get_android_arguments(args_dict):
+        """Extract android args from `args_dict` and return the result.
+
+        Recommended usage in control file:
+            args_dict = utils.args_to_dict(args)
+            android_args = hosts.Android.get_android_arguments(args_dict)
+            host = hosts.create_host(machine, android_args=android_args)
+
+        Args:
+            args_dict: A dict of test args.
+
+        Returns:
+            An dict of android related args.
+        """
+        android_args = {
+                key: args_dict[key]
+                for key in android_constants.ALL_ANDROID_ATTRS
+                if key in args_dict
+        }
+        for attr in android_constants.CRITICAL_ANDROID_ATTRS:
+            if attr not in android_args or not android_args.get(attr):
+                raise error.AutoservError("Critical attribute %s is missing"
+                                          " from android_args." % attr)
+        return android_args

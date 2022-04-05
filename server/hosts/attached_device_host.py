@@ -27,15 +27,24 @@ class AttachedDeviceHost(ssh_host.SSHHost):
     LOCK_FILE_POSTFIX = "_in_use"
     REBOOT_TIMEOUT_SECONDS = 240
 
-    def _initialize(self, hostname, serial_number, *args, **dargs):
+    def _initialize(self,
+                    hostname,
+                    serial_number,
+                    phone_station_ssh_port=None,
+                    *args,
+                    **dargs):
         """Construct a AttachedDeviceHost object.
 
         Args:
             hostname: Hostname of the attached device host.
             serial_number: Usb serial number of the associated
                            device(e.g. Android).
+            phone_station_ssh_port: port for ssh to phone station, it
+                                    use default 22 if the value is None.
         """
         self.serial_number = serial_number
+        if phone_station_ssh_port:
+            dargs['port'] = int(phone_station_ssh_port)
         super(AttachedDeviceHost, self)._initialize(hostname=hostname,
                                                     *args,
                                                     **dargs)
@@ -46,7 +55,7 @@ class AttachedDeviceHost(ssh_host.SSHHost):
         # we can differentiate this by checking if a non-default port
         # is specified.
         self._is_localhost = (self.hostname in {'localhost', "127.0.0.1"}
-                              and not self.is_default_port)
+                              and phone_station_ssh_port is None)
         # Commands on the the host must be run by the superuser.
         # Our account on a remote host is root, but if our target is
         # localhost then we might be running unprivileged.  If so,

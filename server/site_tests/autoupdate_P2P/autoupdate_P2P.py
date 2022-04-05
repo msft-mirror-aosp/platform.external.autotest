@@ -306,12 +306,12 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
                     self.get_payload_for_nebraska(
                             job_repo_url=job_repo_url,
                             full_payload=True,
-                            is_dlc=True,
+                            payload_type=self._PAYLOAD_TYPE.DLC,
                             public_bucket=running_at_desk),
                     self.get_payload_for_nebraska(
                             job_repo_url=job_repo_url,
                             full_payload=False,
-                            is_dlc=True,
+                            payload_type=self._PAYLOAD_TYPE.DLC,
                             public_bucket=running_at_desk)
             ]
 

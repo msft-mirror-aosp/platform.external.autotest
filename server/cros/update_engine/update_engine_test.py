@@ -20,6 +20,7 @@ import six.moves.urllib.parse
 from datetime import datetime, timedelta
 from xml.etree import ElementTree
 
+from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import lsbrelease_utils
@@ -75,6 +76,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     _CORRUPT_STATEFUL_PATH = '/mnt/stateful_partition/.corrupt_stateful'
 
     _STATEFUL_ARCHIVE_NAME = 'stateful.tgz'
+
+    _PAYLOAD_TYPE = autotest_enum.AutotestEnum('CROS', 'DLC', 'MINIOS')
 
     def initialize(self, host=None):
         """
@@ -315,13 +318,16 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return autotest_devserver
 
 
-    def _get_payload_url(self, full_payload=True, is_dlc=False):
+    def _get_payload_url(self,
+                         full_payload=True,
+                         payload_type=_PAYLOAD_TYPE.CROS):
         """
         Gets the GStorage URL of the full or delta payload for the target
         update version for either platform or DLC payloads.
 
         @param full_payload: True for full payload. False for delta.
-        @param is_dlc: True to get the payload URL for sample-dlc.
+        @param payload_type: The type of payload to get. Can be a value of the
+                             _PAYLOAD_TYPE enum.
 
         @returns the payload URL. For example, a full payload URL looks like:
         gs://chromeos-image-archive/octopus-release/R102-14650.0.0/chromeos_R102-14650.0.0_octopus_full_dev.bin
@@ -338,8 +344,13 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Example payload names (DLC):
         # dlc_sample-dlc_package_R85-13265.0.0_eve_full_dev.bin
         # dlc_sample-dlc_package_R85-13265.0.0_R85-13265.0.0_eve_delta_dev.bin
-        if is_dlc:
+        # Example payload names (MiniOS):
+        # minios_R102-14667.0.0_guybrush_full_dev.bin
+        # minios_R102-14667.0.0_R102-14667.0.0_guybrush_delta_dev.bin
+        if payload_type is self._PAYLOAD_TYPE.DLC:
             payload_prefix = 'dlc_*_%s_*.bin'
+        elif payload_type is self._PAYLOAD_TYPE.MINIOS:
+            payload_prefix = 'minios_*_%s_*.bin'
         else:
             payload_prefix = 'chromeos_*_%s_*.bin'
 
@@ -907,8 +918,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                      err_msg))
 
 
-    def get_payload_url_on_public_bucket(self, job_repo_url=None,
-                                         full_payload=True, is_dlc=False):
+    def get_payload_url_on_public_bucket(self,
+                                         job_repo_url=None,
+                                         full_payload=True,
+                                         payload_type=_PAYLOAD_TYPE.CROS):
         """
         Get the google storage url of the payload in a public bucket.
 
@@ -917,7 +930,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param job_repo_url: string url containing the current build.
         @param full_payload: True for full, False for delta.
-        @param is_dlc: True to get the payload URL for sample-dlc.
+        @param payload_type: The type of payload to get. Can be a value of the
+                             _PAYLOAD_TYPE enum.
 
         """
         if job_repo_url is not None:
@@ -928,7 +942,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             self._should_restore_stateful = True
 
         payload_url = self._get_payload_url(full_payload=full_payload,
-                                            is_dlc=is_dlc)
+                                            payload_type=payload_type)
         url = self._copy_payload_to_public_bucket(payload_url)
         logging.info('Public update URL: %s', url)
         return url
@@ -964,7 +978,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                  build=None,
                                  full_payload=True,
                                  public_bucket=False,
-                                 is_dlc=False):
+                                 payload_type=_PAYLOAD_TYPE.CROS):
         """
         Gets a platform or DLC payload URL to be used with a nebraska instance
         on the DUT.
@@ -976,7 +990,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                       Only used for the public bucket update flow.
         @param full_payload: bool whether we want a full payload.
         @param public_bucket: True to return a payload on a public bucket.
-        @param is_dlc: True to get the payload URL for sample-dlc.
+        @param payload_type: The type of payload to get. Can be a value of the
+                             _PAYLOAD_TYPE enum.
 
         @returns string URL of a payload staged on a lab devserver.
 
@@ -1003,10 +1018,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         if public_bucket:
             return self.get_payload_url_on_public_bucket(
-                    full_payload=full_payload, is_dlc=is_dlc)
+                    full_payload=full_payload, payload_type=payload_type)
 
         payload = self._get_payload_url(full_payload=full_payload,
-                                        is_dlc=is_dlc)
+                                        payload_type=payload_type)
         payload_url, _ = self._stage_payload_by_uri(payload)
         logging.info('Payload URL for Nebraska: %s', payload_url)
         self._should_restore_stateful = True

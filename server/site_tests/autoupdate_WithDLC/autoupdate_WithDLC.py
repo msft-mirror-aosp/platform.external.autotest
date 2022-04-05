@@ -60,16 +60,17 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
         # We'll always need a full payload for DLC installation,
         # and optionally a delta payload if required by the test.
         payload_urls.append(
-                self.get_payload_for_nebraska(job_repo_url=job_repo_url,
-                                              full_payload=True,
-                                              is_dlc=True,
-                                              public_bucket=running_at_desk))
+                self.get_payload_for_nebraska(
+                        job_repo_url=job_repo_url,
+                        full_payload=True,
+                        payload_type=self._PAYLOAD_TYPE.DLC,
+                        public_bucket=running_at_desk))
         if not full_payload:
             payload_urls.append(
                     self.get_payload_for_nebraska(
                             job_repo_url=job_repo_url,
                             full_payload=False,
-                            is_dlc=True,
+                            payload_type=self._PAYLOAD_TYPE.DLC,
                             public_bucket=running_at_desk))
 
         active, inactive = kernel_utils.get_kernel_state(self._host)

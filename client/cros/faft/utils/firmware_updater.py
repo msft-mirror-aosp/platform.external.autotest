@@ -205,7 +205,7 @@ class FirmwareUpdater(object):
         handler.new_image(image_path)
         fwid = handler.get_section_fwid(section)
         if fwid is not None:
-            return str(fwid)
+            return str(fwid, 'utf-8')
         else:
             return None
 

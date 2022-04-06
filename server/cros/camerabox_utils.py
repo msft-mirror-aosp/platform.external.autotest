@@ -17,19 +17,28 @@ class ChartFixture:
     DISPLAY_SCRIPT = '/usr/local/autotest/bin/display_chart.py'
     OUTPUT_LOG = '/tmp/chart_service.log'
 
-    def __init__(self, chart_host, scene_uri):
+    def __init__(self, chart_host, scene_uri, job=None):
         self.host = chart_host
         self.scene_uri = scene_uri
+        self.job = job
         self.display_pid = None
-        self.host.run(['rm', '-f', self.OUTPUT_LOG])
+        self.host.run(['rm', '-f', self.OUTPUT_LOG], ignore_status=True)
 
     def initialize(self):
         """Prepare scene file and display it on chart host."""
         logging.info('Prepare scene file')
+        chart_version = self.host.run(
+                'cat /etc/lsb-release | grep CHROMEOS_RELEASE_BUILDER_PATH')
+        logging.info('Chart version: %s', chart_version)
         if utils.is_in_container():
             # Reboot chart to clean the dirty state from last test. See
             # b/201032899.
-            self.host.reboot()
+            version = self.host.get_release_builder_path()
+            self.job.run_test('provision_QuickProvision',
+                              host=self.host,
+                              value=version,
+                              force_update_engine=True)
+
         tmpdir = self.host.get_tmp_dir()
         scene_path = os.path.join(
                 tmpdir, self.scene_uri[self.scene_uri.rfind('/') + 1:])

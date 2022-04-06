@@ -525,7 +525,8 @@ class EcServicer(object):
         # If DUT has a Wilco EC read sysfs for the EC version.
         # Wilco doesn't use RO/RW/active, so ignore target.
         elif self._os_if.path_exists(WILCO_VERSION_FILE):
-            return self._os_if.read_file(WILCO_VERSION_FILE).strip()
+            with open(WILCO_VERSION_FILE, "r") as f:
+                return f.read().strip()
         # If DUT doesn't have an EC, return the empty string.
         else:
             return ''

@@ -317,7 +317,8 @@ class firmware_FAFTRPC(FirmwareTest):
         self.reboot_after_completion = reboot_after_completion
         for rpc_category in rpc_categories_to_test:
             category_name = rpc_category["category_name"]
-            if category_name == "ec" and not self.check_ec_capability():
+            if category_name == "ec" and not self.check_ec_capability(
+                    suppress_warning=True):
                 logging.info("No EC found on DUT. Skipping EC category.")
                 continue
 
@@ -330,6 +331,7 @@ class firmware_FAFTRPC(FirmwareTest):
             for test_case in test_cases:
                 method_names = get_rpc_method_names_from_test_case(test_case)
                 passing_args = test_case.get("passing_args", [])
+                ec_passing_args = test_case.get("ec_passing_args", [])
                 failing_args = test_case.get("failing_args", [])
                 allow_error_msg = test_case.get("allow_error_msg", None)
                 expected_return_type = test_case.get("expected_return_type",
@@ -352,6 +354,18 @@ class firmware_FAFTRPC(FirmwareTest):
                                 failing_arg_tuple)
                         self._assert_fails(category_name, method_name,
                                            failing_arg_tuple)
+                    for arg_tuple in ec_passing_args:
+                        arg_tuple = self._retrieve_stored_values(arg_tuple)
+                        if self.check_ec_capability(suppress_warning=True):
+                            result = self._assert_passes(
+                                    category_name, method_name, arg_tuple,
+                                    allow_error_msg, expected_return_type,
+                                    silence_result)
+                            if store_result_as is not None:
+                                self._stored_values[store_result_as] = result
+                        else:
+                            self._assert_fails(category_name, method_name,
+                                               arg_tuple)
 
 
 """
@@ -1012,6 +1026,8 @@ RPC_CATEGORIES = [
                                 "passing_args": [
                                         NO_ARGS,
                                         ("bios", ),
+                                ],
+                                "ec_passing_args": [
                                         ("ec", ),
                                 ],
                                 "failing_args": [

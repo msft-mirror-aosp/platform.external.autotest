@@ -280,6 +280,8 @@ def get_perf_metrics_from_test_result_xml(result_path, resultsdir):
                     test_name = test.get('name')
                     for metric in test.iter('Metric'):
                         score_type = metric.get('score_type')
+                        if score_type == None:
+                            continue
                         if score_type not in ['higher_better', 'lower_better']:
                             logging.warning(
                                 'Unsupported score_type in %s/%s/%s',

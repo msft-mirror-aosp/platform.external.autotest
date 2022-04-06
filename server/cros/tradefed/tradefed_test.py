@@ -35,6 +35,7 @@ from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import test
 from autotest_lib.server import utils
+from autotest_lib.server.cros.tradefed import adb
 from autotest_lib.server.cros.tradefed import cts_expected_failure_parser
 from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
@@ -331,37 +332,14 @@ class TradefedTest(test.test):
         # Avoid setting timeout=0 (None) in any cases.
         self._timeout_factor = max(1, self._test_count_factor)
 
-    def _get_adb_targets(self):
-        """Get a list of adb targets."""
-        return [self._get_adb_target(host) for host in self._hosts]
-
-    def _get_adb_target(self, host):
-        """Get the adb target format.
-
-        This method is slightly different from host.host_port as we need to
-        explicitly specify the port so the serial name of adb target would
-        match."""
-        port = 22 if host.port is None else host.port
-        if re.search(r':.*:', host.hostname):
-            # Add [] for raw IPv6 addresses, stripped for ssh.
-            # In the Python >= 3.3 future, 'import ipaddress' will parse
-            # addresses.
-            return '[{}]:{}'.format(host.hostname, port)
-        return '{}:{}'.format(host.hostname, port)
-
     def _run_adb_cmd(self, host=None, **kwargs):
         """Running adb command.
 
         @param host: DUT that want to connect to. (None if the adb command is
                      intended to run in the server. eg. keygen)
         """
-        # As of N, tradefed could not specify which adb socket to use, which use
-        # tcp:localhost:5037 by default.
-        adb_global_option = ('-H', 'localhost', '-P', '5037')
-        if host:
-            host_port = self._get_adb_target(host)
-            adb_global_option = ('-s', host_port)
-        kwargs['args'] = adb_global_option + kwargs.get('args', ())
+        additional_option = adb.tradefed_options(host)
+        kwargs['args'] = additional_option + kwargs.get('args', ())
         result = self._run('adb', **kwargs)
         logging.info('adb %s:\n%s', ' '.join(kwargs.get('args')),
                      result.stdout + result.stderr)
@@ -380,7 +358,7 @@ class TradefedTest(test.test):
             # This may fail return failure due to a race condition in adb
             # connect (b/29370989). If adb is already connected, this command
             # will immediately return success.
-            host_port = self._get_adb_target(host)
+            host_port = adb.get_adb_target(host)
             result = self._run_adb_cmd(
                 host, args=('connect', host_port), verbose=True, env=env,
                 ignore_status=True,
@@ -1095,7 +1073,7 @@ class TradefedTest(test.test):
         """
         target_argument = []
         for host in self._hosts:
-            target_argument += ['-s', self._get_adb_target(host)]
+            target_argument += ['-s', adb.get_adb_target(host)]
         shard_argument = []
         if len(self._hosts) > 1:
             if self._SHARD_CMD:
@@ -1267,7 +1245,7 @@ class TradefedTest(test.test):
 
     def _run_tradefed_with_timeout(self, command, timeout):
         tradefed = self._tradefed_cmd_path()
-        with tradefed_utils.adb_keepalive(self._get_adb_targets(),
+        with tradefed_utils.adb_keepalive(adb.get_adb_targets(self._hosts),
                                           self._install_paths):
             logging.info('RUN(timeout=%d): %s', timeout,
                          ' '.join([tradefed] + command))

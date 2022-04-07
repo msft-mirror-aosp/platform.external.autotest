@@ -147,6 +147,7 @@ suite:cellular_mbim_compliance
 suite:cellular_modem_fw
 suite:cellular_modem_repair
 suite:cellular_ota
+suite:cellular_ota_avl
 suite:cellular_ota_flaky
 suite:cellular_pseudomodem
 suite:cellular_qual

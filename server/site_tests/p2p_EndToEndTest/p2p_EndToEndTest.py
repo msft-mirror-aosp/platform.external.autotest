@@ -5,11 +5,12 @@
 
 import logging
 import os
-import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server import test
+
+DEFAULT_AVAHI_SIZE_UPDATE_DELAY = 10
 
 # P2P_PATH is the path where the p2p server expects the sharing files.
 P2P_PATH = '/var/cache/p2p'
@@ -17,13 +18,18 @@ P2P_PATH = '/var/cache/p2p'
 # Prefix all the test files with P2P_TEST_PREFIX.
 P2P_TEST_PREFIX = 'p2p-test'
 
-# File size of the shared file in KB.
-P2P_FILE_SIZE_KB = 20 * 1000
+# Kilobyte.
+KB = 1024
+
+# File size of the shared file in MB.
+P2P_FILE_SIZE_MB = 4 * KB * KB
+P2P_FILE_SPLIT_SIZE_KB = P2P_FILE_SIZE_MB // (2 * KB)
 
 # After a peer finishes the download we need it to keep serving the file for
 # other peers. This peer will then wait up to P2P_SERVING_TIMEOUT_SECS seconds
 # for the test to conclude.
-P2P_SERVING_TIMEOUT_SECS = 600
+P2P_SERVING_TIMEOUT_SECS = 300
+
 
 class p2p_EndToEndTest(test.test):
     """Test to check that p2p works."""
@@ -51,17 +57,29 @@ class p2p_EndToEndTest(test.test):
         logging.info('All devices setup. Generating a file on main DUT')
         dut.run('touch %s' % file_temp_name)
         dut.run('setfattr -n user.cros-p2p-filesize -v %d %s' %
-                (P2P_FILE_SIZE_KB * 1000, file_temp_name))
+                (P2P_FILE_SIZE_MB, file_temp_name))
         dut.run('mv %s %s' % (file_temp_name, file_shared_name))
 
         # Generate part of the files total file fize.
-        first_part_size_kb = P2P_FILE_SIZE_KB / 3
-        dut.run('dd if=/dev/urandom of=%s bs=1000 count=%d' %
-                (file_shared_name, first_part_size_kb))
+        dut.run('dd if=/dev/zero of=%s bs=%d count=%d' %
+                (file_shared_name, KB, P2P_FILE_SPLIT_SIZE_KB))
 
-        # This small sleep is to ensure that the new file size is updated
-        # by avahi daemon.
-        time.sleep(5)
+        def _wait_until_avahi_size_update():
+            ret = ''
+            try:
+                ret = self._companion.run(
+                        'p2p-client --get-url=%s --minimum-size=%d' %
+                        (file_id, P2P_FILE_SPLIT_SIZE_KB * KB))
+                ret = ret.stdout.strip()
+            except:
+                return False
+            return ret != ''
+
+        err = 'Shared file size did not update in time.'
+        # The actual delay is 10 seconds, so triple that to account for flakes.
+        utils.poll_for_condition(condition=_wait_until_avahi_size_update,
+                                 timeout=DEFAULT_AVAHI_SIZE_UPDATE_DELAY * 3,
+                                 exception=error.TestFail(err))
 
         # Now thhe companion can attempt a p2p file download.
         logging.info('Listing all p2p peers for the companion: ')
@@ -85,9 +103,9 @@ class p2p_EndToEndTest(test.test):
         logging.info(
                 'While companion is downloading the file, we will expand it to its full size.'
         )
-        dut.run('dd if=/dev/urandom of=%s bs=1000 count=%d'
+        dut.run('dd if=/dev/zero of=%s bs=%d count=%d'
                 ' conv=notrunc oflag=append' %
-                (file_shared_name, P2P_FILE_SIZE_KB - first_part_size_kb))
+                (file_shared_name, KB, P2P_FILE_SPLIT_SIZE_KB))
 
         # Calculate the SHA1 (160 bits -> 40 characters when
         # hexencoded) of the generated file.

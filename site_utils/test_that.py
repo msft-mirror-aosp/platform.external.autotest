@@ -174,10 +174,11 @@ def _parse_arguments_internal(argv):
     parser.add_argument('--ssh_private_key', action='store',
                         default=test_runner_utils.TEST_KEY_PATH,
                         help='Path to the private ssh key.')
-    parser.add_argument('--companion_hosts',
-                        action='store',
-                        default=None,
-                        help='Companion duts for the test.')
+    parser.add_argument(
+            '--companion_hosts',
+            action='store',
+            default=None,
+            help='Companion duts for the test, quoted space seperated strings')
     parser.add_argument('--dut_servers',
                         action='store',
                         default=None,

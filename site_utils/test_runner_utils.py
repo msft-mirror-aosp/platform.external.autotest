@@ -267,7 +267,8 @@ def run_job(job,
             autoserv_verbose=False,
             companion_hosts=None,
             dut_servers=None,
-            is_cft=False):
+            is_cft=False,
+            ch_info=None):
     """
     Shell out to autoserv to run an individual test job.
 
@@ -291,6 +292,7 @@ def run_job(job,
     @param autoserv_verbose: If true, pass the --verbose flag to autoserv.
     @param companion_hosts: Companion hosts for the test.
     @param dut_servers: DUT servers for the test.
+    @param ch_info: hostinfo for companion hosts.
 
     @returns: a tuple, return code of the job and absolute path of directory
               where results were stored.
@@ -308,6 +310,12 @@ def run_job(job,
                            {constants.JOB_EXPERIMENTAL_KEY: job.keyvals[
                                    constants.JOB_EXPERIMENTAL_KEY]})
         _write_host_info(results_directory, _HOST_INFO_SUBDIR, host, info)
+
+        if ch_info:
+            for chost in companion_hosts.split(" "):
+                _write_host_info(results_directory, _HOST_INFO_SUBDIR, chost,
+                                 ch_info[chost], False)
+
         extra_args = [temp_file.name]
         if args:
             extra_args.extend(['--args', args])
@@ -548,6 +556,21 @@ def perform_local_run(autotest_path,
     else:
         host_labels = host_labels.split(" ")
     info = host_info.HostInfo(host_labels, host_attributes)
+
+    # If using test_that, there needs to a hostinfo file (even if blank)
+    # for each host (including companions).
+    # TODO: Determine if we want to auto-detect labels, and/or expose
+    # CLI options for them (which might be required in CFT)
+    ch_info = {}
+    if companion_hosts:
+        for chost in companion_hosts.split(" "):
+            chost_labels = []
+            if not ignore_deps:
+                logging.info('Auto-detecting labels for %s', chost)
+                # Auto-detected labels may duplicate explicitly set ones.
+                chost_labels += list(set(_auto_detect_labels(chost)))
+            ch_info[chost] = host_info.HostInfo(chost_labels, {})
+
     job_queue = []
     test_num = 0
 
@@ -584,12 +607,22 @@ def perform_local_run(autotest_path,
         # could also math.log10... but for a single conversion, not worth.
         job_id_digits = len(str(job.id))
         logging.debug('Running job %s of test %s', job.id, (job.name))
-
-        code, abs_dir = run_job(job, remote, info, autotest_path,
-                                results_directory, fast_mode, job_id_digits,
-                                ssh_verbosity, ssh_options, args, pretend,
-                                autoserv_verbose, companion_hosts, dut_servers,
-                                is_cft)
+        code, abs_dir = run_job(job=job,
+                                host=remote,
+                                info=info,
+                                autotest_path=autotest_path,
+                                results_directory=results_directory,
+                                fast_mode=fast_mode,
+                                id_digits=job_id_digits,
+                                ssh_verbosity=ssh_verbosity,
+                                ssh_options=ssh_options,
+                                args=args,
+                                pretend=pretend,
+                                autoserv_verbose=autoserv_verbose,
+                                companion_hosts=companion_hosts,
+                                dut_servers=dut_servers,
+                                is_cft=is_cft,
+                                ch_info=ch_info)
         codes.append(code)
         logging.debug("Code: %s, Results in %s", code, abs_dir)
 
@@ -852,7 +885,11 @@ def perform_run_from_autotest_root(autotest_path,
     return final_result
 
 
-def _write_host_info(results_dir, host_info_subdir, hostname, info):
+def _write_host_info(results_dir,
+                     host_info_subdir,
+                     hostname,
+                     info,
+                     new_dir=True):
     """ Write HostInfo to a FileStore to be used by autoserv.
 
     @param results_dir: Path to the results directory.
@@ -861,7 +898,8 @@ def _write_host_info(results_dir, host_info_subdir, hostname, info):
     @param info: hosts.HostInfo to write.
     """
     d = os.path.join(results_dir, host_info_subdir)
-    os.makedirs(d)
+    if new_dir:
+        os.makedirs(d)
     store = file_store.FileStore(os.path.join(d, '%s.store' % hostname))
     store.commit(info)
 

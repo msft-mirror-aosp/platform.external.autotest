@@ -255,12 +255,23 @@ class TestRunnerUnittests(unittest.TestCase):
                                             ignore_deps=False,
                                             minus=[])
 
-        run_job_mock.assert_called_with(
-                TypeMatcher(test_runner_utils.SimpleJob), self.remote,
-                TypeMatcher(host_info.HostInfo), self.autotest_path,
-                self.results_dir, self.fast_mode,
-                self.id_digits, self.ssh_verbosity, self.ssh_options,
-                TypeMatcher(str), False, False, None, None, False)
+        run_job_mock.assert_called_with(job=TypeMatcher(
+                test_runner_utils.SimpleJob),
+                                        host=self.remote,
+                                        info=TypeMatcher(host_info.HostInfo),
+                                        autotest_path=self.autotest_path,
+                                        results_directory=self.results_dir,
+                                        fast_mode=self.fast_mode,
+                                        id_digits=self.id_digits,
+                                        ssh_verbosity=self.ssh_verbosity,
+                                        ssh_options=self.ssh_options,
+                                        args=TypeMatcher(str),
+                                        pretend=False,
+                                        autoserv_verbose=False,
+                                        companion_hosts=None,
+                                        dut_servers=None,
+                                        is_cft=False,
+                                        ch_info={})
 
     def test_perform_local_run_missing_deps(self):
         """Test a local run with missing dependencies. No tests should run."""
@@ -343,15 +354,24 @@ class TestRunnerUnittests(unittest.TestCase):
         calls = []
         for name in self.suite_control_files[1:]:
             calls.append(
-                    call(
-                            JobMatcher(test_runner_utils.SimpleJob,
-                                       name=name), self.remote,
-                            hostinfoMatcher(labels=test_labels,
-                                            attributes=test_attributes),
-                            self.autotest_path, self.results_dir,
-                            self.fast_mode, self.id_digits,
-                            self.ssh_verbosity, self.ssh_options,
-                            TypeMatcher(str), False, False, None, None, True))
+                    call(job=JobMatcher(test_runner_utils.SimpleJob,
+                                        name=name),
+                         host=self.remote,
+                         info=hostinfoMatcher(labels=test_labels,
+                                              attributes=test_attributes),
+                         autotest_path=self.autotest_path,
+                         results_directory=self.results_dir,
+                         fast_mode=self.fast_mode,
+                         id_digits=self.id_digits,
+                         ssh_verbosity=self.ssh_verbosity,
+                         ssh_options=self.ssh_options,
+                         args=TypeMatcher(str),
+                         pretend=False,
+                         autoserv_verbose=False,
+                         companion_hosts=None,
+                         dut_servers=None,
+                         is_cft=True,
+                         ch_info={}))
 
         run_job_mock.assert_has_calls(calls, any_order=True)
         assert run_job_mock.call_count == len(calls)

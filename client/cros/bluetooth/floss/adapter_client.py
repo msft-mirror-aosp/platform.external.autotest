@@ -470,8 +470,11 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         @param name: Name of the observer.
         @param observer: Observer that implements all callback classes.
         """
-        self.callbacks.add_observer(name, observer)
-        self.connection_callbacks.add_observer(name, observer)
+        if isinstance(observer, BluetoothCallbacks):
+            self.callbacks.add_observer(name, observer)
+
+        if isinstance(observer, BluetoothConnectionCallbacks):
+            self.connection_callbacks.add_observer(name, observer)
 
     def unregister_callback_observer(self, name, observer):
         """Remove an observer for all callbacks.
@@ -479,8 +482,11 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         @param name: Name of the observer.
         @param observer: Observer that implements all callback classes.
         """
-        self.callbacks.remove_observer(name, observer)
-        self.connection_callbacks.remove_observer(name, observer)
+        if isinstance(observer, BluetoothCallbacks):
+            self.callbacks.remove_observer(name, observer)
+
+        if isinstance(observer, BluetoothConnectionCallbacks):
+            self.connection_callbacks.remove_observer(name, observer)
 
     @glib_call('')
     def get_address(self):

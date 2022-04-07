@@ -11,7 +11,7 @@ from __future__ import print_function
 import base64
 import binascii
 import collections
-from datetime import datetime
+from datetime import datetime, timedelta
 import glob
 # AU tests use ToT client code, but ToT -3 client version.
 try:
@@ -4148,6 +4148,67 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     # How long we wait for the adapter to come up after we start it
     ADAPTER_DAEMON_TIMEOUT_SEC = 20
 
+    # Floss stops discovery after ~12s after starting. To improve discovery
+    # chances in tests, we need to keep restarting discovery. This timeout
+    # tracks how long an overall discovery session should be.
+    DISCOVERY_TIMEOUT_SEC = 60
+
+    class DiscoveryObserver(BluetoothCallbacks):
+        """ Discovery observer that restarts discovery until a timeout.
+
+        By default, the Floss stack stops discovery after ~12s. This can be an
+        insufficient amount of time to discover a device, especially classic
+        devices. To mimic Bluez, we have this observer restart discovery each
+        time it is stopped up until a given timeout.
+        """
+
+        def __init__(self, adapter_client, timeout_secs):
+            """Constructor.
+
+            @param adapter_client: Already initialized client instance.
+            @param timeout_secs: How long to continue refreshing discovery.
+            """
+            self.adapter_client = adapter_client
+            self.deadline = datetime.now() + timedelta(seconds=timeout_secs)
+            self.adapter_client.register_callback_observer(
+                    'DiscoveryObserver', self)
+            self.discovering = None
+
+        def __del__(self):
+            if self.adapter_client:
+                self.cleanup()
+
+        def cleanup(self):
+            """Clean up after this observer."""
+            self.adapter_client.unregister_callback_observer(
+                    'DiscoveryObserver', self)
+            self.adapter_client = None
+
+        def on_discovering_changed(self, discovering):
+            """Discovering has changed."""
+
+            logging.info('Discovering changed to %s', discovering)
+
+            prev = self.discovering
+            self.discovering = discovering
+
+            # No-op if this is the same notification sent multiple times
+            if prev == discovering:
+                pass
+            # If discovering ended, check if the observer has timed out yet. If
+            # not, re-start the discovery.
+            if not discovering and datetime.now() < self.deadline:
+                self.adapter_client.start_discovery(
+                        method_callback=self.start_discovery_rsp)
+
+        def start_discovery_rsp(self, err, result):
+            """Result to |adapter_client.start_discovery|."""
+            # Log any errors that may have occurred
+            if err:
+                logging.error('Error on start_discovery: %s', err)
+            elif result:
+                logging.error('Error on start_discovery: Status=%s', result)
+
     def __init__(self):
         # Init the BaseFacade first
         super(FlossFacadeLocal, self).__init__()
@@ -4173,6 +4234,10 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                                                  self.DEFAULT_ADAPTER)
 
         self.is_clean = False
+
+        # Discovery needs to last longer than the default 12s. Keep an observer
+        # that re-enables discovery up to some timeout.
+        self.discovery_observer = None
 
         # Cache some mock properties for testing. These may be properties that
         # are required in bluez but don't carry over well into Floss.
@@ -4305,12 +4370,21 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         if not self.adapter_client.has_proxy():
             return (False, 'Adapter not found')
 
+        if self.discovery_observer:
+            self.discovery_observer.cleanup()
+
+        self.discovery_observer = self.DiscoveryObserver(
+                self.adapter_client, self.DISCOVERY_TIMEOUT_SEC)
         return (self.adapter_client.start_discovery(), '')
 
     def stop_discovery(self):
         """Stop discovery of remote deviecs."""
         if not self.adapter_client.has_proxy():
             return (False, 'Adapter not found')
+
+        if self.discovery_observer:
+            self.discovery_observer.cleanup()
+            self.discovery_observer = None
 
         return (self.adapter_client.stop_discovery(), '')
 
@@ -4491,8 +4565,14 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
             def __del__(self):
                 """Destructor"""
+                if self.adapter_client:
+                    self.cleanup()
+
+            def cleanup(self):
+                """Clean up after this observer."""
                 self.adapter_client.unregister_callback_observer(
                         'PairingObserver', self)
+                self.adapter_client = None
 
             def on_bond_state_changed(self, status, device_address, state):
                 """Handle bond state change."""

@@ -494,6 +494,39 @@ class Cr50Test(FirmwareTest):
 
         self._retry_cr50_update(image_path, 3, True)
 
+    def _discharging_factory_mode_cleanup(self):
+        """Try to get the dut back into charging mode.
+
+        Shutdown the DUT, fake disconnect AC, and then turn on the DUT to
+        try to recover the EC.
+
+        When Cr50 enters factory mode on Wilco, the EC disables charging.
+        Try to run the sequence to get the Wilco EC out of the factory mode
+        state, so it reenables charging.
+        """
+        if self.faft_config.chrome_ec:
+            return
+        charge_state = self.host.get_power_supply_info()['Battery']['state']
+        logging.info('Charge state: %r', charge_state)
+        if 'Discharging' not in charge_state:
+            logging.info('Charge state is ok')
+            return
+
+        if not self.servo.is_servo_v4_type_c():
+            raise error.TestError(
+                    'Cannot recover charging without Type C servo')
+        # Disconnect the charger and reset the dut to recover charging.
+        logging.info('Recovering charging')
+        self.faft_client.system.run_shell_command('poweroff')
+        time.sleep(self.cr50.SHORT_WAIT)
+        self.servo.set_nocheck('servo_v4_uart_cmd', 'fakedisconnect 100 20000')
+        time.sleep(self.cr50.SHORT_WAIT)
+        self._try_to_bring_dut_up()
+        charge_state = self.host.get_power_supply_info()['Battery']['state']
+        logging.info('Charge state: %r', charge_state)
+        if 'Discharging' in charge_state:
+            logging.warning('DUT still discharging')
+
     def _cleanup_required(self, state_mismatch, image_type):
         """Return True if the update can fix something in the mismatched state.
 
@@ -639,12 +672,16 @@ class Cr50Test(FirmwareTest):
 
             self._try_to_bring_dut_up()
             self._restore_cr50_state()
+
+            # Make sure the sarien EC isn't stuck in factory mode.
+            self._discharging_factory_mode_cleanup()
         finally:
             super(Cr50Test, self).cleanup()
 
         # Check the logs captured during firmware_test cleanup for cr50 errors.
         self._get_cr50_stats_from_uart_capture()
         self.servo.allow_ccd_watchdog_for_test()
+
 
     def _get_cr50_stats_from_uart_capture(self):
         """Check cr50 uart output for errors.

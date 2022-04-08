@@ -177,6 +177,8 @@ class HostapConfig(object):
     }
     # end 11ax caps
 
+    CHANNEL_WIDTH_22 = object()
+
     HT_CHANNEL_WIDTH_20 = object()
     HT_CHANNEL_WIDTH_40_PLUS = object()
     HT_CHANNEL_WIDTH_40_MINUS = object()
@@ -240,6 +242,10 @@ class HostapConfig(object):
 
     DRIVER_NAME = 'nl80211'
 
+    FREQ_BAND_2_4G = object()
+    FREQ_BAND_5G = object()
+    FREQ_BAND_MAP = {FREQ_BAND_2_4G: list(range(1, 15)),
+                     FREQ_BAND_5G: list(range(32, 165))}
 
     @staticmethod
     def get_channel_for_frequency(frequency):
@@ -401,6 +407,8 @@ class HostapConfig(object):
             return self.vht_channel_width
         if ht_channel_width:
             return ht_channel_width
+        if self._mode == self.MODE_11G:
+            return self.CHANNEL_WIDTH_22
         return None
 
     @property
@@ -606,6 +614,13 @@ class HostapConfig(object):
            specified.
         """
         return self._supported_rates
+
+    @property
+    def freq_band(self):
+        """@Get the right frequency band from the channel"""
+        if self.channel in self.FREQ_BAND_MAP[self.FREQ_BAND_2_4G]:
+            return self.FREQ_BAND_2_4G
+        return self.FREQ_BAND_5G
 
     def __init__(self, mode=MODE_11B, channel=None, frequency=None,
                  n_capabilities=None, hide_ssid=None, beacon_interval=None,

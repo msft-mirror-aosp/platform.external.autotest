@@ -4,11 +4,16 @@
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import \
+     BluetoothAdapterAudioTests
 from autotest_lib.server.cros.network import hostap_config
 from autotest_lib.server.cros.network import perf_test_manager as perf_manager
+
 """
 This file defines the expected throughput values that should be used with the network_WiFi_Perf.*
 tests.
+For the network_WiFi_BluetoothStreamPerf.* tests, the expected throughput drop levels are defined
+
 
 The expected throughput values depend on the following parameters:
 1- The test type:
@@ -228,3 +233,435 @@ def get_board_max_expectation(test_type, board_name):
     if not board_maximums:
         return None
     return board_maximums.get(test_type)
+
+
+# Constants defining expected throughput drop in percents
+NO_EXPECTED_THROUGHPUT_DROP = 0
+SCARCELY_EXPECTED_THROUGHPUT_DROP = 5
+LIGHT_EXPECTED_THROUGHPUT_DROP = 25
+MODERATE_EXPECTED_THROUGHPUT_DROP = 50
+SIGNIFICANT_EXPECTED_THROUGHPUT_DROP = 75
+HEAVY_EXPECTED_THROUGHPUT_DROP = 90
+TOTAL_EXPECTED_THROUGHPUT_DROP = 99
+
+
+# The tuples defined below (should not exceed, must not exceed) are selected
+# based on the statistics from multiple execeutions wifi bt coex tests on
+# different boards using OTA setup. The numbers were chosen with rather high
+# tolerance.
+expected_wifibt_coex_throughput_drop = {
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL: {
+                hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11G: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11N_PURE: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (LIGHT_EXPECTED_THROUGHPUT_DROP, MODERATE_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (MODERATE_EXPECTED_THROUGHPUT_DROP, SIGNIFICANT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (LIGHT_EXPECTED_THROUGHPUT_DROP, MODERATE_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        },
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+                hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11G: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11N_PURE: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (LIGHT_EXPECTED_THROUGHPUT_DROP, MODERATE_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (MODERATE_EXPECTED_THROUGHPUT_DROP, SIGNIFICANT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (LIGHT_EXPECTED_THROUGHPUT_DROP, MODERATE_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        },
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+                hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11G: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11N_PURE: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (MODERATE_EXPECTED_THROUGHPUT_DROP, SIGNIFICANT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        },
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL: {
+                hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11G: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11N_PURE: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (LIGHT_EXPECTED_THROUGHPUT_DROP, MODERATE_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, MODERATE_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (MODERATE_EXPECTED_THROUGHPUT_DROP, SIGNIFICANT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, MODERATE_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        },
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+                hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11G: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11N_PURE: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (MODERATE_EXPECTED_THROUGHPUT_DROP, SIGNIFICANT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (MODERATE_EXPECTED_THROUGHPUT_DROP, SIGNIFICANT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        },
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+                hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11G: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                },
+                hostap_config.HostapConfig.MODE_11N_PURE: {
+                        hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (HEAVY_EXPECTED_THROUGHPUT_DROP, TOTAL_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (SCARCELY_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (LIGHT_EXPECTED_THROUGHPUT_DROP, MODERATE_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        },
+                        hostap_config.HostapConfig.FREQ_BAND_5G: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                },
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS: {
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP),
+                                        BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN:
+                                                (NO_EXPECTED_THROUGHPUT_DROP, LIGHT_EXPECTED_THROUGHPUT_DROP)
+                                }
+                        }
+                }
+        }
+}
+
+def get_expected_wifibt_coex_throughput_drop(test_type, ap_config, bt_tag):
+    """returns the expected throughput drop for WiFI BT coex tests.
+
+    @param test_type: the PerfTestTypes test type.
+
+    @param ap_config: the AP configuration
+
+    @param bt_tag: string for BT operation
+
+    @return a tuple of two integers (should, must) of the expected throughput drop percentage
+
+    """
+    mode = ap_config.mode
+    channel_width = ap_config.channel_width
+    freq_band = ap_config.freq_band
+    if test_type in expected_wifibt_coex_throughput_drop:
+        if mode in expected_wifibt_coex_throughput_drop[test_type]:
+            if freq_band in expected_wifibt_coex_throughput_drop[test_type][mode]:
+                if channel_width in expected_wifibt_coex_throughput_drop[test_type][mode][freq_band]:
+                    if bt_tag in expected_wifibt_coex_throughput_drop[test_type][mode][freq_band][channel_width]:
+                        return expected_wifibt_coex_throughput_drop[test_type][mode][freq_band][channel_width][bt_tag]
+
+    ret_mode = hostap_config.HostapConfig.VHT_NAMES[channel_width]
+
+    if ret_mode is None:
+        ret_mode = hostap_config.HostapConfig.HT_NAMES[channel_width]
+    raise error.TestFail(
+            'Failed to find the expected throughput drop from the key values, test type = %s, freq band = %s, mode = %s, channel width = %s'
+            % (test_type, freq_band, mode, ret_mode))

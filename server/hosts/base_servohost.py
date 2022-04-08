@@ -695,7 +695,11 @@ class BaseServoHost(ssh_host.SSHHost):
                     ' seconds for it to become ready', diff)
             time.sleep(diff)
 
-    def is_up(self, timeout=60, connect_timeout=None, base_cmd="true"):
+    def is_up(self,
+              timeout=60,
+              connect_timeout=None,
+              base_cmd="true",
+              with_servod=True):
         """
         Check if the remote host is up by ssh-ing and running a base command.
 
@@ -707,14 +711,20 @@ class BaseServoHost(ssh_host.SSHHost):
         """
         if self.is_containerized_servod():
             client = docker_utils.get_docker_client(timeout=timeout)
-            try:
-                (exit_code,
-                 output) = client.containers.get(self.hostname).exec_run("ps")
+            # Look up the container list with hostname and with/without servod process by label.
+            containers = client.containers.list(
+                    filters={
+                            'name': self.hostname,
+                            'label': ["WITH_SERVOD=%s" % str(with_servod)]
+                    })
+            if not containers:
+                return False
+            elif with_servod:
+                # For container with servod process, check if servod process started.
+                (exit_code, output) = containers[0].exec_run("ps")
                 logging.info("Is Up output %s", output)
                 if b"servod" not in output:
                     return False
-            except docker.errors.NotFound:
-                return False
             return True
         else:
             return super(BaseServoHost, self).is_up(timeout, connect_timeout,

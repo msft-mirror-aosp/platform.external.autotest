@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 import os
-
+import logging
 try:
     import docker
 except ImportError:

@@ -762,15 +762,15 @@ class ServoHost(base_servohost.BaseServoHost):
                      self.servod_container_name)
         client = docker_utils.get_docker_client()
         logging.debug("Docker deamon ping %s", client.ping())
+        labels = {'WITH_SERVOD': str(with_servod)}
         try:
-            if self.is_up():
+            if self.is_up(with_servod=with_servod):
                 logging.warning("Container already exists - not starting")
                 return
+            logging.info(
+                    'Servod container either does not exist or is not running.'
+            )
             self.stop_containerized_servod()
-        except docker.errors.NotFound:
-            logging.info("Servod container %s not found",
-                         self.servod_container_name)
-            pass
         except docker.errors.APIError:
             # Container exists but is not running
             logging.info("Cleanup of non functional container.")
@@ -822,6 +822,7 @@ class ServoHost(base_servohost.BaseServoHost):
                     image,
                     remove=False,
                     privileged=True,
+                    labels=labels,
                     name=self.servod_container_name,
                     hostname=self.servod_container_name,
                     network=container_network,

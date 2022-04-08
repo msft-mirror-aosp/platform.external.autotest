@@ -67,22 +67,22 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
             try:
                 ip_context.bring_interface_up(
                         self.context.router.host,
-                        self.DEFAULT_ROUTER_LAN_IFACE_NAME)
+                        self._router_lan_iface_name)
                 ip_context.bring_interface_up(
                         self.context.pcap_host.host,
-                        self.DEFAULT_PCAP_LAN_IFACE_NAME)
+                        self._pcap_lan_iface_name)
                 ip_context.assign_ip_addr_to_iface(
                         self.context.router.host,
-                        self.DEFAULT_ROUTER_LAN_IP_ADDRESS,
-                        self.DEFAULT_ROUTER_LAN_IFACE_NAME)
+                        self._router_lan_ip_addr,
+                        self._router_lan_iface_name)
                 ip_context.assign_ip_addr_to_iface(
                         self.context.pcap_host.host,
-                        self.DEFAULT_PCAP_LAN_IP_ADDRESS,
-                        self.DEFAULT_PCAP_LAN_IFACE_NAME)
+                        self._pcap_lan_ip_addr,
+                        self._pcap_lan_iface_name)
                 ping_config = ping_runner.PingConfig(
-                        self.DEFAULT_PCAP_LAN_IP_ADDRESS,
+                        self._pcap_lan_ip_addr,
                         count=5,
-                        source_iface=self.DEFAULT_ROUTER_LAN_IFACE_NAME,
+                        source_iface=self._router_lan_iface_name,
                         ignore_result=True)
                 ping_result = self.context.router.ping(ping_config)
                 if ping_result.received == 0:

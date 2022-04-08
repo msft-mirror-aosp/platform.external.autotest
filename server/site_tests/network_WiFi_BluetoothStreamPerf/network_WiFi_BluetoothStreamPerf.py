@@ -7,21 +7,19 @@ import threading
 import time
 
 from autotest_lib.client.common_lib.cros.network import ping_runner
-from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
-from autotest_lib.server.cros.network import netperf_runner
-from autotest_lib.server.cros.network import netperf_session
-from autotest_lib.server.cros.network import wifi_cell_test_base
+from autotest_lib.server.cros.network import perf_test_manager as perf_manager
+from autotest_lib.server.cros.network import wifi_cell_perf_test_base
 
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
-        BluetoothAdapterAudioTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import \
+     BluetoothAdapterAudioTests
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 
 
-class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
-                                       BluetoothAdapterQuickTests,
-                                       BluetoothAdapterAudioTests):
+class network_WiFi_BluetoothStreamPerf(
+        wifi_cell_perf_test_base.WiFiCellPerfTestBase,
+        BluetoothAdapterQuickTests, BluetoothAdapterAudioTests):
     """Test maximal achievable bandwidth on several channels per band.
 
     Conducts a performance test for a set of specified router configurations
@@ -34,17 +32,14 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
 
     version = 1
 
-    NETPERF_CONFIGS = [
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_STREAM),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_TCP_MAERTS),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_STREAM),
-            netperf_runner.NetperfConfig(
-                       netperf_runner.NetperfConfig.TEST_TYPE_UDP_MAERTS),
+    PERF_TEST_TYPES = [
+            perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX,
+            perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX,
+            perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL,
+            perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX,
+            perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX,
+            perf_manager.PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL,
     ]
-
 
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hook into super class to take control files parameters.
@@ -53,14 +48,17 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
         @param additional_params list of HostapConfig objects.
 
         """
-        self._ap_configs = additional_params
+        super(network_WiFi_BluetoothStreamPerf, self).parse_additional_arguments(
+                commandline_args)
 
+        self._ap_configs, self._use_iperf = additional_params
 
-    def test_one(self, session, config, ap_config_tag, bt_tag):
+    def test_one(self, manager, session, config, ap_config_tag, bt_tag):
         """Run one iteration of wifi testing.
 
-        @param session NetperfSession session
-        @param config NetperfConfig config
+        @param manager: a PerfTestManager instance
+        @param session NetperfSession or IperfSession session
+        @param config NetperfConfig or IperfConfig config
         @param ap_config_tag string for AP configuration
         @param bt_tag string for BT operation
 
@@ -72,7 +70,7 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
                 source_iface=self.context.client.wifi_if)
 
         logging.info('testing config %s, ap_config %s, BT:%s',
-                     config.tag, ap_config_tag, bt_tag)
+                     config.test_type, ap_config_tag, bt_tag)
         test_str = '_'.join([ap_config_tag, bt_tag])
         time.sleep(1)
 
@@ -81,19 +79,22 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
         signal_description = '_'.join(['signal', test_str])
         self.write_perf_keyval({signal_description: signal_level})
 
-        # Run netperf and log the results.
+        # Run perf tool and log the results.
         results = session.run(config)
         if not results:
             logging.error('Failed to take measurement for %s',
-                          config.tag)
+                          config.test_type)
             return
         values = [result.throughput for result in results]
-        self.output_perf_value(config.tag + '_' + bt_tag, values, units='Mbps',
+        self.output_perf_value(config.test_type + '_' + bt_tag,
+                               values,
+                               units='Mbps',
                                higher_is_better=True,
                                graph=ap_config_tag)
-        result = netperf_runner.NetperfResult.from_samples(results)
-        self.write_perf_keyval(result.get_keyval(
-            prefix='_'.join([config.tag, test_str])))
+        result = manager.get_result(results)
+        self.write_perf_keyval(
+                result.get_keyval(
+                        prefix='_'.join([config.test_type, test_str])))
 
         # Log the drop in throughput compared with the 'BT_disconnected'
         # baseline.  Only positive values are valid.  Report the drop as a
@@ -103,12 +104,13 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
         elif self.base_through > 0:
             drop = int( (self.base_through - result.throughput) * 100 /
                         self.base_through)
-            self.output_perf_value(config.tag + '_' + bt_tag + '_drop',
-                                   drop, units='percent_drop',
+            self.output_perf_value(config.test_type + '_' + bt_tag + '_drop',
+                                   drop,
+                                   units='percent_drop',
                                    higher_is_better=False,
                                    graph=ap_config_tag + '_drop')
-            self.write_perf_keyval({'_'.join([config.tag, test_str, 'drop']):
-                                   drop})
+            self.write_perf_keyval(
+                    {'_'.join([config.test_type, test_str, 'drop']): drop})
             logging.info('logging drop value as %d%%', drop)
 
         # Test latency with ping.
@@ -133,46 +135,45 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
     def coex_test(self):
         """Test body."""
         start_time = time.time()
-
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.initialize_bluetooth_audio(device, A2DP)
         self.pair_audio_device(device)
 
         for ap_config in self._ap_configs:
             # Set up the router and associate the client with it.
-            self.context.configure(ap_config)
-            assoc_params = xmlrpc_datatypes.AssociationParameters(
-                    ssid=self.context.router.get_ssid(),
-                    security_config=ap_config.security_config)
-            self.context.assert_connect_wifi(assoc_params)
-            session = netperf_session.NetperfSession(self.context.client,
-                                                     self.context.router)
-            session.MEASUREMENT_MAX_SAMPLES = 6.
+            self.configure_and_connect_to_ap(ap_config)
 
+            manager = perf_manager.PerfTestManager(self._use_iperf)
 
-            # Warmup the wifi path and measure signal.
-            session.warmup_stations()
             ap_config_tag = ap_config.perf_loggable_description
 
-            for config in self.NETPERF_CONFIGS:
+            for test_type in self.PERF_TEST_TYPES:
+                config = manager.get_config(test_type)
+
+                session = manager.get_session(test_type, self.context.client,
+                                              self.context.router)
+
+                session.MEASUREMENT_MAX_SAMPLES = 6.
+
                 self.base_through = 0
-                self.test_one(session, config, ap_config_tag, 'BT_disconnected')
+                self.test_one(manager, session, config, ap_config_tag,
+                              'BT_disconnected')
 
                 self.test_connection_by_device(device)
-                self.test_one(session, config, ap_config_tag,
+                self.test_one(manager, session, config, ap_config_tag,
                               'BT_connected_but_not_streaming')
 
                 # Start playing audio in background
                 audio_thread = threading.Thread(target=self.do_audio_test,
                                                 args=(device, ))
                 audio_thread.start()
-                self.test_one(session, config, ap_config_tag,
+                self.test_one(manager, session, config, ap_config_tag,
                               'BT_streaming_audiofile')
 
                 # Wait for audio thread to complete
                 audio_thread.join()
                 self.test_disconnection_by_adapter(device.address)
-                self.test_one(session, config, ap_config_tag,
+                self.test_one(manager, session, config, ap_config_tag,
                               'BT_disconnected_again')
 
             # Clean up router and client state for the next run.
@@ -193,9 +194,9 @@ class network_WiFi_BluetoothStreamPerf(wifi_cell_test_base.WiFiCellTestBase,
         """
         self.coex_test()
 
-    def run_once(self, host, test_name=None):
+    def run_once(self, host, test_name=None, args_dict=None):
         self.host = host
 
-        self.quick_test_init(host, use_btpeer=True)
+        self.quick_test_init(host, use_btpeer=True, args_dict=args_dict)
         self.coex_health_batch_run(test_name=test_name)
         self.quick_test_cleanup()

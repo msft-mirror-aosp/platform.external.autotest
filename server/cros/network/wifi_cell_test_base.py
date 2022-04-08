@@ -76,8 +76,8 @@ class WiFiCellTestBase(test.test):
         self._wifi_context.setup(pcap_as_router=pcap_as_router,
                                  include_rpi=include_rpi,
                                  rpi_role=rpi_role)
-        self._verify_additional_setup_requirements()
         self.parse_additional_arguments(cmdline_args, additional_params)
+        self._verify_additional_setup_requirements()
 
         msg = '======= WiFi autotest setup complete. Starting test... ======='
         self._wifi_context.client.shill_debug_log(msg)

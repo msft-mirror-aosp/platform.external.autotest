@@ -26,9 +26,10 @@ def run(machine):
     mode = hostap_config.HostapConfig.MODE_11A
     configs = [hostap_config.HostapConfig(channel=channel, mode=mode)
                for channel in (44,)]
+    use_iperf=True
     job.run_test('network_WiFi_BluetoothScanPerf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,
-                 additional_params=configs)
+                 additional_params=(configs, use_iperf))
 
 
 parallel_simple(run, machines)

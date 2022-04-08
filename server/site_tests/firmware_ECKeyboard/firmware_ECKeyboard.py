@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 from threading import Timer
 
 from autotest_lib.client.bin.input import linux_input
@@ -41,21 +42,34 @@ class firmware_ECKeyboard(FirmwareTest):
         self.faft_client.system.run_shell_command('start ui')
         super(firmware_ECKeyboard, self).cleanup()
 
+    def send_string(self, keys):
+        """Send a string over a servo"""
+        for key in keys:
+            self.servo.set_nocheck('arb_key_config', key)
+            self.servo.set_nocheck('arb_key', 'tab')
+
     def run_once(self):
         """Runs a single iteration of the test."""
         if not self.check_ec_capability(['keyboard']):
             raise error.TestNAError("Nothing needs to be tested on this device")
 
-        test_keys = ""
+        test_keys = []
         expected_keycodes = []
 
         for key in self.TEST_KEY_MAP:
-            test_keys = test_keys + key
+            test_keys.append(key)
             expected_keycodes.append(self.TEST_KEY_MAP[key])
 
         # Stop UI so that key presses don't go to Chrome.
         self.faft_client.system.run_shell_command('stop ui')
 
-        Timer(self.KEY_PRESS_DELAY, self.ec.send_key_string(test_keys)).start()
-        if (self.faft_client.system.check_keys(expected_keycodes) < 0):
+        if self.servo.has_control('init_usb_keyboard'):
+            logging.debug('Turning off HID keyboard emulator.')
+            self.servo.set_nocheck('init_usb_keyboard', 'off')
+
+        Timer(self.KEY_PRESS_DELAY, lambda: self.send_string(test_keys)).start(
+        )
+        keys_matched = self.faft_client.system.check_keys(expected_keycodes)
+        logging.debug("Matched %d keys", keys_matched)
+        if (keys_matched < 0):
             raise error.TestFail("Some test keys are not captured.")

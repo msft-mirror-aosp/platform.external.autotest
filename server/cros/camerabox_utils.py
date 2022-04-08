@@ -37,7 +37,7 @@ class ChartFixture:
 
         logging.info('Display scene file')
         self.display_pid = self.host.run_background(
-                'python2 {script} {scene} >{log} 2>&1'.format(
+                'python {script} {scene} >{log} 2>&1'.format(
                         script=self.DISPLAY_SCRIPT,
                         scene=scene_path,
                         log=self.OUTPUT_LOG))

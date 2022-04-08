@@ -11,7 +11,7 @@ TIME = "LONG"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING"
+DEPENDENCIES = "servo"
 
 DOC = """
 Stress test Servo changing PD role.

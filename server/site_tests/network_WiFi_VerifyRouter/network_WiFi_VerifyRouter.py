@@ -29,24 +29,6 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
     # another arbitrary threshold.
     ANTENNA_VARIANCE_THRESHOLD = 15
 
-    def parse_additional_arguments(self, commandline_args, additional_params):
-        """Hook into super class to take control files parameters.
-
-        @param commandline_args dict of parsed parameters from the autotest.
-        @param additional_params bool if the test should verify pcap_host
-                instead of router.
-
-        """
-        if additional_params:
-            self._verify_pcap = additional_params
-        else:
-            self._verify_pcap = False
-
-    def warmup(self, *args, **kwargs):
-        # This test requires pcap_as_router to be True.
-        kwargs['pcap_as_router'] = True
-        super(network_WiFi_VerifyRouter, self).warmup(*args, **kwargs)
-
     def _connect(self, wifi_params):
         assoc_result = xmlrpc_datatypes.deserialize(
                 self.context.client.shill.connect_wifi(wifi_params))
@@ -100,12 +82,6 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
 
         return None
 
-    @property
-    def target(self):
-        """Return the LinuxRouter object of the device to verify."""
-        if self._verify_pcap:
-            return self.context.pcap_host
-        return self.context.router
 
     def _antenna_test(self, bitmap, channel):
         """Test that we can connect on |channel|, with given antenna |bitmap|.
@@ -137,10 +113,9 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
         @param channel: int Wifi channel to conduct test on
 
         """
-
         # Antenna can only be configured when the wireless interface is down.
-        self.target.deconfig()
-        self.target.disable_antennas_except(bitmap)
+        self.context.router.deconfig()
+        self.context.router.disable_antennas_except(bitmap)
         # This seems to increase the probability that our association
         # attempts pass.  It is the very definition of a dark incantation.
         time.sleep(5)
@@ -148,11 +123,8 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
         # radios.
         n_mode = hostap_config.HostapConfig.MODE_11N_MIXED
         ap_config = hostap_config.HostapConfig(channel=channel, mode=n_mode)
-        self.context.configure(ap_config, configure_pcap=self._verify_pcap)
-        self.context.configure(
-                ap_config,
-                multi_interface=True,
-                configure_pcap=self._verify_pcap)
+        self.context.configure(ap_config)
+        self.context.configure(ap_config, multi_interface=True)
         failures = []
         # Verify connectivity to both APs. As the APs are spread
         # across radios, this exercises multiple radios.
@@ -162,7 +134,7 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
             logging.info('Connecting to AP with settings %s.',
                          context_message)
             client_conf = xmlrpc_datatypes.AssociationParameters(
-                    ssid=self.target.get_ssid(instance=instance))
+                    ssid=self.context.router.get_ssid(instance=instance))
             if self._connect(client_conf):
                 failure = self._check_signal_levels(instance, bitmap, channel)
                 if failure:
@@ -171,7 +143,7 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
                 failures.append('%s: Failed to connect.' % context_message)
             # Don't automatically reconnect to this AP.
             self.context.client.shill.disconnect(
-                    self.target.get_ssid(instance=instance))
+                    self.context.router.get_ssid(instance=instance))
         return failures
 
 
@@ -183,9 +155,8 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
         """
         self.context.router.deconfig()
         self.context.router.enable_all_antennas()
-        self.context.pcap_host.deconfig()
-        self.context.pcap_host.enable_all_antennas()
         super(network_WiFi_VerifyRouter, self).cleanup()
+
 
     def run_once(self):
         """Verify that all radios on this router are functional."""
@@ -199,7 +170,7 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
         # now.
         # TODO: communicate this back from the driver better, so we don't have
         # to build an exception list.
-        if self.target.board == "gale":
+        if self.context.router.board == "gale":
             bitmaps = (self.ANTENNAS_BOTH, self.ANTENNAS_1)
         else:
             bitmaps = (self.ANTENNAS_BOTH, self.ANTENNAS_1, self.ANTENNAS_2)

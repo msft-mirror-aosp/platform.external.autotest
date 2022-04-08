@@ -1,5 +1,3 @@
-ap_ro_info
-ap_ro_verstate
 bid
 -bitbang
 bpforce
@@ -9,7 +7,6 @@ ccd
 ccdstate
 chan
 dump_nvmem
-ec_comm
 ecrst
 (?P<guc>eraseflashinfo)?
 gettime

@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -15,8 +14,8 @@ construct URLs and instead add a suitable method to AfeUrls.
 """
 
 import logging
-from six.moves import urllib
-import six.moves.urllib.parse
+import urllib
+import urlparse
 import sys
 
 import common
@@ -35,7 +34,7 @@ class AfeUrls(object):
         @param root_url: AFE root URL.
 
         """
-        self._root_url_parts = six.moves.urllib.parse.urlsplit(root_url)
+        self._root_url_parts = urlparse.urlsplit(root_url)
 
     _DEFAULT_URL = 'http://%s/afe/'
 
@@ -72,8 +71,8 @@ class AfeUrls(object):
 
         """
         scheme, netloc, path, query, _fragment = self._root_url_parts
-        fragment = urllib.parse.urlencode(params)
-        return six.moves.urllib.parse.SplitResult(
+        fragment = urllib.urlencode(params)
+        return urlparse.SplitResult(
             scheme, netloc, path, query, fragment).geturl()
 
     @property

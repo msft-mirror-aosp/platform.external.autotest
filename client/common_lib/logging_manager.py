@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 """
 Autotest has some surprisingly complicated logging behaviour.
 
@@ -41,14 +40,7 @@ python logging in a very consistent way.
 """
 
 
-import fcntl
-import logging
-import os
-import signal
-import six
-import sys
-import time
-import warnings
+import fcntl, logging, os, signal, sys, time, warnings
 
 # primary public APIs
 
@@ -99,7 +91,7 @@ def do_not_report_as_logging_caller(func):
     """Decorator to annotate functions we will tell logging not to log."""
     # These are not the droids you are looking for.
     # You may go about your business.
-    _caller_code_to_skip_in_logging_stack.add(func.__code__)
+    _caller_code_to_skip_in_logging_stack.add(func.func_code)
     return func
 
 
@@ -136,11 +128,7 @@ if sys.version_info[:2] > (2, 7):
 
 # Monkey patch our way around logging's design...
 _original_logger__find_caller = logging.Logger.findCaller
-# Do not overwrite in Python 3 and on. It breaks the "<module>:<line num>|"
-# formatting in Python 3.
-if six.PY2:
-    logging.Logger.findCaller = _logging_manager_aware_logger__find_caller
-
+logging.Logger.findCaller = _logging_manager_aware_logger__find_caller
 
 
 class LoggingFile(object):

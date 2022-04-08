@@ -1,6 +1,7 @@
 """Unit tests for saft_flashrom_util.py."""
 
 import mock
+import StringIO
 import unittest
 
 from autotest_lib.client.common_lib import autotemp
@@ -25,11 +26,8 @@ class TestFlashromUtil(unittest.TestCase):
         """check_target should raise error.CmdError if flashrom is broken"""
 
         bad_flashrom = mock.Mock()
-        attrs = {
-                'communicate.return_value':
-                ('broken flashrom stdout', 'broken flashrom stderr')
-        }
-        bad_flashrom.configure_mock(**attrs)
+        bad_flashrom.stdout = StringIO.StringIO('broken flashrom stdout')
+        bad_flashrom.stderr = StringIO.StringIO('broken flashrom stderr')
         bad_flashrom.returncode = 1
 
         mock_subproc_popen.return_value = bad_flashrom
@@ -41,11 +39,8 @@ class TestFlashromUtil(unittest.TestCase):
         """check_target should return True if flashrom is working"""
 
         good_flashrom = mock.Mock()
-        attrs = {
-                'communicate.return_value':
-                ('working flashrom stdout', 'working flashrom stderr')
-        }
-        good_flashrom.configure_mock(**attrs)
+        good_flashrom.stdout = StringIO.StringIO('working flashrom stdout')
+        good_flashrom.stderr = StringIO.StringIO('working flashrom stderr')
         good_flashrom.returncode = 0
 
         mock_subproc_popen.return_value = good_flashrom

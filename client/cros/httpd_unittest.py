@@ -6,14 +6,9 @@
 
 """HTTPlistener unittest."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+import logging, os, sys, threading, urllib, unittest
 
-import logging, os, sys, threading, unittest
-from six.moves import urllib
-
-from autotest_lib.client.cros.httpd import HTTPListener, SecureHTTPListener
+from httpd import HTTPListener, SecureHTTPListener
 
 GET_TEST_PATH = '/get_test'
 
@@ -22,13 +17,13 @@ def run_get_test(test_server, url):
     get_done = test_server.add_wait_url(GET_TEST_PATH)
     get_resp = ''
     try:
-        get_resp = urllib.request.urlopen(url).read()
-    except IOError as e:
+        get_resp = urllib.urlopen(url).read()
+    except IOError, e:
         pass
     if not (get_done.is_set() and get_resp):
-        print('FAILED')
+        print 'FAILED'
     else:
-        print('PASSED')
+        print 'PASSED'
         err = 0
     return err
 
@@ -39,26 +34,26 @@ def test():
                                          matchParams={'test': 'passed'})
     def _Spam():
         while not post_done.is_set():
-            print('TEST: server running')
+            print 'TEST: server running'
             post_done.wait()
         return
     test_server.run()
     t = threading.Thread(target=_Spam).start()
-    params = urllib.parse.urlencode({'test': 'passed'})
+    params = urllib.urlencode({'test': 'passed'})
     err = 1
 
     # TODO(seano): This test doesn't seem to pass.
     post_resp = ''
     try:
-        post_resp = urllib.request.urlopen('http://localhost:8000/post_test',
+        post_resp = urllib.urlopen('http://localhost:8000/post_test',
                                    params).read()
-    except IOError as e:
+    except IOError, e:
         pass
     if not (post_done.is_set() and
             test_server.get_form_entries()['test'] != 'passed'):
-        print('FAILED')
+        print 'FAILED'
     else:
-        print('PASSED')
+        print 'PASSED'
         err = 0
 
 

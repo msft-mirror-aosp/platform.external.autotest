@@ -6,7 +6,8 @@
 
 
 import json
-from six.moves import urllib
+import urllib
+import urllib2
 
 
 DEFAULT_SCOPE = 'https://www.googleapis.com/auth/clouddevices'
@@ -21,7 +22,7 @@ def get_oauth2_auth_url(client_id, scope=DEFAULT_SCOPE):
                   scope=scope,
                   response_type='code',
                   redirect_uri=REDIRECT_URI)
-    return '%s?%s' % (auth_url, urllib.parse.urlencode(params))
+    return '%s?%s' % (auth_url, urllib.urlencode(params))
 
 
 def get_oauth2_user_token(client_id, client_secret, code):
@@ -34,10 +35,9 @@ def get_oauth2_user_token(client_id, client_secret, code):
                 redirect_uri=REDIRECT_URI,
                 grant_type='authorization_code')
 
-    request = urllib.request.Request(token_url,
-                                     data=urllib.parse.urlencode(data),
-                                     headers=headers)
-    url_h = urllib.request.urlopen(request)
+    request = urllib2.Request(token_url, data=urllib.urlencode(data),
+                              headers=headers)
+    url_h = urllib2.urlopen(request)
     auth_result = json.loads(url_h.read())
     return '%s %s' % (auth_result['token_type'],
                       auth_result['access_token'])
@@ -53,10 +53,9 @@ def get_oauth2_robot_token(client_id, client_secret, code):
                 redirect_uri='oob',
                 grant_type='authorization_code')
 
-    request = urllib.request.Request(token_url,
-                                     data=urllib.parse.urlencode(data),
-                                     headers=headers)
-    url_h = urllib.request.urlopen(request)
+    request = urllib2.Request(token_url, data=urllib.urlencode(data),
+                              headers=headers)
+    url_h = urllib2.urlopen(request)
     auth_result = json.loads(url_h.read())
     return '%s %s' % (auth_result['token_type'],
                       auth_result['access_token'])

@@ -1,13 +1,8 @@
-# Lint as: python2, python3
 # Copyright 2009 Google Inc. Released under the GPL v2
 
 """
 This file contains the implementation of a host object for the local machine.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import distutils.core
 import glob
 import os
@@ -18,7 +13,6 @@ import sys
 import common
 from autotest_lib.client.common_lib import hosts, error
 from autotest_lib.client.bin import utils
-import six
 
 
 class LocalHost(hosts.Host):
@@ -65,11 +59,12 @@ class LocalHost(hosts.Host):
             # CmdTimeoutError is a subclass of CmdError, so must be caught first
             new_error = error.AutotestHostRunTimeoutError(
                     e.command, e.result_obj, additional_text=e.additional_text)
-            six.reraise(error.AutotestHostRunTimeoutError, new_error, sys.exc_info()[2])
+            raise error.AutotestHostRunTimeoutError, new_error, \
+                    sys.exc_info()[2]
         except error.CmdError as e:
             new_error = error.AutotestHostRunCmdError(
                     e.command, e.result_obj, additional_text=e.additional_text)
-            six.reraise(error.AutotestHostRunCmdError, new_error, sys.exc_info()[2])
+            raise error.AutotestHostRunCmdError, new_error, sys.exc_info()[2]
 
 
     def list_files_glob(self, path_glob):
@@ -217,8 +212,7 @@ class LocalHost(hosts.Host):
 
         @param parent: The leading path to make the tmp dir.
         """
-        tmp_dir = self.run(
-            'mkdir -p "%s" && mktemp -d -p "%s"' % (parent, parent)
-        ).stdout.rstrip()
+        self.run('mkdir -p "%s"' % parent)
+        tmp_dir = self.run('mktemp -d -p "%s"' % parent).stdout.rstrip()
         self.tmp_dirs.append(tmp_dir)
         return tmp_dir

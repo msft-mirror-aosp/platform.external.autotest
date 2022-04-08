@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -21,19 +20,13 @@ Notes:
    expects to check for error code per API definition
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import datetime, logging
-from six.moves import range
 
 from autotest_lib.client.common_lib import smogcheck_ttci
 # Use explicit import to make code more readable
 from ctypes import c_uint, c_uint32, cdll, c_bool, Structure, POINTER, \
     c_ubyte, c_byte, byref, c_uint16, cast, create_string_buffer, c_uint64, \
     c_char_p, addressof, c_char, pointer
-
 
 # TPM flags
 # TODO(tgao): possible to import from trousers/src/include/tss/tss_defines.h?
@@ -177,7 +170,7 @@ class TpmController(object):
         logging.info('Attempt to load shared library %s', TSPI_C_LIB)
         try:
             self.tspi_lib = cdll.LoadLibrary(TSPI_C_LIB)
-        except OSError as e:
+        except OSError, e:
             raise SmogcheckError('Error loading C library %s: %r' %
                                  (TSPI_C_LIB, e))
         logging.info('Successfully loaded shared library %s', TSPI_C_LIB)

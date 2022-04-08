@@ -122,7 +122,6 @@ class TestAutotest(unittest.TestCase):
                                         delete_dest=True)
         self.god.stub_function(autotest.Autotest, "_send_shadow_config")
         autotest.Autotest._send_shadow_config.expect_call()
-        self.host.run.expect_call('autodir/bin/fs_sync.py', ignore_status=True)
 
         # run and check
         self.autotest.install_full_client()
@@ -144,8 +143,6 @@ class TestAutotest(unittest.TestCase):
                                                            'autodir')
         self.god.stub_function(autotest.Autotest, "_send_shadow_config")
         autotest.Autotest._send_shadow_config.expect_call()
-        self.host.run.expect_call('autodir/bin/fs_sync.py', ignore_status=True)
-
         # run and check
         self.autotest.install()
         self.god.check_playback()

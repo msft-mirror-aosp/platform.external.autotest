@@ -13,7 +13,6 @@ class firmware_TPMKernelVersion(FirmwareTest):
     Automate 1.2.4 Check Kernel version in TPM is not corrupted.
     """
     version = 1
-    NEEDS_SERVO_USB = True
 
     def initialize(self, host, cmdline_args):
         """Initialize the test"""
@@ -68,5 +67,5 @@ class firmware_TPMKernelVersion(FirmwareTest):
         out = self.dut_run_cmd('crossystem tpm_kernver tpm_fwver')
         (kernver, fwver) = out[0].split(' ')
         logging.info('tpm_kernver=%s tpm_fwver=%s', kernver, fwver)
-        assert kernver.lower() != '0xffffffff'
-        assert fwver.lower() != '0xffffffff'
+        assert kernver != '0xFFFFFFFF'
+        assert fwver != '0xFFFFFFFF'

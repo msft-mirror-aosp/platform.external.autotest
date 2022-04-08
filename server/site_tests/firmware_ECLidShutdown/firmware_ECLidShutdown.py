@@ -20,8 +20,7 @@ class firmware_ECLidShutdown(FirmwareTest):
     # Delay to allow for a power state change after closing or opening the lid.
     # This value is determined experimentally.
     LID_POWER_STATE_DELAY = 5
-    POWER_STATE_CHECK_TRIES = 3
-    POWER_STATE_CHECK_DELAY = 10
+    POWER_STATE_CHECK_TRIES = 1
     IGNORE_LID_IN_USERSPACE_CMD = 'echo 0 > /var/lib/power_manager/use_lid'
     CHECK_POWER_MANAGER_CFG_DEFAULT = '[ ! -f /var/lib/power_manager/use_lid ]'
 
@@ -36,11 +35,8 @@ class firmware_ECLidShutdown(FirmwareTest):
         try:
             self._reset_ec_regexp()
             logging.info('The screen should turn back on now, during cleanup.')
-            self.servo.set_nocheck('lid_open', 'yes')
+            self.servo.set('lid_open', 'yes')
             time.sleep(self.LID_POWER_STATE_DELAY)
-            if self.servo.get('lid_open') != 'yes':
-                raise error.TestFail('The device did not stay in a mechanical'
-                                     'on state after a lid open.')
             self.switcher.simple_reboot(sync_before_boot=False)
             self.switcher.wait_for_client()
             self.clear_set_gbb_flags(vboot.GBB_FLAG_DISABLE_LID_SHUTDOWN, 0)
@@ -77,27 +73,15 @@ class firmware_ECLidShutdown(FirmwareTest):
         self.switcher.simple_reboot(sync_before_boot=False)
         # Some boards may reset the lid_open state when AP reboot,
         # check b/137612865
-        time.sleep(self.faft_config.ec_boot_to_console)
         if self.servo.get('lid_open') != 'no':
             self.servo.set('lid_open', 'no')
             time.sleep(self.LID_POWER_STATE_DELAY)
         time.sleep(self.faft_config.firmware_screen)
-        if not self.wait_power_state('G3',
-                                     self.POWER_STATE_CHECK_TRIES,
-                                     self.POWER_STATE_CHECK_DELAY):
+        if not self.wait_power_state('G3', self.POWER_STATE_CHECK_TRIES):
             raise error.TestFail('The device did not stay in a mechanical off '
                                  'state after a lid close and a warm reboot.')
-        # kukui resets EC on opening the lid in some cases, so
-        # using servo.set('lid_open', 'yes') would verify the set result
-        # immediately by getting the control back, and this results a failure of
-        # console-no-response due to EC reset. We should use set_nocheck
-        # instead.
-        self.servo.set_nocheck('lid_open', 'yes')
+        self.servo.set('lid_open', 'yes')
         time.sleep(self.LID_POWER_STATE_DELAY)
-        if self.servo.get('lid_open') != 'yes':
-            raise error.TestFail('The device did not stay in a mechanical on '
-                                 'state after a lid open.')
-
         time.sleep(self.faft_config.firmware_screen)
         self.switcher.simple_reboot(sync_before_boot=False)
         self._reset_ec_regexp()
@@ -124,7 +108,6 @@ class firmware_ECLidShutdown(FirmwareTest):
                     'with powerd ignoring lid state.  Maybe userspace power '
                     'management behaviors have changed.')
         self.switcher.simple_reboot(sync_before_boot=False)
-        time.sleep(self.faft_config.ec_boot_to_console)
         if self.servo.get('lid_open') != 'no':
             self.servo.set('lid_open', 'no')
             time.sleep(self.LID_POWER_STATE_DELAY)

@@ -19,7 +19,6 @@ class firmware_UserRequestRecovery(FirmwareTest):
     disk and checks success of it.
     """
     version = 1
-    NEEDS_SERVO_USB = True
 
     def ensure_normal_boot(self):
         """Ensure normal mode boot this time.

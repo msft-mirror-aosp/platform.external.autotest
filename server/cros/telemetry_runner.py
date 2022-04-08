@@ -1,18 +1,13 @@
-# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import json
 import logging
 import numbers
 import os
 import tempfile
-import six
+import StringIO
 
 import numpy
 
@@ -36,9 +31,11 @@ WARNING_STATUS = 'WARNING'
 FAILED_STATUS = 'FAILED'
 
 # A list of telemetry tests that cannot run on dut.
-ON_DUT_BLOCKLIST = [
+ON_DUT_BLACKLIST = [
+        'cros_ui_smoothness',  # crbug/976839
         'loading.desktop',  # crbug/882299
         'rendering.desktop',  # crbug/882291
+        'system_health.memory_desktop',  # crbug/874386
 ]
 
 
@@ -217,18 +214,8 @@ class TelemetryRunner(object):
                     '--browser=cros-chrome',
                     '--output-format=%s' % output_format,
                     '--output-dir=%s' % output_dir,
-                    '--remote=%s' % self._host.hostname,
+                    '--remote=%s' % self._host.host_port,
             ])
-            if self._host.host_port != self._host.hostname:
-                # If the user specify a different port for the DUT, we should
-                # use different telemetry argument to set it up.
-                #
-                # e.g. When user is running experiments with ssh port
-                # forwarding, they specify remote as 127.0.0.1:2222. Now
-                # host_port is 127.0.0.1:2222 and hostname is 127.0.0.1
-                # port is 2222
-                telemetry_cmd.append('--remote-ssh-port=%s' % self._host.port)
-
         if not no_verbose:
             telemetry_cmd.append('--verbose')
         telemetry_cmd.extend(args)
@@ -299,8 +286,8 @@ class TelemetryRunner(object):
         """
         logging.debug('Running: %s', cmd)
 
-        output = six.StringIO()
-        error_output = six.StringIO()
+        output = StringIO.StringIO()
+        error_output = StringIO.StringIO()
         exit_code = 0
         try:
             result = utils.run(
@@ -427,7 +414,7 @@ class TelemetryRunner(object):
 
         self._perf_value_writer = perf_value_writer
 
-        if benchmark in ON_DUT_BLOCKLIST:
+        if benchmark in ON_DUT_BLACKLIST:
             self._telemetry_on_dut = False
 
         output_format = kwargs.get('ex_output_format', '')
@@ -577,14 +564,14 @@ class TelemetryRunner(object):
                 continue
             metric_name = obj['name']
             diagnostics = obj['diagnostics']
-            if 'stories' in diagnostics:
+            if diagnostics.has_key('stories'):
                 story_name = value_map[diagnostics['stories']][0]
             else:
                 story_name = 'default'
             local_benchmark_name = value_map[diagnostics['benchmarks']][0]
             if benchmark_name == '':
                 benchmark_name = local_benchmark_name
-                if 'benchmarkDescriptions' in diagnostics:
+                if diagnostics.has_key('benchmarkDescriptions'):
                     benchmark_desc = value_map[
                             diagnostics['benchmarkDescriptions']][0]
             if benchmark_name != local_benchmark_name:

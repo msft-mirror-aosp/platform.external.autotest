@@ -104,7 +104,7 @@ class _StubHost(object):
         self.status = status
         self.locked = locked
 
-    is_available = frontend.Host.is_available.__func__
+    is_available = frontend.Host.is_available.im_func
 
 
 if __name__ == '__main__':

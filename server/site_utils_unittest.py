@@ -1,11 +1,6 @@
-# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import mox
 import unittest
@@ -16,7 +11,6 @@ from autotest_lib.server import frontend
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.cros.dynamic_suite import suite_common
-import six
 
 
 class SiteUtilsUnittests(mox.MoxTestBase):
@@ -91,7 +85,7 @@ class SiteUtilsUnittests(mox.MoxTestBase):
                          (sorted(test_views.keys()),
                           sorted(expected_test_views.keys())))
 
-        for test_name, test_status_list in six.iteritems(test_views):
+        for test_name, test_status_list in test_views.iteritems():
             self.assertEqual(sorted(test_status_list),
                              sorted(expected_test_views[test_name]),
                              'For test %s the status list %s does not match '

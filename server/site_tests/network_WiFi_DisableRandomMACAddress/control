@@ -7,7 +7,7 @@ NAME = 'network_WiFi_DisableRandomMACAddress'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
-ATTRIBUTES = ''
+ATTRIBUTES = 'suite:wifi_matfunc'
 
 DOC = """
 This test verifies that MAC address randomization can be

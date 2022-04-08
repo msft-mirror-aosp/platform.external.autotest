@@ -2,12 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import absolute_import
-
 import logging
 import time
 
-import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
@@ -15,7 +12,7 @@ from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 DEVICE_ADDRESS = '01:02:03:04:05:06'
 ADDRESS_TYPE = 0
 
-class bluetooth_Health_DefaultStateTest(
+class bluetooth_Sanity_DefaultStateTest(
         bluetooth_adapter_tests.BluetoothAdapterTests):
     """
     This class implements the default state test
@@ -43,9 +40,9 @@ class bluetooth_Health_DefaultStateTest(
         self.test_reset_off_adapter()
 
         # Kernel default state depends on whether the kernel supports the
-        # BR/EDR Allowlist. When this is supported the 'connectable' setting
+        # BR/EDR Whitelist. When this is supported the 'connectable' setting
         # remains unset and instead page scan is managed by the kernel based
-        # on whether or not a BR/EDR device is in the allowlist.
+        # on whether or not a BR/EDR device is in the whitelist.
         ( commands, events ) = self.read_supported_commands()
         supports_add_device = bluetooth_socket.MGMT_OP_ADD_DEVICE in commands
 
@@ -97,14 +94,14 @@ class bluetooth_Health_DefaultStateTest(
         if not current_settings & bluetooth_socket.MGMT_SETTING_POWERED:
             raise error.TestFail('Bluetooth adapter is not powered')
 
-        # If the kernel does not supports the BR/EDR allowlist, the adapter
+        # If the kernel does not supports the BR/EDR whitelist, the adapter
         # should be generically connectable;
         # if it doesn't, then it depends on previous settings.
         if not supports_add_device:
             if not current_settings & bluetooth_socket.MGMT_SETTING_CONNECTABLE:
                 raise error.TestFail('Bluetooth adapter is not connectable '
                                      'though kernel does not support '
-                                     'BR/EDR allowlist')
+                                     'BR/EDR whitelist')
 
         # Verify that the Bluetooth Daemon sees the same state as the kernel
         # and that it's not discovering.
@@ -146,16 +143,16 @@ class bluetooth_Health_DefaultStateTest(
             raise error.TestFail('HCI INQUIRY flag does not match kernel while '
                                  'powered on')
 
-        # If the kernel does not supports the BR/EDR allowlist, the adapter
+        # If the kernel does not supports the BR/EDR whitelist, the adapter
         # should generically connectable, so should it should be in PSCAN
         # mode. This matches the management API "connectable" setting so far.
         if not supports_add_device:
             if not flags & bluetooth_socket.HCI_PSCAN:
                 raise error.TestFail('HCI PSCAN flag not set though kernel'
-                                     'does not supports BR/EDR allowlist')
+                                     'does not supports BR/EDR whitelist')
 
         # Now we can examine the differences. Try adding and removing a device
-        # from the kernel BR/EDR allowlist. The management API "connectable"
+        # from the kernel BR/EDR whitelist. The management API "connectable"
         # setting should remain off, but we should be able to see the PSCAN
         # flag come and go.
         if supports_add_device:

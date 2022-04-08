@@ -5,21 +5,7 @@ Simple crash handling application for autotest
 @copyright Red Hat Inc 2009
 @author Lucas Meneghel Rodrigues <lmr@redhat.com>
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import commands
-import glob
-import os
-import random
-import re
-import shutil
-import six
-import string
-import sys
-import syslog
-import time
+import sys, os, commands, glob, shutil, syslog, re, time, random, string
 
 
 def generate_random_string(length):
@@ -104,10 +90,10 @@ def get_results_dir_list(pid, core_dir_basename):
                 results_dir_list.append(pid_dir_dict[pid])
             pid = get_parent_pid(pid)
     else:
-        results_dir_list = list(pid_dir_dict.values())
+        results_dir_list = pid_dir_dict.values()
 
     return (results_dir_list or
-            list(pid_dir_dict.values()) or
+            pid_dir_dict.values() or
             [os.path.join("/tmp", core_dir_basename)])
 
 
@@ -158,7 +144,7 @@ def gdb_report(path):
                    (exe_path, path, gdb_command_path))
         backtrace = commands.getoutput(gdb_cmd)
         # Sanitize output before passing it to the report
-        backtrace = six.ensure_text(backtrace, 'utf-8', 'ignore')
+        backtrace = backtrace.decode('utf-8', 'ignore')
     else:
         exe_path = "Unknown"
         backtrace = ("Could not determine backtrace for core file %s" % path)
@@ -204,7 +190,7 @@ if __name__ == "__main__":
         try:
             crashed_pid, crash_time, uid, signal, hostname, exe = sys.argv[1:]
             full_functionality = True
-        except ValueError as e:
+        except ValueError, e:
             # Probably due a kernel bug, we can't exactly map the parameters
             # passed to this script. So we have to reduce the functionality
             # of the script (just write the core at a fixed place).
@@ -230,5 +216,5 @@ if __name__ == "__main__":
             syslog.syslog("Application %s, PID %s crashed" % (exe, crashed_pid))
         write_cores(core_file, results_dir_list)
 
-    except Exception as e:
+    except Exception, e:
         syslog.syslog("Crash handler had a problem: %s" % e)

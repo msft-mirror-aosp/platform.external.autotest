@@ -8,8 +8,7 @@ TIME = 'SHORT'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'enterprise'
 TEST_TYPE = 'server'
-# Disable until test can be fixed: http://b/160218741
-# ATTRIBUTES = "suite:wilco_bve"
+ATTRIBUTES = "suite:wilco_bve"
 
 DOC = """
 Sets up and runs the client test for the DeviceWilcoDtcAllowed

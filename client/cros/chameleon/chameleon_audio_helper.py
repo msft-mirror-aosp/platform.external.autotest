@@ -1,13 +1,8 @@
-# Lint as: python2, python3
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """This module provides the framework for audio tests using chameleon."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import logging
 from contextlib import contextmanager
@@ -17,8 +12,6 @@ from autotest_lib.client.cros.chameleon import audio_widget_arc
 from autotest_lib.client.cros.chameleon import audio_widget_link
 from autotest_lib.server.cros.bluetooth import bluetooth_device
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids as ids
-import six
-from six.moves import range
 
 class AudioPort(object):
     """
@@ -136,7 +129,7 @@ class AudioLinkFactory(object):
         @raises: AudioLinkFactoryError if there is no available
                  audio bus.
         """
-        for index, bus in six.iteritems(self._audio_bus_links):
+        for index, bus in self._audio_bus_links.iteritems():
             if not (bus and bus.occupied):
                 return index
 
@@ -385,7 +378,7 @@ class AudioWidgetFactory(object):
         if len(widgets) == 2:
             return self._create_widget_binder(widgets[0], widgets[1])
         binders = []
-        for index in range(len(widgets) - 1):
+        for index in xrange(len(widgets) - 1):
             binders.append(
                     self._create_widget_binder(
                             widgets[index],  widgets[index + 1]))

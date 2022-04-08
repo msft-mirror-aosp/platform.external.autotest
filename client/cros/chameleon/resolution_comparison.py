@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -6,7 +5,7 @@
 """Classes to do resolution comparison."""
 
 import logging
-import six.moves.xmlrpc_client
+import xmlrpclib
 
 
 class ExactMatchResolutionComparer(object):
@@ -39,7 +38,7 @@ class ExactMatchResolutionComparer(object):
         """
         try:
             chameleon_resolution = self._chameleon_port.get_resolution()
-        except six.moves.xmlrpc_client.Fault as e:
+        except xmlrpclib.Fault as e:
             logging.exception(e)
             return str(e)
         cros_resolution = self._display_facade.get_external_resolution()
@@ -96,7 +95,7 @@ class VgaResolutionComparer(object):
         """
         try:
             chameleon_resolution = self._chameleon_port.get_resolution()
-        except six.moves.xmlrpc_client.Fault as e:
+        except xmlrpclib.Fault as e:
             logging.exception(e)
             return str(e)
         cros_resolution = self._display_facade.get_external_resolution()

@@ -28,16 +28,12 @@ MODEM_STATE_CHECK_PERIOD_SECONDS=5
 # Number of seconds to sleep after a connect request in slow-connect mode.
 SLOW_CONNECT_WAIT_SECONDS=20
 
-# Number of seconds to sleep after a disable request in slow-disable mode.
-SLOW_DISABLE_WAIT_SECONDS=2
-
 
 class TechnologyCommands():
     """Control the modem mostly using shill Technology interfaces."""
-    def __init__(self, shill, command_delegate, slow_disable):
+    def __init__(self, shill, command_delegate):
         self.shill = shill
         self.command_delegate = command_delegate
-        self.slow_disable = slow_disable
 
     def Enable(self):
         self.shill.manager.EnableTechnology(
@@ -46,10 +42,6 @@ class TechnologyCommands():
     def Disable(self):
         self.shill.manager.DisableTechnology(
                 shill_proxy.ShillProxy.TECHNOLOGY_CELLULAR)
-        if self.slow_disable:
-            time.sleep(SLOW_DISABLE_WAIT_SECONDS)
-            #TODO(pholla): Make ModemManager return a response only after
-            #QC Modem is confirmed to be idle (b/160446543)
 
     def Connect(self, **kwargs):
         self.command_delegate.Connect(**kwargs)
@@ -63,20 +55,15 @@ class TechnologyCommands():
 
 class ModemCommands():
     """Control the modem using modem manager DBUS interfaces."""
-    def __init__(self, modem, slow_connect, slow_disable):
+    def __init__(self, modem, slow_connect):
         self.modem = modem
         self.slow_connect = slow_connect
-        self.slow_disable = slow_disable
 
     def Enable(self):
         self.modem.Enable(True)
 
     def Disable(self):
         self.modem.Enable(False)
-        if self.slow_disable:
-            time.sleep(SLOW_DISABLE_WAIT_SECONDS)
-            #TODO(pholla): Make ModemManager return a response only after
-            #QC Modem is confirmed to be idle (b/160446543)
 
     def Connect(self, simple_connect_props):
         logging.debug('Connecting with properties: %r' % simple_connect_props)
@@ -105,11 +92,10 @@ class ModemCommands():
 
 class DeviceCommands():
     """Control the modem using shill device interfaces."""
-    def __init__(self, shill, device, slow_connect, slow_disable):
+    def __init__(self, shill, device, slow_connect):
         self.shill = shill
         self.device = device
         self.slow_connect = slow_connect
-        self.slow_disable = slow_disable
         self.service = None
 
     def GetService(self):
@@ -125,10 +111,6 @@ class DeviceCommands():
     def Disable(self):
         self.service = None
         self.device.Disable(timeout=DEVICE_TIMEOUT)
-        if self.slow_disable:
-            time.sleep(SLOW_DISABLE_WAIT_SECONDS)
-            #TODO(pholla): Make ModemManager return a response only after
-            #QC Modem is confirmed to be idle (b/160446543)
 
     def Connect(self, **kwargs):
         self.GetService().Connect()
@@ -364,7 +346,7 @@ class cellular_ModemControl(test.test):
                 cellular_proxy.CellularProxy.APN_INFO_PROPERTY_APN, default)
 
     def run_once(self, test_env, autoconnect, mixed_iterations=2,
-                 slow_connect=False, slow_disable=False):
+                 slow_connect=False):
         self.test_env = test_env
         self.autoconnect = autoconnect
 
@@ -372,15 +354,12 @@ class cellular_ModemControl(test.test):
             self.device = self.test_env.shill.find_cellular_device_object()
 
             modem_commands = ModemCommands(self.test_env.modem,
-                                           slow_connect,
-                                           slow_disable)
+                                           slow_connect)
             technology_commands = TechnologyCommands(self.test_env.shill,
-                                                     modem_commands,
-                                                     slow_disable)
+                                                     modem_commands)
             device_commands = DeviceCommands(self.test_env.shill,
                                              self.device,
-                                             slow_connect,
-                                             slow_disable)
+                                             slow_connect)
 
             # shill disables autoconnect on any cellular service before a user
             # logs in (CL:851267). To test the autoconnect scenario, we need a

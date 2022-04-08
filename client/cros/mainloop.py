@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -6,7 +5,6 @@
 import gobject, logging, sys, traceback
 
 import common
-
 from autotest_lib.client.common_lib import error
 
 # TODO(rochberg): Take another shot at fixing glib to allow this
@@ -22,7 +20,7 @@ def ExceptionForward(func):
   def wrapper(self, *args, **kwargs):
     try:
       return func(self, *args, **kwargs)
-    except Exception as e:
+    except Exception, e:
       logging.warning('Saving exception: %s' % e)
       logging.warning(''.join(traceback.format_exception(*sys.exc_info())))
       self._forwarded_exception = e

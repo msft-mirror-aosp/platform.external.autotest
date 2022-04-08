@@ -1,19 +1,13 @@
-# Lint as: python2, python3
 # Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """An adapter to remotely access the display facade on DUT."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging
 import os
 import tempfile
-from six.moves import map
-import six.moves.xmlrpc_client
+import xmlrpclib
 
 from PIL import Image
 
@@ -195,7 +189,7 @@ class DisplayFacadeRemoteAdapter(object):
         """
         try:
             self._display_proxy.suspend_resume(suspend_time)
-        except six.moves.xmlrpc_client.Fault as e:
+        except xmlrpclib.Fault as e:
             # Log suspend/resume errors but continue the test.
             logging.error('suspend_resume error: %s', str(e))
 
@@ -330,7 +324,7 @@ class DisplayFacadeRemoteAdapter(object):
 
         @return: list of object DisplayInfo for display informtion
         """
-        return list(map(DisplayInfo, self._display_proxy.get_display_info()))
+        return map(DisplayInfo, self._display_proxy.get_display_info())
 
 
     def get_display_modes(self, display_id):

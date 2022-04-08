@@ -3,12 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import mox
-from six.moves import range
 import threading
 import time
 import unittest
@@ -38,10 +33,10 @@ class InContextTest(mox.MoxTestBase):
         # a method in_context N times rather than call a method in_context that
         # does something N times, because by doing the former, we acquire the
         # context N times (1 time for the latter).
-        thread_body = lambda f, n: [f() for i in range(n)]
+        thread_body = lambda f, n: [f() for i in xrange(n)]
         threads = [threading.Thread(target=thread_body,
                                     args=(self.inc_count, iters))
-                   for i in range(num_threads)]
+                   for i in xrange(num_threads)]
         for thread in threads:
             thread.start()
         for thread in threads:

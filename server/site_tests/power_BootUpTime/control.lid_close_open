@@ -12,7 +12,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "power"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:bootup_time"
-DEPENDENCIES = "servo_state:WORKING"
+DEPENDENCIES = "servo"
 JOB_RETRIES = 3
 
 DOC = """

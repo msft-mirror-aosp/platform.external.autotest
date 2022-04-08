@@ -5,12 +5,12 @@
 # found in the LICENSE file.
 
 import datetime
-import mock
-import mox
 import unittest
 
-import common
+import mock
+import mox
 
+import common
 from autotest_lib.server.cros.dynamic_suite import reporting_utils
 
 

@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 """
 APIs to write tests and control files that handle partition creation, deletion
 and formatting.
@@ -577,7 +576,7 @@ class partition(object):
             # We throw away the output here - we only need it on error, in
             # which case it's in the exception
             utils.system_output("yes | %s" % mkfs_cmd)
-        except error.CmdError as e:
+        except error.CmdError, e:
             logging.error(e.result_obj)
             if record:
                 self.job.record('FAIL', None, mkfs_cmd, error.format_error())
@@ -827,11 +826,11 @@ class virtual_partition:
         @param file_img: Path to the desired disk image file.
         @param file_size: Size of the desired image in Bytes.
         """
-        logging.debug('Quick check before attempting to create virtual '
+        logging.debug('Sanity check before attempting to create virtual '
                       'partition')
         try:
             os_dep.commands('dd', 'losetup', 'truncate')
-        except ValueError as e:
+        except ValueError, e:
             e_msg = 'Unable to create virtual partition: %s' % e
             raise error.AutotestError(e_msg)
 
@@ -869,7 +868,7 @@ class virtual_partition:
         try:
             cmd = 'truncate %s --size %dM' % (img_path, self.size)
             utils.run(cmd)
-        except error.CmdError as e:
+        except error.CmdError, e:
             e_msg = 'Error creating disk image %s: %s' % (img_path, e)
             raise error.AutotestError(e_msg)
         return img_path
@@ -886,7 +885,7 @@ class virtual_partition:
             loop_path = utils.system_output(cmd)
             cmd = 'losetup -f %s' % self.img
             utils.run(cmd)
-        except error.CmdError as e:
+        except error.CmdError, e:
             e_msg = ('Error attaching image %s to a loop device: %s' %
                      (self.img, e))
             raise error.AutotestError(e_msg)
@@ -902,7 +901,7 @@ class virtual_partition:
         try:
             cmd = 'losetup -d %s' % self.loop
             utils.run(cmd)
-        except error.CmdError as e:
+        except error.CmdError, e:
             e_msg = ('Error detaching image %s from loop device %s: %s' %
                     (self.img, self.loop, e))
             raise error.AutotestError(e_msg)

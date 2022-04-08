@@ -6,12 +6,13 @@ from autotest_lib.server import utils
 
 AUTHOR = "louiscollard, apronin"
 NAME = "firmware_Cr50U2fPowerwash"
-ATTRIBUTES = "suite:faft_cr50_pvt, suite:faft_cr50_prepvt"
+ATTRIBUTES = "suite:faft_cr50_experimental"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-DEPENDENCIES="servo_state:WORKING"
+DEPENDENCIES="servo"
+JOB_RETRIES = 1
 
 DOC = """
 This test issues a U2F_REGISTER command, clears the TPM, and checks that
@@ -25,8 +26,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run_test(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    iterations = int(args_dict.get("iterations", 1))
-    job.run_test('firmware_Cr50U2fPowerwash', host=host, cmdline_args=args,
-                 iterations=iterations)
+    job.run_test('firmware_Cr50U2fPowerwash', host=host)
 
 parallel_simple(run_test, machines)

@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -10,11 +9,10 @@
    http://localhost:nnnn/?status="Browser started!"
 """
 
-import cgi, errno, logging, os, posixpath, six.moves.SimpleHTTPServer, socket, ssl, sys
-import threading, six.moves.urllib.parse
-from six.moves import urllib
-from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from six.moves.socketserver import BaseServer, ThreadingMixIn
+import cgi, errno, logging, os, posixpath, SimpleHTTPServer, socket, ssl, sys
+import threading, urllib, urlparse
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from SocketServer import BaseServer, ThreadingMixIn
 
 
 def _handle_http_errors(func):
@@ -22,7 +20,7 @@ def _handle_http_errors(func):
     def wrapper(self):
         try:
             func(self)
-        except IOError as e:
+        except IOError, e:
             if e.errno == errno.EPIPE or e.errno == errno.ECONNRESET:
                 # Instead of dumping a stack trace, a single line is sufficient.
                 self.log_error(str(e))
@@ -32,7 +30,7 @@ def _handle_http_errors(func):
     return wrapper
 
 
-class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
+class FormHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     """Implements a form handler (for POST requests only) which simply
     echoes the key=value parameters back in the response.
 
@@ -40,7 +38,7 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
     to disk with the name contained in the 'filename' field.
     """
 
-    six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map.update({
+    SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map.update({
         '.webm': 'video/webm',
     })
 
@@ -69,7 +67,7 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
             for field in form.keys():
                 field_item = form[field]
                 self.server._form_entries[field] = field_item.value
-        path = six.moves.urllib.parse.urlparse(self.path)[2]
+        path = urlparse.urlparse(self.path)[2]
         if path in self.server._url_handlers:
             self.server._url_handlers[path](self, form)
         else:
@@ -86,10 +84,10 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
         # Send response boilerplate
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(('Hello from Autotest!\nClient: %s\n' %
-                         str(self.client_address)).encode('utf-8'))
-        self.wfile.write(('Request for path: %s\n' % self.path).encode('utf-8'))
-        self.wfile.write(b'Got form data:\n')
+        self.wfile.write('Hello from Autotest!\nClient: %s\n' %
+                         str(self.client_address))
+        self.wfile.write('Request for path: %s\n' % self.path)
+        self.wfile.write('Got form data:\n')
 
         # See the note in do_POST about form.keys().
         if form:
@@ -98,13 +96,13 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
                 if field_item.filename:
                     # The field contains an uploaded file
                     upload = field_item.file.read()
-                    self.wfile.write(('\tUploaded %s (%d bytes)<br>' %
-                                     (field, len(upload))).encode('utf-8'))
+                    self.wfile.write('\tUploaded %s (%d bytes)<br>' %
+                                     (field, len(upload)))
                     # Write submitted file to specified filename.
-                    open(field_item.filename, 'w').write(upload)
+                    file(field_item.filename, 'w').write(upload)
                     del upload
                 else:
-                    self.wfile.write(('\t%s=%s<br>' % (field, form[field].value)).encode('utf-8'))
+                    self.wfile.write('\t%s=%s<br>' % (field, form[field].value))
 
 
     def translate_path(self, path):
@@ -112,10 +110,10 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
         from arbitrary docroot
         """
         # abandon query parameters
-        path = six.moves.urllib.parse.urlparse(path)[2]
-        path = posixpath.normpath(urllib.parse.unquote(path))
+        path = urlparse.urlparse(path)[2]
+        path = posixpath.normpath(urllib.unquote(path))
         words = path.split('/')
-        words = [_f for _f in words if _f]
+        words = filter(None, words)
         path = self.server.docroot
         for word in words:
             drive, word = os.path.splitdrive(word)
@@ -145,22 +143,22 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
             fp=self.rfile,
             headers=self.headers,
             environ={'REQUEST_METHOD': 'GET'})
-        split_url = six.moves.urllib.parse.urlsplit(self.path)
+        split_url = urlparse.urlsplit(self.path)
         path = split_url[2]
         # Strip off query parameters to ensure that the url path
         # matches any registered events.
         self.path = path
-        args = six.moves.urllib.parse.parse_qs(split_url[3])
+        args = urlparse.parse_qs(split_url[3])
         if path in self.server._url_handlers:
             self.server._url_handlers[path](self, args)
         else:
-            six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+            SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
         self._fire_event()
 
 
     @_handle_http_errors
     def do_HEAD(self):
-        six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler.do_HEAD(self)
+        SimpleHTTPServer.SimpleHTTPRequestHandler.do_HEAD(self)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):

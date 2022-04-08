@@ -58,9 +58,6 @@ crosperf outputs, but not in the outputs produced specifically by this script.
 """
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 import json
 import logging
 import math
@@ -70,7 +67,6 @@ import re
 import shutil
 import subprocess
 import sys
-from six.moves import input
 
 
 _ITERATIONS = 5
@@ -97,6 +93,11 @@ label: {label} {{
   remote: {remote}
 }}
 """
+
+
+def prompt_for_input(prompt_message):
+    """Prompts for user input and returns the inputted text as a string."""
+    return raw_input('%s:> ' % prompt_message)
 
 
 def identify_benchmarks_to_run(benchmark_info, iteration_nums, perf_keys):
@@ -154,7 +155,7 @@ def identify_benchmarks_to_run(benchmark_info, iteration_nums, perf_keys):
                         else benchmark_to_add['iterations'])
                 else:
                     benchmark_to_add['iterations'] = iter_num
-        benchmarks_to_run = list(identified_benchmarks.values())
+        benchmarks_to_run = identified_benchmarks.values()
 
     return benchmarks_to_run, perf_keys_requested
 
@@ -504,7 +505,6 @@ def verify_command_line_options(options, iteration_nums, perf_keys):
 
 
 def main():
-    """Main script logic."""
     options = parse_options()
 
     log_level = logging.DEBUG if options.verbose else logging.INFO

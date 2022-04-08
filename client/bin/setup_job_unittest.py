@@ -3,7 +3,7 @@
 import logging
 import os
 import shutil
-import six
+import StringIO
 import sys
 import unittest
 
@@ -116,7 +116,7 @@ class test_setup_job(unittest.TestCase):
         self.jobtag = "jobtag"
 
         # get rid of stdout and logging
-        sys.stdout = six.StringIO()
+        sys.stdout = StringIO.StringIO()
         logging_manager.configure_logging(logging_config.TestingConfig())
         logging.disable(logging.CRITICAL)
         def dummy_configure_logging(*args, **kwargs):

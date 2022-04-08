@@ -1,19 +1,13 @@
-# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from six.moves import range
-import six
+import StringIO
 import json
 import mox
 import time
 import unittest
-from six.moves import urllib
+import urllib2
 
 import common
 from autotest_lib.client.common_lib import global_config
@@ -93,7 +87,7 @@ class _FakeURLResponse(object):
     """
 
     def __init__(self, code, buffer):
-        self._stringio = six.StringIO(buffer)
+        self._stringio = StringIO.StringIO(buffer)
         self._code = code
 
 
@@ -122,7 +116,7 @@ class GetStatusTest(mox.MoxTestBase):
 
     def setUp(self):
         super(GetStatusTest, self).setUp()
-        self.mox.StubOutWithMock(urllib.request, 'urlopen')
+        self.mox.StubOutWithMock(urllib2, 'urlopen')
         self.mox.StubOutWithMock(time, 'sleep')
 
 
@@ -130,7 +124,7 @@ class GetStatusTest(mox.MoxTestBase):
         """Test that successful calls to urlopen() succeed."""
         json_string = _OPEN_STATUS_VALUES[0]
         json_value = json.loads(json_string)
-        urllib.request.urlopen(mox.IgnoreArg()).AndReturn(
+        urllib2.urlopen(mox.IgnoreArg()).AndReturn(
                 _FakeURLResponse(200, json_string))
         self.mox.ReplayAll()
         result = site_utils._get_lab_status(_FAKE_URL)
@@ -142,10 +136,10 @@ class GetStatusTest(mox.MoxTestBase):
         """Test that an IOError retries at least once."""
         json_string = _OPEN_STATUS_VALUES[0]
         json_value = json.loads(json_string)
-        urllib.request.urlopen(mox.IgnoreArg()).AndRaise(
+        urllib2.urlopen(mox.IgnoreArg()).AndRaise(
                 IOError('Fake I/O error for a fake URL'))
         time.sleep(mox.IgnoreArg()).AndReturn(None)
-        urllib.request.urlopen(mox.IgnoreArg()).AndReturn(
+        urllib2.urlopen(mox.IgnoreArg()).AndReturn(
                 _FakeURLResponse(200, json_string))
         self.mox.ReplayAll()
         result = site_utils._get_lab_status(_FAKE_URL)
@@ -157,10 +151,10 @@ class GetStatusTest(mox.MoxTestBase):
         """Test that an HTTP error retries at least once."""
         json_string = _OPEN_STATUS_VALUES[0]
         json_value = json.loads(json_string)
-        urllib.request.urlopen(mox.IgnoreArg()).AndReturn(
+        urllib2.urlopen(mox.IgnoreArg()).AndReturn(
                 _FakeURLResponse(500, ''))
         time.sleep(mox.IgnoreArg()).AndReturn(None)
-        urllib.request.urlopen(mox.IgnoreArg()).AndReturn(
+        urllib2.urlopen(mox.IgnoreArg()).AndReturn(
                 _FakeURLResponse(200, json_string))
         self.mox.ReplayAll()
         result = site_utils._get_lab_status(_FAKE_URL)
@@ -173,7 +167,7 @@ class GetStatusTest(mox.MoxTestBase):
         json_string = _OPEN_STATUS_VALUES[0]
         json_value = json.loads(json_string)
         for _ in range(site_utils._MAX_LAB_STATUS_ATTEMPTS):
-            urllib.request.urlopen(mox.IgnoreArg()).AndRaise(
+            urllib2.urlopen(mox.IgnoreArg()).AndRaise(
                     IOError('Fake I/O error for a fake URL'))
             time.sleep(mox.IgnoreArg()).AndReturn(None)
         self.mox.ReplayAll()
@@ -187,7 +181,7 @@ class GetStatusTest(mox.MoxTestBase):
         json_string = _OPEN_STATUS_VALUES[0]
         json_value = json.loads(json_string)
         for _ in range(site_utils._MAX_LAB_STATUS_ATTEMPTS):
-            urllib.request.urlopen(mox.IgnoreArg()).AndReturn(
+            urllib2.urlopen(mox.IgnoreArg()).AndReturn(
                     _FakeURLResponse(404, 'Not here, never gonna be'))
             time.sleep(mox.IgnoreArg()).InAnyOrder().AndReturn(None)
         self.mox.ReplayAll()

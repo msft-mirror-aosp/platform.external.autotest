@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -20,13 +19,8 @@ Notes:
    expects to check for error code per API definition
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging, re
-from autotest_lib.client.common_lib import i2c_node
-import six
+from autotest_lib.client.common_lib import i2c_slave
 
 
 # INA219 registers
@@ -60,29 +54,29 @@ class InaError(Exception):
     """Base class for all errors in this module."""
 
 
-class InaController(i2c_node.I2cNode):
+class InaController(i2c_slave.I2cSlave):
     """Object to control INA219 module on TTCI board."""
 
-    def __init__(self, node_addr=None, range_dict=None):
+    def __init__(self, slave_addr=None, range_dict=None):
         """Constructor.
 
         Mandatory params:
-          node_addr: node address to set. Default: None.
+          slave_addr: slave address to set. Default: None.
 
         Optional param:
           range_dict: desired max/min thresholds for measurement values.
                       Default: DEFAULT_MEAS_RANGE_VALUE.
 
         Args:
-          node_addr: an integer, address of main or backup power.
+          slave_addr: an integer, address of main or backup power.
           range_dict: desired max/min thresholds for measurement values.
 
         Raises:
           InaError: if error initializing INA219 module or invalid range_dict.
         """
         super(InaController, self).__init__()
-        if node_addr is None:
-            raise InaError('Error node_addr expected')
+        if slave_addr is None:
+            raise InaError('Error slave_addr expected')
 
         try:
             if range_dict is None:
@@ -91,10 +85,10 @@ class InaController(i2c_node.I2cNode):
                 self._validateRangeDict(DEFAULT_MEAS_RANGE_VALUE, range_dict)
             self.range_dict = range_dict
 
-            self.setNodeAddress(node_addr)
+            self.setSlaveAddress(slave_addr)
             self.writeWord(INA_REG['CONF'], INA_CONF_INIT_VAL)
             self.writeWord(INA_REG['CALIB'], INA_CALIB_INIT_VAL)
-        except InaError as e:
+        except InaError, e:
             raise InaError('Error initializing INA219: %s' % e)
 
     def _validateRangeDict(self, d_ref, d_in):
@@ -110,7 +104,7 @@ class InaController(i2c_node.I2cNode):
         Raises:
           InaError: if range_dict is invalid.
         """
-        for k, v in six.iteritems(d_ref):
+        for k, v in d_ref.iteritems():
             if k not in d_in:
                 raise InaError('Key %s not present in dict %r' % (k, d_in))
             if type(v) != type(d_in[k]):
@@ -136,7 +130,7 @@ class InaController(i2c_node.I2cNode):
             hex_str = '0x%.4x' % self.readWord(self.range_dict[measure]['reg'])
             logging.debug('Word read = %r', hex_str)
             return self._checkMeasureRange(hex_str, measure)
-        except InaError as e:
+        except InaError, e:
             logging.error('Error reading %s: %s', measure, e)
 
     def getPowerMetrics(self):
@@ -151,7 +145,7 @@ class InaController(i2c_node.I2cNode):
         try:
             return (0, self.readMeasure('voltage'),
                     self.readMeasure('current'))
-        except InaError as e:
+        except InaError, e:
             logging.error('getPowerMetrics(): %s', e)
             return (-1, None, None)
 

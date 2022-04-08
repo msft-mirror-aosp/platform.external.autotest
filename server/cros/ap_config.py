@@ -1,10 +1,9 @@
-# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import collections
-import six.moves.configparser
+import ConfigParser
 import logging
 import os
 import time
@@ -28,7 +27,7 @@ def get_ap_list():
     aps = []
     # chaos_ap_list.conf holds static conf of all APs in lab.
     for filename in ['chaos_ap_list.conf']:
-        ap_config = six.moves.configparser.RawConfigParser(
+        ap_config = ConfigParser.RawConfigParser(
                 {AP.CONF_RPM_MANAGED: 'False'})
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             filename)
@@ -137,7 +136,7 @@ class AP(object):
         """@return string bss for AP from config file"""
         try:
             bss = self.ap_config.get(self.bss, self.CONF_BSS)
-        except six.moves.configparser.NoOptionError as e:
+        except ConfigParser.NoOptionError as e:
             bss = 'N/A'
         return bss
 
@@ -146,7 +145,7 @@ class AP(object):
         """@return string bss5 for AP from config file"""
         try:
             bss5 = self.ap_config.get(self.bss, self.CONF_BSS5)
-        except six.moves.configparser.NoOptionError as e:
+        except ConfigParser.NoOptionError as e:
             bss5 = 'N/A'
         return bss5
 

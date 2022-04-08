@@ -30,6 +30,11 @@ BENCHMARKS = {
                                 'display': 'PrepAttn',
                                 'units': 'seconds',
                                 'upload': True},
+        'take_ownership': {'stage': STAGE_OOBE,
+                           'name': 'ownership-duration',
+                           'display': 'TakeOwnp',
+                           'units': 'seconds',
+                           'upload': True},
         }
 
 class platform_InitLoginPerfServer(test.test):

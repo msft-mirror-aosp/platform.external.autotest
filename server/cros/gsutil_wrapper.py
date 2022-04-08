@@ -1,12 +1,8 @@
-# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 import logging
 import os.path
 import subprocess
@@ -46,8 +42,8 @@ def copy_private_bucket(host, bucket, filename, destination, timeout_s=30):
 
         output = p.communicate()
 
-        log("STDOUT | " + output[0].decode('utf-8'))
-        log("STDERR | " + output[1].decode('utf-8'))
+        log("STDOUT | " + output[0])
+        log("STDERR | " + output[1])
 
         if p.returncode:
             raise subprocess.CalledProcessError(returncode=p.returncode,

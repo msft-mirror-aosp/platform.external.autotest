@@ -1,16 +1,12 @@
-# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import logging, os
 
+import constants, cros_logging, cros_ui, cryptohome
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros import constants
-from autotest_lib.client.cros import cros_logging
-from autotest_lib.client.cros import cros_ui
-from autotest_lib.client.cros import cryptohome
 
 
 class CrashError(error.TestError):
@@ -63,7 +59,7 @@ def wait_for_condition(condition, timeout_msg, timeout, process, crash_msg):
             condition,
             utils.TimeoutError(timeout_msg),
             timeout=timeout)
-    except utils.TimeoutError as e:
+    except utils.TimeoutError, e:
         # We could fail faster if necessary, but it'd be more complicated.
         if process_crashed(process, log_reader):
             logging.error(crash_msg)
@@ -105,7 +101,7 @@ def wait_for_browser_exit(crash_msg, timeout=cros_ui.RESTART_UI_TIMEOUT):
           process=constants.BROWSER,
           crash_msg=crash_msg)
       return True
-    except utils.TimeoutError as e:
+    except utils.TimeoutError, e:
       return False
 
 

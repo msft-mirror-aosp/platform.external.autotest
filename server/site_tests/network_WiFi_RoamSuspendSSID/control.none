@@ -17,9 +17,8 @@ from autotest_lib.server.cros.network import hostap_config
 
 
 def run(machine):
-    mode = hostap_config.HostapConfig.MODE_11N_MIXED
-    ap_config0 = hostap_config.HostapConfig(channel=1, mode=mode)
-    ap_config1 = hostap_config.HostapConfig(channel=36, mode=mode)
+    ap_config0 = hostap_config.HostapConfig(channel=1)
+    ap_config1 = hostap_config.HostapConfig(channel=11)
     job.run_test('network_WiFi_RoamSuspendSSID',
                  tag=NAME.split('.')[1],
                  host=hosts.create_host(machine),

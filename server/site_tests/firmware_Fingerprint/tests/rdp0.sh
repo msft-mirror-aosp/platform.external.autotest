@@ -6,8 +6,7 @@
 
 set -e
 
-# shellcheck source=./common.sh
-. "$(dirname "$(readlink -f "${0}")")/common.sh"
+. $(dirname "$(readlink -f "${0}")")/common.sh
 
 test_read_from_flash_in_bootloader_mode_without_modifying_RDP_level() {
   local file_read_from_flash="test.bin"

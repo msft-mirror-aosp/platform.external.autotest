@@ -1,12 +1,19 @@
 import datetime
 import os
 import re
-import logging
+import sys
 
 
+_debug_logger = sys.stderr
 def dprint(msg):
-    """Log a message on the DEBUG level."""
-    logging.debug('%s', msg)
+    #pylint: disable-msg=C0111
+    print >> _debug_logger, 'tko parser: %s' % msg
+
+
+def redirect_parser_debugging(ostream):
+    #pylint: disable-msg=C0111
+    global _debug_logger
+    _debug_logger = ostream
 
 
 def get_timestamp(mapping, field):
@@ -78,5 +85,4 @@ def get_skylab_task_id(tag):
 
 
 def is_skylab_task(tag):
-    """Given a tag, determine whether it represents a Skylab task."""
     return get_skylab_task_id(tag) is not None

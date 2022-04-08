@@ -1,16 +1,10 @@
-# Lint as: python2, python3
 # Copyright (c) 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 # This module contains some commonly used time conversion function.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import datetime
-import six
 import time
 
 from autotest_lib.client.common_lib import decorators
@@ -98,7 +92,7 @@ def to_epoch_time(value):
               otherwise returns the value.
     @raise ValueError: If value is not a datetime object or a number.
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, basestring):
         value = time_string_to_datetime(value)
     if isinstance(value, datetime.datetime):
         return time.mktime(value.timetuple()) + 0.000001 * value.microsecond

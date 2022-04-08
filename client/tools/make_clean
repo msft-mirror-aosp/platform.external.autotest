@@ -1,8 +1,4 @@
 #!/usr/bin/python2
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 
 def purge_src(top_dir):
@@ -23,7 +19,7 @@ def purge_src(top_dir):
         else:
             cmd = 'cd %s; make clean > /dev/null 2>&1 ' % src_path
 
-        print('Cleaning %s test dir' % dir)
+        print 'Cleaning %s test dir' % dir
         os.system(cmd)
 
 if os.path.isdir('tmp'):

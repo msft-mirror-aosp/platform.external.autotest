@@ -6,7 +6,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import tpm_utils
-from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server import test
 
 # TPM vendor commands have the following header structure:
 
@@ -69,9 +69,6 @@ HASH_TO_SIGN = ('91f93c8d88ed6168d07a36de53bd62b6'
                 '649e84d343dd417ed6062775739b6e65')
 RANDOM_32 = '0fd2bf886fa8c036d069adf321bf1390859da4d615034c3a81ca3812a210ce0d'
 
-# For complying with struct u2f_generate_req only.
-# Auth-time secret hash is used only in versioned KHs.
-UNUSED_AUTH_TIME_SECRET_HASH = '00' * 32
 
 def get_bytes(tpm_str, start, length):
   return tpm_str[(start * 2):(start * 2 + length * 2)]
@@ -105,7 +102,7 @@ def check_response_size(response, expected_response, success_size):
         'Non-zero response size on failure: {}'.format(response_size))
 
 
-class firmware_Cr50U2fCommands(FirmwareTest):
+class firmware_Cr50U2fCommands(test.test):
   """Tests the custom U2F commands in cr50"""
 
   version = 1
@@ -195,8 +192,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
     assert_byte_length(flags, 1)
 
     response = self.__send_vendor_cmd(
-        VENDOR_CC_U2F_GENERATE, '{}{}{}{}'.format(app_id, user_secret, flags,
-                                                  UNUSED_AUTH_TIME_SECRET_HASH),
+        VENDOR_CC_U2F_GENERATE, '{}{}{}'.format(app_id, user_secret, flags),
         expected_response)
 
     check_response_size(response, expected_response,
@@ -246,18 +242,10 @@ class firmware_Cr50U2fCommands(FirmwareTest):
     if registration['keyHandle'] == registration_2['keyHandle']:
       raise error.TestFail('Key handles not unique')
 
-  def _safe_power_short_press(self):
-    """Stop powerd before pressing the power button."""
-    # Validating U2F requires pressing the power button. If those power button
-    # presses power off the AP, stop powerd before the test to ignore them.
-    if self.faft_config.ec_forwards_short_pp_press:
-        self.stop_powerd()
-    self.servo.power_short_press()
-
   def __test_generate_sign_simple(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
                     HASH_TO_SIGN, '00', VENDOR_CMD_RESPONSE_SUCCESS)
@@ -273,7 +261,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
         '01',  # U2F_AUTH_FLAG_TUP
         VENDOR_CMD_RESPONSE_NOT_ALLOWED)
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     self.__u2f_generate(
         APP_ID,
@@ -282,7 +270,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
         VENDOR_CMD_RESPONSE_SUCCESS)
 
   def __test_generate_consume_presence(self):
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     self.__u2f_generate(
         APP_ID,
@@ -310,7 +298,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
   def __test_sign_multiple_no_consume(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
                     HASH_TO_SIGN, '00', VENDOR_CMD_RESPONSE_SUCCESS)
@@ -324,7 +312,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
   def __test_sign_consume(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     self.__u2f_sign(
         APP_ID,
@@ -343,7 +331,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
   def __test_sign_wrong_user_secret(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     # Sanity check.
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
@@ -355,7 +343,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
   def __test_sign_wrong_app_id(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     # Sanity check.
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
@@ -389,7 +377,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
   def __test_sign_invalid_kh_with_presence(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     # Should return invalid KH error, without consuming presence.
     self.__u2f_sign(
@@ -418,7 +406,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
   def __test_sign_check_only_with_presence(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
                     HASH_TO_SIGN, '07', VENDOR_CMD_RESPONSE_SUCCESS)
@@ -439,7 +427,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
   def __test_sign_check_only_invalid_kh_with_presence(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     self.__u2f_sign(APP_ID,
                     USER_SECRET_1,
@@ -554,7 +542,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
   def __test_kh_invalidated_by_powerwash(self):
     registration = self.__u2f_generate(APP_ID, USER_SECRET_1, '00')
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     # Sanity check
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
@@ -564,7 +552,7 @@ class firmware_Cr50U2fCommands(FirmwareTest):
     # key handle after this.
     tpm_utils.ClearTPMOwnerRequest(self.client, wait_for_ready=True)
 
-    self._safe_power_short_press()
+    self.servo.power_short_press()
 
     self.__u2f_sign(APP_ID, USER_SECRET_1, registration['keyHandle'],
                     HASH_TO_SIGN, '00', VENDOR_CMD_RESPONSE_PASSWORD_REQUIRED)
@@ -573,6 +561,8 @@ class firmware_Cr50U2fCommands(FirmwareTest):
     """Run the tests."""
 
     self.client = host
+    self.servo = host.servo
+    self.servo.initialize_dut()
 
     # Basic functionality
     self.__test_generate_unique()

@@ -26,11 +26,8 @@ pub keys.
                  Firewall
 """
 
-from __future__ import print_function
-
 import logging
 import shlex
-import six
 import socket
 import subprocess
 import sys
@@ -82,7 +79,7 @@ class ScpiSshTunnel(scpi.Scpi):
                 self.proxy_port, self.port, self.ssh_tunnel.pid)
         except OSError as e:
             logging.exception('Error starting SSH tunnel to SCPI device.')
-            six.reraise(scpi.ScpiException(cause=e), None, sys.exc_info()[2])
+            raise scpi.ScpiException(cause=e), None, sys.exc_info()[2]
 
         # Open a socket connection for communication with chassis
         # using the SSH Tunnel.
@@ -91,7 +88,7 @@ class ScpiSshTunnel(scpi.Scpi):
             self.socket.connect(('127.0.0.1', self.proxy_port))
         except (socket.error, socket.timeout) as e:
             logging.error('Error connecting to SCPI device.')
-            six.reraise(scpi.ScpiException(cause=e), None, sys.exc_info()[2])
+            raise scpi.ScpiException(cause=e), None, sys.exc_info()[2]
 
     def _make_tunnel_command(self, hosts_file='/dev/null',
                              connect_timeout=30, alive_interval=300):

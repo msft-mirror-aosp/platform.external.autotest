@@ -18,8 +18,8 @@ class security_ProcessManagementPolicy(test.test):
     version = 1
 
     _WHITELIST_DICT = {
-        "cros-disks": set(("chronos", "fuse-exfat", "fuse-sshfs", "nobody",
-                           "ntfs-3g", "fuse-rar2fs", "fuse-smbfs", "fuse-zip")),
+        "cros-disks": set(("avfs", "chronos", "fuse-exfat",
+                           "fuse-sshfs", "nobody", "ntfs-3g")),
         "shill": set(("dhcp", "ipsec", "openvpn", "syslog", "nobody")),
     }
 

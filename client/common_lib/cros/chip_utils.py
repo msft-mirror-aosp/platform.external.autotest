@@ -60,10 +60,8 @@ class ps8751(generic_chip):
 
     chip_name = 'ps8751'
     fw_name = 'ps8751_a3'
-    extension = '.bin'
-    hash_extension = '.hash'
-    cbfs_bin_name = fw_name + extension
-    cbfs_hash_name = fw_name + hash_extension
+    cbfs_bin_name = fw_name + '.bin'
+    cbfs_hash_name = fw_name + '.hash'
 
     def fw_ver_from_hash(self, blob):
         """Return the firmware version encoded in the firmware hash."""
@@ -88,13 +86,12 @@ class anx3429(generic_chip):
 
     chip_name = 'anx3429'
     fw_name = 'anx3429_ocm'
-    extension = '.bin'
-    hash_extension = '.hash'
-    cbfs_bin_name = fw_name + extension
-    cbfs_hash_name = fw_name + hash_extension
+    cbfs_bin_name = fw_name + '.bin'
+    cbfs_hash_name = fw_name + '.hash'
 
     def fw_ver_from_hash(self, blob):
-        """Return the firmware version encoded in the passed-in hash content."""
+        """Return the firmware version encoded in the firmware hash."""
+
         return blob[0]
 
     def compute_hash_bytes(self):
@@ -114,10 +111,8 @@ class ecrw(generic_chip):
 
     chip_name = 'ecrw'
     fw_name = 'ecrw'
-    extension = ''
-    hash_extension = '.hash'
     cbfs_bin_name = fw_name
-    cbfs_hash_name = fw_name + hash_extension
+    cbfs_hash_name = fw_name + '.hash'
 
     def compute_hash_bytes(self):
         """Generates the firmware blob hash."""
@@ -130,12 +125,10 @@ class ecrw(generic_chip):
 
         # openssl outputs the result to stdout
         cmd = 'openssl dgst -sha256 -binary %s' % self.fw_file_name
-        result = subprocess.check_output(cmd, shell=True)
-        return bytearray(result)
+        return subprocess.check_output(cmd, shell=True)
 
 
 chip_id_map = {
-        'ecrw': ecrw,
-        '0x8751': ps8751,
-        '0x3429': anx3429,
+    '0x8751': ps8751,
+    '0x3429': anx3429,
 }

@@ -16,17 +16,17 @@ class GitRepoManager(object):
     git_repo_manager = None
 
 
-    def __init__(self, main_repo=None):
+    def __init__(self, master_repo=None):
         """
         Setup self.git_repo_manager.
 
-        If a main_repo is present clone it.
+        If a master_repo is present clone it.
         Otherwise create a directory in /tmp and init it.
 
-        @param main_repo: GitRepo representing main.
+        @param master_repo: GitRepo representing master.
         """
-        if main_repo is None:
-            self.repodir = tempfile.mktemp(suffix='main')
+        if master_repo is None:
+            self.repodir = tempfile.mktemp(suffix='master')
             self._create_git_repo(self.repodir)
             self.git_repo_manager = revision_control.GitRepo(
                                         self.repodir,
@@ -42,7 +42,7 @@ class GitRepoManager(object):
             self.repodir = tempfile.mktemp(suffix='dependent')
             self.git_repo_manager = revision_control.GitRepo(
                                       self.repodir,
-                                      main_repo.repodir,
+                                      master_repo.repodir,
                                       abs_work_tree=self.repodir)
             self.git_repo_manager.clone()
             self._setup_git_environment()
@@ -106,15 +106,11 @@ class GitRepoManager(object):
         self.commit_hash = self.git_repo_manager.get_latest_commit_hash()
 
 
-    def get_main_tot(self):
+    def get_master_tot(self):
         """
-        Get everything from mains TOT squashing local changes.
-        If the dependent repo is empty pull from main.
+        Get everything from masters TOT squashing local changes.
+        If the dependent repo is empty pull from master.
         """
-        # TODO b:169251326 terms below are set outside of this codebase
-        # and should be updated when possible. ("master" -> "main")
-        # Currently (but I believe it will eventually) does not support
-        # `reset --hard origin/main` (must be origin/master).
         self.git_repo_manager.reinit_repo_at('master')
         self.commit_hash = self.git_repo_manager.get_latest_commit_hash()
 
@@ -124,23 +120,23 @@ class RevisionControlUnittest(mox.MoxTestBase):
     A unittest to exercise build_externals.py's usage
     of revision_control.py's Git wrappers.
     """
-    main_repo=None
+    master_repo=None
     dependent_repo=None
 
     def setUp(self):
         """
-        Create a main repo and clone it into a dependent repo.
+        Create a master repo and clone it into a dependent repo.
         """
         super(RevisionControlUnittest, self).setUp()
-        self.main_repo = GitRepoManager()
-        self.dependent_repo = GitRepoManager(self.main_repo)
+        self.master_repo = GitRepoManager()
+        self.dependent_repo = GitRepoManager(self.master_repo)
 
 
     def tearDown(self):
         """
         Delete temporary directories.
         """
-        shutil.rmtree(self.main_repo.repodir)
+        shutil.rmtree(self.master_repo.repodir)
         shutil.rmtree(self.dependent_repo.repodir)
         super(RevisionControlUnittest, self).tearDown()
 
@@ -149,26 +145,26 @@ class RevisionControlUnittest(mox.MoxTestBase):
         """
         Test add, commit, pull, clone.
         """
-        self.main_repo._edit()
-        self.main_repo.add()
-        self.main_repo.commit()
-        self.dependent_repo.get_main_tot()
+        self.master_repo._edit()
+        self.master_repo.add()
+        self.master_repo.commit()
+        self.dependent_repo.get_master_tot()
         self.assertEquals(self.dependent_repo.commit_hash,
-            self.main_repo.commit_hash,
-            msg=(("hashes don't match after clone, main and dependent repo"
+            self.master_repo.commit_hash,
+            msg=(("hashes don't match after clone, master and dependent repo"
                   "out of sync: %r != %r") %
                   (self.dependent_repo.commit_hash,
-                   self.main_repo.commit_hash)))
+                   self.master_repo.commit_hash)))
 
-        self.main_repo._edit(msg='foobar')
-        self.main_repo.commit()
-        self.dependent_repo.get_main_tot()
+        self.master_repo._edit(msg='foobar')
+        self.master_repo.commit()
+        self.dependent_repo.get_master_tot()
         self.assertEquals(self.dependent_repo.commit_hash,
-            self.main_repo.commit_hash,
-            msg=(("hashes don't match after pull, main and dependent repo"
+            self.master_repo.commit_hash,
+            msg=(("hashes don't match after pull, master and dependent repo"
                   "out of sync: %r != %r") %
                   (self.dependent_repo.commit_hash,
-                   self.main_repo.commit_hash)))
+                   self.master_repo.commit_hash)))
 
 
     def testGitUrlClone(self):

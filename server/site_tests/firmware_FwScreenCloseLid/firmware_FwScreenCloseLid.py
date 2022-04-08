@@ -19,7 +19,6 @@ class firmware_FwScreenCloseLid(FirmwareTest):
     and then closes the lid in order to power the machine down.
     """
     version = 1
-    NEEDS_SERVO_USB = True
 
     SHORT_SHUTDOWN_CONFIRMATION_PERIOD = 0.1
 
@@ -80,8 +79,7 @@ class firmware_FwScreenCloseLid(FirmwareTest):
             power_action = True
 
         if self.faft_config.mode_switcher_type not in (
-                'keyboard_dev_switcher', 'tablet_detachable_switcher',
-                'menu_switcher'):
+                'keyboard_dev_switcher', 'tablet_detachable_switcher'):
             raise error.TestNAError("This test is only valid on devices with "
                                     "screens.")
 

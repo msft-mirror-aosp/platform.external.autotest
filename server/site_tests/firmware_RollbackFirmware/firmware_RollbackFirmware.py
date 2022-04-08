@@ -18,7 +18,6 @@ class firmware_RollbackFirmware(FirmwareTest):
     results recovery boot.
     """
     version = 1
-    NEEDS_SERVO_USB = True
 
     def initialize(self, host, cmdline_args, dev_mode=False):
         """Initialize the test"""

@@ -12,10 +12,10 @@ from contextlib import contextmanager
 import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.site_utils import lxc
+from autotest_lib.site_utils.lxc import BaseImage
 from autotest_lib.site_utils.lxc import constants
 from autotest_lib.site_utils.lxc import unittest_setup
 from autotest_lib.site_utils.lxc import utils as lxc_utils
-from autotest_lib.site_utils.lxc.base_image import BaseImage
 
 
 test_dir = None
@@ -34,7 +34,8 @@ class BaseImageTests(lxc_utils.LXCTests):
     def testCreate_existing(self):
         """Verifies that BaseImage works with existing base containers."""
         with TestBaseContainer() as control:
-            manager = BaseImage(control.container_path, control.name)
+            manager = BaseImage(control.container_path,
+                                control.name)
             self.assertIsNotNone(manager.base_container)
             self.assertEquals(control.container_path,
                               manager.base_container.container_path)
@@ -44,6 +45,7 @@ class BaseImageTests(lxc_utils.LXCTests):
             except error.ContainerError:
                 self.fail('Base container was not valid.\n%s' %
                           error.format_error())
+
 
     def testCleanup_noClones(self):
         """Verifies that cleanup cleans up the base image."""
@@ -60,7 +62,8 @@ class BaseImageTests(lxc_utils.LXCTests):
 
         # Verify that the base container was cleaned up.
         self.assertFalse(lxc_utils.path_exists(
-            os.path.join(base.container_path, base.name)))
+                os.path.join(base.container_path, base.name)))
+
 
     def testCleanup_withClones(self):
         """Verifies that cleanup cleans up the base image.
@@ -81,6 +84,7 @@ class BaseImageTests(lxc_utils.LXCTests):
                                               new_name='clone_%d' % i,
                                               snapshot=True))
 
+
         # Precondition: all containers are valid.
         base.refresh_status()
         for container in clones:
@@ -90,13 +94,13 @@ class BaseImageTests(lxc_utils.LXCTests):
 
         # Verify that all containers were cleaned up
         self.assertFalse(lxc_utils.path_exists(
-            os.path.join(base.container_path, base.name)))
+                os.path.join(base.container_path, base.name)))
         for container in clones:
             if constants.SUPPORT_SNAPSHOT_CLONE:
                 # Snapshot clones should get deleted along with the base
                 # container.
                 self.assertFalse(lxc_utils.path_exists(
-                    os.path.join(container.container_path, container.name)))
+                        os.path.join(container.container_path, container.name)))
             else:
                 # If snapshot clones aren't supported (e.g. on moblab), the
                 # clones should not be affected by the destruction of the base
@@ -107,6 +111,7 @@ class BaseImageTests(lxc_utils.LXCTests):
                     self.fail(error.format_error())
 
 
+
 class BaseImageSetupTests(lxc_utils.LXCTests):
     """Unit tests to verify the setup of specific images.
 
@@ -115,10 +120,12 @@ class BaseImageSetupTests(lxc_utils.LXCTests):
     """
 
     def setUp(self):
-        self.manager = BaseImage(test_dir, lxc.BASE)
+        self.manager = BaseImage(container_path=test_dir)
+
 
     def tearDown(self):
         self.manager.cleanup()
+
 
     def testSetupBase05(self):
         """Verifies that setup works for moblab base container.
@@ -132,6 +139,7 @@ class BaseImageSetupTests(lxc_utils.LXCTests):
 
         container.start(wait_for_network=False)
         self.assertTrue(container.is_running())
+
 
     @unittest.skipIf(constants.IS_MOBLAB,
                      "Moblab does not support the regular base container.")
@@ -182,7 +190,7 @@ def setUpModule():
     # Unfortunately, aside from duping the BaseImage code completely, there
     # isn't an easy way to download and configure a base container.  So even
     # though this is the BaseImage unittest, we use a BaseImage to set it up.
-    bcm = BaseImage(lxc.DEFAULT_CONTAINER_PATH, lxc.BASE)
+    bcm = BaseImage()
     if bcm.base_container is None:
         bcm.setup()
         cleanup_ref_container = True

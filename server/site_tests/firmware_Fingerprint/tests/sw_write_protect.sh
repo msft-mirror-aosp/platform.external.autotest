@@ -6,8 +6,7 @@
 
 set -e
 
-# shellcheck source=./common.sh
-. "$(dirname "$(readlink -f "${0}")")/common.sh"
+. $(dirname "$(readlink -f "${0}")")/common.sh
 
 echo "Running test to validate software write protect cannot be disabled when \
 hardware write protect is enabled"
@@ -26,7 +25,7 @@ reboot_ec_to_ro
 check_has_mp_rw_firmware
 check_has_mp_ro_firmware
 check_running_ro_firmware
-check_hw_and_sw_write_protect_enabled_ro
+check_hw_and_sw_write_protect_enabled
 
 echo "Disabling software write protect when hardware write protect is enabled \
 when running RO"
@@ -36,7 +35,7 @@ if (disable_sw_write_protect); then
 fi
 
 echo "Validating write protection did not change"
-check_hw_and_sw_write_protect_enabled_ro
+check_hw_and_sw_write_protect_enabled
 
 echo "Reboot to RW"
 reboot_ec

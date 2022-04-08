@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -67,5 +66,6 @@ class PEMCertificate(object):
         """Returns the subject DN of the certificate as a dict of name:value"""
         if self._subject_dict is None:
           # Convert the list [ 'A=B', ... ] into a dict { 'A': 'B',  ... }
-          self._subject_dict = dict([x.split('=', 1) for x in self.subject])
+          self._subject_dict = dict(map(lambda x: x.split('=', 1),
+                                        self.subject))
         return self._subject_dict

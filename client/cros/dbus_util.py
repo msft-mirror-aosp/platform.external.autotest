@@ -1,20 +1,11 @@
-# Lint as: python2, python3
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import dbus
 import logging
-import six
-
-import common
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import seven
 
 
 DBUS_INTERFACE_OBJECT_MANAGER = 'org.freedesktop.DBus.ObjectManager'
@@ -32,16 +23,16 @@ def dbus2primitive(value):
     elif isinstance(value, int):
         return int(value)
     elif isinstance(value, dbus.UInt16):
-        return seven.ensure_long(value)
+        return long(value)
     elif isinstance(value, dbus.UInt32):
-        return seven.ensure_long(value)
+        return long(value)
     elif isinstance(value, dbus.UInt64):
-        return seven.ensure_long(value)
+        return long(value)
     elif isinstance(value, float):
         return float(value)
     elif isinstance(value, str):
         return str(value)
-    elif isinstance(value, six.text_type):
+    elif isinstance(value, unicode):
         return str(value)
     elif isinstance(value, list):
         return [dbus2primitive(x) for x in value]
@@ -49,7 +40,7 @@ def dbus2primitive(value):
         return tuple([dbus2primitive(x) for x in value])
     elif isinstance(value, dict):
         return dict([(dbus2primitive(k), dbus2primitive(v))
-                     for k, v in value.items()])
+                     for k,v in value.items()])
     else:
         logging.error('Failed to convert dbus object of class: %r',
                       value.__class__.__name__)
@@ -86,7 +77,7 @@ def get_objects_with_interface(service_name, object_manager_path,
     logging.debug('Saw objects %r', objects)
     # Filter by interface.
     objects = [(path, interfaces)
-               for path, interfaces in six.iteritems(objects)
+               for path, interfaces in objects.iteritems()
                if dbus_interface in interfaces]
     if path_prefix is not None:
         objects = [(path, interfaces)

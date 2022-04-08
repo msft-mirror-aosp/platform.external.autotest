@@ -1,16 +1,10 @@
-# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import errno
 import os
 import shutil
-import six
 import time
 
 from autotest_lib.client.bin import utils
@@ -214,7 +208,7 @@ class NetworkChroot(object):
         try:
             with open(chroot_pid_file) as f:
                 return int(f.read())
-        except IOError as e:
+        except IOError, e:
             if not missing_ok or e.errno != errno.ENOENT:
                 raise e
 
@@ -296,6 +290,6 @@ class NetworkChroot(object):
 
     def write_configs(self):
         """Write out config files"""
-        for config_file, template in six.iteritems(self._config_file_templates):
+        for config_file, template in self._config_file_templates.iteritems():
             with open(self.chroot_path(config_file), 'w') as f:
                 f.write(template % self._config_file_values)

@@ -1,11 +1,8 @@
 """Provides utilities to support bluetooth adapter tests"""
 
-from __future__ import absolute_import
+from debug_linux_keymap import linux_input_keymap
 
-import common
 from autotest_lib.client.bin.input.linux_input import EV_KEY
-from autotest_lib.server.cros.bluetooth.debug_linux_keymap import (
-        linux_input_keymap)
 from ast import literal_eval as make_tuple
 import logging
 

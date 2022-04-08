@@ -1,20 +1,12 @@
-# Lint as: python2, python3
 """This class extends pexpect.spawn to specialize setting up SSH connections.
 This adds methods for login, logout, and expecting the shell prompt.
 
 $Id: pxssh.py 487 2007-08-29 22:33:29Z noah $
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from six.moves import range
+from pexpect import *
+import pexpect
 import time
-
-from autotest_lib.client.common_lib.pexpect import *
-from autotest_lib.client.common_lib import pexpect
-
 
 __all__ = ['ExceptionPxssh', 'pxssh']
 
@@ -117,7 +109,7 @@ class pxssh (spawn):
         if n > m:
             a,b = b,a
             n,m = m,n
-        current = list(range(n+1))
+        current = range(n+1)
         for i in range(1,m+1):
             previous, current = current, [i]+[0]*n
             for j in range(1,n+1):

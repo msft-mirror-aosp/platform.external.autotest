@@ -19,7 +19,6 @@ class firmware_FwScreenPressPower(FirmwareTest):
     and then presses the power button in order to power the machine down.
     """
     version = 1
-    NEEDS_SERVO_USB = True
 
     SHORT_SHUTDOWN_CONFIRMATION_PERIOD = 0.1
 
@@ -72,8 +71,7 @@ class firmware_FwScreenPressPower(FirmwareTest):
     def run_once(self):
         """Main test logic"""
         if self.faft_config.mode_switcher_type not in (
-                'keyboard_dev_switcher', 'tablet_detachable_switcher',
-                'menu_switcher'):
+                'keyboard_dev_switcher', 'tablet_detachable_switcher'):
             raise error.TestNAError("This test is only valid on devices with "
                                     "screens.")
         if not self.faft_config.has_powerbutton:
@@ -123,7 +121,7 @@ class firmware_FwScreenPressPower(FirmwareTest):
                 'mainfw_type': 'developer',
         }))
         self.faft_client.system.request_recovery_boot()
-        self.switcher.simple_reboot('cold')
+        self.switcher.simple_reboot()
         self.run_shutdown_process(
                 self.wait_longer_fw_screen_and_press_power,
                 post_power_action=self.switcher.bypass_dev_mode,
@@ -139,7 +137,7 @@ class firmware_FwScreenPressPower(FirmwareTest):
                 'mainfw_type': 'developer',
         }))
         self.faft_client.system.request_recovery_boot()
-        self.switcher.simple_reboot('cold')
+        self.switcher.simple_reboot()
         self.run_shutdown_process(
                 self.wait_yuck_screen_and_press_power,
                 post_power_action=self.switcher.bypass_dev_mode,
@@ -161,7 +159,7 @@ class firmware_FwScreenPressPower(FirmwareTest):
                 'mainfw_type': 'normal',
         }))
         self.faft_client.system.request_recovery_boot()
-        self.switcher.simple_reboot('cold')
+        self.switcher.simple_reboot()
         self.run_shutdown_process(
                 self.wait_longer_fw_screen_and_press_power,
                 shutdown_timeout=self.SHORT_SHUTDOWN_CONFIRMATION_PERIOD)

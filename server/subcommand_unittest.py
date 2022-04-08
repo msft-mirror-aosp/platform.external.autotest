@@ -1,19 +1,12 @@
 #!/usr/bin/python2
 # Copyright 2009 Google Inc. Released under the GPL v2
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import time, unittest
-import six
 
 import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.test_utils import mock
 from autotest_lib.server import subcommand
-from six.moves import range
-from six.moves import zip
 
 
 def _create_subcommand(func, args):
@@ -103,7 +96,7 @@ class subcommand_test(unittest.TestCase):
         self.god.stub_function(subcommand.os, 'fork')
         self.god.stub_function(subcommand.os, 'close')
         self.god.stub_function(subcommand.os, 'write')
-        self.god.stub_function(six.moves.cPickle, 'dumps')
+        self.god.stub_function(subcommand.cPickle, 'dumps')
         self.god.stub_function(subcommand.os, '_exit')
 
 
@@ -123,8 +116,8 @@ class subcommand_test(unittest.TestCase):
         subcommand.os.close.expect_call(10)
         fork_hook.expect_call(cmd)
         func.expect_call(1, 2).and_return(True)
-        six.moves.cPickle.dumps.expect_call(True,
-                six.moves.cPickle.HIGHEST_PROTOCOL).and_return('True')
+        subcommand.cPickle.dumps.expect_call(True,
+                subcommand.cPickle.HIGHEST_PROTOCOL).and_return('True')
         subcommand.os.write.expect_call(20, 'True')
         subcommand.os.close.expect_call(20)
         join_hook.expect_call(cmd)
@@ -147,8 +140,8 @@ class subcommand_test(unittest.TestCase):
         subcommand.os.close.expect_call(10)
         func.expect_call(1, 2).and_raises(error)
         subcommand.logging.exception.expect_call('function failed')
-        six.moves.cPickle.dumps.expect_call(error,
-                six.moves.cPickle.HIGHEST_PROTOCOL).and_return('error')
+        subcommand.cPickle.dumps.expect_call(error,
+                subcommand.cPickle.HIGHEST_PROTOCOL).and_return('error')
         subcommand.os.write.expect_call(20, 'error')
         subcommand.os.close.expect_call(20)
         subcommand.os._exit.expect_call(1)
@@ -254,7 +247,7 @@ class real_subcommand_test(unittest.TestCase):
 class parallel_test(unittest.TestCase):
     def setUp(self):
         self.god = mock.mock_god()
-        self.god.stub_function(six.moves.cPickle, 'load')
+        self.god.stub_function(subcommand.cPickle, 'load')
 
 
     def tearDown(self):
@@ -286,7 +279,7 @@ class parallel_test(unittest.TestCase):
 
         for task in tasklist:
             task.fork_waitfor.expect_call(timeout=None).and_return(0)
-            (six.moves.cPickle.load.expect_call(task.result_pickle)
+            (subcommand.cPickle.load.expect_call(task.result_pickle)
                     .and_return(6))
             task.result_pickle.close.expect_call()
 
@@ -299,7 +292,7 @@ class parallel_test(unittest.TestCase):
 
         for task in tasklist:
             task.fork_waitfor.expect_call(timeout=None).and_return(1)
-            (six.moves.cPickle.load.expect_call(task.result_pickle)
+            (subcommand.cPickle.load.expect_call(task.result_pickle)
                     .and_return(6))
             task.result_pickle.close.expect_call()
 
@@ -319,7 +312,7 @@ class parallel_test(unittest.TestCase):
         for task in tasklist:
             subcommand.time.time.expect_call().and_return(1)
             task.fork_waitfor.expect_call(timeout=timeout).and_return(None)
-            (six.moves.cPickle.load.expect_call(task.result_pickle)
+            (subcommand.cPickle.load.expect_call(task.result_pickle)
                     .and_return(6))
             task.result_pickle.close.expect_call()
 
@@ -332,13 +325,13 @@ class parallel_test(unittest.TestCase):
         tasklist = self._setup_common()
 
         tasklist[0].fork_waitfor.expect_call(timeout=None).and_return(0)
-        (six.moves.cPickle.load.expect_call(tasklist[0].result_pickle)
+        (subcommand.cPickle.load.expect_call(tasklist[0].result_pickle)
                 .and_return(6))
         tasklist[0].result_pickle.close.expect_call()
 
         error = Exception('fail')
         tasklist[1].fork_waitfor.expect_call(timeout=None).and_return(1)
-        (six.moves.cPickle.load.expect_call(tasklist[1].result_pickle)
+        (subcommand.cPickle.load.expect_call(tasklist[1].result_pickle)
                 .and_return(error))
         tasklist[1].result_pickle.close.expect_call()
 
@@ -392,7 +385,7 @@ class test_parallel_simple(unittest.TestCase):
 
     def test_default_subdirs_constructor(self):
         func = self.god.create_mock_function('func')
-        args = list(range(4))
+        args = range(4)
         for arg in args:
             subcommand.subcommand.expect_call(
                     func, [arg], str(arg)).and_return(arg)
@@ -404,7 +397,7 @@ class test_parallel_simple(unittest.TestCase):
 
     def test_nolog_skips_subdirs(self):
         func = self.god.create_mock_function('func')
-        args = list(range(3))
+        args = range(3)
         for arg in args:
             subcommand.subcommand.expect_call(
                     func, [arg], None).and_return(arg)
@@ -416,7 +409,7 @@ class test_parallel_simple(unittest.TestCase):
 
     def test_custom_subdirs_constructor(self):
         func = self.god.create_mock_function('func')
-        args = list(range(7))
+        args = range(7)
         subdirs = ['subdir%s' % arg for arg in args]
         for arg, subdir in zip(args, subdirs):
             subcommand.subcommand.expect_call(

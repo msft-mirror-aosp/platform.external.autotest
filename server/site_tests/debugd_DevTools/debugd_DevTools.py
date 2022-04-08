@@ -68,7 +68,12 @@ class debugd_DevTools(test.test):
 
     def test_tool(self, tool):
         """
-        Tests an individual tool by disabling, enabling, then disabling again.
+        Tests an individual tool.
+
+        Functionality is tested by disabling, enabling, then disabling
+        again. Certain tools may be unavailable on a board (e.g. USB
+        boot on Mario), which will log a warning but not register a
+        test failure.
 
         @param tool: Tool object to test.
 
@@ -78,25 +83,38 @@ class debugd_DevTools(test.test):
         # Start by disabling the tool. If disable fails we may still be
         # able to test enabling the tool.
         logging.debug('Disabling %s.', tool)
-        tool.disable()
+        try:
+            tool.disable()
+        except debugd_dev_tools.FeatureUnavailableError as e:
+            # If the tool can't be disabled and is already enabled there's no
+            # way to test if our enable function is working or not.
+            if tool.is_enabled():
+                logging.warning('Skipping %s - cannot disable (%s).', tool, e)
+                return
         if tool.is_enabled():
             raise error.TestFail('%s did not disable correctly.' % tool)
 
         # Now enable the tool and make sure it worked.
         logging.debug('Enabling %s.', tool)
-        tool.enable()
+        try:
+            tool.enable()
+        except debugd_dev_tools.FeatureUnavailableError as e:
+            logging.warning('Skipping %s - cannot enable (%s).', tool, e)
+            return
         if not tool.is_enabled():
             raise error.TestFail('%s did not enable correctly.' % tool)
 
         # Disable one more time to confirm our disable routine works.
         logging.debug('Disabling %s.', tool)
-        tool.disable()
+        try:
+            tool.disable()
+        except debugd_dev_tools.FeatureUnavailableError:
+            return
         if tool.is_enabled():
             raise error.TestFail('%s did not disable correctly.' % tool)
 
 
     def run_once(self, host=None):
-        """Main test function."""
         self.create_tools(host)
         try:
             # First remove rootfs verification if it's not already.

@@ -10,7 +10,7 @@ PURPOSE = "Verify factory mode vendor command"
 ATTRIBUTES = "suite:faft_cr50_pvt, suite:faft_cr50_prepvt"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING"
+DEPENDENCIES = "servo"
 
 DOC = """
 This test will make sure the FWMP, write protect, and ccd password can disable

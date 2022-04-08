@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -106,8 +105,7 @@ class Dhcpv6TestServer(object):
         associated process.
         """
         if os.path.exists(DHCPV6_SERVER_PID_FILE):
-            with open(DHCPV6_SERVER_PID_FILE) as rf:
-                pid = int(rf.read())
+            pid = int(file(DHCPV6_SERVER_PID_FILE).read())
             os.remove(DHCPV6_SERVER_PID_FILE)
             try:
                 os.kill(pid, signal.SIGTERM)

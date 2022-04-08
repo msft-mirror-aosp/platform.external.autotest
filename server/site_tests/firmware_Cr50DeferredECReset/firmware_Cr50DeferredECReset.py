@@ -7,7 +7,6 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
-from autotest_lib.server.cros.servo import servo
 
 
 class firmware_Cr50DeferredECReset(Cr50Test):
@@ -58,17 +57,6 @@ class firmware_Cr50DeferredECReset(Cr50Test):
 
         time.sleep(self.PD_SETTLE_TIME)
 
-    def ac_is_plugged_in(self):
-        """Check if AC is plugged.
-
-        Returns:
-            True if AC is plugged, or False otherwise.
-        """
-
-        rv = self.ec.send_command_get_output('chgstate',
-                                             [r'ac\s*=\s*(0|1)\s*'])[0][1]
-        return rv == '1'
-
     def initialize(self, host, cmdline_args, full_args):
         """Initialize the test and check if cr50 exists, DTS is controllable,
            and power delivery mode and power button is adjustable.
@@ -88,7 +76,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         self.dts_restore = self.servo.get_dts_mode()
 
         # Fast open cr50 and check if testlab is enabled.
-        self.fast_ccd_open(enable_testlab=True)
+        self.fast_open(enable_testlab=True)
         if not self.cr50.testlab_is_on():
             raise error.TestNAError('Cr50 testlab mode is not enabled')
 
@@ -114,14 +102,18 @@ class firmware_Cr50DeferredECReset(Cr50Test):
             self.servo.set('servo_v4_role', 'snk')
             time.sleep(self.PD_SETTLE_TIME)
 
-            if self.ac_is_plugged_in():
+            rv = self.ec.send_command_get_output('chgstate',['.*>'])[0].strip()
+            logging.info(rv)
+            if 'ac = 0' not in rv:
                 raise error.TestFail('Failed to set servo_v4_role sink')
 
             # Test stopping the external power delivery
             self.servo.set('servo_v4_role', 'src')
             time.sleep(self.PD_SETTLE_TIME)
 
-            if not self.ac_is_plugged_in():
+            rv = self.ec.send_command_get_output('chgstate',['.*>'])[0].strip()
+            logging.info(rv)
+            if 'ac = 1' not in rv:
                 raise error.TestFail('Failed to set servo_v4_role source')
 
         # Check if the dut has any RDD recognition issue.
@@ -159,15 +151,18 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         """
 
         # If the console is responsive, then the EC is awake.
-        expected_txt = 'asserted' if expect_assert else 'deasserted'
-        logging.info('Checking if ecrst is %s', expected_txt)
+        expecting_txt = ' asserted' if expect_assert else ' deasserted'
+        logging.info('Checking if ecrst is %s', expecting_txt)
 
         try:
             rv = self.cr50.send_command_get_output('ecrst',
-                                        [r'EC_RST_L is (%s)' % expected_txt])
+                    ['(?i)EC_RST_L is \w{0,2}asserted.*>'])[0].strip()
             logging.info(rv)
         except error.TestError as e:
             raise error.TestFail(str(e))
+
+        if expecting_txt.lower() not in rv.lower():
+            raise error.TestFail(rv)
 
     def ping_ec(self, expect_response):
         """Check if EC is running and responding.
@@ -182,9 +177,14 @@ class firmware_Cr50DeferredECReset(Cr50Test):
             logging.info('Checking if ec is %sresponsive',
                          '' if expect_response else 'not ')
             rv = self.ec.send_command_get_output('help', ['.*>'])[0].strip()
-        except servo.UnresponsiveConsoleError as e:
-            logging.info(str(e))
-            return
+        except error.TestFail as e:
+            msg = str(e)
+            logging.info(msg)
+            if not expect_response:
+                if ('Timeout waiting for response' in msg or
+                    'No data was sent from the pty' in msg):
+                    return
+            raise e
         else:
             if not expect_response:
                 logging.error('EC should not respond')

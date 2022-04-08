@@ -1,10 +1,5 @@
 #!/usr/bin/python2
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import os
-import sys
+import sys,os
 
 autodir = None
 autotest_conf = os.path.realpath('/etc/autotest.conf')
@@ -17,7 +12,7 @@ if not autodir:
             autodir = path
 
 if not autodir:
-    print("Autotest home dir NOT FOUND")
+    print "Autotest home dir NOT FOUND"
     sys.exit()
 
 autotest = os.path.join(autodir, 'bin/autotest')
@@ -26,7 +21,7 @@ state = os.path.join(autodir, 'control.state')
 
 if len(sys.argv) == 1 or sys.argv[1] == 'start':
     if os.path.exists(state):
-        print("Restarting partially completed autotest job")
+        print "Restarting partially completed autotest job"
         os.system(autotest + ' --continue ' + control)
     else:
-        print("No autotest jobs outstanding")
+        print "No autotest jobs outstanding"

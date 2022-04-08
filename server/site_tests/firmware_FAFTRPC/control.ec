@@ -4,11 +4,11 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "gredelston, kmshelton, waihong"
+AUTHOR = "gredelston, kmshelton, dgoyette, waihong"
 NAME = "firmware_FAFTRPC.ec"
 PURPOSE = "Verify that the RPC system, and all EC RPCs, work as expected."
 CRITERIA = "This test will fail if the EC system is not set up correctly."
-ATTRIBUTES = "suite:faft_smoke"
+ATTRIBUTES = "suite:faft_framework"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"

@@ -114,7 +114,7 @@ class CsvFolder(object):
             utils.run('gsutil cp %s %s' % (f, dest_dir))
 
 
-    @retry.retry(Exception, raiselist=[CsvNonexistenceException],
+    @retry.retry(Exception, blacklist=[CsvNonexistenceException],
                  timeout_min=UPLOAD_TIMEOUT_MINS)
     def upload(self):
         """Upload the folder to cns.

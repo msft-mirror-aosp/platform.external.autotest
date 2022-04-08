@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -6,8 +6,8 @@
 
 """Unit tests for registration_tickets.py."""
 
+import mox
 import unittest
-import mock
 
 import common
 from fake_device_server import common_util
@@ -20,11 +20,12 @@ from fake_device_server import resource_delegate
 from fake_device_server import server_errors
 
 
-class RegistrationTicketsTest(unittest.TestCase):
+class RegistrationTicketsTest(mox.MoxTestBase):
     """Tests for the RegistrationTickets class."""
 
     def setUp(self):
-        """Sets up a ticket / registration objects."""
+        """Sets up mox and a ticket / registration objects."""
+        mox.MoxTestBase.setUp(self)
         self.tickets = {}
         self.devices_resource = {}
         self.fail_control = fail_control.FailControl()
@@ -64,14 +65,15 @@ class RegistrationTicketsTest(unittest.TestCase):
 
     def testInsert(self):
         """Tests that we can create a new ticket."""
-        common_util.parse_serialized_json = mock.MagicMock(
-            return_value={'userEmail': 'me'})
-        common_util.grab_header_field = mock.MagicMock(
-            return_value='Bearer %s' % self.registration.TEST_ACCESS_TOKEN)
+        self.mox.StubOutWithMock(common_util, 'parse_serialized_json')
+        common_util.parse_serialized_json().AndReturn({'userEmail': 'me'})
+        self.mox.StubOutWithMock(common_util, 'grab_header_field')
+        common_util.grab_header_field('Authorization').AndReturn(
+                'Bearer %s' % self.registration.TEST_ACCESS_TOKEN)
+        self.mox.ReplayAll()
         returned_json = self.registration.POST()
         self.assertIn('id', returned_json)
-        common_util.parse_serialized_json.assert_called_once()
-        common_util.grab_header_field.assert_called_once()
+        self.mox.VerifyAll()
 
 
     def testGet(self):
@@ -91,36 +93,40 @@ class RegistrationTicketsTest(unittest.TestCase):
         update_ticket = dict(blah='hi')
         self.tickets[(1234, None)] = dict(id=1234)
 
-        common_util.parse_serialized_json = mock.MagicMock(
-            return_value=update_ticket)
+        self.mox.StubOutWithMock(common_util, 'parse_serialized_json')
 
+        common_util.parse_serialized_json().AndReturn(update_ticket)
+
+        self.mox.ReplayAll()
         returned_json = self.registration.PATCH(1234)
         self.assertEquals(expected_ticket, returned_json)
-        common_util.parse_serialized_json.assert_called_once()
+        self.mox.VerifyAll()
 
 
-    def _testReplaceTicket(self):
+    def testReplaceTicket(self):
         """Tests that we correctly replace a ticket."""
         update_ticket = dict(id=12345, blah='hi')
         self.tickets[(12345, None)] = dict(id=12345)
 
-        common_util.parse_serialized_json = mock.MagicMock(
-            return_value=update_ticket)
+        self.mox.StubOutWithMock(common_util, 'parse_serialized_json')
 
+        common_util.parse_serialized_json().AndReturn(update_ticket)
+
+        self.mox.ReplayAll()
         returned_json = self.registration.PUT(12345)
         self.assertEquals(update_ticket, returned_json)
-        common_util.parse_serialized_json.assert_called_once()
+        self.mox.VerifyAll()
 
-        common_util.parse_serialized_json.reset_mock()
+        self.mox.ResetAll()
 
         # Ticket id doesn't match.
         update_ticket = dict(id=12346, blah='hi')
-        common_util.parse_serialized_json = mock.MagicMock(
-            return_value=update_ticket)
+        common_util.parse_serialized_json().AndReturn(update_ticket)
 
+        self.mox.ReplayAll()
         self.assertRaises(server_errors.HTTPError,
                           self.registration.PUT, 12345)
-        common_util.parse_serialized_json.assert_called_once()
+        self.mox.VerifyAll()
 
 
 if __name__ == '__main__':

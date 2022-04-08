@@ -13,10 +13,7 @@ WiFi Clients RF enclosures for interoperability testing.
 
 """
 
-from __future__ import print_function
-
 import logging
-import six
 import socket
 import sys
 
@@ -64,7 +61,7 @@ class Scpi(object):
             self.socket.connect((host, port))
         except (socket.error, socket.timeout) as e:
             logging.error('Error connecting to SCPI device.')
-            six.reraise(ScpiException(cause=e), None, sys.exc_info()[2])
+            raise ScpiException(cause=e), None, sys.exc_info()[2]
 
     def close(self):
         """Close the connection."""

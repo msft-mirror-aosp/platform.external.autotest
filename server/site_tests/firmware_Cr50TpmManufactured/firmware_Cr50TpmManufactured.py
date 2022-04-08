@@ -19,10 +19,6 @@ class firmware_Cr50TpmManufactured(FirmwareTest):
 
     def run_once(self):
         """Check if the TPM is manufactured."""
-        if not hasattr(self, 'cr50'):
-            raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
-
         # Signing is different in dev signed images. This test doesn't really
         # apply.
         if not self.cr50.using_prod_rw_keys():
@@ -39,10 +35,7 @@ class firmware_Cr50TpmManufactured(FirmwareTest):
         # We want to make this as accessible as possible and checking the
         # captured uart is the best way to do that.
         self._record_uart_capture()
-        cr50_uart_file = self.servo.get_uart_logfile('cr50')
-        if not cr50_uart_file:
-            raise error.TestNAError('No saved uart file')
-        with open(cr50_uart_file, 'r') as f:
+        with open(self.cr50_uart_file, 'r') as f:
             contents = f.read()
         logging.debug('Cr50 reset logs:\n%s', contents)
 

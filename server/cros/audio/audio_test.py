@@ -57,7 +57,7 @@ def audio_test_requirement():
 def install_sox():
     """Install sox command on autotest drone."""
     try:
-        lxc.install_packages(packages=['sox'])
+        lxc.install_package('sox')
     except error.ContainerError:
         logging.info('Can not install sox outside of container.')
 

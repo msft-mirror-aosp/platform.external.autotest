@@ -23,7 +23,8 @@ class firmware_ClearTPMOwnerAndReset(FirmwareTest):
         tpm_utils.ClearTPMOwnerRequest(host)
 
         logging.info(tpm_utils.TPMStatus(host))
-        host.reset_via_servo()
+
+        self.servo.get_power_state_controller().reset()
 
         end_time = time.time() + self.TIMEOUT
         while utils.ping(host.ip, deadline=5, tries=1):

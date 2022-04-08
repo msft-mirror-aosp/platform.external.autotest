@@ -8,7 +8,7 @@
 from django.db import models as dbmodels
 
 import common
-from autotest_lib.client.common_lib import autotest_enum
+from autotest_lib.client.common_lib import enum
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.frontend.afe import model_logic
@@ -25,7 +25,7 @@ class Server(dbmodels.Model, model_logic.ModelExtensions):
                   'Note         : %(note)s\n')
 
     STATUS_LIST = ['primary', 'repair_required']
-    STATUS = autotest_enum.AutotestEnum(*STATUS_LIST, string_values=True)
+    STATUS = enum.Enum(*STATUS_LIST, string_values=True)
 
     hostname = dbmodels.CharField(unique=True, max_length=128)
     cname = dbmodels.CharField(null=True, blank=True, default=None,
@@ -95,8 +95,6 @@ class Server(dbmodels.Model, model_logic.ModelExtensions):
 class ServerRole(dbmodels.Model, model_logic.ModelExtensions):
     """Role associated with hosts."""
     # Valid roles for a server.
-    # TODO b:169251326 terms below are set outside of this codebase
-    # and should be updated when possible.
     ROLE_LIST = [
             'afe',
             'crash_server',
@@ -113,7 +111,7 @@ class ServerRole(dbmodels.Model, model_logic.ModelExtensions):
 
             'reserve',
     ]
-    ROLE = autotest_enum.AutotestEnum(*ROLE_LIST, string_values=True)
+    ROLE = enum.Enum(*ROLE_LIST, string_values=True)
     # Roles that must be assigned to a single primary server in an Autotest
     # instance
     ROLES_REQUIRE_UNIQUE_INSTANCE = [ROLE.SCHEDULER,

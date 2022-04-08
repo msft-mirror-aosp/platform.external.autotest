@@ -1,17 +1,9 @@
-# Lint as: python2, python3
 """This module gives the mkfs creation options for an existing filesystem.
 
 tune2fs or xfs_growfs is called according to the filesystem. The results,
 filesystem tunables, are parsed and mapped to corresponding mkfs options.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os, re, tempfile
-
-import six
-
 import common
 from autotest_lib.client.common_lib import error, utils
 
@@ -29,7 +21,7 @@ def opt_string2dict(opt_string):
         elif item != '':
             opt_dict['-%s' % item] = None
     # Convert all the digit strings to int.
-    for key, value in six.iteritems(opt_dict):
+    for key, value in opt_dict.iteritems():
         if value and value.isdigit():
             opt_dict[key] = int(value)
 
@@ -64,11 +56,11 @@ def parse_mke2fs_conf(fs_type, conf_file='/etc/mke2fs.conf'):
     f.close()
 
     # fs_types options override the defaults options
-    for key, value in six.iteritems(fs_opt):
+    for key, value in fs_opt.iteritems():
         default_opt[key] = value
 
     # Convert all the digit strings to int.
-    for key, value in six.iteritems(default_opt):
+    for key, value in default_opt.iteritems():
         if value and value.isdigit():
             default_opt[key] = int(value)
 
@@ -90,7 +82,7 @@ def convert_conf_opt(default_opt):
     if 'features' in default_opt:
         mkfs_opt['-O'] += ',%s' % default_opt['features']
 
-    for key, value in six.iteritems(conf_opt_mapping):
+    for key, value in conf_opt_mapping.iteritems():
         if key in default_opt:
             mkfs_opt[value] = default_opt[key]
 
@@ -183,7 +175,7 @@ def ext_mkfs_options(tune2fs_dict, mkfs_option):
         'Filesystem features': lambda d, k: re.sub(' ', ',', d[k]),
         'Filesystem revision #': lambda d, k: d[k][0]}
 
-    for key, value in six.iteritems(ext_mapping):
+    for key, value in ext_mapping.iteritems():
         if key not in tune2fs_dict:
             continue
         if key in conversions:
@@ -276,7 +268,7 @@ def xfs_mkfs_options(tune2fs_dict, mkfs_option):
     mkfs_option['-l size'] = tune2fs_dict['log: bsize'] * (
         tune2fs_dict['log: blocks'])
 
-    for key, value in six.iteritems(xfs_mapping):
+    for key, value in xfs_mapping.iteritems():
         mkfs_option[value] = tune2fs_dict[key]
 
 
@@ -306,7 +298,7 @@ def match_ext_options(fs_type, dev, needed_options):
 
    # User options override config options.
     needed_opt = conf_mkfs_opt
-    for key, value in six.iteritems(needed_opt_dict):
+    for key, value in needed_opt_dict.iteritems():
         if key == '-N' or key == '-T':
             raise Exception('-N/T is not allowed.')
         elif key == '-O':
@@ -331,7 +323,7 @@ def match_ext_options(fs_type, dev, needed_options):
     ext_mkfs_options(tune2fs_dict, current_opt)
 
     # Does the match
-    for key, value in six.iteritems(needed_opt):
+    for key, value in needed_opt.iteritems():
         if key == '-O':
             if not compare_features(value, current_opt[key].split(',')):
                 return False

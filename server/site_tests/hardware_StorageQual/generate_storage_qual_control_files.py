@@ -68,12 +68,6 @@ BASE_AFTER = {
     'length': 'long'
 }
 
-
-BASE_NONROOT_BEFORE = copy.deepcopy(BASE_BEFORE)
-BASE_NONROOT_BEFORE['args']['nonroot'] = True
-BASE_NONROOT_AFTER = copy.deepcopy(BASE_AFTER)
-BASE_NONROOT_AFTER['args']['nonroot'] = True
-
 SOAK_QUICK = copy.deepcopy(SOAK)
 SOAK_QUICK['iterations'] = 2
 SOAK_QUICK['args']['duration'] = HOUR_IN_SECS
@@ -194,24 +188,6 @@ SUITES = {
             ]
         }
     ],
-    'storage_qual_external': [
-        {
-            'label': 'storage_qual_external',
-            'tests': [
-                BASE_NONROOT_BEFORE,
-                {
-                    'test': 'hardware_StorageQualSuspendStress',
-                    'args': {'tag': 'suspend', 'duration': 4 * HOUR_IN_SECS,
-                        'other_dev': True
-                    },
-                    'iterations': 2,
-                    'priority': 80,
-                    'length': 'long'
-                },
-                BASE_NONROOT_AFTER
-            ]
-        }
-    ],
     'storage_qual_cq': [
         {
             'label': 'storage_qual_cq_1',
@@ -254,12 +230,11 @@ SUITES = {
 SUITE_ATTRIBUTES = {
     'storage_qual': 'suite:storage_qual',
     'storage_qual_quick': 'suite:storage_qual_quick',
-    'storage_qual_cq': 'suite:storage_qual_cq',
-    'storage_qual_external': 'suite:storage_qual_external'
+    'storage_qual_cq': 'suite:storage_qual_cq'
 }
 
 TEMPLATE = """
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -268,7 +243,7 @@ TEMPLATE = """
 
 from autotest_lib.client.common_lib import utils
 
-AUTHOR = "chromeos-storage"
+AUTHOR = "Chrome OS Team"
 NAME = "{name}"
 ATTRIBUTES = "{attributes}"
 PURPOSE = "{name}"
@@ -312,7 +287,7 @@ def _get_control_file_name(suite, label, test, i=None):
 
 def _get_args(test):
     args = []
-    for key, value in test['args'].items():
+    for key, value in test['args'].iteritems():
         args.append('%s=%s' % (key, repr(value)))
     return ', '.join(args)
 
@@ -328,7 +303,7 @@ for suite in SUITES:
         label = sub_test['label']
         for test in sub_test['tests']:
             if 'iterations' in test:
-                for i in range(int(test['iterations'])):
+                for i in xrange(test['iterations']):
                     control_file = TEMPLATE.format(
                         label = label,
                         name = _get_name(label, test, i),

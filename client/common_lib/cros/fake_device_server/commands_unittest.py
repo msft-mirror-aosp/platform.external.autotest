@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -7,6 +7,7 @@
 """Unit tests for commands.py."""
 
 import copy
+import mox
 import unittest
 
 import common
@@ -16,7 +17,7 @@ from fake_device_server import fail_control
 from fake_device_server import server_errors
 
 
-class CommandsTest(unittest.TestCase):
+class CommandsTest(mox.MoxTestBase):
     """Tests for the Commands class.
 
     Note unlike other unittests in this project, I set the api_key for all
@@ -26,7 +27,8 @@ class CommandsTest(unittest.TestCase):
     """
 
     def setUp(self):
-        """Sets up a ticket / registration objects."""
+        """Sets up mox and a ticket / registration objects."""
+        mox.MoxTestBase.setUp(self)
         # Use a fake OAuth module to work around the hack that this
         # module bypass cherrypy by directly invoking commands.GET.
         self.oauth = fake_oauth.FakeOAuth()

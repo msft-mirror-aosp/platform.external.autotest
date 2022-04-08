@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -10,13 +9,9 @@ Do not put something only usable in client side in this module.
 
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 import logging
 import time
 import uuid
-import six
 
 
 class AppRTCParameters(object):
@@ -36,7 +31,7 @@ class AppRTCParameters(object):
 
         """
         audio_params = []
-        for key, value in six.iteritems(self.audio):
+        for key, value in self.audio.iteritems():
             audio_params.append('%s=%s' % (key, 'true' if value else 'false'))
         audio_params_str = ','.join(audio_params)
         return audio_params_str

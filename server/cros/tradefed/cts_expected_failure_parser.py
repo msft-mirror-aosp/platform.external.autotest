@@ -11,35 +11,23 @@ class ParseKnownCTSFailures(object):
     def __init__(self, failure_files):
         self.waivers_yaml = self._load_failures(failure_files)
 
-    def _validate_waiver_config(self, arch, board, bundle_abi, sdk_ver,
-                                first_api_level, config):
+    def _validate_waiver_config(self, arch, board, bundle_abi, sdk_ver, config):
         """Validate if the test environment matches the test config.
 
         @param arch: DUT's arch type.
         @param board: DUT's board name.
         @param bundle_abi: The test's abi type.
         @param sdk_ver: DUT's Android SDK version
-        @param first_api_level: DUT's Android first API level.
         @param config: config for an expected failing test.
         @return True if test arch or board is part of the config, else False.
         """
-        # Map only the versions that ARC releases care.
-        sdk_ver_map = {25: 'N', 28: 'P', 30: 'R'}
-
-        # 'all' applies to all devices.
-        # 'x86' or 'arm' applies to the DUT's architecture.
-        # board name like 'eve' or 'kevin' applies to the DUT running the board.
         dut_config = ['all', arch, board]
-        # 'nativebridge' applies to the case running ARM CTS on x86 devices.
         if bundle_abi and bundle_abi != arch:
             dut_config.append('nativebridge')
-        # 'N' or 'P' or 'R' applies to the device running that Android version.
+        # Map only the versions that ARC releases care.
+        sdk_ver_map = {'25': 'N', '28': 'P'}
         if sdk_ver in sdk_ver_map:
-            dut_config.append(sdk_ver_map[sdk_ver])
-        # 'shipatN' or 'shipatP' or 'shipatR' applies to those originally
-        # launched at that Android version.
-        if first_api_level in sdk_ver_map:
-            dut_config.append('shipat' + sdk_ver_map[first_api_level])
+           dut_config.append(sdk_ver_map[sdk_ver])
         return len(set(dut_config).intersection(config)) > 0
 
     def _load_failures(self, failure_files):
@@ -63,20 +51,19 @@ class ParseKnownCTSFailures(object):
                          failure_file)
         return waivers_yaml
 
-    def find_waivers(self, arch, board, bundle_abi, sdk_ver, first_api_level):
+    def find_waivers(self, arch, board, bundle_abi, sdk_ver):
         """Finds waivers for the test board.
 
         @param arch: DUT's arch type.
         @param board: DUT's board name.
         @param bundle_abi: The test's abi type.
-        @param sdk_ver: DUT's Android SDK version.
-        @param first_api_level: DUT's Android first API level.
+        @param sdk_ver: DUT's Android SDK version
         @return a set of waivers/no-test-modules applied to the test board.
         """
         applied_waiver_list = set()
         for test, config in self.waivers_yaml.iteritems():
             if self._validate_waiver_config(arch, board, bundle_abi, sdk_ver,
-                                            first_api_level, config):
+                                            config):
                 applied_waiver_list.add(test)
         logging.info('Excluding tests/packages from rerun: %s.',
                      applied_waiver_list)

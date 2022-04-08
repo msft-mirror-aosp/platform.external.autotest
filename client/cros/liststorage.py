@@ -15,12 +15,7 @@ To use it as python module it's enough to call the get_all() function.
 |get_all()| output is human readable (as oppposite to python's data structures)
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging, os, re
-import six
 
 # this script can be run at command line on DUT (ie /usr/local/autotest
 # contains only the client/ subtree), on a normal autotest
@@ -29,8 +24,6 @@ import common
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
-from autotest_lib.client.common_lib import seven
-
 
 INFO_PATH = "/sys/block"
 UDEV_CMD_FOR_SERIAL_NUMBER = "udevadm info -a -n %s | grep -iE 'ATTRS{" \
@@ -245,7 +238,7 @@ def get_partition_info(part_path, bus, model, partid=None, fstype=None,
                     # Here an octal unicode '\040' is added to the path
                     # replacing ' ' (space).
                     # Following '.decode('unicode-escape')' handles the same
-                    dev['mountpoint'] = seven.ensure_text(mount, 'unicode-escape')
+                    dev['mountpoint'] = mount.decode('unicode-escape')
                     dev['is_removable'] = is_removable
                     dev['usb_type'], dev['serial'] = \
                             get_usbdevice_type_and_serial(dev['device'],
@@ -352,9 +345,9 @@ def get_all(host=None):
 
 def main():
     for device in get_all():
-        print("%(device)s %(bus)s %(model)s %(size)d %(fs_uuid)s %(fstype)s "
-              "%(is_mounted)d %(mountpoint)s %(usb_type)s %(serial)s" %
-              device)
+        print ("%(device)s %(bus)s %(model)s %(size)d %(fs_uuid)s %(fstype)s "
+               "%(is_mounted)d %(mountpoint)s %(usb_type)s %(serial)s" %
+               device)
 
 
 if __name__ == "__main__":

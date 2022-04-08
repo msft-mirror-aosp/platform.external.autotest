@@ -1,11 +1,6 @@
-# Lint as: python2, python3
 # Copyright (c) 2008 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import os, time, socket, shutil, glob, logging, tempfile, re
 import shlex
@@ -13,7 +8,6 @@ import subprocess
 
 from autotest_lib.client.bin.result_tools import runner as result_tools_runner
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.client.common_lib.global_config import global_config
 from autotest_lib.server import utils, autotest
@@ -21,13 +15,6 @@ from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import remote
 from autotest_lib.server.hosts import rpc_server_tracker
 from autotest_lib.server.hosts import ssh_multiplex
-import six
-from six.moves import filter
-
-try:
-    from chromite.lib import metrics
-except ImportError:
-    metrics = utils.metrics_mock
 
 # pylint: disable=C0111
 
@@ -79,7 +66,6 @@ class AbstractSSHHost(remote.RemoteHost):
         @param connection_pool: ssh_multiplex.ConnectionPool instance to share
                 the master ssh connection across control scripts.
         """
-        self._track_class_usage()
         # IP address is retrieved only on demand. Otherwise the host
         # initialization will fail for host is not online.
         self._ip = None
@@ -140,8 +126,8 @@ class AbstractSSHHost(remote.RemoteHost):
 
     @property
     def is_default_port(self):
-        """Returns True if its port is default SSH port."""
-        return self.port == _DEFAULT_SSH_PORT
+      """Returns True if its port is default SSH port."""
+      return self.port == _DEFAULT_SSH_PORT
 
     @property
     def host_port(self):
@@ -173,7 +159,7 @@ class AbstractSSHHost(remote.RemoteHost):
                          alive_interval=300, alive_count_max=3,
                          connection_attempts=1):
         """Composes SSH -o options."""
-        assert isinstance(connect_timeout, six.integer_types)
+        assert isinstance(connect_timeout, (int, long))
         assert connect_timeout > 0 # can't disable the timeout
 
         options = [("StrictHostKeyChecking", "no"),
@@ -366,7 +352,7 @@ class AbstractSSHHost(remote.RemoteHost):
         umask = os.umask(0)
         os.umask(umask)
 
-        max_privs = 0o777 & ~umask
+        max_privs = 0777 & ~umask
 
         def set_file_privs(filename):
             """Sets mode of |filename|.  Assumes |filename| exists."""
@@ -375,8 +361,8 @@ class AbstractSSHHost(remote.RemoteHost):
             file_privs = max_privs
             # if the original file permissions do not have at least one
             # executable bit then do not set it anywhere
-            if not file_stat.st_mode & 0o111:
-                file_privs &= ~0o111
+            if not file_stat.st_mode & 0111:
+                file_privs &= ~0111
 
             os.chmod(filename, file_privs)
 
@@ -441,7 +427,7 @@ class AbstractSSHHost(remote.RemoteHost):
         # Start a master SSH connection if necessary.
         self.start_master_ssh()
 
-        if isinstance(source, six.string_types):
+        if isinstance(source, basestring):
             source = [source]
         dest = os.path.abspath(dest)
 
@@ -457,7 +443,7 @@ class AbstractSSHHost(remote.RemoteHost):
                                              safe_symlinks)
                 utils.run(rsync)
                 try_scp = False
-            except error.CmdError as e:
+            except error.CmdError, e:
                 # retry on rsync exit values which may be caused by transient
                 # network problems:
                 #
@@ -496,7 +482,7 @@ class AbstractSSHHost(remote.RemoteHost):
                 scp = self._make_scp_cmd(remote_source, local_dest)
                 try:
                     utils.run(scp)
-                except error.CmdError as e:
+                except error.CmdError, e:
                     logging.debug('scp failed: %s', e)
                     raise error.AutoservRunError(e.args[0], e.args[1])
 
@@ -547,7 +533,7 @@ class AbstractSSHHost(remote.RemoteHost):
         # Start a master SSH connection if necessary.
         self.start_master_ssh()
 
-        if isinstance(source, six.string_types):
+        if isinstance(source, basestring):
             source = [source]
 
         local_sources = self._encode_local_paths(source)
@@ -568,7 +554,7 @@ class AbstractSSHHost(remote.RemoteHost):
                                              False, excludes=excludes)
                 utils.run(rsync)
                 try_scp = False
-            except error.CmdError as e:
+            except error.CmdError, e:
                 logging.warning("trying scp, rsync failed: %s", e)
 
         if try_scp:
@@ -593,11 +579,12 @@ class AbstractSSHHost(remote.RemoteHost):
                 scp = self._make_scp_cmd(sources, remote_dest)
                 try:
                     utils.run(scp)
-                except error.CmdError as e:
+                except error.CmdError, e:
                     logging.debug('scp failed: %s', e)
                     raise error.AutoservRunError(e.args[0], e.args[1])
             else:
                 logging.debug('skipping scp for empty source list')
+
 
     def verify_ssh_user_access(self):
         """Verify ssh access to this host.
@@ -637,7 +624,7 @@ class AbstractSSHHost(remote.RemoteHost):
         except error.AutoservSshPermissionDeniedError:
             #let AutoservSshPermissionDeniedError be visible to the callers
             raise
-        except error.AutoservRunError as e:
+        except error.AutoservRunError, e:
             # convert the generic AutoservRunError into something more
             # specific for this context
             raise error.AutoservSshPingHostError(e.description + '\n' +
@@ -664,16 +651,10 @@ class AbstractSSHHost(remote.RemoteHost):
             return True
 
 
-    def is_up_fast(self, count=1):
-        """Return True if the host can be pinged.
-
-        @param count How many time try to ping before decide that host is not
-                    reachable by ping.
-        """
-        ping_config = ping_runner.PingConfig(self.hostname,
-                                             count=count,
-                                             ignore_result=True,
-                                             ignore_status=True)
+    def is_up_fast(self):
+        """Return True if the host can be pinged."""
+        ping_config = ping_runner.PingConfig(
+                self.hostname, count=3, ignore_result=True, ignore_status=True)
         return ping_runner.PingRunner().ping(ping_config).received > 0
 
 
@@ -1022,32 +1003,3 @@ class AbstractSSHHost(remote.RemoteHost):
             self._cached_up_status = self.is_up_fast()
             self._cached_up_status_updated = time.time()
         return self._cached_up_status
-
-
-    def _track_class_usage(self):
-        """Tracking which class was used.
-
-        The idea to identify unused classes to be able clean them up.
-        We skip names with dynamic created classes where the name is
-        hostname of the device.
-        """
-        class_name = None
-        if 'chrome' not in self.__class__.__name__:
-            class_name = self.__class__.__name__
-        else:
-            for base in self.__class__.__bases__:
-                if 'chrome' not in base.__name__:
-                    class_name = base.__name__
-                    break
-        if class_name:
-            data = {'host_class': class_name}
-            metrics.Counter(
-                'chromeos/autotest/used_hosts').increment(fields=data)
-
-    def is_file_exists(self, file_path):
-        """Check whether a given file is exist on the host.
-        """
-        result = self.run('test -f ' + file_path,
-                          timeout=30,
-                          ignore_status=True)
-        return result.exit_status == 0

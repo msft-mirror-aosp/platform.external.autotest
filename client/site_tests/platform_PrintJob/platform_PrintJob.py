@@ -9,7 +9,7 @@ import time
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.chameleon import chameleon
-from autotest_lib.client.common_lib import ui_utils_helpers
+from autotest_lib.client.cros.input_playback import input_playback
 
 _CHECK_TIMEOUT = 20
 _PRINTER_NAME = "HP OfficeJet g55"
@@ -28,13 +28,76 @@ class platform_PrintJob(test.test):
     """
     version = 1
 
+    def warmup(self):
+        """Test setup."""
+        # Emulate keyboard to play back shortcuts and navigate.
+        # See input_playback README.
+        self._player = input_playback.InputPlayback()
+        self._player.emulate(input_type='keyboard')
+        self._player.find_connected_inputs()
+
+
     def cleanup(self):
         if hasattr(self, 'browser'):
             self.browser.close()
-        if self.printer_capture_started:
-            self.usb_printer.StopCapturingPrinterData()
-        if self.printer_connected:
-            self.usb_printer.Unplug()
+        self._player.close()
+
+
+
+    def _open_print_dialog(self):
+        """Use keyboard shortcut to open print dialog."""
+        self._player.blocking_playback_of_default_file(
+            input_type='keyboard', filename='keyboard_ctrl+p')
+        time.sleep(_SHORT_WAIT)
+
+
+    def _press_tab(self):
+        """Use keyboard shortcut to press Tab."""
+        self._player.blocking_playback_of_default_file(
+            input_type='keyboard', filename='keyboard_tab')
+
+
+    def _press_down(self):
+        """Use keyboard shortcut to press down."""
+        self._player.blocking_playback_of_default_file(
+            input_type='keyboard', filename='keyboard_down')
+
+
+    def _press_shift_tab(self):
+        """Use keyboard shortcut to press Shift-Tab."""
+        self._player.blocking_playback_of_default_file(
+            input_type='keyboard', filename='keyboard_shift+tab')
+
+
+    def _press_enter(self):
+        """Use keyboard shortcut to press Enter."""
+        self._player.blocking_playback_of_default_file(
+            input_type='keyboard', filename='keyboard_enter')
+        time.sleep(_SHORT_WAIT)
+
+
+    def execute_print_job(self):
+        """Using keyboard imput navigate to print dialog and execute a job."""
+
+        # Open dialog and select 'See more'
+        self._open_print_dialog()
+        time.sleep(_SHORT_WAIT)
+
+        # Navigate to printer selection
+        for x in range(_STEPS_BETWEEN_CONTROLS):
+            self._press_tab()
+        self._press_down()
+        self._press_tab()
+        self._press_down()
+        self._press_enter()
+
+        # Go back to Print button
+        for x in range(_STEPS_BETWEEN_CONTROLS):
+            self._press_shift_tab()
+
+        # Send the print job
+        self._press_enter()
+
 
     def check_notification(self, notification):
         """Polls for successful print job notification"""
@@ -53,6 +116,7 @@ class platform_PrintJob(test.test):
                 desc='Notification %s NOT found' % notification,
                 timeout=_CHECK_TIMEOUT, sleep_interval=_SHORT_WAIT)
 
+
     def navigate_to_pdf(self):
         """Navigate to the pdf page to print"""
         self.cr.browser.platform.SetHTTPServerDirectories(self.bindir)
@@ -63,11 +127,9 @@ class platform_PrintJob(test.test):
                 timeout=_CHECK_TIMEOUT);
         time.sleep(_SHORT_WAIT)
 
+
     def run_once(self, host, args):
         """Run the test."""
-        # Set these to know if the usb_printer needs to be handled post test.
-        self.printer_capture_started = False
-        self.printer_connected = False
 
         # Make chameleon host known to the DUT host crbug.com/862646
         chameleon_args = 'chameleon_host=' + host.hostname + '-chameleon'
@@ -75,21 +137,20 @@ class platform_PrintJob(test.test):
 
         chameleon_board = chameleon.create_chameleon_board(host.hostname, args)
         chameleon_board.setup_and_reset(self.outputdir)
-        self.usb_printer = chameleon_board.get_usb_printer()
-        self.usb_printer.SetPrinterModel(1008, 17, _PRINTER_NAME)
+        usb_printer = chameleon_board.get_usb_printer()
+        usb_printer.SetPrinterModel(1008, 17, _PRINTER_NAME)
 
         with chrome.Chrome(autotest_ext=True,
                            init_network_controller=True) as self.cr:
-            self.usb_printer.Plug()
-            self.printer_connected = True
+            usb_printer.Plug()
             self.check_notification(_USB_PRINTER_CONNECTED_NOTIF)
             logging.info('Chameleon printer connected!')
             self.navigate_to_pdf()
             time.sleep(_SHORT_WAIT)
             logging.info('PDF file opened in browser!')
-            self.ui_helper = ui_utils_helpers.UIPrinterHelper(chrome=self.cr)
-            self.ui_helper.print_to_custom_printer("Chameleon " + _PRINTER_NAME)
-            self.usb_printer.StartCapturingPrinterData()
-            self.printer_capture_started = True
+            self.execute_print_job()
+            usb_printer.StartCapturingPrinterData()
             self.check_notification(_PRINTING_NOTIF)
             self.check_notification(_PRINTING_COMPLETE_NOTIF)
+            usb_printer.StopCapturingPrinterData()
+            usb_printer.Unplug()

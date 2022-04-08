@@ -6,14 +6,14 @@ import logging, os
 import time
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros import constants
 
 
+_PASSWD_FILE = '/var/tmp/tpm_password'
 _RM_FILES = ['/home/chronos/.oobe_completed',
              '/home/chronos/Local\ State',
              '/var/cache/shill/default.profile']
 _RM_DIRS = ['/home/.shadow/*',
-            os.path.join(constants.ALLOWLIST_DIR, '*'),
+            '/var/lib/whitelist/*',
             '/var/cache/app_pack',
             '/var/lib/tpm']
 
@@ -28,8 +28,9 @@ def TPMStatus(client):
 
     @param client: client object to run commands on.
     """
-    out = client.run('tpm_manager_client status --nonsensitive').stdout.strip()
-    lines = out.split('\n')[1:-1]
+    out = client.run('cryptohome --action=tpm_status').stdout.strip()
+    out = out.replace('TPM ', '')
+    lines = out.split('\n')
     status = {}
     for item in lines:
         item = item.split(':')
@@ -50,22 +51,49 @@ def IsTPMAvailable(client):
     @param client: client object to run commands on.
     """
     status = TPMStatus(client)
-    return status['is_enabled'] and not status['is_owned']
+    return status['Enabled'] and not status['Owned']
 
 
 def ClearTPMServer(client, out_dir):
     """Clears the TPM and reboots from a server-side autotest.
 
     @param client: client object to run commands on.
-    @param out_dir: temporary directory.
+    @param out_dir: temporary directory to store the retrieved password file.
     """
     if IsTPMAvailable(client):
         logging.debug('TPM is not owned')
         return
 
     client.run('stop ui')
-    client.run('crossystem clear_tpm_owner_request=1')
+    try:
+        password = TPMStatus(client)['Password']
+        if not password:
+            try:
+                client.get_file(_PASSWD_FILE, out_dir)
+            except error.AutoservRunError:
+                raise NoTPMPasswordException(
+                        'TPM Password file %s doesn\'t exist, falling back on '
+                        'clear_tpm_owner_request to clear the TPM. You may '
+                        'need to have the firmware clear the TPM, for instance '
+                        'by toggling the dev switch.' % _PASSWD_FILE)
+            with open(os.path.join(out_dir,
+                      os.path.basename(_PASSWD_FILE))) as f:
+                password = f.read().rstrip()
+        if not password:
+            raise NoTPMPasswordException(
+                    'TPM Password file %s empty, falling back on '
+                    'clear_tpm_owner_request to clear the TPM. You may need to '
+                    'have the firmware clear the TPM, for instance by toggling '
+                    'the dev switch.' % _PASSWD_FILE)
+
+        res = client.run('tpm_clear --pass ' + password).stdout.strip()
+        logging.warn(repr(res))
+    except NoTPMPasswordException as e:
+        logging.warn(e.args[0])
+        client.run('crossystem clear_tpm_owner_request=1')
+
     CleanupAndReboot(client)
+
 
 def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
     """Clears the TPM using crossystem command.
@@ -83,17 +111,12 @@ def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
     if wait_for_ready:
         status = ''
         end_time = time.time() + timeout
-        # Wait for tpm_manager to send a successful reply.
-        while 'STATUS_SUCCESS' not in status and time.time() < end_time:
-            status = client.run('tpm_manager_client status --nonsensitive',
-                                ignore_status=True).stdout.strip()
+        # Wait for cryptohome to send a successful reply.
+        while 'GetTpmStatus success' not in status and time.time() < end_time:
+            status = client.run('cryptohome --action=tpm_more_status',
+                    ignore_status=True).stdout.strip()
             logging.debug(status)
             time.sleep(1)
-        # Verify if the TPM is unowned.
-        tpm_status = TPMStatus(client)
-        logging.info('TPM status: %s', tpm_status)
-        if tpm_status['is_owned']:
-            raise error.TestFail('Failed to clear TPM.')
 
 
 def ClearTPMIfOwned(client):
@@ -102,7 +125,7 @@ def ClearTPMIfOwned(client):
     @param client: client object to run commands on."""
     tpm_status = TPMStatus(client)
     logging.info('TPM status: %s', tpm_status)
-    if tpm_status['is_owned']:
+    if tpm_status['Owned']:
         logging.info('Clearing TPM because this device is owned.')
         ClearTPMOwnerRequest(client)
 

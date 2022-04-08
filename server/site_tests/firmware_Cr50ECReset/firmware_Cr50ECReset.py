@@ -2,14 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import print_function
-
 import logging
 import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
-from autotest_lib.server.cros.servo import servo
 
 
 class firmware_Cr50ECReset(Cr50Test):
@@ -52,9 +49,15 @@ class firmware_Cr50ECReset(Cr50Test):
         time.sleep(self.EC_SETTLE_TIME)
         try:
             self.ec.send_command_get_output('time', ['.*>'])
-        except servo.UnresponsiveConsoleError as e:
-            logging.info(str(e))
-            return False
+        except error.TestFail as e:
+            # TODO(b/149760070): To detect if EC is responsive,
+            # send_command_get_output() should define and raise a Timeout error.
+            msg = str(e)
+            logging.info(msg)
+            if ('Timeout waiting for response' in msg or
+                'No data was sent from the pty' in msg):
+                return False
+            raise
         else:
             return True
 
@@ -139,7 +142,7 @@ class firmware_Cr50ECReset(Cr50Test):
         """Verify EC hibernate"""
         try:
             self.ec_hibernate()
-        except error.TestError as e:
+        except error.TestError, e:
             if 'Could not put the EC into hibernate' in str(e):
                 raise error.TestNAError("EC hibernate doesn't work.")
         finally:
@@ -151,7 +154,7 @@ class firmware_Cr50ECReset(Cr50Test):
         failed_wake = []
 
         # Open cr50 so the test has access to ecrst
-        self.fast_ccd_open(True)
+        self.fast_open(True)
 
         self.check_basic_ecrst()
 

@@ -5,7 +5,7 @@
 """Module contains a simple client lib to interact with OAuth."""
 
 import json
-from six.moves import urllib
+import urllib2
 
 import common
 from fake_device_server.client_lib import common_client
@@ -23,19 +23,17 @@ class OAuthClient(common_client.CommonClient):
     def invalidate_all_access_tokens(self):
         """Invalidates all access tokens previously issued."""
         headers = self.add_auth_headers({'Content-Type': 'application/json'})
-        request = urllib.request.Request(
-            self.get_url(
-                                    ['invalidate_all_access_tokens']),
+        request = urllib2.Request(self.get_url(['invalidate_all_access_tokens']),
                                   json.dumps(dict()), headers=headers)
-        url_h = urllib.request.urlopen(request)
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())
 
 
     def invalidate_all_refresh_tokens(self):
         """Invalidates all refresh tokens previously issued."""
         headers = self.add_auth_headers({'Content-Type': 'application/json'})
-        request = urllib.request.Request(
+        request = urllib2.Request(
             self.get_url(['invalidate_all_refresh_tokens']),
             json.dumps(dict()), headers=headers)
-        url_h = urllib.request.urlopen(request)
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())

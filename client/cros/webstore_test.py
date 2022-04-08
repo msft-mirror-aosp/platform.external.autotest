@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,14 +8,7 @@ using ChromeDriver. They should inherit from the webstore_test class,
 and should override the run() method.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging
-import six
-from six.moves import range
-from six.moves import zip
 import time
 
 from autotest_lib.client.bin import test
@@ -44,8 +36,8 @@ def enum(*enumNames):
 
     @param enumNames: The strings representing the values of the enum
     """
-    enums = dict(zip(enumNames, list(range(len(enumNames)))))
-    reverse = dict((value, key) for key, value in six.iteritems(enums))
+    enums = dict(zip(enumNames, range(len(enumNames))))
+    reverse = dict((value, key) for key, value in enums.iteritems())
     enums['from_string'] = enums
     enums['to_string'] = reverse
     return type('Enum', (), enums)

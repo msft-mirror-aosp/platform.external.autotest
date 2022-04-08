@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import print_function
-
 import logging
 import time
 
@@ -62,7 +60,7 @@ class firmware_Cr50USB(FirmwareTest):
             try:
                 # Run usb_updater command.
                 result = self.host.run("usb_updater -f")
-            except Exception as e:
+            except Exception, e:
                 failed_runs.append(str(i))
                 fail_count += 1
                 logging.debug(e)

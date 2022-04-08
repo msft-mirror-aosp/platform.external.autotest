@@ -31,12 +31,7 @@ class audio_AudioBasicInternalMicrophone(audio_test.AudioTest):
         if not audio_test_utils.has_internal_microphone(self.host):
             return
 
-        # The small volume is to avoid distortion when played on Chameleon.
-        golden_file = audio_test_data.GenerateAudioTestData(
-                path=os.path.join(self.bindir, 'fix_1330_16.raw'),
-                duration_secs=10,
-                frequencies=[1330, 1330],
-                volume_scale=0.1)
+        golden_file = audio_test_data.SIMPLE_FREQUENCY_TEST_1330_FILE
 
         source = self.widget_factory.create_widget(
                 chameleon_audio_ids.ChameleonIds.LINEOUT)

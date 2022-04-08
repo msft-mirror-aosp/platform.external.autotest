@@ -4,7 +4,6 @@
 
 import logging
 import os
-import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
@@ -17,9 +16,6 @@ class login_CryptohomeDataLeak(test.test):
     """
     version = 1
 
-    _CHAPS_LOCK_DIR = '/run/lock/power_override'
-    _CHAPS_LOCK_PREFIX = 'chapsd_token_init_slot_'
-    _CHAPS_INIT_TIMEOUT = 30
 
     def run_once(self):
         """Entry point of test"""
@@ -36,20 +32,6 @@ class login_CryptohomeDataLeak(test.test):
 
             logging.info("Test file: %s", test_file)
             open(test_file, 'w').close()
-
-            # Check until chaps lock file disappear.
-            for _ in xrange(self._CHAPS_INIT_TIMEOUT):
-                time.sleep(1)
-                has_lock = False
-                for lock in os.listdir(self._CHAPS_LOCK_DIR):
-                    if lock.startswith(self._CHAPS_LOCK_PREFIX):
-                        has_lock = True
-                        break
-                if not has_lock:
-                    break
-            else:
-                raise error.TestError(
-                        'Expected chaps finished all load events.')
 
         if cryptohome.is_vault_mounted(user=username, allow_fail=True):
             raise error.TestError('Expected to not find a mounted vault.')

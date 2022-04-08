@@ -105,23 +105,14 @@ class policy_EnterpriseForceInstallCustom(
             pol = self.policy_creator(case)
             self.setup_case(user_policies=pol,
                             arc_mode='enabled',
-                            use_clouddpc_test=False)
+                            use_clouddpc_test=True)
 
             self._verify_force_apps_list()
 
     def policy_creator(self, case):
-        """
-        Generates the policy value.
-
-        @param case: If the app should installed or removed.
-
-        @returns: Policy value.
-        """
         pol = {'ArcEnabled': True,
                'ArcPolicy':
                    {"installUnknownSourcesDisabled": False,
-                    "playDeviceLocalPolicyEnabled": True,
-                    "availableAppSetPolicy": "WHITELIST",
                     "applications":
                         [{"packageName": self.PACKAGE1,
                           "defaultPermissionPolicy": "GRANT",

@@ -1,21 +1,14 @@
-# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import abc, logging, os, re, time
-from six.moves import range
 import subprocess
 
 import common
-
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros.constants import CLEANUP_LOGS_PAUSED_FILE
+from constants import CLEANUP_LOGS_PAUSED_FILE
 
 
 def strip_timestamp(msg):
@@ -163,7 +156,7 @@ class AbstractLogReader(object):
         if not type(patterns) in (list, tuple):
             patterns = [patterns]
 
-        for retry in range(retries + 1):
+        for retry in xrange(retries + 1):
             for pattern in patterns:
                 regexp_compiled = re.compile(pattern)
                 last_match = None
@@ -255,26 +248,11 @@ class LogReader(AbstractLogReader):
                     continue
                 peek = yield line
                 if peek:
-                  buf = [next(f) for _ in range(peek)]
+                  buf = [f.next() for _ in xrange(peek)]
                   yield buf[-1]
                   while buf:
                     yield buf.pop(0)
             f.close()
-
-
-class SystemLogReader(AbstractLogReader):
-    """A class to read logs stored in plaintexts using croslog command
-    """
-
-    def read_all_logs(self):
-      proc = subprocess.Popen(['croslog'], stdout=subprocess.PIPE)
-      line_number = 0
-      for line in proc.stdout:
-          line_number += 1
-          if line_number < self._start_line:
-              continue
-          yield line
-      proc.terminate()
 
 
 class JournalLogReader(AbstractLogReader):
@@ -319,12 +297,10 @@ class ContinuousLogReader(AbstractLogReader):
 def make_system_log_reader():
     """Create a system log reader.
 
-    This will create SystemLogReader(). JournalLogReader() or LogReader() depending on
+    This will create JournalLogReader() or LogReader() depending on
     whether the system is configured with systemd.
     """
-    if os.path.exists("/usr/sbin/croslog"):
-        return SystemLogReader()
-    elif os.path.exists("/var/log/journal"):
+    if os.path.exists("/var/log/journal"):
         return JournalLogReader()
     else:
         return LogReader()

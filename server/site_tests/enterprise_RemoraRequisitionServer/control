@@ -8,8 +8,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "enterprise"
 TEST_TYPE = "server"
-# stop test from running until it can be fixd: https://crbug.com/1116132
-# ATTRIBUTES = "suite:hotrod-remora"
+ATTRIBUTES = "suite:hotrod"
 JOB_RETRIES = 3
 
 DOC = """

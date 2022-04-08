@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Chrome OS Team"
-NAME = "suite_HWConfig"
+NAME = "HWConfig"
 PURPOSE = "Execute automated hardware configuration checks."
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"

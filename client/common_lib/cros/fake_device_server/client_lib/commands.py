@@ -6,7 +6,7 @@
 
 import json
 import logging
-from six.moves import urllib
+import urllib2
 
 import common
 from fake_device_server.client_lib import common_client
@@ -26,9 +26,9 @@ class CommandsClient(common_client.CommonClient):
 
         @param command_id: valid id for a command.
         """
-        request = urllib.request.Request(self.get_url([command_id]),
-                                         headers=self.add_auth_headers())
-        url_h = urllib.request.urlopen(request)
+        request = urllib2.Request(self.get_url([command_id]),
+                                  headers=self.add_auth_headers())
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())
 
 
@@ -37,10 +37,9 @@ class CommandsClient(common_client.CommonClient):
 
         @param command_id: valid id for a command.
         """
-        request = urllib.request.Request(
-            self.get_url(params={'deviceId':device_id}),
-            headers=self.add_auth_headers())
-        url_h = urllib.request.urlopen(request)
+        request = urllib2.Request(self.get_url(params={'deviceId':device_id}),
+                                  headers=self.add_auth_headers())
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())
 
 
@@ -56,15 +55,14 @@ class CommandsClient(common_client.CommonClient):
             return
 
         headers = self.add_auth_headers({'Content-Type': 'application/json'})
-        request = urllib.request.Request(
-            self.get_url([command_id]), json.dumps(data),
-            headers=headers)
+        request = urllib2.Request(self.get_url([command_id]), json.dumps(data),
+                                  headers=headers)
         if replace:
             request.get_method = lambda: 'PUT'
         else:
             request.get_method = lambda: 'PATCH'
 
-        url_h = urllib.request.urlopen(request)
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())
 
 
@@ -76,8 +74,8 @@ class CommandsClient(common_client.CommonClient):
         """
         headers = self.add_auth_headers({'Content-Type': 'application/json'})
         data['deviceId'] = device_id
-        request = urllib.request.Request(self.get_url(),
-            json.dumps(data),
-            headers=headers)
-        url_h = urllib.request.urlopen(request)
+        request = urllib2.Request(self.get_url(),
+                                  json.dumps(data),
+                                  headers=headers)
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())

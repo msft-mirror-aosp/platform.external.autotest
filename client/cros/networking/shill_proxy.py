@@ -93,6 +93,7 @@ class ShillProxy(object):
     SERVICE_PROPERTY_PASSPHRASE = 'Passphrase'
     SERVICE_PROPERTY_PROFILE = 'Profile'
     SERVICE_PROPERTY_SAVE_CREDENTIALS = 'SaveCredentials'
+    SERVICE_PROPERTY_FT_ENABLED = 'WiFi.FTEnabled'
     # Unless you really care whether a network is WPA (TSN) vs. WPA-2
     # (RSN), you should use SERVICE_PROPERTY_SECURITY_CLASS.
     SERVICE_PROPERTY_SECURITY_RAW = 'Security'
@@ -158,6 +159,7 @@ class ShillProxy(object):
         SERVICE_PROPERTY_STRENGTH: (dbus.Byte, {}),
         SERVICE_PROPERTY_STATE: (dbus.String, {}),
         SERVICE_PROPERTY_TYPE: (dbus.String, {}),
+        SERVICE_PROPERTY_FT_ENABLED: (dbus.Boolean, {}),
         SERVICE_PROPERTY_STATIC_IP_CONFIG: (dbus.Dictionary,
                                             {'signature' : 'sv'}),
 
@@ -667,7 +669,7 @@ class ShillProxy(object):
         return None
 
 
-    def find_matching_service(self, properties, only_visible=True):
+    def find_matching_service(self, properties):
         """Find a service object that matches the given properties.
 
         This re-implements the manager DBus method FindMatchingService.
@@ -676,12 +678,9 @@ class ShillProxy(object):
 
         @param properties dict of strings understood by shill to describe
             a service.
-        @param only_visible if set to True, restrict the search to services
-            that are currently visible.
 
         """
-        return self.find_object('Service' if only_visible else 'AnyService',
-                properties)
+        return self.find_object('Service', properties)
 
 
     def connect_service_synchronous(self, service, timeout_seconds):

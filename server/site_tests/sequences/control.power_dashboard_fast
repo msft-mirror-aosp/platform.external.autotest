@@ -1,4 +1,4 @@
-# Copyright 2018 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -13,7 +13,6 @@ DOC = """
 Sequence to make sure that power_Dashboard tests work fine.
 """
 
-import datetime
 from autotest_lib.client.common_lib import utils
 
 # Need separate list for client and server test due to how these test work.
@@ -58,9 +57,7 @@ try:
 except NameError:
     args_dict = utils.args_to_dict(args)
 
-# Use time as pdash_note if not supplied to track all tests in same suite.
-pdash_note = args_dict.get('pdash_note',
-                           NAME + '_' + datetime.datetime.utcnow().isoformat())
+pdash_note = args_dict.get('pdash_note', '')
 sweetberry_serial = args_dict.get('sweetberry_serial', None)
 
 def run_client_test(machine):

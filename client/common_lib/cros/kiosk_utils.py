@@ -88,7 +88,7 @@ def wait_for_kiosk_ext(browser, ext_id):
             ext_contexts = browser.extensions.GetByExtensionId(ext_id)
             if len(ext_contexts) > 1:
                 return ext_contexts
-        except (AttributeError, KeyError, chrome.Error):
+        except (KeyError, chrome.Error):
             pass
         return []
     return utils.poll_for_condition(

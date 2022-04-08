@@ -14,16 +14,13 @@ class firmware_RecoveryCacheBootKeys(FirmwareTest):
     cache instead training memory every boot.
     """
     version = 1
-    NEEDS_SERVO_USB = True
 
-    # Message in older mrc_cache driver code
-    USED_CACHE_MSG1 = ('MRC: Hash comparison successful. '
-                       'Using data from RECOVERY_MRC_CACHE')
-    # Message in newer mrc_cache driver code
-    USED_CACHE_MSG2 = ('MRC: Hash idx 0x100b comparison successful.')
+    USED_CACHE_MSG = ('MRC: Hash comparison successful. '
+                      'Using data from RECOVERY_MRC_CACHE')
     REBUILD_CACHE_MSG = "MRC: cache data 'RECOVERY_MRC_CACHE' needs update."
     RECOVERY_CACHE_SECTION = 'RECOVERY_MRC_CACHE'
     FIRMWARE_LOG_CMD = 'cbmem -1' + ' | grep ' + REBUILD_CACHE_MSG[:3]
+    FMAP_CMD = 'mosys eeprom map'
     RECOVERY_REASON_REBUILD_CMD = 'crossystem recovery_request=0xC4'
 
     def initialize(self, host, cmdline_args, dev_mode=False):
@@ -60,12 +57,8 @@ class firmware_RecoveryCacheBootKeys(FirmwareTest):
         """
         logging.info("Checking if device has RECOVERY_MRC_CACHE")
 
-        # If flashrom can read the section, this means it exists.
-        command = ('flashrom -p host -r -i %s:/dev/null'
-                   % self.RECOVERY_CACHE_SECTION)
-
         return self.faft_client.system.run_shell_command_check_output(
-            command, 'SUCCESS')
+                self.FMAP_CMD, self.RECOVERY_CACHE_SECTION)
 
     def check_cache_used(self):
         """Checks the firmware log to ensure that the recovery cache was used
@@ -75,10 +68,8 @@ class firmware_RecoveryCacheBootKeys(FirmwareTest):
         """
         logging.info('Checking if cache was used.')
 
-        return (self.faft_client.system.run_shell_command_check_output(
-                self.FIRMWARE_LOG_CMD, self.USED_CACHE_MSG1)
-                or self.faft_client.system.run_shell_command_check_output(
-                        self.FIRMWARE_LOG_CMD, self.USED_CACHE_MSG2))
+        return self.faft_client.system.run_shell_command_check_output(
+                self.FIRMWARE_LOG_CMD, self.USED_CACHE_MSG)
 
     def check_cache_rebuilt(self):
         """Checks the firmware log to ensure that the recovery cache was rebuilt

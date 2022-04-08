@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -134,35 +133,33 @@ class KernelConfig():
                 self._failed('"%s" found for "%s" when only "%s" allowed' %
                              (name, regex, "|".join(expected)))
 
-    def _read_config(self):
+    def _open_config(self):
         """Open the kernel's build config file. Attempt to use the built-in
         symbols from /proc first, then fall back to looking for a text file
         in /boot.
 
-        @return readlines for fileobj
+        @return fileobj for open config file
         """
         filename = '/proc/config.gz'
         if not os.path.exists(filename):
             utils.system("modprobe configs", ignore_status=True)
         if os.path.exists(filename):
-            with gzip.open(filename, "r") as rf:
-                return rf.readlines()
+            return gzip.open(filename, "r")
 
         filename = '/boot/config-%s' % utils.system_output('uname -r')
         if os.path.exists(filename):
             logging.info('Falling back to reading %s', filename)
-            with open(filename, "r") as rf:
-                return rf.readlines()
+            return file(filename, "r")
 
         self._fatal("Cannot locate suitable kernel config file")
 
     def initialize(self, missing_ok=None):
         """Load the kernel configuration and parse it.
         """
-        file_lines = self._read_config()
+        fileobj = self._open_config()
         # Import kernel config variables into a dictionary for each searching.
         config = dict()
-        for item in file_lines:
+        for item in fileobj.readlines():
             item = item.strip()
             if not '=' in item:
                 continue

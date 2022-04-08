@@ -5,7 +5,7 @@
 from autotest_lib.server import utils
 
 AUTHOR = "Chrome OS Team"
-NAME = "factory_InstallServo"
+NAME = "Factory Install Servo"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "factory"

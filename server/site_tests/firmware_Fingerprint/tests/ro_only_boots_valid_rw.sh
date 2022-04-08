@@ -6,8 +6,7 @@
 
 set -e
 
-# shellcheck source=./common.sh
-. "$(dirname "$(readlink -f "${0}")")/common.sh"
+. $(dirname "$(readlink -f "${0}")")/common.sh
 
 echo "Running test to verify only valid RW firmware will boot"
 

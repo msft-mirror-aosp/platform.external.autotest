@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 """
 Module with abstraction layers to revision control systems.
 
@@ -6,15 +5,8 @@ With this library, autotest developers can handle source code checkouts and
 updates on both client as well as server code.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os, warnings, logging
-import six
-
-from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import utils
+import error, utils
 from autotest_lib.client.bin import os_dep
 
 
@@ -64,8 +56,8 @@ class GitRepo(object):
         Initialized reposotory.
 
         @param repodir: destination repo directory.
-        @param giturl: main repo git url.
-        @param weburl: a web url for the main repo.
+        @param giturl: master repo git url.
+        @param weburl: a web url for the master repo.
         @param abs_work_tree: work tree of the git repo. In the
             absence of a work tree git manipulations will occur
             in the current working directory for non bare repos.
@@ -170,15 +162,15 @@ class GitRepo(object):
         """
         Clones a repo using giturl and repodir.
 
-        Since we're cloning the main repo we don't have a work tree yet,
+        Since we're cloning the master repo we don't have a work tree yet,
         make sure the getter of the gitcmd doesn't think we do by setting
         work_tree to None.
 
         @param remote_branch: Specify the remote branch to clone. None if to
-                              clone main branch.
+                              clone master branch.
         @param shallow: If True, do a shallow clone.
 
-        @raises GitCloneError: if cloning the main repo fails.
+        @raises GitCloneError: if cloning the master repo fails.
         """
         logging.info('Cloning git repo %s', self.giturl)
         cmd = 'clone %s %s ' % (self.giturl, self.repodir)
@@ -466,8 +458,8 @@ class GitRepo(object):
         """
         Checks for empty but initialized repos.
 
-        eg: we clone an empty main repo, then don't pull
-        after the main commits.
+        eg: we clone an empty master repo, then don't pull
+        after the master commits.
 
         @return True if the repo has no commits.
         """
@@ -505,7 +497,7 @@ class GitRepo(object):
         if not self.is_repo_initialized():
             self.get()
 
-        assert(isinstance(remote, six.string_types))
+        assert(isinstance(remote, basestring))
         if local:
             cmd = 'checkout -b %s %s' % (local, remote)
         else:

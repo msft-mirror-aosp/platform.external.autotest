@@ -10,9 +10,9 @@ The atest class contains attributes & method generic to all the CLI
 operations.
 
 The class inheritance is shown here using the command
-'atest server list ...' as an example:
+'atest host create ...' as an example:
 
-atest <-- server <-- server_list
+atest <-- host <-- host_create <-- site_host_create
 
 Note: The site_<topic>.py and its classes are only needed if you need
 to override the common <topic>.py methods with your site specific ones.
@@ -54,8 +54,6 @@ High Level Algorithm:
    parameter.  This is child-specific, but should leverage the
    atest.print_*() methods.
 """
-
-from __future__ import print_function
 
 import logging
 import optparse
@@ -174,7 +172,7 @@ def _get_item_key(item, key):
             raise ValueError('empty subkey in %r' % key)
         try:
             nested_item = nested_item[subkey]
-        except KeyError as e:
+        except KeyError, e:
             raise KeyError('%r - looking up key %r in %r' %
                            (e, key, nested_item))
     else:
@@ -274,7 +272,7 @@ class atest(object):
     Should only be instantiated by itself for usage
     references, otherwise, the <topic> objects should
     be used."""
-    msg_topic = '[acl|job|label|shard|test|user|server]'
+    msg_topic = '[acl|host|job|label|shard|test|user|server]'
     usage_action = '[action]'
     msg_items = ''
 
@@ -291,7 +289,7 @@ class atest(object):
         if self.kill_on_failure:
             self.invalid_syntax(header + rest)
         else:
-            print(header + rest, file=sys.stderr)
+            print >> sys.stderr, header + rest
 
 
     def invalid_syntax(self, msg):
@@ -299,12 +297,12 @@ class atest(object):
 
         @param msg: Error message.
         """
-        print()
-        print(msg, file=sys.stderr)
-        print()
-        print("usage:")
-        print(self._get_usage())
-        print()
+        print
+        print >> sys.stderr, msg
+        print
+        print "usage:",
+        print self._get_usage()
+        print
         sys.exit(1)
 
 
@@ -453,18 +451,17 @@ class atest(object):
                                dest='log_level')
 
 
-    def add_skylab_options(self, enforce_skylab=True):
-        """Add options for reading and writing skylab inventory repository.
-
-        The enforce_skylab parameter does nothing and is kept for compatibility.
-        """
+    def add_skylab_options(self, enforce_skylab=False):
+        """Add options for reading and writing skylab inventory repository."""
         self.allow_skylab = True
-        self.enforce_skylab = True
+        self.enforce_skylab = enforce_skylab
 
         self.parser.add_option('--skylab',
-                               help='Deprecated',
-                               action='store_const', dest='skylab',
-                               const=True)
+                                help=('Use the skylab inventory as the data '
+                                      'source. Default to %s.' %
+                                       self.enforce_skylab),
+                                action='store_true', dest='skylab',
+                                default=self.enforce_skylab)
         self.parser.add_option('--env',
                                help=('Environment ("prod" or "staging") of the '
                                      'machine. Default to "prod". %s' %
@@ -528,7 +525,9 @@ class atest(object):
 
         @param: options: Option values parsed by the parser.
         """
-        self.skylab = True
+        self.skylab = options.skylab
+        if not self.skylab:
+            return
 
         # TODO(nxia): crbug.com/837831 Add skylab_inventory to
         # autotest-server-deps ebuilds to remove the ImportError check.
@@ -587,7 +586,7 @@ class atest(object):
                 values, leftover = item_parse_info.get_values(options,
                                                               leftover)
                 setattr(self, item_parse_info.attribute_name, values)
-        except CliError as s:
+        except CliError, s:
             self.invalid_syntax(s)
 
         if (req_items and not getattr(self, req_items, None)):
@@ -634,7 +633,7 @@ class atest(object):
         self.web_server = options.web_server
         try:
             self.afe = rpc.afe_comm(self.web_server)
-        except rpc.AuthError as s:
+        except rpc.AuthError, s:
             self.failure(str(s), fatal=True)
 
         return (options, leftover)
@@ -672,7 +671,7 @@ class atest(object):
         while retry:
             try:
                 return self.afe.run(op, **data)
-            except urllib2.URLError as err:
+            except urllib2.URLError, err:
                 if hasattr(err, 'reason'):
                     if 'timed out' not in err.reason:
                         self.invalid_syntax('Invalid server name %s: %s' %
@@ -685,7 +684,7 @@ class atest(object):
                                  what_failed=("Error received from web server"))
                     raise CliError("Error from web server")
                 if self.debug:
-                    print('retrying: %r %d' % (data, retry))
+                    print 'retrying: %r %d' % (data, retry)
                 retry -= 1
                 if retry == 0:
                     if item:
@@ -698,7 +697,7 @@ class atest(object):
                     raise CliError("Timed-out contacting the Autotest server")
             except mock.CheckPlaybackError:
                 raise
-            except Exception as full_error:
+            except Exception, full_error:
                 # There are various exceptions throwns by JSON,
                 # urllib & httplib, so catch them all.
                 self.failure(full_error, item=item,
@@ -719,22 +718,22 @@ class atest(object):
         if len(values) == 0:
             return
         elif len(values) == 1:
-            print(msg + ': ')
+            print msg + ': '
         elif len(values) > 1:
             if msg.endswith('s'):
-                print(msg + ': ')
+                print msg + ': '
             else:
-                print(msg + 's: ')
+                print msg + 's: '
 
         values.sort()
 
         if 'AUTOTEST_CLI_NO_WRAP' in os.environ:
-            print('\n'.join(values))
+            print '\n'.join(values)
             return
 
         twrap = textwrap.TextWrapper(initial_indent='\t',
                                      subsequent_indent='\t')
-        print(twrap.fill(', '.join(values)))
+        print twrap.fill(', '.join(values))
 
 
     def __conv_value(self, type, value):
@@ -751,12 +750,12 @@ class atest(object):
         if not items:
             return
         if title:
-            print(title)
+            print title
         for item in items:
             for key in keys:
-                print('%s: %s' % (KEYS_TO_NAMES_EN[key],
+                print '%s: %s' % (KEYS_TO_NAMES_EN[key],
                                   self.__conv_value(key,
-                                                    _get_item_key(item, key))))
+                                                    _get_item_key(item, key)))
 
 
     def print_fields_parse(self, items, keys, title=None):
@@ -773,7 +772,7 @@ class atest(object):
                       for key in keys
                       if self.__conv_value(key,
                                            _get_item_key(item, key)) != '']
-            print(self.parse_delim.join(values))
+            print self.parse_delim.join(values)
 
 
     def __find_justified_fmt(self, items, keys):
@@ -787,7 +786,7 @@ class atest(object):
         # lines when the max is overlaps but the current values
         # are smaller
         if not items:
-            print("No results")
+            print "No results"
             return
         for key in keys[:-1]:
             lens[key] = max(len(self.__conv_value(key,
@@ -810,10 +809,10 @@ class atest(object):
         if not items:
             return
         if line_before:
-            print()
-        print(title)
+            print
+        print title
         for key, value in items.items():
-            print('%s : %s' % (key, value))
+            print '%s : %s' % (key, value)
 
 
     def print_table_std(self, items, keys_header, sublist_keys=()):
@@ -829,17 +828,17 @@ class atest(object):
             return
         fmt = self.__find_justified_fmt(items, keys_header)
         header = tuple(KEYS_TO_NAMES_EN[key] for key in keys_header)
-        print(fmt % header)
+        print fmt % header
         for item in items:
             values = tuple(self.__conv_value(key,
                                              _get_item_key(item, key))
                            for key in keys_header)
-            print(fmt % values)
+            print fmt % values
             if sublist_keys:
                 for key in sublist_keys:
                     self.print_wrapped(KEYS_TO_NAMES_EN[key],
                                        _get_item_key(item, key))
-                print('\n')
+                print '\n'
 
 
     def print_table_parse(self, items, keys_header, sublist_keys=()):
@@ -862,7 +861,7 @@ class atest(object):
                  for key in sublist_keys
                  if len(_get_item_key(item, key))]
 
-            print(self.parse_delim.join(values))
+            print self.parse_delim.join(values)
 
 
     def print_by_ids_std(self, items, title=None, line_before=False):
@@ -876,9 +875,9 @@ class atest(object):
         if not items:
             return
         if line_before:
-            print()
+            print
         if title:
-            print(title + ':')
+            print title + ':'
         self.print_table_std(items, keys_header=['id', 'name'])
 
 
@@ -893,9 +892,9 @@ class atest(object):
         if not items:
             return
         if line_before:
-            print()
+            print
         if title:
-            print(title + '='),
+            print title + '=',
         values = []
         for item in items:
             values += ['%s=%s' % (KEYS_TO_NAMES_EN[key],
@@ -904,7 +903,7 @@ class atest(object):
                        for key in ['id', 'name']
                        if self.__conv_value(key,
                                             _get_item_key(item, key)) != '']
-        print(self.parse_delim.join(values))
+        print self.parse_delim.join(values)
 
 
     def print_list_std(self, items, key):
@@ -916,7 +915,7 @@ class atest(object):
         """
         if not items:
             return
-        print(' '.join(_get_item_key(item, key) for item in items))
+        print ' '.join(_get_item_key(item, key) for item in items)
 
 
     def print_list_parse(self, items, key):
@@ -928,8 +927,8 @@ class atest(object):
         """
         if not items:
             return
-        print('%s=%s' % (KEYS_TO_NAMES_EN[key],
-                         ','.join(_get_item_key(item, key) for item in items)))
+        print '%s=%s' % (KEYS_TO_NAMES_EN[key],
+                         ','.join(_get_item_key(item, key) for item in items))
 
 
     @staticmethod
@@ -942,13 +941,13 @@ class atest(object):
         @return: True to proceed or False to abort.
         """
         if message:
-            print(message)
+            print message
         sys.stdout.write('Continue? [y/N] ')
         read = raw_input().lower()
         if read == 'y':
             return True
         else:
-            print('User did not confirm. Aborting...')
+            print 'User did not confirm. Aborting...'
             return False
 
 

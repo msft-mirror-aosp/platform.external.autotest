@@ -15,26 +15,22 @@ class hardware_StorageQualBase(test.test):
     """
 
     version = 1
-
-    FIO_ARGV = {'constraints': [
-        '_seq_read_read_bw >= 50 * 1024',
-        '_seq_write_write_bw >= 15 * 1024',
-        '_16k_write_write_iops >= 10'],
-        'requirements': [
-            ('seq_write', []),
-            ('seq_read', []),
-            ('4k_write', []),
-            ('4k_read', []),
-            ('16k_write', []),
-            ('16k_read', [])],
-    }
-
-
     CLIENT_FUNCTIONAL_TESTS = [
         ('hardware_DiskSize', {'constraints': ['gb_main_disk_size >= 8']}),
         ('hardware_SsdDetection', {
             'constraints': ['mb_ssd_device_size >= 8000']}),
-        ('hardware_StorageFio', FIO_ARGV)
+        ('hardware_StorageFio', {'constraints': [
+            '_seq_read_read_bw >= 50 * 1024',
+            '_seq_write_write_bw >= 15 * 1024',
+            '_16k_write_write_iops >= 10'],
+            'requirements': [
+                ('seq_write', []),
+                ('seq_read', []),
+                ('4k_write', []),
+                ('4k_read', []),
+                ('16k_write', []),
+                ('16k_read', [])],
+                })
     ]
 
     CRYPTO_RUNTIME = 5 * 60  # seconds.
@@ -55,7 +51,7 @@ class hardware_StorageQualBase(test.test):
 
 
     def run_once(self, client_ip, client_tag='', crypto_runtime=CRYPTO_RUNTIME,
-                 cq=False, nonroot=False):
+            cq=False):
         """
         Runs simple tests to ensure the device meets basic criteria.
 
@@ -76,21 +72,16 @@ class hardware_StorageQualBase(test.test):
 
         client = hosts.create_host(client_ip)
         client_at = autotest.Autotest(client)
+        for test_name, argv in self.CLIENT_FUNCTIONAL_TESTS:
+            client_at.run_test(test_name, disable_sysinfo=True, tag=client_tag,
+                               **argv)
 
-        if nonroot:
-            client_at.run_test("hardware_StorageFioOther", disable_sysinfo=True,
-                               tag=client_tag, **self.FIO_ARGV)
-        else:
-            for test_name, argv in self.CLIENT_FUNCTIONAL_TESTS:
-                client_at.run_test(test_name, disable_sysinfo=True,
-                                   tag=client_tag, **argv)
-
-            # Test real life performance
-            for script in self.CRYPTO_TESTS:
-                client_at.run_test('platform_CryptohomeFio',
-                    disable_sysinfo=True,
-                    from_internal_disk_only=True,
-                    script=script,
-                    tag='_'.join([client_tag, script]),
-                    runtime=crypto_runtime,
-                    disk_configs=['crypto', 'plain'])
+        # Test real life performance
+        for script in self.CRYPTO_TESTS:
+            client_at.run_test('platform_CryptohomeFio',
+                disable_sysinfo=True,
+                from_internal_disk_only=True,
+                script=script,
+                tag='_'.join([client_tag, script]),
+                runtime=crypto_runtime,
+                disk_configs=['crypto', 'plain'])

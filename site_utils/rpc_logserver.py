@@ -5,10 +5,6 @@
 # found in the LICENSE file.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import argparse
 import ctypes
 import logging
@@ -55,7 +51,7 @@ class LogServer(object):
         LogServer.process.start()
         while not server_started.value:
             time.sleep(0.1)
-        print('LogServer is started at port %d.' % port)
+        print 'LogServer is started at port %d.' % port
 
 
     @staticmethod

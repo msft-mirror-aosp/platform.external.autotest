@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import print_function
-
 import logging, threading
 import time
 
@@ -46,7 +44,7 @@ class platform_InternalDisplay(test.test):
                 'Monroe does not have internal display. Test Skipped')
 
         self.host.reboot()
-        if self.host.has_internal_display() != 'internal_display':
+        if self.host.has_internal_display() is not 'internal_display':
             raise error.TestFail('Internal display is missing after reboot.')
 
         time.sleep(_SLEEP_BEFORE_SUSPEND_SEC)
@@ -54,7 +52,7 @@ class platform_InternalDisplay(test.test):
         logging.info('DUT suspended')
         self.host.test_wait_for_resume(boot_id, _LONG_TIMEOUT)
         logging.info('DUT resumed')
-        if self.host.has_internal_display() != 'internal_display':
+        if self.host.has_internal_display() is not 'internal_display':
             raise error.TestFail(
                 'Internal display is missing after suspend & resume.')
 

@@ -1,9 +1,8 @@
-# Lint as: python2, python3
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import six.moves.configparser
+import ConfigParser
 import io
 import unittest
 
@@ -39,7 +38,7 @@ rpm_outlet = .A15""")
 
 
 def _parse_config_from_string(conf):
-    parser = six.moves.configparser.RawConfigParser()
+    parser = ConfigParser.RawConfigParser()
     parser.readfp(io.BytesIO(conf))
     return parser
 

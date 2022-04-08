@@ -4,7 +4,6 @@
 import logging
 import os
 
-from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.cros.power import power_videotest
 
@@ -16,75 +15,75 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
     # Time in seconds to measure power per video file.
     _MEASUREMENT_DURATION = 120
 
-    _BASE_URL='http://storage.googleapis.com/chromiumos-test-assets-public/tast/cros/video/power/30s/'
+    _BASE_URL='http://storage.googleapis.com/chromiumos-test-assets-public/tast/cros/video/power/2m/'
 
     # list of video name and url.
     _VIDEOS = [
         ('h264_720_30fps',
-         _BASE_URL + '720p30fpsH264_foodmarket_sync_30s.mp4'
+         _BASE_URL + '720p30fpsH264_foodmarket_sync_2m.mp4'
         ),
         ('h264_720_60fps',
-         _BASE_URL + '720p60fpsH264_boat_sync_30s.mp4'
+         _BASE_URL + '720p60fpsH264_boat_sync_2m.mp4'
         ),
         ('h264_1080_30fps',
-         _BASE_URL + '1080p30fpsH264_foodmarket_sync_30s.mp4'
+         _BASE_URL + '1080p30fpsH264_foodmarket_sync_2m.mp4'
         ),
         ('h264_1080_60fps',
-         _BASE_URL + '1080p60fpsH264_boat_sync_30s.mp4'
+         _BASE_URL + '1080p60fpsH264_boat_sync_2m.mp4'
         ),
         ('h264_4k_30fps',
-         _BASE_URL + '4k30fpsH264_foodmarket_sync_vod_30s.mp4'
+         _BASE_URL + '4k30fpsH264_foodmarket_sync_vod_2m.mp4'
         ),
         ('h264_4k_60fps',
-         _BASE_URL + '4k60fpsH264_boat_sync_vod_30s.mp4'
+         _BASE_URL + '4k60fpsH264_boat_sync_vod_2m.mp4'
         ),
         ('vp8_720_30fps',
-         _BASE_URL + '720p30fpsVP8_foodmarket_sync_30s.webm'
+         _BASE_URL + '720p30fpsVP8_foodmarket_sync_2m.webm'
         ),
         ('vp8_720_60fps',
-         _BASE_URL + '720p60fpsVP8_boat_sync_30s.webm'
+         _BASE_URL + '720p60fpsVP8_boat_sync_2m.webm'
         ),
         ('vp8_1080_30fps',
-         _BASE_URL + '1080p30fpsVP8_foodmarket_sync_30s.webm'
+         _BASE_URL + '1080p30fpsVP8_foodmarket_sync_2m.webm'
         ),
         ('vp8_1080_60fps',
-         _BASE_URL + '1080p60fpsVP8_boat_sync_30s.webm'
+         _BASE_URL + '1080p60fpsVP8_boat_sync_2m.webm'
         ),
         ('vp8_4k_30fps',
-         _BASE_URL + '4k30fpsVP8_foodmarket_sync_30s.webm'
+         _BASE_URL + '4k30fpsVP8_foodmarket_sync_2m.webm'
         ),
         ('vp8_4k_60fps',
-         _BASE_URL + '4k60fpsVP8_boat_sync_30s.webm'
+         _BASE_URL + '4k60fpsVP8_boat_sync_2m.webm'
         ),
         ('vp9_720_30fps',
-         _BASE_URL + '720p30fpsVP9_foodmarket_sync_30s.webm'
+         _BASE_URL + '720p30fpsVP9_foodmarket_sync_2m.webm'
         ),
         ('vp9_720_60fps',
-         _BASE_URL + '720p60fpsVP9_boat_sync_30s.webm'
+         _BASE_URL + '720p60fpsVP9_boat_sync_2m.webm'
         ),
         ('vp9_1080_30fps',
-         _BASE_URL + '1080p30fpsVP9_foodmarket_sync_30s.webm'
+         _BASE_URL + '1080p30fpsVP9_foodmarket_sync_2m.webm'
         ),
         ('vp9_1080_60fps',
-         _BASE_URL + '1080p60fpsVP9_boat_sync_30s.webm'
+         _BASE_URL + '1080p60fpsVP9_boat_sync_2m.webm'
         ),
         ('vp9_4k_30fps',
-         _BASE_URL + '4k30fpsVP9_foodmarket_sync_30s.webm'
+         _BASE_URL + '4k30fpsVP9_foodmarket_sync_2m.webm'
         ),
         ('vp9_4k_60fps',
-         _BASE_URL + '4k60fpsVP9_boat_sync_30s.webm'
+         _BASE_URL + '4k60fpsVP9_boat_sync_2m.webm'
         ),
         ('av1_720_30fps',
-         _BASE_URL + '720p30fpsAV1_foodmarket_sync_30s.mp4'
+         _BASE_URL + '720p30fpsAV1_foodmarket_sync_2m.mp4'
         ),
         ('av1_720_60fps',
-         _BASE_URL + '720p60fpsAV1_boat_sync_30s.mp4'
+         _BASE_URL + '720p60fpsAV1_boat_sync_2m.mp4'
         ),
         ('av1_1080_30fps',
-         _BASE_URL + '1080p30fpsAV1_foodmarket_sync_30s.mp4'
+         _BASE_URL + '1080p30fpsAV1_foodmarket_sync_2m.mp4'
         ),
         ('av1_1080_60fps',
-         _BASE_URL + '1080p60fpsAV1_boat_sync_30s.mp4'
+         _BASE_URL + '1080p60fpsAV1_boat_sync_2m.mp4'
         ),
     ]
 
@@ -127,8 +126,6 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
         tab = cr.browser.tabs[0]
         tab.Navigate(cr.browser.platform.http_server.UrlOf(local_path))
         tab.WaitForDocumentReadyStateToBeComplete()
-        tab.EvaluateJavaScript(
-            "document.getElementsByTagName('video')[0].loop=true")
 
     def _teardown_video(self, cr, url):
         """Teardown browser session after playing video.
@@ -149,21 +146,8 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
         @param use_hw_decode: if False, disable hw video decoding.
         @param fast: Use smaller set of videos when videos is None.
         """
-        default_videos = self._FAST_VIDEOS if fast else self._VIDEOS
         if not videos:
-            videos = default_videos
-        else:
-            for i, (tagname, url) in enumerate(videos):
-                if url:
-                    continue
-                # if url is unset & tagname matches default use that path.
-                for default in default_videos:
-                    if tagname == default[0]:
-                        videos[i] = default
-                        break
-                else:
-                    estr = 'Unable to find URL for video name %s' % tagname
-                    raise error.TestError(estr)
+            videos = self._FAST_VIDEOS if fast else self._VIDEOS
 
         super(power_VideoPlayback, self).run_once(
             videos, secs_per_video, use_hw_decode)

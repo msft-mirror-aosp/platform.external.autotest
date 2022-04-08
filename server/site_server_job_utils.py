@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -10,7 +9,7 @@ test_item: extends the basic test tuple to add include/exclude attributes and
 """
 
 
-import logging, os, six.moves.queue
+import logging, os, Queue
 from autotest_lib.client.common_lib import error, utils
 from autotest_lib.server import autotest, hosts, host_attributes
 

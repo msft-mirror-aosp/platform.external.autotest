@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import print_function
-
 import logging
 import time
 import StringIO
@@ -11,7 +9,6 @@ import subprocess
 
 from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.common_lib.cros import tpm_utils
-from autotest_lib.client.cros import constants
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
@@ -53,9 +50,9 @@ class firmware_IntegratedU2F(FirmwareTest):
 
 
     def owner_key_exists(self):
-        """Return True if constants.OWNER_KEY_FILE exists."""
+        """Return True if /var/lib/whitelist/owner.key exists."""
         logging.info('checking for owner key')
-        return self.host.path_exists(constants.OWNER_KEY_FILE)
+        return self.host.path_exists('/var/lib/whitelist/owner.key')
 
 
     def wait_for_policy(self):
@@ -72,44 +69,18 @@ class firmware_IntegratedU2F(FirmwareTest):
             raise error.TestError('Device did not create owner key')
 
 
-    def attestation_init_complete(self):
-        """Return True if prepare_for_enrollment has completed"""
-        return 'prepared_for_enrollment: true' in self.host.run(
-            'attestation_client status').stdout
-
-    def chaps_init_complete(self):
-        """Return True if chaps token initialization has completed"""
-        try:
-            return 'available with 2 token' in self.host.run(
-                    'chaps_client --ping').stderr
-        except error.AutoservRunError:
-            logging.info('Chaps no response')
-            return False
-
-    def wait_for_cr50(self):
-        """Wait for cr50 to complete any OOBE initialization"""
-
-        if not utils.wait_for_value(
-                self.attestation_init_complete, True, timeout_sec=120):
-            raise error.TestError('Attestation initialization did not complete')
-
-        if not utils.wait_for_value(
-                self.chaps_init_complete, True, timeout_sec=120):
-            raise error.TestError('Chaps initialization did not complete')
-
-
     def set_u2fd_flags(self, u2f, g2f, user_keys):
         # Start by removing all flags.
         self.host.run('rm -f /var/lib/u2f/force/*.force')
 
         if u2f:
-            self.host.run('touch %s' % self.U2F_FORCE_PATH)
+          self.host.run('touch %s' % self.U2F_FORCE_PATH)
 
         if g2f:
-            self.host.run('touch %s' % self.G2F_FORCE_PATH)
+          self.host.run('touch %s' % self.G2F_FORCE_PATH)
 
         if user_keys:
-            self.host.run('touch %s' % self.USER_KEYS_FORCE_PATH)
+          self.host.run('touch %s' % self.USER_KEYS_FORCE_PATH)
 
         # Restart u2fd so that flag change takes effect.
         self.host.run('restart u2fd')
@@ -130,7 +101,7 @@ class firmware_IntegratedU2F(FirmwareTest):
         path = '/sys/bus/hid/devices/*:%s:%s.*/hidraw' % (self.VID, self.PID)
         try:
             self.device = self.host.run('ls ' + path).stdout.strip()
-        except error.AutoservRunError as e:
+        except error.AutoservRunError, e:
             logging.info('Could not find device')
         return len(self.device)
 
@@ -225,10 +196,6 @@ class firmware_IntegratedU2F(FirmwareTest):
 
         # u2fd needs the policy file to exist.
         self.wait_for_policy()
-
-        # Wait for OOBE initialiation to complete, as long-running operations
-        # (eg RSA key generation) could cause U2F operations to timeout.
-        self.wait_for_cr50()
 
         logging.info("testing u2fd --u2f")
         self.set_u2fd_flags(True, False, False)

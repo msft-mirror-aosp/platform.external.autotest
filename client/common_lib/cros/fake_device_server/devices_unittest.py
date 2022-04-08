@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -6,6 +6,7 @@
 
 """Unit tests for devices.py."""
 
+import mox
 import unittest
 
 import common
@@ -17,11 +18,12 @@ from fake_device_server import resource_delegate
 from fake_device_server import server_errors
 
 
-class DevicesTest(unittest.TestCase):
+class DevicesTest(mox.MoxTestBase):
     """Tests for the Devices class."""
 
     def setUp(self):
-        """Sets a ticket / registration objects."""
+        """Sets up mox and a ticket / registration objects."""
+        mox.MoxTestBase.setUp(self)
         self.devices_resource = {}
         self.fail_control = fail_control.FailControl()
         self.oauth = oauth.OAuth(self.fail_control)

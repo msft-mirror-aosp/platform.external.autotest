@@ -19,7 +19,6 @@ class firmware_DevBootUSB(FirmwareTest):
     should boot the USB disk.
     """
     version = 1
-    NEEDS_SERVO_USB = True
 
     def initialize(self, host, cmdline_args, ec_wp=None):
         """Initialize the test"""

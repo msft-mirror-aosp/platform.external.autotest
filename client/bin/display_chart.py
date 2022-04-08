@@ -4,27 +4,21 @@
 
 '''Login with test account and display chart file using telemetry.'''
 
+# This sets up import paths for autotest.
+import common
+
 import argparse
 import contextlib
 import logging
 import os
 import signal
-import sys
 import time
 
-# Set chart process preferred logging format before overridden by importing
-# common package.
-logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s - %(levelname)s - %(message)s')
-
-# This sets up import paths for autotest.
-import common
 from autotest_lib.client.bin import utils
-from autotest_lib.client.cros import constants
-from autotest_lib.client.cros.multimedia import display_facade_native
-from autotest_lib.client.cros.multimedia import facade_resource
 from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.cros.input_playback import keyboard
+
+DISPLAY_LEVEL = 96.0
 
 
 @contextlib.contextmanager
@@ -46,9 +40,6 @@ def set_display_brightness(display_level):
 
 def display(filepath):
     """Display chart with filepath on device by using telemetry."""
-    DISPLAY_LEVEL = 96.0
-    DISPLAY_ORIENTATION = 90
-
     assert os.path.isfile(filepath), 'filepath %r not found.' % filepath
     filepath = os.path.abspath(filepath)
 
@@ -62,32 +53,15 @@ def display(filepath):
 
     signal.signal(signal.SIGINT, handler)
 
-    with chrome.Chrome(
-            extension_paths=[constants.DISPLAY_TEST_EXTENSION],
-            autotest_ext=True,
-            init_network_controller=True) as cr, set_display_brightness(
-                    DISPLAY_LEVEL):
-        logging.info('Set fullscreen.')
-        facade = facade_resource.FacadeResource(cr)
-        display_facade = display_facade_native.DisplayFacadeNative(facade)
-        display_facade.set_fullscreen(True)
-
-        logging.info('Fix screen rotation %d.', DISPLAY_ORIENTATION)
-        internal_display_id = display_facade.get_internal_display_id()
-        display_facade.set_display_rotation(internal_display_id,
-                                            rotation=DISPLAY_ORIENTATION)
-
+    with chrome.Chrome() as cr, set_display_brightness(DISPLAY_LEVEL):
         logging.info('Display chart file of path %r.', filepath)
-        cr.browser.platform.SetHTTPServerDirectories(os.path.dirname(filepath))
         tab = cr.browser.tabs[0]
-        tab.Navigate(cr.browser.platform.http_server.UrlOf(filepath))
-        tab.WaitForDocumentReadyStateToBeComplete()
+        tab.Navigate('file://' + filepath)
 
-        logging.info('Chart is ready.')
-
-        # Flush the 'is ready' message for server test to sync with ready state.
-        sys.stdout.flush()
-        sys.stderr.flush()
+        logging.info('Set chart tab fullscreen.')
+        kb = keyboard.Keyboard()
+        kb.press_key('f4')
+        kb.close()
 
         while displaying:
             time.sleep(1)

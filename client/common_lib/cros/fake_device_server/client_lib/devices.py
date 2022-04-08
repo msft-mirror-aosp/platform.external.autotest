@@ -5,7 +5,8 @@
 """Module contains a simple client lib to the devices RPC."""
 
 import json
-from six.moves import urllib
+import logging
+import urllib2
 
 import common
 from fake_device_server.client_lib import common_client
@@ -25,17 +26,17 @@ class DevicesClient(common_client.CommonClient):
 
         @param device_id: valid device_id.
         """
-        request = urllib.request.Request(self.get_url([device_id]),
-                                         headers=self.add_auth_headers())
-        url_h = urllib.request.urlopen(request)
+        request = urllib2.Request(self.get_url([device_id]),
+                                  headers=self.add_auth_headers())
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())
 
 
     def list_devices(self):
         """Returns the list of the devices the server currently knows about."""
-        request = urllib.request.Request(self.get_url(),
-                                         headers=self.add_auth_headers())
-        url_h = urllib.request.urlopen(request)
+        request = urllib2.Request(self.get_url(),
+                                  headers=self.add_auth_headers())
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())
 
 
@@ -50,7 +51,7 @@ class DevicesClient(common_client.CommonClient):
                     channel=channel,
                     **kwargs)
         headers = self.add_auth_headers({'Content-Type': 'application/json'})
-        request = urllib.request.Request(self.get_url(), json.dumps(data),
-                                         headers=headers)
-        url_h = urllib.request.urlopen(request)
+        request = urllib2.Request(self.get_url(), json.dumps(data),
+                                  headers=headers)
+        url_h = urllib2.urlopen(request)
         return json.loads(url_h.read())

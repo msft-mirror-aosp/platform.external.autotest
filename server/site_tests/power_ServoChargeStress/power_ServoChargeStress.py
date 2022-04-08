@@ -4,8 +4,6 @@
 
 """Stress test Servo's charging functionalities. """
 
-from __future__ import print_function
-
 import collections
 import logging
 import time
@@ -50,9 +48,9 @@ class power_ServoChargeStress(test.test):
                     # result = -1   failed;
                     # result = 0    successful;
                     # result > 0    successful with 'result' # of recoveries.
-                    if role == 'snk':
+                    if role is 'snk':
                         result = self._charge_manager.stop_charging()
-                    elif role == 'src':
+                    elif role is 'src':
                         result = self._charge_manager.start_charging()
                     if result > 0: # Recoveries triggered.
                         total_success_with_recovery[role] += 1

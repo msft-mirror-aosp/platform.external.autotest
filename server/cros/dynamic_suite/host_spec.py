@@ -1,16 +1,9 @@
-# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 
 #pylint: disable-msg=C0111
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import six
-from six.moves import filter
-
 def order_by_complexity(host_spec_list):
     """
     Returns a new list of HostSpecs, ordered from most to least complex.
@@ -120,17 +113,17 @@ class ExplicitHostGroup(HostGroup):
         """
         self._hostname_data_dict = {}
         self._potentially_unsatisfied_specs = []
-        for spec, host_list in six.iteritems(hosts_per_spec):
+        for spec, host_list in hosts_per_spec.iteritems():
             for host in host_list:
                 self.add_host_for_spec(spec, host)
 
 
     def _get_host_datas(self):
-        return six.itervalues(self._hostname_data_dict)
+        return self._hostname_data_dict.itervalues()
 
 
     def as_args(self):
-        return {'hosts': list(self._hostname_data_dict.keys())}
+        return {'hosts': self._hostname_data_dict.keys()}
 
 
     def size(self):
@@ -182,7 +175,7 @@ class ExplicitHostGroup(HostGroup):
         for spec in self._potentially_unsatisfied_specs:
             # If a spec in _potentially_unsatisfied_specs is a subset of some
             # satisfied spec, then it's not unsatisfied.
-            if [d for d in self._get_host_datas() if spec.is_subset(d.spec)]:
+            if filter(lambda d: spec.is_subset(d.spec), self._get_host_datas()):
                 continue
             unsatisfied.append(spec)
         return unsatisfied
@@ -200,8 +193,7 @@ class ExplicitHostGroup(HostGroup):
             else:
                 possibly_doomed.add(data.spec)
         # If a spec is not a subset of any ok spec, it's doomed.
-        return set([s for s in possibly_doomed
-                    if not list(filter(s.is_subset, ok))])
+        return set([s for s in possibly_doomed if not filter(s.is_subset, ok)])
 
 
 class MetaHostGroup(HostGroup):

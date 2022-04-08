@@ -1,6 +1,7 @@
 # Copyright 2018 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """This is a server side hotwording test using the Chameleon board."""
 
 import logging
@@ -8,12 +9,12 @@ import os
 import time
 import threading
 
-from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_helper
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server.cros.audio import audio_test
+from autotest_lib.server.cros.multimedia import remote_facade_factory
 
 
 class audio_AudioBasicHotwording(audio_test.AudioTest):
@@ -32,62 +33,63 @@ class audio_AudioBasicHotwording(audio_test.AudioTest):
     SUSPEND_SECONDS = 20
     RESUME_TIMEOUT_SECS = 60
 
-    def run_once(self, suspend=False):
+    def run_once(self, host, suspend=False):
         """Runs Basic Audio Hotwording test.
 
+        @param host: device under test CrosHost
+
         @param suspend: True for suspend the device before playing hotword.
-                        False for not suspend.
+                        False for hotwording test suspend.
 
         """
-        if (not audio_test_utils.has_hotwording(self.host)):
-            raise error.TestNAError(
-                    'No hotwording device for the DUT.'
-                    ' Confirm swarming bot dimension and control file'
-                    ' dependency for hot-wording is matching.'
-                    ' For new boards, please update the BOARDS_WITH_HOTWORDING.'
-            )
+        if (not audio_test_utils.has_hotwording(host)):
+            return
 
         hotword_file = audio_test_data.HOTWORD_TEST_FILE
-        golden_file = audio_test_data.GenerateAudioTestData(
-                path=os.path.join(self.bindir, 'fix_1330_16.raw'),
-                duration_secs=10,
-                frequencies=[1330, 1330],
-                volume_scale=0.1)
+        golden_file = audio_test_data.SIMPLE_FREQUENCY_TEST_1330_FILE
 
-        source = self.widget_factory.create_widget(
-                chameleon_audio_ids.ChameleonIds.LINEOUT)
-        sink = self.widget_factory.create_widget(
-                chameleon_audio_ids.PeripheralIds.SPEAKER)
-        binder = self.widget_factory.create_binder(source, sink)
+        chameleon_board = host.chameleon
+        factory = remote_facade_factory.RemoteFacadeFactory(
+                host, results_dir=self.resultsdir)
 
-        listener = self.widget_factory.create_widget(
-                chameleon_audio_ids.CrosIds.HOTWORDING)
+        chameleon_board.setup_and_reset(self.outputdir)
+
+        widget_factory = chameleon_audio_helper.AudioWidgetFactory(
+                factory, host)
+
+        source = widget_factory.create_widget(
+            chameleon_audio_ids.ChameleonIds.LINEOUT)
+        sink = widget_factory.create_widget(
+            chameleon_audio_ids.PeripheralIds.SPEAKER)
+        binder = widget_factory.create_binder(source, sink)
+
+        listener = widget_factory.create_widget(
+            chameleon_audio_ids.CrosIds.HOTWORDING)
 
         with chameleon_audio_helper.bind_widgets(binder):
             time.sleep(self.DELAY_AFTER_BINDING_SECS)
+            audio_facade = factory.create_audio_facade()
 
             audio_test_utils.dump_cros_audio_logs(
-                    self.host, self.facade, self.resultsdir, 'after_binding')
+                    host, audio_facade, self.resultsdir, 'after_binding')
 
             logging.info('Start listening from Cros device.')
             listener.start_listening()
             time.sleep(self.DELAY_AFTER_START_LISTENING_SECS)
 
-            audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
-                                                  self.resultsdir,
-                                                  'after_start_listening')
-            if suspend:
+            audio_test_utils.dump_cros_audio_logs(
+                    host, audio_facade, self.resultsdir,
+                    'after_start_listening')
 
+            if suspend:
                 def suspend_host():
-                    """Call the host method suspend."""
                     logging.info('Suspend the DUT for %d secs',
                                  self.SUSPEND_SECONDS)
-                    self.host.suspend(
-                            suspend_time=self.SUSPEND_SECONDS,
-                            allow_early_resume=True)
+                    host.suspend(suspend_time=self.SUSPEND_SECONDS,
+                                 allow_early_resume=True)
 
                 # Folk a thread to suspend the host
-                boot_id = self.host.get_boot_id()
+                boot_id = host.get_boot_id()
                 thread = threading.Thread(target=suspend_host)
                 thread.start()
                 suspend_start_time = time.time()
@@ -101,19 +103,20 @@ class audio_AudioBasicHotwording(audio_test.AudioTest):
             logging.info('Setting golden playback data on Chameleon')
             remote_golden_file_path = source.set_playback_data(golden_file)
 
-            logging.info('Start playing %s from Chameleon', hotword_file.path)
+            logging.info('Start playing %s from Chameleon',
+                         hotword_file.path)
             source.start_playback_with_path(remote_hotword_file_path)
             time.sleep(hotword_file.duration_secs)
 
-            logging.info('Start playing %s from Chameleon', golden_file.path)
+            logging.info('Start playing %s from Chameleon',
+                         golden_file.path)
             source.start_playback_with_path(remote_golden_file_path)
 
             time.sleep(self.RECORD_SECONDS)
 
             # If the DUT suspended, the server will reconnect to DUT
             if suspend:
-                self.host.test_wait_for_resume(boot_id,
-                                               self.RESUME_TIMEOUT_SECS)
+                host.test_wait_for_resume(boot_id, self.RESUME_TIMEOUT_SECS)
                 real_suspend_time = time.time() - suspend_start_time
                 logging.info('Suspend for %f time.', real_suspend_time)
 
@@ -122,15 +125,14 @@ class audio_AudioBasicHotwording(audio_test.AudioTest):
                     logging.info('Real suspend time is less than '
                                  'SUSPEND_SECONDS. Hotwording succeeded.')
                 else:
-                    logging.error(
-                            'Real suspend time is larger than or equal to'
-                            'SUSPEND_SECONDS. Hostwording failed.')
+                    logging.error('Real suspend time is larger than or equal to'
+                                  'SUSPEND_SECONDS. Hostwording failed.')
 
             listener.stop_listening()
             logging.info('Stopped listening from Cros device.')
 
             audio_test_utils.dump_cros_audio_logs(
-                    self.host, self.facade, self.resultsdir, 'after_listening')
+                    host, audio_facade, self.resultsdir, 'after_listening')
 
             listener.read_recorded_binary()
             logging.info('Read recorded binary from Cros device.')
@@ -159,5 +161,5 @@ class audio_AudioBasicHotwording(audio_test.AudioTest):
         # Comparing data by frequency is more robust than comparing them by
         # correlation, which is suitable for fully-digital audio path like USB
         # and HDMI.
-        audio_test_utils.check_recorded_frequency(
-                golden_file, listener, second_peak_ratio=0.2)
+        audio_test_utils.check_recorded_frequency(golden_file, listener,
+                                                  second_peak_ratio=0.2)

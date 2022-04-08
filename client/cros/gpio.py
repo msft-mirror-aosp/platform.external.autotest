@@ -11,10 +11,6 @@ values on a Chrome OS compatible device.
 See help(Gpio) for more information.
 '''
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os, shutil, sys, tempfile
 
 
@@ -38,6 +34,7 @@ class Gpio(object):
 
     DEVELOPER_SWITCH_BOOT = 'devsw_boot'
     RECOVERY_BUTTON_BOOT = 'recoverysw_boot'
+    WRITE_PROTECT_BOOT = 'wpsw_boot'
 
     def __init__(self, exception_type=IOError):
         self._exception_type = exception_type
@@ -49,6 +46,7 @@ class Gpio(object):
                 self.RECOVERY_BUTTON_CURRENT: int,
                 self.RECOVERY_BUTTON_BOOT: int,
                 self.WRITE_PROTECT_CURRENT: int,
+                self.WRITE_PROTECT_BOOT: int,
         }
 
         # list of legacy (chromeos_acpi) property names.
@@ -116,10 +114,10 @@ def main():
     gpio = Gpio()
     try:
         gpio.setup()
-        print("developer switch current status: %s" %
-              gpio.read(gpio.DEVELOPER_SWITCH_CURRENT))
-    except Exception as e:
-        print("GPIO failed. %s" % e)
+        print ("developer switch current status: %s" %
+               gpio.read(gpio.DEVELOPER_SWITCH_CURRENT))
+    except Exception, e:
+        print "GPIO failed. %s" % e
         sys.exit(1)
 
 if __name__ == '__main__':

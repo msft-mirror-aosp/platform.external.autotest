@@ -22,10 +22,6 @@ CLOUD/tko_access_servers in shadow_config.ini.
 
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import argparse
 import socket
 import sys
@@ -93,9 +89,9 @@ def update_allowed_networks(project, instance, afe=None, extra_servers=None,
             'CLOUD', 'tko_access_servers', default='')
     if tko_servers:
         servers.extend(tko_servers.split(','))
-    print('Adding servers %s to access list for projects %s' % (servers,
-                                                                instance))
-    print('Fetching their IP addresses...')
+    print 'Adding servers %s to access list for projects %s' % (servers,
+                                                                instance)
+    print 'Fetching their IP addresses...'
     ips = []
     for name in servers:
         try:
@@ -104,18 +100,18 @@ def update_allowed_networks(project, instance, afe=None, extra_servers=None,
             # collect external ips
             ips.append(_fetch_external_ip(name))
         except socket.gaierror:
-            print('Failed to resolve internal IP address for name %s' % name)
+            print 'Failed to resolve internal IP address for name %s' % name
             raise
         except error.TimeoutException:
-            print('Failed to resolve external IP address for %s' % name)
+            print 'Failed to resolve external IP address for %s' % name
             raise
 
-    print('...Done: %s' % ips)
+    print '...Done: %s' % ips
 
     cidr_ips = [str(ip) + '/32' for ip in ips]
 
     if dryrun:
-        print('This is a dryrun: skip updating glcoud sql allowlists.')
+        print 'This is a dryrun: skip updating glcoud sql whitelists.'
         return
 
     login = False
@@ -124,7 +120,7 @@ def update_allowed_networks(project, instance, afe=None, extra_servers=None,
             utils.run('gcloud config set project %s -q' % project)
             cmd = ('gcloud sql instances patch %s --authorized-networks %s '
                    '-q' % (instance, ','.join(cidr_ips)))
-            print('Running command to update allowlists: "%s"' % cmd)
+            print 'Running command to update whitelists: "%s"' % cmd
             utils.run(cmd, stdout_tee=sys.stdout, stderr_tee=sys.stderr)
             return
         except error.CmdError:
@@ -152,7 +148,7 @@ def main():
                         default=None)
     parser.add_argument('--dryrun', dest='dryrun', action='store_true',
                         default=False,
-                        help='Fetch IPs without updating allowlists in gcloud.')
+                        help='Fetch IPs without updating whitelists in gcloud.')
     options = parser.parse_args()
 
     update_allowed_networks(options.project, options.instance, options.afe,

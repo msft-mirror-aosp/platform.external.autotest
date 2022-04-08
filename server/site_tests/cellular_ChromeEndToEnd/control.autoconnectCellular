@@ -8,7 +8,8 @@ AUTHOR = 'harpreet'
 TIME = 'SHORT'
 NAME = 'cellular_ChromeEndToEnd.autoconnectCellular'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'servo_state:WORKING'
+ATTRIBUTES = 'suite:cellular_endtoend'
+DEPENDENCIES = 'servo'
 
 DOC = """
 Tests that the device auto connects to cellular network..

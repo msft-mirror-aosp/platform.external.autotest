@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -144,7 +143,7 @@ class StorageScanner(object):
         try:
             # Create the dir in case it does not exist.
             os.mkdir(storage_dict['mountpoint'])
-        except OSError as e:
+        except OSError, e:
             # If it's not "file exists", report the exception.
             if e.errno != 17:
                 raise e
@@ -193,7 +192,7 @@ class StorageScanner(object):
         # See BUG=chromium-os:32105
         try:
             os.rmdir(storage_dict['mountpoint'])
-        except OSError as e:
+        except OSError, e:
             logging.debug('Removing %s failed: %s: ignoring.',
                           storage_dict['mountpoint'], e)
         storage_dict['is_mounted'] = False
@@ -278,11 +277,11 @@ class StorageTester(test.test):
                 logging.debug('Preparing volume on %s.', storage['device'])
                 cmd = 'mkfs.%s %s' % (filesystem, storage['device'])
                 utils.system(cmd)
-        except StorageException as e:
+        except StorageException, e:
             logging.warning("%s._prepare_volume() didn't find any device "
                             "attached: skipping volume preparation: %s",
                             self.__class__.__name__, e)
-        except error.CmdError as e:
+        except error.CmdError, e:
             logging.warning("%s._prepare_volume() couldn't format volume: %s",
                             self.__class__.__name__, e)
 
@@ -386,7 +385,7 @@ def create_file(path, size):
     @param size: the file size in bytes.
     """
     logging.debug('Creating %s (size %d) from /dev/urandom.', path, size)
-    with open('/dev/urandom', 'rb') as urandom:
+    with file('/dev/urandom', 'rb') as urandom:
         utils.open_write_close(path, urandom.read(size))
 
 
@@ -400,7 +399,7 @@ def checksum_file(path):
     chunk_size = 1024
 
     m = hashlib.md5()
-    with open(path, 'rb') as f:
+    with file(path, 'rb') as f:
         for chunk in f.read(chunk_size):
             m.update(chunk)
 

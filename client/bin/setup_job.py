@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2007 Google Inc. Released under the GPL v2
 #
 # Eric Li <ericli@google.com>
@@ -73,9 +72,9 @@ def init_test(options, testdir):
             import_stmt = 'import %s' % test_name
             init_stmt = ('auto_test = %s.%s(job, testdir, outputdir)' %
                          (test_name, test_name))
-            exec(import_stmt + '\n' + init_stmt, locals_dict, globals_dict)
+            exec import_stmt + '\n' + init_stmt in locals_dict, globals_dict
             client_test = globals_dict['auto_test']
-        except ImportError as e:
+        except ImportError, e:
             # skips error if test is control file without python test
             if re.search(test_name, str(e)):
                 pass
@@ -83,7 +82,7 @@ def init_test(options, testdir):
             else:
                 logging.exception('%s import error: %s.  Skipping %s' %
                               (test_name, e, test_name))
-        except Exception as e:
+        except Exception, e:
             # Log other errors (e.g., syntax errors) and collect the test.
             logging.exception("%s: %s", test_name, e)
     finally:
@@ -148,7 +147,7 @@ def setup_test(client_test):
                 versionfile = os.path.join(client_test.srcdir, '.version')
                 pickle.dump(client_test.version, open(versionfile, 'w'))
             good_setup = True
-        except Exception as err:
+        except Exception, err:
             logging.error(err)
             raise error.AutoservError('Failed to build client test %s on '
                                       'server.' % test_name)

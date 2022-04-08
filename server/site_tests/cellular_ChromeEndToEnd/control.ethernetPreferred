@@ -8,7 +8,8 @@ AUTHOR = 'harpreet'
 TIME = 'SHORT'
 NAME = 'cellular_ChromeEndToEnd.ethernetPreferred'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'servo_state:WORKING'
+ATTRIBUTES = 'suite:cellular_endtoend'
+DEPENDENCIES = 'servo'
 
 DOC = """
 Tests that the device prefers ethernet over cellular network.

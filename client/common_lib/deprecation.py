@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,7 +6,8 @@
 
 TODO(ayatane): The reason for putting this module here is so client tests can use it.
 """
-from six.moves import urllib
+
+import urllib
 import warnings
 
 
@@ -43,7 +43,7 @@ class APIDeprecationWarning(UserWarning):
     def _get_fixit_bug_url(self):
         """Return the URL for making a fixit bug."""
         return ('https://bugs.chromium.org/p/chromium/issues/entry?'
-                + urllib.parse.urlencode({
+                + urllib.urlencode({
                     'summary': 'Deprecated use of %s' % self._deprecated_name,
                     'description': 'Please paste the warning message below\n',
                     'components': 'Infra>Client>ChromeOS',

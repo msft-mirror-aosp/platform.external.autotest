@@ -29,7 +29,6 @@ class power_Idle(power_test.power_Test):
 
     """
     version = 1
-    first_test_warmup_secs = 60
 
     def initialize(self, pdash_note='', seconds_period=10.,
                    force_discharge=False):
@@ -42,9 +41,6 @@ class power_Idle(power_test.power_Test):
 
         def measure_it(warmup_secs, idle_secs, tagname):
             """Helper function to wrap testing loop for each sub test."""
-            if self.is_first_test:
-                warmup_secs += self.first_test_warmup_secs
-                self.is_first_test = False
             if warmup_secs > 0:
                 tstart = time.time()
                 time.sleep(warmup_secs)
@@ -57,7 +53,6 @@ class power_Idle(power_test.power_Test):
             .BluetoothDeviceXmlRpcDelegate()
 
         with chrome.Chrome() as self.cr:
-            self.is_first_test = True
 
             # Measure power in full-screen blank tab
             tab = self.cr.browser.tabs.New()

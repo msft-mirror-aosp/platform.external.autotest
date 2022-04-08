@@ -1,11 +1,10 @@
-# Lint as: python2, python3
 # Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """Facade to access the system-related functionality."""
 
-import six
+import StringIO
 import os
 import threading
 import time
@@ -25,14 +24,11 @@ class SystemFacadeNative(object):
 
     """
     SCALING_GOVERNOR_MODES = [
+            'interactive',
             'performance',
-            'powersave',
-            'userspace',
             'ondemand',
-            'conservative',
-            'schedutil',
-            'interactive', # deprecated since kernel v4.14
-            'sched' # deprecated since kernel v4.14
+            'powersave',
+            'sched'
             ]
 
     def __init__(self):
@@ -185,7 +181,7 @@ class BackgroundWorker(object):
         self._do_process_output = do_process_output
         self._output_lock = threading.Lock()
         self._process_output_thread = None
-        self._stdout = six.StringIO()
+        self._stdout = StringIO.StringIO()
 
     def start(self):
         """

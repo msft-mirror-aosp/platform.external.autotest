@@ -5,28 +5,24 @@
 import glob, os
 from autotest_lib.client.cros.video import device_capability
 
-def find_cameras():
-    """
-    Find V4L camera devices
 
-    @return [device list]. If no camera is found, returns empty list.
+def find_camera():
+    """
+    Find a V4L camera device.
+
+    @return (device_name, device_index). If no camera is found, (None, None).
     """
     cameras = [os.path.basename(camera) for camera in
                glob.glob('/sys/bus/usb/drivers/uvcvideo/*/video4linux/video*')]
     if not cameras:
-        return []
-    return cameras
+        return None, None
+    camera = cameras[0]
+    return camera, int(camera[5:])
 
 
 def has_builtin_usb_camera():
     """Check if there is a built-in USB camera by capability."""
     return device_capability.DeviceCapability().have_capability('builtin_usb_camera')
-
-
-def has_builtin_or_vivid_camera():
-    """Check if there is a built-in USB camera or MIPI camera by capability."""
-    return device_capability.DeviceCapability().have_capability(
-            'builtin_or_vivid_camera')
 
 
 def get_camera_hal_paths():

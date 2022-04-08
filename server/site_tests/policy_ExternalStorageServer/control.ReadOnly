@@ -11,7 +11,7 @@ TEST_CATEGORY = 'General'
 TEST_CLASS = 'enterprise'
 TEST_TYPE = 'server'
 ATTRIBUTES = 'suite:ent-nightly, suite:policy'
-DEPENDENCIES = 'servo_state:WORKING'
+DEPENDENCIES = 'servo'
 
 DOC = """
 This test connects the servo repair USB stick to the DUT, then runs the

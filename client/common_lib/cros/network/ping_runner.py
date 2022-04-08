@@ -1,16 +1,10 @@
-# Lint as: python2, python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import logging
 import math
 import re
-import six
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -25,7 +19,7 @@ def _get_platform_delegate(platform):
     elif platform == PLATFORM_MACOS:
         return MacPingDelegate
     else:
-        raise error.TestError('%s is not a valid platform type', platform)
+      raise error.TestError('%s is not a valid platform type', platform)
 
 
 def _regex_int_from_string(pattern, line):
@@ -54,13 +48,6 @@ def _regex_float_from_string(pattern, line):
     if m is not None:
         return float(m.group(1))
     return None
-
-
-def _extract_ping_loss(output):
-    for line in output.splitlines():
-        if line.find('packets transmitted') > 0:
-            return line
-    return ''
 
 
 class MacPingDelegate(object):
@@ -129,7 +116,8 @@ class MacPingDelegate(object):
         This function will look for both 'stdev' and 'std-dev' in test results
         to support both ping and ping6 commands.
         """
-        loss_line = _extract_ping_loss(ping_output)
+        loss_line = (filter(lambda x: x.find('packets transmitted') > 0,
+                            ping_output.splitlines()) or [''])[0]
         sent = _regex_int_from_string('([0-9]+) packets transmitted', loss_line)
         received = _regex_int_from_string('([0-9]+) packets received',
                                           loss_line)
@@ -224,7 +212,8 @@ class LinuxPingDelegate(object):
             time 90 ms
 
         """
-        loss_line = _extract_ping_loss(ping_output)
+        loss_line = (filter(lambda x: x.find('packets transmitted') > 0,
+                            ping_output.splitlines()) or [''])[0]
         sent = _regex_int_from_string('([0-9]+) packets transmitted', loss_line)
         received = _regex_int_from_string('([0-9]+) received', loss_line)
         loss = _regex_float_from_string('([0-9]+(\.[0-9]+)?)% packet loss',
@@ -299,8 +288,9 @@ class PingResult(object):
 
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(
-                ['%s=%r' % item for item in six.iteritems(vars(self))]))
+        return '%s(%s)' % (self.__class__.__name__,
+                           ', '.join(['%s=%r' % item
+                                      for item in vars(self).iteritems()]))
 
 
 class PingRunner(object):

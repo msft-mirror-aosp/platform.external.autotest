@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -24,7 +24,7 @@ class FakeDeviceServerTests(unittest.TestCase):
         json_data = json.dumps(dict(a='b', b='c'))
 
         json_file = tempfile.TemporaryFile()
-        json_file.write(json.dumps(json_data).encode('utf-8'))
+        json_file.write(json.dumps(json_data))
         content_length = json_file.tell()
         json_file.seek(0)
         cherrypy.request.headers['Content-Length'] = content_length

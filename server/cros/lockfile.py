@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 
 """
 lockfile.py - Platform-independent advisory file locks.
@@ -48,17 +47,14 @@ Exceptions:
             NotMyLock - File was locked but not by the current thread/process
 """
 
-from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
 
 import logging
 import socket
 import os
 import threading
 import time
-import six
-from six.moves import urllib
+import urllib
 
 # Work with PEP8 and non-PEP8 versions of threading module.
 if not hasattr(threading, "current_thread"):
@@ -143,7 +139,7 @@ class LockBase(object):
         self.hostname = socket.gethostname()
         self.pid = os.getpid()
         name = threading.current_thread().get_name()
-        tname = "%s-" % urllib.parse.quote(name, safe="")
+        tname = "%s-" % urllib.quote(name, safe="")
         dirname = os.path.dirname(self.lock_file)
         self.unique_name = os.path.join(dirname, "%s.%s%s" % (self.hostname,
                                                               tname, self.pid))

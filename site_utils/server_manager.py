@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -30,10 +29,6 @@ modify(hostname, role=None, status=None, note=None, delete=False,
 
 """
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import datetime
 
@@ -79,7 +74,7 @@ def _add_role(server, role, action):
     server_manager_actions.try_execute(server, [role], enable=True,
                                        post_change=True, do_action=action)
 
-    print('Role %s is added to server %s.' % (role, server.hostname))
+    print 'Role %s is added to server %s.' % (role, server.hostname)
 
 
 def _delete_role(server, role, action=False):
@@ -105,7 +100,7 @@ def _delete_role(server, role, action=False):
     server_manager_actions.try_execute(server, [role], enable=False,
                                        post_change=False, do_action=action)
 
-    print('Deleting role %s from server %s...' % (role, server.hostname))
+    print 'Deleting role %s from server %s...' % (role, server.hostname)
     server.roles.get(role=role).delete()
 
     # Apply actions to disable the role for the server after the role is
@@ -117,7 +112,7 @@ def _delete_role(server, role, action=False):
         server.status == server_models.Server.STATUS.PRIMARY):
         print ('Server %s has no role.')
 
-    print('Role %s is deleted from server %s.' % (role, server.hostname))
+    print 'Role %s is deleted from server %s.' % (role, server.hostname)
 
 
 def _change_status(server, status, action):
@@ -180,9 +175,9 @@ def _change_status(server, status, action):
                                        prev_status=prev_status,
                                        do_action=action)
 
-    print('Status of server %s is changed from %s to %s. Affected roles: %s' %
-          (server.hostname, prev_status, status,
-           ', '.join(server.get_role_names())))
+    print ('Status of server %s is changed from %s to %s. Affected roles: %s' %
+           (server.hostname, prev_status, status,
+            ', '.join(server.get_role_names())))
 
 
 @server_manager_utils.verify_server(exist=False)
@@ -216,17 +211,17 @@ def delete(hostname, server=None):
     @raise ServerActionError: If delete server action failed, e.g., server is
             not found in database.
     """
-    print('Deleting server %s from server database.' % hostname)
+    print 'Deleting server %s from server database.' % hostname
 
     if (server_manager_utils.use_server_db() and
         server.status == server_models.Server.STATUS.PRIMARY):
-        print('Server %s is in status primary, need to disable its '
-              'current roles first.' % hostname)
+        print ('Server %s is in status primary, need to disable its '
+               'current roles first.' % hostname)
         for role in server.roles.all():
             _delete_role(server, role.role)
 
     server.delete()
-    print('Server %s is deleted from server database.' % hostname)
+    print 'Server %s is deleted from server database.' % hostname
 
 
 @server_manager_utils.verify_server()

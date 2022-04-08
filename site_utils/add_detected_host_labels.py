@@ -19,10 +19,6 @@ Limitations:
 """
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from multiprocessing import pool
 import logging
 import socket
@@ -114,7 +110,7 @@ def main():
     options = parser.parse_args()
 
     if options.silent and options.info_only:
-        print('The -i and -s flags cannot be used together.')
+        print 'The -i and -s flags cannot be used together.'
         parser.print_help()
         return 0
 

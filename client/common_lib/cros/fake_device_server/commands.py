@@ -132,7 +132,7 @@ class Commands(object):
             listing = {'kind': 'clouddevices#commandsListResponse'}
             requested_state = kwargs.get('state', None)
             listing['commands'] = []
-            for _, command in iter(self.device_commands[device_id].items()):
+            for _, command in self.device_commands[device_id].iteritems():
                 # Check state for match (if None, just append all of them).
                 if (requested_state is None or
                         requested_state == command['state']):
@@ -140,7 +140,7 @@ class Commands(object):
             logging.info('Returning queue of commands: %r', listing)
             return listing
 
-        for command_id, _ in iter(self.device_commands[device_id].items()):
+        for command_id, resource in self.device_commands[device_id].iteritems():
             if command_id == requested_command_id:
                 return self.device_commands[device_id][command_id]
 

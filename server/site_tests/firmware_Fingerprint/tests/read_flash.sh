@@ -6,8 +6,7 @@
 
 set -e
 
-# shellcheck source=./common.sh
-. "$(dirname "$(readlink -f "${0}")")/common.sh"
+. $(dirname "$(readlink -f "${0}")")/common.sh
 
 echo "Make sure all write protect is enabled"
 check_hw_and_sw_write_protect_enabled

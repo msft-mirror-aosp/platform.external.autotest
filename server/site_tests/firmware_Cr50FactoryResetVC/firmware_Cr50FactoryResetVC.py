@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import print_function
-
 import logging
 import time
 
@@ -28,7 +26,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
                 full_args)
         if not self.cr50.has_command('bpforce'):
             raise error.TestNAError('Cannot run test without bpforce')
-        self.fast_ccd_open(enable_testlab=True)
+        self.fast_open(enable_testlab=True)
         # Reset ccd completely.
         self.cr50.send_command('ccd reset')
 
@@ -37,7 +35,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
         try:
             self.bp_override(True)
             self.bp_override(False)
-        except Exception as e:
+        except Exception, e:
             logging.info(e)
             raise error.TestNAError('Cannot fully test factory mode vendor '
                     'command without the ability to fake battery presence')
@@ -63,7 +61,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
 
     def fwmp_ccd_lockout(self):
         """Returns True if FWMP is locking out CCD."""
-        return 'fwmp_lock' in self.cr50.get_ccd_info('TPM')
+        return 'fwmp_lock' in self.cr50.get_ccd_info()['TPM']
 
 
     def set_fwmp_lockout(self, enable):
@@ -94,7 +92,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
         if set_password:
             self.cr50.send_command('ccd testlab open')
             # Set the ccd password
-            self.set_ccd_password(self.CCD_PASSWORD)
+            self.set_ccd_password('ccd_dummy_pw')
         if self.cr50.password_is_reset() == set_password:
             raise error.TestError('Could not %s password' %
                     ('set' if set_password else 'clear'))
@@ -198,7 +196,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
                     try:
                         self.set_factory_mode(True)
                         self.set_factory_mode(False)
-                    except Exception as e:
+                    except Exception, e:
                         message = 'FAILURE %r %r' % (self.get_state_message(),
                                 e)
                         logging.info(message)

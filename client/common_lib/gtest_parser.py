@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright (c) 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -61,10 +60,8 @@ class gtest_parser(object):
             'Suppression \(error hash=#([0-9A-F]+)#\):')
         self._suppression_end = re.compile('^}\s*$')
 
-        # TODO b:169251326 terms below are set outside of this codebase
-        # and should be updated when possible. ("master" -> "main")
-        self._main_name_re = re.compile('\[Running for master: "([^"]*)"')
-        self.main_name = ''
+        self._master_name_re = re.compile('\[Running for master: "([^"]*)"')
+        self.master_name = ''
 
         self._error_logging_start_re = re.compile('=' * 70)
         self._error_logging_test_name_re = re.compile(
@@ -152,7 +149,7 @@ class gtest_parser(object):
 
     def SuppressionHashes(self):
         """Returns list of suppression hashes found in the log."""
-        return list(self._suppressions.keys())
+        return self._suppressions.keys()
 
     def Suppression(self, suppression_hash):
         """Returns a list containing the suppression for a given hash.
@@ -172,10 +169,10 @@ class gtest_parser(object):
         # Track line number for error messages.
         self._line_number += 1
 
-        if not self.main_name:
-            results = self._main_name_re.search(line)
+        if not self.master_name:
+            results = self._master_name_re.search(line)
             if results:
-                self.main_name = results.group(1)
+                self.master_name = results.group(1)
 
         # Is it a line reporting disabled tests?
         results = self._disabled.search(line)

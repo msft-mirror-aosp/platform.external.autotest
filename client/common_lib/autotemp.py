@@ -24,7 +24,6 @@ class tempfile(object):
 
     @param unique_id: required, a unique string to help identify what
                       part of code created the tempfile.
-    @param auto_clean: automatically delete the temporary file in destructor.
     @var name: The name of the temporary file.
     @var fd:  the file descriptor of the temporary file that was created.
     @return a tempfile object
@@ -36,8 +35,7 @@ class tempfile(object):
         t.clean() # clean up after yourself
     """
     def __init__(self, unique_id, suffix='', prefix='', dir=None,
-                 text=False, auto_clean=True):
-        self.auto_clean = auto_clean
+                 text=False):
         suffix = unique_id + suffix
         prefix = prefix + _TEMPLATE
         self.fd, self.name = module_tempfile.mkstemp(suffix=suffix,
@@ -61,8 +59,8 @@ class tempfile(object):
 
     def __del__(self):
         try:
-            if self.name is not None and self.auto_clean:
-                logging.debug('Auto-cleaning %s', self.name)
+            if self.name is not None:
+                logging.debug('Cleaning %s', self.name)
                 self.clean()
         except:
             try:
@@ -118,7 +116,7 @@ class tempdir(object):
     def __del__(self):
         try:
             if self.name and self.auto_clean:
-                logging.debug('Auto-cleaning %s', self.name)
+                logging.debug('Clean was not called for ' + self.name)
                 self.clean()
         except:
             try:

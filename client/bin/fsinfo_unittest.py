@@ -1,10 +1,6 @@
 #!/usr/bin/python2
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import unittest, six
-
+import unittest, StringIO
 import common
 from autotest_lib.client.bin import fsinfo
 from autotest_lib.client.common_lib.test_utils import mock
@@ -21,7 +17,7 @@ class fsionfo_test(unittest.TestCase):
 
 
     def create_test_file(self, filename, contents):
-        test_file = six.StringIO(contents)
+        test_file = StringIO.StringIO(contents)
         fsinfo.open.expect_call(filename, 'r').and_return(test_file)
 
 
@@ -50,7 +46,7 @@ class fsionfo_test(unittest.TestCase):
         mkfs_option = {}
         fsinfo.ext_mkfs_options(tune2fs_dict, mkfs_option)
 
-        for option, value in six.iteritems(expected_option):
+        for option, value in expected_option.iteritems():
             self.assertEqual(value, mkfs_option[option])
 
 
@@ -98,7 +94,7 @@ class fsionfo_test(unittest.TestCase):
                            '-l size': 10485760}
         mkfs_option = {}
         fsinfo.xfs_mkfs_options(tune2fs_dict, mkfs_option)
-        for option, value in six.iteritems(expected_option):
+        for option, value in expected_option.iteritems():
             self.assertEqual(value, mkfs_option[option])
 
 

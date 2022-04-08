@@ -784,6 +784,28 @@ class TastTest(unittest.TestCase):
                             'label:os': 'cros',
                     }, self._test._fill_config_extvars())
 
+    def test_dut_server_arg(self):
+        # Test positive single case
+        cargs = [
+                'dut_servers=100.101.102.103:1111,', 'servo_host=localhost',
+                'servo_port=9999'
+        ]
+        dut_server = tast._dut_server_arg(cargs)
+        self.assertEqual(dut_server, '100.101.102.103:1111')
+
+        # Test no dut_servers provided case:
+        cargs = ['servo_host=localhost', 'servo_port=9999']
+        dut_server = tast._dut_server_arg(cargs)
+        self.assertEqual(dut_server, None)
+
+        # Test multiple dut_servers provided case:
+        cargs = [
+                'dut_servers=100.101.102.103:1111,localhost:1234',
+                'servo_host=localhost', 'servo_port=9999'
+        ]
+        dut_server = tast._dut_server_arg(cargs)
+        self.assertEqual(dut_server, '100.101.102.103:1111')
+
 
 class TestInfo:
     """Wraps information about a Tast test.

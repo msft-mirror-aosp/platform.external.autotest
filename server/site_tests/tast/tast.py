@@ -81,6 +81,27 @@ def _encode_json(j):
     return j
 
 
+def _dut_server_arg(command_args):
+    """Return dut_server arg out of command_args if found."""
+    dut_server_arg = None
+    dut_server = None
+    for arg in command_args:
+        if 'dut_servers=' in arg:
+            dut_server_arg = arg
+            break
+    if not dut_server_arg:
+        return
+    dut_server = dut_server_arg.split('=')[1]
+
+    # In case multiple dutservers are passed...
+    # e.g.: "dut_servers=localhost:1343,localhost:5678"
+    if ',' in dut_server:
+        # Currently only support the first, until we map dut:dut_server
+        dut_server = dut_server.split(',')[0]
+
+    return dut_server
+
+
 class TastConfigError(error.AutotestError):
     """Indicates a problem with configuration files."""
 
@@ -275,6 +296,13 @@ class tast(test.test):
         self._f20_container = f20_container or is_cft
         self._ephemeraldevserver = ephemeraldevserver
         self._exclude_missing = exclude_missing
+
+        # Need to pass in dut_servers for every test in CFT.
+        # But only add it if not already in varslist.
+        if any([True if 'dut.servers' in arg else False for arg in varslist]):
+            dut_server = _dut_server_arg(command_args)
+            if dut_server:
+                self._varslist.append('servers.dut=:%s' % dut_server)
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.

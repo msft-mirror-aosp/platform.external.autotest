@@ -15,9 +15,10 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import attached_device_host
 from autotest_lib.server.hosts import android_constants
+from autotest_lib.server.hosts import base_classes
 
 
-class AndroidHost(object):
+class AndroidHost(base_classes.Host):
     """Host class for Android devices"""
     PHONE_STATION_LABEL_PREFIX = "associated_hostname"
     SERIAL_NUMBER_LABEL_PREFIX = "serial_number"
@@ -39,6 +40,7 @@ class AndroidHost(object):
             android_args: Android args for local test run.
         """
         self.hostname = hostname
+        super(AndroidHost, self).__init__(*args, **dargs)
         self.host_info_store = (host_info_store
                                 or host_info.InMemoryHostInfoStore())
         self.associated_hostname = None
@@ -211,15 +213,18 @@ class AndroidHost(object):
         if self.closed:
             logging.debug('Android host %s already closed.', self.hostname)
             return
-        if self.adb_tcp_mode:
-            # In some rare cases, leave the Android device in adb over tcp
-            # mode may break USB connection so we want to always reset adb
-            # to usb mode before teardown.
-            self.run_adb_command('usb', ignore_status=True)
-        self.stop_adb_server()
-        if self.phone_station:
-            self.phone_station.close()
-        self.closed = True
+        try:
+            if self.adb_tcp_mode:
+                # In some rare cases, leave the Android device in adb over tcp
+                # mode may break USB connection so we want to always reset adb
+                # to usb mode before teardown.
+                self.run_adb_command('usb', ignore_status=True)
+            self.stop_adb_server()
+            if self.phone_station:
+                self.phone_station.close()
+            self.closed = True
+        finally:
+            super(AndroidHost, self).close()
 
     @staticmethod
     def get_android_arguments(args_dict):

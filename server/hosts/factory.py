@@ -269,6 +269,11 @@ def create_host(machine, host_class=None, connectivity_class=None, **args):
                   or OS_HOST_DICT.get(afe_host.attributes.get('os_type'))
                   or OS_HOST_DICT.get(host_os))
 
+    if host_class is android_host.AndroidHost:
+        # We don't have direct ssh access to Android devices, so we do
+        # not need connectivity_class for AndroidHost here.
+        connectivity_class = None
+
     if host_class is None:
         # TODO(pprabhu) If we fail to verify connectivity, we skip the costly
         # host autodetection logic. We should ideally just error out in this
@@ -288,8 +293,11 @@ def create_host(machine, host_class=None, connectivity_class=None, **args):
             logging.debug('Defaulting to CrosHost.')
 
     # create a custom host class for this machine and return an instance of it
-    classes = (host_class, connectivity_class)
-    custom_host_class = type("%s_host" % hostname, classes, {})
+    if connectivity_class:
+        classes = (host_class, connectivity_class)
+        custom_host_class = type("%s_host" % hostname, classes, {})
+    else:
+        custom_host_class = host_class
 
     logging.info('creating host class for {} w/ {}||'.format(hostname, args))
     host_instance = custom_host_class(hostname, **args)

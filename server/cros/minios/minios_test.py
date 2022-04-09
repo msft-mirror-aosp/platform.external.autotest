@@ -57,6 +57,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         """
         super(MiniOsTest, self).initialize(host)
         self._nebraska = None
+        self._servo = host.servo
+        self._servo.initialize_dut()
 
     def cleanup(self):
         """Clean up minios autotests."""
@@ -68,7 +70,11 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
     def _boot_minios(self):
         """Boot the DUT into MiniOS."""
-        self._host.servo.boot_in_recovery_mode()
+        # Turn off usbkey to avoid booting into usb-recovery image.
+        self._servo.switch_usbkey('off')
+        psc = self._servo.get_power_state_controller()
+        psc.power_off()
+        psc.power_on(psc.REC_ON)
         self._host.test_wait_for_shutdown(self._MINIOS_SHUTDOWN_TIMEOUT)
         logging.info('Waiting for firmware screen')
         time.sleep(self._FIRMWARE_SCREEN_TIMEOUT)
@@ -81,7 +87,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         while not minios_is_up and attempts < self._MINIOS_BOOT_MAX_ATTEMPTS:
             # Use Ctrl+R shortcut to boot 'MiniOS
             logging.info('Try to boot MiniOS')
-            self._host.servo.ctrl_r()
+            self._servo.ctrl_r()
             minios_is_up = self._host.wait_up(
                     timeout=self._MINIOS_WAIT_UP_TIME_SECONDS,
                     host_is_down=True)

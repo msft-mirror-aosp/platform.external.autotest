@@ -824,7 +824,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     def _download_and_extract_stateful(self,
                                        stateful_url,
                                        destination,
-                                       keep_symlinks=False):
+                                       keep_symlinks=False,
+                                       members=None):
         """
         Download and extract the stateful partition.
 
@@ -832,6 +833,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param destination: The directory that the stateful archive will be
             extracted into.
         @param keep_symlinks: Don't overwrite symlinks in destination directory.
+        @param members: When provided, they specify the names of the stateful
+            archive members to be extracted else everything will be extracted.
 
         """
         cmd = [
@@ -841,6 +844,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         ]
         if keep_symlinks:
             cmd += ['--keep-directory-symlink']
+        if members:
+            # Normalize members to be a list.
+            if not isinstance(members, list):
+                members = [members]
+            cmd += members
         self._run(cmd)
 
     def _stage_stateful(self, public_bucket=False):

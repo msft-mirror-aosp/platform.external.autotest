@@ -45,8 +45,10 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
     _RECOVERY_VERSION = '0.0.0.0'
 
     # Files used by the tests.
-    _MINIOS_DEV_IMAGE_DIR = '/usr/local/tmp/stateful/dev_image_new'
+    _DEPENDENCY_DIRS = ['bin', 'lib', 'lib64', 'libexec']
+    _DEPENDENCY_INSTALL_DIR = '/usr/local'
     _MINIOS_TEMP_STATEFUL_DIR = '/usr/local/tmp/stateful'
+    _STATEFUL_DEV_IMAGE_NAME = 'dev_image_new'
 
     def initialize(self, host):
         """
@@ -151,18 +153,26 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         logging.info('Installing dependencies from %s', statefuldev_url)
 
         # Create destination directories.
-        install_dirs = ['/usr/local/bin', '/usr/local/lib', '/usr/local/lib64']
-        staging_dirs = [
-                self._MINIOS_TEMP_STATEFUL_DIR, self._MINIOS_DEV_IMAGE_DIR
+        minios_dev_image_dir = os.path.join(self._MINIOS_TEMP_STATEFUL_DIR,
+                                            self._STATEFUL_DEV_IMAGE_NAME)
+        install_dirs = [
+                os.path.join(self._DEPENDENCY_INSTALL_DIR, dir)
+                for dir in self._DEPENDENCY_DIRS
         ]
-        self._run(['mkdir', '-p'] + staging_dirs + install_dirs)
+        self._run(['mkdir', '-p', minios_dev_image_dir] + install_dirs)
         # Symlink the install dirs into the staging destination.
         for dir in install_dirs:
-            self._run(['ln', '-s', dir, '%s/.' % self._MINIOS_DEV_IMAGE_DIR])
+            self._run(['ln', '-s', dir, minios_dev_image_dir])
 
+        # Generate the list of stateful archive members that we want to extract.
+        members = [
+                os.path.join(self._STATEFUL_DEV_IMAGE_NAME, dir)
+                for dir in self._DEPENDENCY_DIRS
+        ]
         try:
             self._download_and_extract_stateful(statefuldev_url,
                                                 self._MINIOS_TEMP_STATEFUL_DIR,
+                                                members=members,
                                                 keep_symlinks=True)
         except error.AutoservRunError as e:
             err_str = 'Failed to install the test dependencies'

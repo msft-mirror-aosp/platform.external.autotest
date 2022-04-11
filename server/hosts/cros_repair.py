@@ -7,7 +7,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import json
 import logging
 import math
 import six
@@ -401,28 +400,19 @@ class TPMStatusVerifier(hosts.Verifier):
             return
 
         try:
-            status = CryptohomeStatus(host)
+            status = TpmStatus(host)
         except hosts.AutoservVerifyError:
             logging.info('Cannot determine the Cryptohome valid status - '
                          'skipping check.')
             return
         try:
-            tpm = status['tpm']
-            if not tpm['enabled']:
+            if not status['is_enabled']:
                 raise hosts.AutoservVerifyError(
                         'TPM is not enabled -- Hardware is not working.')
-            if not tpm['can_connect']:
-                raise hosts.AutoservVerifyError(
-                        ('TPM connect failed -- '
-                         'last_error=%d.' % tpm['last_error']))
-            if tpm['owned'] and not tpm['can_load_srk']:
-                raise hosts.AutoservVerifyError(
-                        'Cannot load the TPM SRK')
-            if tpm['can_load_srk'] and not tpm['can_load_srk_pubkey']:
-                raise hosts.AutoservVerifyError(
-                        'Cannot load the TPM SRK public key')
+            if status['is_owned'] and not status['is_srk_default_auth']:
+                raise hosts.AutoservVerifyError('Cannot load the TPM SRK')
         except KeyError:
-            logging.info('Cannot determine the Cryptohome valid status - '
+            logging.info('Cannot determine the TPM valid status - '
                          'skipping check.')
 
     @property
@@ -691,7 +681,7 @@ class JetstreamTpmVerifier(hosts.Verifier):
     def verify(self, host):
         # pylint: disable=missing-docstring
         try:
-            status = CryptohomeStatus(host)
+            status = TpmStatus(host)
             if not status.tpm_enabled:
                 raise hosts.AutoservVerifyError('TPM is not enabled')
             if not status.tpm_owned:
@@ -1883,72 +1873,59 @@ def _is_virtual_machine(host):
             'qemu' in output.stdout.lower())
 
 
-class CryptohomeStatus(dict):
+class TpmStatus(dict):
     """Wrapper for getting cryptohome status from a host."""
 
     def __init__(self, host):
-        super(CryptohomeStatus, self).__init__()
-        self.update(_get_cryptohome_status(host))
-        self.tpm = self['tpm']
+        super(TpmStatus, self).__init__()
+        self.update(_get_tpm_status(host))
 
     @property
     def tpm_enabled(self):
         # pylint: disable=missing-docstring
-        return self.tpm.get('enabled') == True
+        return self.get('is_enabled') == True
 
     @property
     def tpm_owned(self):
         # pylint: disable=missing-docstring
-        return self.tpm.get('owned') == True
+        return self.get('is_owned') == True
 
     @property
     def tpm_can_load_srk(self):
         # pylint: disable=missing-docstring
-        return self.tpm.get('can_load_srk') == True
+        return self.tpm_owned and self.get('is_srk_default_auth') == True
 
     @property
     def tpm_can_load_srk_pubkey(self):
         # pylint: disable=missing-docstring
-        return self.tpm.get('can_load_srk_pubkey') == True
+        return self.tpm_owned and self.get('is_srk_default_auth') == True
 
 
-def _get_cryptohome_status(host):
-    """Returns a dictionary containing the cryptohome status.
+def _get_tpm_status(host):
+    """Returns a dictionary containing the TPM status.
 
     @param host: a hosts.Host object.
-    @returns A dictionary containing the cryptohome status.
+    @returns A dictionary containing the TPM status.
     @raises AutoservVerifyError: if the output could not be parsed or the TPM
        status is missing.
     @raises hosts.AutoservRunError: if the cryptohome command failed.
     """
-    # This cryptohome command emits status information in JSON format. It
-    # looks something like this:
-    # {
-    #    "installattrs": {
-    #       ...
-    #    },
-    #    "mounts": [ {
-    #       ...
-    #    } ],
-    #    "tpm": {
-    #       "being_owned": false,
-    #       "can_connect": true,
-    #       "can_decrypt": false,
-    #       "can_encrypt": false,
-    #       "can_load_srk": true,
-    #       "can_load_srk_pubkey": true,
-    #       "enabled": true,
-    #       "has_context": true,
-    #       "has_cryptohome_key": false,
-    #       "has_key_handle": false,
-    #       "last_error": 0,
-    #       "owned": true
-    #    }
-    # }
     try:
-        output = host.run('cryptohome --action=status').stdout.strip()
-        status = json.loads(output)
-        if 'tpm' not in status:
+        output = host.run(
+                'tpm_manager_client status --nonsensitive').stdout.strip()
+        lines = output.split('\n')[1:-1]
+        status = {}
+        for item in lines:
+            item = item.split(':')
+            if not item[0]:
+                continue
+            if len(item) == 1:
+                item.append('')
+            item = [x.strip() for x in item]
+            item[1] = True if item[1] == 'true' else item[1]
+            item[1] = False if item[1] == 'false' else item[1]
+            status[item[0]] = item[1]
+        if status['status'] != 'STATUS_SUCCESS':
             raise hosts.AutoservVerifyError('TPM status is missing')
         return status
     except ValueError:

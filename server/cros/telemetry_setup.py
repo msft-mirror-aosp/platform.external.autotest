@@ -140,7 +140,7 @@ class TelemetrySetup(object):
         try:
             resp = requests.get(url)
             resp.raise_for_status()
-            with open(dep_path, 'w') as f:
+            with open(dep_path, 'wb') as f:
                 for content in resp.iter_content(_READ_BUFFER_SIZE_BYTES):
                     f.write(content)
         except Exception as e:

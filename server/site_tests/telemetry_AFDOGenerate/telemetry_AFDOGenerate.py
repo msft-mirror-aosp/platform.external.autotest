@@ -421,9 +421,9 @@ class telemetry_AFDOGenerate(test.test):
         @returns Name of compressed file.
         """
         dest = ''
-        with open(unc_file, 'r') as inp:
+        with open(unc_file, 'rb') as inp:
             dest = telemetry_AFDOGenerate._get_compressed_name(com_file)
-            with bz2.BZ2File(dest, 'w') as out:
+            with bz2.BZ2File(dest, 'wb') as out:
                 for data in inp:
                     out.write(data)
         if not dest or not os.path.isfile(dest):

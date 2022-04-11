@@ -10,6 +10,7 @@ from __future__ import print_function
 import json
 import logging
 import os
+import re
 import time
 
 from autotest_lib.client.common_lib import error
@@ -24,6 +25,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
     """
 
     _MINIOS_CLIENT_CMD = 'minios_client'
+    _MINIOS_KERNEL_FLAG = 'cros_minios'
 
     # Period to wait for firmware screen in seconds.
     # Value based on Brya, which is the slowest so far.
@@ -91,6 +93,12 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
             if mainfw_type != 'recovery':
                 raise error.TestError(
                         'Boot to MiniOS - invalid firmware: %s.' % mainfw_type)
+            # There are multiple types of recovery images, make sure we booted
+            # into minios.
+            pattern = r'\b%s\b' % self._MINIOS_KERNEL_FLAG
+            if not re.search(pattern, self._host.get_cmdline()):
+                raise error.TestError(
+                        'Boot to MiniOS - recovery image is not minios.')
         else:
             # Try to not leave unit on recovery firmware screen.
             self._host.power_cycle()

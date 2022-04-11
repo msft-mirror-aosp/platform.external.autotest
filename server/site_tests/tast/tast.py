@@ -299,7 +299,8 @@ class tast(test.test):
 
         # Need to pass in dut_servers for every test in CFT.
         # But only add it if not already in varslist.
-        if any([True if 'dut.servers' in arg else False for arg in varslist]):
+        if not any(
+                [True if 'dut.servers' in arg else False for arg in varslist]):
             dut_server = _dut_server_arg(command_args)
             if dut_server:
                 self._varslist.append('servers.dut=:%s' % dut_server)

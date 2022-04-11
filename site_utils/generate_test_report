@@ -387,12 +387,14 @@ class ResultCollector(object):
         # Designed to match a line like this:
         #   END GOOD testname ... timestamp=1347324321 localtime=Sep 10 17:45:21
         status_re = r'GOOD|%s|%s' % (failure_tags, warning_tag)
-        timestamp, localtime = self._CollectEndTimes(status_raw, status_re)
+        endtimestamp, endlocaltime = self._CollectEndTimes(status_raw,
+                                                           status_re)
+        starttimestamp, startlocaltime = self._CollectEndTimes(status_raw,
+                                                               is_end=False)
         # Hung tests will occasionally skip printing the END line so grab
         # a default timestamp from the START line in those cases.
-        if not timestamp:
-            timestamp, localtime = self._CollectEndTimes(status_raw,
-                                                         is_end=False)
+        if not endtimestamp:
+            endtimestamp, endlocaltime = starttimestamp, startlocaltime
 
         full_status = False
         for r in results:
@@ -409,15 +411,17 @@ class ResultCollector(object):
                 'crashes': self._CollectCrashes(status_raw),
                 'status': status,
                 'error_msg': error_msg,
-                'localtime': localtime,
-                'timestamp': timestamp,
+                'localtime': endlocaltime,
+                'timestamp': endtimestamp,
                 'perf': self._CollectPerf(testdir),
                 'attr': self._CollectAttr(testdir),
-                'info': self._CollectInfo(testdir, {'localtime': localtime,
-                                                    'timestamp': timestamp}),
+                'info': self._CollectInfo(testdir, {'localtime': endlocaltime,
+                                                    'timestamp': endtimestamp}),
                 'experimental': is_experimental,
                 'full_status': full_status,
-                'full_err': err
+                'full_err': err,
+                'startlocaltime': startlocaltime,
+                'starttimestamp': starttimestamp
                 })
 
     def RecursivelyCollectResults(self,
@@ -936,7 +940,9 @@ class ReportGenerator(object):
                 {'verdict': test_info['full_status'],
                  'testname': self._test_name_from_dir(test_info['testdir']),
                  'errmsg': test_info['full_err'],
-                 'resultspath': test_info['testdir']
+                 'resultspath': test_info['testdir'],
+                 'starttime': test_info['starttimestamp'],
+                 'endtime': test_info['timestamp']
                  })
         return res
 

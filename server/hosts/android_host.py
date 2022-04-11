@@ -58,6 +58,7 @@ class AndroidHost(base_classes.Host):
         # AttachedDeviceHost for phone station as ssh proxy.
         self.phone_station = self._create_phone_station_host_proxy()
         self.adb_tcp_mode = False
+        self.usb_dev_path = None
         self.closed = False
 
     def _create_phone_station_host_proxy(self):
@@ -100,6 +101,21 @@ class AndroidHost(base_classes.Host):
         """
         self.run_adb_command('tcpip %s' % str(port))
         self.adb_tcp_mode = True
+
+    def cache_usb_dev_path(self):
+        """
+        Read and cache usb devpath for the Android device.
+        """
+        cmd = 'adb devices -l | grep %s' % self.serial_number
+        res = self.phone_station.run(cmd)
+        for line in res.stdout.strip().split('\n'):
+            if len(line.split()) > 2 and line.split()[1] == 'device':
+                self.usb_dev_path = line.split()[2]
+                logging.info('USB devpath: %s', self.usb_dev_path)
+                break
+        if not self.usb_dev_path:
+            logging.warning(
+                    'Failed to collect usbdev path of the Android device.')
 
     def ensure_device_connectivity(self):
         """Ensure we can interact with the Android device via adb and
@@ -146,7 +162,13 @@ class AndroidHost(base_classes.Host):
         Returns:
             An autotest_lib.client.common_lib.utils.CmdResult object.
         """
-        command = 'adb -s %s %s' % (self.serial_number, adb_command)
+        # When use adb to interact with an Android device, we prefer to use
+        # devpath to distinguish the particular device as the serial number
+        # is not guaranteed to be unique.
+        if self.usb_dev_path:
+            command = 'adb -s %s %s' % (self.usb_dev_path, adb_command)
+        else:
+            command = 'adb -s %s %s' % (self.serial_number, adb_command)
         return self.phone_station.run(command, ignore_status=ignore_status)
 
     def start_adb_server(self):
@@ -180,6 +202,7 @@ class AndroidHost(base_classes.Host):
                                   dut_out)
 
         self.restart_adb_server()
+        self.cache_usb_dev_path()
         self.ensure_device_connectivity()
         ip_address = self.get_wifi_ip_address()
         self.adb_over_tcp()

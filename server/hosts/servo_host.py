@@ -735,14 +735,15 @@ class ServoHost(base_servohost.BaseServoHost):
 
     def wait_for_init_servod_in_container(self, container):
         """Waits for servod process to be ready to listen inside container."""
-        ready_output = "Instance associated with id 9999 ready"
+        ready_output = "Instance associated with id %s ready" % self.servo_port
         if not container:
             logging.debug("Container object is None.")
             return False
         try:
             # Executes servodtool command to wait for servod to be active.
             exit_code, output = container.exec_run(
-                    cmd="servodtool instance wait-for-active -p 9999",
+                    cmd="servodtool instance wait-for-active -p %s" %
+                    self.servo_port,
                     stdout=True)
             # b/217780680, Make this compatible with python3,
             if isinstance(output, bytes):
@@ -836,11 +837,28 @@ class ServoHost(base_servohost.BaseServoHost):
                     environment=environment,
                     command=start_cmds,
             )
-            # Wait for 60 sec, probing servod ready state fails.
-            if not self.wait_for_init_servod_in_container(container):
-                time.sleep(servo_constants.SERVOD_STARTUP_TIMEOUT)
-            logging.info("Servod container %s up and running.",
-                         self.servod_container_name)
+            # Probing servod ready state fails.
+            if with_servod:
+                current_time = 0
+                while not self.wait_for_init_servod_in_container(
+                        container
+                ) and current_time <= servo_constants.SERVOD_STARTUP_TIMEOUT:
+                    time.sleep(10)
+                    current_time += 10
+
+                if not self.wait_for_init_servod_in_container(container):
+                    logging.info(
+                            'Servod process is not up within the servod container after %s seconds.'
+                            % servo_constants.SERVOD_STARTUP_TIMEOUT)
+                else:
+                    logging.info(
+                            'Servod process is up within the servod container after %s seconds.'
+                            % current_time)
+            else:
+                logging.info(
+                        "Servod container %s up and running without servod process.",
+                        self.servod_container_name)
+
         except docker.errors.ContainerError as e:
             logging.exception("Failed to start servod container. %s", e)
             raise

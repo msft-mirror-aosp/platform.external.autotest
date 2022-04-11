@@ -151,9 +151,7 @@ class RPCProxy(object):
                 if self.host.run("test -f", args=[logfile],
                                  ignore_status=True).exit_status == 0:
                     self.host.get_file(logfile, dest)
-                    self.host.run("rm -f",
-                                  ignore_status=True,
-                                  args=self.logfiles)
+                    self.host.run("rm -f", ignore_status=True, args=[logfile])
             self.logfiles.clear()
 
     def __repr__(self):

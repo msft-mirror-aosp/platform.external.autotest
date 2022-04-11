@@ -5,6 +5,7 @@
 import logging
 import time
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros import vboot_constants as vboot
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
@@ -33,11 +34,27 @@ class firmware_ConsecutiveBoot(FirmwareTest):
         self.faft_waitup_time = int(dict_args.get('faft_waitup_time', 0))
         self.faft_localrun = int(dict_args.get('faft_localrun', 0))
         super(firmware_ConsecutiveBoot, self).initialize(host, cmdline_args)
+        self.console_checker()
         self.switcher.setup_mode('dev' if dev_mode else 'normal',
                                  allow_gbb_force=True)
         if dev_mode:
             self.clear_set_gbb_flags(0, vboot.GBB_FLAG_DEV_SCREEN_SHORT_DELAY)
         self.setup_usbkey(usbkey=False)
+
+    def console_checker(self):
+        """Verify EC console is available if using Chrome EC."""
+        if not self.check_ec_capability(suppress_warning=True):
+            # Not Chrome EC. Nothing to check.
+            return True
+        try:
+            if self.ec.get_version():
+                return True
+        except:
+            pass
+
+        raise error.TestFail(
+                "Failed EC console check. Maybe CCD close. Please check ccd open state."
+        )
 
     def wait_for_client_aux(self):
         """Use test specific timeout to wait for system to come up,

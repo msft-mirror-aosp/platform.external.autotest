@@ -106,9 +106,14 @@ class power_VideoCall(power_test.power_Test):
             # TODO(b/226960942): Revert crrev.com/c/3556798 once root cause is
             # found for why test fails before 2 hrs.
             min_run_time = min_run_time_percent / 100.0 * duration
+            type_count = 0
             while time.time() - self._start_time < duration:
                 if multitask:
                     keys.press_key('number_block')
+                    type_count += 1
+                    if type_count == 10:
+                        keys.press_key('ctrl+a_backspace')
+                        type_count = 0
                 else:
                     time.sleep(60)
 

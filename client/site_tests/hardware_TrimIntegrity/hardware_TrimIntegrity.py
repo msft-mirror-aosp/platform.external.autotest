@@ -132,11 +132,6 @@ class hardware_TrimIntegrity(test.test):
         # Make file size multiple of 4 * chunk size
         file_size -= file_size % (4 * chunk_size)
 
-        if fulldisk:
-            fio_file_size = 0
-        else:
-            fio_file_size = file_size
-
         logging.info('filename: %s, filesize: %d', self._filename, file_size)
 
         self._verify_trim_support(chunk_size)
@@ -163,7 +158,7 @@ class hardware_TrimIntegrity(test.test):
         # Check read speed/latency when reading real data.
         self.job.run_test('hardware_StorageFio',
                           disable_sysinfo=True,
-                          filesize=fio_file_size,
+                          filesize=file_size,
                           blkdiscard=False,
                           requirements=[('4k_read_qd32', [])],
                           tag='before_trim')
@@ -231,7 +226,7 @@ class hardware_TrimIntegrity(test.test):
         # Check read speed/latency when reading from trimmed data.
         self.job.run_test('hardware_StorageFio',
                           disable_sysinfo=True,
-                          filesize=fio_file_size,
+                          filesize=file_size,
                           blkdiscard=False,
                           requirements=[('4k_read_qd32', [])],
                           tag='after_trim')

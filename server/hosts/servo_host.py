@@ -1216,6 +1216,9 @@ class ServoHost(base_servohost.BaseServoHost):
     def get_servohost_logs(self, outdir):
         """Get logs that can help debugging servo/servod problem from
         the servohost
+
+        @param outdir: directory to create a subdirectory into to place the
+                       servod logs into.
         """
         log_dir = os.path.join(outdir, 'servohost_%s' % self.hostname)
         if os.path.isdir(log_dir):
@@ -1238,9 +1241,27 @@ class ServoHost(base_servohost.BaseServoHost):
         if not self.is_containerized_servod():
             try:
                 self.get_file('/var/log/messages', log_dir, try_rsync=False)
-            except error.AutoservRunError as e:
+            except error.AutoservRunError:
                 logging.warning(
                         'Failed to collect messages log from servohost.')
+
+    def get_servod_startup_log(self, outdir):
+        """Get servod start_up log, this log is available even servod was
+        not started successfully.
+
+        @param outdir: directory to create a subdirectory into to place the
+                       servod logs into.
+        """
+        if self.is_containerized_servod():
+            return
+        log_dir = os.path.join(outdir, 'servod_startup_%s' % self.servo_port)
+        os.mkdir(log_dir)
+        start_up_log = '/var/log/servod_%s.STARTUP.log' % self.servo_port
+        try:
+            self.get_file(start_up_log, log_dir, try_rsync=False)
+        except error.AutoservRunError:
+            logging.warning('Failed to collect servod start up log'
+                            ' from servohost.')
 
     def get_instance_logs(self, instance_ts, outdir, old=False):
         """Collect all logs with |instance_ts| and dump into a dir in |outdir|
@@ -1394,17 +1415,17 @@ class ServoHost(base_servohost.BaseServoHost):
             self.start_containerized_servod(with_servod=False)
             servo_host_ready = True
 
-        if servo_host_ready:
+        # TODO(crbug.com/1011516): once enabled, remove the check against
+        # localhost and instead check against log-rotiation enablement.
+        should_collect_log = (servo_host_ready and self.job
+                              and not self.is_localhost())
+        if should_collect_log:
             instance_ts = self.get_instance_logs_ts()
         else:
             logging.info('Servohost is down, will skip servod log collecting.')
             instance_ts = None
-        # TODO(crbug.com/1011516): once enabled, remove the check against
-        # localhost and instead check against log-rotiation enablement.
-        logs_available = (instance_ts is not None and
-                          self.job and
-                          not self.is_localhost())
-        if logs_available:
+        servod_logs_available = instance_ts is not None
+        if servod_logs_available:
             # Probe whether there was a servod restart, and grab those old
             # logs as well.
             try:
@@ -1421,20 +1442,25 @@ class ServoHost(base_servohost.BaseServoHost):
             outdir = None if not self.job else self.job.resultdir
             # In some cases when we run as lab-tools, the job object is None.
             self._servo.close(outdir)
-
-        if logs_available:
+        try:
+            if should_collect_log:
+                self.get_servod_startup_log(self.job.resultdir)
+                self.get_servohost_logs(self.job.resultdir)
             # Grab current (not old like above) logs after the servo instance
             # was closed out.
-            try:
-                self.get_servohost_logs(self.job.resultdir)
+            if servod_logs_available:
                 self.get_instance_logs(instance_ts, self.job.resultdir)
-            except error.AutoservRunError as e:
-                logging.info('Failed to grab servo logs due to: %s. '
-                             'This error is forgiven.', str(e))
-            except Exception as e:
-                logging.error('Unexpected error grabbing servod logs. %s. '
-                              'Forgiven. Please file a bug and fix or catch '
-                              'in log grabbing function', str(e), exc_info=True)
+        except error.AutoservRunError as e:
+            logging.info(
+                    'Failed to grab servo logs due to: %s. '
+                    'This error is forgiven.', str(e))
+        except Exception as e:
+            logging.error(
+                    'Unexpected error grabbing servod logs. %s. '
+                    'Forgiven. Please file a bug and fix or catch '
+                    'in log grabbing function',
+                    str(e),
+                    exc_info=True)
 
         if self._is_locked and servo_host_ready:
             # Remove the lock if the servohost has been locked.

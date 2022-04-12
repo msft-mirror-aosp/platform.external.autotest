@@ -40,8 +40,6 @@ def run(machine):
     host=hosts.create_host(machine)
     varslist = []
     args_dict = utils.args_to_dict(args)
-    expr = chrome_sideloader.get_tast_expr(args_dict)
-    logging.info('Tast expr: %s', expr)
 
     assert host.path_exists('/var/lib/imageloader/lacros'), ('lacros artifact'
             'is not provisioned by CTP. Please check the CTP request.')
@@ -57,6 +55,11 @@ def run(machine):
     assert host.path_exists(path_to_chrome), (
             'lacros artifact is not provisioned at expected path, %s'
             % path_to_chrome)
+
+    expr = chrome_sideloader.get_tast_expr_from_file(host, args_dict, '%s/' % job.resultdir, CHROME_DIR)
+    if not expr:
+        expr = chrome_sideloader.get_tast_expr(args_dict)
+    logging.info('Tast expr: %s', expr)
 
     varslist.append('lacrosDeployedBinary=%s' %
                     os.path.dirname(path_to_chrome)

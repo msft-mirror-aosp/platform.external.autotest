@@ -280,6 +280,15 @@ class ModemProxy(object):
         sim_path = self.properties(mm1_constants.I_MODEM).get('Sim')
         if not sim_path:
             return None
+        return self.get_sim_at_path(sim_path)
+
+    def get_sim_at_path(self, sim_path):
+        """
+        Return the SIM proxy object associated with the sim_path.
+
+        @return SimProxy object or None if no SIM exists.
+
+        """
         sim_proxy = SimProxy(self._bus, sim_path)
         # Check that this object is valid
         try:

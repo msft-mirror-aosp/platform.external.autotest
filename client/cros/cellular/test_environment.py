@@ -381,8 +381,18 @@ class CellularTestEnvironment(object):
 
         logging.info('Device SIM values=> path:%s '
                 'primary slot:%d', sim_path, primary_slot)
+
+        def is_usable_sim(path):
+            """Check if sim at path can be used to establish a connection"""
+            if path == mm1_constants.MM_EMPTY_SLOT_PATH:
+                return False
+            sim_proxy = modem_proxy.get_sim_at_path(path)
+            sim_props = sim_proxy.properties()
+            return sim_props[
+                    'EsimStatus'] != mm1_constants.MM_SIM_ESIM_STATUS_NO_PROFILES
+
         # Check current SIM path value and status
-        if sim_path != mm1_constants.MM_EMPTY_SLOT_PATH:
+        if is_usable_sim(sim_path):
             return modem_proxy
 
         slots = modem_props['SimSlots']
@@ -390,7 +400,7 @@ class CellularTestEnvironment(object):
                     'current sim path:%s slots:%s', sim_path, slots)
 
         for idx, path in enumerate(slots):
-            if path == mm1_constants.MM_EMPTY_SLOT_PATH:
+            if not is_usable_sim(path):
                 continue
             logging.info('Primary slot does not have a SIM, '
                         'switching slot to %d', idx+1)

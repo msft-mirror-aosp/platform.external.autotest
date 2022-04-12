@@ -251,7 +251,6 @@ class power_LoadTest(arc.ArcTest):
 
         self._services = service_stopper.ServiceStopper(
             service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
-        self._services.stop_services()
 
         self._detachable_handler = power_utils.BaseActivitySimulator()
 
@@ -357,6 +356,10 @@ class power_LoadTest(arc.ArcTest):
             if getattr(self, params_dict[k]) is not '':
                 extension.ExecuteJavaScript('var %s = %s;' %
                                             (k, getattr(self, params_dict[k])))
+
+        # Stop the services after the browser is setup. This ensures that
+        # restart ui does not restart services e.g. powerd underneath us
+        self._services.stop_services()
 
         # This opens a trap start page to capture tabs opened for first login.
         # It will be closed when startTest is run.

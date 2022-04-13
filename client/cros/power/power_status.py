@@ -126,6 +126,26 @@ class ThermalStatACPI(DevStat):
         # Browse the thermal folder for trip point fields.
         self.num_trip_points = 0
 
+        if path is None:
+            path = ThermalStatACPI.path
+
+        self.zones = {}
+        thermal_zones = glob.glob(path)
+        for (i, zone) in enumerate(thermal_zones):
+            desc_path = os.path.join(zone, 'device/description')
+            desc = ''
+            if os.path.exists(desc_path):
+                desc = utils.read_one_line(desc_path)
+
+            # If there's no description then use the type to create a description
+            if desc == '':
+                domain_path = os.path.join(zone, 'type')
+                domain = utils.read_one_line(domain_path)
+                desc = '%s%d' % (domain, i)
+
+            desc = desc.replace(' ', '_')
+            self.zones[desc] = os.path.join(zone, 'temp')
+
         thermal_fields = glob.glob(path + '/*')
         for file in thermal_fields:
             field = file[len(path + '/'):]
@@ -160,7 +180,8 @@ class ThermalStatACPI(DevStat):
 
 class ThermalStatHwmon(DevStat):
     """
-    hwmon-based thermal status.
+    hwmon-based thermal status. Excludes overlaps with thermal zones by default
+    since thermal zones generally provide a more usable description.
 
     Fields:
     int   <tname>_temp<num>_input: Current temperature in millidegrees Celsius
@@ -172,7 +193,17 @@ class ThermalStatHwmon(DevStat):
     path = '/sys/class/hwmon'
 
     thermal_fields = {}
-    def __init__(self, rootpath=None):
+
+    def __init__(self, rootpath=None, exclude_tz=True):
+        excluded_domains = set()
+        if exclude_tz:
+            thermal_zones = glob.glob('/sys/class/thermal/thermal_zone*')
+            for zone in thermal_zones:
+                domain_path = os.path.join(zone, 'type')
+                domain = utils.read_one_line(domain_path)
+
+                excluded_domains.add(domain)
+
         if not rootpath:
             rootpath = self.path
         for subpath1 in glob.glob('%s/hwmon*' % rootpath):
@@ -182,10 +213,13 @@ class ThermalStatHwmon(DevStat):
                     bname = os.path.basename(gpath)
                     field_path = os.path.join(subpath1, subpath2, bname)
 
-                    tname_path = os.path.join(os.path.dirname(gpath), "name")
-                    tname = utils.read_one_line(tname_path)
+                    domain_path = os.path.join(os.path.dirname(gpath), "name")
+                    domain = utils.read_one_line(domain_path)
 
-                    field_key = "%s_%s" % (tname, bname)
+                    if domain in excluded_domains:
+                        continue
+
+                    field_key = "%s_%s" % (domain, bname)
                     self.thermal_fields[field_key] = [field_path, int]
 
         super(ThermalStatHwmon, self).__init__(self.thermal_fields, rootpath)
@@ -2263,37 +2297,26 @@ class TempLogger(MeasurementLogger):
 
     def create_measurements(self):
         """Create measurements for TempLogger."""
-        domains = set()
         measurements = []
+
+        zstats = ThermalStatACPI()
+        for desc, fpath in zstats.zones.items():
+            new_meas = TempMeasurement(desc, fpath)
+            measurements.append(new_meas)
+
         tstats = ThermalStatHwmon()
         for kname in tstats.fields:
             match = re.match(r'(\S+)_temp(\d+)_input', kname)
             if not match:
                 continue
-            domain = match.group(1) + '-t' + match.group(2)
+            desc = match.group(1) + '-t' + match.group(2)
             fpath = tstats.fields[kname][0]
-            new_meas = TempMeasurement(domain, fpath)
+            new_meas = TempMeasurement(desc, fpath)
             measurements.append(new_meas)
-            domains.add(domain)
 
         if has_battery_temp():
             measurements.append(BatteryTempMeasurement())
 
-        sysfs_paths = '/sys/class/thermal/thermal_zone*'
-        paths = glob.glob(sysfs_paths)
-        for path in paths:
-            domain_path = os.path.join(path, 'type')
-            temp_path = os.path.join(path, 'temp')
-
-            domain = utils.read_one_line(domain_path)
-
-            # Skip when thermal_zone and hwmon have same domain.
-            if domain in domains:
-                continue
-
-            domain = domain.replace(' ', '_')
-            new_meas = TempMeasurement(domain, temp_path)
-            measurements.append(new_meas)
         return measurements
 
     def save_results(self, resultsdir, fname_prefix=None):

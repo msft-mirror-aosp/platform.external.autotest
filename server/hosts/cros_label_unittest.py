@@ -9,12 +9,12 @@ import mock
 import common
 
 from autotest_lib.server import utils
-from autotest_lib.server.hosts import cros_label
 from autotest_lib.server.hosts.cros_label import BrandCodeLabel
 from autotest_lib.server.hosts.cros_label import Cr50Label
 from autotest_lib.server.hosts.cros_label import Cr50ROKeyidLabel
 from autotest_lib.server.hosts.cros_label import Cr50RWKeyidLabel
 from autotest_lib.server.hosts.cros_label import DeviceSkuLabel
+from autotest_lib.server.hosts.cros_label import AudioConfigLabel
 from autotest_lib.server.hosts.cros_label import AudioLoopbackDongleLabel
 from autotest_lib.server.hosts.cros_label import ChameleonConnectionLabel
 from autotest_lib.server.hosts.cros_label import ChameleonLabel
@@ -241,6 +241,74 @@ class Cr50ROKeyidTests(unittest.TestCase):
     def test_gsctool_fails(self):
         host = MockHost([], MockCmd('gsctool -a -f', 1, ''))
         self.assertEqual(Cr50ROKeyidLabel().get(host), [])
+
+
+class AudioConfigLabelTests(unittest.TestCase):
+    """Unit tests for AudioConfigLabel"""
+
+    HAS_NC_BOARD_INI_OUTPUT = """
+    [hotword]
+    pause_at_suspend=1
+    [processing]
+    nc_supported=1
+    hw_echo_ref_disabled=1
+    """
+
+    NO_NC_BOARD_INI_OUTPUT = """
+    [hotword]
+    pause_at_suspend=1
+    [processing]
+    hw_echo_ref_disabled=1
+    """
+
+    DISABLED_NC_BOARD_INI_OUTPUT = """
+    [hotword]
+    pause_at_suspend=1
+    [processing]
+    hw_echo_ref_disabled=1
+    nc_supported=0
+    """
+
+    def test_has_noise_cancellation_label_enabled(self):
+        cros_config_cmd = 'cros_config / name'
+        cras_config_cmd = 'cat /etc/cras/HAS_NC/board.ini'
+        host = MockHost([], MockCmd(cros_config_cmd, 0, 'HAS_NC\n'),
+                        MockCmd(cras_config_cmd, 0,
+                                self.HAS_NC_BOARD_INI_OUTPUT))
+        self.assertEqual(AudioConfigLabel().get(host),
+                         ['audio:has_noise_cancellation'])
+
+    def test_has_noise_cancellation_label_not_exists(self):
+        cros_config_cmd = 'cros_config / name'
+        cras_config_cmd = 'cat /etc/cras/NO_NC/board.ini'
+        host = MockHost([], MockCmd(cros_config_cmd, 0, 'NO_NC\n'),
+                        MockCmd(cras_config_cmd, 0,
+                                self.NO_NC_BOARD_INI_OUTPUT))
+        self.assertEqual(AudioConfigLabel().get(host), [])
+
+    def test_has_noise_cancellation_label_disabled(self):
+        cros_config_cmd = 'cros_config / name'
+        cras_config_cmd = 'cat /etc/cras/DISABLED_NC/board.ini'
+        host = MockHost([], MockCmd(cros_config_cmd, 0, 'DISABLED_NC\n'),
+                        MockCmd(cras_config_cmd, 0,
+                                self.DISABLED_NC_BOARD_INI_OUTPUT))
+        self.assertEqual(AudioConfigLabel().get(host), [])
+
+    def test_has_noise_cancellation_label_fails_cros_config(self):
+        cros_config_cmd = 'cros_config / name'
+        cras_config_cmd = 'cat /etc/cras/HAS_NC/board.ini'
+        host = MockHost([], MockCmd(cros_config_cmd, 1, 'HAS_NC\n'),
+                        MockCmd(cras_config_cmd, 0,
+                                self.HAS_NC_BOARD_INI_OUTPUT))
+        self.assertEqual(AudioConfigLabel().get(host), [])
+
+    def test_has_noise_cancellation_label_fails_cras_config(self):
+        cros_config_cmd = 'cros_config / name'
+        cras_config_cmd = 'cat /etc/cras/HAS_NC/board.ini'
+        host = MockHost([], MockCmd(cros_config_cmd, 0, 'HAS_NC\n'),
+                        MockCmd(cras_config_cmd, 1,
+                                self.HAS_NC_BOARD_INI_OUTPUT))
+        self.assertEqual(AudioConfigLabel().get(host), [])
 
 
 class AudioLoopbackDongleLabelTests(unittest.TestCase):

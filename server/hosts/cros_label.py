@@ -10,13 +10,13 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import configparser
 import logging
 import re
 
 import common
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.cros.audio import cras_utils
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.hosts import base_label
@@ -220,6 +220,45 @@ class ChameleonConnectionLabel(base_label.StringPrefixLabel):
         return task_name in (DEPLOY_TASK_NAME, '')
 
 
+class AudioConfigLabel(base_label.StringPrefixLabel):
+    """Determine the label of CRAS configuration for the device.
+
+    It parses config keys from the board.ini file content as the example below:
+
+    [hotword]
+    pause_at_suspend=1
+    [processing]
+    nc_supported=1
+
+    """
+
+    _NAME = 'audio'
+
+    def generate_labels(self, host):
+        # Get model name for determining the board.ini file path.
+        cros_config_cmd = 'cros_config / name'
+        result = host.run(command=cros_config_cmd, ignore_status=True)
+        if result.exit_status != 0:
+            logging.error('Failed to run command: %s', cros_config_cmd)
+            return []
+
+        model = result.stdout.strip()
+        cras_config_cmd = 'cat /etc/cras/{}/board.ini'.format(model)
+        result = host.run(command=cras_config_cmd, ignore_status=True)
+        if result.exit_status != 0:
+            logging.error('Failed to run command: %s', cras_config_cmd)
+            return []
+
+        config = configparser.ConfigParser()
+        config.read_string(result.stdout)
+        labels = []
+        # Generate "has_noise_cancellation" from "processing:nc_supported".
+        if config.getboolean('processing', 'nc_supported', fallback=False):
+            labels.append('has_noise_cancellation')
+
+        return labels
+
+
 class AudioLoopbackDongleLabel(base_label.BaseLabel):
     """Return the label if an audio loopback dongle is plugged in."""
 
@@ -332,6 +371,7 @@ def _parse_hwid_labels(hwid_info_list):
 
 
 CROS_LABELS = [
+    AudioConfigLabel(),
     AudioLoopbackDongleLabel(), #STATECONFIG
     BluetoothPeerLabel(), #STATECONFIG
     ChameleonConnectionLabel(), #LABCONFIG

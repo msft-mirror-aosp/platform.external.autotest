@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "puthik"
-NAME = "power_Idle.default20min"
+NAME = "power_Idle.default20min_noarc"
 PURPOSE = "Measure power usage when system is idle."
 CRITERIA = "This test is a benchmark."
 TIME = "LONG"
@@ -22,4 +22,5 @@ it easier for HW Eng to manually measure power with other hardware.
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_Idle', pdash_note=pdash_note, tag=NAME.split('.')[1],
-             default_only=True, force_discharge='optional', idle_secs=1200)
+             default_only=True, force_discharge='optional', idle_secs=1200,
+             run_arc=False)

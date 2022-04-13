@@ -7,7 +7,9 @@ import re
 import time
 
 from autotest_lib.client.bin import test
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import arc_common
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.cros import service_stopper
@@ -31,7 +33,8 @@ class power_Test(test.test):
                    seconds_period=20.,
                    pdash_note='',
                    force_discharge='false',
-                   check_network=False):
+                   check_network=False,
+                   run_arc=True):
         """Perform necessary initialization prior to power test run.
 
         @param seconds_period: float of probing interval in seconds.
@@ -43,6 +46,7 @@ class power_Test(test.test):
                 possible but not raising an error when it fails, which is more
                 friendly to devices without a battery.
         @param check_network: check that Ethernet interface is not running.
+        @param run_arc: bool, whether to run with ARC (if available)
 
         @var backlight: power_utils.Backlight object.
         @var keyvals: dictionary of result keyvals.
@@ -93,6 +97,11 @@ class power_Test(test.test):
 
         self._pdash_note = pdash_note
         self._failure_messages = []
+
+        self._arc_mode = arc_common.ARC_MODE_DISABLED
+        if run_arc and utils.is_arc_available():
+            self._arc_mode = arc_common.ARC_MODE_ENABLED
+        self.keyvals['arc_mode'] = self._arc_mode
 
     def get_extra_browser_args_for_camera_test(self):
         """Return Chrome args for camera power test."""

@@ -33,10 +33,11 @@ class power_Idle(power_test.power_Test):
     first_test_warmup_secs = 60
 
     def initialize(self, pdash_note='', seconds_period=10.,
-                   force_discharge=False):
+                   force_discharge=False, run_arc=True):
         super(power_Idle, self).initialize(seconds_period=seconds_period,
                                            pdash_note=pdash_note,
-                                           force_discharge=force_discharge)
+                                           force_discharge=force_discharge,
+                                           run_arc=run_arc)
 
     def run_once(self, warmup_secs=20, idle_secs=120, default_only=False):
         """Collect power stats for idle tests."""
@@ -60,7 +61,8 @@ class power_Idle(power_test.power_Test):
         # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
         # so that each test run does not remember info from last test run.
         extra_browser_args = ['--disable-sync']
-        with chrome.Chrome(extra_browser_args=extra_browser_args) as self.cr:
+        with chrome.Chrome(extra_browser_args=extra_browser_args,
+                           arc_mode=self._arc_mode) as self.cr:
             self.is_first_test = True
 
             # Measure power in full-screen blank tab

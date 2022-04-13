@@ -108,7 +108,7 @@ To run locally:
     You should now be able to ssh into DUTs in the lab without a password.
 
     Follow these instructions to setup the ssh access to lab devservers:
-    http://g3doc/company/teams/chrome/ops/fleet/software/team-resources/onboarding#devserver-environment-for-running-local-tests-with-lab-duts
+    https://g3doc.corp.google.com/company/teams/chrome/ops/fleet/software/onboarding/creating-work-env.md#devserver-environment-for-running-local-tests-with-lab-duts
         You'll need appropriate group membership to be able to access the
         Valentine secret for the devserver file.
 

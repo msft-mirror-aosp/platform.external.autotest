@@ -110,6 +110,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # stateful should be restored on failure.
         self._should_restore_stateful = False
 
+        self._autotest_devserver = None
+
     def cleanup(self):
         """Clean up update_engine autotests."""
         if self._host:
@@ -128,6 +130,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info("Current release builder path on the DUT is %s",
                      builder_path)
         return builder_path
+
 
     def _get_expected_events_for_rootfs_update(self, source_release):
         """
@@ -291,6 +294,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if properties_file:
             filenames.append(filename + '.json')
         try:
+            if self._autotest_devserver is None:
+                self._autotest_devserver = dev_server.ImageServer.resolve(
+                        build_name, self._host.hostname)
+
             self._autotest_devserver.stage_artifacts(image=build_name,
                                                      files=filenames,
                                                      archive_url=archive_url)
@@ -1032,7 +1039,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                       payload_uri,
                       clobber_stateful=False,
                       tag='source',
-                      ignore_appid=False):
+                      ignore_appid=False,
+                      m2n=False):
         """
         Updates the device.
 
@@ -1049,14 +1057,27 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                              when parsing the update request. This allows
                              the target update to use a different board's
                              image, which is needed for kernelnext updates.
+        @param m2n: True for an m2n update. m2n update tests don't use signed
+                    payloads from gs://chromeos-releases/, so the payload paths
+                    need to be parsed differently.
 
         @raise error.TestFail if anything goes wrong with the update.
 
         """
         cros_preserved_path = ('/mnt/stateful_partition/unencrypted/'
                                'preserve/cros-update')
-        build_name, payload_filename = self._get_update_parameters_from_uri(
-            payload_uri)
+        if m2n:
+            # The payload_uri for an m2n update looks like:
+            # http://100.115.220.112:8082/static/octopus-release/R102-14692.0.0/chromeos_R102-14692.0.0_octopus_full_dev.bin
+            payload_path = payload_uri[payload_uri.index('static/'):]
+            build_name = '/'.join(payload_path.split('/')[1:-1])
+            payload_filename = payload_path.split('/')[-1]
+        else:
+            # Otherwise the payload_uri looks like:
+            # gs://chromeos-releases/dev-channel/octopus/14698.0.0/payloads/chromeos_14698.0.0_octopus_dev-channel_full_test.bin-gyzdkobygyzdck3swpkou632wan55vgx
+            build_name, payload_filename = self._get_update_parameters_from_uri(
+                    payload_uri)
+
         logging.info('Installing %s on the DUT', payload_uri)
         with remote_access.ChromiumOSDeviceHandler(
             self._host.hostname, base_dir=cros_preserved_path) as device:

@@ -534,7 +534,7 @@ class LabTransfer(Transfer):
           '%s.' % (' '.join(cmd), e))
 
     pattern = re.compile(r'Content-Length: [0-9]+', re.I)
-    match = pattern.findall(proc.output)
+    match = pattern.findall(str(proc.output))
     if not match:
       raise ChromiumOSTransferError('Could not get payload size from output: '
                                     '%s ' % proc.output)
@@ -586,7 +586,12 @@ class LabEndToEndPayloadTransfer(LabTransfer):
     Returns:
       Regular expression.
     """
-    return _PAYLOAD_PATTERN
+    if "payloads/" in self._GetPayloadFormat():
+      # Ex: payloads/chromeos_14698.0.0_octopus_dev-channel_full_test.bin-gyzdkobygyzdck3swpkou632wan55vgx
+      return _PAYLOAD_PATTERN
+    else:
+      # Ex: chromeos_R102-14692.0.0_octopus_full_dev.bin
+      return r'.*(R[0-9]+-)(?P<image_version>.+)'
 
   def _GetCurlCmdForPayloadDownload(self, payload_dir, payload_filename,
                                     build_id=None):

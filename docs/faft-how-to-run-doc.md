@@ -263,7 +263,7 @@ the syntax (with the assumption that your DUT's network interface and your servo
 host's network interface is tunnelled to 2203 and servod is listening on port
 9901 on your servo host) for running tests is:
 
-- `$ test_that localhost:2222 --args="servo_host=localhost servo_host_ssh_port=2223 servo_port=9901 --use_icmp_false" $TESTS`
+- `$ test_that localhost:2222 --args="servo_host=localhost servo_host_ssh_port=2223 servo_port=9901 use_icmp=false" $TESTS`
 - `$ tast run -build=false -var=servo=127.0.0.1:9901:ssh:2223 127.0.0.1:2222  $TESTS`
 
 Note that for tast, you will likely need to manually start servod.  Note that

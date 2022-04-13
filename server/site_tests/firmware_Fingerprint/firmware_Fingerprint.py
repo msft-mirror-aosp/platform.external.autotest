@@ -46,11 +46,10 @@ class firmware_Fingerprint(FingerprintTest):
                 image_args.append(getattr(self, arg))
         self._test_exe_args = image_args
 
-        if self.get_host_board() == 'zork':
+        if self.is_uart_device():
             # TODO(b/170770251): Move the rdp1 and rdp0 tests to separate files
             #
-            # Zork's RDP1 and RDP0 tests requires an AP reboot, so do it in
-            # this class
+            # On devices with UART, RDP1 and RDP0 tests requires an AP reboot.
             if self._test_exe == 'rdp1.sh':
                 self.test_rdp1()
             elif self._test_exe == 'rdp0.sh':
@@ -159,8 +158,8 @@ class firmware_Fingerprint(FingerprintTest):
         if self.get_file_size(file_read_from_flash) != 0:
             raise error.TestFail('File read from flash is not empty')
 
-        # On zork, an AP reboot is needed after using flash_fp_mcu.
-        if self.get_host_board() == 'zork':
+        # On devices with UART, an AP reboot is needed after using flash_fp_mcu.
+        if self.is_uart_device():
             self.host.reboot()
 
         self.check_firmware_is_functional()
@@ -200,8 +199,8 @@ class firmware_Fingerprint(FingerprintTest):
                     'Flash read output size doesn\'t match original fw size')
         self.check_file_contains_all_0xFF_bytes(file_read_from_flash)
 
-        # On zork, an AP reboot is needed after using flash_fp_mcu.
-        if self.get_host_board() == 'zork':
+        # On devices with UART, an AP reboot is needed after using flash_fp_mcu.
+        if self.is_uart_device():
             self.host.reboot()
 
         logging.info('Checking that firmware is non-functional')
@@ -239,8 +238,8 @@ class firmware_Fingerprint(FingerprintTest):
             raise error.TestFail(
                     'File read from flash does not match original fw file')
 
-        # On zork, an AP reboot is needed after using flash_fp_mcu.
-        if self.get_host_board() == 'zork':
+        # On devices with UART, an AP reboot is needed after using flash_fp_mcu.
+        if self.is_uart_device():
             self.host.reboot()
 
         self.check_firmware_is_functional()
@@ -273,8 +272,8 @@ class firmware_Fingerprint(FingerprintTest):
             raise error.TestFail(
                     'File read from flash does not match original fw file')
 
-        # On zork, an AP reboot is needed after using flash_fp_mcu.
-        if self.get_host_board() == 'zork':
+        # On devices with UART, an AP reboot is needed after using flash_fp_mcu.
+        if self.is_uart_device():
             self.host.reboot()
 
         self.check_firmware_is_functional()

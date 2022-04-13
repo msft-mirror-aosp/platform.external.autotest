@@ -248,7 +248,7 @@ class FingerprintTest(test.test):
 
         # On some platforms an AP reboot is needed after flashing firmware to
         # rebind the driver.
-        self._dut_needs_reboot = self.get_host_board() == 'zork'
+        self._dut_needs_reboot = self.is_uart_device()
 
         if filesystem_util.is_rootfs_writable(self.host):
             if self._dut_needs_reboot:
@@ -459,6 +459,11 @@ class FingerprintTest(test.test):
             raise error.TestFail(
                 'Unable to get fingerprint board with cros_config')
         return result.stdout.rstrip()
+
+    def is_uart_device(self) -> bool:
+        """Returns True if the boards transpot device is UART"""
+        uart_devices = ['zork', 'guybrush']
+        return self.get_host_board() in uart_devices
 
     def get_host_board(self):
         """Returns name of the host board."""

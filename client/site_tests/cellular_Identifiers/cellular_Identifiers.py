@@ -6,6 +6,7 @@
 import logging
 
 from autotest_lib.client.bin import test
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.cellular import mm1_constants
 from autotest_lib.client.cros.cellular.pseudomodem import sim
@@ -91,14 +92,16 @@ class cellular_Identifiers(test.test):
         """Called by autotest to run this test."""
         with test_env:
             device = test_env.shill.find_cellular_device_object()
-            service = test_env.shill.find_cellular_service_object()
-            #device_props = device.GetProperties(utf8_strings=True)
-            #service_props = service.GetProperties(utf8_strings=True)
-
             device_props = device.GetProperties()
+            service = test_env.shill.find_cellular_service_object()
             service_props = service.GetProperties()
             self.is_modemmanager = 'freedesktop' in device_props['DBus.Service']
 
+            utils.poll_for_condition(
+                test_env.modem.ModemIsRegistered,
+                exception = error.TestFail(
+                    'Modem failed to register with the network'),
+                timeout = SERVICE_REGISTRATION_TIMEOUT)
             modem_props = test_env.modem.GetModemProperties()
 
             logging.debug('shill service properties: %s', service_props)

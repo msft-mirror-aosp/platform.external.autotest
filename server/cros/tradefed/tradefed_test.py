@@ -987,6 +987,12 @@ class TradefedTest(test.test):
         logging.warning('Could not establish channel. Using retry=0.')
         return 0
 
+    def _is_tablet_mode_device(self):
+        """Returns if running the test on a tabled mode device"""
+        # TODO(kinaba): consider adding per-model check
+        board = self._get_board_name()
+        return any(board.startswith(b) for b in constants.TABLET_MODE_BOARDS)
+
     def _run_commands(self, commands, **kwargs):
         """Run commands on all the hosts."""
         # We need to copy the ADB key to the device to run adb on it.
@@ -1332,9 +1338,8 @@ class TradefedTest(test.test):
             # TODO(kinaba): Make it a general config (per-model choice
             # of tablet,clamshell,default) if the code below works.
             if utils.is_in_container() and not client_utils.is_moblab():
-                # Force all hatch/dedede devices run the test in laptop mode,
-                # regardless of their physical placement.
-                if board.startswith('hatch') or board.startswith('dedede'):
+                # Force laptop mode for non TABLET_MODE_BOARDS
+                if not self._is_tablet_mode_device():
                     self._run_commands(
                         ['inject_powerd_input_event --code=tablet --value=0'],
                         ignore_status=True)

@@ -56,6 +56,9 @@ BOARD_CTS_HELPERS_DIR = '/usr/local/opt/google/vms/android'
 LOGIN_BOARD_TIMEOUT = {'betty': 300, 'betty-arcnext': 300, 'betty-pi-arc': 300}
 LOGIN_DEFAULT_TIMEOUT = 90
 
+# List of boards that we want to run CTS in tablet mode for some models.
+TABLET_MODE_BOARDS = ('kukui', 'nocturne', 'scarlet')
+
 # Approximately assume ChromeOS revision Rdd-xxxxx.y.z with y>=45 as stable.
 APPROXIMATE_STABLE_BRANCH_NUMBER = 45
 

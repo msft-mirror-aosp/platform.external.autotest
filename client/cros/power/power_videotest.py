@@ -117,6 +117,9 @@ class power_VideoTest(power_test.power_Test):
             tab = self.cr.browser.tabs[0]
             tab.Activate()
 
+            # Stop services again as Chrome might have restarted them.
+            self._services.stop_services()
+
             # Just measure power in full-screen.
             fullscreen = tab.EvaluateJavaScript('document.webkitIsFullScreen')
             if not fullscreen:

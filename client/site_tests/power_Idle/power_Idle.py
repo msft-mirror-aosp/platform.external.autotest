@@ -73,6 +73,9 @@ class power_Idle(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
+            # Stop services again as Chrome might have restarted them.
+            self._services.stop_services()
+
             if default_only:
                 self.start_measurements()
                 measure_it(warmup_secs, idle_secs, 'all-default')

@@ -62,6 +62,9 @@ class power_ThermalLoad(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
+            # Stop services again as Chrome might have restarted them.
+            self._services.stop_services()
+
             self.backlight.set_percent(100)
 
             logging.info('Navigating to url: %s', test_url)

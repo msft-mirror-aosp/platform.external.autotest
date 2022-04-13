@@ -55,6 +55,9 @@ class power_Display(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
+            # Stop services again as Chrome might have restarted them.
+            self._services.stop_services()
+
             if brightness not in ['', 'all', 'max']:
                 raise error.TestFail(
                         'Invalid brightness flag: %s' % (brightness))

@@ -61,6 +61,9 @@ class power_VideoEncode(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
+            # Stop services again as Chrome might have restarted them.
+            self._services.stop_services()
+
             url = self.video_url
             tab.Navigate(url)
             tab.WaitForDocumentReadyStateToBeComplete()

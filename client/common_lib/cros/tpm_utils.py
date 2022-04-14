@@ -72,10 +72,8 @@ def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
 
     ownership_id = ownership_id.stdout.strip()
 
-    if not client.run('crossystem clear_tpm_owner_request=1',
-                      ignore_status=True).exit_status == 0:
-        raise error.TestFail('Unable to clear TPM.')
-
+    logging.info('Sending Clear TPM owner request')
+    client.run('crossystem clear_tpm_owner_request=1')
     CleanupAndReboot(client)
 
     if wait_for_ready:

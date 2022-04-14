@@ -14,7 +14,7 @@ import os
 from threading import Thread
 import time
 
-from autotest_lib.client.common_lib import error, utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests import (
@@ -381,8 +381,7 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         btsnoop_path = self.BTSNOOP_LOG_FILE
         try:
             cmd = f'btmon -C 100 -r {self.dut_btmon_log_path} > {btsnoop_path}'
-            cmd = f'ssh root@{self.host.ip} \'{cmd}\''
-            res = utils.run(cmd)
+            res = self.host.run(cmd).stdout
             logging.debug('run command: %s, result: %s', cmd, res)
 
             self.host.get_file(btsnoop_path, btsnoop_path, delete_dest=True)

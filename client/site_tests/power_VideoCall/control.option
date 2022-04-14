@@ -30,8 +30,12 @@ duration = int(args_dict.get('duration', 2 * HOURS))
 preset = str(args_dict.get('preset', ''))
 video_url = str(args_dict.get('video_url', ''))
 num_video = int(args_dict.get('num_video', 5))
-multitask = bool(args_dict.get('multitask', True))
-min_run_time_percent = bool(args_dict.get('min_run_time_percent', 100))
+multitask = args_dict.get('multitask')
+if multitask and (str(multitask).lower() == 'false' or int(multitask) == 0):
+    multitask = False
+else:
+    multitask = True
+min_run_time_percent = int(args_dict.get('min_run_time_percent', 100))
 
 pdash_note = args_dict.get('pdash_note', '')
 

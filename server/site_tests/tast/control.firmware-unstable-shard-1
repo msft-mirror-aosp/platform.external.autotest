@@ -39,6 +39,9 @@ def run(machine):
                  max_run_sec=16200, # 4h30m
                  command_args=command_args,
                  varslist=varslist,
-                 ephemeraldevserver='false')
+                 ephemeraldevserver='false',
+                 totalshards=3,
+                 shardindex=1,
+                 )
 
 parallel_simple(run, machines)

@@ -8,6 +8,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server.cros.network import ip_config_context_manager
+from autotest_lib.server.cros.network import perf_test_manager as perf_manager
 from autotest_lib.server.cros.network import wifi_cell_test_base
 
 
@@ -87,10 +88,10 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
                     raise Exception("Ping failed (%s)" % (ping_result))
             except Exception as e:
                 raise error.TestNAError(
-                        'Could not verify connection between router and pcap '
-                        'devices. Router and pcap device must have a direct '
-                        'Ethernet connection over their LAN ports to run '
-                        'performance tests: %s' % (e))
+                    'Could not verify connection between router and pcap '
+                    'devices. Router and pcap device must have a direct '
+                    'Ethernet connection over their LAN ports to run '
+                    'performance tests: %s' % (e))
 
     def _setup_ip_config(self, ip_context, add_ip_route=True):
         """Set up the IP configs required by the test.
@@ -130,8 +131,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
             if self._governor not in ('performance', 'powersave', 'userspace',
                                       'ondemand', 'conservative', 'schedutil'):
                 logging.warning(
-                        'Unrecognized CPU governor %s. Running test '
-                        'without setting CPU governor...', self._governor)
+                    'Unrecognized CPU governor %s. Running test '
+                    'without setting CPU governor...', self._governor)
                 self._governor = None
         else:
             self._governor = None
@@ -174,9 +175,9 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         original state.
         """
         self.client_governor = utils.get_scaling_governor_states(
-                self.context.client.host)
+            self.context.client.host)
         self.router_governor = utils.get_scaling_governor_states(
-                self.context.router.host)
+            self.context.router.host)
         utils.set_scaling_governors(governor, self.context.client.host)
         utils.set_scaling_governors(governor, self.context.router.host)
 
@@ -184,6 +185,40 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         """Restore governors to the original states.
         """
         utils.restore_scaling_governor_states(self.client_governor,
-                self.context.client.host)
+                                              self.context.client.host)
         utils.restore_scaling_governor_states(self.router_governor,
-                self.context.router.host)
+                                              self.context.router.host)
+
+    def configure_and_run_tests(self):
+        """IP configuration for router and pcap hosts.
+
+        Bring interfaces up, assign IP addresses and add routes.
+        Run the test for all provided AP configs and enabled governors.
+        """
+        failed_performance_tests = set()
+
+        for ap_config in self._ap_configs:
+            # Set up the router and associate the client with it.
+            self.configure_and_connect_to_ap(ap_config)
+            with ip_config_context_manager.IpConfigContextManager(
+            ) as ip_context:
+
+                self._setup_ip_config(ip_context)
+
+                manager = perf_manager.PerfTestManager(self._use_iperf)
+                # Flag a test error if we disconnect for any reason.
+                with self.context.client.assert_no_disconnects():
+                    for governor in sorted(set([None, self._governor])):
+                        # Run the performance test and record the test types
+                        # which failed due to low throughput.
+                        failed_performance_tests.update(
+                            self.do_run(ap_config, manager,
+                                        not (self._power_save_off),
+                                        governor))
+
+            # Clean up router and client state for the next run.
+            self.context.client.shill.disconnect(
+                self.context.router.get_ssid())
+            self.context.router.deconfig()
+
+        return failed_performance_tests

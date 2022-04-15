@@ -9,7 +9,6 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.server.cros.network import expected_performance_results
-from autotest_lib.server.cros.network import ip_config_context_manager
 from autotest_lib.server.cros.network import perf_test_manager as perf_manager
 from autotest_lib.server.cros.network import wifi_cell_perf_test_base
 
@@ -171,30 +170,10 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
     def run_once(self):
         """Test body."""
         start_time = time.time()
-        low_throughput_tests = set()
         logging.info(self.context.client.board)
 
-        for ap_config in self._ap_configs:
-            # Set up the router and associate the client with it.
-            self.configure_and_connect_to_ap(ap_config)
-            with ip_config_context_manager.IpConfigContextManager(
-            ) as ip_context:
-                self._setup_ip_config(ip_context)
+        low_throughput_tests = self.configure_and_run_tests()
 
-                manager = perf_manager.PerfTestManager(self._use_iperf)
-                # Flag a test error if we disconnect for any reason.
-                with self.context.client.assert_no_disconnects():
-                    for governor in sorted(set([None, self._governor])):
-                        # Run the performance test and record the test types
-                        # which failed due to low throughput.
-                        low_throughput_tests.update(
-                                self.do_run(ap_config, manager,
-                                            not (self._power_save_off),
-                                            governor))
-
-            # Clean up router and client state for the next run.
-            self.context.client.shill.disconnect(self.context.router.get_ssid())
-            self.context.router.deconfig()
         end_time = time.time()
         logging.info('Running time %0.1f seconds.', end_time - start_time)
         if len(low_throughput_tests) != 0:

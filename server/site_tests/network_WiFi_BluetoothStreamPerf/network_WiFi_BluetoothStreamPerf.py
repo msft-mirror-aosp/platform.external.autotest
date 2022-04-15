@@ -6,6 +6,7 @@ import logging
 import threading
 import time
 
+from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server.cros.network import perf_test_manager as perf_manager
 from autotest_lib.server.cros.network import wifi_cell_perf_test_base
@@ -131,70 +132,81 @@ class network_WiFi_BluetoothStreamPerf(
         """Run the body of the audio test"""
         self.test_a2dp_sinewaves(device, A2DP, 60)
 
+    def do_run(self, ap_config, manager, power_save, governor):
+        """Run a single set of perf tests, for a given AP and DUT config.
+
+        @param ap_config: the AP configuration that is being used
+        @param manager: a PerfTestManager instance
+        @param power_save: whether or not to use power-save mode on the DUT
+                           (boolean)
+        @ return set of failed configs
+        """
+        governor_name = self.setup_governor(governor)
+        # If CPU governor is already set to self._governor, don't
+        # perform the run twice
+        if governor_name == self._governor:
+            return
+
+        failed_test_types = set()
+
+        self.context.client.powersave_switch(power_save)
+        ps_tag = 'PS%s' % ('on' if power_save else 'off')
+        governor_tag = 'governor-%s' % governor_name
+        ap_config_tag = '_'.join([ap_config.perf_loggable_description,
+                                  ps_tag, governor_tag])
+
+        device = self.bt_device
+
+        for test_type in self.PERF_TEST_TYPES:
+            config = manager.get_config(test_type)
+            pcap_lan_iface = interface.Interface(self._pcap_lan_iface_name,
+                                                 self.context.pcap_host.host)
+            session = manager.get_session(test_type,
+                                          self.context.client,
+                                          self.context.pcap_host,
+                                          peer_device_interface=pcap_lan_iface)
+
+            session.MEASUREMENT_MAX_SAMPLES = 6.
+
+            self.base_through = 0
+            self.test_one(manager, session, config, ap_config_tag,
+                            'BT_disconnected')
+
+            self.test_connection_by_device(device)
+            self.test_one(manager, session, config, ap_config_tag,
+                            'BT_connected_but_not_streaming')
+
+            # Start playing audio in background
+            audio_thread = threading.Thread(target=self.do_audio_test,
+                                            args=(device, ))
+            audio_thread.start()
+            self.test_one(manager, session, config, ap_config_tag,
+                            'BT_streaming_audiofile')
+
+            # Wait for audio thread to complete
+            audio_thread.join()
+            self.test_disconnection_by_adapter(device.address)
+            self.test_one(manager, session, config, ap_config_tag,
+                            'BT_disconnected_again')
+
+        if governor:
+            self.restore_scaling_governors()
+
+        return failed_test_types
+
+
+
     @test_wrapper('Coex tests', devices={'BLUETOOTH_AUDIO': 1})
     def coex_test(self):
         """Test body."""
         start_time = time.time()
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.initialize_bluetooth_audio(device, A2DP)
-        self.pair_audio_device(device)
+        self.bt_device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.initialize_bluetooth_audio(self.bt_device, A2DP)
+        self.pair_audio_device(self.bt_device)
 
-        for ap_config in self._ap_configs:
-            # Set up the router and associate the client with it.
-            self.configure_and_connect_to_ap(ap_config)
+        self.configure_and_run_tests()
 
-            manager = perf_manager.PerfTestManager(self._use_iperf)
-
-            for governor in sorted(set([None, self._governor])):
-                governor_name = self.setup_governor(governor)
-                # If CPU governor is already set to self._governor, don't
-                # perform the run twice
-                if governor_name == self._governor:
-                    return
-
-                self.context.client.powersave_switch(not self._power_save_off)
-                ps_tag = 'PS%s' % ('off' if self._power_save_off else 'on')
-                governor_tag = 'governor-%s' % governor_name
-                ap_config_tag = '_'.join([ap_config.perf_loggable_description,
-                                          ps_tag, governor_tag])
-
-                for test_type in self.PERF_TEST_TYPES:
-                    config = manager.get_config(test_type)
-
-                    session = manager.get_session(test_type, self.context.client,
-                                                  self.context.router)
-
-                    session.MEASUREMENT_MAX_SAMPLES = 6.
-
-                    self.base_through = 0
-                    self.test_one(manager, session, config, ap_config_tag,
-                                  'BT_disconnected')
-
-                    self.test_connection_by_device(device)
-                    self.test_one(manager, session, config, ap_config_tag,
-                                  'BT_connected_but_not_streaming')
-
-                    # Start playing audio in background
-                    audio_thread = threading.Thread(target=self.do_audio_test,
-                                                    args=(device, ))
-                    audio_thread.start()
-                    self.test_one(manager, session, config, ap_config_tag,
-                                  'BT_streaming_audiofile')
-
-                    # Wait for audio thread to complete
-                    audio_thread.join()
-                    self.test_disconnection_by_adapter(device.address)
-                    self.test_one(manager, session, config, ap_config_tag,
-                                  'BT_disconnected_again')
-
-                if governor:
-                    self.restore_scaling_governors()
-
-            # Clean up router and client state for the next run.
-            self.context.client.shill.disconnect(self.context.router.get_ssid())
-            self.context.router.deconfig()
-
-        self.cleanup_bluetooth_audio(device, A2DP)
+        self.cleanup_bluetooth_audio(self.bt_device, A2DP)
         end_time = time.time()
         logging.info('Running time %0.1f seconds.', end_time - start_time)
 

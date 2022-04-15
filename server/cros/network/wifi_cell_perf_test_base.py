@@ -164,7 +164,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         else:
             # try to get machine's current governor
             governor_name = self.get_current_governor(self.context.client.host)
-            if governor_name != self.get_current_governor(self.context.router.host):
+            if (governor_name != self.get_current_governor(self.context.router.host) or
+                governor_name != self.get_current_governor(self.context.pcap_host.host)):
                 governor_name = 'default'
         return governor_name
 
@@ -178,8 +179,11 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
             self.context.client.host)
         self.router_governor = utils.get_scaling_governor_states(
             self.context.router.host)
+        self.pcap_host_governor = utils.get_scaling_governor_states(
+            self.context.pcap_host.host)
         utils.set_scaling_governors(governor, self.context.client.host)
         utils.set_scaling_governors(governor, self.context.router.host)
+        utils.set_scaling_governors(governor, self.context.pcap_host.host)
 
     def restore_scaling_governors(self):
         """Restore governors to the original states.
@@ -188,6 +192,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
                                               self.context.client.host)
         utils.restore_scaling_governor_states(self.router_governor,
                                               self.context.router.host)
+        utils.restore_scaling_governor_states(self.pcap_host_governor,
+                                              self.context.pcap_host.host)
 
     def configure_and_run_tests(self):
         """IP configuration for router and pcap hosts.

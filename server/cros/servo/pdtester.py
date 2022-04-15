@@ -252,7 +252,7 @@ class PDTester(chrome_ec.ChromeEC):
                       command requested by DUT
         @returns value of prswap in PDTester FW
         """
-        self.set(self.USBC_PRSWAP, allow)
+        self.set(self.USBC_PRSWAP, int(allow))
 
     def allow_dr_swap(self, allow):
         """Issue usbc_action drswap PDTester command
@@ -261,4 +261,4 @@ class PDTester(chrome_ec.ChromeEC):
                       command requested by DUT
         @returns value of drswap in PDTester FW
         """
-        self.set(self.USBC_DRSWAP, allow)
+        self.set(self.USBC_DRSWAP, int(allow))

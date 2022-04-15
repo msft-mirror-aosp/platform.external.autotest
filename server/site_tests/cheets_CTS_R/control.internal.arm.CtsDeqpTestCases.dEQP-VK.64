@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_R.internal.arm.CtsDeqpTestCases.dEQP-VK.64'
-ATTRIBUTES = 'suite:arc-cts-r'
+ATTRIBUTES = 'suite:arc-cts-r, suite:arc-cts-qual'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 0
 TEST_TYPE = 'server'
@@ -21,6 +21,7 @@ def run_TS(machine):
         'cheets_CTS_R',
         hosts=host_list,
         iterations=1,
+        max_retry=9,
         tag='internal.arm.CtsDeqpTestCases.dEQP-VK.64',
         test_name='cheets_CTS_R.internal.arm.CtsDeqpTestCases.dEQP-VK.64',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases', '--test', 'dEQP-VK.*', '--abi', 'arm64-v8a'],
@@ -30,6 +31,6 @@ def run_TS(machine):
         bundle='arm',
         uri='LATEST',
         use_jdk9=True,
-        timeout=54000)
+        timeout=172800)
 
 parallel_simple(run_TS, machines)

@@ -174,6 +174,10 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsMediaTestCases',
 ]
 
+CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
+        'CtsDeqpTestCases',
+]
+
 CONFIG['USE_OLD_ADB'] = [
         'CtsStatsdHostTestCases',
 ]
@@ -303,6 +307,7 @@ CONFIG['HARDWARE_MODULES'] = [
 ]
 
 SUITE_ARC_CTS_R = ['suite:arc-cts-r']
+R_QUAL_SUITES = ['suite:arc-cts-r', 'suite:arc-cts-qual']
 R_REGRESSION_SUITES = ['suite:arc-cts-r', 'suite:arc-cts']
 R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
 
@@ -311,11 +316,11 @@ CONFIG['EXTRA_MODULES'] = {
         'CtsCameraTestCases.NativeCameraDeviceTest': R_REGRESSION_AND_QUAL_SUITES,
     },
     'CtsDeqpTestCases': {
-        'CtsDeqpTestCases.dEQP-EGL': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-GLES2': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-GLES3': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-GLES31': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-VK': SUITE_ARC_CTS_R,
+        'CtsDeqpTestCases.dEQP-EGL': R_QUAL_SUITES,
+        'CtsDeqpTestCases.dEQP-GLES2': R_QUAL_SUITES,
+        'CtsDeqpTestCases.dEQP-GLES3': R_QUAL_SUITES,
+        'CtsDeqpTestCases.dEQP-GLES31': R_QUAL_SUITES,
+        'CtsDeqpTestCases.dEQP-VK': R_QUAL_SUITES,
     },
     'CtsMediaTestCases': {
         'CtsMediaTestCases.audio': R_REGRESSION_AND_QUAL_SUITES,

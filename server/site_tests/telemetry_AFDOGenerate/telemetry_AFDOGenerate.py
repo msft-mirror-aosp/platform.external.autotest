@@ -59,7 +59,8 @@ from autotest_lib.site_utils import test_runner_utils
 
 # These are arguments to the linux "perf" tool.
 # The -e value is processor specific and comes from the Intel SDM vol 3b
-PROFILER_ARGS = 'record -a -e r20c4 -c 50000 -b'
+# TODO(b:229298221): Revert to -c 50000 when fixed.
+PROFILER_ARGS = 'record -a -e r20c4 -c 200003 -b'
 
 # In practice, it takes >2min to copy the perf.data back from the DUT, set
 # this timeout to 600 secs to be safe.
@@ -103,8 +104,9 @@ TELEMETRY_AFDO_BENCHMARKS = (
         # page_cycler tests are deprecated. Replace them with loading.desktop.
         ('loading.desktop', ('--pageset-repeat=1',
                              '--story-tag-filter=typical')),
-        ('loading.desktop', ('--pageset-repeat=1',
-                             '--story-tag-filter=intl_ja_zh')),
+        # TODO(b:229298221): Re-enabled when fixed.
+        # ('loading.desktop', ('--pageset-repeat=1',
+        #                      '--story-tag-filter=intl_ja_zh')),
         ('rendering.desktop', ('--pageset-repeat=1',
                                '--story-tag-filter=tough_canvas')),
         ('octane', ),

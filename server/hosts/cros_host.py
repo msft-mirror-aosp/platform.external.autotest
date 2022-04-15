@@ -480,14 +480,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         else:
             self.pdtester = None
 
-        try:
-            logging.debug('Pre test lsb-release {}'.format(
-                    self._get_lsb_release_content()))
-        except Exception as e:
-            logging.debug(
-                    'Could not get lsb-release on SSH connection because %s',
-                    e)
-
     def initialize_btpeer(self, btpeer_args=[]):
         """ Initialize the Bluetooth peers
 
@@ -1523,9 +1515,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
     def close(self):
         """Close connection."""
         super(CrosHost, self).close()
-
-        logging.debug('Post test lsb-release {}'.format(
-                self._get_lsb_release_content()))
 
         if self._chameleon_host:
             self._chameleon_host.close()

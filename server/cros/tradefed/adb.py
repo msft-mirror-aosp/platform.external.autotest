@@ -3,7 +3,52 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(rkuroiwa): Rename this file to adb_utils.py to align with other utility
+# modules. Also when class Adb is instantiated, the user is likely to call the
+# instance "adb" which would collide with this file name (unless they always
+# use "import adb as someothername".
+
+import logging
 import re
+
+from autotest_lib.server import utils
+
+
+class Adb:
+    """Class for running adb commands."""
+
+    def __init__(self):
+        self._install_paths = set()
+
+    def add_path(self, path):
+        """Adds path for executing commands.
+
+        Path to ADB and AAPT may have to be added it if is not in the path.
+        Use this method to add it to the path before using run().
+        """
+        self._install_paths.add(path)
+
+    def get_paths(self):
+        return self._install_paths
+
+    def run(self, host, *args, **kwargs):
+        """Runs an ADB command on the host.
+
+        @param host: DUT to issue the adb command.
+        @param args: Extra args passed to the adb command.
+        @param kwargs: Extra arguments passed to utils.run().
+        """
+        additional_option = _tradefed_options(host)
+        kwargs['args'] = additional_option + kwargs.get('args', ())
+
+        # _install_paths should include the directory with adb.
+        # utils.run() will append these to paths.
+        kwargs['extra_paths'] = (kwargs.get('extra_paths', []) +
+                                 list(self._install_paths))
+        result = utils.run('adb', **kwargs)
+        logging.info('adb %s:\n%s', ' '.join(kwargs.get('args')),
+                     result.stdout + result.stderr)
+        return result
 
 
 def get_adb_target(host):
@@ -30,7 +75,7 @@ def get_adb_targets(hosts):
     return [get_adb_target(host) for host in hosts]
 
 
-def tradefed_options(host):
+def _tradefed_options(host):
     """ADB arguments for tradefed.
 
     These arguments are specific to using adb with tradefed.

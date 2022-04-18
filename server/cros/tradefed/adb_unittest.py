@@ -5,7 +5,7 @@
 
 import unittest
 
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from autotest_lib.server.cros.tradefed import adb
 
 
@@ -51,13 +51,38 @@ class AdbTest(unittest.TestCase):
         targets = adb.get_adb_targets([mock_host1, mock_host2, mock_host3])
         self.assertEqual(targets, ['host1:1111', 'host2:2222', 'host3:3333'])
 
-    def test_tradefed_options_with_host(self):
-        mock_host = Mock()
-        mock_host.port = 4792
-        mock_host.hostname = 'some.hostname.cros'
-        options = adb.tradefed_options(mock_host)
-        self.assertEqual(options, ('-s', 'some.hostname.cros:4792'))
+    def test_add_paths(self):
+        instance = adb.Adb()
+        instance.add_path('/some/install/path')
+        instance.add_path('/another/directory')
 
-    def test_tradefed_options_without_host(self):
-        options = adb.tradefed_options(None)
-        self.assertEqual(options, ('-H', 'localhost', '-P', '5037'))
+        self.assertEqual(set(['/some/install/path', '/another/directory']),
+                         instance.get_paths())
+
+    @patch('autotest_lib.server.utils.run')
+    def test_run(self, mock_run):
+        instance = adb.Adb()
+        instance.add_path('/some/install/path')
+
+        mock_host = Mock()
+        mock_host.port = 3467
+        mock_host.hostname = '123.76.0.29'
+
+        instance.run(mock_host, args=('some', 'command'), timeout=240)
+        mock_run.assert_called_with('adb',
+                                    args=('-s', '123.76.0.29:3467', 'some',
+                                          'command'),
+                                    timeout=240,
+                                    extra_paths=['/some/install/path'])
+
+    @patch('autotest_lib.server.utils.run')
+    def test_run_without_host(self, mock_run):
+        instance = adb.Adb()
+        instance.add_path('/some/install/path')
+
+        instance.run(None, args=('some', 'command'), timeout=240)
+        mock_run.assert_called_with('adb',
+                                    args=('-H', 'localhost', '-P', '5037',
+                                          'some', 'command'),
+                                    timeout=240,
+                                    extra_paths=['/some/install/path'])

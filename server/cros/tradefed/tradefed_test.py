@@ -35,7 +35,7 @@ from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import test
 from autotest_lib.server import utils
-from autotest_lib.server.cros.tradefed import adb
+from autotest_lib.server.cros.tradefed import adb as adb_utils
 from autotest_lib.server.cros.tradefed import cts_expected_failure_parser
 from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
@@ -76,6 +76,11 @@ class TradefedTest(test.test):
     # A job will be aborted after 16h. Subtract 30m for setup/teardown.
     _MAX_LAB_JOB_LENGTH_IN_SEC = 16 * 60 * 60 - 30 * 60
     _job_deadline = None
+
+    # Currently this is only used for dependency injection for testing.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
+        self._adb = kwargs.get('adb', adb_utils.Adb())
 
     def _log_java_version(self):
         """Log java version to debug failures due to version mismatch."""
@@ -139,6 +144,7 @@ class TradefedTest(test.test):
         permission = (
             stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH
             | stat.S_IXOTH)
+
         adb_dir = constants.ADB_DIR_OLD if use_old_adb else constants.ADB_DIR
         self._install_files(adb_dir, constants.ADB_FILES, permission)
         self._install_files(constants.SDK_TOOLS_DIR,
@@ -262,8 +268,10 @@ class TradefedTest(test.test):
     def _kill_adb_server(self):
         # Kill any lingering adb servers.
         try:
-            self._run_adb_cmd(verbose=True, args=('kill-server',),
-                timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+            self._adb.run(None,
+                          verbose=True,
+                          args=('kill-server', ),
+                          timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
         except error.CmdTimeoutError as e:
             logging.warn(e)
             # `adb kill-server` sometimes hangs up. Kill it more brutally.
@@ -304,10 +312,11 @@ class TradefedTest(test.test):
         This method should only be called after all hosts' Android has been
         successfully booted up."""
         # Check all hosts have same Android fingerprint.
-        fingerprint = set(self._run_adb_cmd(
-            host,
-            args=('shell', 'getprop', 'ro.build.fingerprint')).stdout
-            for host in self._hosts)
+        fingerprint = set(
+                self._adb.run(host,
+                              args=('shell', 'getprop',
+                                    'ro.build.fingerprint')).stdout
+                for host in self._hosts)
         if len(fingerprint) > 1:
             raise error.TestFail('Hosts\' supported fingerprint is different: '
                                  '%s', fingerprint)
@@ -332,19 +341,6 @@ class TradefedTest(test.test):
         # Avoid setting timeout=0 (None) in any cases.
         self._timeout_factor = max(1, self._test_count_factor)
 
-    def _run_adb_cmd(self, host=None, **kwargs):
-        """Running adb command.
-
-        @param host: DUT that want to connect to. (None if the adb command is
-                     intended to run in the server. eg. keygen)
-        """
-        additional_option = adb.tradefed_options(host)
-        kwargs['args'] = additional_option + kwargs.get('args', ())
-        result = self._run('adb', **kwargs)
-        logging.info('adb %s:\n%s', ' '.join(kwargs.get('args')),
-                     result.stdout + result.stderr)
-        return result
-
     def _try_adb_connect(self, host):
         """Attempts to connect to adb on the DUT.
 
@@ -358,16 +354,22 @@ class TradefedTest(test.test):
             # This may fail return failure due to a race condition in adb
             # connect (b/29370989). If adb is already connected, this command
             # will immediately return success.
-            host_port = adb.get_adb_target(host)
-            result = self._run_adb_cmd(
-                host, args=('connect', host_port), verbose=True, env=env,
-                ignore_status=True,
-                timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
+            host_port = adb_utils.get_adb_target(host)
+            result = self._adb.run(
+                    host,
+                    args=('connect', host_port),
+                    verbose=True,
+                    env=env,
+                    ignore_status=True,
+                    timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             if result.exit_status != 0:
                 return False
 
-            result = self._run_adb_cmd(host, args=('devices',), env=env,
-                timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
+            result = self._adb.run(
+                    host,
+                    args=('devices', ),
+                    env=env,
+                    timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             if not re.search(r'{}\s+(device|unauthorized)'.format(
                     re.escape(host_port)), result.stdout):
                 logging.info('No result found in with pattern: %s',
@@ -377,10 +379,13 @@ class TradefedTest(test.test):
 
             # Actually test the connection with an adb command as there can be
             # a race between detecting the connected device and actually being
-            # able to run a commmand with authenticated adb.
-            result = self._run_adb_cmd(
-                host, args=('shell', 'exit'), env=env, ignore_status=True,
-                timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
+            # able to run a command with authenticated adb.
+            result = self._adb.run(
+                    host,
+                    args=('shell', 'exit'),
+                    env=env,
+                    ignore_status=True,
+                    timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
             return result.exit_status == 0
         except error.CmdTimeoutError as e:
             logging.warning(e)
@@ -418,10 +423,10 @@ class TradefedTest(test.test):
         """
 
         def _intent_helper_running():
-            result = self._run_adb_cmd(
-                host,
-                args=('shell', 'pgrep', '-f', 'org.chromium.arc.intent_helper'),
-                ignore_status=True)
+            result = self._adb.run(host,
+                                   args=('shell', 'pgrep', '-f',
+                                         'org.chromium.arc.intent_helper'),
+                                   ignore_status=True)
             return bool(result.stdout)
 
         utils.poll_for_condition(
@@ -440,11 +445,10 @@ class TradefedTest(test.test):
         This method disables it.
         """
         logging.info('Disabling the adb install dialog.')
-        result = self._run_adb_cmd(
-            host,
-            verbose=True,
-            args=('shell', 'settings', 'put', 'global',
-                  'verifier_verify_adb_installs', '0'))
+        result = self._adb.run(host,
+                               verbose=True,
+                               args=('shell', 'settings', 'put', 'global',
+                                     'verifier_verify_adb_installs', '0'))
         logging.info('Disable adb dialog: %s', result.stdout)
 
         # Android "RescueParty" feature can reset the above settings when the
@@ -773,7 +777,9 @@ class TradefedTest(test.test):
                 local = self._instance_copyfile(cache_path)
             os.chmod(local, permission)
             # Keep track of PATH.
-            self._install_paths.append(os.path.dirname(local))
+            local_dir = os.path.dirname(local)
+            self._install_paths.append(local_dir)
+            self._adb.add_path(local_dir)
 
     def _prepare_media(self, media_asset):
         """Downloads and offers the cached media files to tradefed."""
@@ -824,7 +830,7 @@ class TradefedTest(test.test):
         # Earlier checks enforce that each host has the same build fingerprint,
         # so we can assume that the packages from the first host will work
         # across the whole set.
-        package_list = self._run_adb_cmd(
+        package_list = self._adb.run(
                 self._hosts[0],
                 args=('shell', 'getprop',
                       constants.TRADEFED_CTS_HELPERS_PROPERTY)).stdout.strip()
@@ -900,10 +906,10 @@ class TradefedTest(test.test):
         successfully initialized."""
         if not self._abilist:
             for _ in range(3):
-                abilist_str = self._run_adb_cmd(
-                    self._hosts[0],
-                    args=('shell', 'getprop',
-                          'ro.product.cpu.abilist')).stdout.strip()
+                abilist_str = self._adb.run(
+                        self._hosts[0],
+                        args=('shell', 'getprop',
+                              'ro.product.cpu.abilist')).stdout.strip()
                 if abilist_str:
                     self._abilist = abilist_str.split(',')
                     break
@@ -1079,7 +1085,7 @@ class TradefedTest(test.test):
         """
         target_argument = []
         for host in self._hosts:
-            target_argument += ['-s', adb.get_adb_target(host)]
+            target_argument += ['-s', adb_utils.get_adb_target(host)]
         shard_argument = []
         if len(self._hosts) > 1:
             if self._SHARD_CMD:
@@ -1190,8 +1196,10 @@ class TradefedTest(test.test):
             logging.info('Copying extra artifacts from "%s" to "%s".',
                          artifact, output_dir)
             try:
-                self._run_adb_cmd(host, verbose=True, timeout=120,
-                                  args=('pull', artifact, output_dir))
+                self._adb.run(host,
+                              verbose=True,
+                              timeout=120,
+                              args=('pull', artifact, output_dir))
             except:
                 # Maybe ADB connection failed, or the artifacts don't exist.
                 logging.exception('Copying extra artifacts failed.')
@@ -1251,8 +1259,8 @@ class TradefedTest(test.test):
 
     def _run_tradefed_with_timeout(self, command, timeout):
         tradefed = self._tradefed_cmd_path()
-        with tradefed_utils.adb_keepalive(adb.get_adb_targets(self._hosts),
-                                          self._install_paths):
+        with tradefed_utils.adb_keepalive(
+                adb_utils.get_adb_targets(self._hosts), self._install_paths):
             logging.info('RUN(timeout=%d): %s', timeout,
                          ' '.join([tradefed] + command))
             output = self._run(

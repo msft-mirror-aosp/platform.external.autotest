@@ -342,6 +342,7 @@ INTEL_UARCH_TABLE = {
     '06_9E': 'Kaby Lake',
     '06_0F': 'Merom',
     '06_16': 'Merom',
+    '06_AA': 'Meteor Lake',
     '06_17': 'Nehalem',
     '06_1A': 'Nehalem',
     '06_1D': 'Nehalem',
@@ -377,7 +378,8 @@ INTEL_BIGCORE_ORDER = [
         'Prescott', 'Presler', 'Dothan', 'Merom', 'Nehalem', 'Westmere',
         'Sandy Bridge', 'Ivy Bridge', 'Ivy Bridge-E', 'Haswell', 'Haswell-E',
         'Broadwell', 'Skylake', 'Kaby Lake', 'Coffee Lake', 'Whiskey Lake',
-        'Cannon Lake', 'Comet Lake', 'Ice Lake', 'Tiger Lake', 'Alder Lake'
+        'Cannon Lake', 'Comet Lake', 'Ice Lake', 'Tiger Lake', 'Alder Lake',
+        'Meteor Lake'
 ]
 
 

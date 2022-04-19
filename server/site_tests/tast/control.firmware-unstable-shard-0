@@ -6,7 +6,7 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'Chromium OS Firmware EngProd team'
-NAME = 'tast.firmware-unstable'
+NAME = 'tast.firmware-unstable-shard-0'
 TIME = 'LENGTHY'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'

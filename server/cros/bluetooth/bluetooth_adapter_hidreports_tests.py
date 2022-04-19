@@ -113,8 +113,7 @@ class BluetoothAdapterHIDReportTests(
 
                 # Check if peripheral is connected after suspend resume, reconnect
                 # and try again if it isn't.
-                if not self.ignore_failure(self.test_device_is_connected,
-                                           device.address):
+                if not self.ignore_failure(check_connected_method, device):
                     logging.info("device not connected after suspend_resume")
                     self.test_connection_by_device(device)
                 run_hid_test()

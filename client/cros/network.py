@@ -42,7 +42,7 @@ def CheckThatInterfaceCanAccessDestination(host,
         # addresses.
         try:
             utils.poll_for_condition(condition=lambda: utils.ping(
-                    address, interface=interface, tries=2, timeout=2) == 0,
+                    address, interface=interface, tries=2, timeout=3) == 0,
                                      exception=Exception('No route to %s' %
                                                          address),
                                      timeout=2)

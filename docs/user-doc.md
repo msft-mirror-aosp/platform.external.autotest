@@ -11,8 +11,8 @@ Autotest concepts.
 [Gentoo Portage ebuild/eclass Information](http://www.gentoo.org/proj/en/devrel/handbook/handbook.xml?part=2):
 Getting to know the package build system we use.
 
-[ChromiumOS specific Portage FAQ](http://www.chromium.org/chromium-os/how-tos-and-troubleshooting/portage-build-faq):
-Learning something about the way we use portage.
+[ChromiumOS specific Portage FAQ](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/portage/ebuild_faq.md):
+Learn something about the way we use portage.
 
 ## Autotest and ebuild workflow
 

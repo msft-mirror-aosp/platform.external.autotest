@@ -4843,6 +4843,23 @@ class BluetoothAdapterTests(test.test):
 
         return rssi
 
+    def check_floss_support(self):
+        """ Check whether this device supports Floss
+
+        Check for the presence of /usr/bin/btmanagerd and fail with TESTNA
+        if the file is not present. This should only fail on the following boards
+        with 2GB rootfs where Floss is not enabled
+        ['asuka', 'banon', 'bob', 'caroline', 'cave', 'celes',
+        'chell', 'coral', 'cyan', 'edgar', 'elm', 'gru', 'hana',
+        'kefka', 'kevin', 'lars', 'pyro', 'reef', 'reks', 'relm',
+        'sand', 'scarlet', 'sentry', 'setzer', 'snappy', 'terra', 'ultima']
+
+
+        @raises error.TestNA if device doesn't support Floss
+        """
+        if not self.bluetooth_facade.is_btmanagerd_present():
+            raise error.TestNAError('Floss cannot be enabled on this device')
+
     def verify_device_rssi(self, device_list):
         """ Test device rssi is over required threshold.
 

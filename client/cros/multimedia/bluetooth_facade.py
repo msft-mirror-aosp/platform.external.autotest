@@ -288,6 +288,8 @@ class BluetoothBaseFacadeLocal(object):
 
     # Upstart job name for the Floss Manager daemon
     MANAGER_JOB = "btmanagerd"
+    # File path for btmanagerd
+    BTMANGERD_FILE_PATH = '/usr/bin/btmanagerd'
     # How long we wait for the manager daemon to come up after we start it
     DAEMON_TIMEOUT_SEC = 5
 
@@ -1574,6 +1576,13 @@ class BluetoothBaseFacadeLocal(object):
         @returns: a list of cras audio information.
         """
         return cras_utils.get_audio_thread_summary()
+
+    def is_btmanagerd_present(self):
+        """ Check if /usr/bin/btmanagerd file is present
+
+        @returns: True if /usr/bin/btmanagerd is present and False if not
+        """
+        return os.path.exists(self.BTMANGERD_FILE_PATH)
 
 
 class BluezPairingAgent:

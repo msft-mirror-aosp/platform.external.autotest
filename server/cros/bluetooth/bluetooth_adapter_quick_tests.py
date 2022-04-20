@@ -194,6 +194,10 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
         logging.debug("Bluetooth attenuator is %s", self.bt_attenuator)
 
+        # Check whether this device supports floss
+        if self.floss:
+            self.check_floss_support()
+
         if self.use_btpeer:
             self.input_facade = self.factory.create_input_facade()
 

@@ -51,9 +51,10 @@ class power_BrightnessResetAfterReboot(test.test):
         initial_lux = -1
         if als_exists:
             initial_lux = int(result.stdout.rstrip())
-            lux_domain = [initial_lux / 2, initial_lux * 2]
+            cushion_percent = 5
             brightness_range = \
-                    [get_backlight(host, lux) for lux in lux_domain]
+                    [get_backlight(host, initial_lux / 2) - cushion_percent,
+                    get_backlight(host, initial_lux * 2) + cushion_percent]
         else:
             brightness_range = [10.0, 90.0]
 
@@ -86,11 +87,14 @@ class power_BrightnessResetAfterReboot(test.test):
         # If there is an ambient light sensor, allow a small change in internal
         # display brightness, in case that the ambient light changes slightly.
         if als_exists:
-            cushion = 0.2
-            lux_domain_after_reboot = [(1.0 - cushion) * initial_lux,
-                                       (1.0 + cushion) * initial_lux]
-            brightness_range_after_reboot = [get_backlight(host, lux) for lux
-                                             in lux_domain_after_reboot]
+            cushion_lux = 0.2
+            cushion_percent = 1
+            lux_after_reboot = [(1.0 - cushion_lux) * initial_lux,
+                                (1.0 + cushion_lux) * initial_lux]
+            brightness_range_after_reboot = [
+                    get_backlight(host, lux_after_reboot[0]) - cushion_percent,
+                    get_backlight(host, lux_after_reboot[1]) + cushion_percent
+            ]
             if (brightness_range_after_reboot[0] <=
                     brightness_after_reboot <=
                     brightness_range_after_reboot[1]):

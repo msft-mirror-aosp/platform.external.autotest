@@ -11,7 +11,7 @@ TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
 # Android changes can't break Chrome tests (so we don't need to run them in the
 # Android PFQ), but OS changes can (so we need to run them in the CQ).
-ATTRIBUTES = 'suite:bvt-tast-cq, suite:bvt-tast-chrome-pfq'
+ATTRIBUTES = 'suite:bvt-tast-cq, suite:bvt-tast-chrome-pfq, suite:py3-beta'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

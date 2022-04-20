@@ -268,8 +268,10 @@ class CellularProxy(shill_proxy.ShillProxy):
         if not device:
             return None
         properties = device.GetProperties()
-        if (model_id == properties.get(self.DEVICE_PROPERTY_MODEL_ID)
-                    and (mm_reboot or (old_modem_mm_object != properties.get(
-                            self.DEVICE_PROPERTY_DBUS_OBJECT)))):
+        if (model_id == properties.get(self.DEVICE_PROPERTY_MODEL_ID) and
+            (mm_reboot or
+             (old_modem_mm_object != properties.get(
+                     self.DEVICE_PROPERTY_DBUS_OBJECT)
+              and '/' in properties.get(self.DEVICE_PROPERTY_DBUS_OBJECT)))):
             return device
         return None

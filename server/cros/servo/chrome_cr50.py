@@ -1093,7 +1093,12 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             line = line.strip()
             if ':' in line:
                 k, v = line.split(':', 1)
-                ccdstate[k.strip()] = v.strip()
+                k = k.strip()
+                v = v.strip()
+                if '(' in v:
+                    ccdstate[k + ' full'] = v
+                    v = v.split('(')[0].strip()
+                ccdstate[k] = v
         logging.info('Current CCD state:\n%s', pprint.pformat(ccdstate))
         return ccdstate
 

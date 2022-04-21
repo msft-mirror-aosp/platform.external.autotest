@@ -30,13 +30,15 @@ The expected throughput values depend on the following parameters:
 2- The Connection mode:
     a) 80211n
     b) 80211ac
+    c) 80211ax
+    Note: gale(legacy) doesn't have expected values for 80211ax
 3- The channel width:
     a) 20 MHz
     b) 40 MHz
     c) 80 MHz
 """
 
-expected_throughput_wifi = {
+expected_throughput_wifi_legacy = {
         perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL: {
                 hostap_config.HostapConfig.MODE_11N_PURE: {
                         hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20: (0, 0),
@@ -153,8 +155,197 @@ expected_throughput_wifi = {
         }
 }
 
+expected_throughput_wifi_router_arch = {
+        'openwrt_mips_mt7915e_ubiquiti-6lite': {
+                perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL: {
+                        hostap_config.HostapConfig.MODE_11N_PURE: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                                (0, 0),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
+                                (0, 0),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
+                                (0, 0)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                                (0, 0)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_PURE: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                                (0, 0),
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                                (0, 0)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80:
+                                (0, 0)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_PURE: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20:
+                                (0, 0),
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_40:
+                                (0, 0)
+                        }
+                },
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL: {
+                        hostap_config.HostapConfig.MODE_11N_PURE: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                                (0, 0),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
+                                (0, 0),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
+                                (0, 0)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                                (0, 0)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_PURE: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                                (0, 0),
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                                (0, 0)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80:
+                                (0, 0)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_PURE: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20:
+                                (0, 0),
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_40:
+                                (0, 0)
+                        }
+                },
+                perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+                        hostap_config.HostapConfig.MODE_11N_PURE: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                                (61, 86),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
+                                (115, 166),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
+                                (115, 166)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                                (200, 400)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_PURE: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                                (74, 103),
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                                (153, 221)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80:
+                                (200, 400)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_PURE: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20:
+                                (74, 103),
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_40:
+                                (153, 221)
+                        }
+                },
+                perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+                        hostap_config.HostapConfig.MODE_11N_PURE: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                                (61, 86),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
+                                (115, 166),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
+                                (115, 166)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                                (200, 400)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_PURE: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                                (74, 103),
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                                (153, 221)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80:
+                                (200, 400)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_PURE: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20:
+                                (74, 103),
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_40:
+                                (153, 221)
+                        }
+                },
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+                        hostap_config.HostapConfig.MODE_11N_PURE: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                                (72, 101),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
+                                (135, 195),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
+                                (135, 195)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                                (347, 500)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_PURE: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                                (87, 121),
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                                (180, 260)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80:
+                                (347, 500)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_PURE: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20:
+                                (87, 121),
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_40:
+                                (180, 260)
+                        }
+                },
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+                        # TODO(b/271490937): wifi_perf_openwrt: UDP TX perf numbers are low
+                        hostap_config.HostapConfig.MODE_11N_PURE: {
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
+                                (30, 101),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
+                                (50, 195),
+                                hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
+                                (50, 195)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_MIXED: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
+                                (200, 500)
+                        },
+                        hostap_config.HostapConfig.MODE_11AC_PURE: {
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
+                                (30, 121),
+                                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
+                                (50, 260)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80:
+                                (200, 500)
+                        },
+                        hostap_config.HostapConfig.MODE_11AX_PURE: {
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20:
+                                (30, 121),
+                                hostap_config.HostapConfig.HE_CHANNEL_WIDTH_40:
+                                (50, 260)
+                        }
+                }
+        }
+}
 
-def get_expected_throughput_wifi(test_type, mode, channel_width):
+
+def get_expected_throughput_wifi(test_type,
+                                 mode,
+                                 channel_width,
+                                 router_arch=None):
     """returns the expected throughput for WiFi only performance tests.
 
     @param test_type: the PerfTestTypes test type.
@@ -163,16 +354,24 @@ def get_expected_throughput_wifi(test_type, mode, channel_width):
 
     @param channel_width: the channel width used in the test.
 
+    @param router_arch: the arch of router's CPU and WiFi chipset
+
     @return a tuple of two integers (must,should) of the expected throughputs in Mbps.
 
     """
-    if test_type in expected_throughput_wifi:
-        if mode in expected_throughput_wifi[test_type]:
-            if channel_width in expected_throughput_wifi[test_type][mode]:
-                return expected_throughput_wifi[test_type][mode][channel_width]
-    ret_mode = hostap_config.HostapConfig.VHT_NAMES[channel_width]
+    expected_tput = expected_throughput_wifi_legacy
+    if router_arch:
+        expected_tput = expected_throughput_wifi_router_arch[router_arch]
+
+    if test_type in expected_tput:
+        if mode in expected_tput[test_type]:
+            if channel_width in expected_tput[test_type][mode]:
+                return expected_tput[test_type][mode][channel_width]
+    ret_mode = hostap_config.HostapConfig.HE_NAMES.get(channel_width)
     if ret_mode is None:
-        ret_mode = hostap_config.HostapConfig.HT_NAMES[channel_width]
+        ret_mode = hostap_config.HostapConfig.VHT_NAMES.get(channel_width)
+    if ret_mode is None:
+        ret_mode = hostap_config.HostapConfig.HT_NAMES.get(channel_width)
     raise error.TestFail(
             'Failed to find the expected throughput from the key values, test type = %s, mode = %s, channel width = %s'
             % (test_type, mode, ret_mode))

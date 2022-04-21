@@ -4,12 +4,12 @@
 
 ## Useful documents
 
-[Autotest documentation on GitHub](https://github.com/autotest/autotest/wiki/AutotestApi):
+[Autotest documentation](https://autotest.readthedocs.io/en/latest/index.html):
 This would be a good read if you want to familiarize yourself with the basic
 Autotest concepts.
 
-[Gentoo Portage ebuild/eclass Information](http://www.gentoo.org/proj/en/devrel/handbook/handbook.xml?part=2):
-Getting to know the package build system we use.
+[Gentoo Portage ebuild/eclass Information](https://devmanual.gentoo.org/):
+Guides for getting to know the package build system we use.
 
 [ChromiumOS specific Portage FAQ](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/portage/ebuild_faq.md):
 Learn something about the way we use portage.

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "yuanpengni, Chromium OS"
-NAME = "autoupdate_MiniOS.with_dlc.full"
+NAME = "autoupdate_MiniOS.with_exclusion.full"
 TIME = "MEDIUM"
 PURPOSE = "Tests MiniOS update."
 TEST_CATEGORY = "Functional"
@@ -13,11 +13,13 @@ DEPENDENCIES = "servo_state:WORKING"
 ATTRIBUTES = "suite:nbr"
 PY_VERSION = 3
 DOC = """
-This tests the MiniOS update with the platform (OS) and DLC update.
+MiniOS payload will be excluded after encountering certain types of failure.
+This tests that MiniOS payload can be successfully excluded and not blocks the
+OS or DLC update.
 Use the `running_at_desk` arg when testing locally.
 
 Example usage:
-test_that autoupdate_MiniOS.with_dlc.full <DUT> --board=<board> --args="running_at_desk=True"
+test_that autoupdate_MiniOS.with_exclusion.full <DUT> --board=<board> --args="running_at_desk=True"
 """
 
 from autotest_lib.client.common_lib import utils
@@ -27,6 +29,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test('autoupdate_MiniOS', host=host, full_payload=True,
-                 with_dlc=True, **args_dict)
+                 with_dlc=True, with_exclusion=True, **args_dict)
 
 job.parallel_simple(run, machines)

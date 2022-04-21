@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from ctypes import c_size_t
 import datetime
 import json
 import logging
@@ -634,6 +635,22 @@ class UpdateEngineUtil(object):
         self._run(['rm', '-r' if is_dir else '', pref_file],
                   ignore_status=True)
 
+    def _create_update_engine_pref(self, pref_name, pref_val="", sub_dir=None):
+        """
+        Create an update_engine pref file.
+
+        @param pref_name: The name of pref file to create.
+        @param pref_val: The content string in pref file.
+        @param sub_dir: The sub directory for the pref.
+
+        """
+        pref_dir = self._UPDATE_ENGINE_PREFS_DIR
+        if sub_dir:
+            pref_dir = os.path.join(pref_dir, sub_dir)
+            self._run(['mkdir', '-p', pref_dir], ignore_status=True)
+
+        pref_file = os.path.join(pref_dir, pref_name)
+        self._run(['echo', '-n', pref_val, '>', pref_file])
 
     def _get_update_requests(self):
         """
@@ -807,3 +824,18 @@ class UpdateEngineUtil(object):
         """
         nebraska_port = self._run(['cat', '/run/nebraska/port']).stdout
         return 'http://localhost:%s/update' % nebraska_port
+
+    def _get_exclusion_name(self, payload_url):
+        """
+        Get the exclusion name of a payload url by calculating its hash in the
+        same way of base::StringPieceHash in libchrome.
+
+        @param payload_url: The payload url to be excluded.
+
+        @returns: The payload URL hash string as the exclusion name.
+
+        """
+        result = c_size_t(0)
+        for c in payload_url:
+            result = c_size_t((result.value * 131) + ord(c))
+        return str(result.value)

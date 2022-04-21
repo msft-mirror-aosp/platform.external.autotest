@@ -15,6 +15,7 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
 
     version = 1
 
+    _EXCLUSION_PREFS_DIR = "exclusion"
     _MINIOS_PREFS_DIR = "minios"
 
     def initialize(self, host=None):
@@ -29,15 +30,23 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         self._remove_update_engine_pref(pref=self._MINIOS_PREFS_DIR,
                                         is_dir=True)
 
-    def _setup_minios_update(self, has_update):
+    def _setup_minios_update(self, has_update, with_exclusion=False):
         # Get payload URL for the MiniOS update.
         # We'll always need a full payload for MiniOS update.
-        self._payload_urls.append(
-                self.get_payload_for_nebraska(
-                        job_repo_url=self._job_repo_url,
-                        full_payload=True,
-                        payload_type=self._PAYLOAD_TYPE.MINIOS,
-                        public_bucket=self._running_at_desk))
+        payload_url = self.get_payload_for_nebraska(
+                job_repo_url=self._job_repo_url,
+                full_payload=True,
+                payload_type=self._PAYLOAD_TYPE.MINIOS,
+                public_bucket=self._running_at_desk)
+        self._payload_urls.append(payload_url)
+
+        # Test that MiniOS payload can be excluded by creating a pref file.
+        # This simulates that the update engine tries to exclude MiniOS payload
+        # after getting certain types of MiniOS update failure.
+        if with_exclusion:
+            self._create_update_engine_pref(
+                    pref_name=self._get_exclusion_name(payload_url),
+                    sub_dir=self._EXCLUSION_PREFS_DIR)
 
         # MiniOS booting to be verified.
         if has_update:
@@ -108,6 +117,7 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
                  job_repo_url=None,
                  with_os=False,
                  with_dlc=False,
+                 with_exclusion=False,
                  running_at_desk=False):
         """
         Tests that we can successfully update MiniOS along with the OS.
@@ -120,6 +130,7 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
                              update. False for MiniOS only update.
         @param with_dlc: True for MiniOS update with Platform (OS) and DLC.
                              False for turning off DLC update.
+        @param with_exclusion: True for excluding MiniOS payload.
         @param running_at_desk: Indicates test is run locally from a
                                 workstation.
 
@@ -139,11 +150,13 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         active_minios, inactive_minios \
             = kernel_utils.get_minios_priority(self._host)
 
+        minios_update = with_os and not with_exclusion
         # MiniOS update to be verified.
         self._verifications = [
                 lambda: kernel_utils.verify_minios_priority_after_update(
                         self._host,
-                        expected=inactive_minios if with_os else active_minios)
+                        expected=inactive_minios
+                        if minios_update else active_minios)
         ]
 
         # Get payload URLs and setup tests.
@@ -151,8 +164,8 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         self._setup_cros_update(has_update=with_os)
         if with_dlc:
             self._setup_dlc_update()
-        self._setup_minios_update(has_update=with_os)
-
+        self._setup_minios_update(has_update=minios_update,
+                                  with_exclusion=with_exclusion)
 
         # Update MiniOS.
         if with_dlc:

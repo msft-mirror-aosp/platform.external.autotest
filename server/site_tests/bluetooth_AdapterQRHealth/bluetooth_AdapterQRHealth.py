@@ -101,6 +101,18 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
         self.run_test_method(device, test_method, test_profile)
 
     # Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('Quality Report power cycle and A2DP test',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  flags=['Quick Health'])
+    def qr_power_cycle_a2dp_test(self):
+        """Quality Report power cycle and A2DP test"""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        test_profile = A2DP_MEDIUM
+        test_method = lambda: self.qr_power_cycle_a2dp(device, test_profile)
+
+        self.run_test_method(device, test_method, test_profile)
+
+    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Quality Report HFP NBS dut as source test',
                   devices={'BLUETOOTH_AUDIO': 1},
                   flags=['Quick Health'])
@@ -207,6 +219,7 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
                 whole batch
         """
         self.qr_a2dp_test()
+        self.qr_power_cycle_a2dp_test()
         self.qr_hfp_nbs_dut_as_src_test()
         self.qr_hfp_wbs_dut_as_src_test()
         self.qr_disabled_a2dp_test()

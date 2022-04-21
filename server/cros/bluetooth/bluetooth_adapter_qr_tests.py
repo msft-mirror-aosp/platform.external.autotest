@@ -501,3 +501,23 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         p2.start()
         p1.join()
         p2.join()
+
+    def qr_power_cycle_a2dp(self, device, test_profile):
+        """Checking if the enable debug state persists after power reset.
+
+        @param device: the bluetooth audio device.
+        @param test_profile: the audio test profile to used.
+        """
+        self.test_reset_off_adapter()
+        time.sleep(3)
+        self.test_reset_on_adapter()
+
+        # Need to connect to the device again.
+        self.test_bluetoothd_running()
+        self.test_discover_device(device.address)
+        self.test_pairing(device.address, device.pin, trusted=True)
+        self.test_connection_by_adapter(device.address)
+
+        self.dut_btmon_log_path = self.start_new_btmon()
+
+        self.test_a2dp_sinewaves(device, test_profile, duration=None)

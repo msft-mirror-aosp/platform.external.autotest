@@ -106,7 +106,12 @@ def control_brightness():
 @contextlib.contextmanager
 def control_display(cr):
     """Fix the display orientation instead of using gyro orientation."""
-    DISPLAY_ORIENTATION = 90
+    board = utils.get_board()
+    logging.info("Board:%s", board)
+    if board == 'scarlet':
+        DISPLAY_ORIENTATION = 90
+    else:
+        DISPLAY_ORIENTATION = 0
 
     logging.info('Set fullscreen.')
     facade = facade_resource.FacadeResource(cr)
@@ -137,6 +142,7 @@ def display(chart_path, display_level):
         assert False, 'chart_path %r not found.' % chart_path
 
     def show_chart(name):
+        """Show image on chart base on file name"""
         filepath = os.path.join(chart_dir_path, name)
         logging.info('Display chart file of path %r.', filepath)
         tab = cr.browser.tabs[0]

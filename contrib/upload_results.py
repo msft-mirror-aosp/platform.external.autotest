@@ -580,6 +580,8 @@ class ResultsSenderClass:
             if not os.path.isfile(file):
                 continue
             gs_client_bucket = storage.Client().bucket(self.gcs_bucket)
+            # remove trailing slash to ensure dest_file path gets created properly
+            test_dir = test_dir.rstrip('/')
             dest_file = gs_path + file.replace(test_dir, "", 1)
             logging.info("uploading file: %s", dest_file)
             blob = gs_client_bucket.blob(dest_file)

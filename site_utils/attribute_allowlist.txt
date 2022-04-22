@@ -257,6 +257,7 @@ suite:moblab_storage_qual
 suite:mtp
 suite:nbr
 suite:nearby-share
+suite:nearby-share-android
 suite:nearby-share-arc
 suite:nearby-share-dev
 suite:nearby-share-prod

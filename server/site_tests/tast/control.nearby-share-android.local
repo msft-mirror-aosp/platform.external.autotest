@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
-NAME = 'tast.cross-device-android.local'
+NAME = 'tast.nearby-share-android.local'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 1024 * 1024
@@ -12,7 +12,7 @@ PY_VERSION = 3
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
-DOC = '''Run the Tast Cross Device test suite with Skylab's Android support locally.
+DOC = '''Run the Tast Nearby Share test suite with Skylab's Android support locally.
 
 This control file will setup the chromebook and android phone for you if you want to run locally.
 Locally means kicking off via test_that to run against either:
@@ -22,12 +22,14 @@ You can use #2 to test the e2e adb-over-wifi flow without having a labstation at
 NOTE: Labstations store their adb keys at /var/lib/android_keys (and this gets wiped during login) so you need to click accept manually for the setups adb connection.
 
 You need to specify the wifi network details below that the chromebook and phone should be on together.
+Set <SET NETWORK NAME> to your SSID and <SET PASSWORD> to your network password.
 
 These args are expected to be passed to test_that:
 --args="phone_station=$PHONE_HOST android_serial=$ANDROID_SERIAL_NUMBER"
 
 When using port forwarding to locahost, the expected args are:
 --args="phone_station=locahost android_station_ssh_port=$FORWARDED_PORT android_serial=$ANDROID_SERIAL_NUMBER"
+$FORWARDED_PORT is the port of the labstation that you port forwarded to localhost
 
 '''
 
@@ -47,14 +49,14 @@ def run(machine):
 
     # Configure devices for crossdevice tests.
     cross_device_util.connect_to_wifi(host, ssid, password)
-    ip_address = phone.setup_for_cross_device_tests()
+    ip_address = phone.setup_for_cross_device_tests(adb_persist_reboot=True)
 
     # Pass the phones adb-over-tcp "serial" (e.g 192.168.0.30:5555) to Tast as a global var.
     ip_address_arg = 'crossdevice.PhoneIP=%s:5555' % ip_address
 
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:cross-device")'],
+                 test_exprs=['("group:nearby-share")'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=args,
                  varslist=[ip_address_arg])

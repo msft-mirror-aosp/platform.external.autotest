@@ -92,14 +92,23 @@ class AndroidHost(base_classes.Host):
                     'Failed to initialize Android host due to'
                     ' serial_number is not found in host_info_store.')
 
-    def adb_over_tcp(self, port=5555):
+    def adb_over_tcp(self, port=5555, persist_reboot=False):
         """Restart adb server listening on a TCP port.
 
         Args:
             port: Tcp port for adb server to listening on, default value
                   is 5555 which is the default TCP/IP port for adb.
+            persist_reboot: True for adb over tcp to continue listening
+                            after the device reboots.
         """
-        self.run_adb_command('tcpip %s' % str(port))
+        port = str(port)
+        if persist_reboot:
+            self.run_adb_command('shell setprop persist.adb.tcp.port %s' %
+                                 port)
+            self.run_adb_command('shell setprop ctl.restart adbd')
+            self.wait_for_transport_state()
+
+        self.run_adb_command('tcpip %s' % port)
         self.adb_tcp_mode = True
 
     def cache_usb_dev_path(self):
@@ -171,6 +180,17 @@ class AndroidHost(base_classes.Host):
             command = 'adb -s %s %s' % (self.serial_number, adb_command)
         return self.phone_station.run(command, ignore_status=ignore_status)
 
+    def wait_for_transport_state(self, transport='usb', state='device'):
+        """
+        Wait for a device to reach a desired state.
+
+        Args:
+            transport: usb, local, any
+            state: device, recovery, sideload, bootloader
+
+        """
+        self.run_adb_command('wait-for-%s-%s' % (transport, state))
+
     def start_adb_server(self):
         """Start adb server from the phone station."""
         # Adb home is created upon CrOS login, however on labstation we
@@ -186,7 +206,7 @@ class AndroidHost(base_classes.Host):
         """Stop adb server from the phone station."""
         self.phone_station.run("adb kill-server")
 
-    def setup_for_cross_device_tests(self):
+    def setup_for_cross_device_tests(self, adb_persist_reboot=False):
         """
         Setup the Android phone for Cross Device tests.
 
@@ -205,7 +225,7 @@ class AndroidHost(base_classes.Host):
         self.cache_usb_dev_path()
         self.ensure_device_connectivity()
         ip_address = self.get_wifi_ip_address()
-        self.adb_over_tcp()
+        self.adb_over_tcp(persist_reboot=adb_persist_reboot)
         return ip_address
 
     def close(self):

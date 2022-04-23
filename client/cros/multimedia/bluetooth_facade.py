@@ -916,14 +916,19 @@ class BluetoothBaseFacadeLocal(object):
 
         bt_wake_path = bt_wake_path.replace('/power/wakeup', '')
 
-        last_resume_details = self._powerd_last_resume_details()
-
+        last_resume_details = self._powerd_last_resume_details().rstrip(
+                '\n ').split('\n')
+        logging.debug('/var/log/power_manager/powerd.LATEST: 5 lines after '
+                      'powerd_suspend returns:')
+        for l in last_resume_details[::-1]:
+            logging.debug(l)
         # If BT caused wake, there will be a line describing the bt wake
         # path's event_count before and after the resume
-        for line in last_resume_details.split('\n'):
+        for line in last_resume_details:
             if 'event_count' in line:
                 logging.info('Checking wake event: {}'.format(line))
                 if bt_wake_path in line:
+                    logging.debug('BT event woke the DUT')
                     return True
 
         return False

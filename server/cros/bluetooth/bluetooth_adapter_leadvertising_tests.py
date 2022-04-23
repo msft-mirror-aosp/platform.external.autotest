@@ -493,6 +493,9 @@ class bluetooth_AdapterLEAdvertising(
         # advertisements are discoverable. Give a few extra seconds in suspend
         # to be safe
         suspend_time = discover_time * num_adv + 10
+        logging.debug(
+                'suspend_time(%d) = discover_time(%d) * num_adv(%d) + 10',
+                suspend_time, discover_time, num_adv)
 
         # Trigger suspend, asynchronously trigger wake and wait for resume
         boot_id = self.host.get_boot_id()
@@ -506,6 +509,8 @@ class bluetooth_AdapterLEAdvertising(
                     peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
 
         # Wait for device to come out of suspend
+        logging.debug('test_wait_for_resume(resume_timeout=%d, start_time=%s)',
+                      suspend_time, start_time)
         self.test_wait_for_resume(boot_id,
                                   suspend,
                                   resume_timeout=suspend_time,

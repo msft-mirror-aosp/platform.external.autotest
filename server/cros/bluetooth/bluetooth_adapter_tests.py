@@ -573,6 +573,8 @@ def test_retry_and_log(test_method_or_retry_flag,
             syslog_captured = False
 
             try:
+                logging.info('[>>> running: {}]'.format(test_method.__name__))
+                start_time = time.time()
                 if messages_start:
                     # Grab /var/log/messages output during test run
                     instance.bluetooth_facade.messages_start()
@@ -593,14 +595,16 @@ def test_retry_and_log(test_method_or_retry_flag,
 
                 logging.debug('instance._expected_result : %s',
                               instance._expected_result)
+                elapsed_time = 'elapsed_time: {:.3f}s'.format(time.time() -
+                                                              start_time)
                 if instance._expected_result:
                     if test_result:
-                        logging.info('[*** passed: {}]'.format(
-                                test_method.__name__))
+                        logging.info('[*** passed: {}] {}'.format(
+                                test_method.__name__, elapsed_time))
                     else:
                         fail_msg = '[--- failed: {} ({})]'.format(
                                 test_method.__name__, str(instance.results))
-                        logging.error(fail_msg)
+                        logging.error('{} {}'.format(fail_msg, elapsed_time))
                         instance.fails.append(fail_msg)
                 else:
                     if test_result:
@@ -608,13 +612,13 @@ def test_retry_and_log(test_method_or_retry_flag,
                         reason = 'expected fail, actually passed'
                         fail_msg = '[--- failed: {} ({})]'.format(
                                 test_method.__name__, reason)
-                        logging.error(fail_msg)
+                        logging.error('{} {}'.format(fail_msg, elapsed_time))
                         instance.fails.append(fail_msg)
                     else:
                         # The test is expected to fail; and it did fail.
                         reason = 'expected fail, actually failed'
-                        logging.info('[*** passed: {} ({})]'.format(
-                                test_method.__name__, reason))
+                        logging.info('[*** passed: {} ({})] {}'.format(
+                                test_method.__name__, reason, elapsed_time))
 
             # Reset _expected_result and let the quicktest wrapper catch it.
             # These errors should skip out of the testcase entirely.
@@ -4507,7 +4511,11 @@ class BluetoothAdapterTests(test.test):
             # we can use measured time instead.
             info = self.bluetooth_facade.find_last_suspend_via_powerd_logs()
             if info:
-                (start_suspend_at, end_suspend_at, retcode) = info
+                start_suspend_at, end_suspend_at, retcode = info
+                logging.debug('find_last_suspend_via_powerd_logs returned: '
+                              'start_suspend_at: {}, end_suspend_at: {}, '
+                              'retcode {}'.format(start_suspend_at,
+                                                  end_suspend_at, retcode))
                 actual_delta = end_suspend_at - start_suspend_at
                 results['powerd time to resume'] = actual_delta.total_seconds()
                 results['powerd retcode'] = retcode
@@ -4517,12 +4525,25 @@ class BluetoothAdapterTests(test.test):
                 # fail here if BT blocked suspend, not if we woke spuriously.
                 # This is by design (we depend on the timeout to check for
                 # spurious wakeup).
-                success = _check_suspend_attempt_or_raise(
-                        test_start_time,
-                        end_suspend_at) and _check_retcode_or_raise(
-                                retcode) and _check_timeout(actual_delta)
+                try:
+                    suspend_ok, retcode_ok, timeout_ok = False, False, False
+                    suspend_ok = _check_suspend_attempt_or_raise(
+                            test_start_time, end_suspend_at)
+                    retcode_ok = _check_retcode_or_raise(retcode)
+                    timeout_ok = _check_timeout(actual_delta)
+                except error.TestNAError as e:
+                    raise e
+                finally:
+                    logging.debug('_check_suspend_attempt_or_raise: {} '
+                                  '_check_retcode_or_raise: {} '
+                                  '_check_timeout: {}'.format(
+                                          suspend_ok, retcode_ok, timeout_ok))
+                success = suspend_ok and retcode_ok and timeout_ok
             else:
                 results['time to resume'] = network_delta.total_seconds()
+                logging.debug(
+                        'Unable to get time to resume from powerd. Estimate sleep time '
+                        'using network ping')
                 success = _check_timeout(network_delta)
         except error.TestFail as e:
             results['device accessible on resume'] = False
@@ -4549,6 +4570,7 @@ class BluetoothAdapterTests(test.test):
         results['suspend exit code'] = suspend.exitcode
         self.results = results
 
+        logging.info('test_wait_for_resume(): %r', results)
         return all([success, suspend.exitcode == 0])
 
 

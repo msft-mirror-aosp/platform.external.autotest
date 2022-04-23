@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import mock
 import os
 import six
 import unittest
+from unittest import mock
 
 import common
 from autotest_lib.client.common_lib import autotemp

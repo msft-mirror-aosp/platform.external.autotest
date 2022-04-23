@@ -12,14 +12,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import mock
 import os
 import shutil
 from six.moves import map
 from six.moves import range
 import tempfile
 import unittest
-from mock import patch
+from unittest import mock
+from unittest.mock import patch
 
 import common
 

@@ -13,7 +13,6 @@ from __future__ import print_function
 
 import collections
 from collections import OrderedDict
-from mock import patch, call, ANY
 import os
 import six
 from six.moves import range
@@ -21,6 +20,8 @@ from six.moves import zip
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch, call, ANY
+
 import common
 
 from autotest_lib.client.common_lib import base_job
@@ -43,7 +44,7 @@ from autotest_lib.server.cros.dynamic_suite.fakes import FakeMultiprocessingPool
 from autotest_lib.server.cros.dynamic_suite.suite import RetryHandler
 from autotest_lib.server.cros.dynamic_suite.suite import Suite
 
-from mock import MagicMock
+from unittest.mock import MagicMock
 
 
 class TypeMatcher(object):

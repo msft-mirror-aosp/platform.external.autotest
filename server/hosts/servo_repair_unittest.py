@@ -5,8 +5,8 @@
 
 # pylint: disable=missing-docstring
 
-import mock
 import unittest
+from unittest import mock
 
 import common
 from autotest_lib.server.hosts import servo_repair

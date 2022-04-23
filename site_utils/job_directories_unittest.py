@@ -6,11 +6,11 @@ from __future__ import print_function
 
 import contextlib
 import datetime
-from mock import patch
 import os
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import common
 

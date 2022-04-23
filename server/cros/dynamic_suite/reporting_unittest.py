@@ -5,9 +5,9 @@
 # found in the LICENSE file.
 
 import datetime
-import mock
 import six
 import unittest
+from unittest import mock
 
 import common
 

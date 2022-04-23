@@ -14,7 +14,7 @@ from __future__ import print_function
 import logging
 import time
 import unittest
-import mock
+from unittest import mock
 
 import common
 from autotest_lib.server import hosts

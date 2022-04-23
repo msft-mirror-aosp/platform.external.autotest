@@ -10,9 +10,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from mock import patch, MagicMock
 import six
 import unittest
+from unittest.mock import patch, MagicMock
 
 import common
 

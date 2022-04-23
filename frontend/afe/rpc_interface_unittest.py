@@ -5,6 +5,8 @@ from __future__ import absolute_import
 
 import datetime
 import unittest
+from unittest.mock import patch
+from unittest.mock import MagicMock
 
 import six
 from autotest_lib.client.common_lib import (control_data, error, global_config,
@@ -19,8 +21,6 @@ from autotest_lib.server.cros.dynamic_suite import (constants,
                                                     control_file_getter,
                                                     frontend_wrappers,
                                                     suite_common)
-from mock import patch
-from mock import MagicMock
 
 import common
 

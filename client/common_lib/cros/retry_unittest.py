@@ -5,11 +5,10 @@
 """Unit tests for client/common_lib/cros/retry.py."""
 
 import itertools
+import signal
 import time
 import unittest
-import signal
-
-import mock
+from unittest import mock
 
 import common
 

@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 """Unit tests for shell_wrapper.py."""
 
-import mock
 import unittest
+from unittest import mock
 
 from autotest_lib.client.cros.faft.utils import shell_wrapper
 

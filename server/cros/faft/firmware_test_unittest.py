@@ -3,8 +3,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import mock
 import unittest
+from unittest import mock
+
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft import firmware_test
 

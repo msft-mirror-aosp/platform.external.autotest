@@ -8,10 +8,10 @@ Unit tests for functions in `build_data`.
 
 
 import json
-import mock
 import os
 import sys
 import unittest
+from unittest import mock
 
 import common
 from autotest_lib.site_utils.stable_images import build_data

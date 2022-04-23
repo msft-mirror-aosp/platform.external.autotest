@@ -9,9 +9,8 @@
 import os
 import signal
 import unittest
-
-from mock import MagicMock
-import mock
+from unittest import mock
+from unittest.mock import MagicMock
 
 import common
 from autotest_lib.client.common_lib import base_job, error

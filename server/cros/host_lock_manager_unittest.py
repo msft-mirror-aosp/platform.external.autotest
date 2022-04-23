@@ -5,8 +5,10 @@
 # found in the LICENSE file.
 
 """Unit tests for server/cros/host_lock_manager.py."""
-import mock
+
 import unittest
+from unittest import mock
+
 from . import common
 
 from autotest_lib.server.cros import host_lock_manager

@@ -4,7 +4,7 @@
 
 import base64
 import unittest
-import mock
+from unittest import mock
 
 from autotest_lib.server.cros import chrome_sideloader
 

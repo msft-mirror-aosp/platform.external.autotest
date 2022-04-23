@@ -9,8 +9,8 @@ from __future__ import division
 from __future__ import print_function
 
 from datetime import timedelta, datetime
-import mock
 import unittest
+from unittest import mock
 
 import common
 from autotest_lib.frontend import setup_django_readonly_environment

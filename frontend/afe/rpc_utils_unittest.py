@@ -6,8 +6,8 @@
 
 """Unit tests for frontend/afe/rpc_utils.py."""
 
-import mock
 import unittest
+from unittest import mock
 
 import common
 from autotest_lib.client.common_lib import control_data

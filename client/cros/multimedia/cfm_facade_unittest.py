@@ -8,8 +8,8 @@ utils/unittest_suite.py \
 
 # pylint: disable=missing-docstring
 
-import mock
 import unittest
+from unittest import mock
 
 from autotest_lib.client.common_lib import error
 # Mock cros and graphics modules as they import telemetry which is not available

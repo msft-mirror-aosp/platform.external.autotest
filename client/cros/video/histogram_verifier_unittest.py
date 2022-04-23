@@ -5,12 +5,12 @@
 
 import logging
 import unittest
+from unittest import mock
 
 import common
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.video import histogram_verifier
-import mock
 
 
 class HistogramVerifierTest(unittest.TestCase):

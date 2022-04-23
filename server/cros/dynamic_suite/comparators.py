@@ -4,7 +4,7 @@
 
 """Comparators for use in dynamic_suite module unit tests."""
 
-from mock import ANY
+from unittest.mock import ANY
 
 
 class StatusContains(object):

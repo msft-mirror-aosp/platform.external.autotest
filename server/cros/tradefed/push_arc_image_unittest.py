@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 import unittest
-from mock import Mock, ANY, call
+from unittest.mock import Mock, ANY, call
 
 from autotest_lib.server.cros.tradefed import push_arc_image
 

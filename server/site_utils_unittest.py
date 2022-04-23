@@ -7,8 +7,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from mock import patch
 import unittest
+from unittest.mock import patch
 
 import common
 from autotest_lib.frontend import setup_django_lite_environment

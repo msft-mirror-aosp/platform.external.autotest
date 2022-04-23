@@ -9,7 +9,7 @@ import os
 import shutil
 import tempfile
 import unittest
-from mock import patch
+from unittest.mock import patch
 from six.moves import reload_module as reload
 
 import common

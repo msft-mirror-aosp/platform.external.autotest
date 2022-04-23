@@ -9,10 +9,10 @@ from __future__ import division
 from __future__ import print_function
 import os
 import unittest
+from unittest.mock import patch
 
 import common
 
-from mock import patch
 import shutil
 import tempfile
 import types

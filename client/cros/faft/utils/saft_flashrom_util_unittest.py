@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 """Unit tests for saft_flashrom_util.py."""
 
-import mock
 import unittest
+from unittest import mock
 
 from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error

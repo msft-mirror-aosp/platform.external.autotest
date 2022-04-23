@@ -5,8 +5,8 @@
 
 
 import copy
-import mock
 import unittest
+from unittest import mock
 
 from autotest_lib.client.cros.cellular import cellular_logging
 from autotest_lib.client.cros.cellular import cellular_system_error

@@ -1,6 +1,6 @@
-import mock
-import unittest
 import re
+import unittest
+from unittest import mock
 
 import common
 

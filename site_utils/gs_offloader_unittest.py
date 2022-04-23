@@ -11,7 +11,6 @@ import six.moves.builtins
 import six.moves.queue
 import json
 import logging
-import mock
 import os
 import shutil
 import signal
@@ -22,6 +21,7 @@ import tarfile
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 import common
 

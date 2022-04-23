@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 """Unit tests for flashrom_handler.py."""
 
-import mock
 import unittest
+from unittest import mock
 
 from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.cros.faft.utils import (os_interface,

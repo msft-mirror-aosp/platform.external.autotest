@@ -13,9 +13,8 @@ import six
 from six.moves import urllib
 import time
 import unittest
-
-import mock
-from mock import patch, call
+from unittest import mock
+from unittest.mock import patch, call
 
 import common
 from autotest_lib.client.bin import utils as bin_utils

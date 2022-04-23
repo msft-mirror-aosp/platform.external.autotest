@@ -8,9 +8,8 @@
 from __future__ import print_function
 import os
 import unittest
-
-from mock import patch
-from mock import MagicMock
+from unittest.mock import patch
+from unittest.mock import MagicMock
 
 import common
 

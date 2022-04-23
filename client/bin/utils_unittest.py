@@ -3,9 +3,9 @@
 __author__ = "kerl@google.com, gwendal@google.com (Gwendal Grignou)"
 
 import io
-import mock
 import six
 import unittest
+from unittest import mock
 
 from autotest_lib.client.bin import utils
 

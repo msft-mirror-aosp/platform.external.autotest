@@ -6,8 +6,8 @@
 
 """Unit tests for client/common_lib/cros/control_file_getter.py."""
 
-from mock import patch
 import unittest
+from unittest.mock import patch
 
 import common
 

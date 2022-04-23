@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 import collections
-from mock import patch
 import six
 import unittest
+from unittest.mock import patch
 
 import common
 

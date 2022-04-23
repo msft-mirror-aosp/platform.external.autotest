@@ -9,9 +9,9 @@ import logging
 import multiprocessing
 import struct
 import unittest
+from unittest.mock import patch
 
 import common
-from mock import patch
 
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_channel
 from autotest_lib.client.cros.cellular.mbim_compliance import mbim_errors

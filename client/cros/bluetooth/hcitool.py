@@ -71,6 +71,15 @@ class Hcitool(object):
             mask = mask[::-1]
         return [names[i] for i, m in enumerate(mask) if m == '1']
 
+    def _execute_hcitool_cmd_or_raise(self, ogf, ocf, *parameter):
+        result = self._execute_hcitool_cmd(ogf, ocf, *parameter)
+        status = result[0]
+        if status != self.CONTROLLER_PASS_CODE_VALUE:
+            raise error.TestError(
+                    'Unexpected command output, the status code is ' +
+                    str(status))
+        return result
+
     def read_buffer_size(self):
         """Reads the buffer size of the BT controller.
 
@@ -199,9 +208,107 @@ class Hcitool(object):
 
         return command_name in supported_commands
 
+    def le_read_accept_list_size(self):
+        """Reads accept list size of the BT LE controller.
+
+        @returns: (status, accept_list_size).
+        """
+        return self._execute_hcitool_cmd_or_raise(
+                btsocket.OGF_LE_CTL, btsocket.OCF_LE_READ_ACCEPT_LIST_SIZE)
+
+    def le_read_maximum_data_length(self):
+        """Reads packet data length of the BT LE controller.
+
+        @returns: (status, supported_max_tx_octets, supported_max_tx_time,
+                supported_max_rx_octets, supported_max_rx_time).
+        """
+        return self._execute_hcitool_cmd_or_raise(
+                btsocket.OGF_LE_CTL,
+                HciToolParser.OCF_LE_READ_MAXIMUM_DATA_LENGTH)
+
+    def le_read_resolving_list_size(self):
+        """Reads resolving list size of the BT LE controller.
+        @returns: (status, resolving_list_size).
+        """
+        return self._execute_hcitool_cmd_or_raise(
+                btsocket.OGF_LE_CTL,
+                HciToolParser.OCF_LE_READ_RESOLVING_LIST_SIZE)
+
+    def le_read_number_of_supported_advertising_sets(self):
+        """Reads number of supported advertisement sets.
+
+        @returns: (status, num_supported_advertising_sets).
+        """
+        return self._execute_hcitool_cmd_or_raise(
+                btsocket.OGF_LE_CTL,
+                HciToolParser.OCF_LE_READ_NUMBER_OF_SUPPORTED_ADVERTISING_SETS)
+
+    def vs_msft_read_supported_features(self, msft_ocf):
+        """Reads VS MSFT supported features.
+
+        @param msft_ocf: The msft_ocf for different chipset.
+
+        @returns: (status, subcommand_opcode, [vs_msft_features_name_list],
+                microsoft_event_prefix_length, microsoft_event_prefix)
+        """
+        VS_MSFT_READ_SUPPORTED_FEATURES_SUBCOMMAND_OPCODE = '00'
+        execute_command_result = self._execute_hcitool_cmd_or_raise(
+                btsocket.OGF_VENDOR_CMD, msft_ocf,
+                VS_MSFT_READ_SUPPORTED_FEATURES_SUBCOMMAND_OPCODE)
+        status = execute_command_result[0]
+        vs_msft_features_mask = execute_command_result[2]
+        vs_msft_supported_features = (
+                SupportedFeatures.VS_MSFT_SUPPORTED_FEATURES)
+        final_result = self.filter_with_mask(vs_msft_supported_features,
+                                             vs_msft_features_mask)
+        (_, subcommand_opcode, _, microsoft_event_prefix_length,
+         microsoft_event_prefix) = execute_command_result
+        return (status, subcommand_opcode, final_result,
+                microsoft_event_prefix_length, microsoft_event_prefix)
+
+    def le_get_vendor_capabilities_command(self):
+        """Gets AOSP LE vendor capabilities.
+
+        @returns: (status, max_advt_instances(deprecated),
+                offloaded_resolution_of_private-address(deprecated),
+                total_scan_results_storage, max_irk_list_sz, filtering_support,
+                max_filter, activity_energy_info_support, version_supported,
+                total_num_of_advt_tracked, extended_scan_support,
+                debug_logging_supported,
+                LE_address_generation_offloading_support(deprecated),
+                A2DP_source_offload_capability_mask,
+                bluetooth_quality_report_support, dynamic_audio_buffer_support).
+        """
+        execute_command_result = self._execute_hcitool_cmd_or_raise(
+                btsocket.OGF_VENDOR_CMD,
+                HciToolParser.OCF_LE_GET_VENDOR_CAPABILITIES_COMMAND)
+        pack_format = '<{}B'.format(len(execute_command_result))
+        execute_command_result = struct.pack(pack_format,
+                                             execute_command_result)
+        aosp_formats = [
+                '<BBBHBBBBHHBB',  # v0.95
+                '<BBBHBBBBHHBBB',  # v0.96
+                '<BBBHBBBBHHBBBIB',  # v0.98
+                '<BBBHBBBBHHBBBIBI',  # v1.00
+        ]
+
+        for f in aosp_formats:
+            if struct.calcsize(f) == len(execute_command_result):
+                return struct.unpack(f, execute_command_result)
+        raise error.TestError(
+                'Invalid output of AOSP capability command, length = ' +
+                str(len(execute_command_result)))
+
 
 class HciToolParser:
     """Parser of hcitool command output based on the hcitool parameters."""
+    OCF_LE_READ_MAXIMUM_DATA_LENGTH = 0x002F
+    OCF_LE_READ_RESOLVING_LIST_SIZE = 0x002A
+    OCF_LE_READ_NUMBER_OF_SUPPORTED_ADVERTISING_SETS = 0x003B
+    OCF_MSFT_INTEL_CHIPSET = 0X001e
+    OCF_MSFT_MEDIATEK_CHIPSET = 0x0130
+    OCF_MSFT_QCA_CHIPSET = 0x0170
+    OCF_LE_GET_VENDOR_CAPABILITIES_COMMAND = 0x0153
 
     FORMATS = {
             ################## OGF=0X03 (OGF_HOST_CTL) ##################
@@ -229,7 +336,33 @@ class HciToolParser:
             '<BQ',
             # LE Set Advertising Data command
             (btsocket.OGF_LE_CTL, btsocket.OCF_LE_SET_ADVERTISING_DATA):
-            '<B'
+            '<B',
+            # Read Data Packet Size
+            (btsocket.OGF_LE_CTL, OCF_LE_READ_MAXIMUM_DATA_LENGTH):
+            '<BHHHH',
+            # LE Read Number of Supported Advertising Sets command
+            (btsocket.OGF_LE_CTL, OCF_LE_READ_NUMBER_OF_SUPPORTED_ADVERTISING_SETS):
+            '<BB',
+            # LE Read Resolving List Size
+            (btsocket.OGF_LE_CTL, OCF_LE_READ_RESOLVING_LIST_SIZE):
+            '<BB',
+            # LE Read Accept List Size command
+            (btsocket.OGF_LE_CTL, btsocket.OCF_LE_READ_ACCEPT_LIST_SIZE):
+            '<BB',
+
+            ################## OGF=0X3f (OGF_VENDOR_CMD) ##################
+            # LE_Get_Vendor_Capabilities_Command
+            (btsocket.OGF_VENDOR_CMD, OCF_LE_GET_VENDOR_CAPABILITIES_COMMAND):
+            None,
+            # HCI_VS_MSFT_Intel_Read_Supported_Features
+            (btsocket.OGF_VENDOR_CMD, OCF_MSFT_INTEL_CHIPSET):
+            '<BBQBB',
+            # HCI_VS_MSFT_QCA_Read_Supported_Features
+            (btsocket.OGF_VENDOR_CMD, OCF_MSFT_QCA_CHIPSET):
+            '<BBQBB',
+            # HCI_VS_MSFT_Mediatek_Read_Supported_Features
+            (btsocket.OGF_VENDOR_CMD, OCF_MSFT_MEDIATEK_CHIPSET):
+            '<BBQBB'
     }
 
     @staticmethod
@@ -268,18 +401,30 @@ class HciToolParser:
     @staticmethod
     def parse_payload(payload, ogf, ocf):
         """Parse hcitool payload.
+
         @param payload: hcitool event payload (as bytearray).
         @param ogf: btsocket.OGF_... (int value).
         @param ocf: btsocket.OCF_... (int value).
 
-        @return: list of the hcitool output.
+        @return: parsed result of the hcitool payload based on (ogf, ocf).
+        If it cannot be parsed, returns the payload as bytes.
         """
         cmd_output_format = HciToolParser.get_parsing_format(ogf, ocf)
+        if cmd_output_format is None:
+            cmd_output_format = '<{}B'.format(len(payload))
         return struct.unpack(cmd_output_format, payload)
 
 
 class SupportedFeatures:
     """List supported features names from BT core spec 5.2."""
+    VS_MSFT_SUPPORTED_FEATURES = [
+            'RSSI Monitoring feature for BR/EDR',
+            'RSSI Monitoring feature for LE connections',
+            'RSSI Monitoring of LE advertisements',
+            'Advertising Monitoring of LE advertisements',
+            'Verifying the validity of P-192 and P-256 keys',
+            'Continuous Advertising Monitoring'
+    ]
     SUPPORTED_FEATURES_PAGE_ZERO = [
             '3 slot packets', '5 slot packets', 'Encryption', 'Slot offset',
             'Timing accuracy', 'Role switch', 'Hold mode', 'Sniff mode',

@@ -26,6 +26,7 @@ DOC = """
         acl_min_buffer_number_test()
         acl_min_buffer_size_test()
         sco_min_buffer_number_test()
+        sco_min_buffer_size_test()
 
     """
 

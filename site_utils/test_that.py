@@ -206,6 +206,10 @@ def _parse_arguments_internal(argv):
                         action='store',
                         default="",
                         help='host_labels, quoted space seperated strings')
+    parser.add_argument('--label',
+                        action='store',
+                        default="",
+                        help='label for test name')
     return parser.parse_args(argv), remote_argv
 
 
@@ -373,7 +377,8 @@ def _main_for_local_run(argv, arguments):
                 dut_servers=arguments.dut_servers,
                 is_cft=arguments.CFT,
                 host_attributes=json.loads(arguments.host_attributes),
-                host_labels=arguments.host_labels)
+                host_labels=arguments.host_labels,
+                label=arguments.label)
 
 
 def _main_for_lab_run(argv, arguments):

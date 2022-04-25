@@ -373,6 +373,13 @@ class server_job(base_job.base_job):
                 'status_version': str(self._STATUS_VERSION),
                 'job_started': str(int(time.time()))
         }
+
+        # Adhoc/<testname> is the default label, and should not be written,
+        # as this can cause conflicts with results uploading in CFT.
+        # However, some pipelines (such as PVS) do need `label` within the
+        # keyval, which can now by done with the `-l` flag in test_that.
+        if 'adhoc' not in label:
+            job_data['label'] = label
         # Save parent job id to keyvals, so parser can retrieve the info and
         # write to tko_jobs record.
         if parent_job_id:

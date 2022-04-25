@@ -300,7 +300,8 @@ def run_job(job,
     with tempfile.NamedTemporaryFile() as temp_file:
         temp_file.write(job.control_file.encode())
         temp_file.flush()
-        name_tail = job.name.split('/')[-1]
+
+        name_tail = job.ctrlname.split('/')[-1]
         results_directory = os.path.join(results_directory,
                                          'results-%0*d-%s' % (id_digits, job.id,
                                                               name_tail))
@@ -504,7 +505,8 @@ def perform_local_run(autotest_path,
                       minus=[],
                       dut_servers=None,
                       is_cft=False,
-                      host_labels=None):
+                      host_labels=None,
+                      label=None):
     """Perform local run of tests.
 
     This method enforces satisfaction of test dependencies for tests that are
@@ -535,6 +537,8 @@ def perform_local_run(autotest_path,
     @param job_retry: If False, tests will not be retried at all.
     @param companion_hosts: companion hosts for the test.
     @param dut_servers: dut servers for the test.
+    @param label: Optional label to use for the jobname. Will be appended to
+        the keyval file via server_job.
 
     @returns: A list of return codes each job that has run. Or [1] if
               provision failed prior to running any jobs.
@@ -591,9 +595,14 @@ def perform_local_run(autotest_path,
                 if any([control.name == no_run.name for no_run in m_queue]):
                     continue
                 test_num += 1
-                job = SimpleJob(name="adhoc/{}".format(control.name),
+                if label:
+                    name = label
+                else:
+                    name = "adhoc/{}".format(control.name)
+                job = SimpleJob(name=name,
                                 owner='autotest_system',
-                                test_num=test_num)
+                                test_num=test_num,
+                                ctrlname=control.name)
                 job.set_control_file(control)
                 if ignore_deps:
                     job_queue.append(job)
@@ -783,7 +792,8 @@ def perform_run_from_autotest_root(autotest_path,
                                    minus=[],
                                    dut_servers=None,
                                    is_cft=False,
-                                   host_labels=None):
+                                   host_labels=None,
+                                   label=None):
     """
     Perform a test_that run, from the |autotest_path|.
 
@@ -819,6 +829,8 @@ def perform_run_from_autotest_root(autotest_path,
     @param job_retry: If False, tests will not be retried at all.
     @param companion_hosts: companion hosts for the test.
     @param dut_servers: dut servers for the test.
+    @param label: Optional label to use for the jobname. Will be appended to
+        the keyval file via server_job.
 
     @return: A return code that test_that should exit with.
     """
@@ -860,7 +872,8 @@ def perform_run_from_autotest_root(autotest_path,
                               minus=minus,
                               dut_servers=dut_servers,
                               is_cft=is_cft,
-                              host_labels=host_labels)
+                              host_labels=host_labels,
+                              label=label)
     if pretend:
         logging.info('Finished pretend run. Exiting.')
         return 0
@@ -914,7 +927,12 @@ class SimpleJob(object):
     test_that is a CLI, not a UI, and should be split free of the AFE libs.
     """
 
-    def __init__(self, owner, name, control_type='client', test_num=1):
+    def __init__(self,
+                 owner,
+                 name,
+                 control_type='client',
+                 test_num=1,
+                 ctrlname=None):
         self.owner = owner
         self.name = name
         self.control_type = control_type
@@ -922,6 +940,7 @@ class SimpleJob(object):
         self.keyvals = {'experimental': False}
         self.dependencies = []
         self.py_version = None
+        self.ctrlname = ctrlname
 
     def set_control_file(self, control):
         self.control_file = control.text

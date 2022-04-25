@@ -347,7 +347,8 @@ class TestRunnerUnittests(unittest.TestCase):
                 ignore_deps=False,
                 minus=[self.suite_control_files[0]],
                 is_cft=True,
-                host_labels=test_labels)
+                host_labels=test_labels,
+                label=None)
 
         from mock import call
 

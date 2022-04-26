@@ -11,7 +11,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP_MEDIUM, HFP_WBS, HFP_NBS, HFP_WBS_MEDIUM, HFP_NBS_MEDIUM)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_qr_tests import (
-        BluetoothAdapterQRTests)
+        BluetoothAdapterQRTests, QR_UNSUPPORTED_CHIPSETS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
 
@@ -91,7 +91,8 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
     # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Quality Report A2DP test',
                   devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
     def qr_a2dp_test(self):
         """Quality Report A2DP test"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -115,7 +116,8 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
     # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Quality Report HFP NBS dut as source test',
                   devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
     def qr_hfp_nbs_dut_as_src_test(self):
         """Quality Report HFP NBS dut as source test"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -127,7 +129,8 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
     # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Quality Report HFP WBS dut as source test',
                   devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
     def qr_hfp_wbs_dut_as_src_test(self):
         """Quality Report HFP WBS dut as source test"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -139,7 +142,8 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
     # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Quality Report disabled A2DP test',
                   devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
     def qr_disabled_a2dp_test(self):
         """Quality Report disabled A2DP test"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -157,7 +161,8 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
                           'BLUETOOTH_AUDIO': 1,
                           "KEYBOARD": 1
                   },
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
     def qr_a2dp_cl_keyboard_test(self):
         """Quality Report A2DP and classic keyboard test"""
         audio_device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -177,7 +182,8 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
                     'BLUETOOTH_AUDIO': 1,
                     'KEYBOARD': 1
             },
-            flags=['Quick Health'])
+            flags=['Quick Health'],
+            skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
     def qr_hfp_wbs_dut_as_sink_cl_keyboard_test(self):
         """Quality Report HFP WBS dut as sink and classic keyboard test"""
         audio_device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -197,7 +203,8 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
                     'BLUETOOTH_AUDIO': 1,
                     'KEYBOARD': 1
             },
-            flags=['Quick Health'])
+            flags=['Quick Health'],
+            skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
     def qr_hfp_nbs_dut_as_sink_cl_keyboard_test(self):
         """Quality Report HFP NBS dut as sink and classic keyboard test"""
         audio_device = self.devices['BLUETOOTH_AUDIO'][0]

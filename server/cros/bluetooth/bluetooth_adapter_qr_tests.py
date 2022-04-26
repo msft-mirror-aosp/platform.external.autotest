@@ -22,6 +22,13 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests impor
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         test_retry_and_log)
 
+# List of the controllers that does not support the Bluetooth Quality Report.
+QR_UNSUPPORTED_CHIPSETS = [
+        'MVL-8897', 'MVL-8997',
+        'Intel-AC7260', 'Intel-AC7265',
+        'QCA-6174A-3-UART', 'QCA-6174A-5-USB'
+]
+
 # An example AOSP BQR event in btsnoop.log looks like:
 # = bluetoothd: quality: BQR Quality Report                       75.018599
 # = bluetoothd: quality:   quality_report_id 1                    75.018658

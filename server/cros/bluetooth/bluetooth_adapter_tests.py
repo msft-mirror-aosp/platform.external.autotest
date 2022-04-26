@@ -1530,7 +1530,7 @@ class BluetoothAdapterTests(test.test):
         file_name = 'btsnoop_%s' % now
 
         path = os.path.join(self.BTMON_DIR_LOG_PATH, file_name)
-        self.host.run_background(f'btmon -SAw {path}')
+        self.host.run_background('btmon -SAw {path}')
         return path
 
     def start_new_usbmon(self, reboot=False):
@@ -2267,59 +2267,44 @@ class BluetoothAdapterTests(test.test):
         def _pair_device():
             """Pair to the device.
 
-            @returns: True if it could pair with the device. False otherwise.
+            @returns: True if it could pair with, connect to, and retrieve
+                      connection info from the device. False otherwise.
 
             """
-            return self.bluetooth_facade.pair_legacy_device(
+            self.results['paired'] = self.bluetooth_facade.pair_legacy_device(
                     device_address, pin, trusted,
                     self.ADAPTER_PAIRING_TIMEOUT_SECS)
+            self.results[
+                    'connected'] = self.bluetooth_facade.device_is_connected(
+                            device_address)
+            self.results[
+                    'connection_info_retrievable'] = self.bluetooth_facade.has_connection_info(
+                            device_address)
 
+            return self.results['paired'] and self.results[
+                    'connected'] and self.results['connection_info_retrievable']
 
-        def _verify_connection_info():
-            """Verify that connection info to device is retrievable.
-
-            @returns: True if the connection info is retrievable.
-                      False otherwise.
-            """
-            return self.bluetooth_facade.has_connection_info(device_address)
-
-        def _verify_connected():
-            """Verify the device is connected.
-
-            @returns: True if the device is connected, False otherwise.
-            """
-            return self.bluetooth_facade.device_is_connected(device_address)
-
-        has_device = False
-        paired = False
-        connected = False
-        connection_info_retrievable = False
-        connected_devices = self.bluetooth_facade.get_num_connected_devices()
+        self.results = {
+                'has_device': False,
+                'paired': False,
+                'connected': False,
+                'connection_info_retrievable': False,
+                'connection_num':
+                self.bluetooth_facade.get_num_connected_devices() + 1
+        }
 
         if self.bluetooth_facade.has_device(device_address):
-            has_device = True
+            self.results['has_device'] = True
             try:
                 utils.poll_for_condition(
                         condition=_pair_device,
                         timeout=self.ADAPTER_PAIRING_TIMEOUT_SECS,
                         sleep_interval=self.ADAPTER_PAIRING_POLLING_SLEEP_SECS,
                         desc='Waiting for pairing %s' % device_address)
-                paired = True
             except utils.TimeoutError as e:
                 logging.error('test_pairing: %s', e)
             except:
                 logging.error('test_pairing: unexpected error')
-
-            connection_info_retrievable = _verify_connection_info()
-            connected = _verify_connected()
-
-        self.results = {
-                'has_device': has_device,
-                'paired': paired,
-                'connected': connected,
-                'connection_info_retrievable': connection_info_retrievable,
-                'connection_num': connected_devices + 1
-        }
 
         return all(self.results.values())
 

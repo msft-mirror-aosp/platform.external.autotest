@@ -52,19 +52,6 @@ class Cr50Test(FirmwareTest):
             ERASEFLASHINFO_IMAGE: ['chip_bid'],
     }
     PP_SHORT_INTERVAL = 3
-    # Cr50 may have flash operation errors during the test. Here's an example
-    # of one error message.
-    # do_flash_op:245 errors 20 fsh_pe_control 40720004
-    # The stuff after the ':' may change, but all flash operation errors
-    # contain do_flash_op. do_flash_op is only ever printed if there is an
-    # error during the flash operation. Just search for do_flash_op to simplify
-    # the search string and make it applicable to all flash op errors.
-    CR50_FLASH_OP_ERROR_MSG = 'do_flash_op'
-    # USB issues may show up with the timer sof calibration overflow interrupt.
-    # Count these during cleanup.
-    CR50_USB_ERROR = 'timer_sof_calibration_overflow_int'
-    # Message printed during watchdog reset.
-    CR50_WATCHDOG_RST = 'WATCHDOG PC'
 
     def initialize(self,
                    host,
@@ -656,7 +643,7 @@ class Cr50Test(FirmwareTest):
                                                 dev_mode)
         except Exception as e:
             # Check for cr50 watchdog resets.
-            self._get_cr50_stats_from_uart_capture()
+            self.cr50.check_for_console_errors()
             raise
 
     def cleanup(self):
@@ -679,43 +666,8 @@ class Cr50Test(FirmwareTest):
             super(Cr50Test, self).cleanup()
 
         # Check the logs captured during firmware_test cleanup for cr50 errors.
-        self._get_cr50_stats_from_uart_capture()
+        self.cr50.check_for_console_errors()
         self.servo.allow_ccd_watchdog_for_test()
-
-
-    def _get_cr50_stats_from_uart_capture(self):
-        """Check cr50 uart output for errors.
-
-        Use the logs captured during firmware_test cleanup to check for cr50
-        errors. Flash operation issues aren't obvious unless you check the logs.
-        All flash op errors print do_flash_op and it isn't printed during normal
-        operation. Open the cr50 uart file and count the number of times this is
-        printed. Log the number of errors.
-        """
-        cr50_uart_file = self.servo.get_uart_logfile('cr50')
-        if not cr50_uart_file:
-            logging.info('There is not a cr50 uart file')
-            return
-
-        flash_error_count = 0
-        usb_error_count = 0
-        watchdog_count = 0
-        with open(cr50_uart_file, 'r') as f:
-            for line in f:
-                if self.CR50_FLASH_OP_ERROR_MSG in line:
-                    flash_error_count += 1
-                if self.CR50_USB_ERROR in line:
-                    usb_error_count += 1
-                if self.CR50_WATCHDOG_RST in line:
-                    watchdog_count += 1
-
-        # Log any flash operation errors.
-        logging.info('do_flash_op count: %d', flash_error_count)
-        logging.info('usb error count: %d', usb_error_count)
-        logging.info('watchdog count: %d', watchdog_count)
-        if watchdog_count:
-            raise error.TestFail('Found %r %d times in cr50 logs' %
-                                 (self.CR50_WATCHDOG_RST, watchdog_count))
 
     def _update_device_images_and_running_cr50_firmware(
             self, state, release_path, prod_path, prepvt_path):

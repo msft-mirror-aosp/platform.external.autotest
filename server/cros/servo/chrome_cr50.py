@@ -954,6 +954,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                         ensure_ap_on=ap_is_on)
 
         if level != self.get_ccd_level():
+            self.check_for_console_errors()
             raise error.TestFail('Could not set privilege level to %s' % level)
 
         logging.info('Successfully set CCD privelege level to %s', level)

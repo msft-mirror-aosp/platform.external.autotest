@@ -48,7 +48,7 @@ def run(machine):
     # should be always fresher than the rootfs Chrome bundled in OS.
     chrome_sideloader.setup_host(host, CHROME_DIR, None)
 
-    # lacrosDeployedBinary expects to set the directory containing chrome executable.
+    # lacros.DeployedBinary expects to set the directory containing chrome executable.
     # If chrome is not under squashfs root, specify the relative path by exe_rel_path.
     path_to_chrome = os.path.join(CHROME_DIR,
                                   args_dict.get('exe_rel_path', 'chrome'))
@@ -61,7 +61,7 @@ def run(machine):
         expr = chrome_sideloader.get_tast_expr(args_dict)
     logging.info('Tast expr: %s', expr)
 
-    varslist.append('lacrosDeployedBinary=%s' %
+    varslist.append('lacros.DeployedBinary=%s' %
                     os.path.dirname(path_to_chrome)
     )
 

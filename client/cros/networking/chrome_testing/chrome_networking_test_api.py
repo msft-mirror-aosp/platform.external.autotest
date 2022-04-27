@@ -26,6 +26,7 @@ class ChromeNetworkProvider(object):
 
     WIFI_DEVICE = 'WiFi'
     CELLULAR = 'Cellular'
+    ETHERNET = 'Ethernet'
     SHORT_TIMEOUT = 3
 
 
@@ -50,6 +51,20 @@ class ChromeNetworkProvider(object):
             raise error.TestFail('No wifi networks found.')
 
         return wifi_networks
+
+
+    def get_cellular_networks(self):
+        """Get list of available cellular networks.
+
+        @raises error.TestFail if no cellular networks are found.
+        @return List of dictionaries containing cellular network information.
+
+        """
+        cellular_networks = self._chrome_testing.find_cellular_networks()
+        if not cellular_networks:
+            raise error.TestFail('No cellular networks found.')
+
+        return cellular_networks
 
 
     def get_enabled_devices(self):
@@ -114,27 +129,26 @@ class ChromeNetworkProvider(object):
 
 
     def connect_to_network(self, service_list):
-       """Connects to the given network using networkingPrivate API.
+        """Connects to the given network using networkingPrivate API.
 
-       @param service_list: service list for the network to connect to.
+        @param service_list: service list for the network to connect to.
 
-       """
-       connect_status = self._chrome_testing.call_test_function(
-                            test_utils.LONG_TIMEOUT,
-                            'connectToNetwork',
-                            '"' + service_list['GUID'] +'"')
+        """
+        connect_status = self._chrome_testing.call_test_function(
+                test_utils.LONG_TIMEOUT, 'connectToNetwork',
+                '"' + service_list['GUID'] + '"')
 
-       if connect_status['error'] == 'connected':
-           return
-       elif connect_status['error'] == 'connecting':
-           for retry in range(3):
-               logging.debug('Just hold on for 10 seconds')
-               time.sleep(10)
-               if connect_status['error'] == 'connected':
-                   return
+        if connect_status['error'] == 'connected':
+            return
+        elif connect_status['error'] == 'connecting':
+            for retry in range(3):
+                logging.debug('Just hold on for 10 seconds')
+                time.sleep(10)
+                if connect_status['error'] == 'connected':
+                    return
 
-       if connect_status['status'] == 'chrome-test-call-status-failure':
-           raise error.TestFail(
-                     'Could not connect to %s network. Error returned by '
-                     'chrome.networkingPrivate.startConnect API: %s' %
-                     (service_list['Name'], connect_status['error']))
+        if connect_status['status'] == 'chrome-test-call-status-failure':
+            raise error.TestFail(
+                    'Could not connect to %s network. Error returned by '
+                    'chrome.networkingPrivate.startConnect API: %s' %
+                    (service_list['Name'], connect_status['error']))

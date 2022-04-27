@@ -219,7 +219,7 @@ def _read_line(line):
         time_ = line[-1]
     except Exception as e:
         raise error.TestError(
-                'Exception in reading Bluetooth Quality Report: %s', e)
+                'Exception in reading Bluetooth Quality Report: %s' % e)
     return subevt, value, time_
 
 def _handler_to_base_10(handler):
@@ -424,8 +424,8 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         if len(all_reports) < num_devices:
             raise error.TestFail(
                     'Error in test_check_qr_event_log: wrong '
-                    'handler number: %s, expected: %s', len(all_reports),
-                    num_devices)
+                    'handler number: %s, expected: %s' % (len(all_reports),
+                    num_devices))
 
         for reports in all_reports.values():
             report_type = None

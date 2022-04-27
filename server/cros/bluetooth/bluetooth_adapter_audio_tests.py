@@ -800,6 +800,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         @returns: True on success. False otherwise.
         """
+        # Let the dut capture audio stream until it is stopped explicitly by
+        # setting duration to None. This is required on some slower devices.
+        audio_data = audio_data.copy()
+        audio_data.update({'duration': None})
+
         start_capturing_audio = self.bluetooth_facade.start_capturing_audio_subprocess(
                 audio_data, recording_device)
         self.results = {

@@ -622,15 +622,17 @@ class UpdateEngineUtil(object):
         self._run(['rm', self._CUSTOM_LSB_RELEASE], ignore_status=True)
 
 
-    def _remove_update_engine_pref(self, pref):
+    def _remove_update_engine_pref(self, pref, is_dir=False):
         """
-        Delete an update_engine pref file.
+        Delete an update_engine pref file or directory.
 
         @param pref: The pref file to delete
+        @param is_dir: True for removing a whole pref subdirectory.
 
         """
         pref_file = os.path.join(self._UPDATE_ENGINE_PREFS_DIR, pref)
-        self._run(['rm', pref_file], ignore_status=True)
+        self._run(['rm', '-r' if is_dir else '', pref_file],
+                  ignore_status=True)
 
 
     def _get_update_requests(self):

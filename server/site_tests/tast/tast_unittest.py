@@ -146,7 +146,8 @@ class TastTest(unittest.TestCase):
                             shardindex=0,
                             companion_duts={},
                             maybemissingvars='',
-                            port=True):
+                            port=True,
+                            test_filter_files=[]):
         """Sets fake_tast.py's behavior for 'list' and 'run' commands.
 
         @param tests: List of TestInfo objects.
@@ -159,6 +160,7 @@ class TastTest(unittest.TestCase):
         @param totalshards: total number of shards.
         @param shardindex: shard index to be run.
         @param companion_duts: mapping between roles and DUTs.
+        @param test_filter_files: a list of files specify which tests to disable.
         """
         list_args = [
                 'build=%s' % build,
@@ -204,6 +206,8 @@ class TastTest(unittest.TestCase):
                                       (role, dut.hostname,
                                        ':%d' % dut.port if dut.port else ''))
             run_args.append('companiondut=%s' % role_dut_pairs)
+        if test_filter_files:
+            run_args.append('testfilterfile=%s' % test_filter_files)
         test_list = json.dumps([t.test() for t in tests])
         run_files = {
             self._results_path(): ''.join(
@@ -239,7 +243,8 @@ class TastTest(unittest.TestCase):
                   varslist=[],
                   maybemissingvars='',
                   use_camera_box=False,
-                  vars_gs_path=''):
+                  vars_gs_path='',
+                  test_filter_files=[]):
         """Writes fake_tast.py's configuration and runs the test.
 
         @param ignore_test_failures: Passed as the identically-named arg to
@@ -282,7 +287,8 @@ class TastTest(unittest.TestCase):
                               varslist=varslist,
                               maybemissingvars=maybemissingvars,
                               use_camera_box=use_camera_box,
-                              vars_gs_path=vars_gs_path)
+                              vars_gs_path=vars_gs_path,
+                              test_filter_files=test_filter_files)
         self._test.set_fake_now_for_testing(
                 (NOW - tast._UNIX_EPOCH).total_seconds())
 
@@ -525,6 +531,14 @@ class TastTest(unittest.TestCase):
         }
         self._init_tast_commands(tests=tests, companion_duts=companion_duts)
         self._run_test(companion_duts=companion_duts)
+
+    def testRunCommandWithTestFilterFiles(self):
+        """Tests that companion dut parameter is passing thru without issues."""
+        tests = [TestInfo('pkg.Test1', 0, 2), TestInfo('pkg.Test2', 3, 5)]
+        test_filter_files = ['filter_1.txt', 'filter_2.txt']
+        self._init_tast_commands(tests=tests,
+                                 test_filter_files=test_filter_files)
+        self._run_test(test_filter_files=test_filter_files)
 
     def testNoResultsFile(self):
         """Tests that an error is raised if no results file is written."""

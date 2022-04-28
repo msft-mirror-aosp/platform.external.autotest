@@ -128,6 +128,7 @@ def parse_args():
     run_parser.add_argument('-companiondut', action='append', default=[])
     run_parser.add_argument('-buildartifactsurl')
     run_parser.add_argument('-maybemissingvars')
+    run_parser.add_argument('-testfilterfile', action='append', default=[])
 
     return parser.parse_args()
 

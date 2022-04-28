@@ -206,7 +206,8 @@ class tast(test.test):
                    retries=0,
                    ephemeraldevserver=None,
                    is_cft=False,
-                   exclude_missing=False):
+                   exclude_missing=False,
+                   test_filter_files=[]):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -253,6 +254,8 @@ class tast(test.test):
         @param ephemeraldevserver: A value to pass to -ephemeraldevserver
         @param exclude_missing: This option will exclude tests that are requested, but not found in
         `tast list` command
+        @param test_filter_files: This option includes a list of files containing names
+        of test to be disabled.
 
         When the F20 breadcrumb is detected, it is assumed we are running in
             the F20 container, meaning we will force disable SSP (though the
@@ -296,6 +299,7 @@ class tast(test.test):
         self._f20_container = f20_container or is_cft
         self._ephemeraldevserver = ephemeraldevserver
         self._exclude_missing = exclude_missing
+        self._test_filter_files = test_filter_files
 
         # Need to pass in dut_servers for every test in CFT.
         # But only add it if not already in varslist.
@@ -815,6 +819,9 @@ class tast(test.test):
             for var in self._varslist:
                 args.append('-var=%s' % var)
 
+            for file_name in self._test_filter_files:
+                args.append('-testfilterfile=%s' % file_name)
+
             # Start "tast run" with an attribute expression matching no test
             # to trigger a private test bundle download.
             # Note that Tast CLI will exit abnormally when no test matches,
@@ -890,6 +897,9 @@ class tast(test.test):
             args.append(
                     '-companiondut=%s:%s%s' %
                     (role, dut.hostname, ':%d' % dut.port if dut.port else ''))
+
+        for file in self._test_filter_files:
+            args.append('-testfilterfile=%s' % file)
 
         logging.info('Running tests with timeout of %d sec', self._max_run_sec)
         # This option will exclude tests that are requested, but not found in

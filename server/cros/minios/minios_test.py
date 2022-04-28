@@ -50,6 +50,9 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
     _MINIOS_TEMP_STATEFUL_DIR = '/usr/local/tmp/stateful'
     _STATEFUL_DEV_IMAGE_NAME = 'dev_image_new'
 
+    # Python paths relative to '/usr' and 'usr/local'.
+    _PYTHON_PATHS = ['lib/python-exec', 'bin/python', 'bin/python3']
+
     def initialize(self, host):
         """
         Sets default variables for the test.
@@ -178,8 +181,24 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
             err_str = 'Failed to install the test dependencies'
             raise error.TestFail('%s: %s' % (err_str, str(e)))
 
+        self._setup_python_symlinks()
+
         # Clean-up unused files to save memory.
         self._run(['rm', '-rf', self._MINIOS_TEMP_STATEFUL_DIR])
+
+    def _setup_python_symlinks(self):
+        """
+        Create symlinks in the root to point to /usr/local for stateful
+        installed python to work. This is needed because Gentoo creates
+        wrappers with hardcoded paths to the root (e.g. python-exec).
+
+        """
+        for path in self._PYTHON_PATHS:
+            self._run([
+                    'ln', '-s',
+                    os.path.join(self._DEPENDENCY_INSTALL_DIR, path),
+                    os.path.join('/usr', path)
+            ])
 
     def _start_nebraska(self, payload_url=None):
         """

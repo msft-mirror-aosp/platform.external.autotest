@@ -43,7 +43,7 @@ def check_git_tree_clean():
     return True
 
 
-def fetech_target_commit():
+def fetch_target_commit():
     """ Fetch from the cloud or git to retrieve latest ToT or latest stable
     commit hash.
 
@@ -60,7 +60,7 @@ def fetech_target_commit():
                        ignore_status=True)
 
     if output.exit_status != 0:
-        logging.info('Failed to fetech the latest commit from the server')
+        logging.info('Failed to fetch the latest commit from the server')
         logging.info(output.stdout)
         logging.info(output.stderr)
     else:
@@ -107,7 +107,7 @@ def test_version_setup():
         test_version_setup_exit_print()
         return False
 
-    current_commit, target_commit = fetech_target_commit()
+    current_commit, target_commit = fetch_target_commit()
     if current_commit == target_commit:
         logging.info('Local tree is already at target autotest commit.')
         test_version_setup_exit_print()

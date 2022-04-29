@@ -1534,7 +1534,7 @@ class BluetoothAdapterTests(test.test):
         file_name = 'btsnoop_%s' % now
 
         path = os.path.join(self.BTMON_DIR_LOG_PATH, file_name)
-        self.host.run_background('btmon -SAw {path}')
+        self.host.run_background('btmon -SAw %s' % path)
         return path
 
     def start_new_usbmon(self, reboot=False):

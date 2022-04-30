@@ -94,7 +94,7 @@ class SpectralAnalysisTest(unittest.TestCase):
         freq_2 = 60.0
         coeff_1 = 1
         coeff_2 = 0.3
-        samples = length_in_secs * rate
+        samples = int(length_in_secs * rate)
         noise = numpy.random.standard_normal(samples) * 0.005
         x = numpy.linspace(0.0, (samples - 1) * 1.0 / rate, samples)
         y = (coeff_1 * numpy.sin(freq_1 * 2.0 * numpy.pi * x) +
@@ -135,7 +135,7 @@ class SpectralAnalysisTest(unittest.TestCase):
         """Checks that sepectral analysis handles un-meaningful data."""
         rate = 48000
         length_in_secs = 0.5
-        samples = length_in_secs * rate
+        samples = int(length_in_secs * rate)
         noise_amplitude = audio_analysis.MEANINGFUL_RMS_THRESHOLD * 0.5
         noise = numpy.random.standard_normal(samples) * noise_amplitude
         results = audio_analysis.spectral_analysis(noise, rate)
@@ -167,7 +167,7 @@ class AnomalyTest(unittest.TestCase):
         self.rate = 48000
         self.freq = 440
         length_in_secs = 0.25
-        self.samples = length_in_secs * self.rate
+        self.samples = int(length_in_secs * self.rate)
         x = numpy.linspace(
                 0.0, (self.samples - 1) * 1.0 / self.rate, self.samples)
         self.y = numpy.sin(self.freq * 2.0 * numpy.pi * x)
@@ -197,8 +197,8 @@ class AnomalyTest(unittest.TestCase):
         self.anomaly_start_secs = 0.1
         self.anomaly_duration_secs = 0.005
         anomaly_append_secs = self.anomaly_start_secs + self.anomaly_duration_secs
-        anomaly_start_index = self.anomaly_start_secs * self.rate
-        anomaly_append_index = anomaly_append_secs * self.rate
+        anomaly_start_index = int(self.anomaly_start_secs * self.rate)
+        anomaly_append_index = int(anomaly_append_secs * self.rate)
         self.y = numpy.append(self.y[:anomaly_start_index], self.y[anomaly_append_index:])
 
 

@@ -21,6 +21,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
     # Short wait to make sure cr50 has had enough time to update the ccd state
     SLEEP = 2
     BOOL_VALUES = (True, False)
+    TPM_ERR = 'Problems reading from TPM'
 
     def initialize(self, host, cmdline_args, full_args):
         """Initialize servo check if cr50 exists."""
@@ -148,23 +149,28 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
             logging.info('EXPECT: %s', 'failure' if enable_fail else 'success')
         cmd = 'enable' if enable else 'disable'
 
-        result = self.host.run('gsctool -a -F %s' % cmd,
-                ignore_status=(enable_fail or not enable))
-        logging.debug(result)
+        self.host.run('gsctool -a -F %s' % cmd,
+                      ignore_status=(enable_fail or not enable))
         expect_enabled = enable and not enable_fail
 
+        # Wait long enoug for cr50 to update the ccd state.
+        time.sleep(self.SLEEP)
         if expect_enabled:
-            # Cr50 will reboot after it enables factory mode.
-            self.cr50.wait_for_reboot(timeout=10)
-        else:
-            # Wait long enoug for cr50 to udpate the ccd state.
-            time.sleep(self.SLEEP)
+            # Verify the tpm is disabled.
+            result = self.host.run('gsctool -af', ignore_status=True)
+            if result.exit_status != 3 or self.TPM_ERR not in result.stderr:
+                raise error.TestFail('TPM enabled after entering factory mode')
+            # Reboot the DUT to reenable TPM communications.
+            self.host.reboot()
+
         if self.factory_mode_enabled() != expect_enabled:
             raise error.TestFail('Unexpected factory mode %s result' % cmd)
 
 
     def clear_state(self):
         """Clear the FWMP and reset CCD"""
+        self.host.reboot()
+        self._try_to_bring_dut_up()
         # Clear the FWMP
         self.clear_fwmp()
         # make sure all of the ccd stuff is reset

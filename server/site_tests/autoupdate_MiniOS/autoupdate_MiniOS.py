@@ -19,16 +19,22 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
     _MINIOS_PREFS_DIR = "minios"
 
     def initialize(self, host=None):
-        """Remove all minios prefs on the DUT before starting the test. """
+        """
+        Clear test related prefs on the DUT before starting the test.
+
+        """
         super(autoupdate_MiniOS, self).initialize(host=host)
-        self._remove_update_engine_pref(pref=self._MINIOS_PREFS_DIR,
-                                        is_dir=True)
+        self._remove_minios_update_prefs()
 
     def cleanup(self):
         super(autoupdate_MiniOS, self).cleanup()
         self._save_extra_update_engine_logs(number_of_logs=2)
-        self._remove_update_engine_pref(pref=self._MINIOS_PREFS_DIR,
-                                        is_dir=True)
+        self._remove_minios_update_prefs()
+
+    def _remove_minios_update_prefs(self):
+        for pref in ((self._EXCLUSION_PREFS_DIR, True),
+                     (self._MINIOS_PREFS_DIR, True)):
+            self._remove_update_engine_pref(pref=pref[0], is_dir=pref[1])
 
     def _setup_minios_update(self, has_update, with_exclusion=False):
         # Get payload URL for the MiniOS update.

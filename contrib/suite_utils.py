@@ -74,7 +74,7 @@ class TestObject(object):
                                     test_exprs.append(elem.s)
                                     regex_list = ('(' in elem.s or regex_list)
                                 except AttributeError:
-                                    print('WARNING: Non-standard test found, check'
+                                    print('WARNING: Non-standard test found, check '
                                           + self.file_path + ' manually')
                                     break
                             if regex_list:

@@ -24,6 +24,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
     """
 
+    _ETHERNET_LABEL = 'Ethernet'
     _MINIOS_CLIENT_CMD = 'minios_client'
     _MINIOS_KERNEL_FLAG = 'cros_minios'
 
@@ -49,6 +50,21 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
     _DEPENDENCY_INSTALL_DIR = '/usr/local'
     _MINIOS_TEMP_STATEFUL_DIR = '/usr/local/tmp/stateful'
     _STATEFUL_DEV_IMAGE_NAME = 'dev_image_new'
+
+    # MiniOS State values from platform/system_api/dbus/minios/minios.proto.
+    _MINIOS_STATE_ERROR = 'ERROR'
+    _MINIOS_STATE_IDLE = 'IDLE'
+    _MINIOS_STATE_NETWORK_SELECTION = 'NETWORK_SELECTION'
+    _MINIOS_STATE_NETWORK_CONNECTED = 'CONNECTED'
+    _MINIOS_STATE_NETWORK_CREDENTIALS = 'NETWORK_CREDENTIALS'
+    _MINIOS_STATE_RECOVERING = 'RECOVERING'
+
+    # Arrays used to build iptables commands.
+    _DROP_OUTGOING_PACKETS = ['OUTPUT', '-p', 'tcp', '-j', 'DROP']
+    _HTTP_FILTER = ['--dport', '80']
+    _HTTPS_FILTER = ['--dport', '443']
+
+    _GET_STATE_EXTRACTOR = re.compile(r'State is (\w+)')
 
     def initialize(self, host):
         """
@@ -221,3 +237,104 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         """
         self._host.test_wait_for_shutdown(self._MINIOS_SHUTDOWN_TIMEOUT)
         self._host.test_wait_for_boot(old_boot_id)
+
+    def _drop_download_traffic(self):
+        """
+        Insert Iptables rules to drop outgoing HTTP(S) packets. This simulates
+        a dropped network connection.
+
+        """
+        iptables_add_rule = ['iptables', '-I']
+        self._run(iptables_add_rule + self._DROP_OUTGOING_PACKETS +
+                  self._HTTP_FILTER)
+        self._run(iptables_add_rule + self._DROP_OUTGOING_PACKETS +
+                  self._HTTPS_FILTER)
+
+    def _restore_download_traffic(self):
+        """
+        Attempt to remove Iptables rules that drop outgoing HTTP(S) packets if
+        any. This simulates restoration of a dropped network connection.
+
+        """
+        iptables_delete_rule = ['iptables', '-D']
+        self._run(iptables_delete_rule + self._DROP_OUTGOING_PACKETS +
+                  self._HTTP_FILTER,
+                  ignore_status=True)
+        self._run(iptables_delete_rule + self._DROP_OUTGOING_PACKETS +
+                  self._HTTPS_FILTER,
+                  ignore_status=True)
+
+    def _next_screen(self):
+        """
+        Advance MiniOS recovery to the next screen (next step).
+
+        """
+        self._run([self._MINIOS_CLIENT_CMD, '--next_screen'])
+
+    def _prev_screen(self):
+        """
+        Advance MiniOS recovery to the previous screen (previous step).
+
+        """
+        self._run([self._MINIOS_CLIENT_CMD, '--prev_screen'])
+
+    def _set_network_credentials(self, network_name, network_password=None):
+        """
+        Set the network and optional password that MiniOS should connect to.
+
+        @param network_name: The name of the network to connect to for recovery.
+        @param network_password: Optional password for the network.
+
+        """
+        cmd = [
+                self._MINIOS_CLIENT_CMD, '--set_credentials',
+                '--network_name=%s' % network_name
+        ]
+        if network_password:
+            cmd += ['--network_password=%s' % network_password]
+        logging.info('Setting network credentials for %s.', network_name)
+        self._run(cmd)
+
+    def _get_minios_state(self):
+        """
+        Get the current state of MiniOS from the command
+        'minios_client --get_state'.
+
+        @return The string value of the current MiniOS state.
+
+        """
+        result = self._run([self._MINIOS_CLIENT_CMD,
+                            '--get_state']).stderr.rstrip()
+        state_match = self._GET_STATE_EXTRACTOR.search(result)
+        return state_match.group(1) if state_match else None
+
+    def _validate_minios_state(self, expected_state):
+        """
+        Check if MiniOS is in the expected state.
+
+        @param expected_state: The expected state that we want to validate.
+
+        """
+        state = self._get_minios_state()
+        if expected_state != state:
+            raise error.TestFail('%s not found. State is %s' %
+                                 (expected_state, state))
+
+    def _wait_for_minios_state(self, state_to_wait_for, timeout=3600):
+        """
+        Wait for the MiniOS to reach a certain state.
+
+        @param state_to_wait_for: The MiniOS state to wait for.
+        @param timeout: How long to wait before giving in seconds.
+
+        """
+        expiration = time.time() + timeout
+        while True:
+            state = self._get_minios_state()
+            if state_to_wait_for == state:
+                break
+            time.sleep(1)
+            if time.time() > expiration:
+                raise error.TestFail('MiniOS did not achieve state: %s before'
+                                     'timeout. Current state: %s.' %
+                                     (state_to_wait_for, state))

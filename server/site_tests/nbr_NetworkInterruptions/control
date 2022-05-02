@@ -1,0 +1,33 @@
+# Copyright 2022 The ChromiumOS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "hbarnor, ChromiumOS"
+NAME = "nbr_NetworkInterruptions"
+TIME = "MEDIUM"
+PURPOSE = "Test an NBR N-to-N recovery with persistent network interruption."
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "platform"
+TEST_TYPE = "server"
+DEPENDENCIES = "servo_state:WORKING"
+ATTRIBUTES = "suite:nbr"
+PY_VERSION = 3
+
+DOC = """
+This tests an N-to-N recovery with a persistent network failure during the
+download step. The recovery is attempted a second time after the failure.
+
+Example usage:
+test_that nbr_NetworkInterruptions <DUT> --board=<board> --args="running_at_desk=True"
+
+"""
+
+from autotest_lib.client.common_lib import utils
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+def run(machine):
+    host = hosts.create_host(machine, servo_args=servo_args, **args_dict)
+    job.run_test("nbr_NetworkInterruptions", host=host, **args_dict)
+
+job.parallel_simple(run, machines)

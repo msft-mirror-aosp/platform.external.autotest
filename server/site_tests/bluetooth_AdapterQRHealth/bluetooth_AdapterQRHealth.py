@@ -104,7 +104,8 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
     # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Quality Report power cycle and A2DP test',
                   devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
     def qr_power_cycle_a2dp_test(self):
         """Quality Report power cycle and A2DP test"""
         device = self.devices['BLUETOOTH_AUDIO'][0]

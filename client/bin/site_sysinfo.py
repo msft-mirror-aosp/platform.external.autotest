@@ -352,10 +352,11 @@ class site_sysinfo(base_sysinfo.base_sysinfo):
                         constants.CRYPTOHOME_MOUNT_PT, "crash"),
                                       excludes=logdir.DEFAULT_EXCLUDES +
                                       (crash_exclude_string, )))
-        self.after_iteration_loggables.add(
-                purged_on_init_logdir(constants.CRASH_DIR,
-                                      excludes=logdir.DEFAULT_EXCLUDES +
-                                      (crash_exclude_string, )))
+
+        self.test_loggables.add(
+                purgeable_logdir(constants.CRASH_DIR,
+                                 excludes=logdir.DEFAULT_EXCLUDES +
+                                 (crash_exclude_string, )))
 
         self.test_loggables.add(
             logfile(os.path.join(constants.USER_DATA_DIR,

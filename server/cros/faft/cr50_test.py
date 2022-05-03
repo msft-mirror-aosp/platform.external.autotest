@@ -643,7 +643,7 @@ class Cr50Test(FirmwareTest):
                                                 dev_mode)
         except Exception as e:
             # Check for cr50 watchdog resets.
-            self.cr50.check_for_console_errors()
+            self.cr50.check_for_console_errors('Fast ccd open')
             raise
 
     def cleanup(self):
@@ -666,7 +666,7 @@ class Cr50Test(FirmwareTest):
             super(Cr50Test, self).cleanup()
 
         # Check the logs captured during firmware_test cleanup for cr50 errors.
-        self.cr50.check_for_console_errors()
+        self.cr50.check_for_console_errors('Test Cleanup')
         self.servo.allow_ccd_watchdog_for_test()
 
     def _update_device_images_and_running_cr50_firmware(

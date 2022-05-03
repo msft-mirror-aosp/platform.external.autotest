@@ -954,7 +954,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                         ensure_ap_on=ap_is_on)
 
         if level != self.get_ccd_level():
-            self.check_for_console_errors()
+            self.check_for_console_errors('Running console ccd %s' % level)
             raise error.TestFail('Could not set privilege level to %s' % level)
 
         logging.info('Successfully set CCD privelege level to %s', level)
@@ -1338,7 +1338,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if servo_en:
             self.enable_servo_control_caps()
 
-    def check_for_console_errors(self):
+    def check_for_console_errors(self, desc):
         """Check cr50 uart output for errors.
 
         Use the logs captured during firmware_test cleanup to check for cr50
@@ -1370,5 +1370,5 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         logging.info('usb error count: %d', usb_error_count)
         logging.info('watchdog count: %d', watchdog_count)
         if watchdog_count:
-            raise error.TestFail('Found %r %d times in cr50 logs' %
-                                 (self.WATCHDOG_RST, watchdog_count))
+            raise error.TestFail('Found %r %d times in logs after %s' %
+                                 (self.WATCHDOG_RST, watchdog_count, desc))

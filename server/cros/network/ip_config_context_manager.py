@@ -26,24 +26,25 @@ class IpConfigContextManager(object):
             self._iface_cleanup_dict[host] = [clear_command]
         host.run('sudo ip link set %s up' % dev_name)
 
-    def add_ip_route(self, host, dest_ip, via_ip, iface_name):
+    def add_ip_route(self, host, dest_ip, iface_name, via_ip=None):
         """Add an ip route to the device. This route will be deleted when the
         context is exited.
 
         @param host Host Device to assign the ip route on.
         @param dest_ip String destination ip address of the ip route.
-        @param via_ip String the ip address to route the traffic through.
         @param iface_name String The local iface to route the traffic from.
+        @param via_ip String an optional ip address to route the traffic through.
 
         """
-        clear_command = 'sudo ip route del table 255 %s via %s dev %s' % (
-                dest_ip, via_ip, iface_name)
+        via = "via %s " % via_ip if via_ip else ""
+        clear_command = 'sudo ip route del table 255 %s %sdev %s' % (
+                dest_ip, via, iface_name)
         if host in self._ip_route_cleanup_dict:
             self._ip_route_cleanup_dict[host].append(clear_command)
         else:
             self._ip_route_cleanup_dict[host] = [clear_command]
-        host.run('sudo ip route replace table 255 %s via %s dev %s' %
-                 (dest_ip, via_ip, iface_name))
+        host.run('sudo ip route replace table 255 %s %sdev %s' %
+                 (dest_ip, via, iface_name))
 
     def assign_ip_addr_to_iface(self, host, ip_addr, iface_name):
         """Assign an ip address to an interface on the host. This address will be

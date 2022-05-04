@@ -247,12 +247,12 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                                                    self._pcap_lan_iface_name)
                 ip_context.add_ip_route(self.context.client.host,
                                         self._pcap_lan_ip_addr,
-                                        self.context.router.wifi_ip,
-                                        self.context.client.wifi_if)
+                                        self.context.client.wifi_if,
+                                        self.context.router.wifi_ip)
                 ip_context.add_ip_route(self.context.pcap_host.host,
                                         self.context.client.wifi_ip,
-                                        self._router_lan_ip_addr,
-                                        self._router_lan_iface_name)
+                                        self._router_lan_iface_name,
+                                        self._router_lan_ip_addr)
 
                 manager = perf_manager.PerfTestManager(self._use_iperf)
                 # Flag a test error if we disconnect for any reason.

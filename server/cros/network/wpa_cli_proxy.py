@@ -38,16 +38,19 @@ class WpaCliProxy(object):
     CROS_CMD_FORMAT = ('su wpa -s /bin/bash '
                        '-c "/usr/bin/wpa_cli -i {0[ifname]} {0[cmd]}"')
     CAST_CMD_FORMAT = '/system/bin/wpa_cli -i {0[ifname]} {0[cmd]}'
+    RPI_CMD_FORMAT = '/sbin/wpa_cli -i {0[ifname]} {0[cmd]}'
 
 
-    def __init__(self, host, wifi_if):
+    def __init__(self, host, wifi_if, RPi=False):
         self._host = host
         self._wifi_if = wifi_if
         self._created_networks = {}
+        if RPi:
+            self._wpa_cli_cmd_format = self.RPI_CMD_FORMAT
         # TODO(wiley) Hardcoding this IFNAME prefix makes some big assumptions.
         #             we'll need to discover this parameter as it becomes more
         #             generally useful.
-        if host.get_os_type() == 'android':
+        elif host.get_os_type() == 'android':
             self._wpa_cli_cmd_format = self.ANDROID_CMD_FORMAT
         elif host.get_os_type() == 'brillo':
             self._wpa_cli_cmd_format = self.BRILLO_CMD_FORMAT

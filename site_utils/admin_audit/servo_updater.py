@@ -318,7 +318,7 @@ def any_servo_needs_firmware_update(host):
             logging.info('The servo: %s requires firmware update!', board)
             has_servo_requires_update = True
         else:
-            logging.info('The servo: %s is not requires firmware update!',
+            logging.info('The servo: %s does not require firmware update!',
                          board)
     return has_servo_requires_update
 

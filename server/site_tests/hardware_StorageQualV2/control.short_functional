@@ -1,4 +1,4 @@
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -7,10 +7,11 @@ from autotest_lib.client.common_lib import utils
 AUTHOR = 'dlunev, abergman, chromeos-engprod-platform-syd, chromeos-storage'
 NAME = 'hardware_StorageQualV2.short_functional'
 ATTRIBUTES = ''
-TIME = 'lengthy'
+TIME = 'LENGTHY'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:storage_qual_bringup'
 PY_VERSION = 3
 PRIORITY = 200
 

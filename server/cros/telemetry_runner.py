@@ -1,4 +1,4 @@
-# Lint as: python2, python3
+# Lint as: python3
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -14,6 +14,7 @@ import numbers
 import os
 import tempfile
 import six
+import sys
 
 import numpy
 
@@ -157,7 +158,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
             telemetry_cmd.extend([
                     self._host.ssh_command(alive_interval=900,
                                            connection_attempts=4),
-                    'python',
+                    sys.executable,
                     script,
                     '--output-format=%s' % output_format,
                     '--output-dir=%s' % output_dir,
@@ -165,7 +166,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
             ])
         else:
             telemetry_cmd.extend([
-                    'python',
+                    sys.executable,
                     script,
                     '--browser=cros-chrome',
                     '--output-format=%s' % output_format,
@@ -427,7 +428,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         script = os.path.join(DUT_CHROME_ROOT, TELEMETRY_RUN_GPU_TESTS_SCRIPT)
         cmd = [
                 self._host.ssh_command(alive_interval=900,
-                                       connection_attempts=4), 'python2',
+                                       connection_attempts=4), sys.executable,
                 script
         ]
         cmd.extend(args)
@@ -460,9 +461,9 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         self._benchmark_deps = tempfile.NamedTemporaryFile(
                 prefix='fetch_benchmark_deps_result.', suffix='.json')
         deps_path = self._benchmark_deps.name
-        format_fetch = ('python %s --output-deps=%s %s')
-        command_fetch = format_fetch % (fetch_path, deps_path, test_name)
-        command_get = 'cat %s' % deps_path
+        command_fetch = (f'{sys.executable} {fetch_path} '
+                         f'--output-deps={deps_path} {test_name}')
+        command_get = f'cat {deps_path}'
 
         logging.info('Getting DEPs: %s', command_fetch)
         _, _, exit_code = self._run_cmd(command_fetch)

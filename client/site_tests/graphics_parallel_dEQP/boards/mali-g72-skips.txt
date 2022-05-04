@@ -1,3 +1,8 @@
 # Times out at 60 seconds
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.13
 dEQP-VK.api.device_init.create_instance_device_intentional_alloc_fail
+
+# These tests should not exist. They are from renderpass-with-dynamic-rendering.txt which should
+# have been removed upstream.
+dEQP-VK.renderpass_with_dynamic_rendering.dedicated_allocation.*
+dEQP-VK.renderpass_with_dynamic_rendering.suballocation.*

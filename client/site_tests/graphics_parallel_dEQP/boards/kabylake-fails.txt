@@ -1,9 +1,8 @@
-# https://gitlab.freedesktop.org/mesa/mesa/-/issues/2833
-dEQP-VK.rasterization.interpolation_multisample_2_bit.lines_wide,Fail
-dEQP-VK.rasterization.interpolation_multisample_2_bit.non_strict_lines_wide,Fail
-dEQP-VK.rasterization.interpolation_multisample_4_bit.lines_wide,Fail
-dEQP-VK.rasterization.interpolation_multisample_4_bit.non_strict_lines_wide,Fail
-dEQP-VK.rasterization.interpolation_multisample_8_bit.lines_wide,Fail
-dEQP-VK.rasterization.interpolation_multisample_8_bit.non_strict_lines_wide,Fail
-dEQP-VK.rasterization.interpolation_multisample_16_bit.lines_wide,Fail
-dEQP-VK.rasterization.interpolation_multisample_16_bit.non_strict_lines_wide,Fail
+dEQP-VK.info.instance_extensions,Fail
+
+# This test is buggy in the CTS and should be fixed on the next CTS release.
+# https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/3505
+dEQP-VK.subgroups.multiple_dispatches.uniform_subgroup_size,Fail
+
+# This should be fixed on the next Mesa uprev.
+dEQP-VK.wsi.display_control.register_device_event,Fail

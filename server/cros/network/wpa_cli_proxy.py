@@ -77,7 +77,7 @@ class WpaCliProxy(object):
         return network_id
 
 
-    def run_wpa_cli_cmd(self, command, check_result=True):
+    def run_wpa_cli_cmd(self, command, if_name=None, check_result=True):
         """
         Run a wpa_cli command and optionally check the result.
 
@@ -86,13 +86,18 @@ class WpaCliProxy(object):
 
         @param command string: suffix of a command to be prefixed with
                 an appropriate wpa_cli for this host.
+        @param if_name string: interface name. The wifi interface (self._wifi_if)
+                would be used, if the if_name was not specified.
         @param check_result bool: True iff we want to check that the
                 command comes back with an 'OK' response.
         @return result object returned by host.run.
 
         """
-        cmd = self._wpa_cli_cmd_format.format(
-                {'ifname' : self._wifi_if, 'cmd' : command})
+        iface = if_name if if_name else self._wifi_if
+        cmd = self._wpa_cli_cmd_format.format({
+                'ifname': iface,
+                'cmd': command
+        })
         result = self._host.run(cmd)
         if check_result and not result.stdout.strip().endswith('OK'):
             raise error.TestFail('wpa_cli command failed: %s' % command)

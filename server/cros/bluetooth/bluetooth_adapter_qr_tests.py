@@ -349,7 +349,8 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         return True
 
     @test_retry_and_log(False)
-    def test_check_period(self, reports, tolerable_deviation=0.05):
+    def test_check_period(self, reports, report_type,
+                          tolerable_deviation=0.05):
         """Checking if the sending time between adjecent packet is tolerable.
 
         @param reports: a list of quality event reports.
@@ -364,6 +365,15 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
             return True
 
         tolerance = tolerable_deviation * QR_EVENT_PERIOD
+
+        # According to the spec of AOSP, there are 4 kind of sub-events and we
+        # only care about the sub-event whose quality_report_id is 1.
+        if report_type == AOSP_BQR:
+            reports = [
+                    report for report in reports
+                    if report['quality_report_id'] == '1'
+            ]
+
         for i in range(1, reports_len):
             time_diff = (float(reports[i][START_TIME_SUBEVT]) -
                          float(reports[i - 1][END_TIME_SUBEVT]))
@@ -440,7 +450,7 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
                     reports, HANDLER_SUBEVT[report_type])
             self.test_check_reports_completeness(
                     reports, CHECK_SUBEVTS[report_type])
-            self.test_check_period(reports)
+            self.test_check_period(reports, report_type)
 
     def qr_a2dp(self, device, test_profile):
         """Checking if quality event works fine with A2DP streaming.

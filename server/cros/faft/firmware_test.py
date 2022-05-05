@@ -2249,6 +2249,7 @@ class FirmwareTest(test.test):
         if not hasattr(self, 'cr50'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the Cr50 console')
+        logging.info('Bringing DUT up')
 
         self.servo.set_nocheck('cold_reset', 'off')
         self.servo.set_nocheck('warm_reset', 'off')

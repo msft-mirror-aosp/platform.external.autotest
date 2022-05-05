@@ -690,6 +690,7 @@ class Cr50Test(FirmwareTest):
             self.update_cr50_image_and_board_id(release_path,
                                                 state['chip_bid'])
 
+        self._try_to_bring_dut_up()
         new_mismatch = self._check_running_image_and_board_id(state)
         # Copy the original .prod and .prepvt images back onto the DUT.
         if (self._cleanup_required(new_mismatch, self.DEVICE_IMAGES)
@@ -960,6 +961,9 @@ class Cr50Test(FirmwareTest):
         @return: the rw version of the image
         """
         tmp_dest = '/tmp/' + os.path.basename(path)
+
+        # Make sure the dut is sshable before installing the image.
+        self._try_to_bring_dut_up()
 
         dest, image_ver = cr50_utils.InstallImage(self.host, path, tmp_dest)
         # Use the -p option to make sure the DUT does a clean reboot.

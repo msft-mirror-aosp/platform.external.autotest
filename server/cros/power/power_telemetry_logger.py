@@ -568,9 +568,29 @@ class PacTelemetryLogger(PowerTelemetryLogger):
 
     def _export_data_locally(self, client_test_dir, checkpoint_data=None):
         """Slot for the logger to export measurements locally."""
-        self._local_pac_data_path = os.path.join(client_test_dir,
-                                                 'pacman_data')
-        shutil.copytree(self.pac_data_path, self._local_pac_data_path)
+        pac_data = {}
+        local_checkpoints = {}
+
+        if len(checkpoint_data) == 0:
+            local_checkpoints['all-time'] = [(None, None)]
+        else:
+            local_checkpoints = checkpoint_data
+
+        for checkpoint_name, checkpoint_list in local_checkpoints.items():
+            # Export the first entry without any sort of name change.
+            tstart, tend = checkpoint_list[0]
+
+            pac_data[checkpoint_name] = self._load_and_trim_data(tstart, tend)
+            for suffix, checkpoint_element in enumerate(
+                    checkpoint_list[1:], start=1):
+                # Export subsequent entries with a suffix
+                tstart, tend = checkpoint_element
+                name = '%s%d' % (checkpoint_name, suffix)
+                pac_data[name] = self._load_and_trim_data(tstart, tend)
+
+        path = os.path.join(client_test_dir, 'results', 'pac.json')
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(pac_data, f, ensure_ascii=False, indent=4)
 
 
 class ServodTelemetryLogger(PowerTelemetryLogger):

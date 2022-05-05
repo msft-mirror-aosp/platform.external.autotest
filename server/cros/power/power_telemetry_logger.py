@@ -387,8 +387,10 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         self._pac_gpio_file = config['gpio']
         self._resultsdir = resultsdir
         self.pac_path = self._get_pacman_install_path()
-        self.pac_data_path = os.path.join(self.pac_path, 'Data',
-                                          str(time.time()))
+        self.pac_data_path = os.path.join(resultsdir, 'pac')
+
+        os.makedirs(self.pac_data_path, exist_ok=True)
+
         # Check if pacman is able to run
         try:
             subprocess.check_output('pacman.py', timeout=5, cwd=self.pac_path)
@@ -476,8 +478,7 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         }
         """
         loggers = list()
-        accumulator_path = os.path.join(
-                *[self.pac_data_path, 'accumulatorData.csv'])
+        accumulator_path = os.path.join(self.pac_data_path, 'accumulatorData.csv')
         if not os.path.exists(accumulator_path):
             raise error.TestError('Unable to locate pacman results!')
         # Load resulting pacman csv file

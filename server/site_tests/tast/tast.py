@@ -123,6 +123,7 @@ class tast(test.test):
     _VERSION_TIMEOUT_SEC = 10
     _DOWNLOAD_TIMEOUT_SEC = 120
     _LIST_TIMEOUT_SEC = 30
+    _LIST_TRIES = 2
 
     # Additional time to add to the run timeout (e.g. for collecting crashes and
     # logs).
@@ -341,7 +342,21 @@ class tast(test.test):
         self._ensure_bundles()
 
         # Shortcut if no test belongs to the specified test_exprs.
-        if not self._get_tests_to_run():
+        list_test_exception = None
+        has_tests_to_run = False
+        for i in range(self._LIST_TRIES):
+            try:
+                if i > 0:
+                    logging.info('Retrying to get which tests to run')
+                has_tests_to_run = bool(self._get_tests_to_run())
+                list_test_exception = None
+                break
+            except Exception as e:
+                list_test_exception = e
+        if list_test_exception:
+            raise error.TestFail('Failed to get list of tests to run: %s' %
+                                 str(list_test_exception))
+        if not has_tests_to_run:
             return
 
         # TODO(b/221333999): There are no devservers in CFT (F20), so this

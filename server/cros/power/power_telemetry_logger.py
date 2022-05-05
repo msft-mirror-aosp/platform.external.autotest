@@ -404,6 +404,8 @@ class PacTelemetryLogger(PowerTelemetryLogger):
     def _start_measurement(self):
         """Start a pacman thread with the given config, mapping, and gpio files."""
 
+        self._log = open(os.path.join(self.pac_data_path, "pac.log"), "a")
+
         self._pacman_args = [
                 '--config', self._pac_config_file, '--mapping',
                 self._pac_mapping_file, '--gpio', self._pac_gpio_file,
@@ -414,7 +416,10 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         cmds = ['pacman.py'] + self._pacman_args
         logging.debug(cmds)
 
-        self._pacman_process = subprocess.Popen(cmds, cwd=self.pac_path)
+        self._pacman_process = subprocess.Popen(cmds,
+                                                cwd=self.pac_path,
+                                                stdout=self._log,
+                                                stderr=self._log)
 
     def _end_measurement(self):
         """Stop pacman thread. This will dump and process the accumulators."""
@@ -422,6 +427,8 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         self._pacman_process.wait(timeout=10)
         self._load_and_trim_data(None, None)
         self._export_data_locally(self._resultsdir)
+
+        self._log.close()
 
     def _get_pacman_install_path(self):
         """Return the absolute path of pacman on the host.

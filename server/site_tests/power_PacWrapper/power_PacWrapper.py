@@ -36,4 +36,4 @@ class power_PacWrapper(power_base_wrapper.PowerBaseWrapper):
         return self._pacman_telemetry_logger
 
     def postprocess(self):
-        self._pacman_telemetry_logger.output_pacman_aggregates(self)
+        self._pacman_telemetry_logger.output_pacman_rail_averages(self)

@@ -384,6 +384,7 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         self._resultsdir = resultsdir
         self.pac_path = self._get_pacman_install_path()
         self.pac_data_path = os.path.join(resultsdir, 'pac')
+        self._processed_log = None
 
         os.makedirs(self.pac_data_path, exist_ok=True)
 
@@ -419,8 +420,6 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         """Stop pacman thread. This will dump and process the accumulators."""
         self._pacman_process.send_signal(2)
         self._pacman_process.wait(timeout=10)
-        self._load_and_trim_data(None, None)
-        self._export_data_locally(self._resultsdir)
 
         self._log.close()
 
@@ -479,54 +478,91 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         }
         """
         loggers = list()
-        accumulator_path = os.path.join(self.pac_data_path, 'accumulatorData.csv')
-        if not os.path.exists(accumulator_path):
+        time_data = list()
+        timelog_path = os.path.join(self.pac_data_path, 'timeLog.csv')
+        if not os.path.exists(timelog_path):
             raise error.TestError('Unable to locate pacman results!')
         # Load resulting pacman csv file
         try:
-            with open(accumulator_path, 'r') as csvfile:
+            with open(timelog_path, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 # Capture the first line
                 schema = next(reader)
                 # First column is an index
                 schema[0] = 'index'
-                # Place data into a dictionary
-                self._accumulator_data = list()
                 for row in reader:
                     measurement = dict(zip(schema, row))
-                    self._accumulator_data.append(measurement)
+                    measurement['systime'] = float(measurement['systime'])
+                    measurement['power'] = float(measurement['power'])
+                    time_data.append(measurement)
         except OSError:
             raise error.TestError('Unable to open pacman accumulator results!')
 
+        filtered_data = list()
+        if (start_ts is not None) and (end_ts is not None):
+            filtered_data.extend([
+                    x for x in time_data
+                    if x['systime'] >= start_ts and x['systime'] < end_ts
+            ])
+        else:
+            filtered_data.extend([
+                    x for x in time_data
+            ])
+            start_ts = end_ts = 0
+
+        if len(filtered_data) > 2:
+            sample_duration = filtered_data[-1]['systime'] - filtered_data[0][
+                    'systime']
+        else:
+            sample_duration = end_ts - start_ts
+
+        all_rails = sorted(set([x['rail'] for x in filtered_data]))
+        data_by_rail = {}
+        for rail in all_rails:
+            data_by_rail[rail] = [
+                    x['power'] for x in filtered_data if x['rail'] == rail
+            ]
+        # need to compile all rail lengths, take minimum. power_dashboard
+        # upload does not handle mismatched lengths, and the first log
+        # may be longer than others
+        sample_counts = set([len(data_by_rail[rail]) for rail in data_by_rail])
+        if len(sample_counts) == 0:
+            sample_count = 0
+        else:
+            sample_count = min(sample_counts)
+
         # Match required logger format
         log = {
-                'sample_count': 1,
-                'sample_duration': float(self._accumulator_data[0]['tAccum']),
-                'data': {
-                        x['Rail']: [float(x['Average Power (w)'])]
-                        for x in self._accumulator_data
-                },
+                'sample_count': sample_count,
+                'sample_duration': sample_duration,
+                'data': {rail: data_by_rail[rail][0:sample_count]
+                         for rail in all_rails},
                 'average': {
-                        x['Rail']: float(x['Average Power (w)'])
-                        for x in self._accumulator_data
+                        rail: numpy.average(data_by_rail[rail])
+                        for rail in all_rails
                 },
-                'unit': {x['Rail']: 'watts'
-                         for x in self._accumulator_data},
-                'type': {x['Rail']: 'pacman'
-                         for x in self._accumulator_data},
+                'unit': {x: 'watt'
+                         for x in all_rails},
+                'type': {x: 'power'
+                         for x in all_rails},
         }
         loggers.append(log)
+        if self._processed_log == None:
+            self._processed_log = log
         return loggers
 
-    def output_pacman_aggregates(self, test):
+    def output_pacman_rail_averages(self, test):
         """This outputs all the processed aggregate values to the results-chart.json
 
         @param test: the test.test object to use when outputting the
                     performance values to results-chart.json
         """
-        for rail in self._accumulator_data:
-            test.output_perf_value(rail['Rail'],
-                                   float(rail['Average Power (w)']),
+        if self._processed_log['sample_count'] == 0:
+            return
+
+        for rail in sorted(self._processed_log['average'].keys()):
+            test.output_perf_value("pac_power_rail_" + rail,
+                                   float(self._processed_log['average'][rail]),
                                    units='watts',
                                    replace_existing_values=True)
 
@@ -535,13 +571,6 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         self._local_pac_data_path = os.path.join(client_test_dir,
                                                  'pacman_data')
         shutil.copytree(self.pac_data_path, self._local_pac_data_path)
-
-    def _upload_data(self, loggers, checkpoint_logger):
-        """
-        _upload_data is defined as a pass as a hot-fix to external partners' lack
-        of access to the power_dashboard URL
-        """
-        pass
 
 
 class ServodTelemetryLogger(PowerTelemetryLogger):

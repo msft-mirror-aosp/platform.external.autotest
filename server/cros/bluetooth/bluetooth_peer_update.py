@@ -109,6 +109,20 @@ def is_commit_hash_equal(peer, target_commit):
     return commit == target_commit
 
 
+def is_chromeos_build_greater_or_equal(build1, build2):
+    """ Check if build1 is greater or equal to the build2"""
+    build1 = [int(key1) for key1 in build1.split('.')]
+    build2 = [int(key2) for key2 in build2.split('.')]
+    for key1, key2 in zip(build1, build2):
+        if key1 > key2:
+            return True
+        elif key1 == key2:
+            continue
+        else:
+            return False
+    return True
+
+
 def perform_update(force_system_packages_update, peer, target_commit,
                    latest_commit):
     """ Update the chameleond on the peer
@@ -452,11 +466,11 @@ def get_target_commit(host):
                     'target commit of the host %s is: %s from the '
                     'lab_next_commit', hostname, commit)
         else:
-            host_build = int(host.get_release_version().replace(".", ""))
+            host_build = host.get_release_version()
             lab_commit_map = content.get('lab_commit_map')
             for item in lab_commit_map:
                 build = item['build_version']
-                if host_build >= int(build.replace(".", "")):
+                if is_chromeos_build_greater_or_equal(host_build, build):
                     commit = item['chameleon_commit']
                     break
             else:

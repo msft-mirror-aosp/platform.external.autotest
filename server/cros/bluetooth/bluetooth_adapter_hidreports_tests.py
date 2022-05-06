@@ -43,7 +43,7 @@ class BluetoothAdapterHIDReportTests(
 
 
     def run_keyboard_tests(self, device):
-        """Run all bluetooth mouse reports tests.
+        """Run all bluetooth keyboard reports tests.
 
         @param device: the bluetooth HID device.
 

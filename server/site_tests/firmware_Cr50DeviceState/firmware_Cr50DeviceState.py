@@ -103,12 +103,8 @@ class firmware_Cr50DeviceState(Cr50Test):
     INCREASE = '+'
     DS_RESUME = 'DS'
 
-    MEM_SLEEP_PATH = '/sys/power/mem_sleep'
-    MEM_SLEEP_S0IX = 'echo %s > %s ; sleep 1' % ('s2idle', MEM_SLEEP_PATH)
-    MEM_SLEEP_S3 = 'echo %s > %s ; sleep 1' % ('deep', MEM_SLEEP_PATH)
-    POWER_STATE_PATH = '/sys/power/state'
-    POWER_STATE_S0IX = 'echo %s > %s' % ('freeze', POWER_STATE_PATH)
-    POWER_STATE_S3 = 'echo %s > %s' % ('mem', POWER_STATE_PATH)
+    TMP_POWER_MANAGER_PATH = '/tmp/power_manager'
+    POWER_MANAGER_PATH = '/var/lib/power_manager'
     # TODO(mruthven): remove ec chan restriction once soraka stops spamming host
     # command output. The extra activity makes it look like a interrupt storm on
     # the EC uart.
@@ -135,22 +131,29 @@ class firmware_Cr50DeviceState(Cr50Test):
             irq_s0ix_deep_sleep_key = 'S0ix' + self.DEEP_SLEEP_STEP_SUFFIX
             self.EXPECTED_IRQ_COUNT_RANGE[irq_s0ix_deep_sleep_key] = [0, 2]
 
-        self.generate_suspend_commands()
+    def mount_power_config(self):
+        """Mounts power_manager settings to tmp,
+        ensuring that any changes do not persist across reboots
+        """
+        self.faft_client.system.run_shell_command(
+                'mkdir -p %s && \
+            echo 0 > %s/suspend_to_idle && \
+            mount --bind %s %s && \
+            restart powerd' %
+                (self.TMP_POWER_MANAGER_PATH, self.TMP_POWER_MANAGER_PATH,
+                 self.TMP_POWER_MANAGER_PATH, self.POWER_MANAGER_PATH), True)
 
+    def umount_power_config(self):
+        """Unmounts power_manager settings"""
+        self.faft_client.system.run_shell_command(
+                'umount %s && restart powerd' % self.POWER_MANAGER_PATH, True)
 
-    def generate_suspend_commands(self):
-        """Generate the S3 and S0ix suspend commands"""
-        s0ix_cmds = []
-        s3_cmds = []
-        if self.host.path_exists(self.MEM_SLEEP_PATH):
-            s0ix_cmds.append(self.MEM_SLEEP_S0IX)
-            s3_cmds.append(self.MEM_SLEEP_S3)
-        s0ix_cmds.append(self.POWER_STATE_S0IX)
-        s3_cmds.append(self.POWER_STATE_S3)
-        self._s0ix_cmds = '; '.join(s0ix_cmds)
-        self._s3_cmds = '; '.join(s3_cmds)
-        logging.info('S0ix cmd: %r', self._s0ix_cmds)
-        logging.info('S3 cmd: %r', self._s3_cmds)
+    def set_suspend_to_idle(self, value):
+        """Set suspend_to_idle by writing to power_manager settings"""
+        # Suspend to idle expects 0/1 so %d is used
+        self.faft_client.system.run_shell_command(
+                'echo %d > %s/suspend_to_idle' %
+                (value, self.TMP_POWER_MANAGER_PATH), True)
 
 
     def log_sleep_debug_information(self):
@@ -421,16 +424,15 @@ class firmware_Cr50DeviceState(Cr50Test):
             self.ec.send_command('chan 0x%x' % self.CHAN_RESTRICTED)
         else:
             if state == 'S0ix':
-                full_command = self._s0ix_cmds
-                block = False
+                self.set_suspend_to_idle(True)
+                self.suspend()
             elif state == 'S3':
-                full_command = self._s3_cmds
-                block = False
+                self.set_suspend_to_idle(False)
+                self.suspend()
             elif state == 'G3':
-                full_command = 'poweroff'
-            self.faft_client.system.run_shell_command(full_command, block)
+                self.faft_client.system.run_shell_command('poweroff', True)
 
-        time.sleep(self.SHORT_WAIT);
+        time.sleep(self.SHORT_WAIT)
         # check state transition
         if not self.wait_power_state(state, self.SHORT_WAIT):
             raise error.TestFail('Platform failed to reach %s state.' % state)
@@ -522,11 +524,15 @@ class firmware_Cr50DeviceState(Cr50Test):
         client_at = autotest.Autotest(self.host)
         client_at.run_test('login_LoginSuccess')
 
-        if self.s0ix_supported:
-            self.verify_state('S0ix')
+        self.mount_power_config()
+        try:
+            if self.s0ix_supported:
+                self.verify_state('S0ix')
 
-        if self.s3_supported:
-            self.verify_state('S3')
+            if self.s3_supported:
+                self.verify_state('S3')
+        finally:
+            self.umount_power_config()
 
         # Enter G3
         self.verify_state('G3')

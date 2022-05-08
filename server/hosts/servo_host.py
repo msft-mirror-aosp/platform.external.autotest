@@ -334,7 +334,12 @@ class ServoHost(base_servohost.BaseServoHost):
             # xmlrpc/httplib is not thread-safe, so each thread must have its
             # own separate proxy connection.
             if not hasattr(self._local, "_per_thread_proxy"):
-                remote = 'http://%s:%s' % (self.hostname, self.servo_port)
+                if self.is_containerized_servod():
+                    ip_addr = docker_utils.get_container_ip(self.hostname)
+                    remote = 'http://%s:%s' % (ip_addr, self.servo_port)
+                else:
+                    remote = 'http://%s:%s' % (self.hostname, self.servo_port)
+                logging.debug('Servo Proxy RPC URL: %s', remote)
                 self._local._per_thread_proxy = six.moves.xmlrpc_client.ServerProxy(remote)
             return self._local._per_thread_proxy
 

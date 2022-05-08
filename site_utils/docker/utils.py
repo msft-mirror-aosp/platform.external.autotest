@@ -64,3 +64,25 @@ def get_container_networks(container_name, client=None):
     else:
         container = client.containers.get(container_name)
         return container.attrs['NetworkSettings']['Networks'].keys()
+
+
+def get_container_ip(container_name, client=None):
+    """
+    Return the IP Address of networks of the container. Return None if container is not found.
+    """
+    if client is None:
+        client = get_docker_client()
+    try:
+        container = client.containers.get(container_name)
+        if container and container.status == 'running':
+            container_network = os.environ.get("DOCKER_DEFAULT_NETWORK",
+                                               "default_satlab")
+            return container.attrs['NetworkSettings']['Networks'][
+                    container_network]['IPAddress']
+        logging.exception("Servod container %s found but not running",
+                          container_name)
+    except docker.errors.APIError:
+        logging.exception("Failed to access servod container.")
+    except docker.errors.NotFound:
+        logging.exception("Servod container %s Not Found", container_name)
+    return None

@@ -82,12 +82,16 @@ class TelemetryRunnerFactory(object):
     Factory class while determining the correct TelemetryRunner subclass.
     """
 
-    def get_runner(self, host, local=False, telemetry_on_dut=True):
+    def get_runner(self,
+                   host,
+                   local=False,
+                   telemetry_on_dut=True,
+                   is_lacros=False):
         """Method to determine which TelemetryRunner subclass to use."""
         if local:
             return LocalTelemetryRunner(host, telemetry_on_dut)
         else:
-            return DroneTelemetryRunner(host, telemetry_on_dut)
+            return DroneTelemetryRunner(host, telemetry_on_dut, is_lacros)
 
 
 class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
@@ -98,7 +102,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
     output to the caller.
     """
 
-    def __init__(self, host, telemetry_on_dut=True):
+    def __init__(self, host, telemetry_on_dut=True, is_lacros=False):
         """Initializes this telemetry runner instance.
 
         If telemetry is not installed for this build, it will be.
@@ -107,6 +111,9 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         @param telemetry_on_dut: If set, telemetry itself (the test harness)
                                  will run on dut.
                                  It decides browser=[system|cros-chrome]
+        @param is_lacros: If true, run telemetry on lacros chrome, by defining
+                          browser=lacros-chrome. It is only valid for remote
+                          test mode.
         """
         self._host = host
         self._telemetry_path = None
@@ -114,6 +121,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         self._setup_telemetry()
         self._telemetry_on_dut = telemetry_on_dut
         self._benchmark_deps = None
+        self._is_lacros = is_lacros
         logging.debug('Telemetry Path: %s', self._telemetry_path)
 
     def __enter__(self):
@@ -165,10 +173,11 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
                     '--browser=system',
             ])
         else:
+            browser = 'lacros-chrome' if self._is_lacros else 'cros-chrome'
             telemetry_cmd.extend([
                     sys.executable,
                     script,
-                    '--browser=cros-chrome',
+                    '--browser=%s' % browser,
                     '--output-format=%s' % output_format,
                     '--output-dir=%s' % output_dir,
                     '--remote=%s' % self._host.hostname,

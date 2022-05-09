@@ -360,8 +360,7 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         @returns: True if all the time differences between reports are
                   less than the tolerance.
         """
-        reports_len = len(reports)
-        if reports_len <= 1:
+        if len(reports) <= 1:
             return True
 
         tolerance = tolerable_deviation * QR_EVENT_PERIOD
@@ -374,7 +373,7 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
                     if report['quality_report_id'] == '1'
             ]
 
-        for i in range(1, reports_len):
+        for i in range(1, len(reports)):
             time_diff = (float(reports[i][START_TIME_SUBEVT]) -
                          float(reports[i - 1][END_TIME_SUBEVT]))
 

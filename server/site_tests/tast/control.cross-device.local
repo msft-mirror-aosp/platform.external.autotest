@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
-NAME = 'tast.cross-device-android.local'
+NAME = 'tast.cross-device.local'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 1024 * 1024

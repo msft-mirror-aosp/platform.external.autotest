@@ -45,8 +45,8 @@ class Hcitool(object):
                     self.HCI_COMMAND_COMPLETE_EVENT + ' but got ' + event_type)
 
         if len(event_bytearray) != plen_value:
-            raise error.TestError('Expect plen value of %d but got %d',
-                                  plen_value, len(event_bytearray))
+            raise error.TestError('Expect plen value of ' + str(plen_value) +
+                                  'but got ' + str(len(event_bytearray)))
 
         if status != self.CONTROLLER_PASS_CODE_VALUE:
             return [status]
@@ -81,8 +81,8 @@ class Hcitool(object):
         execute_command_result = self._execute_hcitool_cmd(
                 btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_BUFFER_SIZE)
         if execute_command_result[0] != self.CONTROLLER_PASS_CODE_VALUE:
-            raise error.TestError('Unexpected command output, status code %d',
-                                  execute_command_result[0])
+            raise error.TestError('Unexpected command output, status code ' +
+                                  str(execute_command_result[0]))
         return execute_command_result
 
     def read_local_supported_features(self):
@@ -95,8 +95,8 @@ class Hcitool(object):
 
         status = execute_command_result[0]
         if status != self.CONTROLLER_PASS_CODE_VALUE:
-            raise error.TestError('Unexpected command output, status code %d',
-                                  status)
+            raise error.TestError('Unexpected command output, status code ' +
+                                  str(status))
         lmp_features_mask = execute_command_result[1]
         supported_features = SupportedFeatures.SUPPORTED_FEATURES_PAGE_ZERO
         final_result = self.filter_with_mask(supported_features,
@@ -113,16 +113,16 @@ class Hcitool(object):
         """
         if page_number not in (0, 1, 2):
             raise error.TestError(
-                    'Invalid page_number: want (0, 1, 2), actual: %d',
-                    page_number)
+                    'Invalid page_number: want (0, 1, 2), actual: ' +
+                    str(page_number))
         execute_command_result = self._execute_hcitool_cmd(
                 btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_LOCAL_EXT_FEATURES,
                 str(page_number))
 
         status = execute_command_result[0]
         if status != self.CONTROLLER_PASS_CODE_VALUE:
-            raise error.TestError('Unexpected command output, status code %d',
-                                  status)
+            raise error.TestError('Unexpected command output, status code ' +
+                                  str(status))
         return_page_number = execute_command_result[1]
         maximum_page_number = execute_command_result[2]
         extended_mask = execute_command_result[3]
@@ -150,8 +150,8 @@ class Hcitool(object):
 
         status = execute_command_result[0]
         if status != self.CONTROLLER_PASS_CODE_VALUE:
-            raise error.TestError('Unexpected command output, status code %d',
-                                  status)
+            raise error.TestError('Unexpected command output, status code ' +
+                                  str(status))
         le_features_mask = execute_command_result[1]
         le_supported_features = SupportedFeatures.LE_SUPPORTED_FEATURE
         final_result = self.filter_with_mask(le_supported_features,
@@ -172,9 +172,6 @@ class Hcitool(object):
                 btsocket.OGF_HOST_CTL, btsocket.OCF_SET_EVENT_FLT, filter_type,
                 filter_condition_type, condition)
 
-        if execute_command_result[0] != self.CONTROLLER_PASS_CODE_VALUE:
-            raise error.TestError('Unexpected command output, status code %d',
-                                  execute_command_result[0])
         return execute_command_result
 
     def read_local_supported_commands(self):

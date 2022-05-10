@@ -29,6 +29,8 @@ class bluetooth_AVLHCI(test.test):
                          ['1', '2', '00 17 C0 AA AA AA'],
                          ['1', '2', '00 17 08 AA AA AA'],
                          ['1', '2', '00 16 EA AA AA AA']]
+    CONTROLLER_MEMORY_FULL_STATUS_VALUE = 7
+    CONTROLLER_SUCCESS_STATUS_VALUE = 0
 
     def initialize(self):
         """Initializes Autotest."""
@@ -70,8 +72,8 @@ class bluetooth_AVLHCI(test.test):
             logging.info('%s is supported',
                          self.ERRONEOUS_DATA_REPORTING_FEATURE)
         else:
-            raise error.TestFail(
-                    self.ERRONEOUS_DATA_REPORTING_FEATURE + ' not supported', )
+            raise error.TestFail(self.ERRONEOUS_DATA_REPORTING_FEATURE +
+                                 ' not supported')
 
     def event_filter_size_test(self):
         """Checks the Bluetooth controller event filter entries count.
@@ -79,13 +81,23 @@ class bluetooth_AVLHCI(test.test):
         Checks the Bluetooth controller event filter has at least 8 entries.
         """
         logging.info('** Running Bluetooth event filter size test:')
+        number_of_added_filters = 0
         for event_filter in self.MAC_EVENT_FILTERS:
             set_filter_result = self.hcitool.set_event_filter(
                     event_filter[0], event_filter[1], event_filter[2])[0]
-            if set_filter_result:  # success status is 0
+            if set_filter_result == self.CONTROLLER_MEMORY_FULL_STATUS_VALUE:
                 self.facade.reset_on()
                 raise error.TestFail('Filter ' + ''.join(event_filter) +
-                                     ' failed to apply')
+                                     ' failed to apply. Only ' +
+                                     str(number_of_added_filters) +
+                                     ' filters were added')
+
+            elif set_filter_result != self.CONTROLLER_SUCCESS_STATUS_VALUE:
+                self.facade.reset_on()
+                raise error.TestError(
+                        'Failed to apply filter, status code is ' +
+                        set_filter_result)
+            number_of_added_filters += 1
         logging.info(
                 'All 8 event filters were set successfully with values %s',
                 self.MAC_EVENT_FILTERS)

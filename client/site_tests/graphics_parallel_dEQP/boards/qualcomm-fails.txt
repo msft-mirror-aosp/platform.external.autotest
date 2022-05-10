@@ -1,4 +1,4 @@
-dEQP-VK.info.instance_extensions
+dEQP-VK.info.instance_extensions,Fail
 
 dEQP-VK.spirv_assembly.instruction.compute.float_controls.fp16.generated_args.denorm_nclamp_nan_flush_to_zero_nostorage,Fail
 dEQP-VK.spirv_assembly.instruction.compute.float_controls.fp16.generated_args.denorm_nmax_nan_flush_to_zero_nostorage,Fail

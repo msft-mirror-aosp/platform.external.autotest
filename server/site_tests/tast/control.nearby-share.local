@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
-NAME = 'tast.nearby-share-android.local'
+NAME = 'tast.nearby-share.local'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 1024 * 1024
@@ -12,7 +12,7 @@ PY_VERSION = 3
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
-DOC = '''Run the Tast Nearby Share test suite with Skylab's Android support locally.
+DOC = '''Run the Tast Nearby Share test suites locally.
 
 This control file will setup the chromebook and android phone for you if you want to run locally.
 Locally means kicking off via test_that to run against either:
@@ -23,6 +23,8 @@ NOTE: Labstations store their adb keys at /var/lib/android_keys (and this gets w
 
 You need to specify the wifi network details below that the chromebook and phone should be on together.
 Set <SET NETWORK NAME> to your SSID and <SET PASSWORD> to your network password.
+You also need to set the nearby share suite NAME
+Set <NEARBY SUITE NAME> to the suite you want to run. e.g nearby-share, nearby-share-arc, nearby-share-dev, nearby-share-prod
 
 These args are expected to be passed to test_that:
 --args="phone_station=$PHONE_HOST android_serial=$ANDROID_SERIAL_NUMBER"
@@ -56,7 +58,7 @@ def run(machine):
 
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:nearby-share")'],
+                 test_exprs=['("group:<NEARBY SUITE NAME>")'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=args,
                  varslist=[ip_address_arg])

@@ -247,6 +247,8 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.dut_btmon_log_path = self.start_new_btmon()
         self.start_new_usbmon()
 
+        self.identify_platform_failure_reasons()
+
         self.flag = flag
         self.test_iter = None
 
@@ -625,7 +627,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                   @param test_name: specifc test to run otherwise None to run
                                     the whole batch
                 """
-                self.identify_platform_failure_reasons()
                 if test_name is not None:
                     single_test_method = getattr(self,  test_name)
                     for iter in range(1,num_iterations+1):

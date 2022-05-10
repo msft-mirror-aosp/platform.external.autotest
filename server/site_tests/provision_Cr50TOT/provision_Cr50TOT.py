@@ -12,7 +12,7 @@ import os
 from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
-from autotest_lib.server.cros import filesystem_util, gsutil_wrapper
+from autotest_lib.server.cros import gsutil_wrapper
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
@@ -114,5 +114,5 @@ class provision_Cr50TOT(FirmwareTest):
                 timeout=self.faft_config.gsc_update_wait_for_reboot)
         cr50_version = self.cr50.get_active_version_info()[3].split('/')[-1]
         logging.info('Cr50 running %s after update', cr50_version)
-        filesystem_util.make_rootfs_writable(self.host)
+        self.make_rootfs_writable()
         cr50_utils.InstallImage(self.host, local_path, cr50_utils.CR50_PREPVT)

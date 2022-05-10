@@ -222,13 +222,13 @@ class Cr50Test(FirmwareTest):
             logging.info('Running qual image. No update needed.')
             return
         logging.info('Cr50 qual update required.')
-        self.make_rootfs_writeable()
+        self.make_rootfs_writable()
         self._update_device_images_and_running_cr50_firmware(
                 qual_state, qual_path, prod_path, prepvt_path)
         logging.info("Recording qual device state as 'original' device state")
         self._save_original_state(qual_path)
 
-    def make_rootfs_writeable(self):
+    def make_rootfs_writable(self):
         """Make rootfs writeable. Recover the dut if necessary."""
         path = None
         try:

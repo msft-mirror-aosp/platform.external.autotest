@@ -8,7 +8,6 @@ import logging
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import cr50_utils
-from autotest_lib.server.cros import filesystem_util
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
 
@@ -254,7 +253,7 @@ class firmware_Cr50BID(Cr50Test):
 
         if install_image:
             # Disable rootfs verification so we can copy the image to the DUT
-            filesystem_util.make_rootfs_writable(self.host)
+            self.make_rootfs_writable()
             # Copy the universal image onto the DUT.
             dest, ver = cr50_utils.InstallImage(self.host, self.universal_path,
                     path)

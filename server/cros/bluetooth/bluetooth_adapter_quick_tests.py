@@ -286,11 +286,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
-           (test_start and test_end).
+           (reset/cleanup/logging).
 
            @param test_name: the name of the test to log.
-           @param devices:   list of device names which are going to be used
-                             in the following test.
+           @param devices: map of the device types and the quantities needed for
+                           the test.
+                           For example, {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
            @param flags: list of string to describe who should run the
                          test. The string could be one of the following:
                          ['AVL', 'Quick Health', 'All'].
@@ -311,12 +312,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                       whole test (i.e. advertising) and any
                                       outside failure will cause the test to
                                       fail.
-          @param supports_floss: Does this test support running on Floss?
-          @param use_all_peers: Set number of devices to be used to the
-                                maximum available. This is used for tests
-                                like bluetooth_PeerVerify which uses all
-                                available peers. Specify only one device type
-                                if this is set to true
+           @param supports_floss: Does this test support running on Floss?
+           @param use_all_peers: Set number of devices to be used to the
+                                 maximum available. This is used for tests
+                                 like bluetooth_PeerVerify which uses all
+                                 available peers. Specify only one device type
+                                 if this is set to true
         """
 
         def decorator(test_method):
@@ -325,46 +326,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                @returns the wrapper of the test method.
             """
 
-            def _check_runnable(self):
-                """Check if the test could be run"""
-
-                # Check that the test is runnable in current setting
-                if not(self.flag in flags or 'All' in flags):
-                    logging.info('SKIPPING TEST %s', test_name)
-                    logging.info('flag %s not in %s', self.flag, flags)
-                    self._print_delimiter()
-                    return False
-
-                # If the current test was to run with Floss, the test must
-                # support running with Floss.
-                if self.floss:
-                    return supports_floss
-
-                return True
-
-            def _is_enough_peers_present(self):
-                """Check if enough peer devices are available."""
-
-                # Check that btpeer has all required devices before running
-                for device_type, number in devices.items():
-                    if self.available_devices.get(device_type, 0) < number:
-                        logging.info('SKIPPING TEST %s', test_name)
-                        logging.info('%s not available', device_type)
-                        self._print_delimiter()
-                        return False
-
-                # Check if there are enough peers
-                total_num_devices = sum(devices.values())
-                if total_num_devices > len(self.host.btpeer_list):
-                    logging.info('SKIPPING TEST %s', test_name)
-                    logging.info(
-                            'Number of devices required %s is greater'
-                            'than number of peers available %d',
-                            total_num_devices, len(self.host.btpeer_list))
-                    self._print_delimiter()
-                    return False
-                return True
-
             @functools.wraps(test_method)
             def wrapper(self):
                 """A wrapper of the decorated method."""
@@ -372,29 +333,18 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                 # failing tests
                 self.test_name = test_name
 
-                # Every test_method should pass by default.
-                # This should be placed in the beginning of the wrapper before
-                # executing any self.test_xxx tests. This statement should not
-                # be placed inside quick_test_test_start(). If there are any
-                # exceptions raised in the try block below, the
-                # quick_test_test_end() which contains self.test_xxx tests
-                # would be executed without the _expected_result attribute
-                # getting populated.
-                self._expected_result = True
+                # Check that the test is runnable in current setting
+                if not (self.flag in flags or 'All' in flags):
+                    logging.info('SKIPPING TEST %s', test_name)
+                    logging.info('flag %s not in %s', self.flag, flags)
+                    self._print_delimiter()
+                    return
 
-                if not _check_runnable(self):
+                # Server specific runnable check.
+                if not self.quick_test_test_runnable(supports_floss):
                     return
 
                 try:
-                    if use_all_peers:
-                        if devices != {}:
-                            devices[list(devices.keys())[0]] = len(
-                                    self.host.btpeer_list)
-
-                    if not _is_enough_peers_present(self):
-                        logging.info('Not enough peer available')
-                        raise error.TestNAError('Not enough peer available')
-
                     model = self.get_base_platform_name()
                     if model in skip_models:
                         logging.info('SKIPPING TEST %s', test_name)
@@ -409,7 +359,12 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         raise error.TestNAError(
                                 'Test not supported on this chipset')
 
-                    self.quick_test_test_start(test_name, devices)
+                    # Server specific pretest checks and resets.
+                    self.quick_test_test_pretest(test_name, devices,
+                                                 use_all_peers)
+
+                    self._print_delimiter()
+                    logging.info('Starting test: %s', test_name)
 
                     test_method(self)
                 except error.TestError as e:
@@ -433,21 +388,80 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                     logging.exception(fail_msg)
                     self.fails.append(fail_msg)
 
-                self.quick_test_test_end(model_testNA=model_testNA,
-                                         model_testWarn=model_testWarn,
-                                         skip_common_errors=skip_common_errors)
+                self.quick_test_test_log_results(
+                        model_testNA=model_testNA,
+                        model_testWarn=model_testWarn,
+                        skip_common_errors=skip_common_errors)
+
+                # Server specific posttest cleanups.
+                self.quick_test_test_posttest()
 
             return wrapper
 
         return decorator
 
 
-    def quick_test_test_start(
-            self, test_name=None, devices={}):
-        """Start a quick test. The method clears and restarts adapter on DUT
-           as well as peer devices. In addition the methods prints test start
-           traces.
+    def quick_test_test_runnable(self, supports_floss):
+        """Checks if the test could be run."""
+
+        # If the current test was to run with Floss, the test must
+        # support running with Floss.
+        if self.floss:
+            return supports_floss
+
+        return True
+
+    def quick_test_test_pretest(self,
+                                test_name=None,
+                                devices={},
+                                use_all_peers=False):
+        """Runs pretest checks and resets DUT's adapter and peer devices.
+
+           @param test_name: the name of the test to log.
+           @param devices: map of the device types and the quantities needed for
+                           the test.
+                           For example, {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
+           @param use_all_peers: Set number of devices to be used to the
+                                 maximum available. This is used for tests
+                                 like bluetooth_PeerVerify which uses all
+                                 available peers. Specify only one device type
+                                 if this is set to true
         """
+
+        def _is_enough_peers_present(self):
+            """Checks if enough peer devices are available."""
+
+            # Check that btpeer has all required devices before running
+            for device_type, number in devices.items():
+                if self.available_devices.get(device_type, 0) < number:
+                    logging.info('SKIPPING TEST %s', test_name)
+                    logging.info('%s not available', device_type)
+                    self._print_delimiter()
+                    return False
+
+            # Check if there are enough peers
+            total_num_devices = sum(devices.values())
+            if total_num_devices > len(self.host.btpeer_list):
+                logging.info('SKIPPING TEST %s', test_name)
+                logging.info(
+                        'Number of devices required %s is greater'
+                        'than number of peers available %d', total_num_devices,
+                        len(self.host.btpeer_list))
+                self._print_delimiter()
+                return False
+            return True
+
+        if use_all_peers:
+            if devices != {}:
+                devices[list(devices.keys())[0]] = len(self.host.btpeer_list)
+
+        if not _is_enough_peers_present(self):
+            logging.info('Not enough peer available')
+            raise error.TestNAError('Not enough peer available')
+
+        # Every test_method should pass by default.
+        self._expected_result = True
+
         # Bluetoothd could have crashed behind the scenes; check to see if
         # everything is still ok and recover if needed.
         self.test_is_facade_valid()
@@ -467,17 +481,15 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         # Start and peer HID devices
         self.start_peers(devices)
 
-        if test_name is not None:
-            time.sleep(self.TEST_SLEEP_SECS)
-            self._print_delimiter()
-            logging.info('Starting test: %s', test_name)
-            self.log_message('Starting test: %s'% test_name)
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.log_message('Starting test: %s' % test_name)
 
-    def quick_test_test_end(self,
-                            model_testNA=[],
-                            model_testWarn=[],
-                            skip_common_errors=False):
-        """Log and track the test results"""
+    def quick_test_test_log_results(self,
+                                    model_testNA=[],
+                                    model_testWarn=[],
+                                    skip_common_errors=False):
+        """Logs and tracks the test results."""
+
         result_msgs = []
         model = self.get_base_platform_name()
 
@@ -529,14 +541,18 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
             self.pkg_fail_count += 1
 
         logging.info(result_msg)
-        self.log_message(result_msg)
         self._print_delimiter()
         self.bat_tests_results.append(result_msg)
         self.pkg_tests_results.append(result_msg)
 
-        if self.test_name is not None:
-            logging.info('Cleanning up and restarting towards next test...')
+    def quick_test_test_posttest(self):
+        """Runs posttest cleanups."""
 
+        logging.info('Cleanning up and restarting towards next test...')
+        self.log_message(self.bat_tests_results[-1])
+
+        # Every test_method should pass by default.
+        self._expected_result = True
 
         # Bluetoothd could have crashed behind the scenes; check if everything
         # is ok and recover if needed. This is done as part of clean-up as well

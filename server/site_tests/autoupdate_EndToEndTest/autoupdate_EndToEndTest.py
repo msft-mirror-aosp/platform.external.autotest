@@ -137,10 +137,17 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                     update_url, host=self._host,
                     is_release_bucket=True).run_provision()
 
-            self._run_client_test_and_check_result(self._LOGIN_TEST,
-                                                   tag='source')
+            self._run_client_test_and_check_result(
+                    self._LOGIN_TEST,
+                    tag='source',
+                    username=self._LOGIN_TEST_USERNAME,
+                    password=self._LOGIN_TEST_PASSWORD)
         # Start the update to the target image.
         self.run_update_test(test_conf, m2n)
 
         # Check we can login after the update.
-        self._run_client_test_and_check_result(self._LOGIN_TEST, tag='target')
+        self._run_client_test_and_check_result(
+                self._LOGIN_TEST,
+                tag='target',
+                username=self._LOGIN_TEST_USERNAME,
+                password=self._LOGIN_TEST_PASSWORD)

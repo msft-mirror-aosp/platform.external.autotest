@@ -39,12 +39,16 @@ class login_LoginSuccess(test.test):
     def run_once(self,
                  stress_run=False,
                  arc_mode=None,
+                 username=None,
+                 password=None,
                  dont_override_profile=False):
         """
         Runs the test.
 
         @param stress_run: True if we are doing a stress run and want to
                            double the timeout.
+        @param username: Username to use instead of the default telemetry one.
+        @param password: Password to use instead of the default telemetry one.
         @param arc_mode: This value is passed to Chrome and determines how
                          the ARC/Android instance should start. Possible values
                          are defined in common_lib/cros/arc_common.py.
@@ -55,6 +59,8 @@ class login_LoginSuccess(test.test):
             self._SESSION_STOP_TIMEOUT *= 2
         self._listener.listen_for_session_state_change('started')
         with chrome.Chrome(arc_mode=arc_mode,
+                           username=username,
+                           password=password,
                            dont_override_profile=dont_override_profile):
             self._listener.wait_for_signals(desc='Session started.',
                                             timeout=self._SESSION_START_TIMEOUT)

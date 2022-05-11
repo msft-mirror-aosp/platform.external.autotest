@@ -79,8 +79,11 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
             self._run_client_test_and_check_result(self._LOGIN_TEST_PIN,
                                                    tag='before')
         else:
-            self._run_client_test_and_check_result(self._LOGIN_TEST,
-                                                   tag='before')
+            self._run_client_test_and_check_result(
+                    self._LOGIN_TEST,
+                    username=self._LOGIN_TEST_USERNAME,
+                    password=self._LOGIN_TEST_PASSWORD,
+                    tag='before')
 
         # Record DUT state before the update.
         active, inactive = kernel_utils.get_kernel_state(self._host)
@@ -105,6 +108,9 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                                                    tag='after',
                                                    setup_pin=False)
         else:
-            self._run_client_test_and_check_result(self._LOGIN_TEST,
-                                                   tag='after',
-                                                   dont_override_profile=True)
+            self._run_client_test_and_check_result(
+                    self._LOGIN_TEST,
+                    tag='after',
+                    username=self._LOGIN_TEST_USERNAME,
+                    password=self._LOGIN_TEST_PASSWORD,
+                    dont_override_profile=True)

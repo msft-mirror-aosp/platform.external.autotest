@@ -95,6 +95,9 @@ class UpdateEngineUtil(object):
     # Feature name
     _REPEATED_UPDATES_FEATURE = 'feature-repeated-updates'
 
+    # Credentials to use for the fake login in login tests.
+    _LOGIN_TEST_USERNAME = 'autotest'
+    _LOGIN_TEST_PASSWORD = 'password'
 
     def __init__(self, run_func=_DEFAULT_RUN, get_file=_DEFAULT_COPY):
         """

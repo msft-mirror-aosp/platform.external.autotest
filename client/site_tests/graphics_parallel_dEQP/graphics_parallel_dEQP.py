@@ -35,6 +35,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
     _skips = []
     _fails = []
     _flakes = []
+    _api_helper = None
     # We do not consider these results as failures.
     TEST_RESULT_FILTER = [
         'pass', 'notsupported', 'internalerror', 'qualitywarning',
@@ -43,7 +44,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
 
     def initialize(self):
         """Initialize the test."""
-        super(graphics_parallel_dEQP, self).initialize()
+        super().initialize()
         self._api_helper = graphics_utils.GraphicsApiHelper()
         self._board = utils.get_board()
         self._cpu_type = utils.get_cpu_soc_family()
@@ -68,7 +69,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         """Clean up the test state from initialize()."""
         if self._services:
             self._services.restore_services()
-        super(graphics_parallel_dEQP, self).cleanup()
+        super().cleanup()
 
     def _get_executable(self, api):
         """Return the executable path of the api."""
@@ -84,16 +85,16 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
                                     'graphics_parallel_dEQP', 'boards',
                                     filename)
         try:
-            with open(expects_path) as f:
+            with open(expects_path, encoding='utf-8') as file:
                 logging.debug(
-                    'Reading board test list from {}'.format(expects_path))
-                return f.readlines()
-        except IOError as e:
-            logging.debug('No file found at {}'.format(expects_path))
+                    'Reading board test list from %s', format(expects_path))
+                return file.readlines()
+        except IOError as _:
+            logging.debug('No file found at %s', format(expects_path))
             return []
 
     def read_expectations(self, name):
-        """ """
+        """Appends the skips, fails and flakes files if they exist."""
         self._skips += self.read_file(name + '-skips.txt')
         self._fails += self.read_file(name + '-fails.txt')
         self._flakes += self.read_file(name + '-flakes.txt')
@@ -138,15 +139,15 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # Add any board-specific expectations. Lets hope we never need models.
         self.read_expectations(self._board)
 
-    def add_filter_arg(self, command, list, arg, filename):
+    def add_filter_arg(self, command, tests, arg, filename):
         """Adds an arg for xfail/skip/flake filtering if we made the file for it."""
-        if not list:
+        if not tests:
             return
 
         path = os.path.join(self._log_path, filename)
-        with open(path, 'w') as f:
-            for test in list:
-                f.write(test + '\n')
+        with open(path, 'w', encoding='utf-8') as file:
+            for test in tests:
+                file.write(test + '\n')
         command.append(arg + '=' + path)
 
     def run_once(self, opts=None):
@@ -177,12 +178,6 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
                          self._gpu_type, api)
             return
 
-        if options['perf_failure_description']:
-            self._test_failure_description = options['perf_failure_description']
-        else:
-            # Do not report failure if failure description is not specified.
-            self._test_failure_report_enable = False
-
         # Some information to help post-process logs.
         logging.info('ChromeOS BOARD = %s', self._board)
         logging.info('ChromeOS CPU family = %s', self._cpu_type)
@@ -208,15 +203,15 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         os.chdir(os.path.dirname(executable))
 
         command = ['deqp-runner', 'run']
-        command.append('--output=%s' % self._log_path)
-        command.append('--deqp=%s' % executable)
+        command.append(f'--output={self._log_path}')
+        command.append(f'--deqp={executable}')
         command.append('--testlog-to-xml=%s' % os.path.join(
             self._api_helper.get_deqp_dir(), 'executor', 'testlog-to-xml'))
-        command.append('--caselist=%s' % self._caselist)
+        command.append(f'--caselist={self._caselist}')
         if self._shard_number != 0:
-            command.append('--fraction-start=%d' % (self._shard_number + 1))
+            command.append(f'--fraction-start={self._shard_number + 1}')
         if self._shard_count != 1:
-            command.append('--fraction=%d' % self._shard_count)
+            command.append(f'--fraction={self._shard_count}')
 
         self.add_filter_arg(command, self._flakes, '--flakes',
                             'known_flakes.txt')
@@ -225,9 +220,9 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
                             'expected-fails.txt')
 
         command.append('--')
-        command.append('--deqp-surface-type=%s' % self._surface)
-        command.append('--deqp-surface-width=%s' % self._width)
-        command.append('--deqp-surface-height=%s' % self._height)
+        command.append(f'--deqp-surface-type={self._surface}')
+        command.append(f'--deqp-surface-width={self._width}')
+        command.append(f'--deqp-surface-height={self._height}')
         command.append('--deqp-gl-config-name=rgba8888d24s8ms0')
 
         # Must initialize because some errors don't repopulate
@@ -248,8 +243,10 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # Update failing tests to the chrome perf dashboard records.
         fails = []
         try:
-            with open(os.path.join(self._log_path,
-                                   'failures.csv')) as fails_file:
+            with open(
+                    os.path.join(
+                        self._log_path, 'failures.csv'),
+                        encoding='utf-8') as fails_file:
                 for line in fails_file.readlines():
                     fails.append(line)
                     self.add_failures(line)
@@ -276,24 +273,17 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
             for file in ['testlog.css', 'testlog.xsl']:
                 shutil.copy(os.path.join(stylesheet, file), self._log_path)
 
-        # TODO: We should have a chrome perf dashboard where we report the
-        # Flakes out of results.csv so we can preemptively manage the flakes
-        # list per board, to avoid causing run failures for known flakes when
-        # the automatic flake detection doesn't catch it.
         if fails:
             if len(fails) == 1:
-                raise error.TestFail('Failed test: {}'.format(fails[0]))
+                raise error.TestFail('Failed test: {format(fails[0])}')
             # We format the failure message so it is not too long and reasonably
             # stable even if there are a few flaky tests to simplify triaging
             # on stainless and testmon. We sort the failing tests and report
             # first and last failure.
             fails.sort()
-            fail_msg = 'Failed {} tests: '.format(len(fails))
+            fail_msg = 'Failed {format(len(fails))} tests: '
             fail_msg += fails[0].rstrip() + ', ..., ' + fails[-1].rstrip()
             fail_msg += ' (see failures.csv)'
             raise error.TestFail(fail_msg)
-        elif run_result.exit_status != 0:
-            raise error.TestFail('dEQP run failed with status code %d' %
-                                 run_result.exit_status)
-
-        # self.write_perf_keyval(test_results) # XXX
+        if run_result.exit_status != 0:
+            raise error.TestFail(f'dEQP run failed with status code {run_result.exit_status}')

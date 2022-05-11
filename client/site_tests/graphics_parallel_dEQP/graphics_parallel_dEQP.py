@@ -37,8 +37,8 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
     _flakes = []
     # We do not consider these results as failures.
     TEST_RESULT_FILTER = [
-            'pass', 'notsupported', 'internalerror', 'qualitywarning',
-            'compatibilitywarning', 'skipped'
+        'pass', 'notsupported', 'internalerror', 'qualitywarning',
+        'compatibilitywarning', 'skipped'
     ]
 
     def initialize(self):
@@ -55,7 +55,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         old_ld_path = self._env.get('LD_LIBRARY_PATH', '')
         if old_ld_path:
             self._env[
-                    'LD_LIBRARY_PATH'] = '/usr/local/lib:/usr/local/lib64:' + old_ld_path
+                'LD_LIBRARY_PATH'] = '/usr/local/lib:/usr/local/lib64:' + old_ld_path
         else:
             self._env['LD_LIBRARY_PATH'] = '/usr/local/lib:/usr/local/lib64'
 
@@ -86,10 +86,10 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         try:
             with open(expects_path) as f:
                 logging.debug(
-                        "Reading board test list from {}".format(expects_path))
+                    'Reading board test list from {}'.format(expects_path))
                 return f.readlines()
         except IOError as e:
-            logging.debug("No file found at {}".format(expects_path))
+            logging.debug('No file found at {}'.format(expects_path))
             return []
 
     def read_expectations(self, name):
@@ -127,7 +127,8 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
 
         We could avoid adding filters for other apis than the one being tested,
         but it's harmless to have unused tests in the lists and makes
-        copy-and-paste mistakes less likely."""
+        copy-and-paste mistakes less likely.
+        """
         # Add expectations common for all boards/chipsets.
         self.read_expectations('all-chipsets')
 
@@ -143,7 +144,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
             return
 
         path = os.path.join(self._log_path, filename)
-        with open(path, "w") as f:
+        with open(path, 'w') as f:
             for test in list:
                 f.write(test + '\n')
         command.append(arg + '=' + path)
@@ -151,14 +152,14 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
     def run_once(self, opts=None):
         """Invokes deqp-runner to run a deqp test group."""
         options = dict(
-                api=None,
-                caselist=None,
-                filter='',
-                subset_to_run='Pass',  # Pass, Fail, Timeout, NotPass...
-                shard_number='0',
-                shard_count='1',
-                debug='False',
-                perf_failure_description=None)
+            api=None,
+            caselist=None,
+            filter='',
+            subset_to_run='Pass',  # Pass, Fail, Timeout, NotPass...
+            shard_number='0',
+            shard_count='1',
+            debug='False',
+            perf_failure_description=None)
         if opts is None:
             opts = []
         options.update(utils.args_to_dict(opts))
@@ -177,8 +178,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
             return
 
         if options['perf_failure_description']:
-            self._test_failure_description = options[
-                    'perf_failure_description']
+            self._test_failure_description = options['perf_failure_description']
         else:
             # Do not report failure if failure description is not specified.
             self._test_failure_report_enable = False
@@ -211,7 +211,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         command.append('--output=%s' % self._log_path)
         command.append('--deqp=%s' % executable)
         command.append('--testlog-to-xml=%s' % os.path.join(
-                self._api_helper.get_deqp_dir(), 'executor', 'testlog-to-xml'))
+            self._api_helper.get_deqp_dir(), 'executor', 'testlog-to-xml'))
         command.append('--caselist=%s' % self._caselist)
         if self._shard_number != 0:
             command.append('--fraction-start=%d' % (self._shard_number + 1))
@@ -235,12 +235,13 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         run_result = {}
         try:
             logging.info(command)
-            run_result = utils.run(command,
-                                   env=self._env,
-                                   ignore_status=True,
-                                   stdout_tee=utils.TEE_TO_LOGS,
-                                   stdout_level=logging.INFO,
-                                   stderr_tee=utils.TEE_TO_LOGS)
+            run_result = utils.run(
+                command,
+                env=self._env,
+                ignore_status=True,
+                stdout_tee=utils.TEE_TO_LOGS,
+                stdout_level=logging.INFO,
+                stderr_tee=utils.TEE_TO_LOGS)
         except error.CmdError:
             raise error.TestFail("Failed starting '%s'" % command)
 
@@ -281,15 +282,15 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         # the automatic flake detection doesn't catch it.
         if fails:
             if len(fails) == 1:
-                raise error.TestFail("Failed test: {}".format(fails[0]))
+                raise error.TestFail('Failed test: {}'.format(fails[0]))
             # We format the failure message so it is not too long and reasonably
             # stable even if there are a few flaky tests to simplify triaging
             # on stainless and testmon. We sort the failing tests and report
             # first and last failure.
             fails.sort()
-            fail_msg = "Failed {} tests: ".format(len(fails))
-            fail_msg += fails[0].rstrip() + ", ..., " + fails[-1].rstrip()
-            fail_msg += " (see failures.csv)"
+            fail_msg = 'Failed {} tests: '.format(len(fails))
+            fail_msg += fails[0].rstrip() + ', ..., ' + fails[-1].rstrip()
+            fail_msg += ' (see failures.csv)'
             raise error.TestFail(fail_msg)
         elif run_result.exit_status != 0:
             raise error.TestFail('dEQP run failed with status code %d' %

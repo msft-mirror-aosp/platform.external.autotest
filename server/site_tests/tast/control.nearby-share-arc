@@ -15,6 +15,8 @@ REQUIRE_SSP = True
 
 DOC = '''Run the ARC++ Nearby Share test suite.'''
 
+from autotest_lib.server.cros.crossdevice import cross_device_util
+
 def run(machine):
     # Wifi details that chromebook will connect to.
     ssid = 'nearbysharing_1'

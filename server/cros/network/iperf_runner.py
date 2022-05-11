@@ -385,7 +385,7 @@ class IperfRunner(object):
                 ignore_status=True,
                 ignore_timeout=True,
                 timeout=self.IPERF_SERVER_MAX_STARTUP_WAIT_TIME)
-        if result.exit_status:
+        if not result or result.exit_status:
             logging.debug(
                     'Failed to make a connection to the server in %s seconds.',
                     self.IPERF_SERVER_MAX_STARTUP_WAIT_TIME)

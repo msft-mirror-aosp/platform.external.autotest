@@ -92,6 +92,12 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
             logging.debug("No file found at {}".format(expects_path))
             return []
 
+    def read_expectations(self, name):
+        """ """
+        self._skips += self.read_file(name + '-skips.txt')
+        self._fails += self.read_file(name + '-fails.txt')
+        self._flakes += self.read_file(name + '-flakes.txt')
+
     def setup_case_list_filters(self):
         """Set up the skip/flake/fails filter lists.
 
@@ -121,48 +127,15 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
 
         We could avoid adding filters for other apis than the one being tested,
         but it's harmless to have unused tests in the lists and makes
-        copy-and-paste mistakes less likely.
+        copy-and-paste mistakes less likely."""
+        # Add expectations common for all boards/chipsets.
+        self.read_expectations('all-chipsets')
 
-        We don't care to run the performance or stress tests from dEQP-GLES on
-        any boards -- they're very slow but don't generally fail."""
+        # Add any chipset specific expectations. Most issues should be here.
+        self.read_expectations(self._gpu_type)
 
-        self._skips.append('dEQP-GLES.*.performance.*')
-        self._skips.append('dEQP-GLES.*.stress.*')
-
-        # This set of tests may emit warnings, but is not required for
-        # conformance and I've never seen anyone pay attention to it.
-        self._skips.append('dEQP-GLES.*.accuracy.*')
-
-        # The deqp package ships an Android mustpass list instead of a normal
-        # Linux one, which helps us on host check for some extended behavior
-        # expectations from Android, but also has some expectations that host
-        # dEQP should *not* be trying to enforce (maximum Vulkan version,
-        # extensions exposed, layers exposed).  Skip until upstream dEQP can
-        # get fixed.  Related: https://gerrit.khronos.org/c/vk-gl-cts/+/5715
-        self._skips.append('dEQP-VK.api.info.android.no_layers')
-        self._skips.append('dEQP-VK.api.info.android.no_unknown_extensions')
-
-        # The flush_finish tests throw warnings when behavior doesn't match
-        # their expectations, except that tiling GPUs don't behave the way they
-        # expect in their timing setup so the tests take exceptionally long
-        # while just wasting developer time.  Not required to be warnings-free
-        # for conformance.
-        if self._gpu_type in ['qualcomm', 'rogue'
-                              ] or self._gpu_type.startswith('Mali'):
-            self._skips.append('dEQP-GLES.*.functional.flush_finish.*')
-
-        # This test flakes across all Mesa drivers (Intel KBL+GLK, AMD, and Qualcomm, at least).
-        # https://gitlab.freedesktop.org/mesa/mesa/-/issues/4575
-        self._flakes.append(
-                'dEQP-VK.wsi.display.get_display_plane_capabilities')
-
-        # Add any board-specific expectations
-        self._skips += self.read_file(self._board + '-' + 'skips.txt')
-        self._skips += self.read_file(self._gpu_type + '-' + 'skips.txt')
-        self._fails += self.read_file(self._board + '-' + 'fails.txt')
-        self._fails += self.read_file(self._gpu_type + '-' + 'fails.txt')
-        self._flakes += self.read_file(self._board + '-' + 'flakes.txt')
-        self._flakes += self.read_file(self._gpu_type + '-' + 'flakes.txt')
+        # Add any board-specific expectations. Lets hope we never need models.
+        self.read_expectations(self._board)
 
     def add_filter_arg(self, command, list, arg, filename):
         """Adds an arg for xfail/skip/flake filtering if we made the file for it."""

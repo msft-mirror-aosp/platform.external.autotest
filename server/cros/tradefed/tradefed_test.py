@@ -1062,6 +1062,36 @@ class TradefedTest(test.test):
             logging.warning('Failed to restore powerd policy, overrided policy '
                             'will persist until device reboot.')
 
+    def _should_set_cpu_governor(self, target_module, board):
+        """Returns whether we should set performance governor."""
+        # TODO(kinaba): The current restore logic only applies to Kukui
+        # and Trogdor. Please update the logic when expanding the scope.
+        return (target_module and "CtsDeqp" in target_module) and (board in [
+                'kukui-arc-r', 'trogdor-arc-r'
+        ])
+
+    def _set_cpu_governor(self, governor):
+        """Set the specified CPU governor."""
+        self._run_commands([('for i in /sys/devices/system/cpu/cpufreq/*; do'
+                             ' echo %s > $i/scaling_governor; done') % governor
+                            ])
+
+    def _override_cpu_governor(self):
+        """Override the CPU governor for performance mode."""
+        try:
+            self._set_cpu_governor('performance')
+        except (error.AutoservRunError, error.AutoservSSHTimeout):
+            logging.warning('Failed to override CPU governor, tests depending '
+                            'on boosted performance may fail.')
+
+    def _restore_cpu_governor(self):
+        """Restore the CPU governor to the default value."""
+        try:
+            self._set_cpu_governor('schedutil')
+        except (error.AutoservRunError, error.AutoservSSHTimeout):
+            logging.warning('Failed to restore CPU governor, overrided policy '
+                            'will persist until device reboot.')
+
     def _mute_device(self):
         """Mutes the device to avoid noises while running tests"""
         try:
@@ -1412,10 +1442,14 @@ class TradefedTest(test.test):
                         self._clean_crash_logs()
                 # b/196748125. Mute before running tests to avoid noises.
                 self._mute_device()
+                set_performance_governor = self._should_set_cpu_governor(
+                        target_module, board)
                 # TODO(b/182397469): speculatively disable the "screen-on"
                 # handler for dEQP. Revert when the issue is resolved.
                 keep_screen_on = not (target_module
                                       and "CtsDeqpTestCases" in target_module)
+                if set_performance_governor:
+                    self._override_cpu_governor()
                 if keep_screen_on:
                     self._override_powerd_prefs()
                 try:
@@ -1423,6 +1457,8 @@ class TradefedTest(test.test):
                 finally:
                     if keep_screen_on:
                         self._restore_powerd_prefs()
+                    if set_performance_governor:
+                        self._restore_cpu_governor()
                 if media_asset:
                     self._fail_on_unexpected_media_download(media_asset)
                 result = self._run_tradefed_list_results()

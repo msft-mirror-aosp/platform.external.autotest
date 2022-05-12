@@ -1,4 +1,4 @@
-# Lint as: python2, python3
+# Lint as: python3
 # Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -41,6 +41,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         'pass', 'notsupported', 'internalerror', 'qualitywarning',
         'compatibilitywarning', 'skipped'
     ]
+    _expectations_dir = '/usr/local/graphics/expectations/deqp/'
 
     def initialize(self):
         """Initialize the test."""
@@ -81,13 +82,10 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
 
     def read_file(self, filename):
         """Board/GPU expectation file read helper."""
-        expects_path = os.path.join(self.autodir, 'tests',
-                                    'graphics_parallel_dEQP', 'boards',
-                                    filename)
+        expects_path = os.path.join(self._expectations_dir, filename)
         try:
             with open(expects_path, encoding='utf-8') as file:
-                logging.debug(
-                    'Reading board test list from %s', format(expects_path))
+                logging.debug(f'Reading board test list from {expects_path}')
                 return file.readlines()
         except IOError as _:
             logging.debug('No file found at %s', format(expects_path))
@@ -244,9 +242,8 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         fails = []
         try:
             with open(
-                    os.path.join(
-                        self._log_path, 'failures.csv'),
-                        encoding='utf-8') as fails_file:
+                    os.path.join(self._log_path, 'failures.csv'),
+                    encoding='utf-8') as fails_file:
                 for line in fails_file.readlines():
                     fails.append(line)
                     self.add_failures(line)
@@ -275,15 +272,16 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
 
         if fails:
             if len(fails) == 1:
-                raise error.TestFail('Failed test: {format(fails[0])}')
+                raise error.TestFail(f'Failed test: {fails[0]}')
             # We format the failure message so it is not too long and reasonably
             # stable even if there are a few flaky tests to simplify triaging
             # on stainless and testmon. We sort the failing tests and report
             # first and last failure.
             fails.sort()
-            fail_msg = 'Failed {format(len(fails))} tests: '
+            fail_msg = f'Failed {len(fails)} tests: '
             fail_msg += fails[0].rstrip() + ', ..., ' + fails[-1].rstrip()
             fail_msg += ' (see failures.csv)'
             raise error.TestFail(fail_msg)
         if run_result.exit_status != 0:
-            raise error.TestFail(f'dEQP run failed with status code {run_result.exit_status}')
+            raise error.TestFail(
+                f'dEQP run failed with status code {run_result.exit_status}')

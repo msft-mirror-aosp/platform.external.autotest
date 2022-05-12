@@ -373,9 +373,11 @@ class TastTest(unittest.TestCase):
                          status_string(self._job.status_entries))
 
     def testSkippedTest(self):
-        """Tests that skipped tests aren't reported."""
-        tests = [TestInfo('pkg.Normal', 0, 1),
-                 TestInfo('pkg.Skipped', 2, 2, skip_reason='missing deps')]
+        """Tests that skipped tests are reported correctly."""
+        tests = [
+                TestInfo('pkg.Normal', 0, 1),
+                TestInfo('pkg.Skipped', 2, 3, skip_reason='missing deps')
+        ]
         self._init_tast_commands(tests)
         self._run_test()
         self.assertEqual(status_string(get_status_entries_from_tests(tests)),
@@ -917,10 +919,6 @@ class TestInfo:
             run error was encountered.
         @return: List of Autotest base_job.status_log_entry objects.
         """
-        # Deliberately-skipped tests shouldn't have status entries unless errors
-        # were also reported.
-        if self._skip_reason and not self._errors:
-            return []
 
         def make(status_code, dt, msg=''):
             """Makes a base_job.status_log_entry.
@@ -949,6 +947,12 @@ class TestInfo:
 
             entries.append(make(tast.tast._JOB_STATUS_NOSTATUS, None, reason))
             entries.append(make(tast.tast._JOB_STATUS_END_NOSTATUS, None))
+        elif self._end_time and self._skip_reason and not self._errors:
+            entries.append(
+                    make(tast.tast._JOB_STATUS_SKIP, self._end_time,
+                         self._skip_reason))
+            entries.append(make(tast.tast._JOB_STATUS_END_SKIP,
+                                self._end_time))
         elif self._end_time and not self._errors:
             entries.append(make(tast.tast._JOB_STATUS_GOOD, self._end_time))
             entries.append(make(tast.tast._JOB_STATUS_END_GOOD, self._end_time))

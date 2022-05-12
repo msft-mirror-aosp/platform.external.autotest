@@ -171,12 +171,14 @@ class tast(test.test):
     _JOB_STATUS_END_GOOD = 'END GOOD'
     _JOB_STATUS_END_FAIL = 'END FAIL'
     _JOB_STATUS_END_NOSTATUS = 'END NOSTATUS'
+    _JOB_STATUS_END_SKIP = 'END TEST_NA'
 
     # In-job TKO event status codes from base_client_job._run_test_base in
     # client/bin/job.py and client/common_lib/error.py.
     _JOB_STATUS_GOOD = 'GOOD'
     _JOB_STATUS_FAIL = 'FAIL'
     _JOB_STATUS_NOSTATUS = 'NOSTATUS'
+    _JOB_STATUS_SKIP = 'TEST_NA'
 
     # Status reason used when an individual Tast test doesn't finish running.
     _TEST_DID_NOT_FINISH_MSG = 'Test did not finish'
@@ -1107,10 +1109,6 @@ class tast(test.test):
         # (preceding the Unix epoch) if it didn't report completion.
         test_finished = end_time > 0
 
-        # Avoid reporting tests that were skipped.
-        if test_skipped and not test_reported_errors:
-            return
-
         # Look for magic error _TEST_DID_NOT_RUN_MSG and mark test as not run.
         for err in test.get(_KEY_ERRORS) or []:
             if err[_KEY_REASON] == self._TEST_DID_NOT_RUN_MSG:
@@ -1123,6 +1121,10 @@ class tast(test.test):
             self._log_test_event(self._JOB_STATUS_NOSTATUS, name, end_time,
                                  test[_KEY_MISSING_REASON])
             end_status = self._JOB_STATUS_END_NOSTATUS
+        elif test_skipped and not test_reported_errors:
+            self._log_test_event(self._JOB_STATUS_SKIP, name, end_time,
+                                 test.get(_KEY_SKIP_REASON))
+            end_status = self._JOB_STATUS_END_SKIP
         elif test_finished and not test_reported_errors:
             self._log_test_event(self._JOB_STATUS_GOOD, name, end_time)
             end_status = self._JOB_STATUS_END_GOOD

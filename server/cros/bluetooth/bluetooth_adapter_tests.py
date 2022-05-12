@@ -4773,7 +4773,6 @@ class BluetoothAdapterTests(test.test):
 
         # Some tests may instantiate a peripheral device for testing.
         self.devices = dict()
-        self.shared_peers = []
         for device_type in SUPPORTED_DEVICE_TYPES:
             self.devices[device_type] = list()
 

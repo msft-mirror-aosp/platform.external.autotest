@@ -281,7 +281,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                                   skip_models=[],
                                   skip_chipsets=[],
                                   skip_common_errors=False,
-                                  shared_devices_count=0,
                                   supports_floss=False,
                                   use_all_peers=False):
         """A decorator providing a wrapper to a quick test.
@@ -355,7 +354,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         return False
 
                 # Check if there are enough peers
-                total_num_devices = sum(devices.values()) + shared_devices_count
+                total_num_devices = sum(devices.values())
                 if total_num_devices > len(self.host.btpeer_list):
                     logging.info('SKIPPING TEST %s', test_name)
                     logging.info(
@@ -410,8 +409,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
                         raise error.TestNAError(
                                 'Test not supported on this chipset')
 
-                    self.quick_test_test_start(test_name, devices,
-                                               shared_devices_count)
+                    self.quick_test_test_start(test_name, devices)
 
                     test_method(self)
                 except error.TestError as e:
@@ -445,7 +443,7 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
 
 
     def quick_test_test_start(
-            self, test_name=None, devices={}, shared_devices_count=0):
+            self, test_name=None, devices={}):
         """Start a quick test. The method clears and restarts adapter on DUT
            as well as peer devices. In addition the methods prints test start
            traces.
@@ -468,7 +466,6 @@ class BluetoothAdapterQuickTests(bluetooth_adapter_tests.BluetoothAdapterTests):
         self.initialize()
         # Start and peer HID devices
         self.start_peers(devices)
-        self.shared_peers = self.host.btpeer_list[-shared_devices_count:]
 
         if test_name is not None:
             time.sleep(self.TEST_SLEEP_SECS)

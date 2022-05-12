@@ -2049,7 +2049,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     @property
     def _adapter_proxy(self):
         """Returns proxy object to adapter interface if adapter is valid."""
-        if self._adapter:
+        if self._adapter and self._get_adapter() != (None, None):
             return self._adapter[self.BLUEZ_ADAPTER_IFACE]
 
         return None
@@ -2057,7 +2057,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     @property
     def _property_proxy(self):
         """Returns proxy object to adapter properties if adapter is valid."""
-        if self._adapter:
+        if self._adapter and self._get_adapter() != (None, None):
             return self._adapter[self.DBUS_PROP_IFACE]
 
         return None
@@ -2065,7 +2065,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     @property
     def _advertising_proxy(self):
         """Returns proxy object to advertising interface if adapter is valid."""
-        if self._adapter:
+        if self._adapter and self._get_adapter() != (None, None):
             return self._adapter[self.BLUEZ_LE_ADVERTISING_MANAGER_IFACE]
 
         return None
@@ -2077,7 +2077,10 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return the advertisement monitor manager interface object.
 
         """
-        return self._adapter[self.BLUEZ_ADV_MONITOR_MANAGER_IFACE]
+        if self._adapter and self._get_adapter() != (None, None):
+            return self._adapter[self.BLUEZ_ADV_MONITOR_MANAGER_IFACE]
+
+        return None
 
     @dbus_safe(False)
     def reset_on(self):
@@ -2156,7 +2159,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     @dbus_safe(False)
     def is_discoverable(self):
         """Returns whether the adapter is discoverable."""
-        return bool(self._get_adapter_properties().get('Discoverable') == 1)
+        return bool(self._get_adapter_properties().get('Discoverable', 0) == 1)
 
     @dbus_safe(False)
     def set_powered(self, powered):
@@ -2167,13 +2170,13 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success, False otherwise.
 
         """
-        if not self._adapter:
+        if not self._property_proxy:
             if not powered:
                 # Return success if we are trying to power off an adapter that's
                 # missing or gone away, since the expected result has happened.
                 return True
             else:
-                logging.warning('Adapter not found!')
+                logging.warning('Adapter Property Proxy not found!')
                 return False
 
         logging.debug('_set_powered %r', powered)
@@ -2191,11 +2194,13 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success, False otherwise.
 
         """
-        if not discoverable and not self._adapter:
-            # Return success if we are trying to make an adapter that's
-            # missing or gone away, undiscoverable, since the expected result
-            # has happened.
-            return True
+        if not self._property_proxy:
+            if not discoverable:
+                # Return success if we are trying to make an adapter that's
+                # missing or gone away, undiscoverable, since the expected
+                # result has happened.
+                return True
+            return False
         self._property_proxy.Set(self.BLUEZ_ADAPTER_IFACE, 'Discoverable',
                                  GLib.Variant('b', discoverable))
         return True
@@ -2204,9 +2209,12 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     def get_discoverable_timeout(self):
         """Get the adapter discoverable_timeout.
 
-        @return True on success, False otherwise.
+        @return discoverable timeout on success, None otherwise.
 
         """
+        if not self._property_proxy:
+            return None
+
         return int(
                 self._property_proxy.Get(self.BLUEZ_ADAPTER_IFACE,
                                          'DiscoverableTimeout'))
@@ -2221,6 +2229,9 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success, False otherwise.
 
         """
+        if not self._property_proxy:
+            return False
+
         self._property_proxy.Set(self.BLUEZ_ADAPTER_IFACE,
                                  'DiscoverableTimeout',
                                  GLib.Variant('u', discoverable_timeout))
@@ -2230,9 +2241,12 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     def get_pairable_timeout(self):
         """Get the adapter pairable_timeout.
 
-        @return True on success, False otherwise.
+        @return pairable timeout on success, None otherwise.
 
         """
+        if not self._property_proxy:
+            return None
+
         return int(
                 self._property_proxy.Get(self.BLUEZ_ADAPTER_IFACE,
                                          'PairableTimeout'))
@@ -2247,6 +2261,9 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success, False otherwise.
 
         """
+        if not self._property_proxy:
+            return False
+
         self._property_proxy.Set(self.BLUEZ_ADAPTER_IFACE, 'PairableTimeout',
                                  GLib.Variant('u', pairable_timeout))
         return True
@@ -2255,8 +2272,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     def get_pairable(self):
         """Gets the adapter pairable state.
 
-        @return Pairable property value.
+        @return Pairable property value on success, None otherwise.
         """
+        if not self._property_proxy:
+            return None
+
         return bool(
                 self._property_proxy.Get(self.BLUEZ_ADAPTER_IFACE, 'Pairable'))
 
@@ -2269,6 +2289,9 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success, False otherwise.
 
         """
+        if not self._property_proxy:
+            return False
+
         self._property_proxy.Set(self.BLUEZ_ADAPTER_IFACE, 'Pairable',
                                  GLib.Variant('b', pairable))
         return True
@@ -2281,6 +2304,9 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
 
         @return True on success, False otherwise.
         """
+        if not self._property_proxy:
+            return False
+
         self._property_proxy.Set(self.BLUEZ_ADAPTER_IFACE, 'Alias',
                                  GLib.Variant('s', alias))
         return True
@@ -2289,7 +2315,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         """Read the adapter properties from the Bluetooth Daemon.
 
         @return the properties as a JSON-encoded dictionary on success,
-            the value False otherwise.
+            an empty dict otherwise.
 
         """
 
@@ -2297,7 +2323,13 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         def get_props():
             """Get props from dbus."""
             objects = self._objmgr_proxy.GetManagedObjects()
-            return objects[self._adapter_path][self.BLUEZ_ADAPTER_IFACE]
+            try:
+                return objects[self._adapter_path][self.BLUEZ_ADAPTER_IFACE]
+            except KeyError:
+                logging.warning('Failed to find adapter property')
+                return {}
+            except:
+                raise
 
         if self._bluez and self._adapter:
             props = get_props().copy()
@@ -2313,11 +2345,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
 
     def is_powered_on(self):
         """Checks whether the adapter is currently powered."""
-        return bool(self._get_adapter_properties().get('Powered'))
+        return bool(self._get_adapter_properties().get('Powered', False))
 
     def get_address(self):
         """Gets the current bluez adapter address."""
-        return str(self._get_adapter_properties()['Address'])
+        return str(self._get_adapter_properties().get('Address', ''))
 
     def get_bluez_version(self):
         """Get the BlueZ version.
@@ -2325,7 +2357,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         Returns:
             Bluez version like 'BlueZ 5.39'.
         """
-        return str(self._get_adapter_properties()['Name'])
+        return str(self._get_adapter_properties().get('Name', ''))
 
     def get_bluetooth_class(self):
         """Get the bluetooth class of the adapter.
@@ -2335,7 +2367,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         Returns:
             Class of device for the adapter.
         """
-        return str(self._get_adapter_properties()['Class'])
+        return str(self._get_adapter_properties().get('Class', ''))
 
     def read_version(self):
         """Read the version of the management interface from the Kernel.
@@ -2536,7 +2568,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success, False otherwise.
 
         """
-        if not self._adapter:
+        if not self._adapter_proxy:
             return False
 
         converted_filter = {}
@@ -2556,7 +2588,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success, False otherwise.
 
         """
-        if not self._adapter:
+        if not self._adapter_proxy:
             return (False, "Adapter Not Found")
         self._adapter_proxy.StartDiscovery()
         return (True, None)
@@ -2568,7 +2600,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return True on success, False otherwise.
 
         """
-        if not self._adapter:
+        if not self._adapter_proxy:
             return (False, "Adapter Not Found")
         self._adapter_proxy.StopDiscovery()
         return (True, None)
@@ -2597,6 +2629,8 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
 
         @returns (capabilities, None) on Success. (None, <error>) on failure
         """
+        if not self._adapter_proxy:
+            return (None, "Adapter Not Found")
         value = self._adapter_proxy.GetSupportedCapabilities()
         return (json.dumps(value), None)
 
@@ -2960,6 +2994,8 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @returns: True on success. False otherwise.
 
         """
+        if not self._adapter_proxy:
+            return False
         device = self._find_device(address)
         if not device:
             logging.error('Device not found')
@@ -3150,9 +3186,12 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         Reads the value of 'SupportedMonitorTypes' property of the
         AdvertisementMonitorManager1 interface on the adapter.
 
-        @returns: the list of the supported monitor types.
+        @returns: the list of the supported monitor types on success,
+                  None otherwise.
 
         """
+        if not self._property_proxy:
+            return None
         return unpack_if_variant(
                 self._property_proxy.Get(self.BLUEZ_ADV_MONITOR_MANAGER_IFACE,
                                          'SupportedMonitorTypes'))
@@ -3163,9 +3202,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         Reads the value of 'SupportedFeatures' property of the
         AdvertisementMonitorManager1 interface on the adapter.
 
-        @returns: the list of the supported features.
+        @returns: the list of the supported features on success, None otherwise.
 
         """
+        if not self._property_proxy:
+            return None
         return unpack_if_variant(
                 self._property_proxy.Get(self.BLUEZ_ADV_MONITOR_MANAGER_IFACE,
                                          'SupportedFeatures'))
@@ -3439,7 +3480,8 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @returns: the value of the property in standard (non-dbus) type if the
                     property exists, else None
         """
-
+        if not self._property_proxy:
+            return None
         return unpack_if_variant(
                 self._property_proxy.Get(
                         self.BLUEZ_LE_ADVERTISING_MANAGER_IFACE, prop_name))
@@ -4022,8 +4064,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     def policy_get_service_allow_list(self):
         """Get the service allow list for enterprise policy.
 
-        @returns: array of strings representing the allowed service UUIDs.
+        @returns: array of strings representing the allowed service UUIDs on
+                  success, None otherwise.
         """
+        if not self._property_proxy:
+            return None
         uuids = unpack_if_variant(
                 self._property_proxy.Get(self.BLUEZ_ADMIN_POLICY_STATUS_IFACE,
                                          'ServiceAllowList'))

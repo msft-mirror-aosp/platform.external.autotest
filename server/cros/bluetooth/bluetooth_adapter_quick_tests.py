@@ -432,6 +432,11 @@ class BluetoothAdapterQuickTests(
                         self.bluetooth_facade.remove_device_object(
                                 device.address)
 
+                    # If DUT's adapter address is empty, likely the adapter is
+                    # dead. Skip clearing DUT from peers.
+                    if not self.bluetooth_facade.address:
+                        continue
+
                     # Also remove pairing on Peer
                     logging.info('Clearing DUT from %s', device.name)
                     try:

@@ -286,8 +286,8 @@ class parallel_test(unittest.TestCase):
 
         for task in tasklist:
             task.fork_waitfor.expect_call(timeout=None).and_return(0)
-            (six.moves.cPickle.load.expect_call(task.result_pickle)
-                    .and_return(6))
+            (six.moves.cPickle.load.expect_call(
+                    task.result_pickle, encoding='utf-8').and_return(6))
 
 
         subcommand.parallel(tasklist)
@@ -299,8 +299,8 @@ class parallel_test(unittest.TestCase):
 
         for task in tasklist:
             task.fork_waitfor.expect_call(timeout=None).and_return(1)
-            (six.moves.cPickle.load.expect_call(task.result_pickle)
-                    .and_return(6))
+            (six.moves.cPickle.load.expect_call(
+                    task.result_pickle, encoding='utf-8').and_return(6))
 
 
         self.assertRaises(subcommand.error.AutoservError, subcommand.parallel,
@@ -319,8 +319,8 @@ class parallel_test(unittest.TestCase):
         for task in tasklist:
             subcommand.time.time.expect_call().and_return(1)
             task.fork_waitfor.expect_call(timeout=timeout).and_return(None)
-            (six.moves.cPickle.load.expect_call(task.result_pickle)
-                    .and_return(6))
+            (six.moves.cPickle.load.expect_call(
+                    task.result_pickle, encoding='utf-8').and_return(6))
 
 
 
@@ -333,14 +333,14 @@ class parallel_test(unittest.TestCase):
         tasklist = self._setup_common()
 
         tasklist[0].fork_waitfor.expect_call(timeout=None).and_return(0)
-        (six.moves.cPickle.load.expect_call(tasklist[0].result_pickle)
-                .and_return(6))
+        (six.moves.cPickle.load.expect_call(tasklist[0].result_pickle,
+                                            encoding='utf-8').and_return(6))
         # tasklist[0].result_pickle.close.expect_call()
 
         error = Exception('fail')
         tasklist[1].fork_waitfor.expect_call(timeout=None).and_return(1)
-        (six.moves.cPickle.load.expect_call(tasklist[1].result_pickle)
-                .and_return(error))
+        (six.moves.cPickle.load.expect_call(
+                tasklist[1].result_pickle, encoding='utf-8').and_return(error))
         # tasklist[1].result_pickle.close.expect_call()
 
         self.assertEquals(subcommand.parallel(tasklist, return_results=True),

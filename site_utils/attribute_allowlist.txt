@@ -152,6 +152,7 @@ suite:cellular_ota_avl
 suite:cellular_ota_flaky
 suite:cellular_pseudomodem
 suite:cellular_qual
+suite:cft-beta
 suite:check_setup_cts_N
 suite:check_setup_storage_qual
 suite:chrome-informational

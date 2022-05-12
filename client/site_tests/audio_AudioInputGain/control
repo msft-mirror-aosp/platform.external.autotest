@@ -9,7 +9,7 @@ CRITERIA = '''
 Control the input capture gain by chrome.audio API, and check the actual gain
 from the recorded wave of ALSA loopback.
 '''
-ATTRIBUTES = 'suite:audio_essential, suite:infra_qual'
+ATTRIBUTES = 'suite:audio_essential, suite:infra_qual, suite:py3-beta'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'audio'

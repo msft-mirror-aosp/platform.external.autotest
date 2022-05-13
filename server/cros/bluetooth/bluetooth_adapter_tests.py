@@ -1762,7 +1762,8 @@ class BluetoothAdapterTests(test.test):
         @returns: True if the adapter was located properly
         """
 
-        if not self.bluetooth_facade.has_adapter():
+        if not self.bluetooth_facade.has_adapter(
+        ) or not self.bluetooth_facade.address:
             logging.error('No adapter available, rebooting to recover')
 
             self.reboot()
@@ -1779,6 +1780,8 @@ class BluetoothAdapterTests(test.test):
                 raise error.TestNAError('Unsupported adapter is missing')
 
             raise error.TestFail('Adapter is missing')
+
+        self._dut_address_cache = self.bluetooth_facade.address
 
         return True
 

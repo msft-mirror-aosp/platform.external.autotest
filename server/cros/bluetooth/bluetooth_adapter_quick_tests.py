@@ -419,6 +419,12 @@ class BluetoothAdapterQuickTests(
         # Store a copy of active devices for raspi reset in the final step
         self.active_test_devices = self.devices
 
+        dut_adapter_address = ''
+        if self.bluetooth_facade.address:
+            dut_adapter_address = self.bluetooth_facade.address
+        elif hasattr(self, '_dut_address_cache'):
+            dut_adapter_address = self._dut_address_cache
+
         # Disconnect devices used in the test, and remove the pairing.
         for device_list in self.devices.values():
             for device in device_list:
@@ -434,13 +440,13 @@ class BluetoothAdapterQuickTests(
 
                     # If DUT's adapter address is empty, likely the adapter is
                     # dead. Skip clearing DUT from peers.
-                    if not self.bluetooth_facade.address:
+                    if not dut_adapter_address:
                         continue
 
                     # Also remove pairing on Peer
                     logging.info('Clearing DUT from %s', device.name)
                     try:
-                        device.RemoveDevice(self.bluetooth_facade.address)
+                        device.RemoveDevice(dut_adapter_address)
                     except Exception as e:
                         # If peer doesn't expose RemoveDevice, ignore failure
                         if not (e.__class__.__name__ == 'Fault' and

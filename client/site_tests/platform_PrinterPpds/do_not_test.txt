@@ -11,6 +11,7 @@ dymo-20200714-lp350.ppd.gz
 dymo-20200714-lw450dt.ppd.gz
 dymo-20200714-lwduot.ppd.gz
 dymo-20200714-lwduot2.ppd.gz
+foomatic-20191029-Apollo-P-1200-pcl3.ppd.gz
 foomatic-20191029-Samsung_ML-2525W_Series_PXL.ppd.gz
 foomatic-20200219-Apple-Color_StyleWriter_1500-lpstyl.ppd.gz
 foomatic-20200219-Apple-ImageWriter_II-iwhi.ppd.gz

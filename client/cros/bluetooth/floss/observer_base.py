@@ -8,6 +8,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
 
 class ObserverBase:
     """Simple observer base class that provides the observer pattern."""
@@ -26,6 +27,7 @@ class ObserverBase:
             self.observers[name] = observer
             return True
 
+        logging.warn('Observer {} already exists, not adding'.format(name))
         return False
 
     def remove_observer(self, name, observer):

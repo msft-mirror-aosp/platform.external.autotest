@@ -4568,7 +4568,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             def __init__(self, adapter_client, done_event, address, pin):
                 self.adapter_client = adapter_client
                 self.adapter_client.register_callback_observer(
-                        'PairingObserver', self)
+                        'PairingObserver' + address, self)
 
                 # Event to trigger once we are paired and connected.
                 self.done_event = done_event
@@ -4585,7 +4585,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             def cleanup(self):
                 """Clean up after this observer."""
                 self.adapter_client.unregister_callback_observer(
-                        'PairingObserver', self)
+                        'PairingObserver' + address, self)
                 self.adapter_client = None
 
             def on_bond_state_changed(self, status, device_address, state):

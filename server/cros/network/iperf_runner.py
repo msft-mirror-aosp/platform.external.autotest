@@ -357,11 +357,12 @@ class IperfRunner(object):
         """
         logging.info('Starting iperf server...')
         self._kill_iperf_server()
-        logging.debug('iperf server invocation: %s %s -s -B %s -D %s',
+        logging.debug('iperf server invocation: %s %s -s -B %s -D %s -w 320k',
                       self._minijail, self._command_iperf_server,
                       self._server_ip, self._udp_flag)
         devnull = open(os.devnull, "w")
-        self._server_host.run('%s %s -s -B %s -D %s' %
+        # 320kB is the maximum socket buffer size on Gale (default is 208kB).
+        self._server_host.run('%s %s -s -B %s -D %s -w 320k' %
                               (self._minijail, self._command_iperf_server,
                                self._server_ip, self._udp_flag),
                               stderr_tee=devnull)

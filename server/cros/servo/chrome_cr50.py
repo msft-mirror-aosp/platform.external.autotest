@@ -189,6 +189,22 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     USB_ERROR = 'timer_sof_calibration_overflow_int'
     # Message printed during watchdog reset.
     WATCHDOG_RST = 'WATCHDOG PC'
+    # ===============================================================
+    # AP_RO strings
+    # Cr50 only supports v2
+    AP_RO_VERSIONS = [1]
+    AP_RO_HASH_RE = r'sha256 (hash) ([0-9a-f]{64})'
+    AP_RO_UNSUPPORTED_UNPROGRAMMED = 'RO verification not programmed'
+    AP_RO_UNSUPPORTED_BID_BLOCKED = 'BID blocked'
+    AP_RO_REASON_RE = r'(ap_ro_check_unsupported): (.*)\]'
+    AP_RO_RESULT_RE = r'(result)\s*: (\d)'
+    AP_RO_SUPPORTED_RE = r'(supported)\s*: (yes|no)'
+    AP_RO_UNSUPPORTED_OUTPUT = [
+            AP_RO_REASON_RE, AP_RO_RESULT_RE, AP_RO_SUPPORTED_RE
+    ]
+    AP_RO_SAVED_OUTPUT = [AP_RO_RESULT_RE, AP_RO_SUPPORTED_RE, AP_RO_HASH_RE]
+
+    # ===============================================================
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.
@@ -198,7 +214,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """
         super(ChromeCr50, self).__init__(servo, 'cr50_uart')
         self.faft_config = faft_config
-
 
     def wake_cr50(self):
         """Wake up cr50 by sending some linebreaks and wait for the response"""
@@ -1372,3 +1387,50 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if watchdog_count:
             raise error.TestFail('Found %r %d times in logs after %s' %
                                  (self.WATCHDOG_RST, watchdog_count, desc))
+
+    def ap_ro_version_is_supported(self, version):
+        """Returns True if GSC supports the given version."""
+        return version in self.AP_RO_VERSIONS
+
+    def ap_ro_supported(self):
+        """Returns True if the hash is saved and AP RO is supported."""
+        return self.send_command_retry_get_output(
+                'ap_ro_info', [self.AP_RO_SUPPORTED_RE])[0][2] == 'yes'
+
+    def get_ap_ro_info(self):
+        """Returns a dictionary of the AP RO info.
+
+        Get the ap_ro_info output. Convert it to a usable dictionary.
+
+        Returns:
+            A dictionary with the following key value pairs.
+                'reason': String of unsupported reason or None if ap ro is
+                          supported.
+                'hash': 64 char hash or None if it isn't supported.
+                'supported': bool whether AP RO verification is supported.
+                'result': int of the AP RO verification result.
+        """
+        # Cr50 prints different output based on whether ap ro verification is
+        # supported.
+        if self.ap_ro_supported():
+            output = self.AP_RO_SAVED_OUTPUT
+        else:
+            output = self.AP_RO_UNSUPPORTED_OUTPUT
+        # The reason and hash output is optional. Make sure it's in the
+        # dictionary even if it isn't in the output.
+        info = {'hash': None, 'reason': None}
+        rv = self.send_command_retry_get_output('ap_ro_info',
+                                                output,
+                                                compare_output=True)
+        for _, k, v in rv:
+            # Make key more usable.
+            if k == 'ap_ro_check_unsupported':
+                k = 'reason'
+            # Convert digit strings to ints
+            if v.isdigit():
+                v = int(v)
+            # Convert yes or no to bool
+            if k == 'supported':
+                v = v == 'yes'
+            info[k] = v
+        return info

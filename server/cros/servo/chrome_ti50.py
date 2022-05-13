@@ -28,6 +28,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
             'BatteryBypassPP', 'I2C', 'FlashRead', 'OpenNoDevMode',
             'OpenFromUSB', 'OverrideBatt'
     ]
+    # Ti50 only supports v2
+    AP_RO_VERSIONS = [2]
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.

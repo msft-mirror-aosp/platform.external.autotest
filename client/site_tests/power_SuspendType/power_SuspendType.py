@@ -22,12 +22,11 @@ class power_SuspendType(test.test):
 
         if desired_suspend_type is None:
             if suspend_state != 'mem' and suspend_state != 'freeze':
-                raise error.TestError(
+                raise error.TestFail(
                         'Did not find valid suspend state, want: freeze or mem, got: '
                         + suspend_state)
         else:
             if suspend_state != desired_suspend_type:
-                raise error.TestError(
-                        'Did not find desired suspend state, want: ' +
-                        desired_suspend_type + ', got: ' + suspend_state)
+                raise error.TestFail('System does not support suspend type ' +
+                                     desired_suspend_type)
         return

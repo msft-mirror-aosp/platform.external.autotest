@@ -13,7 +13,7 @@ class firmware_ConsecutiveBootPowerButton(FirmwareTest):
     Servo based consecutive boot test via power button for both on and off.
 
     This test is intended to be run with many iterations to ensure that the DUT
-    does boot into Chrome OS and then does power off later.
+    does boot into ChromeOS and then does power off later.
 
     The iteration should be specified by the parameter -a "faft_iterations=10".
     """

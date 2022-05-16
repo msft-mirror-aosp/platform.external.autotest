@@ -12,7 +12,7 @@ class firmware_RollbackFirmware(FirmwareTest):
     """
     Servo based firmware rollback test.
 
-    This test requires a USB disk plugged-in, which contains a Chrome OS test
+    This test requires a USB disk plugged-in, which contains a ChromeOS test
     image (built by "build_image --test"). On runtime, this test rollbacks
     firmware A and results firmware B boot. It then rollbacks firmware B and
     results recovery boot.

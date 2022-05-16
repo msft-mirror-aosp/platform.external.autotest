@@ -46,7 +46,7 @@ EXTRA_ARGS_MAP = {
 
 DEFAULT_YEAR = str(datetime.now().year)
 
-DEFAULT_AUTHOR = 'Chrome OS Team'
+DEFAULT_AUTHOR = 'ChromeOS Team'
 
 CONTROLFILE_TEMPLATE = (
         """# Copyright {year} The Chromium OS Authors. All rights reserved.
@@ -69,7 +69,7 @@ PY_VERSION = 3
 DOC = '''
 This server side test suite executes the Telemetry Benchmark:
 {test}
-This is part of Chrome for Chrome OS performance testing.
+This is part of Chrome for ChromeOS performance testing.
 
 Pass local=True to run with local telemetry and no AFE server.
 '''

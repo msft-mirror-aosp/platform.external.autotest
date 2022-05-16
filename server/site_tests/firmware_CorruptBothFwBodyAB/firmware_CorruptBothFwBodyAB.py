@@ -14,7 +14,7 @@ class firmware_CorruptBothFwBodyAB(FirmwareTest):
 
     The firmware verification fails on loading RW firmware and enters recovery
     mode. It requires a USB disk plugged-in, which contains a
-    Chrome OS test image (built by "build_image --test").
+    ChromeOS test image (built by "build_image --test").
     """
     version = 1
     NEEDS_SERVO_USB = True

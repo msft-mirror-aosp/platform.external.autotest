@@ -28,9 +28,9 @@ Warning: If the command fails, check run\_push\_to\_device method in
 
 ## Updating the autotest
 
-After you submit your changes, [Chrome OS lab deputy will push it to
+After you submit your changes, [ChromeOS lab deputy will push it to
 prod](https://sites.google.com/a/google.com/chromeos/for-team-members/infrastructure/chromeos-admin/push-to-prod).
-Send a heads up to [Chrome OS lab
+Send a heads up to [ChromeOS lab
 deputy](https://sites.google.com/a/google.com/chromeos/for-team-members/infrastructure/chrome-os-infrastructure-deputy)
 that this change is there.
 

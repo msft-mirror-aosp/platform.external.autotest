@@ -9,7 +9,7 @@ from autotest_lib.server import test
 
 
 class firmware_FingerprintCrosConfig(test.test):
-    """Test Chrome OS config behavior for http://b/160271883."""
+    """Test ChromeOS config behavior for http://b/160271883."""
     version = 1
 
     def initialize(self, host):

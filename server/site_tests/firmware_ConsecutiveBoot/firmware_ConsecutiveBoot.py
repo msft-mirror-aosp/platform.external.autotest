@@ -18,7 +18,7 @@ class firmware_ConsecutiveBoot(FirmwareTest):
     /sbin/shutdown command to turn off DUT.
 
     This test is intended to be run with many iterations to ensure that the DUT
-    does boot into Chrome OS and then does power off later.
+    does boot into ChromeOS and then does power off later.
 
     The iteration should be specified by the parameter -a "faft_iterations=10".
     """

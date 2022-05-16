@@ -11,7 +11,7 @@ class autoupdate_FromUI(update_engine_test.UpdateEngineTest):
     """Trigger an update from the UI.
 
     Start an update by clicking on the 'Check for update' button in the
-    Chrome OS settings menu, instead of calling to update_engine_client
+    ChromeOS settings menu, instead of calling to update_engine_client
     directly.
 
     """

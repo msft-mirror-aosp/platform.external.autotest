@@ -14,7 +14,7 @@ from autotest_lib.server.cros.update_engine import update_engine_test
 
 
 class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
-    """Complete update test between two Chrome OS releases.
+    """Complete update test between two ChromeOS releases.
 
     Performs an end-to-end test of updating a ChromeOS device from one version
     to another. The test performs the following steps:

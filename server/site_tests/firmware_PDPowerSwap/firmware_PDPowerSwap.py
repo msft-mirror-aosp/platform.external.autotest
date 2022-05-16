@@ -118,7 +118,7 @@ class firmware_PDPowerSwap(FirmwareTest):
         Set the DUT power role to source and then suspend the DUT.
         Verify SRC-to-SNK power role request from the PD tester works,
         while SNK-to-SRC power role request fails. Note that this is
-        Chrome OS policy decision, not part of the PD spec.
+        ChromeOS policy decision, not part of the PD spec.
 
         When DUT doesn't provide power in suspend, set DUT power role
         to sink, supend DUT and check if SNK-to-SRC power role request fails.

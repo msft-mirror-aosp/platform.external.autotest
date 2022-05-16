@@ -12,7 +12,7 @@ class firmware_CorruptBothFwSigAB(FirmwareTest):
     """
     Servo based both firmware signature A and B corruption test.
 
-    This test requires a USB disk plugged-in, which contains a Chrome OS test
+    This test requires a USB disk plugged-in, which contains a ChromeOS test
     image (built by "build_image --test"). On runtime, this test corrupts
     both firmware signature A and B. On next reboot, the firmware verification
     fails and enters recovery mode. This test then checks the success of the

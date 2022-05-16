@@ -1,6 +1,6 @@
 ## Introduction
 
-`test_that` is the supported mechanism to run autotests against Chrome OS
+`test_that` is the supported mechanism to run autotests against ChromeOS
 devices at your desk.  `test_that` replaces an older script, `run_remote_tests`.
 
 Features for testing a local device:

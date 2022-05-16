@@ -7,7 +7,7 @@ _Self-link: [go/faft-running](https://goto.google.com/faft-running)_
 ## FAFT Overview {#faft-overview}
 
 [FAFT] (Fully Automated Firmware Tests) is a collection of tests and related
-infrastructure that exercise and verify capabilities of Chrome OS.
+infrastructure that exercise and verify capabilities of ChromeOS.
 The features tested by FAFT are implemented through low-level software
 (firmware/BIOS) and hardware. FAFT evolved from SAFT
 (Semi-Automated Firmware Tests) and you can locate tests in the [FAFT suite]
@@ -38,7 +38,7 @@ the system to its original state.
 The FAFT suite of tests can be invoked locally or remotely.
 This document describes how to set up the local configuration only.
 
-The Chrome OS firmware controls, among other things, the initial setup of the
+The ChromeOS firmware controls, among other things, the initial setup of the
 system hardware during the boot process. They are necessarily complicated,
 providing reliability against various corruption scenarios and security to
 ensure trusted software is controlling the system. Currently, the purpose of
@@ -49,7 +49,7 @@ FAFT is to exercise EC firmware and BIOS firmware functionality and performance.
 ### General requirements
 
 The firmware running on the system needs to be able to deal with the
-signatures on the disks, so when testing your own local Chrome OS build
+signatures on the disks, so when testing your own local ChromeOS build
 signed with dev keys, install dev signed firmware as well.
 
 The setup requires a USB drive: Pick the fastest option that you can
@@ -68,7 +68,7 @@ will lack important tooling for running the tests: If you see messages
 that `rsync` can't be found you're not using a test image and while
 this step will work (albeit slowly because the fallback is to scp files
 individually), running the DUT's side of the tests will fail because
-non-test Chrome OS lacks a suitable python interpreter.
+non-test ChromeOS lacks a suitable python interpreter.
 
 ### ServoV4 Type-A with Micro {#servov4-typea-micro}
 
@@ -76,7 +76,7 @@ The hardware configuration for running FAFT on a servo v4 Type-A
 with servo micro includes:
 
 - A test controller (your host workstation with a working chroot environment)
-- The test device (a device / DUT that can boot Chrome OS)
+- The test device (a device / DUT that can boot ChromeOS)
 - A servo board
 - Related cables and components
     - servo-micro cable
@@ -99,7 +99,7 @@ Details of servoV4 Type-A with micro connections:
 1. Connect one end (micro USB) of the servo micro to servoV4 using a micro USB to USB cable.
 2. Connect the servo micro to the debug header on the chrome device.
 3. Connect the USB type A cable of the servoV4 to the DUT.
-4. Prepare a USB flash drive with valid Chrome OS image and plug into the USB port of the servo as shown in the diagram.
+4. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the diagram.
 5. Connect the micro USB port of the servo to the host machine (typically your workstation).
 6. Connect an Ethernet cable to the Ethernet jack of the servo that goes to the a network reachable from the network that your host machine is on.
 
@@ -108,7 +108,7 @@ Details of servoV4 Type-A with micro connections:
 The hardware configuration for running FAFT with a servo v4 type-C includes:
 
 - A test controller (your host workstation with a working chroot environment)
-- The test device (a device / DUT that can boot Chrome OS)
+- The test device (a device / DUT that can boot ChromeOS)
 - A servo board
 - Related cables and components
     - USB type-A to USB micro cable for test controller connection (~ 4' - 6' in length)
@@ -126,7 +126,7 @@ before plugging in cables and components to the servo and DUT.
 Details of servoV4 Type-C connections in Figure 2:
 
 1. Connect the USB Type-C cable of the servoV4 to the DUT.
-2. Prepare a USB flash drive with valid Chrome OS image and plug into the USB port of the servo as shown in the diagram.
+2. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the diagram.
 3. Connect the micro USB port of the servo to the host machine (typically your workstation).
 4. Connect an Ethernet cable to the Ethernet jack of the servo that goes to the a network reachable from the network that your host machine is on.
 
@@ -171,7 +171,7 @@ Details of servo v2 connections:
 
 1. Connect one end(ribbon cable) of the flex cable to servoV2 and the other end to the debug header on the chrome device.
 2. Connect DUT_HUB_IN(micro USB port) of the servo to the DUT.
-3. Prepare a USB flash drive with valid Chrome OS image and plug into the USB port of the servo as shown in the photo.
+3. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the photo.
 4. Connect the micro USB port of the servo to the host machine(workstation or a labstation).
 5. Connect an Ethernet cable to the Ethernet jack of the servo.
 
@@ -226,7 +226,7 @@ Some tests can be run in either normal mode or dev mode, specify the control fil
 
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP f:.*TryFwB/control.dev`
 
-FAFT can install Chrome OS image from the USB when image filename is specified
+FAFT can install ChromeOS image from the USB when image filename is specified
 
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "image=$IMAGE_FILE" f:.*RecoveryButton/control.normal`
 
@@ -315,7 +315,7 @@ Q: All tests are failing to run, saying that python was not found.
   powerwash.
 
   It is usually caused by the stateful filesystem becoming corrupted, since
-  Chrome OS performs a powerwash instead of running `fsck` like a standard
+  ChromeOS performs a powerwash instead of running `fsck` like a standard
   Linux distribution would.
 
 Q: What causes filesystem corruption?

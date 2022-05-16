@@ -1,4 +1,4 @@
-# Coding style for autotest in Chrome OS / Android / Brillo
+# Coding style for autotest in ChromeOS / Android / Brillo
 These rules elaborate on, but rarely deviate from PEP-8.  When in doubt, go
 with PEP-8.
 
@@ -234,6 +234,6 @@ client/common\_lib/error.py.
 
 ## Submitting patches
 
-Submit changes through the Chrome OS gerrit instance.  This process is
+Submit changes through the ChromeOS gerrit instance.  This process is
 documented on
 [chromium.org](http://dev.chromium.org/developers/contributing-code).

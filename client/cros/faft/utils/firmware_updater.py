@@ -365,14 +365,11 @@ class FirmwareUpdater(object):
             work_path = self._work_path
         self.os_if.run_shell_command(
                 '/usr/share/vboot/bin/resign_firmwarefd.sh '
-                '%s %s %s %s %s %s %s %s' %
+                '%s %s %s %s %s %s' %
                 (os.path.join(work_path, self._bios_path),
                  os.path.join(self._temp_path, 'output.bin'),
                  os.path.join(self._keys_path, 'firmware_data_key.vbprivk'),
                  os.path.join(self._keys_path, 'firmware.keyblock'),
-                 os.path.join(self._keys_path,
-                              'dev_firmware_data_key.vbprivk'),
-                 os.path.join(self._keys_path, 'dev_firmware.keyblock'),
                  os.path.join(self._keys_path, 'kernel_subkey.vbpubk'),
                  ('%d' % version) if version is not None else ''))
         self.os_if.copy_file(

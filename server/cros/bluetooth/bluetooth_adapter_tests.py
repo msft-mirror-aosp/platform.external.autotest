@@ -729,7 +729,7 @@ class BluetoothAdapterTests(test.test):
     ERROR_INVALID_ADVERTISING_INTERVALS = (
             'org.bluez.Error.InvalidArguments: Invalid arguments')
 
-    # Supported profiles by chrome os.
+    # Supported profiles by ChromeOS.
     SUPPORTED_UUIDS = {
             'GATT_UUID': '00001801-0000-1000-8000-00805f9b34fb',
             'A2DP_SOURCE_UUID': '0000110a-0000-1000-8000-00805f9b34fb',
@@ -2069,7 +2069,7 @@ class BluetoothAdapterTests(test.test):
         logging.debug('Saw Bluetooth ID of: %s', modalias)
 
         # Valid Device ID is:
-        # <00E0(Google)>/<C405(Chrome OS)>/<non-zero versionNumber>
+        # <00E0(Google)>/<C405(ChromeOS)>/<non-zero versionNumber>
         bt_format = 'bluetooth:v00E0pC405d(?!0000)'
 
         if not re.match(bt_format, modalias):

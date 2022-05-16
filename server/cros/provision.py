@@ -66,9 +66,9 @@ def get_version_label_prefix(image):
     to, and returns the corresponding version label prefix.
 
     Known version label prefixes are:
-      * `CROS_VERSION_PREFIX` for Chrome OS version strings.
+      * `CROS_VERSION_PREFIX` for ChromeOS version strings.
         These images have names like `cave-release/R57-9030.0.0`.
-      * `CROS_ANDROID_VERSION_PREFIX` for Chrome OS Android version strings.
+      * `CROS_ANDROID_VERSION_PREFIX` for ChromeOS Android version strings.
         These images have names like `git_nyc-arc/cheets_x86-user/3512523`.
 
     @param image: The image name to be parsed.

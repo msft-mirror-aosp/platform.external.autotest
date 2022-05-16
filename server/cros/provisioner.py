@@ -162,7 +162,7 @@ def _url_to_version(update_url):
     @param update_url: url to the image to update to.
 
     """
-    # The Chrome OS version is generally the last element in the URL. The only
+    # The ChromeOS version is generally the last element in the URL. The only
     # exception is delta update URLs, which are rooted under the version; e.g.,
     # http://.../update/.../0.14.755.0/au/0.14.754.0. In this case we want to
     # strip off the au section of the path before reading the version.

@@ -1517,7 +1517,7 @@ class FirmwareTest(test.test):
         boot_id = self.get_bootid()
         self.faft_client.disconnect()
 
-        # Press power button to trigger Chrome OS normal shutdown process.
+        # Press power button to trigger ChromeOS normal shutdown process.
         # We use a customized delay since the normal-press 1.2s is not enough.
         self.servo.power_key(self.faft_config.hold_pwr_button_poweroff)
         # device can take 44-51 seconds to restart,

@@ -46,12 +46,12 @@ class ImageParsingTests(unittest.TestCase):
             self.assertEqual(prefix, expected)
 
     def test_cros_prefix(self):
-        """Test handling of Chrome OS version strings."""
+        """Test handling of ChromeOS version strings."""
         self._do_test_prefixes(provision.CROS_VERSION_PREFIX,
                                _CROS_VERSION_SAMPLES)
 
     def test_cros_android_prefix(self):
-        """Test handling of Chrome OS version strings."""
+        """Test handling of ChromeOS version strings."""
         self._do_test_prefixes(provision.CROS_ANDROID_VERSION_PREFIX,
                                _CROS_ANDROID_VERSION_SAMPLES)
 

@@ -335,7 +335,7 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         """Runs a telemetry test on a dut.
 
         @param script: Which telemetry test script we want to run. Can be
-                       telemetry's base test script or the Chrome OS specific
+                       telemetry's base test script or the ChromeOS specific
                        test script.
         @param test: Telemetry test we want to run.
         @param args: additional list of arguments to pass to the script.

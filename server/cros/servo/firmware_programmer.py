@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""A utility to program Chrome OS devices' firmware using servo.
+"""A utility to program ChromeOS devices' firmware using servo.
 
 This utility expects the DUT to be connected to a servo device. This allows us
 to put the DUT into the required state and to actually program the DUT's

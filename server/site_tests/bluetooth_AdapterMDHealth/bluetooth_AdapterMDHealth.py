@@ -79,7 +79,11 @@ class bluetooth_AdapterMDHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Two BLE connections',
-                  devices={'BLE_MOUSE':1, 'BLE_KEYBOARD':1})
+                  devices={
+                          'BLE_MOUSE': 1,
+                          'BLE_KEYBOARD': 1
+                  },
+                  supports_floss=True)
     def md_two_ble_hid_connections_test(self):
         """ test whether DUT can connect to ble keyboard and ble mouse at the
             same time
@@ -92,7 +96,12 @@ class bluetooth_AdapterMDHealth(BluetoothAdapterQuickTests,
         self.pair_and_test_connection(devices)
 
 
-    @test_wrapper('Two classic connections', devices={'MOUSE':1, 'KEYBOARD':1})
+    @test_wrapper('Two classic connections',
+                  devices={
+                          'MOUSE': 1,
+                          'KEYBOARD': 1
+                  },
+                  supports_floss=True)
     def md_two_cl_hid_connections_test(self):
         """ test whether DUT can connect to classic mouse and classic keyboard
             at the same time

@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_MiniosPriority.minios_b"
 PURPOSE = "Set the MiniOS priority and verify the device can boot to MiniOS in any priority setting"
 CRITERIA = "This test will fail if the device fail to boot to MiniOS or boot to the wrong partition"

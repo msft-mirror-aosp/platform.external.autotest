@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECSystemLocked"
 PURPOSE = "Ensure that CONFIG_SYSTEM_UNLOCKED is unset."
 CRITERIA = "This test will fail if CONFIG_SYSTEM_UNLOCKED is set."

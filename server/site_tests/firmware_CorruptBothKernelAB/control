@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_CorruptBothKernelAB"
 PURPOSE = "Servo based both kernel A and B corruption test"
 CRITERIA = "This test will fail if firmware does not enter recovery mode"
@@ -20,7 +20,7 @@ PY_VERSION = 3
 DOC = """
 This test corrupts both kernel A and B and and checks for recovery boot.
 
-This test requires a USB disk plugged-in, which contains a Chrome OS test
+This test requires a USB disk plugged-in, which contains a ChromeOS test
 image (built by "build_image --test"). On runtime, this test corrupts
 both kernel A and B. On next reboot, the kernel verification fails
 and enters recovery mode. This test then checks the success of the

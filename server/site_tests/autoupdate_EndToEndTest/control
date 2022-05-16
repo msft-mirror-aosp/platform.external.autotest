@@ -20,8 +20,8 @@ PY_VERSION = 3
 REQUIRE_SSP = False
 
 DOC = """
-This is an end-to-end update test of Chrome OS releases. Given a test
-configuration, it will perform an end-to-end test of a Chrome OS update
+This is an end-to-end update test of ChromeOS releases. Given a test
+configuration, it will perform an end-to-end test of a ChromeOS update
 payload. A test configuration can be given as command-line arguments (see
 below) or instantiated inline as local varibles.
 

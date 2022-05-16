@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_UserRequestRecovery.dev"
 PURPOSE = "Request recovery mode and check it next reboot."
 CRITERIA = "This test will fail if firmware does not enter recovery mode"
@@ -17,7 +17,7 @@ TEST_TYPE = "server"
 PY_VERSION = 3
 
 DOC = """
-This test requires a USB disk plugged-in, which contains a Chrome OS test
+This test requires a USB disk plugged-in, which contains a ChromeOS test
 image (built by "build_image --test"). On runtime, this test first requests
 a recovery mode on next boot by setting the crossystem recovery_request
 flag. It then triggers recovery mode by unplugging and plugging in the USB

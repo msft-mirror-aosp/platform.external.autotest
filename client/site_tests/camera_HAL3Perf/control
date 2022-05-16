@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Team, chromeos-video@google.com"
+AUTHOR = "ChromeOS Team, chromeos-video@google.com"
 NAME = "camera_HAL3Perf"
 PURPOSE = "Monitor the performance of the camera HAL3."
 CRITERIA = """

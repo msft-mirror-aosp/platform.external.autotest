@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_Mosys"
 PURPOSE = "Execute firmware Mosys commands and check return value."
 CRITERIA = """

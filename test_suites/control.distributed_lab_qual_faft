@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Distributed Fleet Platform"
+AUTHOR = "ChromeOS Distributed Fleet Platform"
 NAME = "distributed_lab_qual_faft"
 PURPOSE = "Test Distributed Lab stability with faft tests"
 

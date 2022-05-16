@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_CorruptMinios.minios_b"
 PURPOSE = "Corrupt one MiniOS kernel, set the priority to that, and ensure that both priority can boot"
 CRITERIA = "This test will fail if the device fail to boot to MiniOS when one MiniOS kernel is corrupted"

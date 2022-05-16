@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "servo_USBInstall"
 PURPOSE = "Force reinstall cros to a dut from the servo."
 TIME = "MEDIUM"

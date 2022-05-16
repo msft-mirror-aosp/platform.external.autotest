@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_MenuModeTransition"
 PURPOSE = "Perform mode transitions through menu navigation"
 CRITERIA = "This test will fail if mode transition does not work"

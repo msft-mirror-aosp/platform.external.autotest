@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "platform_ExternalUsbPeripherals.detect.long_cycle"
 PURPOSE = "Servo based USB peripheral detection test"
 CRITERIA = "This test will fail if any of the actions or checks fail."

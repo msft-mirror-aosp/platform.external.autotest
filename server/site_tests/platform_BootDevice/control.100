@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 NAME = "platform_BootDevice.BootDevice100"
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 ATTRIBUTES = "suite:stress"
 TIME = "LONG"
 TEST_CATEGORY = "Stress"

@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECKeyboardReboot"
 PURPOSE = "Servo based EC reboot test"
 CRITERIA = "This test will fail if failed to reboot via dut-control ec_uart_cmd:reboot."

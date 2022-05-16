@@ -16,7 +16,7 @@ PY_VERSION = 3
 
 DOC = """
 This runs various Telemetry performance tests under the crosperf script.
-This is part of Chrome OS Toolchain testing platform.
+This is part of ChromeOS Toolchain testing platform.
 """
 
 # Put the args into the args_dict.

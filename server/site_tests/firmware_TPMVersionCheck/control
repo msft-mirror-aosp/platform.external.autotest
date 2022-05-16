@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_TPMVersionCheck"
 PURPOSE = "Crossystem reports tpm versions correctly"
 CRITERIA = "This test will fail if crossystem does not report correctly."

@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_TypeCProbeUSB3"
 PURPOSE = "Remotely controlled USB type C super speed device probing test."
 CRITERIA = "This test will fail if DUT can't probe USB3 device on type C port."

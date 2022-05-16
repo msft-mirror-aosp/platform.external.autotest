@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_CorruptFwBodyB.dev"
 PURPOSE = "Servo based firmware B body corruption test"
 CRITERIA = "This test will fail if firmware verification mis-behaved"

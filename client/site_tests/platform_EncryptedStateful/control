@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 NAME = "platform_EncryptedStateful"
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 PURPOSE = "Verify mount-encrypted operates as expected"
 CRITERIA = """
 Fails if the mount-encrypted helper does not operated as expected

@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_Cr50DeferredECReset"
 PURPOSE = "Verify Deferred EC Reset."
 # TODO(b/139537748): should verify this test running on varius platforms

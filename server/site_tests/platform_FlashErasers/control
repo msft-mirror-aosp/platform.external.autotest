@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "platform_FlashErasers"
 PURPOSE = "Test flashrom erasing blocks of various sizes."
 ATTRIBUTES = "suite:faft_flashrom"

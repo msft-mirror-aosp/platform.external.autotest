@@ -4,7 +4,7 @@
 
 #from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_FMap.dev"
 PURPOSE = "Check the existence of BIOS and EC FMap and the required FMap areas"
 CRITERIA = "This test will fail if the required FMap areas not existed"

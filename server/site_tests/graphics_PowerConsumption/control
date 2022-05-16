@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 PY_VERSION = 3
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "graphics_PowerConsumption"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Performance"

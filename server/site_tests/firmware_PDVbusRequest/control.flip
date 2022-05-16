@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_PDVbusRequest.flip"
 PURPOSE = "Servo based PD VBUS voltage level test"
 ATTRIBUTES = "suite:faft_pd"

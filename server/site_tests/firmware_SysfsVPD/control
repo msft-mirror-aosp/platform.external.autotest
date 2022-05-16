@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_SysfsVPD"
 PURPOSE = "Servo based test for reading VPD data through sysfs"
 CRITERIA = "This test will fail if the VPD test string is not read back correctly"

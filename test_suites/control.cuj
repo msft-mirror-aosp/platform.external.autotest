@@ -4,7 +4,7 @@
 
 AUTHOR = "ChromeOS Performance Metrics Team (chromeos-perfmetrics-eng@google.com)"
 NAME = "cuj"
-PURPOSE = "Suite to run CUJ tests regularly on Chrome OS devices."
+PURPOSE = "Suite to run CUJ tests regularly on ChromeOS devices."
 
 TIME = "MEDIUM"
 TEST_CATEGORY = "General"

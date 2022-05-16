@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 NAME = "platform_KernelErrorPaths.EXCEPTION"
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 ATTRIBUTES = "suite:kernel_per-build_regression, suite:pvs-kernel, suite:partners"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"

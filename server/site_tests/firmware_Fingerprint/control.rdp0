@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_Fingerprint.RDP0"
 PURPOSE = """
 Verify that we can read flash when RDP (readout protection) is set to level 0.

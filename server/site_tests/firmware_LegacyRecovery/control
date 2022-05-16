@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_LegacyRecovery"
 PURPOSE = "Servo based test to Verify recovery request at Remove Screen."
 CRITERIA = "This test will fail if the recovery at Remove screen is success."
@@ -18,7 +18,7 @@ JOB_RETRIES = 0
 PY_VERSION = 3
 
 DOC = """
-This test requires a USB disk plugged-in, which contains a Chrome OS test image
+This test requires a USB disk plugged-in, which contains a ChromeOS test image
 (built by "build_image --test"). It recovery boots to the USB image and sets
 recovery_request=1 and do a reboot. A failure is expected.
 """

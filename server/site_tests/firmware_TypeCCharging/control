@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_TypeCCharging"
 PURPOSE = "Remotely controlled USB type C charging test."
 CRITERIA = "This test will fail if Plankton type C VBUS voltage not in range."

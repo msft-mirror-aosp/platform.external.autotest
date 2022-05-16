@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_FlashServoKeyboardMap"
 PURPOSE = "Flash the servo v3 keyboard map"
 CRITERIA = "This test will fail if the servo keyboard map can't be updated"

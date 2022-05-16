@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "power_LoadTest.FDO_eth_fast"
 PURPOSE = "Test health of power load test functionality."
 CRITERIA = "This test is a benchmark."

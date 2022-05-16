@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECRestoreFW"
 PURPOSE = "Verify the FW restoration capability even from a bad state."
 ATTRIBUTES = ""

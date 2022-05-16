@@ -33,7 +33,7 @@ A failure can indicate several things:
 
 That's a fairly broad range of causes. They're all covered here with the intent
 of providing a single fast-running, minimally-flaky test that can be used to
-validate new versions of Chrome before integrating them into Chrome OS.
+validate new versions of Chrome before integrating them into ChromeOS.
 
 The info log provides high-level information about what the test is doing and
 can hopefully be used to narrow down the location of failure.

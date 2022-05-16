@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_PDResetHard.dts_flip"
 PURPOSE = "Servo based PD hard reset test"
 ATTRIBUTES = "suite:faft_pd"

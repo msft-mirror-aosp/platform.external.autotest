@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "platform_Flashrom"
 PURPOSE = "Test flashrom in chromeos-firmwareupdate."
 ATTRIBUTES = "suite:faft_flashrom"

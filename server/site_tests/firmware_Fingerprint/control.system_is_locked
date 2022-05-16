@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_Fingerprint.SystemIsLocked"
 PURPOSE = """
 Verify that system_is_locked() is true in the firmware (i.e.,

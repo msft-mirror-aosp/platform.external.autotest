@@ -4,14 +4,14 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_SelfSignedBoot"
 PURPOSE = "Servo based developer mode boot only test to Self signed Kernels."
 CRITERIA = """
 Prerequirement is as follow:
 1. This test should run in Dev mode.
 2. Enable dev_boot_usb and dev_boot_signed_only.
-3. A USB disk should be plugged-in, which contains a Chrome OS Test Image.
+3. A USB disk should be plugged-in, which contains a ChromeOS test image.
 
 This test will fail if one of the following conditions is met:
 1. Ctrl-U boots to USB image with recovery keys.
@@ -28,7 +28,7 @@ JOB_RETRIES = 0
 PY_VERSION = 3
 
 DOC = """
-This test requires a USB disk plugged-in, which contains a Chrome OS test
+This test requires a USB disk plugged-in, which contains a ChromeOS test
 image (built by "build_image test"). On runtime, this test first switches
 DUT to developer mode. When dev_boot_signed_only=1 and dev_boot_usb=1 and,
 pressing Ctrl-U on developer screen should not boot the USB disk. On resigning

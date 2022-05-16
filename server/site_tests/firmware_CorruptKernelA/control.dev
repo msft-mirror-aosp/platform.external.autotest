@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_CorruptKernelA.dev"
 PURPOSE = "Servo based kernel A corruption test"
 CRITERIA = "This test will fail if kernel verification mis-behaved"

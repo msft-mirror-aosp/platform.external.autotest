@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Fingerprint Team"
+AUTHOR = "ChromeOS Fingerprint Team"
 NAME = "fingerprint-cq"
 PURPOSE = "Run fingerprint-related critical tests."
 

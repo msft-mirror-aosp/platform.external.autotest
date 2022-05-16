@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "wificell_dut_validation"
 PURPOSE = "Group of tests run by lab team to validate AP, PCAP, BT-Peers & DUT during deployment."
 

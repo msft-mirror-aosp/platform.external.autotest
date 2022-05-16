@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECHash"
 PURPOSE = "Servo based EC hash recompute test"
 CRITERIA = "This test will fail if EC failed to recompute its hash."

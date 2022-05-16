@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "power_LoadTest.force_discharge"
 PURPOSE = "Measure power draw when system is under load."
 CRITERIA = "This test is a benchmark."

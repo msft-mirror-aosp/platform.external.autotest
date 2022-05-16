@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_PDTrySrc"
 PURPOSE = "Servo based PD Try.SRC protocol test"
 ATTRIBUTES = "suite:faft_pd"

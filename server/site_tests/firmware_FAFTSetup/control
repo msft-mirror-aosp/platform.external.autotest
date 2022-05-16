@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_FAFTSetup"
 PURPOSE = "Servo based diagnose of FAFT hardware setup"
 CRITERIA = "This test will fail if FAFT hardware is not set up correctly."

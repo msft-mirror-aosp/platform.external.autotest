@@ -1,4 +1,4 @@
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "power_Display.max_brightness"
 PURPOSE = "Measure display power usage."
 

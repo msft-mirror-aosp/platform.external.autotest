@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_TPMNotCorruptedDevMode"
 PURPOSE = "Ensure kernel and fw version in TPM isn't corrupted in dev mode."
 CRITERIA = "This test will fail if dev mode corrupts the kernel or fw version."
@@ -18,7 +18,7 @@ JOB_RETRIES = 0
 PY_VERSION = 3
 
 DOC = """
-This test requires a USB disk plugged-in, which contains a Chrome OS test
+This test requires a USB disk plugged-in, which contains a ChromeOS test
 image (built by "build_image test"). On runtime, this test first switches
 DUT to developer mode. It then checks the kernel and firmware version stored in
 the TPM. It then boots into normal mode and checks the kernel and firmware

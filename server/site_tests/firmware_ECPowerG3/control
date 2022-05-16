@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECPowerG3"
 PURPOSE = "Servo based EC X86 power G3 drop test"
 CRITERIA = "This test will fail if EC fails to drop to G3 correctly."

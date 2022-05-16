@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 NAME = "detachablebase_TriggerHammerd"
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 PURPOSE = "Check hammerd starts correctly on boot."
 CRITERIA = "This test will fail if hammerd returns non-zero value."
 TIME = "SHORT"

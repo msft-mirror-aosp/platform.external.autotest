@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_RollbackFirmware"
 PURPOSE = "Servo based firmware rollback test."
 CRITERIA = "This test will fail if firmware rollback doesn't fail verification."
@@ -18,7 +18,7 @@ JOB_RETRIES = 0
 PY_VERSION = 3
 
 DOC = """
-This test requires a USB disk plugged-in, which contains a Chrome OS test
+This test requires a USB disk plugged-in, which contains a ChromeOS test
 image (built by "build_image --test"). On runtime, this test rollbacks
 firmware A and results firmware B boot. It then rollbacks firmware B and
 results recovery boot.

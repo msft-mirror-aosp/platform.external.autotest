@@ -7,7 +7,7 @@
 # To re-enable migrate to Python 3.
 # If the test is not migrated by 1/14/22 it will be deleted.
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "platform_BootPerf"
 PURPOSE = "Collect boot performance metrics from the last system reboot."
 CRITERIA = """

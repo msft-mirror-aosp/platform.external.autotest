@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_Fingerprint.CrosConfig"
 PURPOSE = """
 Debug cros_config failures. See http://b/160271883.

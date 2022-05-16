@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "dummy_Fail"
 PURPOSE = "Demonstrate failure methods of autotests."
 CRITERIA = "This test will never succeed."
@@ -26,4 +26,3 @@ job.run_test('dummy_Fail', tag='Fail', to_throw='TestFail')
 job.run_test('dummy_Fail', tag='Warn', to_throw='TestWarn')
 job.run_test('dummy_Fail', tag='NAError', to_throw='TestNAError')
 job.run_test('dummy_Fail', tag='Crash', to_throw=None)
-

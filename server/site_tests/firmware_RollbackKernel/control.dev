@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_RollbackKernel.dev"
 PURPOSE = "Servo based kernel rollback test."
 CRITERIA = "This test will fail if kernel rollback doesn't fail verification."
@@ -17,7 +17,7 @@ TEST_TYPE = "server"
 PY_VERSION = 3
 
 DOC = """
-This test requires a USB disk plugged-in, which contains a Chrome OS test
+This test requires a USB disk plugged-in, which contains a ChromeOS test
 image (built by "build_image --test"). In normal mode, this test rollbacks
 kernel A and results kernel B boot. It then rollbacks kernel B and
 results recovery boot. In developer mode, the firmware ignores kernel

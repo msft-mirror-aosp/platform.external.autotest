@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_UpdateFirmwareDataKeyVersion"
 PURPOSE = """
 Servo based firmware update test which check firmware datakey version.
@@ -13,7 +13,7 @@ CRITERIA = """
 Prerequirement is as follow:
 1.The fwid should matches shellball's (/usr/sbin/chromeos-firmwareupdate) fwid,
   unless this test use a given shellball.
-2. A USB disk should be plugged-in, which contains a Chrome OS test image.
+2. A USB disk should be plugged-in, which contains a ChromeOS test image.
 
 This test will fail if following requrements are met:
 1. fwid does not match shellball's (/usr/sbin/chromeos-firmwareupdate) fwid

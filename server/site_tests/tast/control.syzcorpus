@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'zsm, Chrome OS Kernel Team'
+AUTHOR = 'zsm, ChromeOS Kernel Team'
 NAME = 'tast.syzcorpus'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
@@ -14,7 +14,7 @@ PY_VERSION = 3
 REQUIRE_SSP = True
 
 DOC = '''
-Run the Tast test(s) to run Syzkaller reproducers to test Chrome OS kernels.
+Run the Tast test(s) to run Syzkaller reproducers to test ChromeOS Kernels.
 This is a regression test suite for the kernel(both core and drivers).
 See https://github.com/dvyukov/syzkaller-repros for more information.
 

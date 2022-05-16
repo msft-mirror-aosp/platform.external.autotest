@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "zsm, Chrome OS Kernel Team"
+AUTHOR = "zsm, ChromeOS Kernel Team"
 NAME = "syzcorpus"
-PURPOSE = "Suite to run Syzkaller repros on Chrome OS devices."
+PURPOSE = "Suite to run Syzkaller repros on ChromeOS devices."
 
 TIME = "MEDIUM"
 TEST_CATEGORY = "General"
@@ -12,7 +12,7 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite runs Syzkaller reproducers to test the Chrome OS kernel.
+This suite runs Syzkaller reproducers to test the ChromeOS Kernel.
 This is a regression test suite for the kernel(both core and drivers).
 See https://github.com/dvyukov/syzkaller-repros for more information.
 """

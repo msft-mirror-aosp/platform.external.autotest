@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Cellular Team"
+AUTHOR = "ChromeOS Cellular Team"
 NAME = "cellular_callbox"
 PURPOSE = "Cellular callbox tests to be included in cellular callbox CQ"
 

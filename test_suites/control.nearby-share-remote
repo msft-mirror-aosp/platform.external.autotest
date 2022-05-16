@@ -4,7 +4,7 @@
 
 AUTHOR = "ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)"
 NAME = "nearby-share-remote"
-PURPOSE = "Suite to run Nearby Share remote tests on Chrome OS devices."
+PURPOSE = "Suite to run Nearby Share remote tests on ChromeOS devices."
 TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "suite"

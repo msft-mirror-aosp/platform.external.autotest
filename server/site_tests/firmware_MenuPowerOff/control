@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_MenuPowerOff"
 PURPOSE = "Select power off menu item on firmware screens"
 CRITERIA = "This test will fail the power off menu item doesn't have any effect"

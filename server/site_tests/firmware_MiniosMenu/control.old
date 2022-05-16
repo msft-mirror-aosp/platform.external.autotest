@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_MiniosMenu.old"
 PURPOSE = "Navigate to the MiniOS by menu navigation (older version)"
 CRITERIA = "This test will fail if the device fail to boot to MiniOS"

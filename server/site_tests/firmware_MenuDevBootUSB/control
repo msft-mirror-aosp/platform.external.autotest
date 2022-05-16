@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_MenuDevBootUSB"
 PURPOSE = "Select external boot menu item on developer screen"
 CRITERIA = "This test will fail the external boot menu item doesn't have any effect"

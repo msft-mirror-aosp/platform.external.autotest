@@ -11,7 +11,7 @@ PY_VERSION = 3
 
 DOC = """
 This server side test suite executes the Telemetry Scrolling Benchmark.
-This is part of our effort to support Chrome for Chrome OS performance testing.
+This is part of our effort to support Chrome for ChromeOS performance testing.
 """
 
 def run_test(machine):

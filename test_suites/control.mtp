@@ -4,7 +4,7 @@
 
 AUTHOR = "ARC Engprod Team"
 NAME = "mtp"
-PURPOSE = "Suite to run MTP(Media Transfer Protocol) tests on Chrome OS devices."
+PURPOSE = "Suite to run MTP(Media Transfer Protocol) tests on ChromeOS devices."
 TIME = "MEDIUM"
 TEST_CATEGORY = "General"
 TEST_CLASS = "suite"

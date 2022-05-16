@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_CorruptBothFwBodyAB"
 PURPOSE = "Servo based both firmware body A and B corruption test"
 CRITERIA = "This test will fail if firmware does not enter recovery mode"
@@ -26,7 +26,7 @@ doesn't hurt the boot results since it boots the RO path directly and does
 not load and verify the RW firmware body. In the case USE_RO_NORMAL OFF,
 the firmware verification fails on loading RW firmware and enters recovery
 mode. In this case, it requires a USB disk plugged-in, which contains a
-Chrome OS test image (built by "build_image --test").
+ChromeOS test image (built by "build_image --test").
 """
 
 args_dict = utils.args_to_dict(args)

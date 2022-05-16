@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 NAME = "platform_BootDevice.BootDevice"
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 ATTRIBUTES = "suite:kernel_daily_regression"
 TIME = "LONG"
 TEST_CATEGORY = "Stress"

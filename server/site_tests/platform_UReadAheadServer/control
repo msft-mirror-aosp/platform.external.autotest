@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 NAME = "platform_UReadAheadServer"
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 TIME = "SHORT"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"

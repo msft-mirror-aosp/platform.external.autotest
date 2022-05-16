@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_DevMode"
 PURPOSE = "Servo based developer firmware boot test"
 CRITERIA = "This test will fail if firmware does not switch to developer mode"

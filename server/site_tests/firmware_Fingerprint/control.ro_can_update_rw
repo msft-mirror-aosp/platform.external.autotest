@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_Fingerprint.ROCanUpdateRW"
 PURPOSE = """
 Validates that the RO fingerprint firmware can update the RW firmware.

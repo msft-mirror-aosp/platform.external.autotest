@@ -1,4 +1,4 @@
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "power_VideoPlayback"
 PURPOSE = "Measure video playback power usage."
 

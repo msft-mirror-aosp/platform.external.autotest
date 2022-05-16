@@ -4,7 +4,7 @@
 
 AUTHOR = "ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)"
 NAME = "cross-device"
-PURPOSE = "Suite to run Cross Device tests on Chrome OS devices."
+PURPOSE = "Suite to run Cross Device tests on ChromeOS devices."
 TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "suite"

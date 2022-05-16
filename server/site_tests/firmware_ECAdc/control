@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECAdc"
 PURPOSE = "Servo based EC ADC test"
 CRITERIA = "This test will fail if EC ADC misbehalved."

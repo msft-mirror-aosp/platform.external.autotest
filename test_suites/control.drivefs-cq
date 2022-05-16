@@ -11,7 +11,7 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite verifies all of Chrome OS's basic functionality using tests
+This suite verifies all of ChromeOS's basic functionality using tests
 which have a tast group attribute of drivefs-cq. These tests should run
 as presubmit only when a new ebuild is uprevved in the drivefs and
 drivefs-ipc packages.

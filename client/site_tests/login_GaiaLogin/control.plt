@@ -4,7 +4,7 @@
 
 from autotest_lib.client.common_lib.cros import power_load_util
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "login_GaiaLogin.plt"
 ATTRIBUTES = "suite:power_daily"
 TIME = "SHORT"

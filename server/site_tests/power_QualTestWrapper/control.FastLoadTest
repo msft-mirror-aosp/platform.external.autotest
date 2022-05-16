@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS PVS Team"
+AUTHOR = "ChromeOS PVS Team"
 NAME = "power_FastLoadTest"
 PURPOSE = "power_Dummy orchestrated with wrappers for qualification"
 CRITERIA = "This test is a benchmark."

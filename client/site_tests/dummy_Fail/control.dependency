@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "dummy_Fail.dependency"
 PURPOSE = """
 Test if dependency is properly processed, the test should be shown as TEST_NA in

@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECWakeSource"
 PURPOSE = "Servo based EC wake source test"
 CRITERIA = "This test will fail if EC wake source misbehalved."

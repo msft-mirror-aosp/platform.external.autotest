@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "bvt-tast-parallels-cq"
 PURPOSE = "Runs all critical Parallels Tast tests."
 
@@ -12,7 +12,7 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite verifies basic Parallels functionality on Chrome OS for the Chrome
+This suite verifies basic Parallels functionality on ChromeOS for the Chrome
 OS Commit Queue by running all Parallels Tast integration tests that must
 always pass against a DUT.
 

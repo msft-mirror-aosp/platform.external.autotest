@@ -3,10 +3,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-'''Chrome OS device GPIO library
+'''ChromeOS device GPIO library
 
 This module provides a convenient way to detect, setup, and access to GPIO
-values on a Chrome OS compatible device.
+values on a ChromeOS compatible device.
 
 See help(Gpio) for more information.
 '''

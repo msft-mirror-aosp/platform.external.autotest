@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# The names of expected mount-points, devices, magic files, etc on chrome os.
+# The names of expected mount-points, devices, magic files, etc on ChromeOS.
 
 # Constants used by other constants.
 USER_DATA_DIR = '/home/chronos'

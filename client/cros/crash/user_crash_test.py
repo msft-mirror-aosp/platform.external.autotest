@@ -50,7 +50,7 @@ class UserCrashTest(crash_test.CrashTest):
 
         @param expected_tag: Expected tag in crash_reporter log message.
         @param expected_version: Expected version included in the crash report,
-                                 or None to use the Chrome OS version.
+                                 or None to use the ChromeOS version.
         @param force_user_crash_dir: Always look for crash reports in the crash
                                      directory of the current user session, or
                                      the fallback directory if no sessions.

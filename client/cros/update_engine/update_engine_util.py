@@ -583,7 +583,7 @@ class UpdateEngineUtil(object):
 
         @param update_url: String of url to use for update check.
         @param build: String of the build number to use. Represents the
-                      Chrome OS build this device thinks it is on.
+                      ChromeOS build this device thinks it is on.
         @param kwargs: A dictionary of key/values to be made into a query string
                        and appended to the update_url
 

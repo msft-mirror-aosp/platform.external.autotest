@@ -420,7 +420,7 @@ def add_ssh_identity(temp_directory, ssh_private_key=TEST_KEY_PATH):
     """Add an ssh identity to the agent.
 
     TODO (sbasi) b/26186193: Add support for test_droid and make TEST_KEY_PATH
-    not Chrome OS specific.
+    not ChromeOS specific.
 
     @param temp_directory: A directory to copy the |private key| into.
     @param ssh_private_key: Path to the ssh private key to use for testing.

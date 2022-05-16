@@ -103,7 +103,7 @@ def download_image_to_servo_usb(host, build):
     """Download the given image to the USB attached to host's servo.
 
     @param host   A server.hosts.Host object.
-    @param build  A Chrome OS version string for the build to download.
+    @param build  A ChromeOS version string for the build to download.
     """
     _, update_url = host.stage_image_for_servo(build)
     host.servo.image_to_servo_usb(update_url)

@@ -190,18 +190,18 @@ class _FirmwareVersionMapHandler(_VersionMapHandler):
 
 class _CrOSVersionMapHandler(_VersionMapHandler):
     TYPE = frontend.AFE.CROS_IMAGE_TYPE
-    DESCRIPTION = 'Chrome OS'
+    DESCRIPTION = 'ChromeOS'
 
     def set_mapping(self, board, version):
-        """Assign the Chrome OS mapping for the given board.
+        """Assign the ChromeOS mapping for the given board.
 
-        This function assigns the given Chrome OS version to the given
+        This function assigns the given ChromeOS version to the given
         board.  Additionally, for any model with firmware bundled in the
         assigned build, that model will be assigned the firmware version
         found for it in the build.
 
-        @param board    Chrome OS board to be assigned a new version.
-        @param version  New Chrome OS version to be assigned to the
+        @param board    ChromeOS board to be assigned a new version.
+        @param version  New ChromeOS version to be assigned to the
                         board.
         """
         new_version = build_data.get_omaha_upgrade(
@@ -217,13 +217,13 @@ class _CrOSVersionMapHandler(_VersionMapHandler):
                 fw_handler.set_mapping(model, fw_version)
 
     def delete_mapping(self, board):
-        """Delete the Chrome OS mapping for the given board.
+        """Delete the ChromeOS mapping for the given board.
 
-        This function handles deletes the Chrome OS version mapping for the
+        This function handles deletes the ChromeOS version mapping for the
         given board.  Additionally, any R/W firmware mapping that existed
         because of the OS mapping will be deleted as well.
 
-        @param board    Chrome OS board to be deleted from the mapping.
+        @param board    ChromeOS board to be deleted from the mapping.
         """
         version = self.get_mapping(board)
         super(_CrOSVersionMapHandler, self).delete_mapping(board)

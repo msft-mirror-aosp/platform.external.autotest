@@ -5,11 +5,11 @@
 """Functions for reading build information from GoogleStorage.
 
 This module contains functions providing access to basic data about
-Chrome OS builds:
-  * Functions for finding information about the Chrome OS versions
+ChromeOS builds:
+  * Functions for finding information about the ChromeOS versions
     currently being served by Omaha for various boards/hardware models.
   * Functions for finding information about the firmware delivered by
-    any given build of Chrome OS.
+    any given build of ChromeOS.
 
 The necessary data is stored in JSON files in well-known locations in
 GoogleStorage.
@@ -32,7 +32,7 @@ from autotest_lib.server import frontend
 # served by Omaha, including the following information:
 #   * The board name of the product, as known to Omaha.
 #   * The channel associated with the image.
-#   * The Chrome and Chrome OS version strings for the image
+#   * The Chrome and ChromeOS version strings for the image
 #     being served.
 #
 _OMAHA_STATUS = 'gs://chromeos-build-release-console/omaha_status.json'
@@ -218,7 +218,7 @@ def get_omaha_upgrade(omaha_map, board, version):
     @param board      Name of the board to look up, as known to the AFE.
     @param version    Minimum version to be accepted.
 
-    @return Returns a Chrome OS version string in standard form
+    @return Returns a ChromeOS version string in standard form
             R##-####.#.#.  Will return `None` if `version` is `None` and
             no Omaha entry is found.
     """

@@ -5,7 +5,7 @@
 
 """Clean Staged Images.
 
-This script is responsible for removing older builds from the Chrome OS
+This script is responsible for removing older builds from the ChromeOS
 devserver. It walks through the files in the images folder, check each found
 staged.timestamp and do following.
 1. Check if the build target is in the list of targets that need to keep the

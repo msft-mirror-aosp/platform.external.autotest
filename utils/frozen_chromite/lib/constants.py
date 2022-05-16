@@ -349,7 +349,7 @@ ANDROID_SYMBOLS_URL_TEMPLATE = (
     '/%(target)s_%(arch)s%(suffix)s-symbols-%(version)s.zip')
 ANDROID_SYMBOLS_FILE = 'android-symbols.zip'
 # x86-user, x86-userdebug and x86-eng builders create build artifacts with the
-# same name, e.g. cheets_x86-target_files-${VERSION}.zip. Chrome OS builders
+# same name, e.g. cheets_x86-target_files-${VERSION}.zip. ChromeOS builders
 # that need to select x86-user or x86-userdebug artifacts at emerge time need
 # the artifacts to have different filenames to avoid checksum failures. These
 # targets will have their artifacts renamed when the PFQ copies them from the

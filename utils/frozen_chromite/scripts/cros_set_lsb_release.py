@@ -11,8 +11,8 @@ from __future__ import print_function
 # LSB keys:
 # Set google-specific version numbers:
 # CHROMEOS_RELEASE_BOARD is the target board identifier.
-# CHROMEOS_RELEASE_BRANCH_NUMBER is the Chrome OS branch number
-# CHROMEOS_RELEASE_BUILD_NUMBER is the Chrome OS build number
+# CHROMEOS_RELEASE_BRANCH_NUMBER is the ChromeOS branch number
+# CHROMEOS_RELEASE_BUILD_NUMBER is the ChromeOS build number
 # CHROMEOS_RELEASE_BUILD_TYPE is the type of build (official, from developers,
 # etc..)
 # CHROMEOS_RELEASE_CHROME_MILESTONE is the Chrome milestone (also named Chrome

@@ -1031,7 +1031,7 @@ def DefaultSettings():
             # Use a different branch of the project manifest for the build.
             manifest_branch=None,
 
-            # LKGM for Chrome OS generated for Chrome builds that are blessed from
+            # LKGM for ChromeOS generated for Chrome builds that are blessed from
             # canary runs.
             use_chrome_lkgm=False,
 

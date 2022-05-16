@@ -39,7 +39,7 @@ class stack_trace_test(unittest.TestCase):
             'CROS', 'source_tree', default=None)
 
         if not self._cros_src_dir:
-            self.fail('No Chrome OS source tree defined in global_config.ini')
+            self.fail('No ChromeOS source tree defined in global_config.ini')
 
         self._stack_trace = StackTrace(
             self._fake_results, self._cros_src_dir)

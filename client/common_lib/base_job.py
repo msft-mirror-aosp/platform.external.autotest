@@ -240,7 +240,7 @@ class job_state(object):
             # This _is_ necessary in the instance that the pickled job is transferred between the
             # server_job and the job on the DUT. The two can be on different autotest versions
             # (e.g. for non-SSP / client tests the server-side is versioned with the drone vs
-            # client-side versioned with the Chrome OS being tested).
+            # client-side versioned with the ChromeOS being tested).
             try:
                 with open(file_path, 'r') as rf:
                     on_disk_state = pickle.load(rf)

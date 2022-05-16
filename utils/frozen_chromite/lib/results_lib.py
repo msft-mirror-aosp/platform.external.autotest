@@ -249,7 +249,7 @@ class _Results(object):
 
     Args:
       out: Output stream to write to (e.g. sys.stdout).
-      current_version: Chrome OS version associated with this report.
+      current_version: ChromeOS version associated with this report.
     """
     results = self._results_log
 

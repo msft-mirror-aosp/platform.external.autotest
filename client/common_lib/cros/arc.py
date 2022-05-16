@@ -344,7 +344,7 @@ def get_container_pid_path():
 
 
 def get_android_data_root():
-    """Returns path to Chrome OS directory that bind-mounts Android's /data."""
+    """Returns path to ChromeOS directory that bind-mounts Android's /data."""
     return _ANDROID_DATA_ROOT_PATH
 
 

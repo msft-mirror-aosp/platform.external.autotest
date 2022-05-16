@@ -16,10 +16,10 @@
 # track of any secondary failure allow lists.
 #
 # Stack trace generation is done by the minidump_stackwalk utility which is also
-# bundled with the Chrome OS source tree. Requires gsutil and cros_sdk utilties
+# bundled with the ChromeOS source tree. Requires gsutil and cros_sdk utilties
 # be present in the path.
 #
-# The path to the Chrome OS source tree is defined in global_config under the
+# The path to the ChromeOS source tree is defined in global_config under the
 # CROS section as 'source_tree'.
 #
 # Existing parse behavior is kept completely intact. If the site parser is not
@@ -81,7 +81,7 @@ class StackTrace(object):
 
         Args:
             results_dir: Full path to the results directory to process.
-            cros_src_dir: Full path to Chrome OS source tree. Must have a
+            cros_src_dir: Full path to ChromeOS source tree. Must have a
                 working chroot.
         """
         self._results_dir = results_dir
@@ -176,7 +176,7 @@ def main():
     # Results directory should be the last argument passed in.
     results_dir = sys.argv[-1]
 
-    # Load the Chrome OS source tree location.
+    # Load the ChromeOS source tree location.
     cros_src_dir = global_config.global_config.get_config_value(
         'CROS', 'source_tree', default='')
 
@@ -188,12 +188,12 @@ def main():
             ' to default parser.')
         return
 
-    # Load ResultCollector from the Chrome OS source tree.
+    # Load ResultCollector from the ChromeOS source tree.
     sys.path.append(os.path.join(
         cros_src_dir, 'src/platform/crostestutils/utils_py'))
     from generate_test_report import ResultCollector
 
-    # Collect results using the standard Chrome OS test report generator. Doing
+    # Collect results using the standard ChromeOS test report generator. Doing
     # so allows us to use the same crash allow list and reporting standards the
     # VM based test instances use.
     # TODO(scottz): Reevaluate this code usage. crosbug.com/35282

@@ -60,7 +60,7 @@ for c in "${categories[@]}"; do
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome OS Team"
+AUTHOR = "ChromeOS Team"
 NAME = "bvt-tast-cq-${c}"
 PURPOSE = 'Tests the critical Tast tests in the "${c}" category.'
 
@@ -70,7 +70,7 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite verifies Chrome OS's basic functionality for the Chrome OS Commit
+This suite verifies ChromeOS's basic functionality for the ChromeOS Commit
 Queue by running all Tast integration tests in the "${c}" category that must
 always pass against a DUT. See http://go/tast for more information about Tast.
 

@@ -336,7 +336,7 @@ class InfrastructureFailure(CompoundFailure):
   EXCEPTION_CATEGORY = constants.EXCEPTION_CATEGORY_INFRA
 
 
-# Chrome OS Test Lab failures.
+# ChromeOS Test Lab failures.
 class TestLabFailure(InfrastructureFailure):
   """Raised if a stage fails due to hardware lab infrastructure issues."""
 

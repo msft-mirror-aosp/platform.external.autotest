@@ -3,10 +3,10 @@
 # Copyright 2016 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-'''Confidence tests for Chrome on Chrome OS.
+'''Confidence tests for Chrome on ChromeOS.
 
 This script runs a number of confidence tests to ensure that Chrome browser on
-Chrome OS is functional.
+ChromeOS is functional.
 '''
 
 from __future__ import absolute_import

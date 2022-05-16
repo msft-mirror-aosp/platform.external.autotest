@@ -43,7 +43,7 @@ _PRESENTATION_SHADOW_CONFIG_FILE = os.path.join(
         _ROOT_DIR, 'perf_dashboard_shadow_config.json')
 _SERVICE_ACCOUNT_FILE = '/creds/service_accounts/skylab-drone.json'
 
-# Format for Chrome and Chrome OS version strings.
+# Format for Chrome and ChromeOS version strings.
 VERSION_REGEXP = r'^(\d+)\.(\d+)\.(\d+)\.(\d+)$'
 
 
@@ -184,7 +184,7 @@ def _get_version_numbers(test_attributes):
     @param test_attributes: The attributes property (which is a dict) of an
         autotest tko.models.test object.
 
-    @return A pair of strings (Chrome OS version, Chrome version).
+    @return A pair of strings (ChromeOS version, Chrome version).
 
     @raises PerfUploadingError if a version isn't formatted as expected.
     """
@@ -243,7 +243,7 @@ def _get_id_from_version(chrome_version, cros_version):
     """
 
     # Number of digits to use from each part of the version string for Chrome
-    # and Chrome OS versions when building a point ID out of these two versions.
+    # and ChromeOS versions when building a point ID out of these two versions.
     chrome_version_col_widths = [0, 0, 5, 3]
     cros_version_col_widths = [0, 5, 3, 2]
 

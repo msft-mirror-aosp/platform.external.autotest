@@ -108,6 +108,8 @@ class power_VideoTest(power_test.power_Test):
         # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
         # so that each test run does not remember info from last test run.
         extra_browser_args = ['--disable-sync']
+        # b/228256145 to avoid powerd restart
+        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
         if not use_hw_decode:
             extra_browser_args.append(self._DISABLE_HW_VIDEO_DECODE_ARGS)
 

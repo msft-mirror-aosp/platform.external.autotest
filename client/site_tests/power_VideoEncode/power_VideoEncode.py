@@ -49,6 +49,8 @@ class power_VideoEncode(power_test.power_Test):
                        Format is tuple of codec, resolution and framerate.
         """
         extra_browser_args = self.get_extra_browser_args_for_camera_test()
+        # b/228256145 to avoid powerd restart
+        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
         with chrome.Chrome(init_network_controller=True,
                            extra_browser_args=extra_browser_args) as cr:
 

@@ -52,7 +52,13 @@ class power_ThermalLoad(power_test.power_Test):
         @param duration: time in seconds to display url and measure power.
         @param numFish: number of fish to pass to WebGL Aquarium.
         """
-        with chrome.Chrome(init_network_controller=True) as self.cr:
+        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
+        # so that each test run does not remember info from last test run.
+        extra_browser_args = ['--disable-sync']
+        # b/228256145 to avoid powerd restart
+        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
+        with chrome.Chrome(extra_browser_args=extra_browser_args,
+                           init_network_controller=True) as self.cr:
             tab = self.cr.browser.tabs.New()
             tab.Activate()
 

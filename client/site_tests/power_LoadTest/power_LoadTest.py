@@ -332,6 +332,8 @@ class power_LoadTest(arc.ArcTest):
         # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
         # so that each test run does not remember info from last test run.
         extra_browser_args = ['--disable-sync']
+        # b/228256145 to avoid powerd restart
+        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
         try:
             self._browser = chrome.Chrome(
                     extension_paths=[ext_path],

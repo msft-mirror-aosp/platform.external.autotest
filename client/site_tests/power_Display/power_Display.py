@@ -44,6 +44,8 @@ class power_Display(power_test.power_Test):
         # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
         # so that each test run does not remember info from last test run.
         extra_browser_args = ['--disable-sync']
+        # b/228256145 to avoid powerd restart
+        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
         with chrome.Chrome(init_network_controller=True,
                            extra_browser_args=extra_browser_args) as self.cr:
             tab = self.cr.browser.tabs[0]

@@ -90,7 +90,6 @@ class BluetoothQuickTestsBase(object):
     @staticmethod
     def quick_test_test_decorator(test_name,
                                   flags=None,
-                                  check_runnable_func=None,
                                   pretest_func=None,
                                   posttest_func=None,
                                   model_testNA=None,
@@ -108,9 +107,6 @@ class BluetoothQuickTestsBase(object):
         @param flags: List of string to describe who should run the test. The
                       string could be one of the following:
                           ['AVL', 'Quick Health', 'All'].
-        @check_runnable_func: A function that accepts a bluetooth quick test
-                              instance as argument. If not None and returns
-                              False, the test exits early without failure.
         @pretest_func: A function that accepts a bluetooth quick test instance
                        as argument. If not None, the function is run right
                        before the test method.
@@ -174,9 +170,6 @@ class BluetoothQuickTestsBase(object):
                     logging.info('SKIPPING TEST %s', test_name)
                     logging.info('flag %s not in %s', self.flag, flags)
                     self._print_delimiter()
-                    return
-
-                if check_runnable_func and not check_runnable_func(self):
                     return
 
                 try:

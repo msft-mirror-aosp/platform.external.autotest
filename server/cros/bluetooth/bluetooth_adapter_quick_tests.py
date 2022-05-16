@@ -293,10 +293,8 @@ class BluetoothAdapterQuickTests(
         return base_class.quick_test_test_decorator(
                 test_name,
                 flags=flags,
-                check_runnable_func=lambda self: self.quick_test_test_runnable(
-                        supports_floss),
                 pretest_func=lambda self: self.quick_test_test_pretest(
-                        test_name, devices, use_all_peers),
+                        test_name, devices, use_all_peers, supports_floss),
                 posttest_func=lambda self: self.quick_test_test_posttest(),
                 model_testNA=model_testNA,
                 model_testWarn=model_testWarn,
@@ -304,20 +302,11 @@ class BluetoothAdapterQuickTests(
                 skip_chipsets=skip_chipsets,
                 skip_common_errors=skip_common_errors)
 
-    def quick_test_test_runnable(self, supports_floss):
-        """Checks if the test could be run."""
-
-        # If the current test was to run with Floss, the test must
-        # support running with Floss.
-        if self.floss:
-            return supports_floss
-
-        return True
-
     def quick_test_test_pretest(self,
                                 test_name=None,
                                 devices={},
-                                use_all_peers=False):
+                                use_all_peers=False,
+                                supports_floss=False):
         """Runs pretest checks and resets DUT's adapter and peer devices.
 
            @param test_name: the name of the test to log.
@@ -329,6 +318,7 @@ class BluetoothAdapterQuickTests(
                                  like bluetooth_PeerVerify which uses all
                                  available peers. Specify only one device type
                                  if this is set to true
+           @param supports_floss: Does this test support running on Floss?
         """
 
         def _is_enough_peers_present(self):
@@ -361,6 +351,10 @@ class BluetoothAdapterQuickTests(
         if not _is_enough_peers_present(self):
             logging.info('Not enough peer available')
             raise error.TestNAError('Not enough peer available')
+
+        if self.floss and not supports_floss:
+            raise error.TestNAError('Test ' + test_name +
+                                    ' does not support Floss')
 
         # Every test_method should pass by default.
         self._expected_result = True

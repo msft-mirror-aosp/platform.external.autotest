@@ -16,7 +16,7 @@ from autotest_lib.client.cros.update_engine import update_engine_test
 class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
     """Starts a forced update at OOBE.
 
-    Chrome OS will restart when the update is complete so this test will just
+    ChromeOS will restart when the update is complete so this test will just
     start the update. The rest of the processing will be done in a server
     side test.
     """

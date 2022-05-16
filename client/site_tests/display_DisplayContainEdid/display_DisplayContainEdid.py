@@ -12,7 +12,7 @@ from autotest_lib.client.cros.multimedia import local_facade_factory
 
 class display_DisplayContainEdid(test.test):
     """
-    Verifies that display information returned from Chrome OS specific
+    Verifies that display information returned from ChromeOS specific
     chrome.system.display API contain EDID information.
     """
     version = 1

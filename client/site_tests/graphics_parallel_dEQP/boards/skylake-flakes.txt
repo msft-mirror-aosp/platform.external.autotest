@@ -3,7 +3,7 @@
 # don't distinguish them in testing.  So, some failing cases end up
 # listed here as flakes even if they might reliably pass or fail on
 # a specific variant, because the results will be flaky dependening
-# on Chrome OS infra choices.
+# on ChromeOS infra choices.
 
 # These almost always fail (though occasionally flake to a Pass) on
 # asuka GT1 and lars GT1

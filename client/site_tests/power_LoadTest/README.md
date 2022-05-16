@@ -6,7 +6,7 @@
 Modern mobile computers are sold with an advertised battery life, ranging from a
 few to tens of hours. Nonetheless, when these devices are used on a daily basis,
 many users report that their actual battery life doesn’t match up with the
-advertised numbers. For Chrome OS devices, we wanted to try and report battery
+advertised numbers. For ChromeOS devices, we wanted to try and report battery
 life that is as close as possible to what an average user experiences. Thus
 `power_LoadTest` was created to emulate average user behavior and measure the
 resultant battery life. This test is as an [open source][1] Chrome extension
@@ -61,7 +61,7 @@ basis:
 
 ### Via cros_sdk & autotest
 
-If you are interested in running `power_LoadTest` on a Chrome OS system, you
+If you are interested in running `power_LoadTest` on a ChromeOS system, you
 will need a Chromium OS test image that can be built by following [Build your
 own Chromium image][3] instruction with `./build_image --board=${BOARD} test`
 command. After the test image is built, you can follow the [Installing Chromium
@@ -184,8 +184,8 @@ test results are:
 ##  Conclusion
 
 While the initial version of `power_LoadTest` seems to emulate well what users
-experience every day on Chrome OS devices, this test will be constantly
-improved. As we learn more about how users use Chrome OS devices and how
+experience every day on ChromeOS devices, this test will be constantly
+improved. As we learn more about how users use ChromeOS devices and how
 experienced battery life differs from tested battery life, we will use this
 data to refine the test, potentially changing the load mix or the parameters
 of the test. Our goal is to ensure that when you purchase a device, you know -

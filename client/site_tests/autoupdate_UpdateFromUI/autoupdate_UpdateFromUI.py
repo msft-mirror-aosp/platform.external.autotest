@@ -13,7 +13,7 @@ from autotest_lib.client.cros.update_engine import update_engine_test
 from telemetry.core import exceptions
 
 class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
-    """Starts an update from the Chrome OS Settings app. """
+    """Starts an update from the ChromeOS Settings app. """
     version = 1
 
     _NOTIFICATION_INTERVAL = 1
@@ -53,7 +53,7 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
 
     def run_once(self, payload_url):
         """
-        Tests that a Chrome OS software update can be completed from the UI,
+        Tests that a ChromeOS software update can be completed from the UI,
         and that the post-update notification appears when the update is
         complete.
 

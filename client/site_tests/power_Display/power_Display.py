@@ -29,7 +29,7 @@ class power_Display(power_test.power_Test):
         @param secs_per_page: time in seconds to display page and measure power.
         @param brightness: flag for brightness setting to use for testing.
                            possible value are 'max' (100%) and 'all' (all manual
-                           brightness steps in Chrome OS)
+                           brightness steps in ChromeOS)
         """
         if pages is None:
             pages = self.PAGES

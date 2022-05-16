@@ -7,7 +7,7 @@ from autotest_lib.server.hosts.tls_client import autotest_common_pb2 as autotest
 from autotest_lib.server.hosts.tls_client.dependencies.longrunning import operations_pb2 as dependencies_dot_longrunning_dot_operations__pb2
 
 class CommonStub(object):
-  """Common lab services implemented on top of the wiring APIs.
+    """Common lab services implemented on top of the wiring APIs.
 
   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
   NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
@@ -20,46 +20,46 @@ class CommonStub(object):
   they can be fixed.
   """
 
-  def __init__(self, channel):
-    """Constructor.
+    def __init__(self, channel):
+        """Constructor.
 
     Args:
       channel: A grpc.Channel.
     """
-    self.ExecDutCommand = channel.unary_stream(
-        '/chromiumos.config.api.test.tls.Common/ExecDutCommand',
-        request_serializer=autotest__common__pb2.ExecDutCommandRequest.SerializeToString,
-        response_deserializer=autotest__common__pb2.ExecDutCommandResponse.FromString,
-        )
-    self.ProvisionDut = channel.unary_unary(
-        '/chromiumos.config.api.test.tls.Common/ProvisionDut',
-        request_serializer=autotest__common__pb2.ProvisionDutRequest.SerializeToString,
-        response_deserializer=dependencies_dot_longrunning_dot_operations__pb2.Operation.FromString,
-        )
-    self.ProvisionLacros = channel.unary_unary(
-        '/chromiumos.config.api.test.tls.Common/ProvisionLacros',
-        request_serializer=autotest__common__pb2.ProvisionLacrosRequest.SerializeToString,
-        response_deserializer=dependencies_dot_longrunning_dot_operations__pb2.Operation.FromString,
-        )
-    self.FetchCrashes = channel.unary_stream(
-        '/chromiumos.config.api.test.tls.Common/FetchCrashes',
-        request_serializer=autotest__common__pb2.FetchCrashesRequest.SerializeToString,
-        response_deserializer=autotest__common__pb2.FetchCrashesResponse.FromString,
-        )
-    self.CreateFakeOmaha = channel.unary_unary(
-        '/chromiumos.config.api.test.tls.Common/CreateFakeOmaha',
-        request_serializer=autotest__common__pb2.CreateFakeOmahaRequest.SerializeToString,
-        response_deserializer=autotest__common__pb2.FakeOmaha.FromString,
-        )
-    self.DeleteFakeOmaha = channel.unary_unary(
-        '/chromiumos.config.api.test.tls.Common/DeleteFakeOmaha',
-        request_serializer=autotest__common__pb2.DeleteFakeOmahaRequest.SerializeToString,
-        response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-        )
+        self.ExecDutCommand = channel.unary_stream(
+            '/chromiumos.config.api.test.tls.Common/ExecDutCommand',
+            request_serializer=autotest__common__pb2.ExecDutCommandRequest.SerializeToString,
+            response_deserializer=autotest__common__pb2.ExecDutCommandResponse.FromString,
+            )
+        self.ProvisionDut = channel.unary_unary(
+            '/chromiumos.config.api.test.tls.Common/ProvisionDut',
+            request_serializer=autotest__common__pb2.ProvisionDutRequest.SerializeToString,
+            response_deserializer=dependencies_dot_longrunning_dot_operations__pb2.Operation.FromString,
+            )
+        self.ProvisionLacros = channel.unary_unary(
+            '/chromiumos.config.api.test.tls.Common/ProvisionLacros',
+            request_serializer=autotest__common__pb2.ProvisionLacrosRequest.SerializeToString,
+            response_deserializer=dependencies_dot_longrunning_dot_operations__pb2.Operation.FromString,
+            )
+        self.FetchCrashes = channel.unary_stream(
+            '/chromiumos.config.api.test.tls.Common/FetchCrashes',
+            request_serializer=autotest__common__pb2.FetchCrashesRequest.SerializeToString,
+            response_deserializer=autotest__common__pb2.FetchCrashesResponse.FromString,
+            )
+        self.CreateFakeOmaha = channel.unary_unary(
+            '/chromiumos.config.api.test.tls.Common/CreateFakeOmaha',
+            request_serializer=autotest__common__pb2.CreateFakeOmahaRequest.SerializeToString,
+            response_deserializer=autotest__common__pb2.FakeOmaha.FromString,
+            )
+        self.DeleteFakeOmaha = channel.unary_unary(
+            '/chromiumos.config.api.test.tls.Common/DeleteFakeOmaha',
+            request_serializer=autotest__common__pb2.DeleteFakeOmahaRequest.SerializeToString,
+            response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            )
 
 
 class CommonServicer(object):
-  """Common lab services implemented on top of the wiring APIs.
+    """Common lab services implemented on top of the wiring APIs.
 
   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
   NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
@@ -72,8 +72,8 @@ class CommonServicer(object):
   they can be fixed.
   """
 
-  def ExecDutCommand(self, request, context):
-    """ExecDutCommand runs a command on a DUT.
+    def ExecDutCommand(self, request, context):
+        """ExecDutCommand runs a command on a DUT.
 
     The working directory is /.
     A tty is not spawned for the command.
@@ -95,36 +95,36 @@ class CommonServicer(object):
     If the stream is interrupted, the implementation MAY attempt to
     stop the command by sending SIGINT, SIGHUP, SIGTERM, or SIGKILL.
     """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-  def ProvisionDut(self, request, context):
-    """ProvisionDut installs a specified version of Chrome OS on the DUT, along
+    def ProvisionDut(self, request, context):
+        """ProvisionDut installs a specified version of ChromeOS on the DUT, along
     with any specified DLCs.
 
-    If the DUT is already on the specified version of Chrome OS, the OS will
+    If the DUT is already on the specified version of ChromeOS, the OS will
     not be provisioned.
 
     If the DUT already has the specified list of DLCs, only the missing DLCs
     will be provisioned.
     """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-  def ProvisionLacros(self, request, context):
-    """ProvisionLacros installs a specified version of Lacros on the DUT.
+    def ProvisionLacros(self, request, context):
+        """ProvisionLacros installs a specified version of Lacros on the DUT.
 
     If the DUT already has the specified version of Lacros, Lacros will not be
     provisioned.
     """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-  def FetchCrashes(self, request, context):
-    """FetchCrashes gets a stream of all crash reports currently on the DUT.
+    def FetchCrashes(self, request, context):
+        """FetchCrashes gets a stream of all crash reports currently on the DUT.
 
     The stream returned may split up a crash over multiple
     `FetchCrashesResponse` protos. See the definition of that proto for
@@ -132,60 +132,60 @@ class CommonServicer(object):
 
     This call is read-only: it doesn't delete the crashes that it reads.
     """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-  def CreateFakeOmaha(self, request, context):
-    """CreateFakeOmaha starts a fake Omaha service on TLS and exposes the
+    def CreateFakeOmaha(self, request, context):
+        """CreateFakeOmaha starts a fake Omaha service on TLS and exposes the
     listened port to the DUT.
     """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-  def DeleteFakeOmaha(self, request, context):
-    """DeleteFakeOmaha deletes the specified fake Omaha resource created by
+    def DeleteFakeOmaha(self, request, context):
+        """DeleteFakeOmaha deletes the specified fake Omaha resource created by
     CreateFakeOmaha.
     """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_CommonServicer_to_server(servicer, server):
-  rpc_method_handlers = {
-      'ExecDutCommand': grpc.unary_stream_rpc_method_handler(
-          servicer.ExecDutCommand,
-          request_deserializer=autotest__common__pb2.ExecDutCommandRequest.FromString,
-          response_serializer=autotest__common__pb2.ExecDutCommandResponse.SerializeToString,
-      ),
-      'ProvisionDut': grpc.unary_unary_rpc_method_handler(
-          servicer.ProvisionDut,
-          request_deserializer=autotest__common__pb2.ProvisionDutRequest.FromString,
-          response_serializer=dependencies_dot_longrunning_dot_operations__pb2.Operation.SerializeToString,
-      ),
-      'ProvisionLacros': grpc.unary_unary_rpc_method_handler(
-          servicer.ProvisionLacros,
-          request_deserializer=autotest__common__pb2.ProvisionLacrosRequest.FromString,
-          response_serializer=dependencies_dot_longrunning_dot_operations__pb2.Operation.SerializeToString,
-      ),
-      'FetchCrashes': grpc.unary_stream_rpc_method_handler(
-          servicer.FetchCrashes,
-          request_deserializer=autotest__common__pb2.FetchCrashesRequest.FromString,
-          response_serializer=autotest__common__pb2.FetchCrashesResponse.SerializeToString,
-      ),
-      'CreateFakeOmaha': grpc.unary_unary_rpc_method_handler(
-          servicer.CreateFakeOmaha,
-          request_deserializer=autotest__common__pb2.CreateFakeOmahaRequest.FromString,
-          response_serializer=autotest__common__pb2.FakeOmaha.SerializeToString,
-      ),
-      'DeleteFakeOmaha': grpc.unary_unary_rpc_method_handler(
-          servicer.DeleteFakeOmaha,
-          request_deserializer=autotest__common__pb2.DeleteFakeOmahaRequest.FromString,
-          response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-      ),
-  }
-  generic_handler = grpc.method_handlers_generic_handler(
-      'chromiumos.config.api.test.tls.Common', rpc_method_handlers)
-  server.add_generic_rpc_handlers((generic_handler,))
+    rpc_method_handlers = {
+        'ExecDutCommand': grpc.unary_stream_rpc_method_handler(
+            servicer.ExecDutCommand,
+            request_deserializer=autotest__common__pb2.ExecDutCommandRequest.FromString,
+            response_serializer=autotest__common__pb2.ExecDutCommandResponse.SerializeToString,
+        ),
+        'ProvisionDut': grpc.unary_unary_rpc_method_handler(
+            servicer.ProvisionDut,
+            request_deserializer=autotest__common__pb2.ProvisionDutRequest.FromString,
+            response_serializer=dependencies_dot_longrunning_dot_operations__pb2.Operation.SerializeToString,
+        ),
+        'ProvisionLacros': grpc.unary_unary_rpc_method_handler(
+            servicer.ProvisionLacros,
+            request_deserializer=autotest__common__pb2.ProvisionLacrosRequest.FromString,
+            response_serializer=dependencies_dot_longrunning_dot_operations__pb2.Operation.SerializeToString,
+        ),
+        'FetchCrashes': grpc.unary_stream_rpc_method_handler(
+            servicer.FetchCrashes,
+            request_deserializer=autotest__common__pb2.FetchCrashesRequest.FromString,
+            response_serializer=autotest__common__pb2.FetchCrashesResponse.SerializeToString,
+        ),
+        'CreateFakeOmaha': grpc.unary_unary_rpc_method_handler(
+            servicer.CreateFakeOmaha,
+            request_deserializer=autotest__common__pb2.CreateFakeOmahaRequest.FromString,
+            response_serializer=autotest__common__pb2.FakeOmaha.SerializeToString,
+        ),
+        'DeleteFakeOmaha': grpc.unary_unary_rpc_method_handler(
+            servicer.DeleteFakeOmaha,
+            request_deserializer=autotest__common__pb2.DeleteFakeOmahaRequest.FromString,
+            response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+        ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+        'chromiumos.config.api.test.tls.Common', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))

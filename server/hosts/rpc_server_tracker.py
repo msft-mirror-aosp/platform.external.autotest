@@ -41,7 +41,7 @@ class RpcServerTracker(object):
     def _setup_port(self, port, command_name, remote_pid=None):
         """Sets up a tunnel process and register it to rpc_server_tracker.
 
-        Chrome OS on the target closes down most external ports for security.
+        ChromeOS on the target closes down most external ports for security.
         We could open the port, but doing that would conflict with security
         tests that check that only expected ports are open.  So, to get to
         the port on the target we use an ssh tunnel.

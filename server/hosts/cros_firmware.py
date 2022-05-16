@@ -7,7 +7,7 @@
 Repair actions and verifiers relating to CrOS firmware.
 
 This contains the repair actions and verifiers need to find problems
-with the firmware installed on Chrome OS DUTs, and when necessary, to
+with the firmware installed on ChromeOS DUTs, and when necessary, to
 fix problems by updating or re-installing the firmware.
 
 The operations in the module support two distinct use cases:

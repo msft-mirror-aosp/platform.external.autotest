@@ -295,12 +295,12 @@ class BaseServoHost(ssh_host.SSHHost):
         """Update the image on the servo host, if needed.
 
         This method recognizes the following cases:
-          * If the Host is not running Chrome OS, do nothing.
+          * If the Host is not running ChromeOS, do nothing.
           * If a previously triggered update is now complete, reboot
             to the new version.
           * If the host is processing an update do nothing.
           * If the host has an update that pending on reboot, do nothing.
-          * If the host is running a version of Chrome OS different
+          * If the host is running a version of ChromeOS different
             from the default for servo Hosts, start an update.
 
         @stable_version the target build number.(e.g. R82-12900.0.0)

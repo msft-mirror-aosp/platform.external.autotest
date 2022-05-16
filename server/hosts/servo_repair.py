@@ -1100,7 +1100,7 @@ class _RestartServod(hosts.RepairAction):
         elif not host.is_cros_host():
             raise hosts.AutoservRepairError(
                     'Can\'t restart servod: not running '
-                    'embedded Chrome OS.',
+                    'embedded ChromeOS.',
                     'servo_not_applicable_to_non_cros_host')
         host.restart_servod()
 
@@ -1410,7 +1410,7 @@ class _ServoMicroFlashRepair(hosts.RepairAction):
         if not host.is_cros_host():
             raise hosts.AutoservRepairError(
                     'Can\'t restart servod: not running '
-                    'embedded Chrome OS.',
+                    'embedded ChromeOS.',
                     'servo_not_applicable_to_non_cros_host')
         servo = host.get_servo()
         if not servo or self._TARGET_SERVO not in servo.get_servo_type():

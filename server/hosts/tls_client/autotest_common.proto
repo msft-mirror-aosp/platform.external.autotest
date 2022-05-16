@@ -48,10 +48,10 @@ service Common {
   rpc ExecDutCommand(ExecDutCommandRequest)
       returns (stream ExecDutCommandResponse);
 
-  // ProvisionDut installs a specified version of Chrome OS on the DUT, along
+  // ProvisionDut installs a specified version of ChromeOS on the DUT, along
   // with any specified DLCs.
   //
-  // If the DUT is already on the specified version of Chrome OS, the OS will
+  // If the DUT is already on the specified version of ChromeOS, the OS will
   // not be provisioned.
   //
   // If the DUT already has the specified list of DLCs, only the missing DLCs
@@ -186,7 +186,7 @@ message ProvisionDutRequest {
       string gs_path_prefix = 1;
     }
   }
-  // image specifies the Chrome OS image with which to provision the DUT.
+  // image specifies the ChromeOS image with which to provision the DUT.
   ChromeOSImage image = 2;
 
   // Reference DLCs developer documentation:

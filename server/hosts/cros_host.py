@@ -74,7 +74,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     _AFE = frontend_wrappers.RetryingAFE(timeout_min=5, delay_sec=10)
 
-    # Timeout values (in seconds) associated with various Chrome OS
+    # Timeout values (in seconds) associated with various ChromeOS
     # state changes.
     #
     # In general, a good rule of thumb is that the timeout can be up
@@ -1851,7 +1851,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         This function reboots the site host. The more generic
         RemoteHost.reboot() performs sync and sleeps for 5
-        seconds. This is not necessary for Chrome OS devices as the
+        seconds. This is not necessary for ChromeOS devices as the
         sync should be finished in a short time during the reboot
         command.
         """
@@ -1999,7 +1999,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return True
 
     def verify_software(self):
-        """Verify working software on a Chrome OS system.
+        """Verify working software on a ChromeOS system.
 
         Tests for the following conditions:
          1. All conditions tested by the parent version of this
@@ -2059,7 +2059,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
 
     def verify(self):
-        """Verify Chrome OS system is in good state."""
+        """Verify ChromeOS system is in good state."""
         message = 'Beginning verify for host %s board %s model %s'
         info = self.host_info_store.get()
         message %= (self.hostname, info.board, info.model)
@@ -2082,7 +2082,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                          alive_interval=None,
                          alive_count_max=None,
                          connection_attempts=None):
-        """Override default make_ssh_command to use options tuned for Chrome OS.
+        """Override default make_ssh_command to use options tuned for ChromeOS.
 
         Tuning changes:
           - ConnectTimeout=30; maximum of 30 seconds allowed for an SSH

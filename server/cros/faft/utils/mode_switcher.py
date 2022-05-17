@@ -957,11 +957,10 @@ class _BaseModeSwitcher(object):
                 return
             raise ConnectionError('DUT is still up unexpectedly')
 
-    def trigger_dev_to_minios(self, minios_priority=None):
-        """In developer mode, reboot to MiniOS with specified priority.
 
+    def launch_minios(self, minios_priority=None):
+        """Reboot to recovery mode and launch MiniOS with specified priority.
         The DUT must have the config 'minios_enabled'.
-        This method will reboot DUT to recovery mode and boot into MiniOS.
 
         @param minios_priority: Set to 'a' or 'b' for specified priority; Set to
                                 None to skip assigning the priority.
@@ -970,12 +969,13 @@ class _BaseModeSwitcher(object):
         """
         raise NotImplementedError
 
-    def trigger_minios_to_dev(self):
-        """Leave MiniOS and reboot to developer mode.
+    def leave_minios(self, is_devsw_boot=False):
+        """Leave MiniOS and use a mode-aware way to reboot DUT.
 
         The DUT must have the config 'minios_enabled'.
         This method will reboot DUT to leave MiniOS.
 
+        @param is_devsw_boot: True to bypass the developer screen.
         @raise ConnectionError: Failed to wait DUT offline.
         @raise NotImplementedError: DUT does not support MiniOS.
         """
@@ -1003,23 +1003,18 @@ class _MenuSwitcher(_BaseModeSwitcher):
         self.wait_for_client_offline()
         self.bypasser.trigger_dev_to_normal()
 
-    def trigger_dev_to_minios(self, minios_priority=None):
-        """In developer mode, reboot to MiniOS with specified priority.
-
+    def launch_minios(self, minios_priority=None):
+        """Reboot to recovery mode and launch MiniOS with specified priority.
         The DUT must have the config 'minios_enabled'.
-        This method will reboot DUT to recovery mode and boot into MiniOS.
 
         @param minios_priority: Set to 'a' or 'b' for specified priority; Set to
                                 None to skip assigning the priority.
         @raise ConnectionError: Failed to wait DUT offline.
         @raise NotImplementedError: DUT does not support MiniOS.
-        @raise TestError: DUT is not in developer mode.
         """
         # Validity check
         if not self.faft_config.minios_enabled:
             raise NotImplementedError
-        if not self.checkers.mode_checker('dev'):
-            raise error.TestError('DUT is not in developer mode.')
 
         # Set MiniOS priority
         if minios_priority:
@@ -1041,20 +1036,22 @@ class _MenuSwitcher(_BaseModeSwitcher):
         self.servo.ctrl_r()
         self.faft_framework.wait_for('minios_screen')
 
-    def trigger_minios_to_dev(self):
-        """Leave MiniOS and reboot to developer mode.
+    def leave_minios(self, is_devsw_boot=False):
+        """Leave MiniOS and use a mode-aware way to reboot DUT.
 
         The DUT must have the config 'minios_enabled'.
         This method will reboot DUT to leave MiniOS.
 
+        @param is_devsw_boot: True to bypass the developer screen.
         @raise ConnectionError: Failed to wait DUT offline.
         @raise NotImplementedError: DUT does not support MiniOS.
         """
         # mode_aware_reboot() cannot be used here since it leverages autotest
         # libraries which don't exist within MiniOS.
         self.simple_reboot(sync_before_boot=False)
-        self.faft_framework.wait_for('firmware_screen')
-        self.bypass_dev_mode()
+        if is_devsw_boot:
+            self.faft_framework.wait_for('firmware_screen')
+            self.bypass_dev_mode()
 
 
 class _KeyboardDevSwitcher(_MenuSwitcher):

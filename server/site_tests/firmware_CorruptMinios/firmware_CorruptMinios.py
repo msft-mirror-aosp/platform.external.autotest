@@ -33,8 +33,7 @@ class firmware_CorruptMinios(FirmwareTest):
         self.backup_kernel(kernel_type='MINIOS')
 
         self.host = host
-        # SSH to MiniOS is only available for developer mode
-        self.switcher.setup_mode('dev')
+        self.switcher.setup_mode('normal')
         self.setup_usbkey(usbkey=False)
         self.minios_section = minios_section
         self.restored_priority = self.faft_client.system.get_minios_priority()
@@ -42,7 +41,7 @@ class firmware_CorruptMinios(FirmwareTest):
     def cleanup(self):
         if not self.test_skipped:
             try:
-                self.switcher.trigger_minios_to_dev()
+                self.switcher.leave_minios()
                 self.restore_kernel(kernel_type='MINIOS')
                 self.faft_client.system.set_minios_priority(
                         self.restored_priority)
@@ -56,9 +55,9 @@ class firmware_CorruptMinios(FirmwareTest):
         self.faft_client.minios.corrupt_sig(self.minios_section)
 
         logging.info('Try to boot with prioritizing the corrupted section')
-        self.switcher.trigger_dev_to_minios(self.minios_section)
-        self.check_state(self.checkers.dev_boot_minios_checker)
-        self.switcher.trigger_minios_to_dev()
+        self.switcher.launch_minios(self.minios_section)
+        self.check_state(self.checkers.minios_checker)
+        self.switcher.leave_minios()
 
         logging.info('Restore MiniOS section: %r', self.minios_section)
         self.faft_client.minios.restore_sig(self.minios_section)

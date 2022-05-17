@@ -33,8 +33,7 @@ class firmware_MiniosPriority(FirmwareTest):
         self.test_skipped = False
 
         self.host = host
-        # SSH to MiniOS is only available in developer mode
-        self.switcher.setup_mode('dev')
+        self.switcher.setup_mode('normal')
         self.setup_usbkey(usbkey=False)
         self.minios_priority = minios_priority
         self.restored_priority = self.faft_client.system.get_minios_priority()
@@ -42,7 +41,7 @@ class firmware_MiniosPriority(FirmwareTest):
     def cleanup(self):
         if not self.test_skipped:
             try:
-                self.switcher.trigger_minios_to_dev()
+                self.switcher.leave_minios()
                 self.faft_client.system.set_minios_priority(
                         self.restored_priority)
             except Exception as e:
@@ -51,5 +50,5 @@ class firmware_MiniosPriority(FirmwareTest):
 
     def run_once(self):
         """Run a single iteration of the test."""
-        self.switcher.trigger_dev_to_minios(self.minios_priority)
-        self.check_state(self.checkers.dev_boot_minios_checker)
+        self.switcher.launch_minios(self.minios_priority)
+        self.check_state(self.checkers.minios_checker)

@@ -34,14 +34,13 @@ class firmware_CorruptBothMiniosAB(FirmwareTest):
         self.backup_kernel(kernel_type='MINIOS')
 
         self.host = host
-        # SSH to MiniOS is only available in developer mode
-        self.switcher.setup_mode('dev')
+        self.switcher.setup_mode('normal')
         self.setup_usbkey(usbkey=True, host=True, used_for_recovery=True)
 
     def cleanup(self):
         if not self.test_skipped:
             try:
-                self.switcher.trigger_minios_to_dev()
+                self.switcher.leave_minios()
                 self.restore_kernel(kernel_type='MINIOS')
             except Exception as e:
                 logging.error('Caught exception: %s', str(e))
@@ -54,7 +53,7 @@ class firmware_CorruptBothMiniosAB(FirmwareTest):
         self.faft_client.minios.corrupt_sig('b')
 
         # Try to boot to MiniOS and expect a failed boot
-        self.switcher.trigger_dev_to_minios()
+        self.switcher.launch_minios()
         logging.info('DUT should fail to boot MiniOS, verifying...')
         if self.host.ping_wait_up(
                 timeout=self.faft_config.delay_reboot_to_ping):

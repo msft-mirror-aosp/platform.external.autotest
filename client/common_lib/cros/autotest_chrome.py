@@ -261,7 +261,7 @@ class Chrome(object):
             finder_options)
         self._browser_to_create.SetUpEnvironment(b_options)
         for i in range(num_tries):
-            try:autotestChrome
+            try:
                 self._browser = self._browser_to_create.Create()
                 self._browser_pid = \
                     cros_interface.CrOSInterface().GetChromePid()

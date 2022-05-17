@@ -5,7 +5,7 @@
 import logging
 import time
 
-from telemetry.core import exceptions
+from autotest_lib.client.common_lib.cros.autotestChrome.core import exceptions
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome

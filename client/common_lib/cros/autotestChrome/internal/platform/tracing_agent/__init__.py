@@ -5,8 +5,8 @@
 from __future__ import absolute_import
 
 import common
+import six
 
-from autotest_lib.client.common_lib.cros.autotestChrome import six
 from autotest_lib.client.common_lib.cros.autotestChrome.py_trace_event import trace_event
 
 

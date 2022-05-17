@@ -1047,10 +1047,19 @@ class Servo(object):
                 return ''
             raise
 
+    def can_set_active_device(self):
+        """Returns True if the servo setup supports setting the active device
+
+        Servo can only change the active device if there are multiple devices
+        and servo has the active_dut_controller control.
+        """
+        return ('_and_' in self.get_servo_type()
+                and self.has_control('active_dut_controller'))
+
     def get_active_device_prefix(self):
         """Return ccd_(gsc|cr50) or '' if the main device is active."""
         active_device = ''
-        if self.has_control('active_dut_controller'):
+        if self.can_set_active_device():
             # If servo v4 is allowing dual_v4 devices, then choose the
             # active device.
             active_device = self.get('active_dut_controller')
@@ -1402,7 +1411,7 @@ class Servo(object):
 
     def enable_main_servo_device(self):
         """Make sure the main device has control of the dut."""
-        if not self.has_control('active_dut_controller'):
+        if not self.can_set_active_device():
             return
         self.set('active_dut_controller', self.get_main_servo_device())
 
@@ -1425,7 +1434,7 @@ class Servo(object):
         if self.active_device_is_ccd():
             return True
         ccd_device = self.get_ccd_servo_device()
-        if not self.has_control('active_dut_controller') or not ccd_device:
+        if not self.can_set_active_device() or not ccd_device:
             return False
         self.set('active_dut_controller', ccd_device)
         return True

@@ -1458,24 +1458,6 @@ class Servo(object):
         """
         return self.get_main_servo_device() in self.GSC_DRV_SERVOS
 
-    def main_device_is_active(self):
-        """Return whether the main device is the active device.
-
-        This is only relevant for a dual setup with ccd and legacy on the same
-        DUT. The main device is the servo that has no prefix on its controls.
-        This helper answers the question whether that device is also the
-        active device or not.
-        """
-        # TODO(coconutruben): The current implementation of the dual setup only
-        # ever has legacy as the main device. Therefore, it suffices to ask
-        # whether the active device is ccd.
-        if not self.dts_mode_is_valid():
-            # Use dts support as a proxy to whether the servo setup could
-            # support a dual role. Only those setups now support legacy and ccd.
-            return True
-        active_device = self.get('active_dut_controller')
-        return 'ccd' not in active_device
-
     def _initialize_programmer(self, rw_only=False):
         """Initialize the firmware programmer.
 

@@ -1,5 +1,5 @@
-# Lint as: python2, python3
-# Copyright 2016 The Chromium OS Authors. All rights reserved.
+# Lint as: python3
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 #
@@ -16,7 +16,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.common_lib.cros import arc_common
 from telemetry.core import exceptions
-from telemetry.internal.browser import extension_page
+from autotest_lib.client.common_lib.cros.autotestChrome.internal.browser import extension_page
 
 _ARC_SUPPORT_HOST_URL = 'chrome-extension://cnbgggchhmkkdmeppjobngjoejnihlei/'
 _ARC_SUPPORT_HOST_PAGENAME = '_generated_background_page.html'

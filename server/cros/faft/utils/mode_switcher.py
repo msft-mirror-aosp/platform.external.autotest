@@ -564,7 +564,8 @@ class _BaseModeSwitcher(object):
                        to_mode,
                        allow_gbb_force=False,
                        sync_before_boot=True,
-                       wait_for_dut_up=True):
+                       wait_for_dut_up=True,
+                       rec_usb_state='dut'):
         """Reboot and execute the mode switching sequence.
 
         Normally this method simulates what a user would do to switch between
@@ -593,10 +594,10 @@ class _BaseModeSwitcher(object):
           _enable_normal_mode_and_reboot()
 
         Normal <-----> rec:
-          enable_rec_mode_and_reboot(usb_state='dut')
+          enable_rec_mode_and_reboot(usb_state=rec_usb_state)
 
         Normal <-----> rec_force_mrc:
-          _enable_rec_mode_force_mrc_and_reboot(usb_state='dut')
+          _enable_rec_mode_force_mrc_and_reboot(usb_state=rec_usb_state)
 
         Note that one shouldn't transition to dev again without going through the
         normal mode.  This is because trying to disable os_verification when it's
@@ -611,6 +612,10 @@ class _BaseModeSwitcher(object):
                                 reboot and mode switching sequence only and may
                                 need more operations to pass the firmware
                                 screen.
+        @param rec_usb_state: None or a string, one of 'dut', 'host', or 'off'.
+                              This parameter is only valid when to_mode is 'rec'
+                              or 'rec_force_mrc'. Set this to None to prevent
+                              changing the USB state before rebooting.
         """
         logging.info(
                 '-[ModeSwitcher]-[ start reboot_to_mode(%r, %r, %r, %r)]-',
@@ -638,9 +643,9 @@ class _BaseModeSwitcher(object):
                     vboot.GBB_FLAG_FORCE_DEV_SWITCH_ON, 0, reboot=False)
 
         if to_mode == 'rec':
-            self.enable_rec_mode_and_reboot(usb_state='dut')
+            self.enable_rec_mode_and_reboot(usb_state=rec_usb_state)
         elif to_mode == 'rec_force_mrc':
-            self._enable_rec_mode_force_mrc_and_reboot(usb_state='dut')
+            self._enable_rec_mode_force_mrc_and_reboot(usb_state=rec_usb_state)
         elif to_mode == 'dev':
             if allow_gbb_force:
                 self.faft_framework.clear_set_gbb_flags(
@@ -1023,14 +1028,16 @@ class _MenuSwitcher(_BaseModeSwitcher):
         else:
             logging.info('Use the original MiniOS priority setting')
 
-        # Boot to recovery mode to launch MiniOS
+        # Boot to recovery mode to launch MiniOS. We do not want to change the
+        # usb state since it will disturb the MiniOS booting flow.
         logging.info('Boot into recovery mode')
-        self.enable_rec_mode_and_reboot(usb_state='host')
-        self.wait_for_client_offline()
+        self.reboot_to_mode(to_mode="rec",
+                            wait_for_dut_up=False,
+                            rec_usb_state=None)
+        self.faft_framework.wait_for('firmware_screen')
 
         # Use Ctrl+R shortcut to boot MiniOS
         logging.info('Try to boot MiniOS')
-        self.faft_framework.wait_for('firmware_screen')
         self.servo.ctrl_r()
         self.faft_framework.wait_for('minios_screen')
 

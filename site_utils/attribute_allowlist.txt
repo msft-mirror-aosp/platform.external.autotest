@@ -195,6 +195,7 @@ suite:faft_cr50_experimental
 suite:faft_cr50_prepvt
 suite:faft_cr50_pvt
 suite:faft_cr50_tot
+suite:faft_detachable
 suite:faft_dev
 suite:faft_ec
 suite:faft_ec_fw_qual

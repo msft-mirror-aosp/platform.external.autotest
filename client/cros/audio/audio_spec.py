@@ -125,7 +125,10 @@ BOARDS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('snappy', 'snappy', '8'),
         BoardInfo('zork', 'dalboz', ''),
         BoardInfo('zork', 'ezkinil', ''),
-        BoardInfo('zork', 'morphius', ''),
+        # b/232791346 clarifies zork-morpheus SKU 1510014998
+        # has a a front mic ONLY. Other SKUs have both UFC and WFC
+        # for which the following line will be valid.
+        #BoardInfo('zork', 'morphius', ''),
         BoardInfo('zork', 'vilboz360', '1518534658'),
         BoardInfo('zork', 'vilboz360', '1518534660'),
         BoardInfo('zork', 'vilboz360', '1518534661'),

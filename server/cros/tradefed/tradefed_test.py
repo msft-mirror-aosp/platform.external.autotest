@@ -828,6 +828,42 @@ class TradefedTest(test.test):
                 raise error.TestFail(
                     'Failed: Unexpected media bundle was added %s' % contents)
 
+    def _should_push_mediastress_asset(self, target_module, board):
+        """Returns whether we should manually push mediastress assets.
+
+        TODO(b/210801048): Remove this workaround once ARCVM storage performance
+        on ARM becomes good enough.
+        """
+        return (target_module and 'CtsMediaStressTestCases' in target_module
+                and board in ['kukui-arc-r'])
+
+    def _push_mediastress_asset(self, media_asset):
+        """Pushes mediastress assets to the DUT for the upcoming test."""
+        logging.info(
+                'Pushing mediastress assets in advance to workaround slow '
+                'storage on ARM boards (b/210801048)')
+
+        media_dir = os.path.join(media_asset.localpath,
+                                 'android-cts-media-1.5')
+        copy_media_sh = os.path.join(media_dir, 'copy_media.sh')
+        os.chmod(copy_media_sh, 0o755)
+
+        old_cwd = os.getcwd()
+        os.chdir(media_dir)
+        try:
+            for host in self._hosts:
+                host_port = adb_utils.get_adb_target(host)
+                self._run(
+                        copy_media_sh,
+                        args=('all', '-s', host_port),
+                        timeout=constants.ADB_PUSH_MEDIASTRESS_TIMEOUT_SECONDS,
+                        verbose=True,
+                        ignore_status=False,
+                        stdout_tee=utils.TEE_TO_LOGS,
+                        stderr_tee=utils.TEE_TO_LOGS)
+        finally:
+            os.chdir(old_cwd)
+
     def _fetch_helpers_from_dut(self):
         """Fetches the CTS helpers from the dut and installs into the testcases
            subdirectory of our local autotest copy.
@@ -1424,6 +1460,13 @@ class TradefedTest(test.test):
                                 'Specified ABI %s is not in the device ABI list %s. Skipping.',
                                 abi, abilist)
                         return
+
+                # For CtsMediaStressTestCases, push media assets in advance if
+                # applicable.
+                if (not keep_media and media_asset
+                            and self._should_push_mediastress_asset(
+                                    target_module, board)):
+                    self._push_mediastress_asset(media_asset)
 
                 self._run_commands(precondition_commands, ignore_status=True)
                 if use_helpers:

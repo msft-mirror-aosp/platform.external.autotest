@@ -18,10 +18,10 @@ DOC = """
     This class can be called to run bluetooth_AVLHCI.spec_4_2_test
 
     This test contains these subtests:
-        le_data_packet_length_extension_feature_test()
-        packet_data_length_test()
-        le_link_layer_privacy_feature_test()
-        resolving_list_size_test()
+        test_le_data_packet_length_extension_feature()
+        test_packet_data_length()
+        test_le_link_layer_privacy_feature()
+        test_resolving_list_size()
 
     """
 

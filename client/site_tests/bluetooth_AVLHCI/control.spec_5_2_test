@@ -18,8 +18,8 @@ DOC = """
     This class can be called to run bluetooth_AVLHCI.spec_5_2_test
 
     This test contains these subtests:
-        le_isochronous_channels_feature_test()
-        le_power_control_feature_test()
+        test_le_isochronous_channels_feature()
+        test_le_power_control_feature()
 
     """
 

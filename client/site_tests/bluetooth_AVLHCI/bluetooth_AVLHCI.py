@@ -63,61 +63,61 @@ class bluetooth_AVLHCI(test.test):
     def spec_legacy_test(self):
         """Checks Bluetooth legacy specification."""
         logging.info('* Running Bluetooth spec_legacy_test:')
-        self.flushable_data_packets_test()
-        self.erroneous_data_reporting_test()
-        self.event_filter_size_test()
-        self.acl_min_buffer_number_test()
-        self.acl_min_buffer_size_test()
-        self.sco_min_buffer_number_test()
-        self.sco_min_buffer_size_test()
+        self.test_flushable_data_packets()
+        self.test_erroneous_data_reporting()
+        self.test_event_filter_size()
+        self.test_acl_min_buffer_number()
+        self.test_acl_min_buffer_size()
+        self.test_sco_min_buffer_number()
+        self.test_sco_min_buffer_size()
 
     def spec_4_0_test(self):
         """Checks Bluetooth version 4.0 specification."""
         logging.info('* Running Bluetooth spec_4_0_test:')
-        self.low_energy_feature_test()
-        self.accept_list_size_test()
+        self.test_low_energy_feature()
+        self.test_accept_list_size()
 
     def spec_4_1_test(self):
         """Checks Bluetooth version 4.1 specification."""
         logging.info('* Running Bluetooth spec_4_1_test:')
-        self.le_dual_mode_topology_feature_test()
-        self.br_edr_controller_secure_connection_feature_test()
+        self.test_le_dual_mode_topology_feature()
+        self.test_br_edr_controller_secure_connection_feature()
 
     def spec_4_2_test(self):
         """Checks Bluetooth version 4.2 specification."""
         logging.info('* Running Bluetooth spec_4_2_test:')
-        self.le_data_packet_length_extension_feature_test()
-        self.packet_data_length_test()
-        self.le_link_layer_privacy_feature_test()
-        self.resolving_list_size_test()
+        self.test_le_data_packet_length_extension_feature()
+        self.test_packet_data_length()
+        self.test_le_link_layer_privacy_feature()
+        self.test_resolving_list_size()
 
     def spec_5_0_test(self):
         """Check Bluetooth version 5.0 specification."""
         logging.info('* Running Bluetooth spec_5_0_test:')
-        self.le_extended_advertising_feature_test()
-        self.advertisement_sets_number_test()
-        self.le_two_mega_physical_channel_feature_test()
+        self.test_le_extended_advertising_feature()
+        self.test_advertisement_sets_number()
+        self.test_le_two_mega_physical_channel_feature()
 
     def spec_5_2_test(self):
         """Checks Bluetooth version 5.0 specification."""
         logging.info('* Running Bluetooth spec_5_2_test:')
-        self.le_isochronous_channels_feature_test()
-        self.le_power_control_feature_test()
+        self.test_le_isochronous_channels_feature()
+        self.test_le_power_control_feature()
 
     def hci_ext_msft_test(self):
         """Checks Microsoft Bluetooth HCI command execution."""
         logging.info('* Running Bluetooth hci_ext_msft_test:')
-        self.hci_vs_msft_read_supported_features_test()
+        self.test_hci_vs_msft_read_supported_features()
 
     def hci_ext_aosp_test(self):
         """Checks Android Bluetooth HCI command execution."""
         logging.info('* Running Bluetooth hci_ext_aosp_test:')
-        self.aosp_quality_report_test()
-        self.le_apcf_test()
-        self.le_batch_scan_and_events_test()
-        self.le_extended_set_scan_parameters_test()
-        self.le_get_controller_activity_energy_info_test()
-        self.get_controller_debug_info_sub_event_test()
+        self.test_aosp_quality_report()
+        self.test_le_apcf()
+        self.test_le_batch_scan_and_events()
+        self.test_le_extended_set_scan_parameters()
+        self.test_le_get_controller_activity_energy_info()
+        self.test_get_controller_debug_info_sub_event()
 
     def assert_not_support(self, feature, supported_features):
         """Verifies that the feature is not supported.
@@ -169,7 +169,7 @@ class bluetooth_AVLHCI(test.test):
             raise error.TestFail('%s: %s is below the threshold %s' %
                                  (value_name, value, threshold))
 
-    def flushable_data_packets_test(self):
+    def test_flushable_data_packets(self):
         """Checks the Bluetooth controller must support flushable data packets.
 
         Note: As long as the chips are verified by SIG, setting the
@@ -178,26 +178,20 @@ class bluetooth_AVLHCI(test.test):
         """
         logging.info('** Running Bluetooth flushable data packets test:')
         supported_features = self.hcitool.read_local_supported_features()[1]
-        if self.NON_FLUSHABLE_PACKET_BOUNDARY_FEATURE in supported_features:
-            logging.info(
-                    'packet boundary flag flushable data packets is supported')
-        else:
-            raise error.TestFail(
-                    'packet boundary flag flushable data packets not supported'
-            )
+        self.assert_support(self.NON_FLUSHABLE_PACKET_BOUNDARY_FEATURE,
+                            supported_features)
+        logging.info(
+                'packet boundary flag flushable data packets is supported')
 
-    def erroneous_data_reporting_test(self):
+    def test_erroneous_data_reporting(self):
         """Checks the Bluetooth controller supports Erroneous Data Reporting."""
         logging.info('** Running Bluetooth erroneous data reporting test:')
         supported_features = self.hcitool.read_local_supported_features()[1]
-        if self.ERRONEOUS_DATA_REPORTING_FEATURE in supported_features:
-            logging.info('%s is supported',
-                         self.ERRONEOUS_DATA_REPORTING_FEATURE)
-        else:
-            raise error.TestFail(self.ERRONEOUS_DATA_REPORTING_FEATURE +
-                                 ' not supported')
+        self.assert_support(self.ERRONEOUS_DATA_REPORTING_FEATURE,
+                            supported_features)
+        logging.info('%s is supported', self.ERRONEOUS_DATA_REPORTING_FEATURE)
 
-    def event_filter_size_test(self):
+    def test_event_filter_size(self):
         """Checks the Bluetooth controller event filter entries count.
 
         Checks the Bluetooth controller event filter has at least 8 entries.
@@ -230,34 +224,39 @@ class bluetooth_AVLHCI(test.test):
         else:
             logging.debug('Filter cleared')
 
-    def acl_min_buffer_number_test(self):
+    def test_acl_min_buffer_number(self):
         """Checks if ACL minimum buffers count(number of data packets) >=4."""
         logging.info('** Running Bluetooth acl min buffer number test:')
         acl_buffers_count = self.hcitool.read_buffer_size()[
                 self.TOTAL_NUM_ACL_DATA_PACKETS_VALUE_INDEX]
-        self.assert_(acl_buffers_count >= self.MIN_ACL_PACKETS_NUMBER)
-        logging.info("ACL buffers count = %d which is >= %d",
+        self.assert_greater_equal(acl_buffers_count,
+                                  self.MIN_ACL_PACKETS_NUMBER,
+                                  'ACL buffers count')
+        logging.info('ACL buffers count = %d which is >= %d',
                      acl_buffers_count, self.MIN_ACL_PACKETS_NUMBER)
 
-    def acl_min_buffer_size_test(self):
+    def test_acl_min_buffer_size(self):
         """Checks if ACL minimum buffers size >=1021."""
         logging.info('** Running Bluetooth acl min buffer size test:')
         acl_buffer_size = self.hcitool.read_buffer_size()[
                 self.ACL_DATA_PACKET_LENGTH_VALUE_INDEX]
-        self.assert_(acl_buffer_size >= self.MIN_ACL_BUFFER_SIZE)
+        self.assert_greater_equal(acl_buffer_size, self.MIN_ACL_BUFFER_SIZE,
+                                  'ACL buffer size')
         logging.info('ACL buffer size (number of packets)= %d which is >= %d',
                      acl_buffer_size, self.MIN_ACL_BUFFER_SIZE)
 
-    def sco_min_buffer_number_test(self):
+    def test_sco_min_buffer_number(self):
         """Checks if SCO minimum buffer size(number of data packets) >=6."""
         logging.info('** Running Bluetooth sco min buffer number test:')
         sco_buffers_count = self.hcitool.read_buffer_size()[
                 self.TOTAL_NUM_SYNCHRONOUS_DATA_PACKETS_VALUE_INDEX]
-        self.assert_(sco_buffers_count >= self.MIN_SCO_PACKETS_NUMBER)
+        self.assert_greater_equal(sco_buffers_count,
+                                  self.MIN_SCO_PACKETS_NUMBER,
+                                  'SCO buffers count')
         logging.info('SCO buffers count = %d which is >= %d',
                      sco_buffers_count, self.MIN_SCO_PACKETS_NUMBER)
 
-    def sco_min_buffer_size_test(self):
+    def test_sco_min_buffer_size(self):
         """Checks if SCO minimum buffer size >=60."""
         logging.info('** Running Bluetooth SCO min buffer size test:')
         sco_buffer_size = self.hcitool.read_buffer_size()[
@@ -267,7 +266,7 @@ class bluetooth_AVLHCI(test.test):
         logging.info('SCO buffer size = %d which is >= %d.', sco_buffer_size,
                      self.MIN_SCO_BUFFER_SIZE)
 
-    def low_energy_feature_test(self):
+    def test_low_energy_feature(self):
         """Checks if Bluetooth controller must use support
         Bluetooth Low Energy (BLE)."""
         logging.info(
@@ -276,7 +275,7 @@ class bluetooth_AVLHCI(test.test):
         self.assert_support(self.LE_CONTROLLER_FEATURE, supported_features)
         logging.info('%s is supported.', self.LE_CONTROLLER_FEATURE)
 
-    def accept_list_size_test(self):
+    def test_accept_list_size(self):
         """Checks if accept list size >= 8 entries."""
         logging.info('** Running accept list size test:')
         accept_list_entries_count = self.hcitool.le_read_accept_list_size()[1]
@@ -287,7 +286,7 @@ class bluetooth_AVLHCI(test.test):
                      accept_list_entries_count,
                      self.MIN_RESOLVING_LIST_SIZE_ENTRIES)
 
-    def le_dual_mode_topology_feature_test(self):
+    def test_le_dual_mode_topology_feature(self):
         """Checks if Bluetooth controller supports LE dual mode topology."""
         logging.info('** Running LE dual mode topology feature test:')
         supported_features = self.hcitool.read_local_supported_features()[1]
@@ -298,7 +297,7 @@ class bluetooth_AVLHCI(test.test):
                             supported_features)
         logging.info('LE dual mode topology is supported.')
 
-    def br_edr_controller_secure_connection_feature_test(self):
+    def test_br_edr_controller_secure_connection_feature(self):
         """Checks if Bluetooth controller supports BR/EDR secure connections."""
         logging.info('** Running BR/EDR controller secure connection feature '
                      'test:')
@@ -307,7 +306,7 @@ class bluetooth_AVLHCI(test.test):
                             supported_features)
         logging.info('%s is supported.', self.BR_SECURE_CONNECTION_FEATURE)
 
-    def le_data_packet_length_extension_feature_test(self):
+    def test_le_data_packet_length_extension_feature(self):
         """Checks LE data packet length extension support."""
         logging.info('** Running LE data packet length extension test:')
         supported_features = self.hcitool.read_le_local_supported_features()[1]
@@ -316,7 +315,7 @@ class bluetooth_AVLHCI(test.test):
         logging.info('%s is supported.',
                      self.LE_DATA_PACKETS_LENGTH_EXTENSION_FEATURE)
 
-    def packet_data_length_test(self):
+    def test_packet_data_length(self):
         """Checks if data packet length <= 251."""
         logging.info('** Running packet data length test:')
         packet_data_length = self.hcitool.le_read_maximum_data_length()[1]
@@ -325,7 +324,7 @@ class bluetooth_AVLHCI(test.test):
         logging.info('Max packet data length size = %d, but expected %d.',
                      packet_data_length, self.MAX_PACKET_LENGTH)
 
-    def le_link_layer_privacy_feature_test(self):
+    def test_le_link_layer_privacy_feature(self):
         """Checks if Bluetooth controller supports link layer privacy."""
         logging.info('** Running link layer privacy test:')
         supported_features = self.hcitool.read_le_local_supported_features()[1]
@@ -333,7 +332,7 @@ class bluetooth_AVLHCI(test.test):
                             supported_features)
         logging.info('%s is supported.', self.LE_LINK_LAYER_PRIVACY_FEATURE)
 
-    def resolving_list_size_test(self):
+    def test_resolving_list_size(self):
         """Checks if resolving list size >= 8 entries."""
         logging.info('** Running resolving list size test:')
         resolving_list_entries_count = self.hcitool.le_read_resolving_list_size(
@@ -345,7 +344,7 @@ class bluetooth_AVLHCI(test.test):
                      resolving_list_entries_count,
                      self.MIN_RESOLVING_LIST_SIZE_ENTRIES)
 
-    def le_extended_advertising_feature_test(self):
+    def test_le_extended_advertising_feature(self):
         """Checks if Bluetooth controller supports LE advertising extension."""
         logging.info('** Running LE extended advertising feature test:')
         supported_features = self.hcitool.read_le_local_supported_features()[1]
@@ -353,7 +352,7 @@ class bluetooth_AVLHCI(test.test):
                             supported_features)
         logging.info('%s is supported.', self.LE_EXTENDED_ADVERTISING_FEATURE)
 
-    def advertisement_sets_number_test(self):
+    def test_advertisement_sets_number(self):
         """Checks if number of advertisement sets >= 10."""
         logging.info('** Running advertisement sets number feature test:')
         advertisement_sets_number = (
@@ -365,7 +364,7 @@ class bluetooth_AVLHCI(test.test):
                      advertisement_sets_number,
                      self.MIN_ADVERTISEMENT_SETS_NUMBER)
 
-    def le_two_mega_physical_channel_feature_test(self):
+    def test_le_two_mega_physical_channel_feature(self):
         """Checks if Bluetooth controller supports 2 Msym/s PHY for LE."""
         logging.info('** Running LE two mega physical channel feature test:')
         supported_features = self.hcitool.read_le_local_supported_features()[1]
@@ -374,7 +373,7 @@ class bluetooth_AVLHCI(test.test):
         logging.info('%s is supported.',
                      self.LE_TWO_MEGA_PHYSICAL_CHANNEL_FEATURE)
 
-    def le_isochronous_channels_feature_test(self):
+    def test_le_isochronous_channels_feature(self):
         """Checks if ISO channels feature is supported."""
         logging.info('** Running LE isochronous channels feature test:')
         supported_features = self.hcitool.read_le_local_supported_features()[1]
@@ -382,7 +381,7 @@ class bluetooth_AVLHCI(test.test):
                             supported_features)
         logging.info('%s is supported', self.LE_ISOCHRONOUS_CHANNELS_FEATURE)
 
-    def le_power_control_feature_test(self):
+    def test_le_power_control_feature(self):
         """Checks if Bluetooth controller supports LE power control."""
         logging.info('** Running LE power control feature test:')
         supported_features = self.hcitool.read_le_local_supported_features()[1]
@@ -392,7 +391,7 @@ class bluetooth_AVLHCI(test.test):
                             supported_features)
         logging.info('LE power control is supported.')
 
-    def hci_vs_msft_read_supported_features_test(self):
+    def test_hci_vs_msft_read_supported_features(self):
         """Checks if Bluetooth controller supports VS MSFT features."""
         logging.info('** Running hci VS MSFT read supported features:')
         chipset_name = self.facade.get_chipset_name()
@@ -417,7 +416,7 @@ class bluetooth_AVLHCI(test.test):
             raise error.TestNAError('Chipset ' + chipset_name +
                                     ' does not support AOSP HCI extensions')
 
-    def aosp_quality_report_test(self):
+    def test_aosp_quality_report(self):
         """Checks if Bluetooth controller supports AOSP quality report."""
         logging.info('** Running aosp quality report test:')
         self.assert_aosp_hci()
@@ -437,7 +436,7 @@ class bluetooth_AVLHCI(test.test):
                 'Android HCI Extension LE_Get_Vendor_Capabilities_Command.',
                 bluetooth_quality_report_support, version_supported)
 
-    def le_apcf_test(self):
+    def test_le_apcf(self):
         """Checks if APCF filtering feature is supported."""
         logging.info('** Running LE APCF test:')
         self.assert_aosp_hci()
@@ -447,7 +446,7 @@ class bluetooth_AVLHCI(test.test):
             raise error.TestFail('LE APCF feature is not supported')
         logging.info('LE APCF feature is supported.')
 
-    def le_batch_scan_and_events_test(self):
+    def test_le_batch_scan_and_events(self):
         """Checks if LE batch scan and events feature is supported."""
         logging.info('** Running LE batch scan and events test:')
         self.assert_aosp_hci()
@@ -458,7 +457,7 @@ class bluetooth_AVLHCI(test.test):
                     'LE batch scan and events feature is not supported')
         logging.info('LE batch scan and events feature is supported.')
 
-    def le_extended_set_scan_parameters_test(self):
+    def test_le_extended_set_scan_parameters(self):
         """Checks if LE extended set scan parameters feature is supported."""
         logging.info('** Running LE extended set scan parameters test:')
         self.assert_aosp_hci()
@@ -469,7 +468,7 @@ class bluetooth_AVLHCI(test.test):
                     'LE extended set scan parameters feature is not supported')
         logging.info('LE extended set scan parameters feature is supported.')
 
-    def le_get_controller_activity_energy_info_test(self):
+    def test_le_get_controller_activity_energy_info(self):
         """Checks if LE get controller activity energy info feature is
         supported. """
         logging.info('** Running LE get controller activity energy info test:')
@@ -483,7 +482,7 @@ class bluetooth_AVLHCI(test.test):
         logging.info(
                 'LE get controller activity energy info feature is supported.')
 
-    def get_controller_debug_info_sub_event_test(self):
+    def test_get_controller_debug_info_sub_event(self):
         """Checks if get controller debug info and sub-event features is
         supported. """
         logging.info('** Running get controller debug info sub-event test:')

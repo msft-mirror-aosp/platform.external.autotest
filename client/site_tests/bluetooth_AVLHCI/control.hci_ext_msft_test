@@ -20,7 +20,7 @@ DOC = """
     This class can be called to run bluetooth_AVLHCI.hci_ext_msft_test
 
     This test contains these subtests:
-        hci_vs_msft_read_supported_features_test()
+        test_hci_vs_msft_read_supported_features()
 
     """
 

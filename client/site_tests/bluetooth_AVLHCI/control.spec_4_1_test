@@ -20,8 +20,8 @@ DOC = """
     This class can be called to run bluetooth_AVLHCI.spec_4_1_test
 
     This test contains these subtests:
-        le_dual_mode_topology_feature_test()
-        br_edr_controller_secure_connection_feature_test()
+        test_le_dual_mode_topology_feature()
+        test_br_edr_controller_secure_connection_feature()
 
     """
 

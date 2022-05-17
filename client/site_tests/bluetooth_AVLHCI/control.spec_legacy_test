@@ -20,13 +20,13 @@ DOC = """
     This class can be called to run bluetooth_AVLHCI.spec_legacy_test
 
     This test contains these subtests:
-        flushable_data_packets_test()
-        erroneous_data_reporting_test()
-        event_filter_size_test()
-        acl_min_buffer_number_test()
-        acl_min_buffer_size_test()
-        sco_min_buffer_number_test()
-        sco_min_buffer_size_test()
+        test_flushable_data_packets()
+        test_erroneous_data_reporting()
+        test_event_filter_size()
+        test_acl_min_buffer_number()
+        test_acl_min_buffer_size()
+        test_sco_min_buffer_number()
+        test_sco_min_buffer_size()
 
     """
 

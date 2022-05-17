@@ -18,8 +18,8 @@ DOC = """
     This class can be called to run bluetooth_AVLHCI.spec_4_0_test
 
     This test contains these subtests:
-        low_energy_feature_test()
-        accept_list_size_test()
+        test_low_energy_feature()
+        test_accept_list_size()
 
     """
 

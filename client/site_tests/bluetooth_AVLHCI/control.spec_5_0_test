@@ -20,9 +20,9 @@ DOC = """
     This class can be called to run bluetooth_AVLHCI.spec_5_0_test
 
     This test contains these subtests:
-        le_extended_advertising_feature_test()
-        advertisement_sets_number_test()
-        le_two_mega_physical_channel_feature_test()
+        test_le_extended_advertising_feature()
+        test_advertisement_sets_number()
+        test_le_two_mega_physical_channel_feature()
 
     """
 

@@ -20,12 +20,12 @@ DOC = """
     This class can be called to run bluetooth_AVLHCI.hci_ext_aosp_test
 
     This test contains these subtests:
-       aosp_quality_report_test()
-       le_apcf_test()
-       le_batch_scan_and_events_test()
-       le_extended_set_scan_parameters_test()
-       le_get_controller_activity_energy_info_test()
-       get_controller_debug_info_sub_event_test()
+       test_aosp_quality_report()
+       test_le_apcf()
+       test_le_batch_scan_and_events()
+       test_le_extended_set_scan_parameters()
+       test_le_get_controller_activity_energy_info()
+       test_get_controller_debug_info_sub_event()
 
     """
 

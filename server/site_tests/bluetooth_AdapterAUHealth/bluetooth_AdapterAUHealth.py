@@ -98,10 +98,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self._au_a2dp_test(A2DP_LONG, duration=duration)
 
 
-    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('A2DP playback and connect test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_a2dp_playback_and_connect_test(self):
         """Connect then disconnect an A2DP device while playing stream."""
         if not has_internal_speaker(self.host):
@@ -126,10 +124,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_run_test_sequence(device, test_sequence, test_profile)
 
 
-    # Remove flags=['Quick Health'] when this test is migrated to stable test.
     @test_wrapper('A2DP playback back2back test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_a2dp_playback_back2back_test(self):
         """A2DP playback stream back to back test."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -257,10 +253,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_NBS)
 
 
-    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('HFP NBS back2back test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_hfp_nbs_dut_as_source_back2back_test(self):
         """HFP NBS back2back test from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -268,10 +262,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_NBS)
 
 
-    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('HFP WBS back2back test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_hfp_wbs_dut_as_source_back2back_test(self):
         """HFP WBS back2back test from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -288,10 +280,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_NBS_MEDIUM)
 
 
-    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Switch A2DP to HFP WBS test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_a2dp_to_hfp_wbs_dut_as_source_test(self):
         """Switch A2DP to HFP WBS test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -308,10 +298,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_NBS_MEDIUM)
 
 
-    #Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Switch HFP WBS to A2DP test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  flags=['Quick Health'])
+                  devices={'BLUETOOTH_AUDIO': 1})
     def au_hfp_wbs_to_a2dp_dut_as_source_test(self):
         """Switch HFP WBS to A2DP test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -345,10 +333,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_run_avrcp_method(device, self.test_avrcp_commands)
 
 
-    # Add 'Quick Health' to flags to exclude the test from AVL.
-    # When this test is stable enough later, remove the flags here.
-    @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO':1},
-                  flags=['Quick Health'])
+    @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO': 1})
     def au_avrcp_media_info_test(self):
         """AVRCP test to examine metadata propgation."""
         device = self.devices['BLUETOOTH_AUDIO'][0]

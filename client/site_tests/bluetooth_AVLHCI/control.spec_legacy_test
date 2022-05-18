@@ -24,6 +24,7 @@ DOC = """
         test_erroneous_data_reporting()
         test_event_filter_size()
         test_acl_min_buffer_number()
+        test_acl_min_buffer_number_optional()
         test_acl_min_buffer_size()
         test_sco_min_buffer_number()
         test_sco_min_buffer_size()

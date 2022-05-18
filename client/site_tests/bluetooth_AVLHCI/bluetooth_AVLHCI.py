@@ -17,6 +17,7 @@ class bluetooth_AVLHCI(test.test):
     MIN_ACL_BUFFER_SIZE = 1021
     ACL_DATA_PACKET_LENGTH_VALUE_INDEX = 1
     MIN_ACL_PACKETS_NUMBER = 4
+    MIN_ACL_PACKETS_NUMBER_OPTIONAL = 6
     TOTAL_NUM_ACL_DATA_PACKETS_VALUE_INDEX = 3
     MIN_SCO_PACKETS_NUMBER = 6
     TOTAL_NUM_SYNCHRONOUS_DATA_PACKETS_VALUE_INDEX = 4
@@ -67,6 +68,7 @@ class bluetooth_AVLHCI(test.test):
         self.test_erroneous_data_reporting()
         self.test_event_filter_size()
         self.test_acl_min_buffer_number()
+        self.test_acl_min_buffer_number_optional()
         self.test_acl_min_buffer_size()
         self.test_sco_min_buffer_number()
         self.test_sco_min_buffer_size()
@@ -234,6 +236,20 @@ class bluetooth_AVLHCI(test.test):
         self.assert_greater_equal(acl_buffers_count,
                                   self.MIN_ACL_PACKETS_NUMBER,
                                   'ACL buffers count')
+
+    def test_acl_min_buffer_number_optional(self):
+        """Checks if ACL minimum buffers count(number of data packets) >=6."""
+        logging.info(
+                '** Running Bluetooth acl min buffer number test (optional)":')
+        acl_buffers_count = self.hcitool.read_buffer_size()[
+                self.TOTAL_NUM_ACL_DATA_PACKETS_VALUE_INDEX]
+        if acl_buffers_count < self.MIN_ACL_PACKETS_NUMBER_OPTIONAL:
+            raise error.TestWarn(
+                    'ACL buffers count: %d is below the optional threshold %d'
+                    %
+                    (acl_buffers_count, self.MIN_ACL_PACKETS_NUMBER_OPTIONAL))
+        logging.info('ACL buffers count = %d, which is >= %d.' %
+                     (acl_buffers_count, self.MIN_ACL_PACKETS_NUMBER_OPTIONAL))
 
     def test_acl_min_buffer_size(self):
         """Checks if ACL minimum buffers size >=1021."""

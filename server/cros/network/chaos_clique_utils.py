@@ -43,7 +43,7 @@ def allocate_packet_capturer(lock_manager):
         # Pass pcap hostname as set to lock_kmanager
         pcap_host = set([pcap_hostname])
         if lock_manager.lock(pcap_host):
-            return hosts.SSHHost(pcap['hostname'] + '.cros')
+            return hosts.SSHHost(pcap['hostname'])
         else:
             logging.info('Unable to lock %s', pcap['hostname'])
             continue

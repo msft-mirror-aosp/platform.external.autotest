@@ -96,6 +96,7 @@ class nbr_NetworkInterruptions(minios_test.MiniOsTest):
             workstation.
 
         """
+        self._use_public_bucket = running_at_desk
         logging.info('Performing recovery with update url: %s', job_repo_url)
         payload_url = self.get_payload_for_nebraska(
                 job_repo_url, full_payload=True, public_bucket=running_at_desk)
@@ -122,7 +123,4 @@ class nbr_NetworkInterruptions(minios_test.MiniOsTest):
                                               host=self._host)
         # Verify the update engine events that happened during the recovery.
         self.verify_update_events(self._RECOVERY_VERSION, minios_hostlog)
-
-        # Restore the stateful partition.
-        logging.info('Verification complete. Restoring stateful.')
-        self._restore_stateful(public_bucket=running_at_desk)
+        logging.info('Verification complete.')

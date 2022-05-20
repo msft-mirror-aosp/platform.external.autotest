@@ -4,7 +4,6 @@
 
 import logging
 
-from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server.cros.minios import minios_test
@@ -34,6 +33,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
         @param running_at_desk: indicates test is run locally from a workstation.
 
         """
+        self._use_public_bucket = running_at_desk
         update_url = job_repo_url
         if n2m:
             build_name = self._get_latest_serving_stable_build()
@@ -76,7 +76,4 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
                                               host=self._host)
         # Verify the update engine events that happened during the recovery.
         self.verify_update_events(self._RECOVERY_VERSION, minios_hostlog)
-
-        # Restore the stateful partition.
-        logging.info('Verification complete. Restoring stateful.')
-        self._restore_stateful(public_bucket=running_at_desk)
+        logging.info('Verification complete.')

@@ -14,6 +14,8 @@ import re
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.minios import minios_util
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -75,8 +77,31 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         """
         super(MiniOsTest, self).initialize(host)
         self._nebraska = None
+        self._use_public_bucket = False
         self._servo = host.servo
         self._servo.initialize_dut()
+
+    def warmup(self):
+        """
+        Setup up minios autotests.
+
+        MiniOS tests can have a failure condition that leaves the current
+        active partition unbootable. To avoid this having an effect on other
+        tests in a test suite, we provision and run the current installed
+        version on the inactive partition to ensure the next test runs
+        with the correct version of ChromeOS.
+        """
+        build_name = self._get_release_builder_path()
+        # Install the matching build with quick provision.
+        if not self._autotest_devserver:
+            self._autotest_devserver = dev_server.ImageServer.resolve(
+                    build_name, self._host.hostname)
+        update_url = self._autotest_devserver.get_update_url(build_name)
+        logging.info('Installing source image with update url: %s', update_url)
+        provisioner.ChromiumOSProvisioner(
+                update_url, host=self._host,
+                is_release_bucket=True).run_provision()
+        super(MiniOsTest, self).warmup()
 
     def cleanup(self):
         """Clean up minios autotests."""
@@ -85,6 +110,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         super(MiniOsTest, self).cleanup()
         # Make sure to reboot DUT into CroS in case of failures.
         self._host.reboot()
+        # Restore the stateful partition.
+        self._restore_stateful(public_bucket=self._use_public_bucket)
 
     def _boot_minios(self):
         """Boot the DUT into MiniOS."""

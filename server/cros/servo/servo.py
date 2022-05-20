@@ -442,11 +442,18 @@ class _Uart(object):
             try:
                 self._servo.set_nocheck(uart_cmd, target_level)
                 level = self._servo.get(uart_cmd)
-            except error.TestFail as e:
+            except (error.TestFail, AttributeError) as e:
                 # Any sort of test failure here should not stop the test. This
                 # is just to capture more output. Log and move on.
                 logging.warning('Failed to set %s to %s. %s. Ignoring.',
                                 uart_cmd, target_level, str(e))
+            except Exception as e:
+                # Consider catching these above. In general uart capture errors
+                # should be non fatal
+                logging.warning(
+                        'Unexpected Exception %r Failed to set %s to '
+                        '%s. %s. Ignoring.', type(e), uart_cmd, target_level,
+                        str(e))
             if level == target_level:
                 logging.debug('Managed to set %s to %s.', uart_cmd, level)
             else:

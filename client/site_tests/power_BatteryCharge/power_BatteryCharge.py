@@ -110,7 +110,8 @@ class power_BatteryCharge(power_test.power_Test):
             current_charge = new_charge
             logging.info('current_charge: %f', current_charge)
 
-            if self.status.battery.status == 'Full':
+            # Full or Fully Charged
+            if self.status.battery.status[0:4] == 'Full':
                 logging.info('Battery full, aborting!')
                 break
             elif self.status.battery.status == 'Discharging':

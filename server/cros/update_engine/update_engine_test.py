@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import base64
 import json
 import logging
 import os
@@ -20,6 +21,7 @@ import six.moves.urllib.parse
 from datetime import datetime, timedelta
 from xml.etree import ElementTree
 
+from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
@@ -36,6 +38,9 @@ from autotest_lib.server.cros import gsutil_wrapper
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.utils.frozen_chromite.lib import auto_updater
 from autotest_lib.utils.frozen_chromite.lib import auto_updater_transfer
+from autotest_lib.utils.frozen_chromite.lib import constants as chromite_constants
+from autotest_lib.utils.frozen_chromite.lib import gob_util
+from autotest_lib.utils.frozen_chromite.lib import osutils
 from autotest_lib.utils.frozen_chromite.lib import remote_access
 from autotest_lib.utils.frozen_chromite.lib import retry_util
 
@@ -76,6 +81,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     _CORRUPT_STATEFUL_PATH = '/mnt/stateful_partition/.corrupt_stateful'
 
     _STATEFUL_ARCHIVE_NAME = 'stateful.tgz'
+    _KERNEL_ARCHIVE_NAME = 'full_dev_part_KERN.bin.gz'
+    _ROOTFS_ARCHIVE_NAME = 'full_dev_part_ROOT.bin.gz'
 
     _PAYLOAD_TYPE = autotest_enum.AutotestEnum('CROS', 'DLC', 'MINIOS')
 
@@ -979,6 +986,58 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 destination_filename=stateful_filename)
         logging.info('Public stateful URL: %s', url)
         return url
+
+    def _get_provision_url_on_public_bucket(self, release_path):
+        """
+        Copy the necessary artifacts for quick-provision to the public bucket
+        and return the URL pointing to them.
+
+        This is to enable local runs of tests that need to provision a source
+        version on the DUT (such as m2n tests) without requiring lab cache
+        server SSH access.
+
+        @param release_path: path to the build artifacts in
+            gs://chromeos-releases. Ex: dev-channel/asurada/14515.0.0. The
+            output of _get_latest_serving_stable_build matches this format.
+
+        """
+        # We have a flat directory structure in the public directory. Therefore
+        # we need to disambiguate the path to the provision artifacts.
+        new_gs_dir = os.path.join(self._CELLULAR_BUCKET, 'provision',
+                                  release_path)
+        src_gs_dir = os.path.join('gs://chromeos-releases', release_path)
+        provision_artifacts = [
+                self._STATEFUL_ARCHIVE_NAME, self._ROOTFS_ARCHIVE_NAME,
+                self._KERNEL_ARCHIVE_NAME
+        ]
+
+        for file in provision_artifacts:
+            src_url = os.path.join(src_gs_dir, file)
+            dst_url = os.path.join(new_gs_dir, file)
+            utils.run([
+                    'gsutil', 'cp', '-n', '-a', 'public-read', src_url, dst_url
+            ])
+
+        public_url = new_gs_dir.replace('gs://',
+                                        'https://storage.googleapis.com/')
+
+        return public_url
+
+    def _copy_quick_provision_to_dut(self):
+        """ Copies the quick-provision script to the DUT from googlesource."""
+        tmp = autotemp.tempdir(unique_id='m2n')
+        src = os.path.join(tmp.name, 'quick-provision')
+        dst = '/usr/local/bin/quick-provision'
+        logging.info('Downloading quick-provision from googlesource')
+        qp_url_path = '%s/+/%s/%s?format=text' % (
+                'chromiumos/platform/dev-util', 'refs/heads/main',
+                'quick-provision/quick-provision')
+        contents_b64 = gob_util.FetchUrl(chromite_constants.EXTERNAL_GOB_HOST,
+                                         qp_url_path)
+        osutils.WriteFile(src, base64.b64decode(contents_b64).decode('utf-8'))
+        self._host.send_file(src, dst)
+        self._run(['chown', '$USER', dst])
+        self._run(['chmod', '755', dst])
 
     def get_payload_for_nebraska(self,
                                  job_repo_url=None,

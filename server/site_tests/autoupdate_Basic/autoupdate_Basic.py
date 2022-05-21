@@ -56,7 +56,7 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                 public_bucket=running_at_desk)
 
         self._m2n = m2n
-        if self._m2n and not running_at_desk:
+        if self._m2n:
             if self._host.get_board().endswith("-kernelnext"):
                 raise error.TestNAError("Skipping test on kernelnext board")
 
@@ -65,14 +65,22 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
             logging.debug('build name is %s', build_name)
 
             # Install the matching build with quick provision.
-            autotest_devserver = dev_server.ImageServer.resolve(
-                    build_name, self._host.hostname)
-            update_url = autotest_devserver.get_update_url(build_name)
+            if running_at_desk:
+                self._copy_quick_provision_to_dut()
+                update_url = self._get_provision_url_on_public_bucket(
+                        build_name)
+            else:
+                autotest_devserver = dev_server.ImageServer.resolve(
+                        build_name, self._host.hostname)
+                update_url = autotest_devserver.get_update_url(build_name)
+
             logging.info('Installing source image with update url: %s',
                          update_url)
             provisioner.ChromiumOSProvisioner(
-                    update_url, host=self._host,
-                    is_release_bucket=True).run_provision()
+                    update_url,
+                    host=self._host,
+                    is_release_bucket=True,
+                    public_bucket=running_at_desk).run_provision()
 
         # Login to device before update
         if pin_login:

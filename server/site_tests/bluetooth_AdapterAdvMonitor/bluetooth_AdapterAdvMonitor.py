@@ -8,7 +8,7 @@
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests \
      import BluetoothAdapterQuickTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
-     import BluetoothAdapterAdvMonitorTests
+     import (BluetoothAdapterAdvMonitorTests, ADVMON_UNSUPPORTED_CHIPSETS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
         SUSPEND_POWER_DOWN_MODELS)
@@ -111,6 +111,15 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         """Tests interleave scan."""
         self.advmon_test_interleaved_scan()
 
+    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('Condition Device Count Tests',
+                  devices={'BLE_MOUSE': 1},
+                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS,
+                  flags=['Quick Health'])
+    def advmon_condition_device_count_tests(self):
+        """Tests minimum supported condition and device count."""
+        self.advmon_test_condition_device_count()
+
     @batch_wrapper('Advertisement Monitor API')
     def advmon_health_batch_run(self, num_iterations=1, test_name=None):
         """Run the Advertisement Monitor test batch or a specific given test.
@@ -134,6 +143,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_fg_bg_combination_tests()
         self.advmon_suspend_resume_tests()
         self.advmon_interleaved_scan_tests()
+        self.advmon_condition_device_count_tests()
 
     def run_once(self,
                  host,

@@ -663,13 +663,19 @@ class BluetoothAdapterAdvMonitorTests(
 
 
     @test_retry_and_log(False)
-    def test_add_monitor(self, monitor, expected_activate=None,
-                         expected_release=None):
+    def test_add_monitor(self,
+                         monitor,
+                         expected_activate=None,
+                         expected_release=None,
+                         target_devices=None):
         """Test adding a monitor.
 
         @param monitor: the local monitor object.
         @param expected_activate: expected state of the Activate event.
         @param expected_release: expected state of the Release event.
+        @param target_devices: the addresses of the device that we are
+                               interested in. If None, the addresses of
+                               self.peer_mouse and self.peer_keybd will be used.
 
         @returns: True on success, False otherwise.
 
@@ -694,14 +700,16 @@ class BluetoothAdapterAdvMonitorTests(
             self.remove_monitor(app_id, monitor_id)
             monitor.update_monitor_id(None)
 
-        # Set the target devices so that AdvMon ignores Adv from other devices
-        target_devices = []
+        if target_devices is None:
+            # Set the target devices so that AdvMon ignores Adv from other
+            # devices.
+            target_devices = []
 
-        if hasattr(self, 'peer_mouse'):
-            target_devices.append(self.peer_mouse.address)
+            if hasattr(self, 'peer_mouse'):
+                target_devices.append(self.peer_mouse.address)
 
-        if hasattr(self, 'peer_keybd'):
-            target_devices.append(self.peer_keybd.address)
+            if hasattr(self, 'peer_keybd'):
+                target_devices.append(self.peer_keybd.address)
 
         self.set_target_devices(app_id, monitor_id, target_devices)
 
@@ -1051,6 +1059,33 @@ class BluetoothAdapterAdvMonitorTests(
                                                      False)
         self.test_stop_discovery()
         return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_peer_advertise_names_and_addresses(self,
+                                                names,
+                                                addrs,
+                                                device,
+                                                duration=1):
+        """Test for sending advertisements from the peer device.
+
+        @params names: List of str indicating the local name field of the
+                       advertising data.
+        @params addrs: List of str indicating the address of the device when
+                       advertising with the corresponding local name.
+        @params device: The peer device.
+        @params duration: The duration time (seconds) of each (name, addr) tuple
+                          to be advertised.
+
+        @returns True on success, False otherwise.
+        """
+        try:
+            device.AdvertiseWithNamesAndAddresses(list(zip(names, addrs)),
+                                                  duration)
+        except:
+            logging.exception('Advertisement rotations failed')
+            device.ResetStack()
+            return False
+        return True
 
     def advmon_test_monitor_creation(self):
         """Test case: MONITOR_CREATION
@@ -1899,3 +1934,112 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_exit_app(app1)
 
         device.AdapterPowerOn()
+
+    def advmon_test_condition_device_count(self):
+        """Test cases for verifying condition and device count.
+
+        A condition is a group of patterns registered in one monitor.
+        Note that in this test all conditions should be unique, otherwise they
+        will be merged by host stack and eventually only one condition will be
+        registered on the controller.
+
+        Device count means the tracking devices count for one condition.
+        """
+
+        AVL_CONDITION_COUNT = 4
+        AVL_DEVICE_COUNT_PER_CONDITION = 5
+
+        # We generate different advertisements from a single peer by rotating
+        # the advertising data. To avoid considering the peer as out-of-range,
+        # we set the RSSILowTimeout as high is possible.
+        # MSFT adv monitor supports at most 60 (0x3c) seconds of timeout.
+        RSSI_LOW_TIMEOUT = 60
+
+        self.test_is_adv_monitoring_supported()
+
+        device = self.devices['BLE_MOUSE'][0]
+        self.test_stop_peer_device_adv(device)
+
+        device_addrs = []
+        device_names = []
+        for ci in range(AVL_CONDITION_COUNT):
+            for di in range(AVL_DEVICE_COUNT_PER_CONDITION):
+                device_addrs.append('C4:05:C4:05:{:02x}:{:02x}'.format(ci, di))
+                device_names.append('COND{}_DEV{}'.format(ci, di))
+
+        device_rssi = self.get_device_sample_rssi(device)
+        high_rssi = max(device_rssi - self.HIGH_RSSI_THRESHOLD_TOLERANCE, -126)
+        low_rssi = max(device_rssi - self.LOW_RSSI_THRESHOLD_TOLERANCE, -127)
+
+        app = self.create_app()
+        self.test_register_app(app)
+
+        # Create the monitors according to the minimum supported condition count
+        # defined in AVL.
+        monitors = []
+        for i in range(AVL_CONDITION_COUNT):
+            monitor = TestMonitor(app)
+            monitor.update_type('or_patterns')
+            monitor.update_patterns([[0, 0x09, 'COND{}_'.format(i)]])
+            monitor.update_rssi([
+                    high_rssi, self.UNSET_TIMEOUT, low_rssi, RSSI_LOW_TIMEOUT
+            ])
+
+            self.test_add_monitor(monitor,
+                                  expected_activate=True,
+                                  target_devices=device_addrs)
+
+            monitors.append(monitor)
+
+        try:
+            # Rotate the advertisement and monitor the found device count.
+            start_time = time.time()
+            logging.info('Rotating %d advertisements', len(device_names))
+            if not self.test_peer_advertise_names_and_addresses(
+                    device_names, device_addrs, device):
+                raise error.TestNAError('Rotation failed: %s', self.fails)
+
+            # There should be no device lost event before timeout.
+            # Device lost count should be checked as early as possible because
+            # we have a really tight timeout. Thus, we check device lost first
+            # and then device found.
+            passed_device_lost = True
+            for monitor in monitors:
+                # Do not shortcut.
+                # Test all the monitors even when encountering a failure.
+                if not self.test_device_lost(monitor, count=0):
+                    passed_device_lost = False
+            for monitor in monitors:
+                self.test_device_found(monitor,
+                                       count=AVL_DEVICE_COUNT_PER_CONDITION)
+
+            rotate_time = time.time() - start_time
+            if rotate_time > RSSI_LOW_TIMEOUT:
+                logging.warning('Rotation took too much time: %3fs',
+                                rotate_time)
+            else:
+                logging.info('Rotation time: %3fs', rotate_time)
+
+            logging.info('Waiting %ds for all devices to be considered lost',
+                         RSSI_LOW_TIMEOUT)
+            time.sleep(RSSI_LOW_TIMEOUT)
+
+            for monitor in monitors:
+                self.test_device_found(monitor,
+                                       count=AVL_DEVICE_COUNT_PER_CONDITION)
+                self.test_device_lost(monitor,
+                                      count=AVL_DEVICE_COUNT_PER_CONDITION)
+
+            # If for some reason (such as bad network latency or peer issues)
+            # the rotation took too much time, we may get unexpected device
+            # lost events.
+            if not passed_device_lost and rotate_time > RSSI_LOW_TIMEOUT:
+                raise error.TestNAError(
+                        'Rotation took too much time: {:.3f}s, fails: %s'.
+                        format(rotate_time, self.fails))
+
+        finally:
+            for monitor in monitors:
+                self.test_remove_monitor(monitor)
+            self.test_unregister_app(app)
+            self.test_exit_app(app)

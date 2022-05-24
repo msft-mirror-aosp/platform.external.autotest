@@ -38,8 +38,8 @@ from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         TABLET_MODELS, SUSPEND_POWER_DOWN_CHIPSETS,
         SUSPEND_RESET_IF_NO_PEER_CHIPSETS, SUSPEND_POWER_DOWN_MODELS)
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
-        BluetoothAdapterAudioTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_qr_tests import (
+        QR_UNSUPPORTED_CHIPSETS, QR_EVENT_PERIOD, BluetoothAdapterQRTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -53,7 +53,7 @@ STRESS_ITERATIONS = 50
 
 
 class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
-                                BluetoothAdapterAudioTests):
+                                BluetoothAdapterQRTests):
     """Server side bluetooth adapter suspend resume test with peer."""
 
     def _test_keyboard_with_string(self, device):
@@ -467,6 +467,77 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         # Test that we can reconnect to the device after powering back on
         self.test_connection_by_device(device)
 
+    @test_wrapper('Suspend while receiving BQR test',
+                  devices={
+                          'BLUETOOTH_AUDIO': 1,
+                          'KEYBOARD': 1
+                  },
+                  flags=['Quick Health'],
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS +
+                  SUSPEND_POWER_DOWN_CHIPSETS)
+    def sr_while_receiving_bqr(self):
+        """Suspend while receiving BQR to check the health."""
+        audio_device = self.devices['BLUETOOTH_AUDIO'][0]
+        keyboard_device = self.devices['KEYBOARD'][0]
+        devices = (audio_device, keyboard_device)
+        test_profile = A2DP
+        start_time = self.bluetooth_facade.get_device_utc_time()
+
+        # Enable BQR
+        self.enable_disable_quality_debug_log(enable=True)
+        self.dut_btmon_log_path = self.start_new_btmon()
+
+        try:
+            # Connecting to all devices
+            for device in devices:
+                if device.device_type == 'BLUETOOTH_AUDIO':
+                    self.initialize_bluetooth_audio(device, test_profile)
+
+                self.test_discover_device(device.address)
+                self.test_pairing(device.address, device.pin, trusted=True)
+                self.test_connection_by_device(device)
+                time.sleep(2)
+
+            # Connect to the audio device with A2DP profile.
+            self.test_device_a2dp_connected(audio_device)
+
+            # Checking the bqr logs before suspend/resume.
+            time.sleep(QR_EVENT_PERIOD * 2)
+            self.test_send_log()
+            self.check_qr_event_log(num_devices=len(devices))
+
+            # Starting to suspend/resume.
+            boot_id = self.host.get_boot_id()
+            suspend = self.suspend_async(suspend_time=SUSPEND_SEC)
+            self.test_suspend_and_wait_for_sleep(suspend,
+                                                 sleep_timeout=SUSPEND_SEC)
+
+            self.test_wait_for_resume(boot_id,
+                                      suspend,
+                                      resume_timeout=SUSPEND_SEC,
+                                      test_start_time=start_time)
+
+            # Open a 2nd btmon log for BQR log checking.
+            self.dut_btmon_log_path = self.start_new_btmon()
+
+            # After suspend/resume DUT should be able to connect to devices.
+            for device in devices:
+                self.test_discover_device(device.address)
+                self.test_pairing(device.address, device.pin, trusted=True)
+                self.test_connection_by_device(device)
+
+            # Checking the bqr logs after suspend/resume.
+            time.sleep(QR_EVENT_PERIOD * 2)
+            self.test_send_log()
+            self.check_qr_event_log(num_devices=len(devices))
+            self.enable_disable_quality_debug_log(enable=False)
+        finally:
+            for device in devices:
+                if device.device_type == 'BLUETOOTH_AUDIO':
+                    self.cleanup_bluetooth_audio(device, test_profile)
+                self.test_remove_pairing(device.address)
+
     @batch_wrapper('SR with Peer Health')
     def sr_health_batch_run(self, num_iterations=1, test_name=None):
         """ Batch of suspend/resume peer health tests. """
@@ -476,6 +547,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self.sr_peer_wake_le_hid()
         self.sr_while_discovering()
         self.sr_while_advertising()
+        self.sr_while_receiving_bqr()
         self.sr_reconnect_multiple_classic_hid()
         self.sr_reconnect_multiple_le_hid()
         self.sr_reconnect_multiple_classic_le_hid()

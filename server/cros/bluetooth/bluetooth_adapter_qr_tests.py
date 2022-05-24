@@ -253,7 +253,11 @@ def collect_qr_event_from_log(file_path):
     all_reports = collections.defaultdict(list)
 
     lines = None
-    with open(file_path, 'r') as f:
+
+    # Sometimes the btsnoop will contain some words that cannot
+    # decode by the UTF-8 but it seems not very harmful (only few words)
+    # so just ignore the decode errors here.
+    with open(file_path, 'r', errors='ignore') as f:
         lines = f.readlines()
 
     report, handler = {}, None

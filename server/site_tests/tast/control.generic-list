@@ -28,7 +28,8 @@ more information.
 
 This test runs arbitary Tast-based tests specified by args given to test_that.
 This test might be useful on debugging to simulate Tast test runs invoked via
-Autotest.
+Autotest.  Tests run with this wrapper will report skipped tests using the 
+autotest TEST NA status.
 
 Examples:
     test_that --args=tast_list=tast.test_1,tast.test_2 ${DUT} tast.generic_list
@@ -50,6 +51,7 @@ def run(machine):
                  ignore_test_failures=True, max_run_sec=3600,
                  command_args=command_args,
                  varslist=varslist,
-                 exclude_missing=True)
+                 exclude_missing=True,
+                 report_skipped=True)
 
 parallel_simple(run, machines)

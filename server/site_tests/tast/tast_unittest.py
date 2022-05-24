@@ -244,7 +244,8 @@ class TastTest(unittest.TestCase):
                   maybemissingvars='',
                   use_camera_box=False,
                   vars_gs_path='',
-                  test_filter_files=[]):
+                  test_filter_files=[],
+                  report_skipped=False):
         """Writes fake_tast.py's configuration and runs the test.
 
         @param ignore_test_failures: Passed as the identically-named arg to
@@ -267,6 +268,7 @@ class TastTest(unittest.TestCase):
         @param maybemissingvars: a regex to pass to tast run command as
             |-maybemissingvars| arguments.
         @param use_camera_box: Whether the test run in CameraBox.
+        @param report_skipped: Whether or not skipped tests should be reported.
         """
         self._test.initialize(self._host,
                               self.TEST_PATTERNS,
@@ -288,7 +290,8 @@ class TastTest(unittest.TestCase):
                               maybemissingvars=maybemissingvars,
                               use_camera_box=use_camera_box,
                               vars_gs_path=vars_gs_path,
-                              test_filter_files=test_filter_files)
+                              test_filter_files=test_filter_files,
+                              report_skipped=report_skipped)
         self._test.set_fake_now_for_testing(
                 (NOW - tast._UNIX_EPOCH).total_seconds())
 
@@ -374,10 +377,28 @@ class TastTest(unittest.TestCase):
 
     def testSkippedTest(self):
         """Tests that skipped tests aren't reported."""
-        tests = [TestInfo('pkg.Normal', 0, 1),
-                 TestInfo('pkg.Skipped', 2, 2, skip_reason='missing deps')]
+        tests = [
+                TestInfo('pkg.Normal', 0, 1),
+                TestInfo('pkg.Skipped', 2, 2, skip_reason='missing deps')
+        ]
         self._init_tast_commands(tests)
         self._run_test()
+        self.assertEqual(status_string(get_status_entries_from_tests(tests)),
+                         status_string(self._job.status_entries))
+        self.assertIs(self._load_job_keyvals(), None)
+
+    def testSkippedTestWithReportSkipped(self):
+        """Tests that skipped tests are reported correctly when report_skipped=True."""
+        tests = [
+                TestInfo('pkg.Normal', 0, 1),
+                TestInfo('pkg.Skipped',
+                         2,
+                         3,
+                         skip_reason='missing deps',
+                         report_skipped=True)
+        ]
+        self._init_tast_commands(tests)
+        self._run_test(report_skipped=True)
         self.assertEqual(status_string(get_status_entries_from_tests(tests)),
                          status_string(self._job.status_entries))
         self.assertIs(self._load_job_keyvals(), None)
@@ -839,7 +860,8 @@ class TestInfo:
                  skip_reason=None,
                  attr=None,
                  timeout_ns=0,
-                 missing_reason=None):
+                 missing_reason=None,
+                 report_skipped=False):
         """
         @param name: Name of the test, e.g. 'ui.ChromeLogin'.
         @param start_offset: Start time as int seconds offset from BASE_TIME,
@@ -855,6 +877,7 @@ class TestInfo:
         @param attr: List of string test attributes assigned to the test, or
             None if no attributes are assigned.
         @param timeout_ns: Test timeout in nanoseconds.
+        @param report_skipped: Decide if skipped tests should be reported
         """
         def from_offset(offset):
             """Returns an offset from BASE_TIME.
@@ -874,6 +897,7 @@ class TestInfo:
         self._skip_reason = skip_reason
         self._attr = list(attr) if attr else []
         self._timeout_ns = timeout_ns
+        self._report_skipped = report_skipped
 
     def name(self):
         # pylint: disable=missing-docstring
@@ -919,7 +943,7 @@ class TestInfo:
         """
         # Deliberately-skipped tests shouldn't have status entries unless errors
         # were also reported.
-        if self._skip_reason and not self._errors:
+        if not self._report_skipped and self._skip_reason and not self._errors:
             return []
 
         def make(status_code, dt, msg=''):
@@ -949,6 +973,12 @@ class TestInfo:
 
             entries.append(make(tast.tast._JOB_STATUS_NOSTATUS, None, reason))
             entries.append(make(tast.tast._JOB_STATUS_END_NOSTATUS, None))
+        elif self._end_time and self._skip_reason and not self._errors:
+            entries.append(
+                    make(tast.tast._JOB_STATUS_SKIP, self._end_time,
+                         self._skip_reason))
+            entries.append(make(tast.tast._JOB_STATUS_END_SKIP,
+                                self._end_time))
         elif self._end_time and not self._errors:
             entries.append(make(tast.tast._JOB_STATUS_GOOD, self._end_time))
             entries.append(make(tast.tast._JOB_STATUS_END_GOOD, self._end_time))

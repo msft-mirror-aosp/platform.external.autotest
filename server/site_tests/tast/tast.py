@@ -171,12 +171,14 @@ class tast(test.test):
     _JOB_STATUS_END_GOOD = 'END GOOD'
     _JOB_STATUS_END_FAIL = 'END FAIL'
     _JOB_STATUS_END_NOSTATUS = 'END NOSTATUS'
+    _JOB_STATUS_END_SKIP = 'END TEST_NA'
 
     # In-job TKO event status codes from base_client_job._run_test_base in
     # client/bin/job.py and client/common_lib/error.py.
     _JOB_STATUS_GOOD = 'GOOD'
     _JOB_STATUS_FAIL = 'FAIL'
     _JOB_STATUS_NOSTATUS = 'NOSTATUS'
+    _JOB_STATUS_SKIP = 'TEST_NA'
 
     # Status reason used when an individual Tast test doesn't finish running.
     _TEST_DID_NOT_FINISH_MSG = 'Test did not finish'
@@ -208,7 +210,8 @@ class tast(test.test):
                    ephemeraldevserver=None,
                    is_cft=False,
                    exclude_missing=False,
-                   test_filter_files=[]):
+                   test_filter_files=[],
+                   report_skipped=False):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -257,6 +260,8 @@ class tast(test.test):
         `tast list` command
         @param test_filter_files: This option includes a list of files containing names
         of test to be disabled.
+        @param report_skipped: If true then skipped tests will be reported in
+        the status.log
 
         When the F20 breadcrumb is detected, it is assumed we are running in
             the F20 container, meaning we will force disable SSP (though the
@@ -301,6 +306,7 @@ class tast(test.test):
         self._ephemeraldevserver = ephemeraldevserver
         self._exclude_missing = exclude_missing
         self._test_filter_files = test_filter_files
+        self._report_skipped = report_skipped
 
         # Need to pass in dut_servers for every test in CFT.
         # But only add it if not already in varslist.
@@ -1108,7 +1114,7 @@ class tast(test.test):
         test_finished = end_time > 0
 
         # Avoid reporting tests that were skipped.
-        if test_skipped and not test_reported_errors:
+        if test_skipped and not test_reported_errors and not self._report_skipped:
             return
 
         # Look for magic error _TEST_DID_NOT_RUN_MSG and mark test as not run.
@@ -1123,6 +1129,10 @@ class tast(test.test):
             self._log_test_event(self._JOB_STATUS_NOSTATUS, name, end_time,
                                  test[_KEY_MISSING_REASON])
             end_status = self._JOB_STATUS_END_NOSTATUS
+        elif test_skipped and not test_reported_errors and self._report_skipped:
+            self._log_test_event(self._JOB_STATUS_SKIP, name, end_time,
+                                 test.get(_KEY_SKIP_REASON))
+            end_status = self._JOB_STATUS_END_SKIP
         elif test_finished and not test_reported_errors:
             self._log_test_event(self._JOB_STATUS_GOOD, name, end_time)
             end_status = self._JOB_STATUS_END_GOOD

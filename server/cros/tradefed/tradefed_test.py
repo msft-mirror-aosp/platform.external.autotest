@@ -720,6 +720,17 @@ class TradefedTest(test.test):
                 if entry == 'tools':
                     shutil.copytree(os.path.join(special_src, entry),
                                     os.path.join(special_dest, entry))
+                elif entry == 'testcases':
+                    # Directory structure in testcases/ needs to be
+                    # instantiated, because CTS tries `find` command
+                    # in the directory without following symlinks
+                    for subdir, _, files in os.walk(
+                            os.path.join(special_src, entry)):
+                        rel = os.path.relpath(subdir, special_src)
+                        os.mkdir(os.path.join(special_dest, rel))
+                        for file in files:
+                            os.symlink(os.path.join(special_src, rel, file),
+                                       os.path.join(special_dest, rel, file))
                 else:
                     os.symlink(os.path.join(special_src, entry),
                                os.path.join(special_dest, entry))

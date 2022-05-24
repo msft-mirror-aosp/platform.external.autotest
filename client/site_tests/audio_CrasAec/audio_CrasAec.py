@@ -24,13 +24,17 @@ class audio_CrasAec(test.test):
 
     # (sample rate, channels, rms threshold)
     # The rms_threshold value is determined by experiments.
+
+    # We're seeing 95% of the test passes with threshold=0.015 and the failed
+    # cases(5%) having one case out of the six has engergy at 0.03-0.05
+    # For real failures we see engergy surpasses 0.1 in at least one case.
     TEST_DATA = [
-            (48000, 1, 0.015),
-            (44100, 1, 0.015),
-            (16000, 1, 0.015),
-            (44100, 2, 0.015),
-            (48000, 2, 0.015),
-            (16000, 2, 0.015),
+            (48000, 1, 0.05),
+            (44100, 1, 0.05),
+            (16000, 1, 0.05),
+            (44100, 2, 0.05),
+            (48000, 2, 0.05),
+            (16000, 2, 0.05),
     ]
 
     def play_sound(self):

@@ -15,6 +15,8 @@ _LOWER_USB_PORT = 'usb_mux_sel3'
 _SUSPEND_TIME = 30
 _UPPER_USB_PORT = 'usb_mux_sel1'
 _WAIT_DELAY = 15
+_WAIT_OPENLID_DELAY = 30
+_WAIT_LONG_DELAY = 60
 
 # servo v4.1 controls
 _AUX_USB_PORT = 'aux_usbkey_mux'
@@ -194,7 +196,7 @@ class platform_ExternalUsbPeripherals(test.test):
             # Check for mandatory USb devices passed by usb_list flag
             for usb_name in self.usb_list:
                 found = self.wait_for_cmd_output(
-                    'lsusb | grep -E ', usb_name, _WAIT_DELAY * 4,
+                    'lsusb | grep -E ', usb_name, _WAIT_LONG_DELAY,
                     'Not detecting %s' % usb_name)
                 result = result and found
         time.sleep(_WAIT_DELAY)
@@ -230,7 +232,7 @@ class platform_ExternalUsbPeripherals(test.test):
             # Run the usb check command
             for out_match in out_match_list:
                 match_result = self.wait_for_cmd_output(
-                    cmd, out_match, _WAIT_DELAY * 4,
+                    cmd, out_match, _WAIT_LONG_DELAY,
                     'USB CHECKS DETAILS failed at %s %s:' % (cmd, out_match))
                 usb_check_result = usb_check_result and match_result
         return usb_check_result
@@ -281,7 +283,7 @@ class platform_ExternalUsbPeripherals(test.test):
 
         # Collect USB peripherals when plugged
         self.plug_peripherals(True)
-        time.sleep(_WAIT_DELAY * 2)
+        time.sleep(_WAIT_LONG_DELAY)
         on_list = self.getPluggedUsbDevices()
 
         self.diff_list = set(on_list).difference(set(off_list))
@@ -367,7 +369,7 @@ class platform_ExternalUsbPeripherals(test.test):
                     time.sleep(_WAIT_DELAY)
                 elif action == 'OPENLID':
                     self.open_lid(boot_id)
-                    time.sleep(_WAIT_DELAY)
+                    time.sleep(_WAIT_OPENLID_DELAY)
                 elif action == 'UNPLUG':
                     self.plug_peripherals(False)
                 elif action == 'PLUG':
@@ -388,7 +390,7 @@ class platform_ExternalUsbPeripherals(test.test):
                             logging.debug('Skipping logout. Not logged in.')
                     elif action == 'REBOOT':
                         self.host.reboot()
-                        time.sleep(_WAIT_DELAY * 3)
+                        time.sleep(_WAIT_LONG_DELAY)
                         self.login_status = False
                     elif action == 'SUSPEND':
                         boot_id = self.action_suspend()

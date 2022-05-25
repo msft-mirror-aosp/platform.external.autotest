@@ -104,6 +104,20 @@ class CellularTestEnvironment(object):
 
     def __enter__(self):
         try:
+            # Wait for system daemons to stabilize before beginning the test.
+            # Modemfwd, Chrome, Shill and Hermes might be active before the test
+            # begins, and interrupting them abruptly during test setup might
+            # lead to flaky tests. The modem might also appear/disappear
+            # multiple times during this period. Ideally, we would wait for a
+            # green signal from these daemons before performing test setup.
+            with open('/proc/uptime') as uptime_file:
+                uptime = float(uptime_file.readline().split()[0])
+            if uptime < 60:
+                logging.info(
+                        "Waiting %.1f seconds to reach uptime of 1 minute before "
+                        "starting test", 60 - uptime)
+                time.sleep(60 - uptime)
+
             if upstart.has_service('modemfwd') and upstart.is_running('modemfwd'):
                 # Due to b/179796133, stopping modemfwd right after it was
                 # started by a previous test, can wedge the modem. In many

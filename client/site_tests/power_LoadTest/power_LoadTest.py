@@ -585,6 +585,11 @@ class power_LoadTest(arc.ArcTest):
                                        higher_is_better=False)
 
         logger = power_dashboard.KeyvalLogger(self._start_time, self._end_time)
+        for key in [
+                'b_on_ac', 'force_discharge', 'gaia_login',
+                'percent_usb_suspended_time'
+        ]:
+            logger.add_item(key, keyvals[key], 'point', 'perf')
 
         # Add audio/docs/email/web fail load details to power dashboard and to keyval
         for task in ('audio', 'docs', 'email', 'web'):

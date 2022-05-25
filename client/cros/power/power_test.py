@@ -225,15 +225,13 @@ class power_Test(test.test):
         keyvals['level_backlight_current'] = self.backlight.get_level()
 
         # record battery stats if battery exists
-        if not self._force_discharge_success and self.status.on_ac():
-            keyvals['b_on_ac'] = 1
-        else:
-            keyvals['b_on_ac'] = 0
-
-        if self._force_discharge_success:
-            keyvals['force_discharge'] = 1
-        else:
-            keyvals['force_discharge'] = 0
+        keyvals['b_on_ac'] = int(not self._force_discharge_success
+                                 and self.status.on_ac())
+        keyvals['force_discharge'] = int(self._force_discharge_success)
+        for key in [
+                'b_on_ac', 'force_discharge', 'percent_usb_suspended_time'
+        ]:
+            self._keyvallogger.add_item(key, keyvals[key], 'point', 'perf')
 
         if self.status.battery:
             keyvals['ah_charge_full'] = self.status.battery.charge_full

@@ -626,6 +626,7 @@ class power_LoadTest(arc.ArcTest):
                 self.tagged_testname, self.resultsdir, note=self._pdash_note)
             dashboard.upload()
 
+        power_dashboard.generate_parallax_report(self.outputdir)
 
     def cleanup(self):
         force_discharge_utils.restore(self._force_discharge_success)

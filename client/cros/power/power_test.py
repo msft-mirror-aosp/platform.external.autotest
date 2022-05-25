@@ -337,6 +337,7 @@ class power_Test(test.test):
         super(power_Test, self).postprocess_iteration()
         self.publish_dashboard()
         self._save_results()
+        power_dashboard.generate_parallax_report(self.outputdir)
         if self._failure_messages:
             raise error.TestFail('Test has failed with messages: %s' %
                                  self._failure_messages)

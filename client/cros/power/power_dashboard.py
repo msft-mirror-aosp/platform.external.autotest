@@ -789,3 +789,33 @@ class LoggerDashboardFactory(object):
             uploadurl = 'http://chrome-power.appspot.com/rapl'
         dashboard = self.loggerToDashboardDict[type(logger)]
         return dashboard(logger, testname, resultsdir, uploadurl, note)
+
+
+def generate_parallax_report(output_dir):
+    """Generate parallax report in the result directory."""
+    parallax_url = 'http://crospower.page.link/parallax'
+    local_dir = '/usr/local'
+    parallax_tar = os.path.join(local_dir, 'parallax.tar.xz')
+    parallax_dir = os.path.join(local_dir, 'report_analysis')
+    parallax_exe = os.path.join(parallax_dir, 'process.py')
+    results_dir = os.path.join(output_dir, 'results')
+    parallax_html = os.path.join(results_dir, 'parallax.html')
+
+    # Download the source
+    cmd = ' '.join(['wget', parallax_url, '-O', parallax_tar])
+    utils.run(cmd)
+
+    # Extract the tool
+    cmd = ' '.join(['tar', 'xf', parallax_tar, '-C', local_dir])
+    utils.run(cmd)
+
+    # Run the tool
+    cmd = ' '.join([
+            'python', parallax_exe, '-t', 'PowerQual', '-p', output_dir, '-o',
+            parallax_html
+    ])
+    utils.run(cmd)
+
+    # Clean up the tool
+    cmd = ' '.join(['rm', '-rf', parallax_tar, parallax_dir])
+    utils.run(cmd)

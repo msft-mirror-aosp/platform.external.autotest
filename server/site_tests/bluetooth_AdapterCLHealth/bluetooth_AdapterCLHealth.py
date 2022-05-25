@@ -77,7 +77,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                           self.run_keyboard_tests)
 
 
-    @test_wrapper('Pairing Suspend Resume Test', devices={"MOUSE": 1})
+    @test_wrapper('Pairing Suspend Resume Test',
+                  devices={"MOUSE": 1},
+                  supports_floss=True)
     def cl_adapter_pairing_suspend_resume_test(self):
         """Performs pairing test over resume with mouse peripheral"""
         device = self.devices['MOUSE'][0]
@@ -87,7 +89,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                           suspend_resume=True)
 
 
-    @test_wrapper('Pairing Twice Test', devices={"MOUSE":1})
+    @test_wrapper('Pairing Twice Test',
+                  devices={"MOUSE": 1},
+                  supports_floss=True)
     def cl_adapter_pairing_twice_test(self):
         """Performs pairing twice test with  mouse peripheral"""
         device = self.devices['MOUSE'][0]
@@ -168,7 +172,8 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('Connect Disconnect by Device Loop Test',
                   devices={"MOUSE": 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  supports_floss=True)
     def cl_connect_disconnect_by_device_loop_test(self):
         """Performs connect/disconnect by device test with mouse peripheral"""
         device = self.devices['MOUSE'][0]
@@ -179,7 +184,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                 check_connected_method=self.test_mouse_move_in_xy)
 
 
-    @test_wrapper('Connect Disconnect Loop Test', devices={"MOUSE":1})
+    @test_wrapper('Connect Disconnect Loop Test',
+                  devices={"MOUSE": 1},
+                  supports_floss=True)
     def cl_connect_disconnect_loop_test(self):
         """Performs connect/disconnect test with mouse peripheral"""
         device = self.devices['MOUSE'][0]

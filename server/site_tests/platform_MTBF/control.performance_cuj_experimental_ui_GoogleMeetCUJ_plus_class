@@ -102,6 +102,7 @@ def run(machine):
       job.run_test('tast',
                   host=host,
                   test_exprs=['ui.GoogleMeetCUJ.plus_class'],
+                  clear_tpm=False,
                   ignore_test_failures=False,
                   max_run_sec=3600,
                   command_args=args,

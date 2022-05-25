@@ -1012,6 +1012,10 @@ class SystemServicer(object):
         """Remove the directory."""
         return self._os_if.remove_dir(dir_path)
 
+    def check_power_key(self):
+        """Check for power key press"""
+        return self._key_checker.check_power_key()
+
     def check_keys(self, expected_sequence):
         """Check the keys sequence was as expected.
 

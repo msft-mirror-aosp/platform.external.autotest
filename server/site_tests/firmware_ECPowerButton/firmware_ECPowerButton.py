@@ -66,7 +66,7 @@ class firmware_ECPowerButton(FirmwareTest):
         # Press power button for only 10ms. Should be debounced.
         logging.info('ECPowerButton: debounce_power_button')
         Timer(3, self.servo.power_key, [0.001]).start()
-        return self.faft_client.system.check_keys([116])
+        return self.faft_client.system.check_power_key()
 
     def shutdown_and_wake(self, shutdown_powerkey_duration, power_state,
                           wake_powerkey_duration):

@@ -157,9 +157,10 @@ class power_LoadTest(arc.ArcTest):
                 rsp = "Skipping test for device without battery and powercap."
                 raise error.TestNAError(rsp)
 
-        self._tmp_keyvals['b_on_ac'] = (not self._force_discharge_success
-                                        and self._power_status.on_ac())
-        self._tmp_keyvals['force_discharge'] = self._force_discharge_success
+        self._tmp_keyvals['b_on_ac'] = int(not self._force_discharge_success
+                                           and self._power_status.on_ac())
+        self._tmp_keyvals['force_discharge'] = int(
+                self._force_discharge_success)
 
         self._gaia_login = gaia_login
         if gaia_login is None:
@@ -350,6 +351,7 @@ class power_LoadTest(arc.ArcTest):
                                           gaia_login=self._gaia_login)
         if not self._gaia_login:
             self._tmp_keyvals['username'] = 'GUEST'
+        self._tmp_keyvals['gaia_login'] = int(self._gaia_login)
 
         extension = self._browser.get_extension(ext_path)
         for k in params_dict:
@@ -582,7 +584,7 @@ class power_LoadTest(arc.ArcTest):
 
         logger = power_dashboard.KeyvalLogger(self._start_time, self._end_time)
 
-        # Add audio/docs/email/web fail load to power dashboard
+        # Add audio/docs/email/web fail load details to power dashboard and to keyval
         for task in ('audio', 'docs', 'email', 'web'):
             key = 'ext_%s_failed_loads' % task
             if key not in keyvals:
@@ -591,6 +593,7 @@ class power_LoadTest(arc.ArcTest):
             for index, val in enumerate(vals):
                 log_name = 'loop%02d_%s_failed_load' % (index, task)
                 logger.add_item(log_name, val, 'point', 'perf')
+                core_keyvals[log_name] = val
 
         # Add ext_ms_page_load_time_mean to power dashboard
         if 'ext_ms_page_load_time_mean' in keyvals:

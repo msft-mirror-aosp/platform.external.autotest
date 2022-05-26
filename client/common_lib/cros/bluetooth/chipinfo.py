@@ -15,12 +15,11 @@ class ChipInfo(NamedTuple):
 
 
 _chip_info = {
-        'MVL_8897': ChipInfo(False, False, 0),
-        'MVL_8997': ChipInfo(False, False, 0),
+        'MVL-8897': ChipInfo(False, False, 0),
+        'MVL-8997': ChipInfo(False, False, 0),
         'QCA-6174A-5-USB': ChipInfo(False, False, 0),
         'QCA-6174A-3-UART': ChipInfo(False, False, 0),
         'QCA-WCN6856': ChipInfo(True, True, 0x0170),
-        'QCA_WCN3990': ChipInfo(True, True, 0x0170),
         'WCN3991': ChipInfo(True, True, 0x0170),
         'WCN6750': ChipInfo(True, True, 0x0170),
         'Intel-AX200': ChipInfo(False, True, 0x001e),
@@ -47,6 +46,6 @@ def query(chip_name):
 
     chip_info = _chip_info.get(chip_name)
     if chip_info is None:
-        raise error.TestError('Chipset name does not exist, please update the '
-                              'list of chipsets')
+        raise error.TestError('Chipset name %r does not exist, please update '
+                              'the list of chipsets' % chip_name)
     return chip_info

@@ -590,9 +590,9 @@ class SysStat(object):
         """Returns True if battery is ok to discharge on AC presently.
 
         some devices cycle between charge & discharge above a certain
-        SoC.  If AC is charging and SoC > 95% we can safely assume that.
+        SoC.  If AC is charging and SoC > 90% we can safely assume that.
         """
-        return self.battery_charging() and (self.percent_current_charge() > 95)
+        return self.battery_charging() and (self.percent_current_charge() > 90)
 
 
     def percent_current_charge(self):

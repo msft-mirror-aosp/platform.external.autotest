@@ -25,8 +25,9 @@ class Hcitool(object):
         @param ocf: btsocket.OCF_... (int value).
         @param *parameter: parameter as hex string, e.g., ...,'1A','FA'.
 
-        @return: list of the hcitool output. In case
-                of failure, returns [hcitool status].
+        @return: (parsed_payload, event_bytearray) if the HCI command is
+                successful and the returned event is parsable.
+                Otherwise, returns ([status], event_bytearray).
         """
         params = ['hcitool', 'cmd', hex(ogf), hex(ocf)]
         params.extend(parameter)
@@ -49,9 +50,11 @@ class Hcitool(object):
                                   'but got ' + str(len(event_bytearray)))
 
         if status != self.CONTROLLER_PASS_CODE_VALUE:
-            return [status]
-
-        return HciToolParser.parse_payload(event_bytearray, ogf, ocf)
+            return ([status], event_bytearray)
+        parsed_payload = HciToolParser.parse_payload(event_bytearray, ogf, ocf)
+        if parsed_payload is None:
+            return ([status], event_bytearray)
+        return (parsed_payload, event_bytearray)
 
     @staticmethod
     def filter_with_mask(names, mask):
@@ -72,8 +75,20 @@ class Hcitool(object):
         return [names[i] for i, m in enumerate(mask) if m == '1']
 
     def _execute_hcitool_cmd_or_raise(self, ogf, ocf, *parameter):
+        """Executes and checks status of hcitool commands.
+
+        @param ogf: btsocket.OGF_... (int value).
+        @param ocf: btsocket.OCF_... (int value).
+        @param *parameter: parameter as hex string, e.g., ...,'1A','FA'.
+
+        @return: (parsed_payload, event_bytearray) if the HCI command is
+                successful and the returned event is parsable.
+                Otherwise, returns ([status], event_bytearray).
+
+        @raises TestError: If the command status is not zero.
+        """
         result = self._execute_hcitool_cmd(ogf, ocf, *parameter)
-        status = result[0]
+        status = result[0][0]
         if status != self.CONTROLLER_PASS_CODE_VALUE:
             raise error.TestError(
                     'Unexpected command output, the status code is ' +
@@ -88,7 +103,7 @@ class Hcitool(object):
                 total_num_synchronous_data_packets).
         """
         return self._execute_hcitool_cmd_or_raise(
-                btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_BUFFER_SIZE)
+                btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_BUFFER_SIZE)[0]
 
     def read_local_supported_features(self):
         """Reads local supported features for BR/EDR.
@@ -96,7 +111,7 @@ class Hcitool(object):
         @returns: (status, [features_name_list]).
         """
         execute_command_result = self._execute_hcitool_cmd_or_raise(
-                btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_LOCAL_FEATURES)
+                btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_LOCAL_FEATURES)[0]
         status = execute_command_result[0]
         lmp_features_mask = execute_command_result[1]
         supported_features = SupportedFeatures.SUPPORTED_FEATURES_PAGE_ZERO
@@ -118,7 +133,7 @@ class Hcitool(object):
                     str(page_number))
         execute_command_result = self._execute_hcitool_cmd_or_raise(
                 btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_LOCAL_EXT_FEATURES,
-                str(page_number))
+                str(page_number))[0]
 
         status = execute_command_result[0]
         return_page_number = execute_command_result[1]
@@ -144,7 +159,7 @@ class Hcitool(object):
 
         execute_command_result = self._execute_hcitool_cmd_or_raise(
                 btsocket.OGF_LE_CTL,
-                btsocket.OCF_LE_READ_LOCAL_SUPPORTED_FEATURES)
+                btsocket.OCF_LE_READ_LOCAL_SUPPORTED_FEATURES)[0]
 
         status = execute_command_result[0]
         le_features_mask = execute_command_result[1]
@@ -165,7 +180,7 @@ class Hcitool(object):
         """
         execute_command_result = self._execute_hcitool_cmd(
                 btsocket.OGF_HOST_CTL, btsocket.OCF_SET_EVENT_FLT, filter_type,
-                filter_condition_type, condition)
+                filter_condition_type, condition)[0]
 
         return execute_command_result
 
@@ -175,7 +190,7 @@ class Hcitool(object):
         @return: (status, [supported_commands_name_list]).
         """
         execute_command_result = self._execute_hcitool_cmd_or_raise(
-                btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_LOCAL_COMMANDS)
+                btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_LOCAL_COMMANDS)[0]
         status = execute_command_result[0]
         commands_mask = list(execute_command_result[1:])
         commands = SupportedCommands.SUPPORTED_COMMANDS
@@ -200,7 +215,7 @@ class Hcitool(object):
         @returns: (status, accept_list_size).
         """
         return self._execute_hcitool_cmd_or_raise(
-                btsocket.OGF_LE_CTL, btsocket.OCF_LE_READ_ACCEPT_LIST_SIZE)
+                btsocket.OGF_LE_CTL, btsocket.OCF_LE_READ_ACCEPT_LIST_SIZE)[0]
 
     def le_read_maximum_data_length(self):
         """Reads packet data length of the BT LE controller.
@@ -210,7 +225,7 @@ class Hcitool(object):
         """
         return self._execute_hcitool_cmd_or_raise(
                 btsocket.OGF_LE_CTL,
-                HciToolParser.OCF_LE_READ_MAXIMUM_DATA_LENGTH)
+                HciToolParser.OCF_LE_READ_MAXIMUM_DATA_LENGTH)[0]
 
     def le_read_resolving_list_size(self):
         """Reads resolving list size of the BT LE controller.
@@ -218,7 +233,7 @@ class Hcitool(object):
         """
         return self._execute_hcitool_cmd_or_raise(
                 btsocket.OGF_LE_CTL,
-                HciToolParser.OCF_LE_READ_RESOLVING_LIST_SIZE)
+                HciToolParser.OCF_LE_READ_RESOLVING_LIST_SIZE)[0]
 
     def le_read_number_of_supported_advertising_sets(self):
         """Reads number of supported advertisement sets.
@@ -226,8 +241,8 @@ class Hcitool(object):
         @returns: (status, num_supported_advertising_sets).
         """
         return self._execute_hcitool_cmd_or_raise(
-                btsocket.OGF_LE_CTL,
-                HciToolParser.OCF_LE_READ_NUMBER_OF_SUPPORTED_ADVERTISING_SETS)
+                btsocket.OGF_LE_CTL, HciToolParser.
+                OCF_LE_READ_NUMBER_OF_SUPPORTED_ADVERTISING_SETS)[0]
 
     def vs_msft_read_supported_features(self, msft_ocf):
         """Reads VS MSFT supported features.
@@ -240,7 +255,7 @@ class Hcitool(object):
         VS_MSFT_READ_SUPPORTED_FEATURES_SUBCOMMAND_OPCODE = '00'
         execute_command_result = self._execute_hcitool_cmd_or_raise(
                 btsocket.OGF_VENDOR_CMD, msft_ocf,
-                VS_MSFT_READ_SUPPORTED_FEATURES_SUBCOMMAND_OPCODE)
+                VS_MSFT_READ_SUPPORTED_FEATURES_SUBCOMMAND_OPCODE)[0]
         status = execute_command_result[0]
         vs_msft_features_mask = execute_command_result[2]
         vs_msft_supported_features = (
@@ -267,10 +282,7 @@ class Hcitool(object):
         """
         execute_command_result = self._execute_hcitool_cmd_or_raise(
                 btsocket.OGF_VENDOR_CMD,
-                HciToolParser.OCF_LE_GET_VENDOR_CAPABILITIES_COMMAND)
-        pack_format = '<{}B'.format(len(execute_command_result))
-        execute_command_result = struct.pack(pack_format,
-                                             execute_command_result)
+                HciToolParser.OCF_LE_GET_VENDOR_CAPABILITIES_COMMAND)[1]
         aosp_formats = [
                 '<BBBHBBBBHHBB',  # v0.95
                 '<BBBHBBBBHHBBB',  # v0.96
@@ -393,11 +405,11 @@ class HciToolParser:
         @param ocf: btsocket.OCF_... (int value).
 
         @return: parsed result of the hcitool payload based on (ogf, ocf).
-        If it cannot be parsed, returns the payload as bytes.
+                If it cannot be parsed, returns None.
         """
         cmd_output_format = HciToolParser.get_parsing_format(ogf, ocf)
         if cmd_output_format is None:
-            cmd_output_format = '<{}B'.format(len(payload))
+            return None
         return struct.unpack(cmd_output_format, payload)
 
 

@@ -221,8 +221,8 @@ def _charge_control_by_ectool(is_charge, ignore_status):
     Raises:
       error.CmdError: if ectool returns non-zero exit status.
     """
-    ec_cmd_discharge = 'ectool chargecontrol discharge'
-    ec_cmd_normal = 'ectool chargecontrol normal'
+    ec_cmd_discharge = 'ectool chargeoverride dontcharge'
+    ec_cmd_normal = 'ectool chargeoverride off'
     try:
         if is_charge:
             utils.run(ec_cmd_normal)

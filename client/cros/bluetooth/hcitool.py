@@ -255,17 +255,29 @@ class Hcitool(object):
         VS_MSFT_READ_SUPPORTED_FEATURES_SUBCOMMAND_OPCODE = '00'
         execute_command_result = self._execute_hcitool_cmd_or_raise(
                 btsocket.OGF_VENDOR_CMD, msft_ocf,
-                VS_MSFT_READ_SUPPORTED_FEATURES_SUBCOMMAND_OPCODE)[0]
-        status = execute_command_result[0]
-        vs_msft_features_mask = execute_command_result[2]
-        vs_msft_supported_features = (
-                SupportedFeatures.VS_MSFT_SUPPORTED_FEATURES)
-        final_result = self.filter_with_mask(vs_msft_supported_features,
-                                             vs_msft_features_mask)
-        (_, subcommand_opcode, _, microsoft_event_prefix_length,
-         microsoft_event_prefix) = execute_command_result
-        return (status, subcommand_opcode, final_result,
-                microsoft_event_prefix_length, microsoft_event_prefix)
+                VS_MSFT_READ_SUPPORTED_FEATURES_SUBCOMMAND_OPCODE)[1]
+        # HCI_VS_MSFT_Read_Supported_Features return parameters:
+        # (status, subcommand_opcode, supported_features,
+        # MSFT_event_prefix_length,MSFT_event_prefix)
+        FIRST_FOUR_PARAM_FORMAT = '<BBQB'
+        first_four_param_len = struct.calcsize(FIRST_FOUR_PARAM_FORMAT)
+        first_four_param = struct.unpack(
+                FIRST_FOUR_PARAM_FORMAT,
+                execute_command_result[:first_four_param_len])
+        (status, subcommand_opcode, vs_msft_features_mask,
+         msft_event_prefix_len) = first_four_param
+        actual_event_prefix_len = len(
+                execute_command_result) - first_four_param_len
+        if msft_event_prefix_len != actual_event_prefix_len:
+            raise error.TestError(
+                    'Unexpected event prefix length: actual: %d, expect: %d' %
+                    (actual_event_prefix_len, msft_event_prefix_len))
+        event_prefix = bytes(execute_command_result[first_four_param_len:])
+        vs_msft_supported_features = self.filter_with_mask(
+                SupportedFeatures.VS_MSFT_SUPPORTED_FEATURES,
+                vs_msft_features_mask)
+        return (status, subcommand_opcode, vs_msft_supported_features,
+                msft_event_prefix_len, event_prefix)
 
     def le_get_vendor_capabilities_command(self):
         """Gets AOSP LE vendor capabilities.
@@ -354,13 +366,13 @@ class HciToolParser:
             None,
             # HCI_VS_MSFT_Intel_Read_Supported_Features
             (btsocket.OGF_VENDOR_CMD, OCF_MSFT_INTEL_CHIPSET):
-            '<BBQBB',
+            None,
             # HCI_VS_MSFT_QCA_Read_Supported_Features
             (btsocket.OGF_VENDOR_CMD, OCF_MSFT_QCA_CHIPSET):
-            '<BBQBB',
+            None,
             # HCI_VS_MSFT_Mediatek_Read_Supported_Features
             (btsocket.OGF_VENDOR_CMD, OCF_MSFT_MEDIATEK_CHIPSET):
-            '<BBQBB'
+            None
     }
 
     @staticmethod

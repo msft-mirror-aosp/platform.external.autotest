@@ -402,7 +402,7 @@ class HciToolParser:
         hci_event_values_as_string = ''.join([
                 v for v in hci_event_values
         ]).strip().replace("'", '').replace(' ', '')
-        status = int(hci_event_values_as_string[6:8])
+        status = int(hci_event_values_as_string[6:8], 16)
         event_bytearray = bytearray.fromhex(hci_event_values_as_string[6:])
         # Remove first 3 octet from count, not in 'event_bytearray'
         plen_value = int(plen_value) - 3

@@ -9,7 +9,7 @@ NAME = 'bluetooth_AdapterCLHealth.cl_HID_reports_test.floss'
 PURPOSE = ('Test bluetooth adapter receiving reports from '
            'bluetooth HID devices.')
 CRITERIA = 'Adapter should receive HID events correctly.'
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss,suite:bluetooth_floss_cq'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

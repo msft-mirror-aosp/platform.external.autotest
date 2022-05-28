@@ -5,11 +5,11 @@
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.category-crostini'
+NAME = 'tast.category-accountmanager'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-crostini'
+ATTRIBUTES = 'suite:bvt-tast-cq-accountmanager'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 
@@ -17,13 +17,13 @@ PY_VERSION = 3
 REQUIRE_SSP = True
 
 DOC = '''
-Run the critical Tast tests in the "crostini" category.
+Run the critical Tast tests in the "accountmanager" category.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
 more information.
 
-This test runs Tast tests in the "crostini" category that are required to pass
+This test runs Tast tests in the "accountmanager" category that are required to pass
 against a remote DUT. It fails if any individual Tast tests fail.
 
 See http://go/tast-failures for information about investigating failures.
@@ -39,7 +39,7 @@ def run(machine):
                  test_exprs=['('
                              '"group:mainline" && '
                              '!informational && '
-                             '"name:crostini.*"'
+                             '"name:accountmanager.*"'
                              ')'],
                  ignore_test_failures=False, max_run_sec=1800,
                  command_args=args,

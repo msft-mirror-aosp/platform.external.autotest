@@ -110,6 +110,7 @@ TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
 ATTRIBUTES = 'suite:bvt-tast-cq-${c}'
 MAX_RESULT_SIZE_KB = 256 * 1024
+PY_VERSION = 3
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
@@ -141,7 +142,8 @@ def run(machine):
                              ')'],
                  ignore_test_failures=False, max_run_sec=1800,
                  command_args=args,
-                 clear_tpm=True)
+                 clear_tpm=True,
+                 retries=2)
 
 parallel_simple(run, machines)
 EOF

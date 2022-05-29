@@ -4,29 +4,24 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Mohammad Sabri <mohammad.kh.sabri@exalt.ps>'
-NAME = 'bluetooth_AVLHCI.spec_legacy_test'
+NAME = 'bluetooth_AVLHCI.spec_legacy_optional_test'
 ATTRIBUTES = 'suite:bluetooth_flaky'
 PURPOSE = (
-    'Tests the legacy standard specifications of bluetooth AVL requirements'
+    'Tests the optional legacy standard specifications of bluetooth AVL '
+    'requirements'
 )
 CRITERIA = 'all subtests passed'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
-TEST_CLASS = "bluetooth"
+TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'client'
 PY_VERSION = 3
 
 DOC = """
-    This class can be called to run bluetooth_AVLHCI.spec_legacy_test
+    This class can be called to run bluetooth_AVLHCI.spec_legacy_optional_test
 
     This test contains these subtests:
-        test_flushable_data_packets()
-        test_erroneous_data_reporting()
-        test_event_filter_size()
-        test_acl_min_buffer_number()
-        test_acl_min_buffer_size()
-        test_sco_min_buffer_number()
-        test_sco_min_buffer_size()
+        test_acl_min_buffer_number_optional()
 
     """
 

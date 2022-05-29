@@ -70,10 +70,14 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         self.test_erroneous_data_reporting()
         self.test_event_filter_size()
         self.test_acl_min_buffer_number()
-        self.test_acl_min_buffer_number_optional()
         self.test_acl_min_buffer_size()
         self.test_sco_min_buffer_number()
         self.test_sco_min_buffer_size()
+
+    @test_wrapper('spec_legacy_optional_test')
+    def spec_legacy_optional_test(self):
+        """Checks Bluetooth legacy optional specification."""
+        self.test_acl_min_buffer_number_optional()
 
     @test_wrapper('spec_4_0_test')
     def spec_4_0_test(self):
@@ -484,6 +488,7 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         @param test_name: test name as string from control file.
         """
         self.spec_legacy_test()
+        self.spec_legacy_optional_test()
         self.spec_4_0_test()
         self.spec_4_1_test()
         self.spec_4_2_test()

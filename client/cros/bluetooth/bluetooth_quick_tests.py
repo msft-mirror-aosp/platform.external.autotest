@@ -50,6 +50,10 @@ class BluetoothQuickTests(test.test,
         # Init bluetooth facade
         self.bluetooth_facade = bluetooth_facade.BluezFacadeLocal()
 
+        # Make sure adapter is available
+        if not self.bluetooth_facade.has_adapter():
+            raise error.TestNAError('Adapter is missing')
+
         self.enable_disable_debug_log(enable=True)
 
         # Disable cellular services, as they can sometimes interfere with

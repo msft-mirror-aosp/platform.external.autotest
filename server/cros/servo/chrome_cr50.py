@@ -211,6 +211,24 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     AP_RO_SAVED_OUTPUT = [AP_RO_RESULT_RE, AP_RO_SUPPORTED_RE, AP_RO_HASH_RE]
 
     # ===============================================================
+    # Cr50 Image Names
+    GS_PRIVATE = 'gs://chromeos-localmirror-private/distfiles/'
+    GS_PUBLIC = 'gs://chromeos-localmirror/distfiles/'
+    # Prod signed test images are stored in the private cr50 directory.
+    GS_PRIVATE_PROD = GS_PRIVATE + 'cr50/'
+    # Node locked test images are in this private debug directory.
+    GS_PRIVATE_DBG = GS_PRIVATE + 'chromeos-cr50-debug-0.0.11/'
+    # cr50.r0.0.1*.wRW_VER.BID.tbz2
+    PROD_TAR = 'cr50.r0.0.1*.w%s%s.tbz2'
+    # Prod image from the tarball
+    PROD_FILE = 'cr50.bin.prod'
+    # cr50.dbg.0xDEVID0_0xDEVID1.bin.GIT_SHA
+    DEBUG_FILE = '*/cr50.dbg.%s.bin.*%s'
+    # cr50_Unknown_NodeLocked-DEVID0-DEVID1_cr50-accessory-mp.bin
+    ERASEFLASHINFO_FILE = (
+            '*/cr50_Unknown_NodeLocked-%s_cr50-accessory-mp.bin')
+    QUAL_VERSION_FILE = 'chromeos-cr50-QUAL_VERSION'
+    # ===============================================================
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.

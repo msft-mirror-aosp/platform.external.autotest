@@ -31,6 +31,26 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     ]
     # Ti50 only supports v2
     AP_RO_VERSIONS = [2]
+    # ===============================================================
+    # Ti50 Image Names
+    GS_PRIVATE = 'gs://chromeos-localmirror-private/distfiles/'
+    GS_PUBLIC = 'gs://chromeos-localmirror/distfiles/'
+    # Prod signed test images are stored in the private ti50 directory.
+    GS_PRIVATE_PROD = GS_PRIVATE + 'ti50/'
+    # Node locked test images are in this private debug directory.
+    GS_PRIVATE_DBG = GS_PRIVATE + 'chromeos-ti50-debug/'
+    # ti50.ro.0.0.*.rw.RW_VER.BID.tbz2. RW_VER and BID are supplied by the test.
+    PROD_TAR = 'ti50.ro.0.0.*.rw.%s%s.tar.xz'
+    # Prod image from the tarball
+    PROD_FILE = 'ti50.bin.prod'
+    # ti50.dbg.0xDEVID0_0xDEVID1.bin.GIT_SHA.BID (SHA and BID are optional)
+    DEBUG_FILE = '*/ti50.dbg.%s.bin.*%s'
+    # ti50_Unknown_NodeLocked-DEVID0-DEVID1_cr50-accessory-premp.bin
+    ERASEFLASHINFO_FILE = (
+            '*/ti50_Unknown_NodeLocked-%s_ti50-accessory-premp.bin')
+    QUAL_VERSION_FILE = 'chromeos-ti50-QUAL_VERSION'
+
+    # ===============================================================
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.

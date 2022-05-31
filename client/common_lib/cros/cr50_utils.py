@@ -19,12 +19,13 @@ from autotest_lib.client.common_lib import error
 RO = 'ro'
 RW = 'rw'
 BID = 'bid'
-CR50_PROD = '/opt/google/cr50/firmware/cr50.bin.prod'
-CR50_PREPVT = '/opt/google/cr50/firmware/cr50.bin.prepvt'
-CR50_STATE = '/var/cache/cr50*'
-CR50_VERSION = '/var/cache/cr50-version'
-GET_CR50_VERSION = 'cat %s' % CR50_VERSION
-GET_CR50_MESSAGES ='grep "cr50-.*\[" /var/log/messages'
+# cr50 or ti50 firmware paths
+PREPVT_EXT = '.bin.prepvt'
+PROD_EXT = '.bin.prod'
+GSC_STATE = '/var/cache/*50*'
+GSC_VERSION = '/var/cache/*50-version'
+GET_GSC_VERSION = 'cat %s' % GSC_VERSION
+GET_GSC_MESSAGES = 'grep "..50-.*\[" /var/log/messages'
 UPDATE_FAILURE = 'unexpected cr50-update exit code'
 STUB_VER = '-1.-1.-1'
 # This dictionary is used to search the gsctool output for the version strings.
@@ -223,11 +224,13 @@ def GetSavedVersion(client):
     Returns:
         the version saved in cr50-version or None if cr50-version doesn't exist
     """
-    if not client.path_exists(CR50_VERSION):
+    result = client.run(GET_GSC_VERSION, ignore_status=True)
+    # GSC_VERSION doesn't exist
+    if result.exit_status == 1:
         return None
-
-    result = client.run(GET_CR50_VERSION).stdout.strip()
-    return FindVersion(result, '--fwver')
+    if result.exit_status:
+        raise error.TestError('Unexpected gsc version error %r' % result)
+    return FindVersion(result.stdout.strip(), '--fwver')
 
 
 def StopTrunksd(client):
@@ -286,7 +289,7 @@ def GetFwVersion(client):
     return GetVersionFromUpdater(client, ['--fwver', '-a'])
 
 
-def GetBinVersion(client, image=CR50_PROD):
+def GetBinVersion(client, image):
     """Get the image version using 'gsctool --binvers image'"""
     return GetVersionFromUpdater(client, ['--binvers', image])
 
@@ -338,13 +341,14 @@ def GetActiveCr50ImagePath(client):
               is not a known cr50 update path.
     """
     ClearUpdateStateAndReboot(client)
-    messages = client.run(GET_CR50_MESSAGES).stdout.strip()
-    paths = set(re.findall('/opt/google/cr50/firmware/cr50.bin[\S]+', messages))
+    messages = client.run(GET_GSC_MESSAGES).stdout.strip()
+    paths = set(re.findall('/opt/google/*50/firmware/*50.bin[\S]+', messages))
     if not paths:
         raise error.TestFail('Could not determine cr50-update path')
     path = paths.pop()
-    if len(paths) > 1 or (path != CR50_PROD and path != CR50_PREPVT):
-        raise error.TestFail('cannot determine cr50 path')
+    if len(paths) > 1 or (not path.endswith(PREPVT_EXT) and
+                          not path.endswith(PROD_EXT)):
+        raise error.TestFail('cannot determine gsc path')
     return path
 
 
@@ -366,9 +370,9 @@ def CheckForFailures(client, last_message):
             - If there is a unexpected cr50-update exit code after last_message
               in /var/log/messages
     """
-    messages = client.run(GET_CR50_MESSAGES).stdout.strip()
+    messages = client.run(GET_GSC_MESSAGES).stdout.strip()
     messages = messages.split('\n')
-    logging.info('search for %r', GET_CR50_MESSAGES)
+    logging.info('search for %r', GET_GSC_MESSAGES)
     logging.info('numlines: %d', len(messages))
     logging.info('old last message: %r', last_message)
     logging.info('new last message: %r', messages[-1])
@@ -415,19 +419,10 @@ def VerifyUpdate(client, ver='', last_message=''):
     return new_ver, last_message
 
 
-def GetDevicePath(ext):
-    """Return the device path for the .prod or .prepvt image."""
-    if ext == 'prod':
-        return CR50_PROD
-    elif ext == 'prepvt':
-        return CR50_PREPVT
-    raise error.TestError('Unsupported cr50 image type %r' % ext)
-
-
 def ClearUpdateStateAndReboot(client):
     """Removes the cr50 status files in /var/cache and reboots the AP"""
     # If any /var/cache/cr50* files exist, remove them.
-    result = client.run('ls %s' % CR50_STATE, ignore_status=True)
+    result = client.run('ls %s' % GSC_STATE, ignore_status=True)
     if not result.exit_status:
         client.run('rm %s' % ' '.join(result.stdout.split()))
     elif result.exit_status != 2:
@@ -438,7 +433,7 @@ def ClearUpdateStateAndReboot(client):
     client.reboot()
 
 
-def InstallImage(client, src, dest=CR50_PROD):
+def InstallImage(client, src, dest):
     """Copy the image at src to dest on the dut
 
     Args:

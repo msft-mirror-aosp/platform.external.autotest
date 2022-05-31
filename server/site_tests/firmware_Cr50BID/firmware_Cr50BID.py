@@ -223,8 +223,8 @@ class firmware_Cr50BID(Cr50Test):
 
         logging.info('Running test with universal image %s', universal_ver)
 
-        self.replace_image_if_newer(universal_ver[1], cr50_utils.CR50_PROD)
-        self.replace_image_if_newer(universal_ver[1], cr50_utils.CR50_PREPVT)
+        self.replace_image_if_newer(universal_ver[1], self.cr50.DUT_PROD)
+        self.replace_image_if_newer(universal_ver[1], self.cr50.DUT_PREPVT)
 
         self.image_versions[self.UNIVERSAL] = universal_ver
 

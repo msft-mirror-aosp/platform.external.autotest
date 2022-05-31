@@ -286,7 +286,7 @@ class Cr50Test(FirmwareTest):
         _, rw_ver, bid = version
         rw_filename = 'cr50.device.bin.%s.%s' % (ext, rw_ver)
         local_path = os.path.join(self.resultsdir, rw_filename)
-        dut_path = cr50_utils.GetDevicePath(ext)
+        dut_path = self.cr50.DUT_PROD if ext == 'prod' else self.cr50.DUT_PREPVT
         self.host.get_file(dut_path, local_path)
         bid = cr50_utils.GetBoardIdInfoString(bid)
         return local_path, rw_ver, bid
@@ -455,8 +455,8 @@ class Cr50Test(FirmwareTest):
         # rolling back and updating to images that my be older than the images
         # on the device.
         if filesystem_util.is_rootfs_writable(self.host):
-            self.host.run('rm %s' % cr50_utils.CR50_PREPVT, ignore_status=True)
-            self.host.run('rm %s' % cr50_utils.CR50_PROD, ignore_status=True)
+            self.host.run('rm %s' % self.cr50.DUT_PREPVT, ignore_status=True)
+            self.host.run('rm %s' % self.cr50.DUT_PROD, ignore_status=True)
 
         if eraseflashinfo:
             self.run_update_to_eraseflashinfo()
@@ -522,7 +522,7 @@ class Cr50Test(FirmwareTest):
         @param ext: The extension string prod or prepvt
         @param returns: The image version or None if the image doesn't exist.
         """
-        dut_path = cr50_utils.GetDevicePath(ext)
+        dut_path = self.cr50.DUT_PROD if ext == 'prod' else self.cr50.DUT_PREPVT
         file_exists = self.host.path_exists(dut_path)
         if file_exists:
             return cr50_utils.GetBinVersion(self.host, dut_path)
@@ -687,11 +687,11 @@ class Cr50Test(FirmwareTest):
             # Copy the .prod file onto the DUT.
             if prod_path and 'prod_version' in new_mismatch:
                 cr50_utils.InstallImage(self.host, prod_path,
-                                        cr50_utils.CR50_PROD)
+                                        self.cr50.DUT_PROD)
             # Copy the .prepvt file onto the DUT.
             if prepvt_path and 'prepvt_version' in new_mismatch:
                 cr50_utils.InstallImage(self.host, prepvt_path,
-                                        cr50_utils.CR50_PREPVT)
+                                        self.cr50.DUT_PREPVT)
 
         final_mismatch = self._check_running_image_and_board_id(state)
         if final_mismatch:

@@ -126,4 +126,4 @@ class provision_Cr50TOT(Cr50Test):
         cr50_version = self.cr50.get_active_version_info()[3].split('/')[-1]
         logging.info('Cr50 running %s after update', cr50_version)
         self.make_rootfs_writable()
-        cr50_utils.InstallImage(self.host, local_path, cr50_utils.CR50_PREPVT)
+        cr50_utils.InstallImage(self.host, local_path, self.cr50.DUT_PREPVT)

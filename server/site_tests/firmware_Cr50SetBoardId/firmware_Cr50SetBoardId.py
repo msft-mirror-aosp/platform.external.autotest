@@ -70,8 +70,8 @@ class firmware_Cr50SetBoardId(Cr50Test):
             raise error.TestNAError('cr50-set-board-id cannot be used with '
                                     'test mp images.')
         self.make_rootfs_writable()
-        self.host.run('rm %s' % cr50_utils.CR50_PREPVT, ignore_status=True)
-        self.host.run('rm %s' % cr50_utils.CR50_PROD, ignore_status=True)
+        self.host.run('rm %s' % self.cr50.DUT_PREPVT, ignore_status=True)
+        self.host.run('rm %s' % self.cr50.DUT_PROD, ignore_status=True)
 
 
     def run_script(self, expected_result, phase, board_id=''):

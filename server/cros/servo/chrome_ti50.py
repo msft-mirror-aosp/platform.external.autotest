@@ -49,7 +49,9 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     ERASEFLASHINFO_FILE = (
             '*/ti50_Unknown_NodeLocked-%s_ti50-accessory-premp.bin')
     QUAL_VERSION_FILE = 'chromeos-ti50-QUAL_VERSION'
-
+    DUT_FW = '/opt/google/ti50/firmware/'
+    DUT_PROD = DUT_FW + PROD_FILE
+    DUT_PREPVT = DUT_FW + 'ti50.bin.prepvt'
     # ===============================================================
 
     def __init__(self, servo, faft_config):

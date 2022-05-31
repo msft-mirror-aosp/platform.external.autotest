@@ -36,8 +36,8 @@ class firmware_Cr50GetName(Cr50Test):
         efi_path = self.get_saved_eraseflashinfo_image_path()
 
         self.make_rootfs_writable()
-        cr50_utils.InstallImage(self.host, efi_path, cr50_utils.CR50_PROD)
-        cr50_utils.InstallImage(self.host, efi_path, cr50_utils.CR50_PREPVT)
+        cr50_utils.InstallImage(self.host, efi_path, self.cr50.DUT_PROD)
+        cr50_utils.InstallImage(self.host, efi_path, self.cr50.DUT_PREPVT)
 
         # Update to the eraseflashinfo image so we can erase the board id after
         # we set it. This test is verifying cr50-get-name, so it is ok if cr50
@@ -63,6 +63,8 @@ class firmware_Cr50GetName(Cr50Test):
 
     def get_result(self):
         """Return the new cr50 update messages from /var/log/messages"""
+        utils.wait_for_value(self.cr50_update_is_running, expected_value=False,
+                             timeout_sec=30)
         # Get the cr50 messages
         result = self.host.run('grep cr50 /var/log/messages').stdout.strip()
 
@@ -90,7 +92,7 @@ class firmware_Cr50GetName(Cr50Test):
         """
         expected_result = []
 
-        if erased:
+        if erased or (brand == self.MAX_VAL and flags == self.MAX_VAL):
             board_id = 'ffffffff:ffffffff:ffffffff'
             # If the board id is erased, the device should update to the prod
             # image.
@@ -104,7 +106,7 @@ class firmware_Cr50GetName(Cr50Test):
 
         expected_result.append("board_id: '%s' board_flags: '0x%s', extension: "
                 "'%s'" % (board_id, flag_str, ext))
-        expected_result.append('hashing /opt/google/cr50/firmware/cr50.bin.%s' %
+        expected_result.append('hashing /opt/google/..50/firmware/..50.bin.%s' %
                 ext)
         return '(%s)' % '\n.*'.join(expected_result)
 

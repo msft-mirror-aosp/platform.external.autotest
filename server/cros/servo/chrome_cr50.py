@@ -228,6 +228,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     ERASEFLASHINFO_FILE = (
             '*/cr50_Unknown_NodeLocked-%s_cr50-accessory-mp.bin')
     QUAL_VERSION_FILE = 'chromeos-cr50-QUAL_VERSION'
+    DUT_FW = '/opt/google/cr50/firmware/'
+    DUT_PROD = DUT_FW + PROD_FILE
+    DUT_PREPVT = DUT_FW + 'cr50.bin.prepvt'
     # ===============================================================
 
     def __init__(self, servo, faft_config):

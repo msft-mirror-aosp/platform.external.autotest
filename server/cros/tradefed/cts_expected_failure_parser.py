@@ -34,7 +34,7 @@ class ParseKnownCTSFailures(object):
         @return True if test arch or board is part of the config, else False.
         """
         # Map only the versions that ARC releases care.
-        sdk_ver_map = {25: 'N', 28: 'P', 30: 'R'}
+        sdk_ver_map = {25: 'N', 28: 'P', 30: 'R', 33: 'T'}
 
         # 'all' applies to all devices.
         # 'x86' or 'arm' applies to the DUT's architecture.

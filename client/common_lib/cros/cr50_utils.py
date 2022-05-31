@@ -367,16 +367,26 @@ def CheckForFailures(client, last_message):
               in /var/log/messages
     """
     messages = client.run(GET_CR50_MESSAGES).stdout.strip()
-    if last_message:
-        messages = messages.rsplit(last_message, 1)[-1].split('\n')
-        failures = []
-        for message in messages:
-            if UPDATE_FAILURE in message:
-                failures.append(message)
-        if len(failures):
-            logging.info(messages)
-            raise error.TestFail('Detected unexpected exit code during update: '
-                                 '%s' % failures)
+    messages = messages.split('\n')
+    logging.info('search for %r', GET_CR50_MESSAGES)
+    logging.info('numlines: %d', len(messages))
+    logging.info('old last message: %r', last_message)
+    logging.info('new last message: %r', messages[-1])
+    if not last_message:
+        return messages[-1]
+    if last_message in messages:
+        logging.info('Get new messages')
+        messages = messages[messages.index(last_message)::]
+    logging.info('\n'.join(messages))
+    logging.info('Check for errors')
+    failures = []
+    for message in messages:
+        if UPDATE_FAILURE in message:
+            failures.append(message)
+    if len(failures):
+        logging.info(messages)
+        raise error.TestFail('Detected unexpected exit code during update: '
+                             '%s' % failures)
     return messages[-1]
 
 

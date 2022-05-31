@@ -294,6 +294,8 @@ Q: All of my FAFT tests are failing. What should I do?
 
 - A1: Run `firmware_FAFTSetup` as a single test. Once it fails, check the log and determine which step failed and why.
 - A2: Check that the servo has all the wired connections and a USB drive with the valid OS plugged in.  A missing USB drive is guaranteed to make `firmware_FAFTSetup` fail.
+- A3: Make sure [CCD] is open. Locked CCD guarantees to make `firmware_FAFTSetup` fail.
+- A4: Make sure AP FW is dev-signed. MP-signed AP FW guarantees to make `firmware_FAFTSetup` fail with test-image USB.
 
 Q: A few of my FAFT tests failed, but most tests are passing. What should I do?
 
@@ -351,3 +353,4 @@ Q: How can I obtain a device for a local FAFT execution?
 \[FAFT framework\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/faft-code.md <br>
 \[servod\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servod.md <br>
 \[test that\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/test-that.md <br>
+\[CCD\]: https://chromium.googlesource.com/chromiumos/platform/ec/+/cr50_stab/docs/case_closed_debugging_cr50.md <br>

@@ -30,11 +30,11 @@ class Cr50Test(FirmwareTest):
     # Node locked test images are in this private debug directory.
     GS_PRIVATE_DBG = GS_PRIVATE + 'chromeos-cr50-debug-0.0.11/'
     GS_PUBLIC = 'gs://chromeos-localmirror/distfiles/'
-    CR50_PROD_FILE = 'cr50.r0.0.1*.w%s%s.tbz2'
-    CR50_DEBUG_FILE = '*/cr50.dbg.%s.bin.*%s'
-    CR50_ERASEFLASHINFO_FILE = (
+    PROD_FILE = 'cr50.r0.0.1*.w%s%s.tbz2'
+    DEBUG_FILE = '*/cr50.dbg.%s.bin.*%s'
+    ERASEFLASHINFO_FILE = (
             '*/cr50_Unknown_NodeLocked-%s_cr50-accessory-mp.bin')
-    CR50_QUAL_VERSION_FILE = 'chromeos-cr50-QUAL_VERSION'
+    QUAL_VERSION_FILE = 'chromeos-cr50-QUAL_VERSION'
     NONE = 0
     # Saved the original device state during init.
     INITIAL_IMAGE_STATE = 1 << 0
@@ -176,7 +176,7 @@ class Cr50Test(FirmwareTest):
 
         # Determine the qualification version from.
         if not qual_ver_str:
-            gsurl = os.path.join(self.GS_PRIVATE, self.CR50_QUAL_VERSION_FILE)
+            gsurl = os.path.join(self.GS_PRIVATE, self.QUAL_VERSION_FILE)
             dut_path = self.download_cr50_gs_file(gsurl, False)[1]
             qual_ver_str = self.host.run('cat ' + dut_path).stdout.strip()
 
@@ -863,7 +863,7 @@ class Cr50Test(FirmwareTest):
         """
         devid = self._devid.replace(' ', '-').replace('0x', '')
         gsurl = os.path.join(self.GS_PRIVATE_DBG,
-                             self.CR50_ERASEFLASHINFO_FILE % devid)
+                             self.ERASEFLASHINFO_FILE % devid)
         return self.download_cr50_gs_image(gsurl, None, None)
 
     def download_cr50_debug_image(self, devid='', image_bid=''):
@@ -882,7 +882,7 @@ class Cr50Test(FirmwareTest):
             bid_ext = '.' + image_bid.replace(':', '_')
 
         devid = devid if devid else self._devid
-        dbg_file = self.CR50_DEBUG_FILE % (devid.replace(' ', '_'), bid_ext)
+        dbg_file = self.DEBUG_FILE % (devid.replace(' ', '_'), bid_ext)
         gsurl = os.path.join(self.GS_PRIVATE_DBG, dbg_file)
         return self.download_cr50_gs_image(gsurl, None, image_bid)
 
@@ -917,7 +917,7 @@ class Cr50Test(FirmwareTest):
             image_bid = cr50_utils.GetBoardIdInfoString(
                     image_bid, symbolic=True)
             bid_ext = '_' + image_bid.replace(':', '_')
-        release_fn = self.CR50_PROD_FILE % (image_rw, bid_ext)
+        release_fn = self.PROD_FILE % (image_rw, bid_ext)
         gsurl = self._find_release_image_gsurl(release_fn)
 
         # Release images can be found using the rw version

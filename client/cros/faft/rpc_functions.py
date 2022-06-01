@@ -754,6 +754,27 @@ class RootfsServicer(object):
         """
         return self._rootfs_handler.verify_rootfs(section)
 
+    def dump_rootfs_verity(self, section):
+        """Dumps verity info of a rootfs section to a temp location.
+
+        @param section: The rootfs to dump. May be A or B.
+        """
+        return self._rootfs_handler.dump_rootfs_verity(section)
+
+    def restore_rootfs_verity(self, section):
+        """Restores verity info of a rootfs section from a temp location.
+
+        @param section: The rootfs to restore. May be A or B.
+        """
+        return self._rootfs_handler.restore_rootfs_verity(section)
+
+    def corrupt_rootfs_verity(self, section):
+        """Corrupts verity info of a rootfs section.
+
+        @param section: The rootfs to corrupt. May be A or B.
+        """
+        return self._rootfs_handler.corrupt_rootfs_verity(section)
+
 
 class RpcSettingsServicer(object):
     """Class to service RPCs for settings of the RPC server itself"""

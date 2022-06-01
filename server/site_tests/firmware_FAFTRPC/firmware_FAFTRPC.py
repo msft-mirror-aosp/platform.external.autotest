@@ -1191,6 +1191,23 @@ RPC_CATEGORIES = [
                                         ("A", "B"),
                                 ],
                         },
+                        {
+                                "method_names": [
+                                        "dump_rootfs_verity",
+                                        "corrupt_rootfs_verity",
+                                        "restore_rootfs_verity",
+                                ],
+                                "passing_args": [
+                                        ("A", ),
+                                        ("B", ),
+                                ],
+                                "failing_args": [
+                                        NO_ARGS,
+                                        ONE_INT_ARG,
+                                        ("C", ),
+                                        ("A", "B"),
+                                ],
+                        },
                 ]
         },
         {

@@ -6,7 +6,9 @@
 import os
 import re
 
-TMP_FILE_NAME = 'kernel_dump'
+KERNEL_TMP_FILE_NAME = 'kernel_dump'
+ROOTFS_TMP_FILE_NAME = 'rootfs_dump'
+ROOTFS_OFFSET_TMP_FILE_NAME = 'rootfs_offset'
 
 _KERNEL_MAP = {'A': '2', 'B': '4'}
 _ROOTFS_MAP = {'A': '3', 'B': '5'}
@@ -37,19 +39,7 @@ class RootfsHandler(object):
                                            _KERNEL_MAP[section.upper()])
         rootfs_path = self.os_if.join_part(self.root_dev,
                                            _ROOTFS_MAP[section.upper()])
-        # vbutil_kernel won't operate on a device, only a file.
-        self.os_if.run_shell_command(
-                'dd if=%s of=%s' % (kernel_path, self.kernel_dump_file))
-        vbutil_kernel = self.os_if.run_shell_command_get_output(
-                'vbutil_kernel --verify %s --verbose' % self.kernel_dump_file)
-        DM_REGEXP = re.compile(
-                r'dm="(?:1 )?vroot none ro(?: 1)?,(0 (\d+) .+)"')
-        match = DM_REGEXP.search('\n'.join(vbutil_kernel))
-        if not match:
-            return False
-
-        table = match.group(1)
-        partition_size = int(match.group(2)) * 512
+        (table, partition_size) = self._verity_table(kernel_path)
 
         if table.find('PARTUUID=%U/PARTNROFF=1') < 0:
             return False
@@ -70,6 +60,86 @@ class RootfsHandler(object):
         finally:
             self._remove_mapper()
 
+    def corrupt_rootfs_verity(self, section):
+        """Corrupts verity hashes of the root Fs.
+
+        @param section: The rootfs to corrupt. May be A or B.
+        """
+        kernel_path = self.os_if.join_part(self.root_dev,
+                                           _KERNEL_MAP[section.upper()])
+        rootfs_path = self.os_if.join_part(self.root_dev,
+                                           _ROOTFS_MAP[section.upper()])
+        (offset, count) = self._verity_range(kernel_path)
+
+        self.os_if.run_shell_command(
+                'dd if=/dev/zero of=%s seek=%d count=%d bs=1M '
+                'iflag=count_bytes oflag=seek_bytes' %
+                (rootfs_path, offset, count))
+
+    def dump_rootfs_verity(self, section):
+        """Dumps verity hashes of the root FS.
+
+        @param section: The rootfs to dump. May be A or B.
+        """
+        kernel_path = self.os_if.join_part(self.root_dev,
+                                           _KERNEL_MAP[section.upper()])
+        rootfs_path = self.os_if.join_part(self.root_dev,
+                                           _ROOTFS_MAP[section.upper()])
+        (offset, count) = self._verity_range(kernel_path)
+
+        self._dump_rootfs_verity(rootfs_path, offset, count)
+
+    def restore_rootfs_verity(self, section):
+        """Restores verity hashes of the root FS.
+
+        @param section: The rootfs to restore. May be A or B.
+        """
+        rootfs_path = self.os_if.join_part(self.root_dev,
+                                           _ROOTFS_MAP[section.upper()])
+
+        self.os_if.run_shell_command(
+                'dd if=%s of=%s seek=`cat %s` bs=1M '
+                'oflag=seek_bytes' %
+                (self.rootfs_dump_file, rootfs_path, self.rootfs_offset_file))
+
+    def _verity_table(self, kernel_path):
+        """Returns verity table of a kernel.
+
+        @param kernel_path: The path to a kernel device.
+        """
+        # vbutil_kernel won't operate on a device, only a file.
+        self.os_if.run_shell_command('dd if=%s of=%s' %
+                                     (kernel_path, self.kernel_dump_file))
+        vbutil_kernel = self.os_if.run_shell_command_get_output(
+                'vbutil_kernel --verify %s --verbose' % self.kernel_dump_file)
+        DM_REGEXP = re.compile(
+                r'dm="(?:1 )?vroot none ro(?: 1)?,(0 (\d+) .+)"')
+        match = DM_REGEXP.search('\n'.join(vbutil_kernel))
+        return (match.group(1), int(match.group(2)) * 512)
+
+    def _verity_range(self, kernel_path):
+        """Returns (offset, count) of the rootfs verity hashes of the kernel.
+
+        @param kernel_path: The path to a kernel device.
+        """
+        (table, partition_size) = self._verity_table(kernel_path)
+        hash_size = partition_size / 4096 * 64 + 512
+        return (partition_size, hash_size)
+
+    def _dump_rootfs_verity(self, rootfs_path, offset, count):
+        """Dumps verity hashes of the root FS.
+
+        @param rootfs_path: The path to a root FS device.
+        @param offset: The offset of hashes of the rootfs in bytes.
+        @param count: The amount of bytes to dump.
+        """
+        self.os_if.run_shell_command(
+                'dd if=%s of=%s skip=%d count=%d bs=1M '
+                'iflag=count_bytes,skip_bytes' %
+                (rootfs_path, self.rootfs_dump_file, offset, count))
+        self.os_if.run_shell_command('echo %d > %s' %
+                                     (offset, self.rootfs_offset_file))
+
     def _remove_mapper(self):
         """Removes the dm device mapper used by this class."""
         if self.os_if.path_exists(_DM_DEV_PATH):
@@ -79,5 +149,8 @@ class RootfsHandler(object):
     def init(self):
         """Initialize the rootfs handler object."""
         self.root_dev = self.os_if.get_root_dev()
-        self.kernel_dump_file = self.os_if.state_dir_file(TMP_FILE_NAME)
+        self.kernel_dump_file = self.os_if.state_dir_file(KERNEL_TMP_FILE_NAME)
+        self.rootfs_dump_file = self.os_if.state_dir_file(ROOTFS_TMP_FILE_NAME)
+        self.rootfs_offset_file = self.os_if.state_dir_file(
+                ROOTFS_OFFSET_TMP_FILE_NAME)
         self.initialized = True

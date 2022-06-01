@@ -54,14 +54,11 @@ class chromium_Telemetry(test.test):
 
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
 
-        # TODO(crbug/1233676): Read benchmark and filters from test_args.
-        self.benchmark = 'speedometer2'
-        self.telemetry_args = '--story-filter=Speedometer2'.split()
         repeat = self.args_dict.get('pageset_repeat')
         if repeat is not None:
             self.telemetry_args.append('--pageset-repeat=%s' % repeat)
 
-    def run_once(self):
+    def run_once(self, benchmark=None):
         """Run a telemetry benchmark."""
 
         dut_config_str = self.args_dict.get('dut_config', '{}')
@@ -73,8 +70,7 @@ class chromium_Telemetry(test.test):
                 self.host, telemetry_on_dut=False,
                 is_lacros=True) as telemetry:
             perf_value_writer = self
-            telemetry.run_telemetry_benchmark(self.benchmark,
-                                              perf_value_writer,
+            telemetry.run_telemetry_benchmark(benchmark, perf_value_writer,
                                               *self.telemetry_args)
 
     def cleanup(self):

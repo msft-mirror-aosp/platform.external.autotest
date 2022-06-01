@@ -26,4 +26,4 @@ pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_VideoPlayback', tag=NAME.split('.')[1],
              videos=[('h264_1080_30fps', ''), ('vp9_1080_30fps','')],
              secs_per_video=600, pdash_note=pdash_note, seconds_period=20,
-             run_arc=True)
+             run_arc=True, force_discharge='optional')

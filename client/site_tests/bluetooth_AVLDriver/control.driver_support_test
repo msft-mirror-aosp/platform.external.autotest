@@ -1,0 +1,28 @@
+# Lint as: python3
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'chharry@google.com'
+NAME = 'bluetooth_AVLDriver.driver_support_test'
+ATTRIBUTES = 'suite:bluetooth_flaky'
+PURPOSE = (
+    'Tests the driver suppport of bluetooth AVL requirements'
+)
+CRITERIA = 'all subtests passed'
+TIME = 'SHORT'
+TEST_CATEGORY = 'Functional'
+TEST_CLASS = "bluetooth"
+TEST_TYPE = 'client'
+PY_VERSION = 3
+
+DOC = """
+    This class can be called to run bluetooth_AVLDriver.driver_support_test
+
+    This test contains these subtests:
+        test_usb_driver()
+        test_serial_driver()
+
+    """
+
+job.run_test('bluetooth_AVLDriver', test_name=NAME.split('.')[1])

@@ -54,6 +54,26 @@ class chromium_Telemetry(test.test):
 
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
 
+        self.telemetry_args = []
+        if self.args_dict.get('story_filter'):
+            self.telemetry_args.append('--story-filter=%s' %
+                                       self.args_dict['story_filter'])
+
+        # results-label is used by pinpoint
+        if self.args_dict.get('results_label'):
+            self.telemetry_args.append('--results-label=%s' %
+                                       self.args_dict['results_label'])
+
+        if self.args_dict.get('test_shard_map_filename'):
+            self.telemetry_args.append(
+                    '--test-shard-map-filename=%s' %
+                    self.args_dict['test_shard_map_filename'])
+
+        if self.args_dict.get('shard_index'):
+            os.environ['GTEST_SHARD_INDEX'] = self.args_dict['shard_index']
+
+        self.telemetry_args.append('--upload-results')
+
         repeat = self.args_dict.get('pageset_repeat')
         if repeat is not None:
             self.telemetry_args.append('--pageset-repeat=%s' % repeat)

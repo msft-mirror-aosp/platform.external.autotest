@@ -1,0 +1,61 @@
+# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import logging
+from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
+
+AUTHOR = "kyleshima, ChromiumOS"
+NAME = "autoupdate_EndToEndTest.ssp"
+TIME = "MEDIUM"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "platform"
+TEST_TYPE = "server"
+PY_VERSION = 3
+
+DOC = """
+This is an end-to-end update test of Chrome OS releases. Given a test
+configuration, it will perform an end-to-end test of a Chrome OS update
+payload. A test configuration can be given as command-line arguments (see
+below) or instantiated inline as local varibles.
+
+This variant of the test uses SSP (server-side packaging) instead of running
+from the autotest-drone repo.
+
+"""
+
+TEST_CONF_KEYS = (
+    'name', 'update_type', 'source_release', 'target_release',
+    'source_payload_uri', 'source_archive_uri', 'target_payload_uri',
+    'target_archive_uri', 'payload_type')
+
+
+args_dict = utils.args_to_dict(args)
+
+# Create test configuration based on command-line arguments (higher precedence,
+# for test_that invocation) and local variables (lower precedence,
+# for Autotest front-end invocation).
+test_conf = {}
+for key in TEST_CONF_KEYS:
+    test_conf[key] = args_dict.get(key) or locals().get(key)
+
+
+def run_test(machine):
+    """Execute a test configuration on a given machine."""
+    host = hosts.create_host(machine)
+    try:
+        job.run_test(
+                "autoupdate_EndToEndTest",
+                tag='%s_%s' % (test_conf['name'], test_conf['update_type']),
+                host=host, test_conf=test_conf)
+    except Exception as e:
+        if not issubclass(type(e), error.TestBaseException):
+            error_msg = 'Received test error: %s' % e
+            logging.error(error_msg)
+            raise error.TestError(error_msg)
+        raise
+
+
+# Invoke parallel tests.
+parallel_simple(run_test, machines)

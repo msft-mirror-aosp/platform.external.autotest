@@ -6,9 +6,12 @@
 import logging
 import os
 
+from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
+from autotest_lib.client.cros.update_engine import nebraska_wrapper
 from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -75,9 +78,34 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         source_release = test_conf['source_release']
         target_release = test_conf['target_release']
 
-        self.update_device(test_conf['target_payload_uri'],
-                           tag='target',
-                           m2n=m2n)
+        if m2n:
+            payload_url = test_conf['target_payload_uri']
+        else:
+            update_parameters = self._get_update_parameters_from_uri(
+                    test_conf['target_payload_uri'])
+            payload_url = os.path.join(self._autotest_devserver.url(),
+                                       'static', update_parameters[0],
+                                       update_parameters[1])
+
+        # Perform the update.
+        with nebraska_wrapper.NebraskaWrapper(
+                host=self._host,
+                payload_url=payload_url) as nebraska:
+            self._check_for_update(nebraska.get_update_url(),
+                                   critical_update=True)
+            self._wait_for_update_to_complete()
+            # Set no_update=True in the nebraska startup config to get the
+            # post-reboot update event.
+            nebraska.create_startup_config(no_update=True)
+            nebraska.save_log(self.resultsdir)
+
+        self._host.reboot()
+
+        # Check that update engine is ready after reboot.
+        utils.poll_for_condition(self._get_update_engine_status,
+                                 desc='update engine to start')
+        # Do a final update check with no_update=True to get post reboot event.
+        self._check_for_update(self._get_nebraska_update_url())
 
         # Compare hostlog events from the update to the expected ones.
         rootfs, reboot = self._create_hostlog_files()
@@ -119,6 +147,13 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             self._print_rerun_command(test_conf)
         self._autotest_devserver = self._get_devserver_for_test(test_conf)
 
+        # Copy nebraska from the initially provisioned version to use for the
+        # update. We don't want to use the potentially very old nebraska script
+        # from the source version.
+        temp = autotemp.tempdir()
+        temp_nebraska = os.path.join(temp.name, 'nebraska.py')
+        self._host.get_file(self._NEBRASKA_PATH, temp_nebraska)
+
         # Install source image with quick-provision.
         build_name = None
         source_payload_uri = test_conf['source_payload_uri']
@@ -142,6 +177,10 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                     tag='source',
                     username=self._LOGIN_TEST_USERNAME,
                     password=self._LOGIN_TEST_PASSWORD)
+
+        # Restore the latest nebraska before performing the update.
+        self._host.send_file(temp_nebraska, self._NEBRASKA_PATH)
+
         # Start the update to the target image.
         self.run_update_test(test_conf, m2n)
 

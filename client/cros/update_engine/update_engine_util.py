@@ -101,6 +101,9 @@ class UpdateEngineUtil(object):
     _LOGIN_TEST_USERNAME = 'autotest'
     _LOGIN_TEST_PASSWORD = 'password'
 
+    # Path to nebraska on the DUT.
+    _NEBRASKA_PATH = '/usr/local/bin/nebraska.py'
+
     def __init__(self, run_func=_DEFAULT_RUN, get_file=_DEFAULT_COPY):
         """
         Initialize this class with _run() and _get_file() functions.

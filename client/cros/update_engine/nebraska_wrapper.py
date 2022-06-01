@@ -12,13 +12,13 @@ import json
 import logging
 import os
 import requests
-import subprocess
 import six
 import six.moves.urllib.parse
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import upstart
 
 
 # JSON attributes used in payload properties. Look at nebraska.py for more
@@ -43,6 +43,7 @@ class NebraskaWrapper(object):
     """
 
     def __init__(self,
+                 host=None,
                  log_dir=None,
                  payload_url=None,
                  persist_metadata=False,
@@ -51,6 +52,8 @@ class NebraskaWrapper(object):
         Initializes the NebraskaWrapper module.
 
         @param log_dir: The directory to write nebraska.log into.
+        @param host: The DUT to run nebraska on, if creating a NebraskaWrapper
+                     from the server side.
         @param payload_url: The payload that will be returned in responses for
                             update requests. This can be a single URL string
                             or a list of URLs to return multiple payload URLs
@@ -66,9 +69,10 @@ class NebraskaWrapper(object):
                 instead of the default values in payload_url's properties file.
 
         """
-        self._nebraska_server = None
         self._port = None
         self._log_dir = log_dir
+        self._host = host
+        self._run = self._host.run if self._host else utils.run
 
         # _update_metadata_dir is the directory for storing the json metadata
         # files associated with the payloads.
@@ -95,8 +99,11 @@ class NebraskaWrapper(object):
                 self._create_nebraska_dir(metadata=True)
                 self._update_metadata_dir = NEBRASKA_METADATA_DIR
             else:
-                self._tempdir = autotemp.tempdir()
-                self._update_metadata_dir = self._tempdir.name
+                if self._host:
+                    self._update_metadata_dir = self._host.get_tmp_dir()
+                else:
+                    self._tempdir = autotemp.tempdir()
+                    self._update_metadata_dir = self._tempdir.name
 
             self._update_payloads_address = ''.join(
                 payload_url[0].rpartition('/')[0:2])
@@ -131,63 +138,45 @@ class NebraskaWrapper(object):
         """
         self.stop()
 
-    def start(self):
+    def start(self, **kwargs):
         """
         Starts the Nebraska server.
 
         @raise error.TestError: If fails to start the Nebraska server.
 
         """
-        # Any previously-existing files (port, pid and log files) will be
-        # overriden by Nebraska during bring up.
-        runtime_root = '/tmp/nebraska'
-        cmd = ['nebraska.py', '--runtime-root', runtime_root]
-        if self._log_dir:
-            cmd += ['--log-file', os.path.join(self._log_dir, 'nebraska.log')]
-        if self._update_metadata_dir:
-            cmd += ['--update-metadata', self._update_metadata_dir]
-        if self._update_payloads_address:
-            cmd += ['--update-payloads-address', self._update_payloads_address]
-        if self._install_metadata_dir:
-            cmd += ['--install-metadata', self._install_metadata_dir]
-        if self._install_payloads_address:
-            cmd += ['--install-payloads-address',
-                    self._install_payloads_address]
-
-        logging.info('Starting nebraska.py with command: %s', cmd)
-
         try:
-            self._nebraska_server = subprocess.Popen(cmd,
-                                                     stdout=subprocess.PIPE,
-                                                     stderr=subprocess.STDOUT)
+            self.create_startup_config(**kwargs)
+            if self._host:
+                logging.info('Starting nebraska remotely')
+                self._host.upstart_restart('nebraska')
+                self._host.wait_for_service('nebraska')
+            else:
+                logging.info('Starting nebraska')
+                upstart.restart_job('nebraska')
+                utils.poll_for_condition(lambda: upstart.is_running('nebraska')
+                                         )
 
-            # Wait for port file to appear.
-            port_file = os.path.join(runtime_root, 'port')
-            utils.poll_for_condition(lambda: os.path.exists(port_file),
-                                     timeout=5)
-
-            with open(port_file, 'r') as f:
-                self._port = int(f.read())
+            self._port = int(self._run(['cat', '/run/nebraska/port']).stdout)
 
             # Send a health_check request to it to make sure its working.
-            requests.get('http://127.0.0.1:%d/health_check' % self._port)
+            url = 'http://127.0.0.1:%d/health_check' % self._port
+
+            self._run(["curl", "GET", url])
 
         except Exception as e:
             raise error.TestError('Failed to start Nebraska %s' % e)
 
     def stop(self):
         """Stops the Nebraska server."""
-        if not self._nebraska_server:
-            return
         try:
-            self._nebraska_server.terminate()
-            stdout, _ = self._nebraska_server.communicate()
-            logging.info('Stopping nebraska.py with stdout %s', stdout)
-            self._nebraska_server.wait()
-        except subprocess.TimeoutExpired:
+            if self._host:
+                self._host.upstart_stop('nebraska')
+            else:
+                upstart.stop_job('nebraska')
+
+        except Exception as e:
             logging.error('Failed to stop Nebraska. Ignoring...')
-        finally:
-            self._nebraska_server = None
 
     def get_update_url(self, **kwargs):
         """
@@ -220,15 +209,17 @@ class NebraskaWrapper(object):
         payload_props_url = payload_url + '.json'
         _, _, file_name = payload_props_url.rpartition('/')
         try:
-            response = json.loads(requests.get(payload_props_url).text)
+            response = json.loads(
+                    self._run(["curl", payload_props_url]).stdout)
             # Override existing keys if any.
             for k, v in six.iteritems(kwargs):
                 # Don't set default None values. We don't want to override good
                 # values to None.
                 if v is not None:
                     response[k] = v
-            with open(os.path.join(target_dir, file_name), 'w') as fp:
-                json.dump(response, fp)
+
+            self._write_file(os.path.join(target_dir, file_name),
+                             json.dumps(response))
 
         except (requests.exceptions.RequestException,
                 IOError,
@@ -246,8 +237,8 @@ class NebraskaWrapper(object):
                        information.
 
         """
-        requests.post('http://127.0.0.1:%d/update_config' % self._port,
-                      json=kwargs)
+        url = 'http://127.0.0.1:%d/update_config' % self._port
+        self._run(["curl", "-d", json.dumps(kwargs), "-X", "POST", url])
 
     def _create_nebraska_dir(self, metadata=True):
         """
@@ -260,12 +251,8 @@ class NebraskaWrapper(object):
         dir_to_make = NEBRASKA_DIR
         if metadata:
             dir_to_make = NEBRASKA_METADATA_DIR
-        try:
-            os.makedirs(dir_to_make)
-        except OSError as e:
-            if errno.EEXIST != e.errno:
-                raise error.TestError('Failed to create %s with error: %s',
-                                      dir_to_make, e)
+
+        self._create_dir(dir_to_make)
 
     def create_startup_config(self, **kwargs):
         """
@@ -277,6 +264,8 @@ class NebraskaWrapper(object):
 
         """
         conf = {}
+        if self._log_dir:
+            conf['log-file'] = os.path.join(self._log_dir, 'nebraska.log')
         if self._update_metadata_dir:
             conf['update_metadata'] = self._update_metadata_dir
         if self._update_payloads_address:
@@ -290,5 +279,58 @@ class NebraskaWrapper(object):
             conf[k] = v
 
         self._create_nebraska_dir()
-        with open(NEBRASKA_CONFIG, 'w') as fp:
-            json.dump(conf, fp)
+
+        self._write_file(NEBRASKA_CONFIG, json.dumps(conf))
+
+    def _create_dir(self, dir_to_make, owner=None):
+        """
+        Create directory on DUT.
+
+        @param dir_to_make: The directory to create.
+        @param owner: Set owner of the directory, for remote files only (when
+                      writing a file to the DUT from a server-side test/lib).
+
+        """
+        if self._host:
+            try:
+                permission = '1770' if owner else '1777'
+                self._host.run(['mkdir', '-p', '-m', permission, dir_to_make])
+                if owner:
+                    self._host.run('chown', args=(owner, dir_to_make))
+            except (error.AutoservRunError, error.AutoservSSHTimeout) as e:
+                raise error.TestError('Failed to create %s with error: %s',
+                                      dir_to_make, e)
+        else:
+            try:
+                os.makedirs(dir_to_make)
+            except OSError as e:
+                if errno.EEXIST != e.errno:
+                    raise error.TestError('Failed to create %s with error: %s',
+                                          dir_to_make, e)
+
+    def _write_file(self, filepath, content, permission=None, owner=None):
+        """
+        Write content to filepath on DUT.
+
+        @param filepath: path to the file on the DUT.
+        @param content: content to write to the file.
+        @param permission: set permission to 0xxx octal number, for remote
+                           files only.
+        @param owner: set owner, for remote files only.
+
+        """
+        if self._host:
+            tmpdir = autotemp.tempdir(unique_id='nebraska')
+            tmp_path = os.path.join(tmpdir.name, os.path.basename(filepath))
+            with open(tmp_path, 'w') as f:
+                f.write(content)
+            if permission is not None:
+                os.chmod(tmp_path, permission)
+            self._create_dir(os.path.dirname(filepath), owner)
+            self._host.send_file(tmp_path, filepath, delete_dest=True)
+            if owner is not None:
+                self._host.run('chown', args=(owner, filepath))
+            tmpdir.clean()
+        else:
+            with open(filepath, 'w') as fp:
+                fp.write(content)

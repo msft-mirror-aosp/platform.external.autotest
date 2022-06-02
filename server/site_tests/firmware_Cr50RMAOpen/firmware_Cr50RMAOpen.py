@@ -37,7 +37,7 @@ class firmware_Cr50RMAOpen(Cr50Test):
     # Starting in 0.4.8 cr50 doesn't print "RMA Auth error 0x504". It doesn't
     # print anything. Once prod and prepvt versions do this remove the error
     # code from the test.
-    LIMIT_CLI = '(RMA Auth error 0x504|rma_auth\s+>)'
+    LIMIT_CLI = '(RMA Auth error 0x504|rma_auth\s+>|Must wait to generate another code.)'
     LIMIT_AP = 'error 4'
     ERR_DISABLE_AP = 'error 7'
     # GSCTool exit statuses

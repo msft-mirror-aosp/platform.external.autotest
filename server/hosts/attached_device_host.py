@@ -8,7 +8,6 @@
 """This is the base host class for attached devices"""
 
 import logging
-import time
 
 import common
 
@@ -26,6 +25,7 @@ class AttachedDeviceHost(ssh_host.SSHHost):
     TEMP_FILE_DIR = '/var/lib/servod/'
     LOCK_FILE_POSTFIX = "_in_use"
     REBOOT_TIMEOUT_SECONDS = 240
+    USB_POLL_INTERVAL_SECONDS = 2
 
     def _initialize(self,
                     hostname,
@@ -255,25 +255,44 @@ class AttachedDeviceHost(ssh_host.SSHHost):
         """Wait ready for the host if it has been rebooted recently.
 
         It may take a few minutes until the system and usb components
-        re-enumerated and become ready after a attached device reboot,
-        so we need to make sure the host has been up for a given a mount
+        re-enumerated and become ready after attached device reboot,
+        so we need to make sure the host has been up for a given amount
         of time before trying to start any actions.
 
         Args:
             required_uptime: Minimum uptime in seconds that we can
                              consider an attached device host be ready.
+        Raises:
+            AutoservRunError: If the host has been rebooted recently
+                              and it is not ready after timeout.
         """
         uptime = float(self.check_uptime())
-        # To prevent unexpected output from check_uptime() that causes long
-        # sleep, make sure the maximum wait time <= required_uptime.
-        diff = min(required_uptime - uptime, required_uptime)
-        if diff > 0:
-            logging.info(
-                    'The attached device host was just rebooted, wait %s'
-                    ' seconds for all system services ready and usb'
-                    ' components re-enumerated.', diff)
-            #TODO(b:226401363): Use a poll to ensure all dependencies are ready.
-            time.sleep(diff)
+        # Limit the maximum wait time.
+        wait_time = min(required_uptime - uptime, required_uptime)
+        if wait_time <= 0:
+            return
+        logging.info('The attached device host was recently rebooted.'
+                     ' Checking USB components.')
+        utils.poll_for_condition(
+                lambda: self._is_ready(wait_time),
+                timeout=wait_time,
+                sleep_interval=self.USB_POLL_INTERVAL_SECONDS,
+                exception=error.AutoservRunError(
+                        'Attached device host %s is not ready.' %
+                        self.hostname, None))
+
+    def _is_ready(self, timeout):
+        """Return True if USB component with a serial number of the attached
+        device is available.
+
+        Args:
+            timeout: Time limit in seconds before killing the running process.
+        """
+        result = self.run('lsusb -v | grep %s' % self.serial_number,
+                          timeout=timeout,
+                          ignore_status=True,
+                          stdout_tee=None)
+        return result.exit_status == 0 and result.stdout.strip()
 
     def close(self):
         try:

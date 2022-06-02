@@ -3016,12 +3016,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return 'i386'
 
 
-    def get_board_type(self):
-        """
-        Get the DUT's device type / form factor from cros_config. It can be one
-        of CHROMEBOX, CHROMEBASE, CHROMEBOOK, or CHROMEBIT.
+    def get_form_factor(self):
+        """Gets the DUT's form factor from cros_config.
 
-        @return form factor value from cros_config.
+        @return form factor value. It can be one of
+        CHROMEBOX, CHROMEBASE, CHROMEBOOK, CHROMEBIT,
+        CLAMSHELL, CONVERTIBLE, DETACHABLE, or CHROMESLATE.
         """
 
         device_type = self.run('cros_config /hardware-properties form-factor',
@@ -3036,6 +3036,21 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             return device_type.split('=')[-1].strip()
         return ''
 
+
+    def get_board_type(self):
+        """Gets the DUT's device type.
+
+        If the form factor is [CLAMSHELL, CONVERTIBLE, DETACHABLE, CHROMESLATE],
+        the device type is CHROMEBOOK. Otherwise, the device type is the same of
+        the DUT's form factor string.
+
+        @return device type.
+        """
+        device_type = self.get_form_factor()
+
+        return 'CHROMEBOOK' if device_type in [
+                'CLAMSHELL', 'CONVERTIBLE', 'DETACHABLE', 'CHROMESLATE'
+        ] else device_type
 
     def get_arc_version(self):
         """Return ARC version installed on the DUT.

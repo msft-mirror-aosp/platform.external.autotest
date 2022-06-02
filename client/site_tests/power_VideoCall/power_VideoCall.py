@@ -61,11 +61,14 @@ class power_VideoCall(power_test.power_Test):
             video_url = '%s?preset=%s' % (video_url, preset)
 
         extra_browser_args = self.get_extra_browser_args_for_camera_test()
+        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
         with keyboard.Keyboard() as keys,\
              chrome.Chrome(init_network_controller=True,
                            gaia_login=False,
                            extra_browser_args=extra_browser_args,
                            autotest_ext=True) as cr:
+
+            self._services.stop_services()
 
             # Move existing window to left half and open video page
             tab_left = cr.browser.tabs[0]

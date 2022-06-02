@@ -340,6 +340,11 @@ class BatteryStat(DevStat):
         for _ in range(BATTERY_RETRY_COUNT):
             try:
                 self._read_battery()
+
+                # using power_supply_info, as this always supplies a
+                # "full" or "fully charged" state
+                kv = parse_power_supply_info()
+                setattr(self, 'status', kv['Battery']['state'])
                 return
             except error.TestError as e:
                 logging.warning(e)
@@ -562,7 +567,7 @@ class SysStat(object):
             logging.warning('Unable to determine battery charge status')
             return False
 
-        return self.battery.status.rstrip() == 'Charging'
+        return self.battery.status.startswith('Charging')
 
 
     def battery_discharging(self):
@@ -573,7 +578,7 @@ class SysStat(object):
             logging.warning('Unable to determine battery discharge status')
             return False
 
-        return self.battery.status.rstrip() == 'Discharging'
+        return self.battery.status.startswith('Discharging')
 
     def battery_full(self):
         """
@@ -583,7 +588,7 @@ class SysStat(object):
             logging.warning('Unable to determine battery fullness status')
             return False
 
-        return self.battery.status.rstrip() == 'Full'
+        return self.battery.status.startswith('Full')
 
 
     def battery_discharge_ok_on_ac(self):

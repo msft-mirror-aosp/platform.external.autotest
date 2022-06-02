@@ -110,11 +110,10 @@ class power_BatteryCharge(power_test.power_Test):
             current_charge = new_charge
             logging.info('current_charge: %f', current_charge)
 
-            # Full or Fully Charged
-            if self.status.battery.status[0:4] == 'Full':
+            if self.status.battery_full():
                 logging.info('Battery full, aborting!')
                 break
-            elif self.status.battery.status == 'Discharging':
+            elif self.status.battery_discharging():
                 # TestError might be raised if |use_design_charge_capacity|
                 # is True when testing with older battery.
                 if current_charge > self.charge_capacity * 0.97:

@@ -10,8 +10,8 @@ import logging
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, A2DP_MEDIUM, A2DP_LONG, AVRCP, HFP_WBS, HFP_NBS, HFP_WBS_MEDIUM,
-        HFP_NBS_MEDIUM)
+        A2DP, A2DP_MEDIUM, A2DP_LONG, A2DP_RATE_44100, AVRCP, HFP_WBS, HFP_NBS,
+        HFP_WBS_MEDIUM, HFP_NBS_MEDIUM)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -87,6 +87,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         """A2DP test with sinewaves on the two channels."""
         self._au_a2dp_test(A2DP)
 
+
     # The A2DP long test is a stress test. Exclude it from the AVL.
     @test_wrapper('A2DP sinewave long test', devices={'BLUETOOTH_AUDIO':1},
                   flags=['Quick Health'])
@@ -97,6 +98,15 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         """
         self._au_a2dp_test(A2DP_LONG, duration=duration)
 
+
+    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('A2DP rate 44100 sinewave test',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True,
+                  flags=['Quick Health'])
+    def au_a2dp_rate_44100_test(self):
+        """A2DP test with sampling rate 44100 to emulate Intel THD+N tests."""
+        self._au_a2dp_test(A2DP_RATE_44100)
 
     @test_wrapper('A2DP playback and connect test',
                   devices={'BLUETOOTH_AUDIO': 1})
@@ -349,6 +359,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 whole batch
         """
         self.au_a2dp_test()
+        self.au_a2dp_rate_44100_test()
         self.au_a2dp_long_test()
         self.au_hfp_nbs_dut_as_source_test()
         self.au_hfp_nbs_dut_as_sink_test()

@@ -1266,6 +1266,7 @@ class BluetoothBaseFacadeLocal(object):
                     data_format=data_format,
                     path=audio_data['file'],
                     duration_secs=duration,
+                    volume_scale=audio_data.get('volume_scale'),
                     frequencies=audio_data['frequencies'])
             logging.debug("Raw file generated: %s", audio_data['file'])
 

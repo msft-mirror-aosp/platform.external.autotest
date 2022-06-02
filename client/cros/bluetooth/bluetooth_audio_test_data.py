@@ -59,6 +59,7 @@ AUDIO_DATA_TARBALL_PATH = os.path.join(DATA_DIR, AUDIO_TARBALL_NAME)
 A2DP = 'a2dp'
 A2DP_MEDIUM = 'a2dp_medium'
 A2DP_LONG = 'a2dp_long'
+A2DP_RATE_44100 = 'a2dp_rate_44100'
 AVRCP = 'avrcp'
 HFP_NBS = 'hfp_nbs'
 HFP_NBS_MEDIUM = 'hfp_nbs_medium'
@@ -456,12 +457,34 @@ a2dp_medium_test_data.update({
 })
 
 
+# Audio test data for a2dp
+a2dp_rate_44100_test_data = a2dp_test_data.copy()
+a2dp_rate_44100_test_data.update({
+        'rate':
+        44100,
+        'frequencies': (1000, 1000),
+        'file':
+        os.path.join(AUDIO_TEST_DIR,
+                     'binaural_sine_1000hz_1000hz_rate44100_%dsecs.raw'),
+        'chunk_in_secs':
+        1,
+        'chunk_file':
+        os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                     'a2dp_rate_44100_recorded_by_peer_%d.raw'),
+
+        # This particular volume scale will generate a full-amplitude sine wave
+        # which is required to trigger Intel THD+N distortion issue (b/161076715).
+        'volume_scale':
+        0.9999,
+})
+
 audio_test_data = {
-    A2DP: a2dp_test_data,
-    A2DP_MEDIUM: a2dp_medium_test_data,
-    A2DP_LONG: a2dp_long_test_data,
-    HFP_WBS: hfp_wbs_test_data,
-    HFP_WBS_MEDIUM: hfp_wbs_medium_test_data,
-    HFP_NBS: hfp_nbs_test_data,
-    HFP_NBS_MEDIUM: hfp_nbs_medium_test_data,
+        A2DP: a2dp_test_data,
+        A2DP_MEDIUM: a2dp_medium_test_data,
+        A2DP_LONG: a2dp_long_test_data,
+        A2DP_RATE_44100: a2dp_rate_44100_test_data,
+        HFP_WBS: hfp_wbs_test_data,
+        HFP_WBS_MEDIUM: hfp_wbs_medium_test_data,
+        HFP_NBS: hfp_nbs_test_data,
+        HFP_NBS_MEDIUM: hfp_nbs_medium_test_data,
 }

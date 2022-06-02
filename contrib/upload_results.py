@@ -398,7 +398,9 @@ class ResultsParserClass:
         job = parse_one(FakeTkoDb(), pid_file_manager, name, path,
                         parse_options)
         job.board = job.tests[0].attributes['host-board']
-        job_id = int(job.started_time.timestamp() * 1000)
+
+        # fixes b/225403558 by tagging job_id with the current time
+        job_id = int(time.time() * 1000)
         job.afe_parent_job_id = job_id + 1
         if suite_name == "":
             job.suite = self.parse_suite_name(path)

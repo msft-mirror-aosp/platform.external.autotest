@@ -1,17 +1,3 @@
-dymo-20200714-lm280.ppd.gz
-dymo-20200714-lm400.ppd.gz
-dymo-20200714-lm420p.ppd.gz
-dymo-20200714-lm450.ppd.gz
-dymo-20200714-lm500ts.ppd.gz
-dymo-20200714-lmpc.ppd.gz
-dymo-20200714-lmpc2.ppd.gz
-dymo-20200714-lmpnp.ppd.gz
-dymo-20200714-lmpnpw.ppd.gz
-dymo-20200714-lp350.ppd.gz
-dymo-20200714-lw450dt.ppd.gz
-dymo-20200714-lwduot.ppd.gz
-dymo-20200714-lwduot2.ppd.gz
-foomatic-20191029-Apollo-P-1200-pcl3.ppd.gz
 foomatic-20191029-Samsung_ML-2525W_Series_PXL.ppd.gz
 foomatic-20200219-Apple-Color_StyleWriter_1500-lpstyl.ppd.gz
 foomatic-20200219-Apple-ImageWriter_II-iwhi.ppd.gz
@@ -28,7 +14,6 @@ foomatic-20200219-Canon-LBP-470-lips4.ppd.gz
 foomatic-20200219-Compaq-IJ1200-drv_z42.ppd.gz
 foomatic-20200219-Compaq-IJ750-lxm3200X.ppd.gz
 foomatic-20200219-Dell-3010cn-pxldpl.ppd.gz
-foomatic-20200219-Epson-LP-9600SPD-Postscript-Epson.ppd.gz
 foomatic-20200219-Epson-PM_760C-PM760pX.upp.ppd.gz
 foomatic-20200219-Epson-PM_820C-PM820pX.upp.ppd.gz
 foomatic-20200219-Epson-SQ_1170-stcolor.ppd.gz

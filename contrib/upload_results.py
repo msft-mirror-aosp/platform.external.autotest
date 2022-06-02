@@ -27,6 +27,7 @@ import common
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import mail, pidfile
 from autotest_lib.tko.parse import parse_one, export_tko_job_to_file
+from autotest_lib.tko.job_serializer import JobSerializer
 
 # Appends the moblab source paths for the pubsub wrapper
 sys.path.append('/mnt/host/source/src/platform/moblab/src')
@@ -288,7 +289,9 @@ class ResultsManager:
             return
 
         status_log_file = os.path.join(parent_dir, STATUS_LOG_FILE)
-        if os.path.exists(status_log_file):
+        job_serialize_file = os.path.join(parent_dir, "job.serialize")
+        if os.path.exists(status_log_file) or \
+                                            os.path.exists(job_serialize_file):
             self.result_directories.add(parent_dir)
             return
 
@@ -382,34 +385,45 @@ class ResultsParserClass:
         return str(job_id) + "-moblab/" + str(machine)
 
     def parse(self, path, upload_only: bool, suite_name=""):
-        #temporarily assign a fake job id until parsed
-        fake_job_id = 1234
-        fake_machine = "localhost"
-        name = self.job_tag(fake_job_id, fake_machine)
-        parse_options = argparse.Namespace(
-                **{
-                        "suite_report": False,
-                        "dry_run": True,
-                        "reparse": False,
-                        "mail_on_failure": False
-                })
-        pid_file_manager = pidfile.PidFileManager("parser", path)
-        self.print_autotest_git_history(path)
-        job = parse_one(FakeTkoDb(), pid_file_manager, name, path,
-                        parse_options)
-        job.board = job.tests[0].attributes['host-board']
+        job = None
 
         # fixes b/225403558 by tagging job_id with the current time
         job_id = int(time.time() * 1000)
-        job.afe_parent_job_id = job_id + 1
+        if upload_only:
+            js = JobSerializer()
+            job = js.deserialize_from_binary(path + "/job.serialize")
+        else:
+            # this is needed to prevent errors on missing status.log
+            status_log_file = os.path.join(path, STATUS_LOG_FILE)
+            if not os.path.exists(status_log_file):
+                return
+
+            #temporarily assign a fake job id until parsed
+            fake_job_id = 1234
+            fake_machine = "localhost"
+            name = self.job_tag(fake_job_id, fake_machine)
+            parse_options = argparse.Namespace(
+                    **{
+                            "suite_report": False,
+                            "dry_run": True,
+                            "reparse": False,
+                            "mail_on_failure": False
+                    })
+            pid_file_manager = pidfile.PidFileManager("parser", path)
+            self.print_autotest_git_history(path)
+            job = parse_one(FakeTkoDb(), pid_file_manager, name, path,
+                            parse_options)
+
+        job.board = job.tests[0].attributes['host-board']
         if suite_name == "":
             job.suite = self.parse_suite_name(path)
         else:
             job.suite = suite_name
+        job.afe_job_id = job_id
+        job.afe_parent_job_id = str(job_id + 1)
         job.build_version = self.get_build_version(job.tests)
         name = self.job_tag(job_id, job.machine)
-        if not upload_only:
-            export_tko_job_to_file(job, name, path + "/job.serialize")
+        export_tko_job_to_file(job, name, path + "/job.serialize")
 
         # autotest_lib appends additional global logger handlers
         # remove these handlers to avoid affecting logging for the google
@@ -571,7 +585,7 @@ class ResultsSenderClass:
         self.gcs_bucket = destination
 
     def upload_result_and_notify(self, test_dir, moblab_id, job, force):
-        job_id = str(int(job.started_time.timestamp() * 1000))
+        job_id = job.afe_job_id
         if self.uploaded(test_dir) and not force:
             return
         self.upload_result(test_dir, moblab_id, job_id, job.machine)

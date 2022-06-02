@@ -83,7 +83,7 @@ class JobSerializer(object):
 
         job_pb = tko_pb2.Job()
 
-        binary = open(infile, 'r')
+        binary = open(infile, 'rb')
         try:
             job_pb.ParseFromString(binary.read())
         finally:
@@ -419,10 +419,7 @@ class JobSerializer(object):
                     self.set_attr_safely(pb_obj, attr, t, int)
                 else:
                     t = mktime(t.timetuple()) + 1e-6 * t.microsecond
-                    if six.PY2:
-                        setattr(pb_obj, attr, long(t*1000))
-                    else:
-                        setattr(pb_obj, attr, int(t*1000))
+                    setattr(pb_obj, attr, int(t * 1000))
             else:
                 value = getattr(tko_obj, attr)
                 self.set_attr_safely(pb_obj, attr, value, attr_type)

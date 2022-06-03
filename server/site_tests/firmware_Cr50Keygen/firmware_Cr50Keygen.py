@@ -8,6 +8,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server.cros.servo import chrome_ti50
 
 
 class firmware_Cr50Keygen(FirmwareTest):
@@ -19,26 +20,15 @@ class firmware_Cr50Keygen(FirmwareTest):
     TRUNKS_BASE = (
             'trunks_client --key_create --key_blob=/tmp/key --print_time '
             '--usage=decrypt ')
-    RSA_CMD_ARGS = '--rsa=2048'
-    # TODO(mruthven): look at results to see if 5000 is a reasonable average and
-    # 30s is a reasonable max across the test devices. Start a low threshold to
-    # get an idea for how the lab devices are operating.
-    # Raise an error if the average RSA key generation time takes longer than
-    # this threshold in ms.
-    RSA_AVG_THRESHOLD = 8000
-    # Raise an error if the max RSA key generation time takes longer than this
-    # threshold in ms.
-    RSA_MAX_THRESHOLD = 30000
-    ECC_CMD_ARGS = '--ecc'
-    # TODO(mruthven): look at results to see if 150 is a reasonable average and
-    # 500 is a reasonable max across the test devices. Start a low threshold to
-    # get an idea for how the lab devices are operating.
-    # Raise an error if the average ECC key generation time takes longer than
-    # this threshold.
-    ECC_AVG_THRESHOLD = 150
-    # Raise an error if the max ECC key generation time takes longer than this
-    # threshold in ms.
-    ECC_MAX_THRESHOLD = 500
+    # Thresholds in ms for average and max key generation times.
+    CR50_RSA_AVG_THRESHOLD = 8000
+    CR50_RSA_MAX_THRESHOLD = 30000
+    CR50_ECC_AVG_THRESHOLD = 150
+    CR50_ECC_MAX_THRESHOLD = 500
+    TI50_RSA_AVG_THRESHOLD = 16000
+    TI50_RSA_MAX_THRESHOLD = 60000
+    TI50_ECC_AVG_THRESHOLD = 150
+    TI50_ECC_MAX_THRESHOLD = 500
 
     def wait_for_client_after_changing_ccd(self, enable):
         """Change CCD and wait for client.
@@ -66,13 +56,21 @@ class firmware_Cr50Keygen(FirmwareTest):
         if not self.host.ping_wait_up(180):
             raise error.TestError(msg)
 
-    def get_key_attr(self, attr):
-        """Get the attribute for the type of key the test is generating."""
-        return getattr(self, self.key_type + '_' + attr)
+    def get_threshold(self, attr):
+        """Get the threshold for the type of key the test is generating."""
+        if isinstance(self.cr50, chrome_ti50.ChromeTi50):
+            gsc_type = 'TI50'
+        else:
+            gsc_type = 'CR50'
+        return getattr(self, gsc_type + '_' + self.key_type + '_' + attr)
 
     def get_keygen_cmd(self):
         """Generate the trunks_client key_create command."""
-        return self.TRUNKS_BASE + self.get_key_attr('CMD_ARGS')
+        if self.key_type == 'RSA':
+            cmd_args = '--rsa=2048'
+        else:
+            cmd_args = '--ecc'
+        return self.TRUNKS_BASE + cmd_args
 
     def run_once(self, host, key_type='RSA'):
         """Check ECC and RSA Keygen times."""
@@ -103,11 +101,11 @@ class firmware_Cr50Keygen(FirmwareTest):
         self.wait_for_client_after_changing_ccd(True)
         if len(times) != self.RUNS:
             raise error.TestFail('did not generate %d keys' % self.RUNS)
-        max_threshold = self.get_key_attr('MAX_THRESHOLD')
+        max_threshold = self.get_threshold('MAX_THRESHOLD')
         if max_time > max_threshold:
             raise error.TestFail('MAX time %r is over the acceptable '
                                  'threshold(%dms)' % (max_time, max_threshold))
-        avg_threshold = self.get_key_attr('AVG_THRESHOLD')
+        avg_threshold = self.get_threshold('AVG_THRESHOLD')
         if avg_time > avg_threshold:
             raise error.TestFail('Average time %r is over the acceptable '
                                  'threshold(%dms)' % (avg_time, avg_threshold))

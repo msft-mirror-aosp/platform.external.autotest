@@ -1,4 +1,4 @@
-#!/usr/bin/env vpython
+#!/usr/bin/env vpython3
 
 # [VPYTHON:BEGIN]
 # # Third party dependencies.  These are only listed because pylint itself needs
@@ -18,7 +18,7 @@
 # >
 # wheel: <
 #   name: "infra/python/wheels/wrapt/${vpython_platform}"
-#   version: "version:1.10.11"
+#   version: "version:1.12.1"
 # >
 # wheel: <
 #   name: "infra/python/wheels/backports_functools_lru_cache-py2_py3"
@@ -26,15 +26,11 @@
 # >
 # wheel: <
 #   name: "infra/python/wheels/lazy-object-proxy/${vpython_platform}"
-#   version: "version:1.3.1"
+#   version: "version:1.4.3"
 # >
 # wheel: <
 #   name: "infra/python/wheels/singledispatch-py2_py3"
 #   version: "version:3.4.0.3"
-# >
-# wheel: <
-#   name: "infra/python/wheels/enum34-py2"
-#   version: "version:1.1.6"
 # >
 # wheel: <
 #   name: "infra/python/wheels/mccabe-py2_py3"
@@ -42,20 +38,25 @@
 # >
 # wheel: <
 #   name: "infra/python/wheels/six-py2_py3"
-#   version: "version:1.10.0"
+#   version: "version:1.16.0"
 # >
 #
 # # Pylint dependencies.
 #
 # wheel: <
-#   name: "infra/python/wheels/astroid-py2_py3"
-#   version: "version:1.6.6"
+#   name: "infra/python/wheels/astroid-py3"
+#   version: "version:2.4.2"
 # >
 #
 # wheel: <
-#   name: "infra/python/wheels/pylint-py2_py3"
-#   version: "version:1.9.5-45a720817e4de1df2f173c7e4029e176"
+#  name: "infra/python/wheels/pylint-py3"
+#  version: "version:2.6.0"
 # >
+# wheel: <
+#   name: "infra/python/wheels/toml-py3"
+#   version: "version:0.10.1"
+# >
+
 # [VPYTHON:END]
 
 """
@@ -78,7 +79,6 @@ import logging
 import os
 import re
 import sys
-
 import common
 from autotest_lib.client.common_lib import autotemp, revision_control
 

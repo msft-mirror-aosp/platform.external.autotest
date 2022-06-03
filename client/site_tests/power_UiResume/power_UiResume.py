@@ -44,8 +44,12 @@ class power_UiResume(arc.ArcTest):
             self._chrome = chrome.Chrome(extra_browser_args=extra_browser_args)
 
 
-    def run_once(self, max_devs_returned=10, seconds=0,
-                 ignore_kernel_warns=False):
+    def run_once(self,
+                 max_devs_returned=10,
+                 seconds=0,
+                 ignore_kernel_warns=False,
+                 suspend_state='',
+                 suspend_iterations=None):
         """
         Run client side autotest power_Resume, to reduce duplicate code.
 
@@ -60,12 +64,13 @@ class power_UiResume(arc.ArcTest):
             logging.error('%s is not running at start of test', service)
             err += 1
 
-        self.job.run_test(
-                'power_Resume',
-                max_devs_returned=max_devs_returned,
-                seconds=seconds,
-                ignore_kernel_warns=ignore_kernel_warns,
-                measure_arc=self._enable_arc)
+        self.job.run_test('power_Resume',
+                          max_devs_returned=max_devs_returned,
+                          seconds=seconds,
+                          suspend_state=suspend_state,
+                          suspend_iterations=suspend_iterations,
+                          ignore_kernel_warns=ignore_kernel_warns,
+                          measure_arc=self._enable_arc)
 
         pid_end = upstart.get_pid('powerd')
         if not pid_end:

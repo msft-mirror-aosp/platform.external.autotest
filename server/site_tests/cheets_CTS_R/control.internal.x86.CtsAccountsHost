@@ -13,7 +13,7 @@ TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
 PY_VERSION = 3
-DOC = 'Run module CtsAccountsHostTestCases, CtsAccountsHostTestCases[instant], CtsAccountsHostTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
+DOC = 'Run module CtsAccountsHostTestCases, CtsAccountsHostTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
@@ -23,13 +23,13 @@ def run_TS(machine):
         iterations=1,
         tag='internal.x86.CtsAccountsHost',
         test_name='cheets_CTS_R.internal.x86.CtsAccountsHost',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsAccountsHostTestCases', '--include-filter', 'CtsAccountsHostTestCases[instant]', '--include-filter', 'CtsAccountsHostTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsAccountsHostTestCases', '--include-filter', 'CtsAccountsHostTestCases[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsAccountsHost',
         target_plan=None,
         bundle='x86',
         uri='DEV',
         use_jdk9=True,
-        timeout=7200)
+        timeout=5400)
 
 parallel_simple(run_TS, machines)

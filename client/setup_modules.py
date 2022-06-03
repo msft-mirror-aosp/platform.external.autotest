@@ -10,6 +10,8 @@ sys.path.insert(0, common_dir)
 import check_version
 sys.path.pop(0)
 
+FILE_ERROR = FileExistsError if six.PY3 else OSError
+
 
 def _get_pyversion_from_args():
     """Extract, format, & pop the current py_version from args, if provided."""
@@ -158,7 +160,7 @@ def _setup_client_symlink(base_path):
     if not os.path.isdir(autotest_lib_dir):
         try:
             os.mkdir(autotest_lib_dir)
-        except FileExistsError as e:
+        except FILE_ERROR as e:
             if not os.path.isdir(autotest_lib_dir):
                 raise e
 
@@ -171,7 +173,7 @@ def _setup_client_symlink(base_path):
     # creates the symlink in the time between checking and creating.
     # Thus if the symlink DNE, and we cannot create it, check for its
     # existence and exit if it exists.
-    except FileExistsError as e:
+    except FILE_ERROR as e:
         if os.path.islink(link_path):
             return
         raise e

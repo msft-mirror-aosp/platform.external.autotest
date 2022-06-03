@@ -63,6 +63,7 @@ class UpdateEngineUtil(object):
     _UPDATE_STATUS_FINALIZING = 'UPDATE_STATUS_FINALIZING'
     _UPDATE_STATUS_UPDATED_NEED_REBOOT = 'UPDATE_STATUS_UPDATED_NEED_REBOOT'
     _UPDATE_STATUS_REPORTING_ERROR_EVENT = 'UPDATE_STATUS_REPORTING_ERROR_EVENT'
+    _UPDATE_STATUS_UPDATED_BUT_DEFERRED = 'UPDATE_STATUS_UPDATED_BUT_DEFERRED'
 
     # Files used by the tests.
     _UPDATE_ENGINE_LOG = '/var/log/update_engine.log'
@@ -94,6 +95,7 @@ class UpdateEngineUtil(object):
 
     # Feature name
     _REPEATED_UPDATES_FEATURE = 'feature-repeated-updates'
+    _CONSUMER_AUTO_UPDATE_FEATURE = 'feature-consumer-auto-update'
 
     # Credentials to use for the fake login in login tests.
     _LOGIN_TEST_USERNAME = 'autotest'
@@ -144,6 +146,14 @@ class UpdateEngineUtil(object):
         return status[self._CURRENT_OP] in (
             self._UPDATE_STATUS_DOWNLOADING, self._UPDATE_STATUS_FINALIZING)
 
+
+    def _is_update_deferred(self):
+        """Checks if an update is deferred by status."""
+        status = self._get_update_engine_status()
+        if status is None:
+            return False
+        return status[
+                self._CURRENT_OP] == self._UPDATE_STATUS_UPDATED_BUT_DEFERRED
 
     def _has_progress_stopped(self):
         """Checks that the update_engine progress has stopped moving."""
@@ -200,13 +210,16 @@ class UpdateEngineUtil(object):
 
     def _wait_for_update_to_complete(self, check_kernel_after_update=True):
         """
-        Wait for update status to reach NEED_REBOOT.
+        Wait for update status to reach UPDATED_[NEED_REBOOT|BUT_DEFERRED].
 
         @param check_kernel_after_update: True to also check kernel state after
                                           the update.
 
         """
-        self._wait_for_update_status(self._UPDATE_STATUS_UPDATED_NEED_REBOOT)
+        self._wait_for_update_status([
+                self._UPDATE_STATUS_UPDATED_NEED_REBOOT,
+                self._UPDATE_STATUS_UPDATED_BUT_DEFERRED
+        ])
         if check_kernel_after_update:
             kernel_utils.verify_kernel_state_after_update(
                     self._host if hasattr(self, '_host') else None)
@@ -234,11 +247,12 @@ class UpdateEngineUtil(object):
                     self._host if hasattr(self, '_host') else None,
                     inactive_kernel)
 
+
     def _wait_for_update_status(self, status_to_wait_for):
         """
         Wait for the update to reach a certain status.
 
-        @param status_to_wait_for: a string of the update status to wait for.
+        @param status_to_wait_for: a list of the update status to wait for.
 
         """
         while True:
@@ -255,7 +269,7 @@ class UpdateEngineUtil(object):
                     raise error.TestFail('Update status was unexpectedly '
                                          'IDLE when we were waiting for the '
                                          'update to complete: %s' % err_str)
-                if status[self._CURRENT_OP] == status_to_wait_for:
+                if status[self._CURRENT_OP] in status_to_wait_for:
                     break
             time.sleep(1)
 
@@ -529,6 +543,24 @@ class UpdateEngineUtil(object):
         """
         self._run(['restart', 'update-engine'], ignore_status=ignore_status)
 
+
+    def _start_update_engine(self, ignore_status=False):
+        """
+        Starts update-engine daemon.
+
+        @param ignore_status: True to not raise exception on command failure.
+
+        """
+        self._run(['start', 'update-engine'], ignore_status=ignore_status)
+
+    def _stop_update_engine(self, ignore_status=False):
+        """
+        Stops update-engine daemon.
+
+        @param ignore_status: True to not raise exception on command failure.
+
+        """
+        self._run(['stop', 'update-engine'], ignore_status=ignore_status)
 
     def _save_extra_update_engine_logs(self, number_of_logs):
         """
@@ -842,3 +874,13 @@ class UpdateEngineUtil(object):
         for c in payload_url:
             result = c_size_t((result.value * 131) + ord(c))
         return str(result.value)
+
+    def _apply_deferred_update(self, wait_for_idle=True):
+        """
+        Apply the deferred update using the update_engine client.
+        This call into the client will only succeed if there is a deferred
+        update (an update on hold) to apply.
+        If successful, the DUT will reboot after applying the deferred update.
+
+        """
+        self._run([self._UPDATE_ENGINE_CLIENT_CMD, '--apply_deferred_update'])

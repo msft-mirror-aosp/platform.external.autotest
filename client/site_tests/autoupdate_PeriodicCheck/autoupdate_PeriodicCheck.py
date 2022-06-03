@@ -26,12 +26,16 @@ class autoupdate_PeriodicCheck(update_engine_test.UpdateEngineTest):
         self._clear_custom_lsb_release()
         super(autoupdate_PeriodicCheck, self).cleanup()
 
-    def run_once(self, payload_url, periodic_interval):
+    def run_once(self,
+                 payload_url,
+                 periodic_interval,
+                 check_kernel_after_update=True):
         """
         Tests update_engine's periodic update check.
 
         @param payload_url: The payload url.
         @param periodic_interval: Seconds between periodic update checks.
+        @param check_kernel_after_update: Check kernel state after the update.
 
         """
         # Setup the DUT for the test.
@@ -75,4 +79,5 @@ class autoupdate_PeriodicCheck(update_engine_test.UpdateEngineTest):
             except utils.TimeoutError:
                 raise error.TestFail('2nd periodic check not found.')
             logging.info('Second periodic update was initiated.')
-            self._wait_for_update_to_complete()
+            self._wait_for_update_to_complete(
+                    check_kernel_after_update=check_kernel_after_update)

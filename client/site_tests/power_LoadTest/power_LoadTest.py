@@ -595,6 +595,11 @@ class power_LoadTest(arc.ArcTest):
 
         # Add audio/docs/email/web fail load details to power dashboard and to keyval
         for task in ('audio', 'docs', 'email', 'web'):
+            total_key = 'total_%s_loads' % (task)
+            failed_key = 'failed_%s_loads' % (task)
+            percent_key = 'percent_failed_%s_loads' % (task)
+            core_keyvals[total_key] = 0
+            core_keyvals[failed_key] = 0
             key = 'ext_%s_failed_loads' % task
             if key not in keyvals:
                 continue
@@ -603,6 +608,23 @@ class power_LoadTest(arc.ArcTest):
                 log_name = 'loop%02d_%s_failed_load' % (index, task)
                 logger.add_item(log_name, val, 'point', 'perf')
                 core_keyvals[log_name] = val
+                core_keyvals[total_key] += val
+                if val > 0:
+                    core_keyvals[failed_key] += val
+            key = 'ext_%s_successful_loads' % task
+            if key in keyvals:
+                vals = (int(x) for x in keyvals[key].split('_'))
+                for index, val in enumerate(vals):
+                    # total loads is sum of failures and successes
+                    core_keyvals[total_key] += val
+
+            if core_keyvals[total_key] > 0:
+                core_keyvals[percent_key] = (core_keyvals[failed_key] * 100.0 /
+                                             core_keyvals[total_key])
+            else:
+                # if we have no total loads something went wrong so set
+                # percent failed loads to 100%
+                core_keyvals[percent_key] = 100
 
         # Add ext_ms_page_load_time_mean to power dashboard
         if 'ext_ms_page_load_time_mean' in keyvals:

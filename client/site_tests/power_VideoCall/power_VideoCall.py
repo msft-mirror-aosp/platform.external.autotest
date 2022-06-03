@@ -19,12 +19,17 @@ class power_VideoCall(power_test.power_Test):
     video_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_VideoCall/power_VideoCall.html'
     doc_url = 'http://crospower.page.link/power_VideoCall_doc'
 
-    def initialize(self, seconds_period=20., pdash_note='',
-                   force_discharge=False):
+    def initialize(self,
+                   seconds_period=20.,
+                   pdash_note='',
+                   force_discharge=False,
+                   check_network=False):
         """initialize method."""
-        super(power_VideoCall, self).initialize(seconds_period=seconds_period,
-                                                pdash_note=pdash_note,
-                                                force_discharge=force_discharge)
+        super(power_VideoCall,
+              self).initialize(seconds_period=seconds_period,
+                               pdash_note=pdash_note,
+                               force_discharge=force_discharge,
+                               check_network=check_network)
 
 
     def run_once(self,

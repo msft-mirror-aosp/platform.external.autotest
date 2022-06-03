@@ -31,12 +31,19 @@ class power_VideoTest(power_test.power_Test):
     _DISABLE_HW_VIDEO_DECODE_ARGS = '--disable-accelerated-video-decode'
 
 
-    def initialize(self, seconds_period=3, pdash_note='',
-                   force_discharge=False, run_arc=True):
+    def initialize(self,
+                   seconds_period=3,
+                   pdash_note='',
+                   force_discharge=False,
+                   check_network=False,
+                   run_arc=True):
         """Create and mount ram disk to download video."""
-        super(power_VideoTest, self).initialize(
-                seconds_period=seconds_period, pdash_note=pdash_note,
-                force_discharge=force_discharge, run_arc=run_arc)
+        super(power_VideoTest,
+              self).initialize(seconds_period=seconds_period,
+                               pdash_note=pdash_note,
+                               force_discharge=force_discharge,
+                               check_network=check_network,
+                               run_arc=run_arc)
         utils.run('mkdir -p %s' % self._RAMDISK)
         # Don't throw an exception on errors.
         result = utils.run('mount -t ramfs -o context=u:object_r:tmpfs:s0 '

@@ -437,6 +437,8 @@ class power_LoadTest(arc.ArcTest):
             pagetime_tracking.set()
             keyvalues_tracking.set()
 
+            # log at end of loop in case it was changed
+            self._log_backlight_level(i)
             self._log_loop_checkpoint(i, start_time, time.time())
 
             if self._verbose:
@@ -722,9 +724,13 @@ class power_LoadTest(arc.ArcTest):
 
     def _set_backlight_level(self, loop=None):
         self._backlight.set_default()
+
+    def _log_backlight_level(self, loop=None):
         # record brightness level
         self._tmp_keyvals[_loop_keyname(loop, 'level_backlight')] = \
             self._backlight.get_level()
+        self._tmp_keyvals[_loop_keyname(loop, 'level_backlight_percent')] = \
+            float(self._backlight.get_level())/float(self._backlight.get_max_level())*100.0
 
 
     def _set_lightbar_level(self, level='off'):

@@ -46,7 +46,9 @@ class firmware_MiniosMenu(FirmwareTest):
         """Run a single iteration of the test."""
         logging.info('Boot into recovery mode, older_version: %s',
                      self.older_version)
-        self.switcher.reboot_to_mode(to_mode="rec", wait_for_dut_up=False)
+        self.switcher.reboot_to_mode(to_mode="rec",
+                                     wait_for_dut_up=False,
+                                     rec_usb_state='off')
         self.wait_for('firmware_screen')
         self.menu_switcher.trigger_rec_to_minios(self.older_version)
         self.check_state(self.checkers.minios_checker)

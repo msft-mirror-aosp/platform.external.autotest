@@ -48,6 +48,7 @@ def run(machine):
                  totalshards=3,
                  shardindex=0,
                  command_args=args,
-                 clear_tpm=True)
+                 clear_tpm=True,
+                 retries=2)
 
 parallel_simple(run, machines)

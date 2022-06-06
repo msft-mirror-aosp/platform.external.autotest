@@ -336,13 +336,18 @@ class BluetoothQuickTests(test.test,
         return base_class.quick_test_test_decorator(
                 test_name,
                 flags=flags,
-                pretest_func=lambda self: self.bluetooth_facade.reset_on(),
+                pretest_func=lambda self: self.pretest_function(),
                 posttest_func=lambda self: self.bluetooth_facade.reset_on(),
                 model_testNA=model_testNA,
                 model_testWarn=model_testWarn,
                 skip_models=skip_models,
                 skip_chipsets=skip_chipsets,
                 skip_common_errors=skip_common_errors)
+
+    def pretest_function(self):
+        """Runs before each test."""
+        self.bluetooth_facade.reset_on()
+        time.sleep(self.TEST_SLEEP_SECS)
 
     @staticmethod
     def test_log_result(test_method=None,

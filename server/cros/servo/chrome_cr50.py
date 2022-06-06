@@ -95,9 +95,14 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CAP_SETTING = 1
     CAP_REQ = 2
     GET_CAP_TRIES = 20
+    # Cap used to require 10s of physical presence to open ccd.
+    CAP_SHORT_PP = 'UnlockNoShortPP'
+    # Cap used to require wiping nvmem before opening ccd.
+    CAP_OPEN_NO_TPM_WIPE = 'OpenNoTPMWipe'
+    CAP_IF_OPENED = 'IfOpened'
     CAP_ALWAYS = 'Always'
     # Regex to match the valid capability settings.
-    CAP_STATES = '(%s|Default|IfOpened|UnlessLocked)' % CAP_ALWAYS
+    CAP_STATES = '(%s|Default|%s|UnlessLocked)' % (CAP_ALWAYS, CAP_IF_OPENED)
     # List of all cr50 ccd capabilities. Same order of 'ccd' output
     CAP_NAMES = [
             'UartGscRxAPTx', 'UartGscTxAPRx', 'UartGscRxECTx', 'UartGscTxECRx',
@@ -112,8 +117,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     #  UartGscRxECTx   Y 0=Default (Always)
     # Make sure the last word is at the end of the line. The next line will
     # start with some whitespace, so account for that too.
-    CAP_FORMAT = '\s+(Y|-) \d\=%s( \(%s\))?[\r\n]+\s*' % (CAP_STATES,
-                                                          CAP_STATES)
+    CAP_FORMAT = r'\s+(Y|-) \d\=(%s[\S ]*)[\r\n]+\s*' % CAP_STATES
     # Be as specific as possible with the 'ccd' output, so the test will notice
     # missing characters and retry getting the output. Name each group, so the
     # test can extract the field information into a dictionary.
@@ -355,6 +359,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         else:
             values = [ self.CCD_FORMAT[field] for field in self.CCD_FIELDS ]
             match_value = '.*'.join(values)
+        logging.debug('Search %r', match_value)
         matched_output = None
         original_timeout = float(self._servo.get('cr50_uart_timeout'))
         # Change the console timeout to 10s, it may take longer than 3s to read
@@ -407,21 +412,29 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                  requirement]
         """
         # Add whitespace at the end, so we can still match the last line.
-        cap_info_str = self.get_ccd_info('Capabilities') + '\r\n'
-        cap_settings = re.findall('(\S+) ' + self.CAP_FORMAT,
-                                  cap_info_str)
+        cap_strings = self.get_ccd_info('Capabilities').splitlines()
         caps = {}
-        for cap, accessible, setting, _, required in cap_settings:
-            # If there's only 1 value after =, then the setting is the
-            # requirement.
-            if not required:
-                required = setting
+        for line in cap_strings:
+            if '=' not in line:
+                continue
+            logging.debug(line)
+            # There are two capability formats. Match both.
+            #  UartGscRxECTx   Y 3=IfOpened
+            #  or
+            #  UartGscRxECTx   Y 0=Default (Always)
+            start, end = line.split('=')
+            cap, accessible, _ = start.split()
+            settings = re.findall(self.CAP_STATES, end)
+            # The first setting is Default or the actual setting
+            setting = settings[0]
+            # The last setting is the actual setting
+            required = settings[-1]
             cap_info = [accessible == 'Y', setting, required]
             if info is not None:
                 caps[cap] = cap_info[info]
             else:
                 caps[cap] = cap_info
-        logging.debug(pprint.pformat(caps))
+        logging.info(pprint.pformat(caps))
         return caps
 
 
@@ -821,14 +834,25 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         self.wait_for_ccd_enable(raise_error=raise_error)
 
 
-    def _level_change_req_pp(self, level):
-        """Returns True if setting the level will require physical presence"""
-        testlab_pp = level != 'testlab open' and 'testlab' in level
+    def _get_physical_presence_duration(self, level):
+        """Returns the amount of time to press the power button"""
+        if level == 'testlab open' or level == self.LOCK:
+            return 0
+        if 'testlab' in level:
+            return self.PP_SHORT
+        dbg_en = self.get_active_version_info()[2]
+        # DBG images never require 5 minutes to open ccd. They only use short
+        # physical presence.
+        long_pp = self.PP_SHORT if dbg_en else self.PP_LONG
+        caps = self.get_cap_dict()
         # If the level is open and the ccd capabilities say physical presence
         # is required, then physical presence will be required.
-        open_pp = (level == 'open' and
-                   not self.get_cap('OpenNoLongPP')[self.CAP_IS_ACCESSIBLE])
-        return testlab_pp or open_pp
+        if level == 'open' and not caps['OpenNoLongPP'][
+                self.CAP_IS_ACCESSIBLE]:
+            return long_pp
+        if not caps[self.CAP_SHORT_PP][self.CAP_IS_ACCESSIBLE]:
+            return self.PP_SHORT
+        return 0
 
 
     def _state_to_bool(self, state):
@@ -915,12 +939,13 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 "ccd_set_level")
 
         testlab_on = self._state_to_bool(self._servo.get('cr50_testlab'))
-        batt_is_disconnected = self.get_batt_pres_state()[1]
-        req_pp = self._level_change_req_pp(level)
+        batt_is_connected = self.get_batt_pres_state()[1]
+        pp_duration = self._get_physical_presence_duration(level)
         has_pp = not self._servo.main_device_is_ccd()
-        dbg_en = self.get_active_version_info()[2]
+        logging.info('setting ccd %r', level)
+        logging.info('physical presence: %d', pp_duration)
 
-        if req_pp and not has_pp:
+        if pp_duration and not has_pp:
             raise error.TestError("Can't change privilege level to '%s' "
                 "without physical presence." % level)
 
@@ -962,11 +987,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             raise error.TestFail("cr50 is too busy to run %r: %s" % (cmd, rv))
 
         # Press the power button once a second, if we need physical presence.
-        if req_pp and batt_is_disconnected:
-            # DBG images have shorter unlock processes. If the AP is currently
-            # on, make sure it's on at the end of the open process.
-            self.run_pp(self.PP_SHORT if dbg_en else self.PP_LONG,
-                        ensure_ap_on=ap_is_on)
+        if pp_duration and batt_is_connected:
+            # If the AP is currently on, make sure it's on at the end of the
+            # open process.
+            self.run_pp(pp_duration, ensure_ap_on=ap_is_on)
 
         if level != self.get_ccd_level():
             self.check_for_console_errors('Running console ccd %s' % level)
@@ -997,8 +1021,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """
         end_time = time.time() + unlock_timeout
 
-        logging.info('Pressing power button for %ds to unlock the console.',
-                     unlock_timeout)
+        logging.info('Pressing power button for %ds', unlock_timeout)
         logging.info('The process should end at %s', time.ctime(end_time))
 
         # Press the power button once a second to unlock the console.

@@ -46,6 +46,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     OPEN = 'open'
     UNLOCK = 'unlock'
     LOCK = 'lock'
+    PP_SHORT_INT = 1
     # The amount of time you need to show physical presence.
     PP_SHORT = 15
     PP_LONG = 300
@@ -1024,10 +1025,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         logging.info('Pressing power button for %ds', unlock_timeout)
         logging.info('The process should end at %s', time.ctime(end_time))
 
-        # Press the power button once a second to unlock the console.
+        # Press the power button once every PP_SHORT_INT to unlock the console.
         while time.time() < end_time:
             self._servo.power_short_press()
-            time.sleep(1)
+            time.sleep(self.PP_SHORT_INT)
 
         # If the last power button press left the AP powered off, and it was on
         # before, turn it back on.

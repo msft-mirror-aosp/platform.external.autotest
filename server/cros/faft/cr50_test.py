@@ -51,7 +51,6 @@ class Cr50Test(FirmwareTest):
             DBG_IMAGE: ['running_image_ver', 'running_image_bid', 'chip_bid'],
             ERASEFLASHINFO_IMAGE: ['chip_bid'],
     }
-    PP_SHORT_INTERVAL = 3
 
     def initialize(self,
                    host,

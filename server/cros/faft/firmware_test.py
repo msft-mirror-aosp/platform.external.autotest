@@ -2370,7 +2370,7 @@ class FirmwareTest(test.test):
             while time.time() < end_time:
                 self.servo.power_short_press()
                 logging.info('short int power button press')
-                time.sleep(self.PP_SHORT_INTERVAL)
+                time.sleep(self.cr50.PP_SHORT_INT)
             # Poll the output and press the power button for the longer presses.
             utils.wait_for_value(self._check_open_and_press_power_button,
                                  expected_value=True,

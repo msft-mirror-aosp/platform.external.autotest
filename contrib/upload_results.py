@@ -51,6 +51,7 @@ CONFIG_DIR = os.path.dirname(os.path.abspath(__file__)) + "/config/"
 DEFAULT_BOTO_CONFIG = CONFIG_DIR + ".boto_upload_utils"
 UPLOAD_CONFIG = CONFIG_DIR + "upload_config.json"
 SERVICE_ACCOUNT_CONFIG = CONFIG_DIR + ".service_account.json"
+LABEL_REGEX = r"(.*)results-\d*-(.*)"
 
 logging = log.getLogger(__name__)
 
@@ -389,13 +390,15 @@ class ResultsParserClass:
 
         # fixes b/225403558 by tagging job_id with the current time
         job_id = int(time.time() * 1000)
+        serialize_path = os.path.join(path, "job.serialize")
         if upload_only:
             js = JobSerializer()
-            job = js.deserialize_from_binary(path + "/job.serialize")
+            job = js.deserialize_from_binary(serialize_path)
         else:
             # this is needed to prevent errors on missing status.log
             status_log_file = os.path.join(path, STATUS_LOG_FILE)
             if not os.path.exists(status_log_file):
+                logging.warning("no status.log file at %s", status_log_file)
                 return
 
             #temporarily assign a fake job id until parsed
@@ -413,17 +416,22 @@ class ResultsParserClass:
             self.print_autotest_git_history(path)
             job = parse_one(FakeTkoDb(), pid_file_manager, name, path,
                             parse_options)
+            job.board = job.tests[0].attributes['host-board']
+            if suite_name == "":
+                logging.info("parsing suite name")
+                job.suite = self.parse_suite_name(path)
+            else:
+                logging.info("overwrite with cmd line")
+                job.suite = suite_name
+            job.build_version = self.get_build_version(job.tests)
 
-        job.board = job.tests[0].attributes['host-board']
-        if suite_name == "":
-            job.suite = self.parse_suite_name(path)
-        else:
-            job.suite = suite_name
-        job.afe_job_id = job_id
+        if job.label is None:
+            match = re.match(LABEL_REGEX, path)
+            job.label = "chroot/" + match.group(2)
+        job.afe_job_id = str(job_id)
         job.afe_parent_job_id = str(job_id + 1)
-        job.build_version = self.get_build_version(job.tests)
         name = self.job_tag(job_id, job.machine)
-        export_tko_job_to_file(job, name, path + "/job.serialize")
+        export_tko_job_to_file(job, name, serialize_path)
 
         # autotest_lib appends additional global logger handlers
         # remove these handlers to avoid affecting logging for the google
@@ -459,7 +467,7 @@ class ResultsParserClass:
 
         debug_file = os.path.join(path, DEBUG_FILE_PATH)
         if not os.path.exists(debug_file) or not os.path.isfile(debug_file):
-            return None
+            return DEFAULT_SUITE_NAME
         exp = re.compile(SUITE_NAME_REGEX)
         try:
             with open(debug_file) as f:

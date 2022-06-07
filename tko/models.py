@@ -21,7 +21,9 @@ class job(object):
 
     def __init__(self, dir, user, label, machine, queued_time, started_time,
                  finished_time, machine_owner, machine_group, aborted_by,
-                 aborted_on, keyval_dict):
+                 aborted_on, keyval_dict, afe_job_id=None,
+                 afe_parent_job_id=None, build_version=None, suite=None,
+                 board=None):
         self.dir = dir
         self.tests = []
         self.user = user
@@ -35,10 +37,11 @@ class job(object):
         self.aborted_by = aborted_by
         self.aborted_on = aborted_on
         self.keyval_dict = keyval_dict
-        self.afe_parent_job_id = None
-        self.build_version = None
-        self.suite = None
-        self.board = None
+        self.afe_job_id = afe_job_id
+        self.afe_parent_job_id = afe_parent_job_id
+        self.build_version = build_version
+        self.suite = suite
+        self.board = board
         self.job_idx = None
         # id of the corresponding tko_task_references entry.
         # This table is used to refer to skylab task / afe job corresponding to

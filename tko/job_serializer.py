@@ -48,6 +48,7 @@ class JobSerializer(object):
                               'machine_group':str, 'aborted_by':str,
                               'aborted_on':datetime,
                               'keyval_dict':dict,
+                              'afe_job_id':str,
                               'afe_parent_job_id':str,
                               'build_version':str,
                               'suite':str,
@@ -167,7 +168,12 @@ class JobSerializer(object):
                             fields_dict['machine_group'],
                             fields_dict['aborted_by'],
                             fields_dict['aborted_on'],
-                            fields_dict['keyval_dict'])
+                            fields_dict['keyval_dict'],
+                            fields_dict['afe_job_id'],
+                            fields_dict['afe_parent_job_id'],
+                            fields_dict['build_version'],
+                            fields_dict['suite'],
+                            fields_dict['board'])
 
         newjob.tests.extend(fields_dict['tests'])
 

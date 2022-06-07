@@ -48,6 +48,7 @@ except ImportError as e:
     logging.warning("Could not import six due to %s", e)
 
 from contextlib import contextmanager
+from contextlib import ExitStack
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import autotest
@@ -60,7 +61,11 @@ from autotest_lib.site_utils import test_runner_utils
 # These are arguments to the linux "perf" tool.
 # The -e value is processor specific and comes from the Intel SDM vol 3b
 # TODO(b:229298221): Revert to -c 50000 when fixed.
-PROFILER_ARGS = 'record -a -e r20c4 -c 200003 -b'
+INTEL_PROFILER_ARGS = 'record -a -e r20c4 -c 200003 -b'
+
+ARM_PROFILER_ARGS = 'record -e cs_etm/autofdo/u -a -S'
+ETM_STROBING_WINDOW = 1000
+ETM_STROBING_PERIOD = 30000
 
 # In practice, it takes >2min to copy the perf.data back from the DUT, set
 # this timeout to 600 secs to be safe.
@@ -101,17 +106,27 @@ def _wait_for_process(host, pid, timeout=-1):
 # to have a short list that is as representative as possible and takes a
 # short time to execute. At this point the list of benchmarks is in flux.
 TELEMETRY_AFDO_BENCHMARKS = (
-        # page_cycler tests are deprecated. Replace them with loading.desktop.
-        ('loading.desktop', ('--pageset-repeat=1',
-                             '--story-tag-filter=typical')),
-        # TODO(b:229298221): Re-enabled when fixed.
-        # ('loading.desktop', ('--pageset-repeat=1',
-        #                      '--story-tag-filter=intl_ja_zh')),
-        ('rendering.desktop', ('--pageset-repeat=1',
-                               '--story-tag-filter=tough_canvas')),
-        ('octane', ),
-        ('kraken', ),
-        ('speedometer2', ),
+        {'name': 'loading.desktop',
+         'args': ('--pageset-repeat=1',
+                  '--story-tag-filter=typical'),
+         'archs': ('amd64',)},
+        # TODO(b:229298221): Re-enabled "intl_ja_zh" when fixed.
+        {'name': 'loading.desktop',
+         'args': ('--pageset-repeat=1',
+                  '--story-tag-filter=intl_es_fr_pt_BR'),
+         'archs': ('arm',)},
+        {'name': 'tab_switching.typical_25',
+         'archs': ('arm',)},
+        {'name': 'rendering.desktop',
+         'args': ('--pageset-repeat=1',
+                  '--story-tag-filter=tough_canvas'),
+         'archs': ('amd64',)},
+        {'name': 'octane',
+         'archs': ('amd64', 'arm')},
+        {'name': 'kraken',
+         'archs': ('amd64', 'arm')},
+        {'name': 'speedometer2',
+         'archs': ('amd64', 'arm')},
 )
 
 # Temporarily disable this benchmark because it is failing a
@@ -130,7 +145,9 @@ TELEMETRY_AFDO_BENCHMARKS = (
 GCC_BOARDS = ['lumpy']
 
 # Should be disjoint with GCC_BOARDS
-LLVM_BOARDS = ['chell']
+# Supported <board>: <architecture>.
+LLVM_BOARDS = {'chell': 'amd64',
+               'trogdor': 'arm'}
 
 # FIXME(tcwang): only used for testing Async AFDO generation builders.
 # Remove this after testing is done.
@@ -179,12 +196,25 @@ class telemetry_AFDOGenerate(test.test):
 
     @contextmanager
     def perf_on_dut(self):
-        """Start and kill perf process on DUT.
-        """
+        """Start and kill perf process on DUT."""
         logging.info('Starting perf process in background.')
-        perf_cmd = 'nohup perf %s -o %s/perf.data' \
-                    % (PROFILER_ARGS, DUT_CHROME_RESULTS_DIR)
+        if self._is_arm():
+            profile_args = ARM_PROFILER_ARGS
+            perf_data = 'perf-etm.data'
+        else:
+            profile_args = INTEL_PROFILER_ARGS
+            perf_data = 'perf.data'
+
+        perf_cmd = (f'nohup perf {profile_args} '
+                    f'-o {DUT_CHROME_RESULTS_DIR}/{perf_data}')
         perf_pid = self._host.run_background(perf_cmd)
+
+        if self._is_arm():
+            # Send signals to perf_pid to trigger ETM data collection.
+            # Period 100ms.
+            # It will automatically terminate with perf.
+            ping_cmd = f'while kill -USR2 {perf_pid} ; do sleep 4 ; done'
+            self._host.run_background(ping_cmd)
 
         try:
             # Use `kill -0` to check whether the perf process is alive
@@ -197,7 +227,7 @@ class telemetry_AFDOGenerate(test.test):
         finally:
             # Check if process is still alive after benchmark run, if yes,
             # then kill it with -2 (which is SIGINT).
-            kill_cmd = 'kill -0 %s && killall -2 perf' % perf_pid
+            kill_cmd = f'kill -0 {perf_pid} && killall -2 perf'
             if self._host.run(kill_cmd, ignore_status=True).exit_status != 0:
                 logging.error('Perf process is not killed correctly on DUT.')
                 raise RuntimeError
@@ -210,9 +240,53 @@ class telemetry_AFDOGenerate(test.test):
                 raise RuntimeError
             logging.info('Perf has been killed on DUT.')
 
+        if self._is_arm():
+            # Now we need to convert ETM data into Intel's LBR format
+            # which allows us to re-use the same AFDO pipeline.
+            perf_inject_cmd = ('perf inject --itrace=i1000il --strip '
+                               f'-i {DUT_CHROME_RESULTS_DIR}/perf-etm.data '
+                               f'-o {DUT_CHROME_RESULTS_DIR}/perf.data')
+            if self._host.run(perf_inject_cmd).exit_status != 0:
+                logging.error(
+                    'Perf inject failed to convert ETM trace into LBR format.')
+                raise RuntimeError
+
         status = self.scp_perf_data(self._host, self.profdir)
         if status != 0:
             logging.error('Cannot copy perf.data file to host.')
+            raise RuntimeError
+
+    @contextmanager
+    def disable_cpuidle(self):
+        """Disable CPU idle states in a context. See b/185490945."""
+        cpuidle_states = '/sys/devices/system/cpu/cpu*/cpuidle/state*/disable'
+        # Disable CPU Idle states to reduce ETM performance overhead.
+        disable_cmd = f'echo 1 | tee {cpuidle_states}'
+        if self._host.run(disable_cmd).exit_status != 0:
+            logging.error('Failed to disable CPU idle states before perf run.')
+            raise RuntimeError
+        try:
+            yield
+        finally:
+            # Re-enable CPU idle.
+            enable_cmd = f'echo 0 | tee {cpuidle_states}'
+            if self._host.run(enable_cmd).exit_status != 0:
+                logging.error(
+                    'Failed to re-enable CPU idle states after perf run.')
+                raise RuntimeError
+
+    def set_strobing(self, window, period):
+        """Set ETM strobing settings."""
+        stat1 = self._host.run(
+            f'echo {window} > /sys/kernel/config/cs-syscfg/features/strobing/'
+            'params/window/value')
+        stat2 = self._host.run(
+            f'echo {period} > /sys/kernel/config/cs-syscfg/features/strobing/'
+            'params/period/value')
+        if stat1.exit_status != 0 or stat2.exit_status != 0:
+            logging.error(
+                'Failed to set up ETM strobing settings. '
+                'W/o strobing perf profiles can have 100x increase in size.')
             raise RuntimeError
 
     def run_once(self, host, args):
@@ -233,33 +307,51 @@ class telemetry_AFDOGenerate(test.test):
 
         self._parse_args(args)
 
+        # Verify board: arch.
+        if self._arch != LLVM_BOARDS[host_board]:
+            raise error.TestFail(
+                'Mismatch of the board and architecture: '
+                f'board: {host_board}, arch: {self._arch}.'
+                'Check the arguments')
+
         # Remove write protection on host, as now telemetry code will
         # try to remove write protection that causes the machine to
         # reboot and remount during run_benchmark. We want to avoid it.
         filesystem_util.make_rootfs_writable(self._host)
 
-        with self.perf_on_dut():
+        with ExitStack() as stack:
+            if self._is_arm():
+                self.set_strobing(ETM_STROBING_WINDOW, ETM_STROBING_PERIOD)
+                stack.enter_context(self.disable_cpuidle())
+            stack.enter_context(self.perf_on_dut())
+
             if self._minimal_telemetry:
                 self._run_tests_minimal_telemetry()
             else:
-                with telemetry_runner.TelemetryRunnerFactory().get_runner(
-                        self._host, self._local, telemetry_on_dut=False) as tr:
-                    for benchmark_info in TELEMETRY_AFDO_BENCHMARKS:
-                        benchmark = benchmark_info[0]
-                        args = (
-                        ) if len(benchmark_info) == 1 else benchmark_info[1]
-                        try:
-                            self._run_test_with_retry(tr, benchmark, *args)
-                        except error.TestBaseException:
-                            if not self._ignore_failures:
-                                raise
-                            logging.info('Ignoring failure from benchmark %s.',
-                                         benchmark)
+                tr = stack.enter_context(
+                    telemetry_runner.TelemetryRunnerFactory().get_runner(
+                        self._host, self._local, telemetry_on_dut=False))
+                for benchmark_info in TELEMETRY_AFDO_BENCHMARKS:
+                    if self._arch not in benchmark_info['archs']:
+                        continue
+                    benchmark = benchmark_info['name']
+                    args = benchmark_info.setdefault('args', [])
+                    try:
+                        self._run_test_with_retry(tr, benchmark, *args)
+                    except error.TestBaseException:
+                        if not self._ignore_failures:
+                            raise
+                        logging.info('Ignoring failure from benchmark %s.',
+                                     benchmark)
+        self._passed = True
 
     def after_run_once(self):
         """After the profile information has been collected, compress it
         and upload it to GS
         """
+        if not self._passed:
+            return
+
         PERF_FILE = 'perf.data'
         COMP_PERF_FILE = 'chromeos-chrome-%s-%s.perf.data'
         perf_data = os.path.join(self.profdir, PERF_FILE)
@@ -305,6 +397,8 @@ class telemetry_AFDOGenerate(test.test):
         # benchmarks in ChromeOS are too flaky at this point. So, initially,
         # this will be set to True by default.
         self._minimal_telemetry = False
+        # Set when the telemetry test pass.
+        self._passed = False
 
         # Ignored servo arguments.
         ignored_options = ('servo_host', 'servo_port')
@@ -326,6 +420,10 @@ class telemetry_AFDOGenerate(test.test):
                 continue
             else:
                 raise error.TestFail('Unknown option passed: %s' % option_name)
+
+    def _is_arm(self):
+        """Return true if arch is arm."""
+        return self._arch == 'arm'
 
     def _run_test(self, tr, benchmark, *args):
         """Run the benchmark using Telemetry.
@@ -441,7 +539,8 @@ class telemetry_AFDOGenerate(test.test):
         @returns nothing.
         """
         GS_GCC_DEST = 'gs://chromeos-prebuilt/afdo-job/canonicals/%s'
-        GS_LLVM_DEST = 'gs://chromeos-toolchain-artifacts/afdo/unvetted/benchmark/%s'
+        GS_LLVM_DEST = ('gs://chromeos-toolchain-artifacts/afdo/unvetted/'
+                        'benchmark/%s')
         GS_LLVM_ASYNC_DEST = \
             'gs://chromeos-throw-away-bucket/afdo-job/llvm/benchmarks/%s'
         GS_TEST_DEST = 'gs://chromeos-throw-away-bucket/afdo-job/canonicals/%s'

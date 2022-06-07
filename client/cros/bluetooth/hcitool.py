@@ -60,10 +60,13 @@ class Hcitool(object):
     def filter_with_mask(names, mask):
         """Picks the supported names base on the given mask.
 
+        Also lists bits that are undefined in the given names.
+
         @param names: List of names like feature,commands,...
         @param mask: A bitmask (8 bit little-endian) or a list of bitmasks.
 
-        @return: List of supported names (features/commands/...).
+        @return: List of supported names (features/commands/...). Also, for
+                unsupported mask bits, appends them as well.
         """
 
         if isinstance(mask, list):
@@ -72,7 +75,21 @@ class Hcitool(object):
         else:
             mask = '{:b}'.format(mask)
             mask = mask[::-1]
-        return [names[i] for i, m in enumerate(mask) if m == '1']
+        supported_names = []
+        bit_position = 1
+        mask_hex_length = len(mask) // 4
+        if len(mask) % 4:
+            mask_hex_length += 1
+        UNKNOWN_FEATURE_FORMAT = 'Unknown feature (0x{:0%dX})' % mask_hex_length
+        for i, m in enumerate(mask):
+            if m == '1':
+                if i < len(names):
+                    supported_names.append(names[i])
+                else:
+                    supported_names.append(
+                            UNKNOWN_FEATURE_FORMAT.format(bit_position))
+            bit_position = bit_position << 1
+        return supported_names
 
     def _execute_hcitool_cmd_or_raise(self, ogf, ocf, *parameter):
         """Executes and checks status of hcitool commands.

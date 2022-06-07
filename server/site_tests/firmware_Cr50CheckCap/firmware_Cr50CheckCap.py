@@ -23,6 +23,7 @@ class firmware_Cr50CheckCap(Cr50Test):
         """Verify the cr50 cap response after running the given command"""
         if enable_factory:
             self.cr50.ccd_reset_factory()
+            self.servo.get_power_state_controller().reset()
         else:
             # Testlab mode is enabled, so it's ok to reset ccd without enabling
             # capabilities necessary for ccd.

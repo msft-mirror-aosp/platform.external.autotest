@@ -38,6 +38,8 @@ class firmware_Cr50OpenTPMRstDebounce(FirmwareTest):
         try:
             self.fast_ccd_open(True)
             self.cr50.ccd_reset_factory()
+            # Reset the DUT to reenable the TPM.
+            self.servo.get_power_state_controller().reset()
             self.cr50.set_cap(self.cr50.CAP_SHORT_PP, self.cr50.CAP_IF_OPENED)
             self.cr50.set_cap(self.cr50.CAP_OPEN_NO_TPM_WIPE,
                               self.cr50.CAP_IF_OPENED)

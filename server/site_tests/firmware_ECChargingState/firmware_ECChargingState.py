@@ -93,16 +93,18 @@ class firmware_ECChargingState(FirmwareTest):
         match = self._retry_send_cmd("battery", [
                 r"Status:\s*(0x[0-9a-f]+)\s",
                 r"Param flags:\s*([0-9a-f]+)\s",
+                r"Charging:\s+(Allowed|Not Allowed)\s",
                 r"Charge:\s+(\d+)\s+",
         ])
         status = int(match[0][1], 16)
         params = int(match[1][1], 16)
-        level = int(match[2][1])
+        level = int(match[3][1])
 
         result = {
                 "status": status,
                 "flags": params,
                 "level": level,
+                "charging": match[2][1],
         }
 
         if status & self.STATUS_ALARM_MASK != 0:
@@ -136,7 +138,7 @@ class firmware_ECChargingState(FirmwareTest):
         elif sysfs_battery_state == 'Fully charged':
             # Powerd has it's own creative way of determining full, it doesn't
             # use the status from the EC. So we will consider it acceptable if
-            # the battery level is actually full, or above
+            # the battery level is actually full, or above 95%
             if (
                     ec_battery_info['status'] & self.STATUS_FULLY_CHARGED == 0
                     and ec_battery_info['level'] < self.FULL_BATTERY_PERCENT):
@@ -145,6 +147,11 @@ class firmware_ECChargingState(FirmwareTest):
                         sysfs_battery_state, ec_battery_info)
         elif (sysfs_battery_state == 'Not charging'
               or sysfs_battery_state == 'Discharging'):
+            if ec_battery_info['charging'] == 'Not Allowed':
+                raise error.TestFail(
+                        'Kernel reports battery %s, but charging not allowed:'
+                        ' %s',
+                        sysfs_battery_state, ec_battery_info)
             if ec_battery_info['status'] & self.STATUS_DISCHARGING == 0:
                 raise error.TestFail(
                         'Kernel reports battery %s, but actual state is %s',
@@ -199,8 +206,9 @@ class firmware_ECChargingState(FirmwareTest):
 
         battery = self._get_battery_info()
         sysfs_battery_state = host.get_battery_state()
-        if (battery['status'] & self.STATUS_FULLY_CHARGED == 0
-                    and battery['status'] & self.STATUS_DISCHARGING != 0):
+        if ((battery['status'] & self.STATUS_FULLY_CHARGED == 0
+             or battery['charging'] == "Not Allowed")
+                and battery['status'] & self.STATUS_DISCHARGING != 0):
             raise error.TestFail("Wrong battery state. Expected: "
                                  "Charging/Fully charged, got: %s." % battery)
         self._check_kernel_battery_state(host.get_battery_state(), battery)
@@ -217,6 +225,15 @@ class firmware_ECChargingState(FirmwareTest):
                 logging.info(
                         "Wait for the battery to be fully charged. "
                         "The current battery level is %d%%.", battery['level'])
+            elif battery['charging'] == "Not Allowed":
+                logging.info(
+                        "Charging is not allowed, treat like fully charged. "
+                        "Info: %s",
+                        battery,
+                        )
+                self._check_kernel_battery_state(host.get_battery_state(),
+                                                 battery)
+                return
             else:
                 raise error.TestFail("Wrong battery state. Expected: "
                                      "Charging/Fully charged, got: %s." %

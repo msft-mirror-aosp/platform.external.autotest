@@ -55,7 +55,8 @@ BOARD_CTS_HELPERS_DIR = '/usr/local/opt/google/vms/android'
 # It looks like the GCE builder can be very slow and login on VMs take much
 # longer than on hardware or bare metal.
 LOGIN_BOARD_TIMEOUT = {'betty': 300, 'betty-arcnext': 300, 'betty-pi-arc': 300}
-LOGIN_DEFAULT_TIMEOUT = 90
+# Set longer time for Slow ARM ARCVM boards (90 -> 150)
+LOGIN_DEFAULT_TIMEOUT = 150
 
 # List of boards that we want to run CTS in tablet mode for some models.
 TABLET_MODE_BOARDS = ('kukui', 'nocturne', 'scarlet')

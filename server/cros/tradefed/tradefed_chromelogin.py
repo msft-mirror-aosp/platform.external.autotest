@@ -61,9 +61,6 @@ class ChromeLogin(object):
         cmd += ' --no-startup-window'
         # Disable several forms of auto-installation to stablize the tests.
         cmd += ' --no-arc-syncs'
-        # TODO(b/196460968) delete after M96 branch, or after finishing the
-        # experiment.
-        cmd += ' --feature=NotificationsRefresh'
         # Toggle the translation from houdini to ndk
         if self._toggle_ndk:
             cmd += ' --toggle_ndk'

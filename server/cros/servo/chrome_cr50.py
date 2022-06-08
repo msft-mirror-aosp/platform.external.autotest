@@ -980,7 +980,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         finally:
             self._servo.set('cr50_uart_timeout', original_timeout)
         logging.info(rv)
-        if 'ccd_open denied: fwmp' in rv:
+        if ('ccd_open denied: fwmp' in rv or 'Blocked by fwmp' in rv):
             raise error.TestFail('FWMP disabled %r: %s' % (cmd, rv))
         if 'Access Denied' in rv:
             raise error.TestFail("%r %s" % (cmd, rv))

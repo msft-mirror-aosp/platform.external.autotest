@@ -308,6 +308,7 @@ class BluetoothBaseFacadeLocal(object):
                     (('0x8086', '0x4df0'), 'USB'),
                     (('0x8086', '0xa0f0'), 'USB'),
             ],  # HrP2
+            'Intel-AX211': [(('0x8086', '0x51f0'), 'USB')],  # GfP2
             'Intel-AC9260': [(('0x8086', '0x2526'), 'USB')],  # ThP2
             'Intel-AC9560': [
                     (('0x8086', '0x31dc'), 'USB'),  # JfP2

@@ -24,6 +24,7 @@ _chip_info = {
         'WCN6750': ChipInfo(True, True, 0x0170),
         'Intel-AX200': ChipInfo(False, True, 0x001e),
         'Intel-AX201': ChipInfo(False, True, 0x001e),
+        'Intel-AX211': ChipInfo(False, True, 0x001e),
         'Intel-AC9260': ChipInfo(False, True, 0x001e),
         'Intel-AC9560': ChipInfo(False, True, 0x001e),
         'Intel-AC7260': ChipInfo(False, False, 0),

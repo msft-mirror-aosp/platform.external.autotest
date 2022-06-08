@@ -1,0 +1,21 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+PY_VERSION = 3
+NAME = "graphics_HardwareProbe"
+AUTHOR = "The Chromium OS Authors"
+PURPOSE = "Verify graphics/hardware_probe provides same information as autotest"
+CRITERIA = "Fails if the information is unmatched."
+ATTRIBUTES = 'suite:graphics_per-day'
+TIME = "SHORT"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = 'graphics'
+TEST_TYPE = "client"
+JOB_RETRIES = 0
+
+DOC = """
+    Check that the gpu information is consistent.
+"""
+
+job.run_test('graphics_HardwareProbe')

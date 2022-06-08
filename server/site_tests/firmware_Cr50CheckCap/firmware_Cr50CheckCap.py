@@ -64,7 +64,7 @@ class firmware_Cr50CheckCap(Cr50Test):
 
         Args:
             ccd_level: a ccd state level: 'lock', 'unlock', or 'open'.
-            cap_setting: A ccd cap setting: 'IfOpened', 'Always', or
+            cap_setting: A ccd cap setting: 'IfOpened', 'Always', 'Never', or
                          'UnlessLocked'.
             expect_accessible: True if capabilities should be accessible
 

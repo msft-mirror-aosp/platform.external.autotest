@@ -102,7 +102,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CAP_IF_OPENED = 'IfOpened'
     CAP_ALWAYS = 'Always'
     # Regex to match the valid capability settings.
-    CAP_STATES = '(%s|Default|%s|UnlessLocked)' % (CAP_ALWAYS, CAP_IF_OPENED)
+    CAP_STATES = '(%s|Default|%s|UnlessLocked|Never)' % (CAP_ALWAYS, CAP_IF_OPENED)
     # List of all cr50 ccd capabilities. Same order of 'ccd' output
     CAP_NAMES = [
             'UartGscRxAPTx', 'UartGscTxAPRx', 'UartGscRxECTx', 'UartGscTxECRx',

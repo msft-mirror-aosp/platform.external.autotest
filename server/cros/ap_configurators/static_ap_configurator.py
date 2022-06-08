@@ -49,7 +49,7 @@ class StaticAPConfigurator(ap_configurator.APConfiguratorAbstract):
         self.mac_address = ap_config.get_wan_mac()
         self.host_name = ap_config.get_wan_host()
         # Get corresponding PDU from host name.
-        self.pdu = re.sub('host\\d+', 'rpm1', self.host_name) + '.cros'
+        self.pdu = re.sub('host\\d+', 'rpm1', self.host_name)
         self.channel = ap_config.get_channel()
         self.band = ap_config.get_band()
         self.current_band = ap_config.get_band()

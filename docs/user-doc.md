@@ -14,10 +14,14 @@ Guides for getting to know the package build system we use.
 [ChromiumOS specific Portage FAQ](https://chromium.googlesource.com/chromiumos/docs/+/HEAD/portage/ebuild_faq.md):
 Learn something about the way we use portage.
 
+[ChromeOS Autotest Coding Style](coding-style.md)
+
+[ChromeOS Autotest Best Practices](best-practices.md)
+
 ## Autotest and ebuild workflow
 
 To familiarize with autotest concepts, you should start with the upstream
-Autotest documentation at: https://github.com/autotest/autotest/wiki/AutotestApi
+[Autotest documentation](https://github.com/autotest/autotest/wiki/AutotestApi).
 
 The rest of this document is going to use some terms and only explain them
 vaguely.
@@ -74,10 +78,12 @@ certain differences in workflow:
     Anything that can be created as an ebuild (shell script) can be a test source.
     (cros-workon may be utilised, introducing a fairly standard Chromium OS
     project workflow)
--   The staging location (`/build/${board}/usr/local/autotest/`) may not be
+-   The staging location (`/build/${board}/usr/local/build/autotest/`) may not be
     modified; if one wants to modify it, they have to find the source to it
     (using other tools, see FAQ).
--   Propagating source changes requires an emerge step.
+-   Propagating changes to control files or Autotest Python code does not
+    require an emerge.  The quickmerge step from [test_that](test-that.md) will
+    propagate these changes.
 
 ### Ebuild setup, autotest eclass
 
@@ -243,8 +249,7 @@ When running tests, fundamentally, you want to either:
 
 ### Running tests on a machine
 
-Autotests are run with a tool called
-[test_that](https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/test-that.md).
+Autotests are run with a tool called [test_that](test-that.md).
 
 ### Running tests in a VM - cros_run_test
 
@@ -252,34 +257,43 @@ VM tests are conveniently wrapped into a script `cros_run_test` that sets up
 the VM using a given image and then calls `test_that`. This is run by builders
 to test using the Smoke suite.
 
-If you want to run your tests in a VM (see
-[here](https://chromium.googlesource.com/chromiumos/docs/+/main/cros_vm.md#Run-an-autotest-in-the-VM)
+If you want to run your tests in a VM
+[Chrome OS VM for Chromium developers](https://chromium.googlesource.com/chromiumos/docs/+/main/cros_vm.md#Run-an-autotest-in-the-VM))
+has detailed instructions.
 
--   `cros_run_test` starts up a VM and runs autotests using the port
--   specified (defaults to 9222).  As an example:
+There are 2 ways to run tests in a VM using `cros_run_test` or using
+`cros_vm --start` to start a VM and then running your tests as normal.
 
-        $ cros_run_test --autotest=suite:smoke \
-        --image-path=<my_image_to_start or don't set to use most recent build> \
-        --board=amd64-generic
+- `cros_run_test` starts up a VM and runs autotests using the port
+  specified (defaults to 9222).  As an example:
 
--   The emulator command line redirects localhost port 9222 to the emulated
-    machine's port 22 to allow you to ssh into the emulator. For Chromium OS to
-    actually listen on this port you must create & boot a test image.
--   You can then run tests on the correct ssh port with something like
+    ```
+    $ cros_run_test --autotest=suite:smoke \
+    --image-path=<my_image_to_start or don't set to use most recent build> \
+    --board=amd64-generic
+    ```
 
-        $ test_that --board=x86-generic localhost:9222 'f:.*platform_BootPerf/control'
+- If a VM is already running it will use the running VM otherwise one will be
+  started for the test and stopped when the test is completed
 
--   To set the sudo password run set_shared_user_password. Then within the
-    emulator you can press Ctrl-Alt-T to get a terminal, and sudo using this
-    password. This will also allow you to ssh into the unit with, e.g.
+- You must have an image downloaded or built for the board
 
-        $ ssh -p 9222 root@localhost
+Alternatively you can boot a VM with a test image using the `cros_vm`:
 
--   Warning: After
-    [crbug/710629](https://bugs.chromium.org/p/chromium/issues/detail?id=710629),
-    'betty' is the only board regularly run through pre-CQ and CQ VMTest and so
-    is the most likely to work at ToT. 'betty' is based on 'amd64-generic',
-    so 'amd64-generic' is likely to also work for most (non-ARC) tests.
+- For detailed instructions see
+  Chrome OS VM for Chromium developers](https://chromium.googlesource.com/chromiumos/docs/+/main/cros_vm.md#Run-an-autotest-in-the-VM)
+
+- Start the VM with:
+
+    ```
+    $ cros vm --start --board=amd64-generic
+    ```
+
+- You can then run tests on the correct ssh port with something like
+
+    ```
+    $ test_that localhost:9222 stub_Pass
+    ```
 
 
 ## Result log layout structure
@@ -347,8 +361,14 @@ repository.
 
 For a test to be fully functional in Chromium OS, it has to be associated with
 an ebuild. It is generally possible to run tests without an ebuild using
-`test_that` but discouraged, as the same will not function with other parts of
-the system.
+`test_that`.  If you meet any of the following conditions you will need to
+ensure your test is part of an ebuild:
+
+- you want to schedule your test (ie run in a lab)
+- your test has deps that need to be generated (this is rare)
+
+If you are running your test locally only and it has no special deps you can
+skip setting up an ebuild.
 
 ### Making a new test work with ebuilds
 
@@ -425,7 +445,43 @@ control.\<testcase\>. These tests' NAMEs are then
 
 ## Common workflows
 
-### W1. Develop and iterate on a test
+### W1. Using quickmerge to Develop and Iterate or create a new test
+
+The new quickmerge feature of test that allows you to develop and iterate an
+existing test or create a new one without having to deal with ebuilds.  You can
+create a new test or modify an existing test and then run it using `test_that`.
+The quickmerge step of `test_that` will copy the updated source to your build
+directory and run it on the DUT.
+
+1. Modify the test source or create a new test
+2. Run the test with `test_that`
+
+       $ test_that --board=<BOARD> <DUT> <Tests>
+
+   note: The `--board` option is not required. It will work without `--board`
+   if you're either using  `--autotest_dir=`  flag, or if the board you're
+   running on is already built in your chroot. However if you have only built 1
+   board, ie amd64generic, and want to run a test vs another, you will need to
+   use the  --board  flag to point to the board have built in your chroot.
+
+3. If you created a new test add it to an ebuild file if necessary.  See
+[Writing a test](#writing-a-test) to determine if you need an ebuild file.
+4. If necessary to add to an ebuild add it to the associated ebuild (normally
+pared by group
+([example](https://source.corp.google.com/chromeos_public/src/third_party/chromiumos-overlay/chromeos-base/autotest-tests-bluetooth/)),
+and if not use the main
+[chrome](https://source.corp.google.com/chromeos_public/src/third_party/chromiumos-overlay/chromeos-base/autotest-chrome/autotest-chrome-9999.ebuild),
+[client](https://source.corp.google.com/chromeos_public/src/third_party/chromiumos-overlay/chromeos-base/autotest-tests/autotest-tests-9999.ebuild;l=55)
+or
+[server](https://source.corp.google.com/chromeos_public/src/third_party/chromiumos-overlay/chromeos-base/autotest-server-tests/autotest-server-tests-9999.ebuild)),
+via adding the  tests_<test_name>  convention, such as this
+[example](https://source.corp.google.com/chromeos_public/src/third_party/chromiumos-overlay/chromeos-base/autotest-server-tests/autotest-server-tests-9999.ebuild;l=51)
+
+### W2. Develop and iterate on a test
+
+Note this workflow is not needed if using `test_that` from a local chroot.
+Quickmerge allows you to make changes to python code and control files and test
+them by running tests with `test_that`.
 
 1.  Set up the environment.
 
@@ -458,33 +514,32 @@ control.\<testcase\>. These tests' NAMEs are then
         $ cros_workon --board=${board} stop ${EBUILD}
         $ unset TESTS
 
-### W2. Creating a test - steps and checklist
+### W3. Creating a test - steps and checklist
 
 When creating a test, the following steps should be done/verified.
 
 1.  Create the actual test directory, main test files/sources, at least one
     control file
-2.  Find the appropriate ebuild package and start working on it:
-
-        $ cros_workon --board=${board} start <package>
-
-3.  Add the new test into the IUSE_TESTS list of 9999 ebuild
-4.  Try building: (make sure it’s the 9999 version being built)
-
-        $ TESTS=<test> emerge-$board <package>
-
-5.  Try running:
+1.  Try running:
 
         $ test_that <IP> <test>
 
-6.  Iterate on 4,5 and modify source until happy with the initial version.
-7.  Commit test source first, when it is safely in, commit the 9999 ebuild
+1.  Iterate on source until happy with the initial version.
+1.  Find the appropriate ebuild package and start working on it:
+
+        $ cros_workon --board=${board} start <package>
+
+1.  Add the new test into the IUSE_TESTS list of 9999 ebuild
+1.  Try building: (make sure it’s the 9999 version being built)
+
+        $ TESTS=<test> emerge-$board <package>
+1.  Commit test source first, when it is safely in, commit the 9999 ebuild
     version change.
-8.  Cleanup
+1.  Cleanup
 
          $ cros_workon --board=${board} stop <package>
 
-### W3. Splitting autotest ebuild into two
+### W4. Splitting autotest ebuild into two
 
 Removing a test from one ebuild and adding to another in the same revision
 causes portage file collisions unless counter-measures are taken. Generally,
@@ -521,7 +576,7 @@ to help that.
 8.  Uprev (move) autotest-all-0.0.1-rX symlink by one.
 9.  Publish all as the same change list, have it reviewed, push.
 
-### W4. Create and run a test-enabled image on your device
+### W5. Create and run a test-enabled image on your device
 
 1.  Choose which board you want to build for (we'll refer to this as ${BOARD},
     which is for example "x86-generic").
@@ -570,14 +625,13 @@ potentially different list of overlays. To find all autotest ebuilds for board
 foo, you can run:
 ```
 $ board=foo
-$ for dir in $(portageq-${board} envvar PORTDIR_OVERLAY); do
-     find . -name '*.ebuild' | xargs grep "inherit.*autotest" | grep "9999" | \
+$ all_board_ebuilds=$(for dir in $(portageq-${board} envvar PORTDIR_OVERLAY); do
+     find "${dir}" -name '*.ebuild' | xargs grep "inherit.*autotest" | grep "9999" | \
      cut -f1 -d: | \
      sed -e 's/.*\/\([^/]*\)\/\([^/]*\)\/.*\.ebuild/\1\/\2/'
-   done
+   done)
+$ echo ${all_board_ebuilds}
 ```
-(Getting: "WARNING: 'portageq envvar PORTDIR_OVERLAY' is deprecated. Use
-'portageq repositories_configuration' instead." Please fix documentation.)
 
 ### Q2: I see a test of the name ‘greattests_TestsEverything’ in build output/logs/whatever! How do I find which ebuild builds it?
 
@@ -598,8 +652,9 @@ their potentially outdated versions.
 **Alternatively**, you can run a pretended emerge (emerge -p) of all autotest
 ebuilds and scan the output.
 ```
-$ emerge -p ${all_ebuilds_from_Q1} |grep -C 10 “${use_search}”
+$ emerge -p ${all_board_ebuilds} | grep -C 10 “${use_search}”
 ```
+**Note: above command does not seem to work needs updating**
 
 ### Q3: I have an ebuild ‘foo’, where are its sources?
 
@@ -608,8 +663,8 @@ question out (and it shouldn’t be hard). However, all present autotest ebuilds
 (at the time of this writing) are also ‘cros-workon’, and for those, this
 should always work:
 ```
-$ ebuild_search=foo
-$ ebuild $(equery-$board which $ebuild_search) info
+$ ebuild_name=foo
+$ ebuild $(equery-$board which $ebuild_name) info
 CROS_WORKON_SRCDIR=”/home/you/trunk/src/third_party/foo”
 CROS_WORKON_PROJECT=”chromiumos/third_party/foo”
 ```
@@ -652,17 +707,20 @@ $ equery-$board uses ${ebuild_name}
 
 You should ‘workon’ and always cros_workon start all ebuilds that have files
 that you touched.  If you’re interested in a particular file/directory, that
-is installed in `/build/$board/usr/local/autotest/` and would like know which
-package has provided that file, you can use equery:
+is installed in
+`/build/$board/usr/local/build/autotest/client/site_tests/foo_bar/foo_bar.py`
+and would like know which package has provided that file, you can use equery:
 
 ```
-$ equery-$board belongs /build/${board}/usr/local/autotest/client/site_tests/foo_bar/foo_bar.py
+# Note you must ensure /build/${board} prefix is not included in the query
+$ equery-$board belongs /usr/local/build/autotest/client/site_tests/foo_bar/foo_bar.py
  * Searching for <filename> ...
 chromeos-base/autotest-tests-9999 (<filename>)
 ```
 
-DON’T forget to do equery-$board. Just equery will also work, only never
-return anything useful.
+DON’T forget to do `equery-$board`. Just equery will also work, only never
+return anything useful.  Also if you have not run `build_packages` for `$board`
+this will not work.
 
 As a rule of thumb, if you work on anything from the core autotest framework or
 shared libraries (anything besides

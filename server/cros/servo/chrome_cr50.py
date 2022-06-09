@@ -1335,9 +1335,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Returns True if the capability is set to Always"""
         rv = self.send_command_retry_get_output('ccd',
                                                 [cap + self.CAP_FORMAT])[0]
-        # The third field could be Default or "Always". If it's Default,
-        # "Always" must show up in the third field.
-        return self.CAP_ALWAYS in rv[2] or self.CAP_ALWAYS in rv[3]
+        # "Always" must show up in the capability line.
+        return self.CAP_ALWAYS in rv[0]
 
     def servo_drv_enabled(self):
         """Check if the caps  are accessible on boards wigh gsc controls."""

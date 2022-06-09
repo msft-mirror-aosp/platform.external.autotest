@@ -129,7 +129,8 @@ incredibly helpful in understanding code.
 
 ## Hardcoded String Formatting
 
-Strings should use only single quotes for hardcoded strings in the code.
+Strings should use only single quotes for hardcoded strings in the code this
+applies to both python files and control files.
 Double quotes are acceptable when single quote is used as part of the string.
 Multiline strings should not use '\' but wrap the string using parentheseses.
 

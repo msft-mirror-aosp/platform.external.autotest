@@ -91,7 +91,30 @@ client or server.
 
 Upstream documentation
 Our local conventions for autotest control files deviate from the above a bit,
-but the indication about which fields are mandatory still holds.
+but the indication about which fields are mandatory still holds.  Single quotes
+are preferred over double quotes in control files for consistency.
+Example of control file with single quotes:
+```
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = '<author>@google.com'
+NAME = 'my_ExampleTest'
+PURPOSE = 'Verifies some feature works'
+TIME = 'FAST'
+TEST_TYPE = 'client'
+
+DOC = '''
+This is a long description of my test and what args it takes.
+'''
+
+job.run_test('my_ExampleTest')
+```
+
+Following is a list of fields which are used within ChromeOS, any field not
+listed here is optional and is not used within ChromeOS for scheduling or any
+other purposes.
 
 | Variable     | Required | Value                                                                                                                                                                                                                                                                                                                                    |
 |--------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

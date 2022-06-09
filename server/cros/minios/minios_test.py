@@ -63,8 +63,9 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
     # Arrays used to build iptables commands.
     _DROP_OUTGOING_PACKETS = ['OUTPUT', '-p', 'tcp', '-j', 'DROP']
-    _HTTP_FILTER = ['--dport', '80']
-    _HTTPS_FILTER = ['--dport', '443']
+    # Filter DEVSERVER(8082) and GS-CACHE(8888) for when running in the lab.
+    # Also filter HTTP(80) and HTTPS(443) ports for when running at desk.
+    _PORTS_TO_FILTER = ['80', '443', '8082', '8888']
 
     _GET_STATE_EXTRACTOR = re.compile(r'State is (\w+)')
 
@@ -272,10 +273,9 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
         """
         iptables_add_rule = ['iptables', '-I']
-        self._run(iptables_add_rule + self._DROP_OUTGOING_PACKETS +
-                  self._HTTP_FILTER)
-        self._run(iptables_add_rule + self._DROP_OUTGOING_PACKETS +
-                  self._HTTPS_FILTER)
+        for port in self._PORTS_TO_FILTER:
+            self._run(iptables_add_rule + self._DROP_OUTGOING_PACKETS +
+                      ['--dport', port])
 
     def _restore_download_traffic(self):
         """
@@ -284,12 +284,10 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
         """
         iptables_delete_rule = ['iptables', '-D']
-        self._run(iptables_delete_rule + self._DROP_OUTGOING_PACKETS +
-                  self._HTTP_FILTER,
-                  ignore_status=True)
-        self._run(iptables_delete_rule + self._DROP_OUTGOING_PACKETS +
-                  self._HTTPS_FILTER,
-                  ignore_status=True)
+        for port in self._PORTS_TO_FILTER:
+            self._run(iptables_delete_rule + self._DROP_OUTGOING_PACKETS +
+                      ['--dport', port],
+                      ignore_status=True)
 
     def _next_screen(self):
         """

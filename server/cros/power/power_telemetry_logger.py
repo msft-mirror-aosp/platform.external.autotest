@@ -365,9 +365,7 @@ class PacTelemetryLogger(PowerTelemetryLogger):
                        power telemetry devices.
                        required data:
                        {'test': 'test_TestName.tag',
-                        'config': PAC address and sense resistor .py file location,
-                        'mapping: DUT power rail mapping csv file,
-                        'gpio': gpio}
+                        'config': PAC address and sense resistor .py file}
         @param resultsdir: path to directory where current autotest results are
                            stored, e.g. /tmp/test_that_results/
                            results-1-test_TestName.tag/test_TestName.tag/
@@ -377,14 +375,12 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         @raises error.TestError if problem running pacman.py
         """
         super(PacTelemetryLogger, self).__init__(config, resultsdir, host)
-        required_args = ['config', 'mapping', 'gpio']
+        required_args = ['config']
         for arg in required_args:
             if arg not in config:
                 msg = 'Missing required arguments for PacTelemetryLogger: %s' % arg
                 raise error.TestError(msg)
         self._pac_config_file = config['config']
-        self._pac_mapping_file = config['mapping']
-        self._pac_gpio_file = config['gpio']
         self._resultsdir = resultsdir
         self.pac_path = self._get_pacman_install_path()
         self.pac_data_path = os.path.join(resultsdir, 'pac')
@@ -405,10 +401,8 @@ class PacTelemetryLogger(PowerTelemetryLogger):
         """Start a pacman thread with the given config, mapping, and gpio files."""
 
         self._log = open(os.path.join(self.pac_data_path, "pac.log"), "a")
-
         self._pacman_args = [
-                '--config', self._pac_config_file, '--mapping',
-                self._pac_mapping_file, '--gpio', self._pac_gpio_file,
+                '--config', self._pac_config_file,
                 '--output', self.pac_data_path
         ]
 

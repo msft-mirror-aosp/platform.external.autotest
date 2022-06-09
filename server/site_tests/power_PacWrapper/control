@@ -36,9 +36,7 @@ pip3 install pandas plotly pyftdi
 
 Sample usage:
 test_that <ip address of DUT> power_PacWrapper --args \
-'test=power_LoadTest.fast config=./boards/skyrim/skyrim_r1_pacs.py \
- mapping=./boards/skyrim/skyrim_r1_railmap.csv \
- gpio=./boards/skyrim/skyrim_r0_gpio.csv '
+'test=power_LoadTest.fast config=./boards/skyrim/skyrim_r1.py'
 
 What are the parameters:
 test: the client test to run in wrapper test; DUT power is measured during this

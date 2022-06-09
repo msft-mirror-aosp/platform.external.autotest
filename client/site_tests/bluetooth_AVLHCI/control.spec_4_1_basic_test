@@ -3,10 +3,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'Rajaa Abdallah <rajaa.abdallah@exalt.ps>'
-NAME = 'bluetooth_AVLHCI.spec_4_2_test'
+AUTHOR = (
+    'Mohammad Sabri <mohammad.kh.sabri@exalt.ps>, '
+    'Rajaa Abdallah <rajaa.abdallah@exalt.ps>')
+NAME = 'bluetooth_AVLHCI.spec_4_1_basic_test'
 ATTRIBUTES = 'suite:bluetooth_flaky'
-PURPOSE = 'Tests the Bluetooth v4.2 specification of Bluetooth AVL requirements'
+PURPOSE = 'Tests the Bluetooth v4.1 specification of Bluetooth AVL requirements'
 CRITERIA = 'all subtests passed'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
@@ -15,13 +17,10 @@ TEST_TYPE = 'client'
 PY_VERSION = 3
 
 DOC = """
-    This class can be called to run bluetooth_AVLHCI.spec_4_2_test
+    This class can be called to run bluetooth_AVLHCI.spec_4_1_basic_test
 
     This test contains these subtests:
-        test_le_data_packet_length_extension_feature()
-        test_packet_data_length()
-        test_le_link_layer_privacy_feature()
-        test_resolving_list_size()
+        test_le_dual_mode_topology_feature()
 
     """
 

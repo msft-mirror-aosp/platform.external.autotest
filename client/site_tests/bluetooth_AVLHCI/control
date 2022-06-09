@@ -26,12 +26,16 @@ DOC = """
     Currently, the batch contains the following tests:
     - spec_legacy_test
     - spec_4_0_test
-    - spec_4_1_test
-    - spec_4_2_test
+    - spec_4_1_basic_test
+    - spec_4_1_br_edr_secure_conn_test
+    - spec_4_2_basic_test
+    - spec_4_2_packet_data_len_test
+    - spec_4_2_ll_privacy_test
     - spec_5_0_test
     - spec_5_2_test
     - hci_ext_msft_test
-    _ hci_ext_aosp_test
+    - hci_ext_aosp_bqr_test
+    - hci_ext_aosp_non_bqr_test
 
     """
 

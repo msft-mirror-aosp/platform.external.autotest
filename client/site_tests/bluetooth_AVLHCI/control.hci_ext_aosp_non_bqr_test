@@ -4,10 +4,11 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Rajaa Abdallah <rajaa.abdallah@exalt.ps>'
-NAME = 'bluetooth_AVLHCI.hci_ext_aosp_test'
+NAME = 'bluetooth_AVLHCI.hci_ext_aosp_non_bqr_test'
 ATTRIBUTES = 'suite:bluetooth_flaky'
 PURPOSE = (
-'Tests the Android HCI extension part in the Bluetooth AVL requirements'
+'Tests the Android HCI extension non-BQR features'
+'in the Bluetooth AVL requirements'
 )
 CRITERIA = 'all subtests passed'
 TIME = 'SHORT'
@@ -17,10 +18,9 @@ TEST_TYPE = 'client'
 PY_VERSION = 3
 
 DOC = """
-    This class can be called to run bluetooth_AVLHCI.hci_ext_aosp_test
+    This class can be called to run bluetooth_AVLHCI.hci_ext_aosp_non_bqr_test
 
     This test contains these subtests:
-       test_aosp_quality_report()
        test_le_apcf()
        test_le_batch_scan_and_events()
        test_le_extended_set_scan_parameters()

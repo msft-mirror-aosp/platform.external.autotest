@@ -9,7 +9,7 @@ CRITERIA = """
 This test will fail if could not able to Enable/Disable a given Euicc through
 Hermes dbus daemon
 """
-ATTRIBUTES = "suite:cellular_ota_flaky"
+ATTRIBUTES = ""
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"

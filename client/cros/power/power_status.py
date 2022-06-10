@@ -1991,7 +1991,6 @@ class MeasurementLogger(threading.Thread):
         if not mtype:
             mtype = 'meas'
 
-        t = numpy.array(self.times)
         keyvals = {}
         results  = [('domain', 'mean', 'std', 'duration (s)', 'start ts',
                      'end ts')]
@@ -2007,6 +2006,10 @@ class MeasurementLogger(threading.Thread):
 
         if not self._checkpoint_logger.checkpoint_data:
             self._checkpoint_logger.checkpoint()
+
+        # We must screenshot the timestamps *after* joining the thread,
+        # otherwise its length may differ from the actual readings'.
+        t = numpy.array(self.times)
 
         for i, domain_readings in enumerate(zip(*self.readings)):
             meas = numpy.array(domain_readings)

@@ -177,6 +177,10 @@ class TradefedTest(test.test):
         self._repository = os.path.join(bundle_install_path,
                                         self._get_tradefed_base_dir())
 
+        # Newer version os xTS bundles JDK. Points to the path as the default choice.
+        os.environ['PATH'] = '%s:%s' % (os.path.join(self._repository, 'jdk', 'bin'),
+            os.environ['PATH'])
+
         # Load expected test failures to exclude them from re-runs.
         self._waivers = set()
         if load_waivers:

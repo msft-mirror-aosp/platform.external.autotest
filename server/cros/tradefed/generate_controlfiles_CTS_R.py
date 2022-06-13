@@ -178,10 +178,6 @@ CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
 ]
 
-CONFIG['USE_OLD_ADB'] = [
-        'CtsStatsdHostTestCases',
-]
-
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [
         'CtsAppSecurityHostTestCases',

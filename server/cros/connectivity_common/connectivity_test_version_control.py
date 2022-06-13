@@ -7,20 +7,41 @@
 import logging
 import os
 
+
+from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
 
 CWD = os.getcwd()
-BLUETOOTH_DIR = os.path.dirname(__file__)
+CONNECTIVITY_DIR = os.path.dirname(__file__)
 REMOTE_NAME = 'cros'
 BRANCH_NAME = 'main'
 BRANCH_NAME_FULL = os.path.join(REMOTE_NAME, BRANCH_NAME)
 HTTP_MIRROR_URL =\
         'http://commondatastorage.googleapis.com/chromeos-localmirror'
-BUNDLE_PATH = 'distfiles/bluetooth_peer_bundle'
-HTTP_BUNDLE_URL = os.path.join(HTTP_MIRROR_URL, BUNDLE_PATH)
+BT_BUNDLE_PATH = 'distfiles/bluetooth_peer_bundle'
+WIFI_BUNDLE_PATH = 'distfiles/wifi_bundle'
 LATEST_STABLE_AUTOTEST_COMMIT = 'LATEST_STABLE_AUTOTEST_COMMIT'
-HTTP_LATEST_STABLE_AUTOTEST_COMMIT_URL = os.path.join(
-        HTTP_BUNDLE_URL, LATEST_STABLE_AUTOTEST_COMMIT)
+
+
+def get_latest_stable_autotest_commit_url(phy):
+    """ Yield the correct API url depending on the connectivity type
+    as different connectivity teams may have different autotest commit pins.
+
+    @params phy: The name of the connectivity phy (e.g wifi, bluetooth).
+
+    @returns: URL string to fetch commit hash
+    """
+    generate_commit_url = lambda bundle_url: os.path.join(
+            HTTP_MIRROR_URL, bundle_url, LATEST_STABLE_AUTOTEST_COMMIT)
+
+    if phy is 'bluetooth':
+        url = generate_commit_url(BT_BUNDLE_PATH)
+    elif phy is 'wifi':
+        url = generate_commit_url(WIFI_BUNDLE_PATH)
+    else:
+        raise error.TestError('Invalid phy provided. Got {0}. Supported phys: ' \
+                    'WiFi, Bluetooth'.format(phy))
+    return url
 
 
 def check_git_tree_clean():
@@ -43,9 +64,11 @@ def check_git_tree_clean():
     return True
 
 
-def fetch_target_commit():
+def fetch_target_commit(phy):
     """ Fetch from the cloud or git to retrieve latest ToT or latest stable
     commit hash.
+
+    @params phy: The name of the connectivity phy (e.g wifi, bluetooth).
 
     @returns: current and targeted commit hash
     """
@@ -54,9 +77,8 @@ def fetch_target_commit():
     target_commit = utils.system_output(
             'git rev-parse {}'.format(BRANCH_NAME_FULL))
 
-    output = utils.run('wget -O {} {}'.format(
-            LATEST_STABLE_AUTOTEST_COMMIT,
-            HTTP_LATEST_STABLE_AUTOTEST_COMMIT_URL),
+    output = utils.run('curl {}'.format(
+            get_latest_stable_autotest_commit_url(phy)),
                        ignore_status=True)
 
     if output.exit_status != 0:
@@ -64,8 +86,7 @@ def fetch_target_commit():
         logging.info(output.stdout)
         logging.info(output.stderr)
     else:
-        with open(LATEST_STABLE_AUTOTEST_COMMIT) as commit_file:
-            target_commit = commit_file.readline().strip()
+            target_commit = output.stdout.strip()
 
     logging.info('The latest commit will be used is:\n%s', target_commit)
     return current_commit, target_commit
@@ -89,12 +110,14 @@ def test_version_setup_exit_print():
     os.chdir(CWD)
 
 
-def test_version_setup():
+def test_version_setup(phy):
     """This and above functions hope to sync the AVL test environments
     among different vendors, partners, and developers by providing an
     automatic process to fetch a commit hash of the "released"
     (or "stabled") version of the autotest directory from the cloud and
     checkout locally. No manual interaction should be expected.
+
+    @params phy: The name of the connectivity phy (e.g wifi, bluetooth).
 
     @returns: True if current commit version satisfied requirement, the
               test shall proceed. False otherwise.
@@ -102,12 +125,12 @@ def test_version_setup():
     logging.info('=======================================================\n'
                  '                    AVL Test Setup\n')
 
-    os.chdir(BLUETOOTH_DIR)
+    os.chdir(CONNECTIVITY_DIR)
     if not check_git_tree_clean():
         test_version_setup_exit_print()
         return False
 
-    current_commit, target_commit = fetch_target_commit()
+    current_commit, target_commit = fetch_target_commit(phy)
     if current_commit == target_commit:
         logging.info('Local tree is already at target autotest commit.')
         test_version_setup_exit_print()

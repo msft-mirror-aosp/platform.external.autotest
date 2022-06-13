@@ -37,6 +37,8 @@ CONFIG['INTERNAL_SUITE_NAMES'] = [
 ]
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
+# TODO(b/235915212): This doesn't run on VM yet.
+CONFIG['VM_SUITE_NAME'] = 'suite:arc-cts-vm'
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
@@ -145,6 +147,15 @@ CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
         'CtsSensorTestCases',
         'CtsCameraTestCases',
         'CtsBluetoothTestCases',
+]
+
+CONFIG['VM_MODULES'] = [
+        'CtsAccessibilityServiceTestCases',
+        'CtsFileSystemTestCases',
+        'CtsJniTestCases',
+        'CtsPdfTestCases',
+        # Intentionally add a HW test.
+        'CtsCameraTestCases',
 ]
 
 # The suite is divided based on the run-time hint in the *.config file.

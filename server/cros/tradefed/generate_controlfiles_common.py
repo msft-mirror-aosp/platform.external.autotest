@@ -378,6 +378,11 @@ def get_suites(modules, abi, is_public, camera_facing=None,
         if module in CONFIG['HARDWARE_DEPENDENT_MODULES']:
             # CTS modules to be run on all unibuild models.
             suites.add('suite:arc-cts-unibuild-hw')
+        if module in get_vm_modules() and 'VM_SUITE_NAME' in CONFIG:
+            # This logic put the whole control group (if combined) into
+            # VM_SUITE_NAME if any module is listed in get_vm_modules(). We
+            # should not do it once in production.
+            suites.add(CONFIG['VM_SUITE_NAME'])
         if abi == 'x86':
             # Handle a special builder for running all of CTS in a betty VM.
             # TODO(ihf): figure out if this builder is still alive/needed.
@@ -801,6 +806,11 @@ def get_extra_modules_dict(source_type, abi):
 def get_extra_hardware_modules_dict(is_public, abi):
     return CONFIG.get('HARDWAREONLY_EXTRA_MODULES', {})
 
+
+# TODO(fqj): come up a better way for vm modules generation.
+def get_vm_modules():
+    """Gets a list of modules for arc-cts-vm."""
+    return CONFIG.get('VM_MODULES', [])
 
 def get_extra_artifacts(modules):
     artifacts = []

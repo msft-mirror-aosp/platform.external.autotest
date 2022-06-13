@@ -16,6 +16,7 @@ suite:arc-cts-r
 suite:arc-cts-t
 suite:arc-cts-unibuild
 suite:arc-cts-unibuild-hw
+suite:arc-cts-vm
 suite:arc-data-snapshot_per-build
 suite:arc-gts
 suite:arc-gts-qual

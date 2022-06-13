@@ -11,6 +11,7 @@ from autotest_lib.client.common_lib import autotest_enum, error
 from autotest_lib.server import test
 from autotest_lib.server.cros import servo_keyboard_utils
 from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
+from autotest_lib.server.cros.faft.rpc_proxy import RPCProxy
 from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 from autotest_lib.server.cros.power import servo_charger
 from autotest_lib.server.cros.servo import chrome_ec
@@ -352,7 +353,10 @@ class power_WakeSources(test.test):
         self._dr_utils = DarkResumeUtils(host)
         self._dr_utils.stop_resuspend_on_dark_resume()
         self._ec = chrome_ec.ChromeEC(self._host.servo)
-        self._faft_config = FAFTConfig(self._host.get_platform())
+        self._faft_client = RPCProxy(host)
+        self._faft_config = FAFTConfig(
+                self._faft_client.system.get_platform_name(),
+                self._faft_client.system.get_model_name())
         self._kstr = host.get_kernel_version()
         # TODO(b/168939843) : Look at implementing AC plug/unplug w/ non-PD RPMs
         # in the lab.

@@ -125,6 +125,7 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
     def spec_4_1_basic_test(self):
         """Checks Bluetooth version 4.1 basic specification."""
         self.test_le_dual_mode_topology_feature()
+        self.test_link_layer_topology_feature()
 
     @test_wrapper('spec_4_1_br_edr_secure_conn_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_1 +
@@ -360,6 +361,13 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         self.verify_support(self.BR_SECURE_CONNECTION_FEATURE,
                             supported_features)
         return all(self.results.values())
+
+    @test_log_result
+    def test_link_layer_topology_feature(self):
+        """Checks if central and peripheral roles are supported concurrently."""
+        self.results['supported roles'] = (
+                self.bluetooth_facade.get_supported_le_roles())
+        return 'central-peripheral' in self.results['supported roles']
 
     @test_log_result
     def test_le_data_packet_length_extension_feature(self):

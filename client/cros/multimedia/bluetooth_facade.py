@@ -2611,6 +2611,13 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         """Check if adapter is discovering."""
         return self._get_adapter_properties().get('Discovering', 0) == 1
 
+    def get_supported_le_roles(self):
+        """Returns the supported LE roles of the adapter.
+
+        @return: List of str indicates the supported LE roles.
+        """
+        return self._get_adapter_properties().get('Roles', [])
+
     def get_dev_info(self):
         """Read raw HCI device information.
 

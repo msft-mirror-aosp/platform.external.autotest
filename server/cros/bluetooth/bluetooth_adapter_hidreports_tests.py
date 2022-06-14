@@ -115,7 +115,8 @@ class BluetoothAdapterHIDReportTests(
                 # and try again if it isn't.
                 if not self.ignore_failure(check_connected_method, device):
                     logging.info("device not connected after suspend_resume")
-                    self.test_connection_by_device(device)
+                    if not self.test_connection_by_device(device):
+                        return
                 run_hid_test()
 
             if reboot:
@@ -140,10 +141,11 @@ class BluetoothAdapterHIDReportTests(
 
                 time.sleep(self.HID_TEST_SLEEP_SECS)
                 if not self.platform_will_reconnect_on_boot():
-                    self.test_connection_by_device(device)
-
+                    if not self.test_connection_by_device(device):
+                        return
                 else:
-                    self.test_device_is_connected(device.address)
+                    if not self.test_device_is_connected(device.address):
+                        return
                 run_hid_test()
 
             if restart:
@@ -152,7 +154,8 @@ class BluetoothAdapterHIDReportTests(
 
                 if not self.ignore_failure(self.test_device_is_connected,
                                            device.address):
-                    self.test_connection_by_device(device)
+                    if not self.test_connection_by_device(device):
+                        return
                 run_hid_test()
 
         finally:

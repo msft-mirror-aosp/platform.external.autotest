@@ -78,6 +78,11 @@ class FirmwareError(SuspendFailure):
             ('^guybrush', r'.*'),
             # b/195336611: waive the eMMC error for the non-emmc sku
             ('^brya', r'No known Realtek reader found'),
+            # b/233972322 : Waive this error on nissa since some nissa boards
+            # are still using Ti50 0.0.12 which doesn't support reading the firmware
+            # version. This will be removed once all Ti50 stocks are updated to
+            # 0.0.15 or higher (tracked in b/236911319).
+            ('^nissa', r'Reading Ti50 firmware version is not supported'),
     ]
 
 

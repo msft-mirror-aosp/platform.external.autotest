@@ -72,8 +72,6 @@ class chromium_Telemetry(test.test):
         if self.args_dict.get('shard_index'):
             os.environ['GTEST_SHARD_INDEX'] = self.args_dict['shard_index']
 
-        self.telemetry_args.append('--upload-results')
-
         repeat = self.args_dict.get('pageset_repeat')
         if repeat is not None:
             self.telemetry_args.append('--pageset-repeat=%s' % repeat)

@@ -123,10 +123,6 @@ class power_SuspendStress(test.test):
                 if type(failure) is sys_power.KernelError: kernel += 1
                 if type(failure) is sys_power.FirmwareError: firmware += 1
                 if type(failure) is sys_power.SpuriousWakeupError: spurious += 1
-            if total == kernel + timeout:
-                raise error.TestWarn('%d non-fatal suspend failures in %d '
-                        'iterations (%d timeouts, %d kernel warnings)' %
-                        (total, iterations, timeout, kernel))
             if total == 1:
                 # just throw it as is, makes aggregation on dashboards easier
                 raise self._suspender.failures[0]

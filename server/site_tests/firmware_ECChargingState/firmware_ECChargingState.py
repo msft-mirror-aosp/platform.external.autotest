@@ -147,11 +147,6 @@ class firmware_ECChargingState(FirmwareTest):
                         sysfs_battery_state, ec_battery_info)
         elif (sysfs_battery_state == 'Not charging'
               or sysfs_battery_state == 'Discharging'):
-            if ec_battery_info['charging'] == 'Not Allowed':
-                raise error.TestFail(
-                        'Kernel reports battery %s, but charging not allowed:'
-                        ' %s',
-                        sysfs_battery_state, ec_battery_info)
             if ec_battery_info['status'] & self.STATUS_DISCHARGING == 0:
                 raise error.TestFail(
                         'Kernel reports battery %s, but actual state is %s',

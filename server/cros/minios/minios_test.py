@@ -190,9 +190,6 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         @param public_bucket: True to download stateful from a public bucket.
 
         """
-        if not self._job_repo_url:
-            raise error.TestError('No job repo url set.')
-
         statefuldev_url = self._stage_stateful(public_bucket)
         logging.info('Installing dependencies from %s', statefuldev_url)
 

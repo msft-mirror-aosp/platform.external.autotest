@@ -15,6 +15,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
 
     def run_once(self,
                  job_repo_url=None,
+                 build=None,
                  n2m=True,
                  corrupt_partitions=False,
                  network_name='Ethernet',
@@ -25,6 +26,8 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
 
         @param job_repo_url: A url pointing to the devserver where the autotest
             package for this build should be staged.
+        @param build: An optional parameter to specify the target build for the
+            update when running locally. job_repo_url will override this value.
         @param n2m: Perform recovery from ToT to current stable version.
         @param corrupt_partitions: Corrupt the kernel and rootfs partition before
             attempting recovery.
@@ -46,7 +49,10 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
 
         logging.info('Performing recovery with update url: %s', update_url)
         payload_url = self.get_payload_for_nebraska(
-                update_url, full_payload=True, public_bucket=running_at_desk)
+                job_repo_url=update_url,
+                build=build,
+                full_payload=True,
+                public_bucket=running_at_desk)
 
         logging.info("Booting into MiniOS")
         self._boot_minios()

@@ -81,6 +81,7 @@ class nbr_NetworkInterruptions(minios_test.MiniOsTest):
 
     def run_once(self,
                  job_repo_url=None,
+                 build=None,
                  network_name=minios_test.MiniOsTest._ETHERNET_LABEL,
                  network_password=None,
                  running_at_desk=False):
@@ -90,6 +91,8 @@ class nbr_NetworkInterruptions(minios_test.MiniOsTest):
 
         @param job_repo_url: A url pointing to the devserver where the autotest
             package for this build should be staged.
+        @param build: An optional parameter to specify the target build for the
+            update when running locally. job_repo_url will override this value.
         @param network_name: The name of the network to connect to for recovery.
         @param network_password: Optional password for the network.
         @param running_at_desk: indicates test is run locally from a
@@ -99,7 +102,10 @@ class nbr_NetworkInterruptions(minios_test.MiniOsTest):
         self._use_public_bucket = running_at_desk
         logging.info('Performing recovery with update url: %s', job_repo_url)
         payload_url = self.get_payload_for_nebraska(
-                job_repo_url, full_payload=True, public_bucket=running_at_desk)
+                job_repo_url=job_repo_url,
+                build=build,
+                full_payload=True,
+                public_bucket=running_at_desk)
 
         logging.info("Booting into MiniOS")
         self._boot_minios()

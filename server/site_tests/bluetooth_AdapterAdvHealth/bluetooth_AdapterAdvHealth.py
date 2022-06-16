@@ -40,17 +40,19 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                   skip_common_errors=True)
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
-        self.run_le_advertising_test(
-            self.host, advertisements_data.ADVERTISEMENTS,
-            'multi_advertising', num_iterations=1)
+        self.run_le_advertising_test(self.host,
+                                     advertisements_data.gen_advertisements(),
+                                     'multi_advertising',
+                                     num_iterations=1)
 
 
     @test_wrapper('Single LE advertising test')
     def adv_single_advertising_test(self):
         """Run all test cases for single advertisements."""
-        self.run_le_advertising_test(
-            self.host, advertisements_data.ADVERTISEMENTS,
-            'single_advertising', num_iterations=1)
+        self.run_le_advertising_test(self.host,
+                                     advertisements_data.gen_advertisements(),
+                                     'single_advertising',
+                                     num_iterations=1)
 
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
@@ -63,17 +65,19 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                   skip_common_errors=True)
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for advertisements involving suspend resume."""
-        self.run_le_advertising_test(
-            self.host, advertisements_data.ADVERTISEMENTS,
-            'suspend_resume', num_iterations=1)
+        self.run_le_advertising_test(self.host,
+                                     advertisements_data.gen_advertisements(),
+                                     'suspend_resume',
+                                     num_iterations=1)
 
 
     @test_wrapper('Reboot LE advertising test')
     def adv_reboot_advertising_test(self):
         """Run all test cases for advertisements involving reboot."""
-        self.run_le_advertising_test(
-            self.host, advertisements_data.ADVERTISEMENTS,
-            'reboot', num_iterations=1)
+        self.run_le_advertising_test(self.host,
+                                     advertisements_data.gen_advertisements(),
+                                     'reboot',
+                                     num_iterations=1)
 
 
     @test_wrapper('Advertising peer test', devices={'BLE_MOUSE':1})
@@ -89,7 +93,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
         """Verify minimal Nearby advertising requirements"""
 
         self.run_le_advertising_test(self.host,
-                                     advertisements_data.ADVERTISEMENTS,
+                                     advertisements_data.gen_advertisements(),
                                      'nearby',
                                      num_iterations=1)
 
@@ -98,7 +102,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
         """Verify broadcast advertising capability"""
 
         self.run_le_advertising_test(self.host,
-                                     advertisements_data.ADVERTISEMENTS,
+                                     advertisements_data.gen_advertisements(),
                                      'broadcast',
                                      num_iterations=1)
 

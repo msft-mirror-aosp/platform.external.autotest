@@ -312,7 +312,12 @@ class bluetooth_AdapterLEAdvertising(
 
         # We locate the advertisement by searching for the ServiceData
         # attribute we configured.
-        data_to_match = list(advertisement['ServiceData'].keys())[0]
+        data_to_match_uuid, data_to_match_data = list(
+                advertisement['ServiceData'].items())[0]
+        data_to_match_data = ''.join(
+                format(d, '02x') for d in data_to_match_data)
+        data_to_match = 'Service Data (UUID 0x{}): {}'.format(
+                data_to_match_uuid, data_to_match_data)
 
         start_time = time.time()
         found_adv = peer.FindAdvertisementWithAttributes([data_to_match],
@@ -357,7 +362,7 @@ class bluetooth_AdapterLEAdvertising(
                 return False
 
             expected_data = expected_company_info.get(UUID, None)
-            formatted_data = ''.join([format(d, 'x') for d in expected_data])
+            formatted_data = ''.join([format(d, '02x') for d in expected_data])
 
             if formatted_data != company_info.get(int(UUID, 16)):
                 logging.info('Manufacturer data %s didn\'t match expected %s',
@@ -377,7 +382,7 @@ class bluetooth_AdapterLEAdvertising(
                 return False
 
             expected_data = expected_service_data.get(UUID, None)
-            formatted_data = ''.join([format(d, 'x') for d in expected_data])
+            formatted_data = ''.join([format(d, '02x') for d in expected_data])
 
             if formatted_data != service_data.get(int(UUID, 16)):
                 logging.info('Service data %s didn\'t match expected %s',
@@ -442,15 +447,16 @@ class bluetooth_AdapterLEAdvertising(
         num_adv = 3
         self.test_reset_advertising()
 
+        advertisements = advertisements_data.gen_advertisements(0, num_adv)
+
         for i in range(0, num_adv):
-            self.bluetooth_le_facade.register_advertisement(
-                    advertisements_data.ADVERTISEMENTS[i])
+            self.bluetooth_le_facade.register_advertisement(advertisements[i])
 
         discover_time = self.get_host_discovery_time(num_adv)
 
         for i in range(0, num_adv):
-            res = self.test_peer_received_correct_adv(
-                    peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
+            res = self.test_peer_received_correct_adv(peer, advertisements[i],
+                                                      discover_time)
 
     def advertising_peer_suspend_resume_test(self, peer):
         """Verify expected advertising behavior around suspend/resume
@@ -480,14 +486,15 @@ class bluetooth_AdapterLEAdvertising(
         discover_time = self.get_host_discovery_time(num_adv)
         self.test_reset_advertising()
 
+        advertisements = advertisements_data.gen_advertisements(0, num_adv)
+
         for i in range(0, num_adv):
-            self.bluetooth_le_facade.register_advertisement(
-                    advertisements_data.ADVERTISEMENTS[i])
+            self.bluetooth_le_facade.register_advertisement(advertisements[i])
 
         # Verify they can all be discovered
         for i in range(0, num_adv):
-            res = self.test_peer_received_correct_adv(
-                    peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
+            res = self.test_peer_received_correct_adv(peer, advertisements[i],
+                                                      discover_time)
 
         # Enter suspend long enough to verify none of the registered
         # advertisements are discoverable. Give a few extra seconds in suspend
@@ -506,7 +513,7 @@ class bluetooth_AdapterLEAdvertising(
         # Verify they can not be discovered
         for i in range(0, num_adv):
             res = self.test_peer_failed_received_correct_adv(
-                    peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
+                    peer, advertisements[i], discover_time)
 
         # Wait for device to come out of suspend
         logging.debug('test_wait_for_resume(resume_timeout=%d, start_time=%s)',
@@ -518,8 +525,8 @@ class bluetooth_AdapterLEAdvertising(
 
         # Verify reception of advertisements again
         for i in range(0, num_adv):
-            res = self.test_peer_received_correct_adv(
-                    peer, advertisements_data.ADVERTISEMENTS[i], discover_time)
+            res = self.test_peer_received_correct_adv(peer, advertisements[i],
+                                                      discover_time)
 
 
     @test_case_log
@@ -1403,7 +1410,7 @@ class bluetooth_AdapterLEAdvertising(
 
         # We set a specific advertisement with fields required by Nearby
         # sharing service
-        advertisements = [advertisements_data.NEARBY_MEDIUMS_FAST_ADV]
+        advertisements = [advertisements_data.gen_nearby_mediums_fast_adv()]
 
         self.test_reset_advertising()
 
@@ -1457,7 +1464,7 @@ class bluetooth_AdapterLEAdvertising(
         orig_max_adv_interval_ms = self.DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
 
         # We set a specific advertisement that uses the 'broadcast' mode
-        advertisements = [advertisements_data.NEARBY_BROADCAST_ADV]
+        advertisements = [advertisements_data.gen_nearby_broadcast_adv()]
 
         self.test_reset_advertising()
 

@@ -128,8 +128,7 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
                    warn_on_test_retry=True,
                    cmdline_args=None,
                    hard_reboot_on_failure=False,
-                   use_jdk9=False,
-                   use_old_adb=False):
+                   use_jdk9=False):
         super(cheets_CTS_R,
               self).initialize(bundle=bundle,
                                uri=uri,
@@ -140,8 +139,7 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
                                retry_manual_tests=retry_manual_tests,
                                warn_on_test_retry=warn_on_test_retry,
                                hard_reboot_on_failure=hard_reboot_on_failure,
-                               use_jdk9=use_jdk9,
-                               use_old_adb=use_old_adb)
+                               use_jdk9=use_jdk9)
         if camera_facing:
             self.initialize_camerabox(camera_facing, cmdline_args)
 

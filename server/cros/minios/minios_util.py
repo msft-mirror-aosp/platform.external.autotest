@@ -81,7 +81,7 @@ class NebraskaService:
         payload_props_url = payload_url + '.json'
         _, _, file_name = payload_props_url.rpartition('/')
         try:
-            response = json.loads(requests.get(payload_props_url).text)
+            response = json.loads(self._get_url(payload_props_url))
             # Override existing keys if any.
             for k, v in six.iteritems(kwargs):
                 # Don't set default None values. We don't want to override good
@@ -91,8 +91,7 @@ class NebraskaService:
             self._write_remote_file(os.path.join(target_dir, file_name),
                                     json.dumps(response))
 
-        except (requests.exceptions.RequestException, IOError,
-                ValueError) as err:
+        except (IOError, ValueError) as err:
             raise error.TestError(
                     'Failed to get update payload properties: %s with error: %s'
                     % (payload_props_url, err))
@@ -149,6 +148,26 @@ class NebraskaService:
         self._host.run(['mkdir', '-p', '-m', permission, remote_dir])
         if owner:
             self._host.run('chown', args=(owner, remote_dir))
+
+    def _get_url(self, url):
+        """
+        Get the payload from a URL. Attempts to do this using requests and falls
+        back to using curl on the DUT to handle the case where a test is being
+        run remotely but targeting lab infrastructure.
+
+        @param url: The url we want to fetch.
+
+        @return: The textual payload at the url.
+
+        """
+        try:
+            return requests.get(url).text
+        except (requests.exceptions.RequestException) as err:
+            logging.warning(
+                    'Failed to get textual payload from %s with error: %s',
+                    url, err)
+            # Try getting url via curl running on the DUT.
+            return self._host.run_output(['curl', url])
 
     def _write_remote_file(self,
                            filepath,

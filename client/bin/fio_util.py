@@ -425,7 +425,9 @@ def fio_runner(test, job, env_vars,
         size = utils.get_disk_size_gb(diskname)
         perfdb_name = '%s_%dG' % (model, size)
     else:
-        perfdb_name = filename.replace('/', '_')
+        # When a regular file is used, its location is not important.
+        # The type of test (crypto/tmpfs) is.
+        perfdb_name = 'file'
 
     if name_prefix:
         perfdb_name = name_prefix + '_' + perfdb_name

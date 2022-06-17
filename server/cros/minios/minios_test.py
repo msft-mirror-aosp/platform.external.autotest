@@ -82,7 +82,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         self._servo = host.servo
         self._servo.initialize_dut()
 
-    def warmup(self, running_at_desk=False):
+    def warmup(self, running_at_desk=False, skip_provisioning=False):
         """
         Setup up minios autotests.
 
@@ -94,8 +94,15 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
         @param running_at_desk: indicates test is run locally from a
             workstation.
+        @param skip_provisioning: indicates test is run locally and provisioning
+            of inactive partition should be skipped.
 
         """
+
+        if skip_provisioning:
+            logging.warning('Provisioning skipped.')
+            return super(MiniOsTest, self).warmup()
+
         build_name = self._get_release_builder_path()
 
         # Install the matching build with quick provision.
@@ -112,7 +119,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
                         build_name, self._host.hostname)
             update_url = self._autotest_devserver.get_update_url(build_name)
 
-        logging.info('Installing source image with update url: %s', update_url)
+        logging.info('Provisioning inactive partition with update url: %s',
+                     update_url)
         provisioner.ChromiumOSProvisioner(
                 update_url,
                 host=self._host,

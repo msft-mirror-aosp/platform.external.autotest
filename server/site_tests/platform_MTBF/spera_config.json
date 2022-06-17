@@ -8,10 +8,22 @@
       "attributes": ["basic"]
     },
     {
+      "name": "meet-basic-2-lacros",
+      "tool": "tast",
+      "test_expr": "ui.GoogleMeetCUJ.basic_lacros_two",
+      "attributes": ["basic", "lacros"]
+    },
+    {
       "name": "meet-basic-small",
       "tool": "tast",
       "test_expr": "ui.GoogleMeetCUJ.basic_small",
       "attributes": ["basic"]
+    },
+    {
+      "name": "meet-basic-small-lacros",
+      "tool": "tast",
+      "test_expr": "ui.GoogleMeetCUJ.basic_lacros_small",
+      "attributes": ["basic", "lacros"]
     },
     {
       "name": "meet-basic-large",
@@ -20,10 +32,22 @@
       "attributes": ["basic"]
     },
     {
+      "name": "meet-basic-large-lacros",
+      "tool": "tast",
+      "test_expr": "ui.GoogleMeetCUJ.basic_lacros_large",
+      "attributes": ["basic", "lacros"]
+    },
+    {
       "name": "meet-basic-class",
       "tool": "tast",
       "test_expr": "ui.GoogleMeetCUJ.basic_class",
       "attributes": ["basic"]
+    },
+    {
+      "name": "meet-basic-class-lacros",
+      "tool": "tast",
+      "test_expr": "ui.GoogleMeetCUJ.basic_lacros_class",
+      "attributes": ["basic", "lacros"]
     },
     {
       "name": "meet-plus-large",
@@ -53,10 +77,23 @@
       "attributes": ["basic"]
     },
     {
+      "name": "tabswitch-basic-noproxy-lacros",
+      "tool": "tast",
+      "test_expr": "ui.TabSwitchCUJ2.basic_lacros_noproxy",
+      "attributes": ["basic", "lacros"]
+    },
+    {
       "name": "tabswitch-plus-noproxy",
       "tool": "tast",
       "test_expr": "ui.TabSwitchCUJ2.plus_noproxy",
       "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "tabswitch-plus-noproxy-lacros",
+      "tool": "tast",
+      "test_expr": "ui.TabSwitchCUJ2.plus_lacros_noproxy",
+      "attributes": ["plus", "lacros"],
       "deps": ["plus"]
     },
     {
@@ -67,10 +104,23 @@
       "deps": ["premium"]
     },
     {
+      "name": "tabswitch-premium-noproxy-lacros",
+      "tool": "tast",
+      "test_expr": "ui.TabSwitchCUJ2.premium_lacros_noproxy",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
       "name": "quick-check-unlock",
       "tool": "tast",
       "test_expr": "ui.QuickCheckCUJ2.basic_unlock",
       "attributes": ["basic"]
+    },
+    {
+      "name": "quick-check-unlock-lacros",
+      "tool": "tast",
+      "test_expr": "ui.QuickCheckCUJ2.basic_lacros_unlock",
+      "attributes": ["basic", "lacros"]
     },
     {
       "name": "quick-check-wakeup",
@@ -79,10 +129,22 @@
       "attributes": ["basic"]
     },
     {
+      "name": "quick-check-wakeup-lacros",
+      "tool": "tast",
+      "test_expr": "ui.QuickCheckCUJ2.basic_lacros_wakeup",
+      "attributes": ["basic", "lacros"]
+    },
+    {
       "name": "video-basic-youtube-web",
       "tool": "tast",
       "test_expr": "ui.VideoCUJ2.basic_youtube_web",
       "attributes": ["basic"]
+    },
+    {
+      "name": "video-basic-youtube-web-lacros",
+      "tool": "tast",
+      "test_expr": "ui.VideoCUJ2.basic_lacros_youtube_web",
+      "attributes": ["basic", "lacros"]
     },
     {
       "name": "video-premium-youtube-web",
@@ -92,10 +154,23 @@
       "deps": ["premium"]
     },
     {
+      "name": "video-premium-youtube-web-lacros",
+      "tool": "tast",
+      "test_expr": "ui.VideoCUJ2.premium_lacros_youtube_web",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
       "name": "video-basic-youtube-app",
       "tool": "tast",
       "test_expr": "ui.VideoCUJ2.basic_youtube_app",
       "attributes": ["basic"]
+    },
+    {
+      "name": "video-basic-youtube-app-lacros",
+      "tool": "tast",
+      "test_expr": "ui.VideoCUJ2.basic_lacros_youtube_app",
+      "attributes": ["basic", "lacros"]
     },
     {
       "name": "video-premium-youtube-app",
@@ -105,16 +180,36 @@
       "deps": ["premium"]
     },
     {
+      "name": "video-premium-youtube-app-lacros",
+      "tool": "tast",
+      "test_expr": "ui.VideoCUJ2.premium_lacros_youtube_app",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
       "name": "everyday-basic-ytmusic",
       "tool": "tast",
       "test_expr": "ui.EverydayMultiTaskingCUJ.basic_ytmusic",
       "attributes": ["basic"]
     },
     {
+      "name": "everyday-basic-ytmusic-lacros",
+      "tool": "tast",
+      "test_expr": "ui.EverydayMultiTaskingCUJ.basic_lacros_ytmusic",
+      "attributes": ["basic", "lacros"]
+    },
+    {
       "name": "everyday-plus-ytmusic",
       "tool": "tast",
       "test_expr": "ui.EverydayMultiTaskingCUJ.plus_ytmusic",
       "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "everyday-plus-ytmusic-lacros",
+      "tool": "tast",
+      "test_expr": "ui.EverydayMultiTaskingCUJ.plus_lacros_ytmusic",
+      "attributes": ["plus", "lacros"],
       "deps": ["plus"]
     },
     {
@@ -129,6 +224,13 @@
       "tool": "tast",
       "test_expr": "ui.ExtendedDisplayCUJ.plus_video_youtube_web",
       "attributes": ["plus"],
+      "deps": ["external_display", "plus"]
+    },
+    {
+      "name": "extended-display-video-lacros",
+      "tool": "tast",
+      "test_expr": "ui.ExtendedDisplayCUJ.plus_lacros_video_youtube_web",
+      "attributes": ["plus", "lacros"],
       "deps": ["external_display", "plus"]
     },
     {
@@ -295,6 +397,28 @@
         {"test": "everyday-basic-ytmusic", "repeats": 10},
         {"test": "everyday-plus-ytmusic", "repeats": 10},
         {"test": "extended-display-meet", "repeats": 10}
+      ]
+    },
+    {
+      "name": "performance_cuj_lacros",
+      "args_file": "perf_cuj.config",
+      "tests": [
+        {"test": "meet-basic-2-lacros", "repeats": 2},
+        {"test": "meet-basic-small-lacros", "repeats": 2},
+        {"test": "meet-basic-large-lacros", "repeats": 2},
+        {"test": "meet-basic-class-lacros", "repeats": 2},
+        {"test": "tabswitch-basic-noproxy-lacros", "repeats": 2},
+        {"test": "tabswitch-plus-noproxy-lacros", "repeats": 2},
+        {"test": "tabswitch-premium-noproxy-lacros", "repeats": 2},
+        {"test": "quick-check-unlock-lacros", "repeats": 2},
+        {"test": "quick-check-wakeup-lacros", "repeats": 2},
+        {"test": "video-basic-youtube-web-lacros", "repeats": 2},
+        {"test": "video-premium-youtube-web-lacros", "repeats": 2},
+        {"test": "video-basic-youtube-app-lacros", "repeats": 2},
+        {"test": "video-premium-youtube-app-lacros", "repeats": 2},
+        {"test": "everyday-basic-ytmusic-lacros", "repeats": 2},
+        {"test": "everyday-plus-ytmusic-lacros", "repeats": 2},
+        {"test": "extended-display-video-lacros", "repeats": 2}
       ]
     },
     {

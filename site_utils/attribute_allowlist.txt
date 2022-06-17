@@ -291,6 +291,7 @@ suite:partners
 suite:performance_cuj
 suite:performance_cuj_benchmarks
 suite:performance_cuj_experimental
+suite:performance_cuj_lacros
 suite:performance_cuj_quick
 suite:platform_internal_display
 suite:platform_test

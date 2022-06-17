@@ -15,6 +15,7 @@ import logging
 import os
 import struct
 import tempfile
+from typing import Optional
 
 import six
 
@@ -182,7 +183,6 @@ class FlashromHandler(object):
         @type dev_key_path: str
         @type target: str
         """
-        self.fum = None
         self.image = ''
         self.os_if = os_if
         self.initialized = False
@@ -523,7 +523,8 @@ class FlashromHandler(object):
                     'Attempt at using an uninitialized object')
         self.fum.write_whole(self.image)
 
-    def write_partial(self, subsection_name, blob=None, write_through=True):
+    def write_partial(self, subsection_name,
+                      blob: Optional[bytes] = None, write_through=True):
         """Write the subsection part into the flashrom.
 
         One can pass a blob to update the data of the subsection before write
@@ -736,7 +737,7 @@ class FlashromHandler(object):
         subsection_name = self.fv_sections[section].get_sig_name()
         self.write_partial(subsection_name, blob, write_through)
 
-    def set_section_fwid(self, section, blob, write_through=False):
+    def set_section_fwid(self, section, blob:bytes, write_through=False):
         """Put the supplied blob to the fwid of the firmware section"""
         subsection_name = self.fv_sections[section].get_fwid_name()
         self.write_partial(subsection_name, blob, write_through)

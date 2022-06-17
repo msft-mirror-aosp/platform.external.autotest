@@ -260,7 +260,7 @@ class flashrom_util(object):
             blob = blob + ((align - 1) - (len(blob) - 1) % align) * pad
         return blob
 
-    def put_section(self, base_image, section_name, data):
+    def put_section(self, base_image, section_name, data:bytes):
         """
         Updates a section of data based on section_name in firmware_layout.
         Raises error if unknown section.

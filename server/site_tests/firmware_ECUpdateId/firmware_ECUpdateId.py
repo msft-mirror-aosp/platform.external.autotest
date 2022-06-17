@@ -72,12 +72,12 @@ class firmware_ECUpdateId(FirmwareTest):
         logging.info("Current EC hash: %s", ec_hash)
         return ec_hash
 
-    def active_hash_checker(self, expected_hash):
+    def active_hash_checker(self, expected_hash: str):
         """Check if the current EC hash equals to the given one."""
         ec_hash = self.get_active_hash()
         result = ec_hash == expected_hash
         if not result:
-            logging.info("Expected EC hash %s but now %s",
+            logging.info("Expected EC hash %r but now %r",
                          expected_hash, ec_hash)
         return result
 

@@ -10,7 +10,6 @@ These will be exposed via an xmlrpc server running on the DUT.
 
 from __future__ import print_function
 
-import binascii
 from six.moves import http_client as httplib
 import logging
 import os
@@ -44,7 +43,7 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
     The method is then dispatched to a Servicer class.
     """
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """Initialize the servicer for each category.
 
         @type os_if: os_interface.OSInterface
@@ -203,7 +202,7 @@ class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 class BiosServicer(object):
     """Class to service all BIOS RPCs"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """
         @type os_if: os_interface.OSInterface
         """
@@ -417,7 +416,7 @@ class BiosServicer(object):
 class CgptServicer(object):
     """Class to service all CGPT RPCs"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """
         @type os_if: os_interface.OSInterface
         """
@@ -454,7 +453,7 @@ class CgptServicer(object):
 class EcServicer(object):
     """Class to service all EC RPCs"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """
         @type os_if: os_interface.OSInterface
         """
@@ -621,7 +620,7 @@ class EcServicer(object):
 class KernelServicer(object):
     """Class to service all Kernel RPCs"""
 
-    def __init__(self, os_if, is_minios=False):
+    def __init__(self, os_if: os_interface.OSInterface, is_minios=False):
         """
         @type os_if: os_interface.OSInterface
         @type is_minios: True if it is a MiniOS kernel; otherwise, False.
@@ -730,7 +729,7 @@ class KernelServicer(object):
 class RootfsServicer(object):
     """Class to service all RootFS RPCs"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """
         @type os_if: os_interface.OSInterface
         """
@@ -779,7 +778,7 @@ class RootfsServicer(object):
 class RpcSettingsServicer(object):
     """Class to service RPCs for settings of the RPC server itself"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """
         @type os_if: os_interface.OSInterface
         """
@@ -797,7 +796,7 @@ class RpcSettingsServicer(object):
 class SystemServicer(object):
     """Class to service all System RPCs"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """
         @type os_if: os_interface.OSInterface
         """
@@ -1027,7 +1026,7 @@ class SystemServicer(object):
 class TpmServicer(object):
     """Class to service all TPM RPCs"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """
         @type os_if: os_interface.OSInterface
         """
@@ -1080,7 +1079,7 @@ class TpmServicer(object):
 class UpdaterServicer(object):
     """Class to service all Updater RPCs"""
 
-    def __init__(self, os_if):
+    def __init__(self, os_if: os_interface.OSInterface):
         """
         @type os_if: os_interface.OSInterface
         """
@@ -1142,7 +1141,7 @@ class UpdaterServicer(object):
         """Return the hex string of the EC hash."""
         blob = self._updater.get_ec_hash()
         # Format it to a hex string
-        return binascii.hexlify(blob)
+        return bytearray.hex(blob)
 
     def resign_firmware(self, version):
         """Resign firmware with version.

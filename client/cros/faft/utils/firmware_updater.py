@@ -312,7 +312,7 @@ class FirmwareUpdater(object):
         # Modify the EC FWID and resign
         fwid = fwid[:-1] + '~'
         ec = self._get_handler('ec')
-        ec.set_section_fwid('rw', fwid)
+        ec.set_section_fwid('rw', fwid.encode('utf-8'))
         ec.resign_ec_rwsig()
 
         # Replace ecrw to the new one

@@ -82,7 +82,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         self._servo = host.servo
         self._servo.initialize_dut()
 
-    def warmup(self):
+    def warmup(self, running_at_desk=False):
         """
         Setup up minios autotests.
 
@@ -91,17 +91,33 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         tests in a test suite, we provision and run the current installed
         version on the inactive partition to ensure the next test runs
         with the correct version of ChromeOS.
+
+        @param running_at_desk: indicates test is run locally from a
+            workstation.
+
         """
         build_name = self._get_release_builder_path()
+
         # Install the matching build with quick provision.
-        if not self._autotest_devserver:
-            self._autotest_devserver = dev_server.ImageServer.resolve(
-                    build_name, self._host.hostname)
-        update_url = self._autotest_devserver.get_update_url(build_name)
+        if running_at_desk:
+            self._copy_quick_provision_to_dut()
+            # Copy from gs://chromeos-image-archive instead of
+            # gs://chromeos-release because of the format of build_name.
+            # Ex: octopus-release/R102-14650.0.0
+            update_url = self._get_provision_url_on_public_bucket(
+                    build_name, is_release_bucket=False)
+        else:
+            if not self._autotest_devserver:
+                self._autotest_devserver = dev_server.ImageServer.resolve(
+                        build_name, self._host.hostname)
+            update_url = self._autotest_devserver.get_update_url(build_name)
+
         logging.info('Installing source image with update url: %s', update_url)
         provisioner.ChromiumOSProvisioner(
-                update_url, host=self._host,
-                is_release_bucket=True).run_provision()
+                update_url,
+                host=self._host,
+                is_release_bucket=True,
+                public_bucket=running_at_desk).run_provision()
         super(MiniOsTest, self).warmup()
 
     def cleanup(self):
@@ -262,6 +278,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         """
         self._host.test_wait_for_shutdown(self._MINIOS_SHUTDOWN_TIMEOUT)
         self._host.test_wait_for_boot(old_boot_id)
+        self._should_restore_stateful = True
 
     def _drop_download_traffic(self):
         """

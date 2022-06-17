@@ -987,7 +987,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('Public stateful URL: %s', url)
         return url
 
-    def _get_provision_url_on_public_bucket(self, release_path):
+    def _get_provision_url_on_public_bucket(self,
+                                            release_path,
+                                            is_release_bucket=True):
         """
         Copy the necessary artifacts for quick-provision to the public bucket
         and return the URL pointing to them.
@@ -996,16 +998,23 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         version on the DUT (such as m2n tests) without requiring lab cache
         server SSH access.
 
-        @param release_path: path to the build artifacts in
-            gs://chromeos-releases. Ex: dev-channel/asurada/14515.0.0. The
+        @param release_path: path to the build artifacts in either
+            gs://chromeos-releases or gs://chromeos-image-archive.
+            Ex: dev-channel/asurada/14515.0.0 for gs://chromeos-releases. The
             output of _get_latest_serving_stable_build matches this format.
+            Ex: asurada-release/14515.0.0 for gs://chromeos-image-archive. The
+            output of _get_release_builder_path matches this format.
+        @param is_release_bucket: If True (default), use release bucket
+            gs://chromeos-releases else use archive bucket gs://chromeos-image-archive.
 
         """
         # We have a flat directory structure in the public directory. Therefore
         # we need to disambiguate the path to the provision artifacts.
         new_gs_dir = os.path.join(self._CELLULAR_BUCKET, 'provision',
                                   release_path)
-        src_gs_dir = os.path.join('gs://chromeos-releases', release_path)
+        src_gs_bucket = ('gs://%s' % ('chromeos-releases' if is_release_bucket
+                                      else 'chromeos-image-archive'))
+        src_gs_dir = os.path.join(src_gs_bucket, release_path)
         provision_artifacts = [
                 self._STATEFUL_ARCHIVE_NAME, self._ROOTFS_ARCHIVE_NAME,
                 self._KERNEL_ARCHIVE_NAME

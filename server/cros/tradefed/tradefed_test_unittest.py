@@ -282,3 +282,34 @@ class TradefedTestTest(unittest.TestCase):
         mock_add_path.assert_called_with('/path/to/local')
 
         self.assertEqual(self.tradefed._install_paths, ['/path/to/local'])
+
+    @patch('autotest_lib.server.utils.run')
+    @patch('os.renames')
+    @patch('tempfile.mkdtemp')
+    @patch('os.path.isdir')
+    def test_unzip_no_password(self, mock_isdir, mock_mkdtemp, mock_renames,
+                               mock_run):
+        mock_isdir.return_value = False
+        mock_mkdtemp.return_value = '/a/temp/dir'
+
+        self.tradefed._unzip('/path/to/archive.zip')
+
+        mock_run.assert_called_with('unzip',
+                                    args=('-d', '/a/temp/dir',
+                                          '/path/to/archive.zip'))
+
+    @patch('autotest_lib.server.utils.run')
+    @patch('os.renames')
+    @patch('tempfile.mkdtemp')
+    @patch('os.path.isdir')
+    def test_unzip_with_password(self, mock_isdir, mock_mkdtemp, mock_renames,
+                                 mock_run):
+        mock_isdir.return_value = False
+        mock_mkdtemp.return_value = '/a/temp/dir'
+
+        self.tradefed._unzip('/path/to/archive.zip', 'extraction_password!!')
+
+        mock_run.assert_called_with('unzip',
+                                    args=('-p', 'extraction_password!!', '-d',
+                                          '/a/temp/dir',
+                                          '/path/to/archive.zip'))

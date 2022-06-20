@@ -47,6 +47,19 @@ from autotest_lib.server.autotest import OFFLOAD_ENVVAR
 # TODO(kinaba): Move to tradefed_utils together with the setup/cleanup methods.
 MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
 
+class BundleSpecification:
+    """Class containing xTS bundle information."""
+
+    def __init__(self, uri, password):
+        """Construct BundleSpecification
+
+        Args:
+            uri is the uri of the bundle.
+            password is the password for extracting the bundle. Empty string means
+                no password.
+        """
+        self.uri = uri
+        self.password = password
 
 class TradefedTest(test.test):
     """Base class to prepare DUT to run tests via tradefed."""
@@ -168,8 +181,9 @@ class TradefedTest(test.test):
         if uri == 'DEV' and self._get_release_branch_number() >= 3:
             uri = 'LATEST'
         # Install the tradefed bundle.
-        bundle_install_path = self._install_bundle(
-                self._get_bundle_url(uri, bundle))
+        bundle_spec = self._get_bundle_specification(uri, bundle)
+        bundle_install_path = self._install_bundle(bundle_spec.uri,
+                                                   bundle_spec.password)
         self._repository = os.path.join(bundle_install_path,
                                         self._get_tradefed_base_dir())
 
@@ -493,7 +507,7 @@ class TradefedTest(test.test):
             if not (e.errno == errno.EEXIST and os.path.isdir(path)):
                 raise
 
-    def _unzip(self, filename):
+    def _unzip(self, filename, password=''):
         """Unzip the file.
 
         The destination directory name will be the stem of filename.
@@ -502,6 +516,7 @@ class TradefedTest(test.test):
         If here is already a directory at the stem, that directory will be used.
 
         @param filename: Path to the zip archive.
+        @param password: Optional password for unarchiving.
         @return Path to the inflated directory.
         """
         destination = os.path.splitext(filename)[0]
@@ -512,7 +527,13 @@ class TradefedTest(test.test):
         tmp = tempfile.mkdtemp(dir=os.path.dirname(filename))
         logging.info('Begin unzip %s', filename)
         try:
-            utils.run('unzip', args=('-d', tmp, filename))
+            unzip_args = ('-d', tmp, filename)
+            if password:
+                # It is ok to pass a password even if it is not actually
+                # password protected. So this shouldn't fail for unencrypted
+                # zips.
+                unzip_args = ('-p', password) + unzip_args
+            utils.run('unzip', args=unzip_args)
         except:
             logging.error('Failed unzip, cleaning up.')
             # Clean up just created files.
@@ -740,10 +761,11 @@ class TradefedTest(test.test):
             shutil.copytree(cache_path, instance_path)
         return instance_path
 
-    def _install_bundle(self, gs_uri):
+    def _install_bundle(self, gs_uri, password=''):
         """Downloads a zip file, installs it and returns the local path.
 
         @param gs_uri: GS bucket that contains the necessary files.
+        @param password: Optional password for unarchiving the bundle.
         """
         if not gs_uri.endswith('.zip'):
             raise error.TestFail('Error: Not a .zip file %s.', gs_uri)
@@ -756,7 +778,7 @@ class TradefedTest(test.test):
             cache_path = self._download_to_cache(gs_uri)
             # Unzip is lazy as well (but cache_unzipped guaranteed to
             # exist).
-            cache_unzipped = self._unzip(cache_path)
+            cache_unzipped = self._unzip(cache_path, password)
             # To save space we delete the original zip file. This works as
             # _download only checks existence of the cache directory for
             # lazily skipping download, and unzip itself will bail if the
@@ -1337,8 +1359,19 @@ class TradefedTest(test.test):
             lastmatch = (session, passed, failed, done == total)
         return lastmatch
 
-    def _get_bundle_url(self, uri, bundle):
+    def _get_bundle_specification(self, uri, bundle):
         # TODO: Replace with NotImplementedError once all subclasses are done
+        """Get the bundle information.
+
+        Override this method in the subclass to specify other fields
+        e.g. password.
+        """
+        return self.BundleSpecification(self._get_bundle_url(uri, bundle), password='')
+
+    # _get_bundle_url is deprecated in favor of _get_bundle_specification().
+    # Override it instead.
+    # TODO(b/243729773): Remove this function.
+    def _get_bundle_url(self, uri, bundle):
         return self._get_latest_bundle_url(bundle) if uri == 'LATEST' else (
                 uri or self._get_default_bundle_url(bundle))
 

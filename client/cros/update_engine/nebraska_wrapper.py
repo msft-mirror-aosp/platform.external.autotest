@@ -12,13 +12,14 @@ import json
 import logging
 import os
 import requests
+import shutil
+import subprocess
 import six
 import six.moves.urllib.parse
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros import upstart
 
 
 # JSON attributes used in payload properties. Look at nebraska.py for more
@@ -31,6 +32,9 @@ KEY_SHA256='sha256_hex'
 NEBRASKA_DIR = '/usr/local/nebraska'
 NEBRASKA_CONFIG = os.path.join(NEBRASKA_DIR, 'config.json')
 NEBRASKA_METADATA_DIR = os.path.join(NEBRASKA_DIR, 'metadata')
+
+# Nebraska log file name.
+NEBRASKA_LOG = 'nebraska.log'
 
 
 class NebraskaWrapper(object):
@@ -51,7 +55,9 @@ class NebraskaWrapper(object):
         """
         Initializes the NebraskaWrapper module.
 
-        @param log_dir: The directory to write nebraska.log into.
+        @param log_dir: The directory to write nebraska.log into. Note that
+                        this directory is on the DUT, even if starting nebraska
+                        remotely.
         @param host: The DUT to run nebraska on, if creating a NebraskaWrapper
                      from the server side.
         @param payload_url: The payload that will be returned in responses for
@@ -73,6 +79,11 @@ class NebraskaWrapper(object):
         self._log_dir = log_dir
         self._host = host
         self._run = self._host.run if self._host else utils.run
+
+        # These are used to keep track of the currently-running nebraska
+        # process so we can stop it at the end of tests.
+        self._nebraska_server = None
+        self._nebraska_pid = None
 
         # _update_metadata_dir is the directory for storing the json metadata
         # files associated with the payloads.
@@ -146,17 +157,25 @@ class NebraskaWrapper(object):
 
         """
         try:
-            self.create_startup_config(**kwargs)
             if self._host:
                 logging.info('Starting nebraska remotely')
-                self._host.upstart_restart('nebraska')
-                self._host.wait_for_service('nebraska')
+                self._nebraska_pid = self._host.run_background('nebraska.py')
             else:
                 logging.info('Starting nebraska')
-                upstart.restart_job('nebraska')
-                utils.poll_for_condition(lambda: upstart.is_running('nebraska')
-                                         )
-
+                cmd = ['nebraska.py']
+                if self._log_dir:
+                    cmd += [
+                            '--log-file',
+                            os.path.join(self._log_dir, NEBRASKA_LOG)
+                    ]
+                self._nebraska_server = subprocess.Popen(
+                        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            # Wait for port file to appear.
+            port_file = '/run/nebraska/port'
+            utils.poll_for_condition(lambda: self._run(
+                    ['test', '-f', port_file], timeout=5, ignore_status=True).
+                                     exit_status == 0,
+                                     timeout=10)
             self._port = int(self._run(['cat', '/run/nebraska/port']).stdout)
 
             # Send a health_check request to it to make sure its working.
@@ -164,19 +183,32 @@ class NebraskaWrapper(object):
 
             self._run(["curl", "GET", url])
 
+            self.update_config(
+                    update_metadata=self._update_metadata_dir,
+                    update_payloads_address=self._update_payloads_address,
+                    install_metadata=self._install_metadata_dir,
+                    install_payloads_address=self._install_payloads_address)
+
         except Exception as e:
             raise error.TestError('Failed to start Nebraska %s' % e)
 
     def stop(self):
         """Stops the Nebraska server."""
         try:
-            if self._host:
-                self._host.upstart_stop('nebraska')
-            else:
-                upstart.stop_job('nebraska')
+            if self._host and self._nebraska_pid:
+                self._run(['kill', self._nebraska_pid])
+            elif self._nebraska_server:
+                self._nebraska_server.terminate()
+                stdout, _ = self._nebraska_server.communicate()
+                logging.info('Stopping nebraska.py with stdout %s', stdout)
+                self._nebraska_server.wait()
 
         except Exception as e:
             logging.error('Failed to stop Nebraska. Ignoring...')
+
+        finally:
+            self._nebraska_pid = None
+            self._nebraska_server = None
 
     def get_update_url(self, **kwargs):
         """
@@ -238,7 +270,14 @@ class NebraskaWrapper(object):
 
         """
         url = 'http://127.0.0.1:%d/update_config' % self._port
-        self._run(["curl", "-d", json.dumps(kwargs), "-X", "POST", url])
+        data = json.dumps(kwargs)
+        # For some reason the server-side `run` command doesn't properly wrap
+        # the JSON string in quotes, so add them here to avoid any issues with
+        # formatting.
+        if self._host:
+            data = '\'%s\'' % data
+
+        self._run(['curl', '-d', data, '-X', 'POST', url])
 
     def _create_nebraska_dir(self, metadata=True):
         """
@@ -264,8 +303,6 @@ class NebraskaWrapper(object):
 
         """
         conf = {}
-        if self._log_dir:
-            conf['log-file'] = os.path.join(self._log_dir, 'nebraska.log')
         if self._update_metadata_dir:
             conf['update_metadata'] = self._update_metadata_dir
         if self._update_payloads_address:
@@ -334,3 +371,23 @@ class NebraskaWrapper(object):
         else:
             with open(filepath, 'w') as fp:
                 fp.write(content)
+
+    def save_log(self, out_dir):
+        """
+        Save the nebraska log file. Call this explicitly when starting nebraska
+        remotely from a server test, or when starting nebraska from a client
+        test if self._log_dir is not set to the autotest result directory.
+
+        @param out_dir: directory to save the logs to.
+
+        """
+        target = os.path.join(out_dir, NEBRASKA_LOG)
+        if self._log_dir:
+            source = os.path.join(self._log_dir, NEBRASKA_LOG)
+        else:
+            source = os.path.join('/tmp', NEBRASKA_LOG)
+
+        if self._host:
+            self._host.get_file(source, target)
+        else:
+            shutil.copyfile(source, target)

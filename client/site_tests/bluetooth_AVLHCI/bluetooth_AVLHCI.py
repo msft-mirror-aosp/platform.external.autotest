@@ -80,6 +80,9 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
             'Realtek-RTL8852A-USB'
     ]
 
+    CHIPSETS_UNSUPPORT_LLT_QUIRK = [
+            'Intel-AC7265', 'QCA-6174A-5-USB', 'QCA-6174A-3-UART'
+    ]
     CHIPSETS_UNSUPPORT_BR_EDR_SECURE_CONNECTION = [
             'Intel-AC7265', 'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART'
     ]
@@ -87,11 +90,16 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
             'QCA-6174A-3-UART', 'QCA-6174A-5-USB'
     ]
     CHIPSETS_UNSUPPORT_LL_PRIVACY = ['Realtek-RTL8822C-USB']
+    CHIPSETS_UNSUPPORT_ADV_SETS_NUMBER = [
+            'Intel-AC9260', 'Intel-AC9560', 'Realtek-RTL8822C-USB',
+            'Realtek-RTL8822C-UART'
+    ]
     # These chipsets may still support AOSP Get Vendor Cap command as well as
     # BQR feature. They just don't support the features except BQR.
     CHIPSETS_SUPPORT_BQR_ONLY = [
             'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
-            'Realtek-RTL8852A-USB'
+            'Realtek-RTL8852A-USB', 'Mediatek-MTK7921-USB',
+            'Mediatek-MTK7921-SDIO'
     ]
 
     def initialize(self):
@@ -125,6 +133,12 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
     def spec_4_1_basic_test(self):
         """Checks Bluetooth version 4.1 basic specification."""
         self.test_le_dual_mode_topology_feature()
+
+    @test_wrapper('spec_4_1_llt_test',
+                  skip_chipsets=CHIPSETS_UNSUPPORT_4_1 +
+                  CHIPSETS_UNSUPPORT_LLT_QUIRK)
+    def spec_4_1_llt_test(self):
+        """Checks Bluetooth version 4.1 llt feature."""
         self.test_link_layer_topology_feature()
 
     @test_wrapper('spec_4_1_br_edr_secure_conn_test',
@@ -154,12 +168,18 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         self.test_le_link_layer_privacy_feature()
         self.test_resolving_list_size()
 
-    @test_wrapper('spec_5_0_test', skip_chipsets=CHIPSETS_UNSUPPORT_5_0)
-    def spec_5_0_test(self):
-        """Check Bluetooth version 5.0 specification."""
+    @test_wrapper('spec_5_0_basic_test', skip_chipsets=CHIPSETS_UNSUPPORT_5_0)
+    def spec_5_0_basic_test(self):
+        """Check Bluetooth version 5.0 basic specification."""
         self.test_le_extended_advertising_feature()
-        self.test_advertisement_sets_number()
         self.test_le_two_mega_physical_channel_feature()
+
+    @test_wrapper('spec_5_0_adv_sets_number_test',
+                  skip_chipsets=CHIPSETS_UNSUPPORT_5_0 +
+                  CHIPSETS_UNSUPPORT_ADV_SETS_NUMBER)
+    def spec_5_0_adv_sets_number_test(self):
+        """Check Bluetooth version 5.0 advertisement sets number."""
+        self.test_advertisement_sets_number()
 
     @test_wrapper('spec_5_2_test', skip_chipsets=CHIPSETS_UNSUPPORT_5_2)
     def spec_5_2_test(self):
@@ -558,11 +578,13 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         self.spec_legacy_optional_test()
         self.spec_4_0_test()
         self.spec_4_1_basic_test()
+        self.spec_4_1_llt_test()
         self.spec_4_1_br_edr_secure_conn_test()
         self.spec_4_2_basic_test()
         self.spec_4_2_packet_data_len_test()
         self.spec_4_2_ll_privacy_test()
-        self.spec_5_0_test()
+        self.spec_5_0_basic_test()
+        self.spec_5_0_adv_sets_number_test()
         self.spec_5_2_test()
         self.hci_ext_msft_test()
         self.hci_ext_aosp_bqr_test()

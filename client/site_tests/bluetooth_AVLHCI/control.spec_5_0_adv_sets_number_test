@@ -6,9 +6,11 @@
 AUTHOR = (
     'Rajaa Abdallah <rajaa.abdallah@exalt.ps>, '
     'Mohammad Sabri <mohammad.kh.sabri@exalt.ps>')
-NAME = 'bluetooth_AVLHCI.spec_5_0_test'
+NAME = 'bluetooth_AVLHCI.spec_5_0_adv_sets_number_test'
 ATTRIBUTES = 'suite:bluetooth_flaky'
-PURPOSE = 'Tests the Bluetooth v5.0 specification of Bluetooth AVL requirements'
+PURPOSE = (
+    'Tests the Bluetooth v5.0 advertisement sets number of Bluetooth AVL'
+    ' requirements')
 CRITERIA = 'all subtests passed'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
@@ -17,12 +19,11 @@ TEST_TYPE = 'client'
 PY_VERSION = 3
 
 DOC = """
-    This class can be called to run bluetooth_AVLHCI.spec_5_0_test
+    This class can be called to run
+    bluetooth_AVLHCI.spec_5_0_adv_sets_number_test
 
     This test contains these subtests:
-        test_le_extended_advertising_feature()
         test_advertisement_sets_number()
-        test_le_two_mega_physical_channel_feature()
 
     """
 

@@ -53,6 +53,11 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
     _MINIOS_TEMP_STATEFUL_DIR = '/usr/local/tmp/stateful'
     _STATEFUL_DEV_IMAGE_NAME = 'dev_image_new'
 
+    # Additional log files to be extracted from MiniOS.
+    _MESSAGES_LOG = '/var/log/messages'
+    _NET_LOG = '/var/log/net.log'
+    _UPSTART_LOG = '/var/log/upstart.log'
+
     # MiniOS State values from platform/system_api/dbus/minios/minios.proto.
     _MINIOS_STATE_ERROR = 'ERROR'
     _MINIOS_STATE_IDLE = 'IDLE'
@@ -81,6 +86,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         self._use_public_bucket = False
         self._servo = host.servo
         self._servo.initialize_dut()
+        self._minios_resultsdir = os.path.join(self.resultsdir, 'minios')
+        os.mkdir(self._minios_resultsdir)
 
     def warmup(self, running_at_desk=False, skip_provisioning=False):
         """
@@ -132,11 +139,37 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         """Clean up minios autotests."""
         if self._nebraska:
             self._nebraska.stop()
-        super(MiniOsTest, self).cleanup()
-        # Make sure to reboot DUT into CroS in case of failures.
-        self._host.reboot()
+        if self._is_running_minios():
+            # Make sure to reboot DUT into CroS in case of failures.
+            self._minios_cleanup()
+            self._host.reboot()
         # Restore the stateful partition.
         self._restore_stateful(public_bucket=self._use_public_bucket)
+        super(MiniOsTest, self).cleanup()
+
+    def _minios_cleanup(self):
+        """
+        Perform any cleanup operations before we exit MiniOS.
+
+        MiniOS runs purely from ramfs and thus all data is lost when we exit
+        MiniOS. We therefore need to perform any cleanup functions like grabbing
+        logs before MiniOS exits. This function should be called just before
+        rebooting out of MiniOS.
+        """
+        if self._host:
+            self._host.get_file(self._MESSAGES_LOG, self._minios_resultsdir)
+            self._host.get_file(self._NET_LOG, self._minios_resultsdir)
+            self._host.get_file(self._UPDATE_ENGINE_LOG_DIR,
+                                self._minios_resultsdir)
+            self._host.get_file(self._UPSTART_LOG, self._minios_resultsdir)
+        if self._nebraska:
+            self._host.get_file(os.path.join('/tmp', self._NEBRASKA_LOG),
+                                self._minios_resultsdir)
+
+    def _is_running_minios(self):
+        """Returns True if the DUT is booted into MiniOS."""
+        pattern = r'\b%s\b' % self._MINIOS_KERNEL_FLAG
+        return re.search(pattern, self._host.get_cmdline())
 
     def _boot_minios(self):
         """Boot the DUT into MiniOS."""
@@ -171,8 +204,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
                         'Boot to MiniOS - invalid firmware: %s.' % mainfw_type)
             # There are multiple types of recovery images, make sure we booted
             # into minios.
-            pattern = r'\b%s\b' % self._MINIOS_KERNEL_FLAG
-            if not re.search(pattern, self._host.get_cmdline()):
+            if not self._is_running_minios():
                 raise error.TestError(
                         'Boot to MiniOS - recovery image is not minios.')
         else:

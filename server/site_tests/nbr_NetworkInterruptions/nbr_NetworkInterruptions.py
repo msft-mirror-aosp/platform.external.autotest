@@ -119,6 +119,7 @@ class nbr_NetworkInterruptions(minios_test.MiniOsTest):
         self._perform_recovery_with_failed_network(network_name,
                                                    network_password)
         logging.info('Recovery complete. Grabbing logs.')
+        self._minios_cleanup()
 
         # Generate host log.
         minios_hostlog = self._create_minios_hostlog()

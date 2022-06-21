@@ -72,6 +72,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
         logging.info(f'Performing network based recovery with cmd: {cmd}.')
         self._run(cmd)
         logging.info('Recovery complete. Grabbing logs.')
+        self._minios_cleanup()
 
         # Generate host log.
         minios_hostlog = self._create_minios_hostlog()

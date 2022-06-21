@@ -61,6 +61,46 @@ class BundleSpecification:
         self.uri = uri
         self.password = password
 
+class ETagNotFoundException(Exception):
+    """Raised when it fails to find the ETag."""
+    pass
+
+def _GetETagFromGsUri(gs_uri):
+    """Parses the output of gsutil ls -L and returns the ETag.
+
+    The output format of gsutil ls -L should be like
+
+    gs://bucket-name/path/fo/file:
+        ...
+        ETag:                   COOOrtv1r/gCEAE=
+        ...
+
+    This function finds the line and hex-encodes the ETag because it might
+    contain characters that some file-systems cannot handle, such as '/' in the
+    above.
+
+    Args:
+        gs_uri is a Google Storage URI to a file.
+
+    Returns:
+        Hex encoded ETag of the input file.
+
+    Raises:
+        ETagNotFoundException if an ETag is not found.
+    """
+    ls_result = utils.run('gsutil', args=('ls', '-L', gs_uri), verbose=True)
+    output_text = ls_result.stdout
+    for line in output_text.splitlines():
+        if 'ETag:' not in line:
+            continue
+        parsed_text = line.split(':')[1].strip()
+        return parsed_text.encode('utf-8').hex()
+
+    raise ETagNotFoundException(
+            'Failed to find ETag in command {}. Output: {}'.format(
+                ls_result.command, output_text))
+
+
 class TradefedTest(test.test):
     """Base class to prepare DUT to run tests via tradefed."""
     version = 1
@@ -614,11 +654,20 @@ class TradefedTest(test.test):
         @param uri: The Google Storage, dl.google.com or local uri.
         @return Path to the downloaded object, name.
         """
+        if uri.startswith('gs://'):
+            # For Google storage URIs, the ETag of the remote file can be
+            # obtained.
+            # Using ETags should also work for bundles that use "*-latest.zip"
+            # naming scheme because ETag is supposed to update whenever a new
+            # zip file is placed at the same URI.
+            outdir_name = _GetETagFromGsUri(uri)
+        else:
+            outdir_name = hashlib.md5(uri.encode()).hexdigest()
+
         # We are hashing the uri instead of the binary. This is acceptable, as
         # the uris are supposed to contain version information and an object is
         # not supposed to be changed once created.
-        output_dir = os.path.join(self._tradefed_cache,
-                                  hashlib.md5(uri.encode()).hexdigest())
+        output_dir = os.path.join(self._tradefed_cache, outdir_name)
         # Check for existence of cache entry. We check for directory existence
         # instead of file existence, so that _install_bundle can delete original
         # zip files to save disk space.

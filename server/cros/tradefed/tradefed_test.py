@@ -47,6 +47,35 @@ from autotest_lib.server.autotest import OFFLOAD_ENVVAR
 MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
 
 
+class Md5HashNotFoundException(Exception):
+    """Raised when it fails to find the MD5 hash."""
+    pass
+
+
+def _GetMd5HashFromGsutilOutput(output_text):
+    """Parses the output of gsutil hash -hm and returns the MD5 hash.
+
+    The format should be like
+    Hashes [hex] for cts/bundle/R/android-cts-11_r8-linux_x86-x86.zip:
+            Hash (md5):             91cdeeaf0cefc766692eb3c5a53d5913
+            Hash (crc32c):          3c84a9ce
+
+    Returns:
+        Hex encoded MD5 hash. Empty string if it fails to find a hash.
+    """
+    for line in output_text.splitlines():
+        if '(md5):' not in line:
+            continue
+        parsed_text = line.split(':')[1].strip()
+        if re.fullmatch('[0-9a-f]{32}', parsed_text):
+            return parsed_text
+        # Failing to match means it is not a hex string, fall through to raise
+        # an exception.
+
+    raise Md5HashNotFoundException(
+            'Failed to find md5 hash in {}'.format(output_text))
+
+
 class TradefedTest(test.test):
     """Base class to prepare DUT to run tests via tradefed."""
     version = 1
@@ -595,11 +624,23 @@ class TradefedTest(test.test):
         @param uri: The Google Storage, dl.google.com or local uri.
         @return Path to the downloaded object, name.
         """
+        if uri.startswith('gs://'):
+            # For Google storage URIs, a hash of the file can be obtained.
+            # This works for bundles that use "*-latest.zip" naming scheme.
+            # Taking the hash of the uri (else-case) would incorrectly identify
+            # these bundles as "cached".
+            hash_result = utils.run('gsutil',
+                                    args=('hash', '-hm', uri),
+                                    verbose=True)
+            md5_hash_hex = _GetMd5HashFromGsutilOutput(hash_result.stdout)
+            outdir_name = md5_hash_hex
+        else:
+            outdir_name = hashlib.md5(uri.encode()).hexdigest()
+
         # We are hashing the uri instead of the binary. This is acceptable, as
         # the uris are supposed to contain version information and an object is
         # not supposed to be changed once created.
-        output_dir = os.path.join(self._tradefed_cache,
-                                  hashlib.md5(uri.encode()).hexdigest())
+        output_dir = os.path.join(self._tradefed_cache, outdir_name)
         # Check for existence of cache entry. We check for directory existence
         # instead of file existence, so that _install_bundle can delete original
         # zip files to save disk space.

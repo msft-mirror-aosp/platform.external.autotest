@@ -12,6 +12,7 @@ import copy
 import logging
 import os
 import random
+import re
 import string
 import tempfile
 import time
@@ -104,6 +105,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
     """
 
     KNOWN_TEST_PREFIX = 'network_WiFi_'
+    UP_INTERFACES = ("eth0", "lo")
     POLLING_INTERVAL_SECONDS = 0.5
     STARTUP_TIMEOUT_SECONDS = 30
     SUFFIX_LETTERS = string.ascii_lowercase + string.digits
@@ -230,6 +232,9 @@ class LinuxRouter(site_linux_system.LinuxSystem):
 
         # Place us in the US by default
         self.iw_runner.set_regulatory_domain('US')
+
+        # Tear down all redundant interfaces
+        self.tear_down_redundant_interfaces()
 
         self.enable_all_antennas()
 
@@ -1132,3 +1137,54 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         self._brif_index += 1
         self.host.run('brctl addbr %s' % brif_name)
         return brif_name
+
+
+    def tear_down_redundant_interfaces(self):
+        """Tear down redundant interfaces
+
+        Tear down all redundant interfaces except those in up_interfaces
+
+        """
+        all_interfaces = []
+        # Example "ip link show up" output:
+        # 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+        #    link/loopback 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+        output = self.router.run('%s link show up' % (self.cmd_ip))
+        if output.exit_status:
+            raise error.TestError('"%s link show up" error: %s' %
+                                    (self.cmd_ip, output.stderr))
+        content = output.stdout.strip().split('\n')
+        for line in content:
+           interface_name = self.get_interface_name(line)
+           if interface_name:
+                all_interfaces.append(interface_name)
+
+        for interface_name in all_interfaces:
+            if interface_name in self.UP_INTERFACES:
+                continue
+            self.router.run('%s link set %s down' % (self.cmd_ip, interface_name))
+
+
+    def get_interface_name(self, line):
+        """Get the interface name from the string
+
+        @return string interface name
+        """
+        # Example of a line which matches the pattern, where "lo" is the
+        # interface name
+        # 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+        # Check if the line starts like "1: iface:" or "1: iface@alias:"
+        if not re.match("^\\d+:\\s+([^@:]+)@?[^:]*:", line):
+            return None
+        # Split the line by whitespaces, a valid input should have at least 5
+        # fields
+        fields = line.split()
+        if len(fields) < 5:
+            raise error.TestError('invalid "%s link show up" output: %s' %
+                                    (self.cmd_ip, line))
+        # fields[1] is "iface:" or "iface@alias:"
+        interface_with_possible_alias = fields[1].strip(':')
+        # Split interface_with_possible_alias by '@', interface_alias[0] is the
+        # interface name, and interface_alias[1] (if exists) is the alias name
+        interface_alias = interface_with_possible_alias.split("@")
+        return interface_alias[0]

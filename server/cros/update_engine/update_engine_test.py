@@ -850,7 +850,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                        stateful_url,
                                        destination,
                                        keep_symlinks=False,
-                                       members=None):
+                                       members=None,
+                                       wildcards=False):
         """
         Download and extract the stateful partition.
 
@@ -860,6 +861,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param keep_symlinks: Don't overwrite symlinks in destination directory.
         @param members: When provided, they specify the names of the stateful
             archive members to be extracted else everything will be extracted.
+        @param wildcards: Treat members as containing wildcards.
 
         """
         cmd = [
@@ -873,6 +875,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             # Normalize members to be a list.
             if not isinstance(members, list):
                 members = [members]
+            if wildcards:
+                cmd += ['--wildcards']
             cmd += members
         self._run(cmd)
 

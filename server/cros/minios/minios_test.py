@@ -53,6 +53,11 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
     _MINIOS_TEMP_STATEFUL_DIR = '/usr/local/tmp/stateful'
     _STATEFUL_DEV_IMAGE_NAME = 'dev_image_new'
 
+    # Wildcards form of '_DEPENDENCY_DIRS' used for robust extraction from
+    # stateful archive given that the contents of the stateful archive varies
+    # based on DUT CPU architecture.
+    _DEPENDENCY_DIRS_PATTERN = ['bin', 'lib*']
+
     # Additional log files to be extracted from MiniOS.
     _MESSAGES_LOG = '/var/log/messages'
     _NET_LOG = '/var/log/net.log'
@@ -264,13 +269,14 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         # Generate the list of stateful archive members that we want to extract.
         members = [
                 os.path.join(self._STATEFUL_DEV_IMAGE_NAME, dir)
-                for dir in self._DEPENDENCY_DIRS
+                for dir in self._DEPENDENCY_DIRS_PATTERN
         ]
         try:
             self._download_and_extract_stateful(statefuldev_url,
                                                 self._MINIOS_TEMP_STATEFUL_DIR,
                                                 members=members,
-                                                keep_symlinks=True)
+                                                keep_symlinks=True,
+                                                wildcards=True)
         except error.AutoservRunError as e:
             err_str = 'Failed to install the test dependencies'
             raise error.TestFail('%s: %s' % (err_str, str(e)))

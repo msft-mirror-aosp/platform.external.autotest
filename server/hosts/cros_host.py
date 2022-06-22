@@ -500,8 +500,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 dut=self.hostname, btpeer_args_list=btpeer_args_list)
             logging.debug('Bluetooth peer hosts are  %s',
                           self._btpeer_host_list)
-            self.btpeer_list = [_host.create_chameleon_board() for _host in
-                                self._btpeer_host_list if _host is not None]
+
+            self.btpeer_list = []
+            for host in self._btpeer_host_list:
+                if host is None:
+                    continue
+                try:
+                    btpeer = host.create_chameleon_board()
+                    self.btpeer_list.append(btpeer)
+                except Exception as e:
+                    logging.error('Exception %s while creating chamelon_board in %s',
+                                  str(e), host.hostname)
 
             if len(self.btpeer_list) > 0:
                 self.btpeer = self.btpeer_list[0]

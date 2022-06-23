@@ -186,6 +186,8 @@ suite:cellular_ota_avl
 suite:cellular_ota_flaky
 suite:cellular_qual
 suite:cft-beta
+suite:cft-critical
+suite:cft-nightly
 suite:chameleon_hdmi
 suite:chameleon_hdmi_perbuild
 suite:chameleon_hdmi_unstable

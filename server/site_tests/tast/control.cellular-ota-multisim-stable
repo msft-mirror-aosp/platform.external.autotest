@@ -29,6 +29,10 @@ import json
 import tempfile
 import yaml
 
+import json
+import tempfile
+import yaml
+
 def run(machine):
     host = hosts.create_host(machine)
     with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:

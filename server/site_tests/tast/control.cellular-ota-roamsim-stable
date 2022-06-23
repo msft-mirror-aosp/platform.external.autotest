@@ -25,11 +25,23 @@ more information.
 See http://go/tast-failures for information about investigating failures.
 '''
 
+import json
+import tempfile
+import yaml
+
 def run(machine):
-    job.run_test('tast',
-                 host=hosts.create_host(machine),
-                 test_exprs=['("group:cellular" && "cellular_sim_roaming" && !"cellular_unstable")'],
-                 ignore_test_failures=True, max_run_sec=10800,
-                 command_args=args)
+    host = hosts.create_host(machine)
+    with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
+        host_info = host.host_info_store.get()
+        yaml.safe_dump({'autotest_host_info_labels':
+                        json.dumps(host_info.labels)},
+                        stream=temp_file)
+        temp_file.flush()
+        job.run_test('tast',
+                    host=host,
+                    test_exprs=['("group:cellular" && "cellular_sim_roaming" && !"cellular_unstable")'],
+                    ignore_test_failures=True, max_run_sec=10800,
+                    command_args=args,
+                    varsfiles=[temp_file.name])
 
 parallel_simple(run, machines)

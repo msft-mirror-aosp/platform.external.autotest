@@ -18,6 +18,7 @@ import subprocess
 import sys
 import threading
 import time
+import json
 
 
 class OutputRecorderError(Exception):
@@ -124,6 +125,9 @@ class OutputRecorder(object):
                 if line:
                     # Remove ANSI escape sequence so that XML converter can work.
                     line = ansi_escape_re.sub('', line)
+                    # Encode non-displayable characters as well
+                    # json.dumps surrounds the result with quotes, remove them.
+                    line = json.dumps(line)[1:-1]
                     output_f.write(line)
                     output_f.flush()
                     self.contents.append(line)

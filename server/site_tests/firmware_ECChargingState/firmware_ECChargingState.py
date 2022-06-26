@@ -201,9 +201,11 @@ class firmware_ECChargingState(FirmwareTest):
 
         battery = self._get_battery_info()
         sysfs_battery_state = host.get_battery_state()
-        if ((battery['status'] & self.STATUS_FULLY_CHARGED == 0
-             or battery['charging'] == "Not Allowed")
-                and battery['status'] & self.STATUS_DISCHARGING != 0):
+        # Some batteries set DCHG when full to signal internal discharge
+        # so don't check DCHG if FULL is set.
+        if (battery['status'] & self.STATUS_FULLY_CHARGED == 0
+             and battery['charging'] != "Not Allowed"
+             and battery['status'] & self.STATUS_DISCHARGING != 0):
             raise error.TestFail("Wrong battery state. Expected: "
                                  "Charging/Fully charged, got: %s." % battery)
         self._check_kernel_battery_state(host.get_battery_state(), battery)

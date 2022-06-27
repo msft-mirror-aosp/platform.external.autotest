@@ -133,6 +133,9 @@ KERNEL_LOG_LEVEL = {
         'DEBUG': 7
 }
 
+# Possible inquiry results format and code in hciconfig
+INQUIRY_MODE = {'STANDARD': 0, 'RSSI': 1, 'EIR': 2, 'ERROR': -1}
+
 # The benchmark criterion to determine whether HID device reconnection is fast
 HID_RECONNECT_TIME_MAX_SEC = 3
 LE_HID_RECONNECT_TIME_MAX_SEC = 3
@@ -1580,6 +1583,35 @@ class BluetoothAdapterTests(test.test):
         """ Collect WRT logs from Intel Adapters."""
         return self.bluetooth_facade.collect_wrt_logs()
 
+    def read_inquiry_mode(self):
+        """Return current inquiry mode level"""
+        code = self.bluetooth_facade.read_inquiry_mode()
+        return list(INQUIRY_MODE.keys())[list(
+                INQUIRY_MODE.values()).index(code)]
+
+    @test_retry_and_log
+    def write_inquiry_mode(self, mode='EIR'):
+        """Set DUT to inquiry mode
+
+        @param mode: inquiry mode 'STANDARD', 'RSSI' or 'EIR'
+
+        @return: True if setting mode is SUCCESS
+        """
+        self.results = {'inquiry_mode': mode}
+        if not self.test_valid_inquiry_mode(mode):
+            return False
+        return self.bluetooth_facade.write_inquiry_mode(INQUIRY_MODE[mode])
+
+    @test_retry_and_log(False)
+    def test_valid_inquiry_mode(self, mode):
+        """Test if inquiry mode level is correct"""
+        self.results = {'inquiry_mode': mode}
+        if mode != 'ERROR' and mode in INQUIRY_MODE:
+            return True
+        logging.error(
+                'Inquiry mode {} is not valid or not recognized.'.format(mode))
+        return False
+
     @test_retry_and_log
     def test_bluetoothd_running(self):
         """Test that bluetoothd is running."""
@@ -2186,7 +2218,9 @@ class BluetoothAdapterTests(test.test):
                 'start_discovery': discovery_started,
                 'stop_discovery': discovery_stopped,
                 'is_not_discovering': is_not_discovering,
-                'device_discovered': device_discovered}
+                'device_discovered': device_discovered,
+                'inquiry_mode': self.read_inquiry_mode()
+        }
 
         # Make sure a discovered device properly started and stopped discovery
         device_found = device_discovered and (discovery_stopped

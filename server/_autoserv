@@ -7,7 +7,6 @@ Run a control file through the server side engine
 """
 
 import datetime
-import contextlib
 import getpass
 import logging
 import os
@@ -22,8 +21,6 @@ import six
 from six.moves import urllib
 
 import common
-from autotest_lib.client.bin.result_tools import utils as result_utils
-from autotest_lib.client.bin.result_tools import view as result_view
 from autotest_lib.client.common_lib import control_data
 from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import error
@@ -51,10 +48,8 @@ from autotest_lib.server import server_logging_config
 from autotest_lib.server import server_job, utils, autoserv_parser, autotest
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server import site_utils
-from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
 from autotest_lib.site_utils import job_directories
 from autotest_lib.site_utils import lxc
-from autotest_lib.site_utils.lxc import utils as lxc_utils
 from autotest_lib.client.common_lib import pidfile, logging_manager
 
 

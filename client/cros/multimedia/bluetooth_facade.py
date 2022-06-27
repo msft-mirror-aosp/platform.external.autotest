@@ -547,6 +547,79 @@ class BluetoothBaseFacadeLocal(object):
             logging.error('is_intel_adapter  failed with %s', cmd, str(e))
             return False
 
+    def __execute_cmd(self, cmd_str, msg=''):
+        """Wrapper around subprocess.check_output.
+
+        @params cmd: Command to be executed as a string
+        @params msg: Optional description of the command
+
+        @returns: (True, output) if execution succeeded
+              (False, None) if execution failed
+
+        """
+        try:
+            logging.info('Executing %s cmd', msg)
+            cmd = cmd_str.split(' ')
+            logging.debug('command is "%s"', cmd)
+            output = subprocess.check_output(cmd, encoding='UTF-8')
+            logging.info('%s cmd successfully executed', msg)
+            logging.debug('output is %s', output)
+            return (True, output)
+        except Exception as e:
+            logging.error('Exception %s while executing %s command', str(e),
+                          msg)
+            return (False, None)
+
+    def read_inquiry_mode(self):
+        """Read inquiry mode of DUT"""
+        read_inquiry_mode_cmd = 'hciconfig hci0 inqmode'
+
+        def _extract_inquiry_mode(hciconfig_str):
+            if 'Extended Inquiry' in hciconfig_str:
+                return 2
+            if 'RSSI' in hciconfig_str:
+                return 1
+            if 'Standard' in hciconfig_str:
+                return 0
+            return -1  # not recognized
+
+        try:
+            logging.info('Read inquiry mode')
+            status, output = self.__execute_cmd(read_inquiry_mode_cmd,
+                                                'Read inquiry mode')
+            if not status:
+                logging.info('Read inquiry mode command execution failed')
+                return -1
+
+            logging.info('Inquiry mode returned')
+            code = _extract_inquiry_mode(output)
+            if code == -1:
+                logging.error('hciconfig inquiry mode not recognized')
+            return code
+        except Exception as e:
+            logging.error('Exception %s while getting inquiry mode', str(e))
+            return -1
+
+    def write_inquiry_mode(self, mode=2):
+        """Write inquiry mode to DUT"""
+        if mode > 2 or mode < 0:
+            logging.info('Wrong inquiry mode value: out of range [0-2]')
+            return False
+        write_inquiry_mode_cmd = 'hciconfig hci0 inqmode ' + str(mode)
+
+        try:
+            logging.info('Write inquiry mode')
+            status, _ = self.__execute_cmd(write_inquiry_mode_cmd,
+                                           'Write inquiry mode')
+            if not status:
+                logging.info('Write inquiry mode command execution failed')
+                return False
+
+            return True
+        except Exception as e:
+            logging.error('Exception %s while setting inquiry mode', str(e))
+            return False
+
     def enable_wrt_logs(self):
         """ Enable WRT logs for Intel Bluetooth adapters.
 
@@ -577,29 +650,6 @@ class BluetoothBaseFacadeLocal(object):
         multi_comm_trace_file = ('/sys/kernel/debug/ieee80211'
                                  '/phy0/iwlwifi/iwlmvm/send_hcmd')
 
-        def _execute_cmd(cmd_str, msg=''):
-            """Wrapper around subprocess.check_output.
-
-            @params cmd: Command to be executed as a string
-            @params msg: Optional description of the command
-
-            @returns: (True, output) if execution succeeded
-                  (False, None) if execution failed
-
-            """
-            try:
-                logging.info('Executing %s cmd', msg)
-                cmd = cmd_str.split(' ')
-                logging.debug('command is "%s"', cmd)
-                output = subprocess.check_output(cmd, enconding='UTF-8')
-                logging.info('%s cmd successfully executed', msg)
-                logging.debug('output is %s', output)
-                return (True, output)
-            except Exception as e:
-                logging.error('Exception %s while executing %s command',
-                              str(e), msg)
-                return (False, None)
-
         def _get_ddc_write_cmd(ddc_read_result, ddc_write_cmd_prefix):
             """ Create ddc_write_cmd from read command
 
@@ -627,12 +677,13 @@ class BluetoothBaseFacadeLocal(object):
 
         try:
             logging.info('Enabling WRT logs')
-            status, _ = _execute_cmd(fw_trace_cmd, 'FW trace cmd')
+            status, _ = self.__execute_cmd(fw_trace_cmd, 'FW trace cmd')
             if not status:
                 logging.info('FW trace command execution failed')
                 return False
 
-            status, ddc_read_result = _execute_cmd(ddc_read_cmd, 'DDC Read')
+            status, ddc_read_result = self.__execute_cmd(
+                    ddc_read_cmd, 'DDC Read')
             if not status:
                 logging.info('DDC Read command  execution failed')
                 return False
@@ -640,12 +691,13 @@ class BluetoothBaseFacadeLocal(object):
             ddc_write_cmd = _get_ddc_write_cmd(ddc_read_result,
                                                ddc_write_cmd_prefix)
             logging.debug('DDC Write command  is %s', ddc_write_cmd)
-            status, _ = _execute_cmd(ddc_write_cmd, 'DDC Write')
+            status, _ = self.__execute_cmd(ddc_write_cmd, 'DDC Write')
             if not status:
                 logging.info('DDC Write commanad execution failed')
                 return False
 
-            status, hw_trace_result = _execute_cmd(hw_trace_cmd, 'HW trace')
+            status, hw_trace_result = self.__execute_cmd(
+                    hw_trace_cmd, 'HW trace')
             if not status:
                 logging.info('HW Trace command  execution failed')
                 return False

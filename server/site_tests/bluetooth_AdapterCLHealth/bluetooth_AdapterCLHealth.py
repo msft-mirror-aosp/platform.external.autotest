@@ -204,7 +204,30 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         """
         device = self.devices['MOUSE'][0]
 
-        # Setup
+        # TODO(b/237819909): remove the check after fixing the bug related to
+        # hcitool in floss
+        if not self.floss:
+            # Get current inquiry mode
+            inquiry_mode = self.read_inquiry_mode()
+
+            self.test_valid_inquiry_mode(inquiry_mode)
+
+            # Add subtests to check inquiry scan functionality with different modes
+            # if the existing mode is not 'STANDARD'
+            if inquiry_mode == 'RSSI' or inquiry_mode == 'EIR':
+                # inquiry handled by hci_inquiry_result_evt()
+                self.write_inquiry_mode('STANDARD')
+                self.assert_discover_and_pair(device)
+                self.test_remove_pairing(device.address)
+
+                if inquiry_mode == 'EIR':
+                    # inquiry handled by hci_inquiry_result_with_rssi_evt()
+                    self.write_inquiry_mode('RSSI')
+                    self.assert_discover_and_pair(device)
+                    self.test_remove_pairing(device.address)
+
+                self.write_inquiry_mode(inquiry_mode)
+
         self.assert_discover_and_pair(device)
         self.test_start_discovery()
 

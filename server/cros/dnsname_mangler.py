@@ -21,6 +21,8 @@ ROUTER_FAILURE_MESSAGE = (
         'Cannot infer DNS name of WiFi router from a client IP address.')
 PCAP_FAILURE_MESSAGE = (
         'Cannot infer DNS name of Packet Capturer from a client IP address.')
+RPI_FAILURE_MESSAGE = (
+        'Cannot infer DNS name of RaspberryPi from a client IP address.')
 
 
 def is_ip_address(hostname):
@@ -151,4 +153,26 @@ def get_btattenuator_addr(client_hostname,
             '-btattenuator',
             cmdline_override=cmdline_override,
             not_dnsname_msg=BTATTENUATOR_FAILURE_MESSAGE,
+            allow_failure=allow_failure)
+
+def get_rpi_addr(client_hostname, cmdline_override=None, allow_failure=False):
+    """Build a hostname for a RaspberryPi from the client hostname.
+
+    Optionally override that hostname with the provided command line hostname.
+
+    @param client_hostname: string DNS name of the client.
+    @param cmdline_override: string DNS name of the RaspberryPi provided
+        via commandline arguments.
+    @param allow_failure: boolean True iff we should return None on failure to
+        infer a DNS name.
+    @return usable DNS name for RaspberryPi host.
+
+    """
+    # By default use the -btpeer1 suffix on the client hostname if no rpi
+    # hostname was given.
+    return get_companion_device_addr(
+            client_hostname,
+            "-btpeer1",
+            cmdline_override=cmdline_override,
+            not_dnsname_msg= RPI_FAILURE_MESSAGE,
             allow_failure=allow_failure)

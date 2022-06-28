@@ -410,7 +410,7 @@ def check_audio_stream_at_selected_device(device_name, device_type):
             raise error.TestFail("Audio is not routing through expected node")
         logging.info('Audio is routing through %s', bt_device)
     else:
-        card_device_search = re.search(r':(\d),(\d)', device_name)
+        card_device_search = re.search(r':(\d+),(\d+)', device_name)
         if card_device_search:
             card_num = card_device_search.group(1)
             device_num = card_device_search.group(2)

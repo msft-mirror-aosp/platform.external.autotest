@@ -22,6 +22,10 @@ This control file is still in experimental stage.
 
 def run_benchmark(machine):
     host = hosts.create_host(machine)
-    job.run_test('chromium_Telemetry', host=host, args=args, benchmark='loading.desktop')
+    job.run_test('chromium_Telemetry',
+                host=host,
+                args=args,
+                tag='loading.desktop',
+                benchmark='loading.desktop')
 
 parallel_simple(run_benchmark, machines)

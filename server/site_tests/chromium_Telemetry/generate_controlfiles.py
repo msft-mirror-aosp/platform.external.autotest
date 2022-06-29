@@ -47,7 +47,11 @@ This control file is still in experimental stage.
 
 def run_benchmark(machine):
     host = hosts.create_host(machine)
-    job.run_test('chromium_Telemetry', host=host, args=args, benchmark='{test}')
+    job.run_test('chromium_Telemetry',
+                host=host,
+                args=args,
+                tag='{test}',
+                benchmark='{test}')
 
 parallel_simple(run_benchmark, machines)
 """)

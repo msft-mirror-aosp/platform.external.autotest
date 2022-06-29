@@ -99,6 +99,7 @@ def _autotest_logging_handle_error(self, record):
 
 
 def _monkeypatch_logging_handle_error():
+    """Setup logging method.  """
     # Hack out logging.py*
     logging_py = os.path.join(os.path.dirname(__file__), 'common_lib',
                               'logging.py*')
@@ -115,11 +116,12 @@ def _monkeypatch_logging_handle_error():
 
 
 def _insert_site_packages(root):
-    # Allow locally installed third party packages to be found
-    # before any that are installed on the system itself when not.
-    # running as a client.
-    # This is primarily for the benefit of frontend and tko so that they
-    # may use libraries other than those available as system packages.
+    """Allow locally installed third party packages to be found before any that
+    are installed on the system itself when not running as a client.
+
+    This is primarily for the benefit of frontend and tko so that they may use
+    libraries other than those available as system packages.
+    """
     if six.PY2:
         sys.path.insert(0, os.path.join(root, 'site-packages'))
 
@@ -132,28 +134,45 @@ ROOT_MODULE_NAME_ALLOW_LIST = (
 )
 
 
-def _setup_top_level_symlink(base_path):
+def _setup_top_level_symlink(base_path, autotest_lib_name):
     """Create a self pointing symlink in the base_path)."""
-    if os.path.islink(os.path.join(base_path, 'autotest_lib')):
+
+    # Create symlink of autotest_lib_name to the current directory
+    autotest_lib_path = os.path.join(base_path, autotest_lib_name)
+    if os.path.exists(autotest_lib_path):
         return
+
+    # Save state of current working dir
+    current_dir = os.getcwd()
+
     os.chdir(base_path)
-    os.symlink('.', 'autotest_lib')
+    try:
+        os.symlink('.', 'autotest_lib')
+    except FILE_ERROR as e:
+        if os.path.islink('autotest_lib'):
+            return
+        raise e
+    finally:
+        # Return state of current working dir
+        os.chdir(current_dir)
 
 
-def _setup_client_symlink(base_path):
+def _setup_client_symlink(base_path, autotest_lib_name):
     """Setup the client symlink for the DUT.
 
-    Creates a "autotest_lib" folder in client, then creates a symlink called
+    Creates a folder named  autotest_lib_name, then creates a symlink called
     "client" pointing back to ../, as well as an __init__ for the folder.
     """
 
     def _create_client_symlink():
-        os.chdir(autotest_lib_dir)
+        """Create client symlink to parent dir.
+        """
         with open('__init__.py', 'w'):
             pass
         os.symlink('../', 'client')
 
-    autotest_lib_dir = os.path.join(base_path, 'autotest_lib')
+    # Create autotest_lib directory and symlinks
+    autotest_lib_dir = os.path.join(base_path, autotest_lib_name)
     link_path = os.path.join(autotest_lib_dir, 'client')
 
     # TODO: Use os.makedirs(..., exist_ok=True) after switching to Python 3
@@ -167,6 +186,10 @@ def _setup_client_symlink(base_path):
     if os.path.islink(link_path):
         return
 
+    # Save state of current working dir
+    current_dir = os.getcwd()
+
+    os.chdir(autotest_lib_dir)
     try:
         _create_client_symlink()
     # It's possible 2 autotest processes are running at once, and one
@@ -177,63 +200,107 @@ def _setup_client_symlink(base_path):
         if os.path.islink(link_path):
             return
         raise e
-
-
-def _symlink_check(base_path, root_dir):
-    """Verify the required symlinks are present, and add them if not."""
-    # Note the starting cwd to later change back to it.
-    starting_dir = os.getcwd()
-    if root_dir == 'autotest_lib':
-        _setup_top_level_symlink(base_path)
-    elif root_dir == 'autotest_lib.client':
-        _setup_client_symlink(base_path)
-
-    os.chdir(starting_dir)
+    finally:
+        # Return state of current working dir
+        os.chdir(current_dir)
 
 
 def setup(base_path, root_module_name):
-    _symlink_check(base_path, root_module_name)
+    """import autotest_lib modules and toplevel submodules.
+
+    ex:
+    - autotest_lib
+    - autotest_lib.client
+    - autotest_lib.client.bin
+    """
+    # Input verification first
     if root_module_name not in ROOT_MODULE_NAME_ALLOW_LIST:
         raise Exception('Unexpected root module: ' + root_module_name)
 
+    # Function will only have an effect if running python2
     _insert_site_packages(base_path)
+
+    # Default autotest_lib name
+    autotest_lib_name = 'autotest_lib'
 
     # Ie, server (or just not /client)
     if root_module_name == 'autotest_lib':
+        # Creates a symlink to itself
+        _setup_top_level_symlink(base_path, autotest_lib_name)
+
         # Base path is just x/x/x/x/autotest/files
-        _setup_autotest_lib(base_path)
-        _preimport_top_level_packages(os.path.join(base_path, 'autotest_lib'),
-                                      parent='autotest_lib')
+        _setup_autotest_lib(base_path, autotest_lib_name)
+
+        # Setup the autotest_lib.* modules
+        _preimport_top_level_packages(
+                base_path,
+                parent='autotest_lib',
+                autotest_lib_name=autotest_lib_name)
     else:  # aka, in /client/
+        # Takes you from /client/ to /files
+        # this is because on DUT there is no files/client
         if os.path.exists(os.path.join(os.path.dirname(base_path), 'server')):
-
-            # Takes you from /client/ to /files
-            # this is because on DUT there is no files/client
             autotest_base_path = os.path.dirname(base_path)
-
         else:
+            autotest_lib_name = f'autotest_lib_{os.getpid()}'
             autotest_base_path = base_path
 
-        _setup_autotest_lib(autotest_base_path)
+        _setup_client_symlink(base_path, autotest_lib_name)
+
+        # Modules autotest_lib_<PID> -> dir/autotest_lib_<PID>
+        _setup_autotest_lib(autotest_base_path, autotest_lib_name)
+
+        # setup autotest_lib, autotest_lib.client.*
         _preimport_top_level_packages(os.path.join(autotest_base_path,
-                                                   'autotest_lib'),
-                                      parent='autotest_lib')
-        _preimport_top_level_packages(
-                os.path.join(autotest_base_path, 'autotest_lib', 'client'),
-                parent='autotest_lib.client',
-        )
+                                                   autotest_lib_name),
+                                      parent='autotest_lib',
+                                      autotest_lib_name=autotest_lib_name)
+        _preimport_top_level_packages(os.path.join(autotest_base_path,
+                                                   autotest_lib_name, 'client'),
+                                      parent='autotest_lib.client',
+                                      autotest_lib_name=autotest_lib_name)
 
     _monkeypatch_logging_handle_error()
 
 
-def _setup_autotest_lib(path):
-    sys.path.insert(0, path)
-    # This is a symlink back to the root directory, that does all the magic.
-    importlib.import_module('autotest_lib')
+def _setup_autotest_lib(autotest_lib_path, autotest_lib_name):
+    """Sets up the toplevel module 'autotest_lib'.
+
+    Imports the module autotest_lib_name and maps the desired 'autotest_lib'
+    name to it.
+    """
+    # Add autotest_lib to our path
+    sys.path.insert(0, autotest_lib_path)
+
+    # This is a symlink back to the root directory
+    importlib.import_module(autotest_lib_name)
+
+    # Setup toplevel 'autotest_lib' module name
+    sys.modules['autotest_lib'] = sys.modules[autotest_lib_name]
+
+    # Restore original state of path
     sys.path.pop(0)
 
 
-def _preimport_top_level_packages(root, parent):
+def _preimport_top_level_packages(root, parent, autotest_lib_name):
+    """Pre import the autotest_lib module top level packages.
+
+    The existence of an __init__.py file in a directory is used to determine if
+    that directory is pre-imported as a sub module of autotest_lib or
+    autotest_lib.client.
+
+    The intent is to reduce the number of imports required in the codebase.
+
+    Args:
+      root:
+        Location we will be looking for directories that contain '__init__.py'
+        files
+      parent:
+        Module name those directories should be imported as sub modules of,
+        autotest_lib or autotest_lib.client
+      autotest_lib_name:
+        Name of the autotest_lib we used when creating the directory structure
+    """
     # The old code to setup the packages used to fetch the top-level packages
     # inside autotest_lib. We keep that behaviour in order to avoid having to
     # add import statements for the top-level packages all over the codebase.
@@ -247,6 +314,9 @@ def _preimport_top_level_packages(root, parent):
     #  import common
     #  import autotest_lib.server
     #  from autotest_lib.server import utils
+
+    # Find the top-level packages, they are identified by directories that
+    # contain __init__ files
     names = []
     for filename in os.listdir(root):
         path = os.path.join(root, filename)
@@ -259,8 +329,10 @@ def _preimport_top_level_packages(root, parent):
         if '__init__.py' in os.listdir(path):
             names.append(filename)
 
+    # Do not import autotest_lib or autotest_lib_<PID>, only the packages
+    autotest_re = r'^autotest_lib[_0123456789]*'
     for name in names:
-        pname = parent + '.' + name
-        importlib.import_module(pname)
-        if name != 'autotest_lib':
+        if re.match(autotest_re, name) is None:
+            pname = parent + '.' + name
+            importlib.import_module(pname)
             sys.modules[name] = sys.modules[pname]

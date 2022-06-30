@@ -191,6 +191,38 @@ FAFT tests are written in two different frameworks: Autotest and Tast.
 
 Autotest tests are run using the `test_that` command, described below. Tast tests are run using the `tast run` command, which is documented at [go/tast-running](http://chromium.googlesource.com/chromiumos/platform/tast/+/HEAD/docs/running_tests.md).
 
+### Get tast private repo {#tast-tests-private}
+
+There is at least one test that needs a secret key to get access to the ChromeOS
+login screen, and that key will not be there if you only have the public manifest
+checked out in your chroot.  To get the missing key create the file
+`~/chromiumos/.repo/local_manifests/tast-tests-private.xml` with the contents:
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <remote name="cros-internal"
+          fetch="https://chrome-internal.googlesource.com"
+          review="https://chrome-internal-review.googlesource.com">
+    <annotation name="public" value="false" />
+  </remote>
+  <remote name="chrome"
+          alias="cros-internal"
+          fetch="https://chrome-internal.googlesource.com">
+    <annotation name="public" value="false" />
+  </remote>
+  <project path="src/platform/tast-tests-private"
+           remote="cros-internal"
+           name="chromeos/platform/tast-tests-private" />
+</manifest>
+```
+
+and then run `repo sync`.  If you cannot complete this step, you will have at
+least one test fail with the error `runtime variable
+ui.signinProfileTestExtensionManifestKey is missing`. In that case you should
+ask someone at Google to run that one failing test for you if you need that
+result.
+
 ### Setup Confirmation {#setup-confirmation}
 
 To run Autotest tests, use the `test_that` tool, which does not automatically

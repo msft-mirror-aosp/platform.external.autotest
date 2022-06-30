@@ -143,8 +143,6 @@ class ServoTopology(object):
         children_types = [c.get(stc.ST_DEVICE_TYPE) for c in children]
         # DUAL_V4 setup has to have cr50 and one more child.
         if dual_set:
-            if stc.ST_CR50_TYPE not in children_types:
-                return self._missing_servo_error(stc.ST_CR50_TYPE, raise_error)
             if len(children) < 2:
                 message = 'Expected two children but have only one'
                 return self._process_error(message, raise_error)

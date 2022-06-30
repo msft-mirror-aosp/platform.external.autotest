@@ -30,7 +30,7 @@ These args are expected to be passed to test_that:
 --args="phone_station=$PHONE_HOST android_serial=$ANDROID_SERIAL_NUMBER"
 
 When using port forwarding to locahost, the expected args are:
---args="phone_station=locahost android_station_ssh_port=$FORWARDED_PORT android_serial=$ANDROID_SERIAL_NUMBER"
+--args="phone_station=locahost phone_station_ssh_port=$FORWARDED_PORT android_serial=$ANDROID_SERIAL_NUMBER"
 $FORWARDED_PORT is the port of the labstation that you port forwarded to localhost
 
 '''

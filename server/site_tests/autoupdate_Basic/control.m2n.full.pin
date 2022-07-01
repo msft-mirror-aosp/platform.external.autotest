@@ -16,19 +16,10 @@ This tests an M-to-N update. That means it will update from the current stable
 version for this board to ToT. This test will be used in the CQ to ensure
 changes don't break autoupdate.
 
-In the lab, a job_repo_url will be passed directly to the test. It contains
-information about the build to use and the IP address of lab cache server to
-download update payloads from. Local runs can use cache servers as well but
-the setup is fairly complicated. Instead, local test runs can specify the
-`running_at_desk` and `build` args to run without requiring special setup.
+Refer to control.delta for instructions on how to run this test locally.
 
-Example usage:
-
-With lab cache server SSH access and a job_repo_url:
-test_that <DUT> autoupdate_Basic.m2n.full.pin --args="job_repo_url='http://<IP>:<port>/static/<board>-release/RXX-XXXX.X.X/autotest/packages'"
-
-Otherwise, the running_at_desk and build args are required:
-test_that <DUT> autoupdate_Basic.m2n.full.pin --board=<board> --args="running_at_desk=True build=R102-14643.0.0"
+Note: for m2n tests, the source version is the currently serving stable channel
+version.
 
 """
 

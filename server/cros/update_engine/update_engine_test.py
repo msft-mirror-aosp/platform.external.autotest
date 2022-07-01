@@ -45,8 +45,8 @@ from autotest_lib.utils.frozen_chromite.lib import retry_util
 class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     """Base class for all autoupdate_ server tests.
 
-    Contains useful functions shared between tests like staging payloads
-    on devservers, verifying hostlogs, and launching client tests.
+    Contains useful functions shared between tests like getting payload URLs
+    from caching servers, verifying hostlogs, and launching client tests.
 
     """
     version = 1
@@ -83,6 +83,13 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     _PAYLOAD_TYPE = autotest_enum.AutotestEnum('CROS', 'DLC', 'MINIOS')
 
+    # Static cache servers to use when running tests from your workstation
+    # against lab DUTs. Tests running in the lab will instead use the
+    # job_repo_url from the provisioning attributes, which contains a cache
+    # server URL assigned by the lab.
+    _PINNED_CACHE_SERVER_IPS = ['100.115.220.100', '10.128.176.201']
+    _CACHE_SERVER_URL_PATTERN = 'http://%s:8082'
+
     def initialize(self, host=None):
         """
         Sets default variables for the test.
@@ -100,12 +107,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Utilities for DLC management
         self._dlc_util = dlc_util.DLCUtil(self._run)
 
-        # URL pointing to the autotest package on a lab cache server. It is
-        # used by lab runs to select the right board+build when finding the
-        # update payloads. The cache server will also be used for downloading
-        # the update.
-        self._job_repo_url = None
-
         # The target build for the update. Uses the release builder path
         # format, ex: octopus-release/R102-14650.0.0
         self._build = None
@@ -114,7 +115,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # stateful should be restored on failure.
         self._should_restore_stateful = False
 
-        self._autotest_devserver = None
+        # Cache server URL to use for the test, if running on a lab DUT.
+        self._cache_server_url = None
 
     def cleanup(self):
         """Clean up update_engine autotests."""
@@ -276,39 +278,37 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 % (et, expected._timeout, time_taken))
 
 
-    def _stage_payload_by_uri(self, payload_uri, properties_file=True):
-        """Stage a payload based on its GS URI.
+    def _get_payload_url_on_cache_server(self,
+                                         cache_server_url,
+                                         full_payload=True,
+                                         payload_type=_PAYLOAD_TYPE.CROS):
+        """Get the URL to a payload on the cache server based on its GS URI.
 
         This infers the build's label, filename and GS archive from the
         provided GS URI.
 
-        @param payload_uri: The full GS URI of the payload.
-        @param properties_file: If true, it will stage the update payload
-                                properties file too.
+        @param cache_server_url: The URL of the lab caching server.
+        @param full_payload: True for a full payload, False for delta.
+        @param payload_type: The type of payload to use, can be a value from
+                             the PAYLOAD_TYPE enum.
 
-        @return URL of the staged payload (and properties file) on the server.
-
-        @raise error.TestError if there's a problem with staging.
+        @return 3-tuple of update artifact URLs: (payload, properties file, stateful archive).
 
         """
+        payload_uri = self._get_payload_url(full_payload=full_payload,
+                                            payload_type=payload_type)
         archive_url, _, filename = payload_uri.rpartition('/')
         build_name = six.moves.urllib.parse.urlsplit(archive_url).path.strip(
                 '/')
         filenames = [filename]
-        if properties_file:
-            filenames.append(filename + '.json')
-        try:
-            if self._autotest_devserver is None:
-                self._autotest_devserver = dev_server.ImageServer.resolve(
-                        build_name, self._host.hostname)
 
-            self._autotest_devserver.stage_artifacts(image=build_name,
-                                                     files=filenames,
-                                                     archive_url=archive_url)
-            return (self._autotest_devserver.get_staged_file_url(f, build_name)
-                    for f in filenames)
-        except dev_server.DevServerException as e:
-            raise error.TestError('Failed to stage payload: %s' % e)
+        # Add the payload properties file and stateful archive.
+        filenames.append(filename + '.json')
+        filenames.append(self._STATEFUL_ARCHIVE_NAME)
+
+        url_pattern = '%s/static/%s'
+        return ('/'.join([(url_pattern % (cache_server_url, build_name)), f])
+                for f in filenames)
 
 
     def _get_devserver_for_test(self, test_conf):
@@ -380,45 +380,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     def _get_stateful_uri(build_uri):
         """Returns a complete GS URI of a stateful update given a build path."""
         return '/'.join([build_uri.rstrip('/'), 'stateful.tgz'])
-
-
-    def _get_job_repo_url(self, job_repo_url=None):
-        """Gets the job_repo_url argument supplied to the test by the lab."""
-        if job_repo_url is not None:
-            return job_repo_url
-        if self._host is None:
-            raise error.TestFail('No host specified by AU test.')
-        info = self._host.host_info_store.get()
-        return info.attributes.get(self._host.job_repo_url_attribute, '')
-
-
-    def _stage_payloads(self, payload_uri, archive_uri):
-        """
-        Stages payloads on the devserver.
-
-        @param payload_uri: URI for a GS payload to stage.
-        @param archive_uri: URI for GS folder containing payloads. This is used
-                            to find the related stateful payload.
-
-        @returns URI of staged payload, URI of staged stateful.
-
-        """
-        if not payload_uri:
-            return None, None
-        staged_uri, _ = self._stage_payload_by_uri(payload_uri)
-        logging.info('Staged %s at %s.', payload_uri, staged_uri)
-
-        # Figure out where to get the matching stateful payload.
-        if archive_uri:
-            stateful_uri = self._get_stateful_uri(archive_uri)
-        else:
-            stateful_uri = self._payload_to_stateful_uri(payload_uri)
-        staged_stateful = self._stage_payload_by_uri(stateful_uri,
-                                                     properties_file=False)
-        logging.info('Staged stateful from %s at %s.', stateful_uri,
-                     staged_stateful)
-        return staged_uri, staged_stateful
-
 
 
     def _payload_to_stateful_uri(self, payload_uri):
@@ -771,8 +732,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         The two values we need are:
         (1) A build_name string e.g dev-channel/samus/9583.0.0
-        (2) A filename of the exact payload file to use for the update. This
-        payload needs to have already been staged on the devserver.
+        (2) A filename of the exact payload file to use for the update.
 
         @param payload_uri: Google Storage URI to extract values from
 
@@ -810,8 +770,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Fallback to lab provisioning if this function fails to restore.
         self._run(['touch', self._CORRUPT_STATEFUL_PATH])
 
-        # Stage stateful payload.
-        statefuldev_url = self._stage_stateful(public_bucket)
+        # Get the stateful archive URL.
+        statefuldev_url = self._get_stateful_url(public_bucket)
 
         logging.info('Restoring stateful partition...')
         # Setup local dir.
@@ -877,9 +837,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             cmd += members
         self._run(cmd)
 
-    def _stage_stateful(self, public_bucket=False):
+    def _get_stateful_url(self, public_bucket=False):
         """
-        Stage the stateful archive for download.
+        Get the URL for the stateful archive.
 
         @param public_bucket: True to return archive on a public bucket.
 
@@ -887,15 +847,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if public_bucket:
             statefuldev_url = self._get_stateful_url_on_public_bucket()
         else:
-            # Stage stateful payload.
-            ds_url, build = tools.get_devserver_build_from_package_url(
-                    self._job_repo_url)
-            self._autotest_devserver = dev_server.ImageServer(ds_url)
-            self._autotest_devserver.stage_artifacts(build, ['stateful'])
-
-            update_url = self._autotest_devserver.get_update_url(build)
-            statefuldev_url = update_url.replace('update', 'static')
-            statefuldev_url += '/stateful.tgz'
+            _, _, statefuldev_url = self._get_payload_url_on_cache_server(
+                    self._cache_server_url)
         return statefuldev_url
 
     def verify_update_events(self, source_release, hostlog_filename,
@@ -934,7 +887,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
 
     def get_payload_url_on_public_bucket(self,
-                                         job_repo_url=None,
                                          full_payload=True,
                                          payload_type=_PAYLOAD_TYPE.CROS):
         """
@@ -943,18 +895,12 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         We will be copying the payload to a public google storage bucket
         (similar location to updates via autest command).
 
-        @param job_repo_url: string url containing the current build.
         @param full_payload: True for full, False for delta.
         @param payload_type: The type of payload to get. Can be a value of the
                              _PAYLOAD_TYPE enum.
 
         """
         self._should_restore_stateful = True
-        if job_repo_url is not None:
-            self._job_repo_url = job_repo_url
-            _, build = tools.get_devserver_build_from_package_url(
-                    self._job_repo_url)
-            self._build = build
 
         payload_url = self._get_payload_url(full_payload=full_payload,
                                             payload_type=payload_type)
@@ -1049,6 +995,31 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._run(['chown', '$USER', dst])
         self._run(['chmod', '755', dst])
 
+    def _get_job_repo_url(self):
+        """Gets the job_repo_url argument supplied to the test by the lab."""
+        if self._host is None:
+            raise error.TestFail('No host specified by AU test.')
+        info = self._host.host_info_store.get()
+        return info.attributes.get(self._host.job_repo_url_attribute, '')
+
+    def _get_cache_server_url(self):
+        """Gets the lab cache server to use, if one is available."""
+        if self._get_job_repo_url():
+            logging.info('Getting payload for the build in job_repo_url')
+            cache_server_url, _ = tools.get_devserver_build_from_package_url(
+                    self._get_job_repo_url())
+            return cache_server_url
+
+        for ip in self._PINNED_CACHE_SERVER_IPS:
+            try:
+                self._host.run(['ping', '-c', '3', ip])
+            except error.AutoservRunError as e:
+                logging.error('Failed to ping cache server at %s', ip)
+                continue
+            return self._CACHE_SERVER_URL_PATTERN % ip
+
+        return None
+
     def get_payload_for_nebraska(self,
                                  job_repo_url=None,
                                  build=None,
@@ -1057,10 +1028,18 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                  payload_type=_PAYLOAD_TYPE.CROS):
         """
         Gets a platform or DLC payload URL to be used with a nebraska instance
-        on the DUT.
+        on the DUT. The payload source is determined as follows:
+        - If a job_repo_url is provided (as is the case for scheduled lab runs)
+          the test will get update payloads from the cache server contained in
+          the job_repo_url.
+        - If the DUT can ping a static cache server (implying it is in the CrOS
+          lab) the test will get payloads from that server.
+        - If the `public_bucket` argument is True, or if the DUT is not in the
+          CrOS lab network (no job_repo_url/can't ping static cache server),
+          the test will get payloads from the public throwaway GS bucket.
 
-        @param job_repo_url: string url containing the current build and cache
-                             server to use.
+        @param job_repo_url: unused, but can only remove once all users of this
+                             function have stopped passing in the arg.
         @param build: string containing the build to use for the update,
                       like R102-14644.0.0 (the milestone number is required).
                       Only used for the public bucket update flow.
@@ -1069,18 +1048,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param payload_type: The type of payload to get. Can be a value of the
                              _PAYLOAD_TYPE enum.
 
-        @returns string URL of a payload staged on a lab devserver.
+        @returns string URL of a payload on a lab cache server or public GS
+                 bucket that can be used by nebraska_wrapper.py.
 
         """
-        self._job_repo_url = self._get_job_repo_url(job_repo_url)
-
-        if self._job_repo_url:
-            logging.info('Getting payload for the build in job_repo_url')
-            ds_url, build = tools.get_devserver_build_from_package_url(
-                    self._job_repo_url)
-            self._autotest_devserver = dev_server.ImageServer(ds_url)
-            self._build = build
-        elif build is not None:
+        if build is not None:
             logging.info('Getting payload for the build provided in test_that')
             # self._build looks like this: octopus-release/R102-14650.0.0
             # Replace the version with the one provided in test_that.
@@ -1097,13 +1069,28 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # might run with mismatching stateful partition.
         self._should_restore_stateful = True
 
-        if public_bucket:
+        self._cache_server_url = self._get_cache_server_url()
+
+        if public_bucket or not self._cache_server_url:
+            logging.info(
+                    "Getting payload for nebraska for build %s on the public bucket",
+                    self._build)
             return self.get_payload_url_on_public_bucket(
                     full_payload=full_payload, payload_type=payload_type)
 
-        payload = self._get_payload_url(full_payload=full_payload,
-                                        payload_type=payload_type)
-        payload_url, _ = self._stage_payload_by_uri(payload)
+        if self._get_job_repo_url():
+            logging.info('Getting payload for the build in job_repo_url')
+            _, self._build = tools.get_devserver_build_from_package_url(
+                    self._get_job_repo_url())
+
+        logging.info(
+                "Getting payload for nebraska for build %s on lab cache server %s",
+                self._build, self._cache_server_url)
+
+        payload_url, _, _ = self._get_payload_url_on_cache_server(
+                self._cache_server_url,
+                full_payload=full_payload,
+                payload_type=payload_type)
         logging.info('Payload URL for Nebraska: %s', payload_url)
         return payload_url
 

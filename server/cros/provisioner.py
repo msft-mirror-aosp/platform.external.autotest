@@ -9,7 +9,6 @@ import logging
 import os
 import re
 import six
-import sys
 import six.moves.urllib.parse
 
 from autotest_lib.client.bin import utils
@@ -219,7 +218,8 @@ class ChromiumOSProvisioner(object):
                  interactive=True,
                  is_release_bucket=None,
                  is_servohost=False,
-                 public_bucket=False):
+                 public_bucket=False,
+                 cache_server_url=None):
         """Initializes the object.
 
         @param update_url: The URL we want the update to use.
@@ -231,6 +231,10 @@ class ChromiumOSProvisioner(object):
         @param public_bucket: True to copy payloads to a public throwaway GS
             bucket. This avoids using a lab cache server, so local test runs
             can provision without any special setup.
+        @param cache_server_url: Optional URL for a cache server. Using this
+                                 will avoid needing to SSH or curl lab cache
+                                 servers, allowing tests to provision lab DUTs
+                                 when running from a workstation host.
         """
         self.update_url = update_url
         self.host = host
@@ -239,6 +243,7 @@ class ChromiumOSProvisioner(object):
         self._is_release_bucket = is_release_bucket
         self._is_servohost = is_servohost
         self._public_bucket = public_bucket
+        self._cache_server_url = cache_server_url
 
     def _run(self, cmd, *args, **kwargs):
         """Abbreviated form of self.host.run(...)"""
@@ -391,13 +396,6 @@ class ChromiumOSProvisioner(object):
         ds = dev_server.ImageServer('http://%s' % devserver_name)
         archive_url = ('gs://chromeos-releases/%s' %
                        image_name if self._is_release_bucket else None)
-        try:
-            ds.stage_artifacts(
-                    image_name,
-                    ['quick_provision', 'stateful', 'autotest_packages'],
-                    archive_url=archive_url)
-        except dev_server.DevServerException as e:
-            six.reraise(error.TestFail, str(e), sys.exc_info()[2])
 
         static_url = 'http://%s/static' % devserver_name
         command = '%s --noreboot %s %s' % (provision_command, image_name,
@@ -567,7 +565,10 @@ class ChromiumOSProvisioner(object):
         image_name = url_to_image_name(self.update_url)
         # update_url is different from devserver url needed to stage autotest
         # packages, therefore, resolve a new devserver url here.
-        devserver_url = dev_server.ImageServer.resolve(
-                image_name, self.host.hostname).url()
+        if self._cache_server_url:
+            devserver_url = self._cache_server_url
+        else:
+            devserver_url = dev_server.ImageServer.resolve(
+                    image_name, self.host.hostname).url()
         repo_url = tools.get_package_url(devserver_url, image_name)
         return image_name, {ds_constants.JOB_REPO_URL: repo_url}

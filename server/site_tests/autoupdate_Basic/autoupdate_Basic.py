@@ -4,9 +4,9 @@
 # found in the LICENSE file.
 
 import logging
+import os
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import cryptohome
 from autotest_lib.server.cros import provisioner
@@ -22,7 +22,6 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
 
     def run_once(self,
                  full_payload,
-                 job_repo_url=None,
                  build=None,
                  m2n=False,
                  running_at_desk=False,
@@ -31,15 +30,13 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         Performs a N-to-N autoupdate with Nebraska.
 
         @param full_payload: True for full payload, False for delta
-        @param job_repo_url: A url pointing to the devserver where the autotest
-            package for this build should be staged.
         @param build: An optional parameter to specify the target build for the
-                      update when running locally. job_repo_url will override
-                      this value.
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used. In the lab, the
+                      job_repo_url from the host attributes will override this.
         @m2n: M -> N update. This means we install the current stable version
               of this board before updating to ToT.
         @param running_at_desk: Indicates test is run locally from workstation.
-                                Flag does not work with M2N tests.
         @param pin_login: True to use login via PIN.
 
         """
@@ -50,7 +47,6 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
 
         # Get a payload to use for the test.
         payload_url = self.get_payload_for_nebraska(
-                job_repo_url=job_repo_url,
                 build=build,
                 full_payload=full_payload,
                 public_bucket=running_at_desk)
@@ -67,14 +63,15 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
             logging.debug('build name is %s', build_name)
 
             # Install the matching build with quick provision.
+            cache_server_url = None
             if running_at_desk:
                 self._copy_quick_provision_to_dut()
                 update_url = self._get_provision_url_on_public_bucket(
                         build_name)
             else:
-                autotest_devserver = dev_server.ImageServer.resolve(
-                        build_name, self._host.hostname)
-                update_url = autotest_devserver.get_update_url(build_name)
+                cache_server_url = self._get_cache_server_url()
+                update_url = os.path.join(cache_server_url, 'update',
+                                          build_name)
 
             logging.info('Installing source image with update url: %s',
                          update_url)
@@ -82,7 +79,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                     update_url,
                     host=self._host,
                     is_release_bucket=True,
-                    public_bucket=running_at_desk).run_provision()
+                    public_bucket=running_at_desk,
+                    cache_server_url=cache_server_url).run_provision()
 
         # Login to device before update
         if pin_login:

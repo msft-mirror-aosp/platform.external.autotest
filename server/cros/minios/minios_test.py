@@ -14,7 +14,6 @@ import re
 import time
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.minios import minios_util
 from autotest_lib.server.cros.update_engine import update_engine_test
@@ -126,10 +125,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
             update_url = self._get_provision_url_on_public_bucket(
                     build_name, is_release_bucket=False)
         else:
-            if not self._autotest_devserver:
-                self._autotest_devserver = dev_server.ImageServer.resolve(
-                        build_name, self._host.hostname)
-            update_url = self._autotest_devserver.get_update_url(build_name)
+            cache_server_url = self._get_cache_server_url()
+            update_url = os.path.join(cache_server_url, 'update', build_name)
 
         logging.info('Provisioning inactive partition with update url: %s',
                      update_url)
@@ -137,7 +134,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
                 update_url,
                 host=self._host,
                 is_release_bucket=True,
-                public_bucket=running_at_desk).run_provision()
+                public_bucket=running_at_desk,
+                cache_server_url=cache_server_url).run_provision()
         super(MiniOsTest, self).warmup()
 
     def cleanup(self):
@@ -251,7 +249,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         @param public_bucket: True to download stateful from a public bucket.
 
         """
-        statefuldev_url = self._stage_stateful(public_bucket)
+        statefuldev_url = self._get_stateful_url(public_bucket)
         logging.info('Installing dependencies from %s', statefuldev_url)
 
         # Create destination directories.

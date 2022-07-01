@@ -112,7 +112,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                  full_payload=True,
                  cellular=False,
                  interrupt=None,
-                 job_repo_url=None,
                  moblab=False,
                  m2n=False):
         """
@@ -122,10 +121,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param cellular: True to do the update over a cellualar connection.
                          Requires that the DUT have a sim card slot.
         @param interrupt: Type of interrupt to try. See _SUPPORTED_INTERRUPTS.
-        @param job_repo_url: Used for debugging locally. This is used to figure
-                             out the current build and the devserver to use.
-                             The test will read this from a host argument
-                             when run in the lab.
         @param moblab: True if we are running on moblab.
         @param m2n: True if we should first provision the latest stable version
                     for the current board so that we can perform a M->N update.
@@ -151,13 +146,13 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                     is_release_bucket=True).run_provision()
 
         payload_url = None
+        public_bucket = False
         if cellular:
             self._set_update_over_cellular_setting(True)
-            payload_url = self.get_payload_url_on_public_bucket(
-                job_repo_url, full_payload=full_payload)
-        else:
-            payload_url = self.get_payload_for_nebraska(
-                    job_repo_url, full_payload=full_payload)
+            public_bucket = True
+
+        payload_url = self.get_payload_for_nebraska(
+                full_payload=full_payload, public_bucket=public_bucket)
         before_version = self._host.get_release_version()
 
         # Clear any previously started updates.

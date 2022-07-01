@@ -18,18 +18,35 @@ changes don't break autoupdate.
 
 In the lab, a job_repo_url will be passed directly to the test. It contains
 information about the build to use and the IP address of lab cache server to
-download update payloads from. Local runs can use cache servers as well but
-the setup is fairly complicated.
+download update payloads from.
 
-Instead you can use the `running_at_desk` arg when running tests locally to
-avoid the extra setup needed to access cache servers from your workstation.
-`running_at_desk` will copy payloads from gs://chromeos-image-archive/ to a
-public bucket that is accessible without additional configuration.
+When running the test from your workstation, the source of update payloads
+differs depending on where the DUT is located/what network it is on:
+
+1. DUT is in the CrOS lab or connected physically to the lab network.
+  - Payloads by default will be retrieved from a static caching server in the
+    lab.
+2. DUT is at your desk and NOT connected to the CrOS lab network.
+  - Payloads will be retrieved from a public GS bucket in this case.
+
+The test will automatically determine which situation you are in, but you can
+use the "running_at_desk=True" arg if you wish to force the public bucket flow.
+
 
 Example usage:
 
-The current version on the DUT will be used for the update:
+test_that <DUT> autoupdate_Basic.delta --board=<board>
+- Payload origin will be automatically determined based on the DUTs network.
+- Version currently on the DUT will be used as the update's target version.
+
+test_that <DUT> autoupdate_Basic.delta --board=<board> --args="build=R102-14643.0.0"
+- Payload origin will be automatically determined based on the DUTs network.
+- R102-14643.0.0 will be used as the update's target version.
+
 test_that <DUT> autoupdate_Basic.delta --board=<board> --args="running_at_desk=True"
+- Public GS bucket will be used.
+- Version currently on the DUT will be used as the update's target version.
+
 """
 
 from autotest_lib.client.common_lib import utils

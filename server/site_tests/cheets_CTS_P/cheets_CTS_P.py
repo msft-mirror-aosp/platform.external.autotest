@@ -121,8 +121,8 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         chart_hosts = [hosts.create_host(ip) for ip in chart_address]
 
         self.chart_fixtures = [
-                camerabox_utils.ChartFixture(h, self._SCENE_URI, self.job)
-                for h in chart_hosts
+            camerabox_utils.ChartFixture(h, self._SCENE_URI)
+            for h in chart_hosts
         ]
         self.dut_fixtures = [
             camerabox_utils.DUTFixture(self, h, camera_facing)

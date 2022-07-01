@@ -15,7 +15,8 @@ from autotest_lib.client.cros.multimedia import display_facade as display_facade
 from autotest_lib.client.cros.multimedia import facade_resource
 
 EXTRA_BROWSER_ARGS = ['--enable-experimental-web-platform-features',
-                      '--force-tablet-mode=clamshell']
+                      '--force-tablet-mode=clamshell',
+                      '--ash-no-nudges']
 
 
 class graphics_HwOverlays(graphics_utils.GraphicsTest):

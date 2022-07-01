@@ -15,7 +15,6 @@ import random
 import re
 import string
 import tempfile
-import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -109,7 +108,6 @@ class LinuxRouter(site_linux_system.LinuxSystem):
 
     KNOWN_TEST_PREFIX = 'network_WiFi_'
     UP_INTERFACES = ("eth0", "lo")
-    POLLING_INTERVAL_SECONDS = 0.5
     STARTUP_TIMEOUT_SECONDS = 30
     SUFFIX_LETTERS = string.ascii_lowercase + string.digits
     SUBNET_PREFIX_OCTETS = (192, 168)
@@ -195,21 +193,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         self.dhcpd_conf = os.path.join(self.logdir, 'dhcpd.%s.conf')
         self.dhcpd_leases = os.path.join(self.logdir, 'dhcpd.leases')
 
-        # Log the most recent message on the router so that we can rebuild the
-        # suffix relevant to us when debugging failures.
-        last_log_line = self.host.run('tail -1 /var/log/messages',
-                                      ignore_status=True).stdout
-        # We're trying to get the timestamp from:
-        # 2014-07-23T17:29:34.961056+00:00 localhost kernel: blah blah blah
-        self._log_start_timestamp = last_log_line.strip().partition(' ')[0]
-        if self._log_start_timestamp:
-            logging.debug('Will only retrieve logs after %s.',
-                          self._log_start_timestamp)
-        else:
-            # If syslog is empty, we just use a wildcard pattern, to grab
-            # everything.
-            logging.debug('Empty or corrupt log; will retrieve whole log')
-            self._log_start_timestamp = '.'
+        self.setup_logs()
 
         # hostapd configuration persists throughout the test, subsequent
         # 'config' commands only modify it.
@@ -255,24 +239,8 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         """Close global resources held by this system."""
         router_log = os.path.join(self.logdir, 'router_log')
         self.deconfig()
-        # dnsmasq and hostapd cause interesting events to go to system logs.
-        # Retrieve only the suffix of the logs after the timestamp we stored on
-        # router creation.
-        self.host.run("sed -n -e '/%s/,$p' /var/log/messages >%s" %
-                      (self._log_start_timestamp, router_log),
-                      ignore_status=True)
-        self.host.get_file(router_log, 'debug/%s_host_messages' % self.role)
+        self.get_logs(router_log)
         super(LinuxRouter, self).close()
-
-
-    def reboot(self, timeout):
-        """Reboot this router, and restore it to a known-good state.
-
-        @param timeout Maximum seconds to wait for router to return.
-
-        """
-        super(LinuxRouter, self).reboot(timeout)
-        self.__setup()
 
 
     def has_local_server(self):
@@ -373,54 +341,6 @@ class LinuxRouter(site_linux_system.LinuxSystem):
                 raise error.TestFail('hostapd process terminated.')
 
         return False
-
-
-    def _kill_process_instance(self,
-                               process,
-                               instance=None,
-                               timeout_seconds=10,
-                               ignore_timeouts=False):
-        """Kill a process on the router.
-
-        Kills remote program named |process| (optionally only a specific
-        |instance|).  Wait |timeout_seconds| for |process| to die
-        before returning.  If |ignore_timeouts| is False, raise
-        a TestError on timeouts.
-
-        @param process: string name of process to kill.
-        @param instance: string fragment of the command line unique to
-                this instance of the remote process.
-        @param timeout_seconds: float timeout in seconds to wait.
-        @param ignore_timeouts: True iff we should ignore failures to
-                kill processes.
-        @return True iff the specified process has exited.
-
-        """
-        if instance is not None:
-            search_arg = '-f "^%s.*%s"' % (process, instance)
-        else:
-            search_arg = process
-
-        self.host.run('pkill %s' % search_arg, ignore_status=True)
-
-        # Wait for process to die
-        time.sleep(self.POLLING_INTERVAL_SECONDS)
-        try:
-            utils.poll_for_condition(
-                    condition=lambda: self.host.run(
-                            'pgrep -l %s' % search_arg,
-                            ignore_status=True).exit_status != 0,
-                    timeout=timeout_seconds,
-                    sleep_interval=self.POLLING_INTERVAL_SECONDS)
-        except utils.TimeoutError:
-            if ignore_timeouts:
-                return False
-
-            raise error.TestError(
-                'Timed out waiting for %s%s to die' %
-                (process,
-                '' if instance is None else ' (instance=%s)' % instance))
-        return True
 
 
     def kill_hostapd_instance(self, instance):

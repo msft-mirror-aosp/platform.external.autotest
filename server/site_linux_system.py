@@ -15,6 +15,7 @@ import random
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import path_utils
 from autotest_lib.client.common_lib.cros import virtual_ethernet_pair
 from autotest_lib.client.common_lib.cros.network import interface
@@ -54,6 +55,7 @@ class LinuxSystem(object):
     MAC_BIT_LOCAL = 0x2  # Locally administered.
     MAC_BIT_MULTICAST = 0x1
     MAC_RETRY_LIMIT = 1000
+    POLLING_INTERVAL_SECONDS = 0.5
 
     _UMA_EVENTS = '/var/lib/metrics/uma-events'
     _LOG_PATH_PREFIX = '/tmp/autotest-'
@@ -158,6 +160,24 @@ class LinuxSystem(object):
                                ignore_status=True)
         for path in result.stdout.splitlines():
             self.delete_link(path.split('/')[-1])
+
+
+    def setup_logs(self):
+        """Setup the logs for this system."""
+        # Log the most recent message on the device.
+        last_log_line = self.host.run('tail -1 /var/log/messages',
+                                      ignore_status=False).stdout
+        # We're trying to get the timestamp from:
+        # 2014-07-23T17:29:34.961056+00:00 localhost kernel: blah blah blah
+        self._log_start_timestamp = last_log_line.strip().partition(' ')[0]
+        if self._log_start_timestamp:
+            logging.debug('Will only retrieve logs after %s.',
+                          self._log_start_timestamp)
+        else:
+            # If syslog is empty, we just use a wildcard pattern, to grab
+            # everything.
+            logging.debug('Empty or corrupt log; will retrieve whole log')
+            self._log_start_timestamp = '.'
 
 
     @property
@@ -299,6 +319,19 @@ class LinuxSystem(object):
         self.host.run('%s link del %s' % (self.cmd_ip, name),
                       ignore_status=True)
 
+    def get_logs(self, device_log):
+        """Retrieve the logs for this system.
+
+        @param device_log: string name of the file to save the logs to
+        """
+        # dnsmasq and hostapd cause interesting events to go to system logs.
+        # Retrieve only the suffix of the logs after the timestamp we stored
+        # on device creation.
+        self.host.run("sed -n -e '/%s/,$p' /var/log/messages >%s" %
+                        (self._log_start_timestamp, device_log),
+                        ignore_status=True)
+        self.host.get_file(device_log, 'debug/%s_host_messages' % self.role)
+
 
     def close(self):
         """Close global resources held by this system."""
@@ -327,6 +360,54 @@ class LinuxSystem(object):
         """
         self.host.reboot(timeout=timeout, wait=True)
         self.__setup()
+
+
+    def _kill_process_instance(self,
+                               process,
+                               instance=None,
+                               timeout_seconds=10,
+                               ignore_timeouts=False):
+        """Kill a process on the system.
+
+        Kills remote program named |process| (optionally only a specific
+        |instance|).  Wait |timeout_seconds| for |process| to die
+        before returning.  If |ignore_timeouts| is False, raise
+        a TestError on timeouts.
+
+        @param process: string name of process to kill.
+        @param instance: string fragment of the command line unique to
+                this instance of the remote process.
+        @param timeout_seconds: float timeout in seconds to wait.
+        @param ignore_timeouts: True iff we should ignore failures to
+                kill processes.
+        @return True iff the specified process has exited.
+
+        """
+        if instance is not None:
+            search_arg = '-f "^%s.*%s"' % (process, instance)
+        else:
+            search_arg = process
+
+        self.host.run('pkill %s' % search_arg, ignore_status=True)
+
+        # Wait for process to die
+        time.sleep(self.POLLING_INTERVAL_SECONDS)
+        try:
+            utils.poll_for_condition(
+                    condition=lambda: self.host.run(
+                            'pgrep -l %s' % search_arg,
+                            ignore_status=True).exit_status != 0,
+                    timeout=timeout_seconds,
+                    sleep_interval=self.POLLING_INTERVAL_SECONDS)
+        except utils.TimeoutError:
+            if ignore_timeouts:
+                return False
+
+            raise error.TestError(
+                'Timed out waiting for %s%s to die' %
+                (process,
+                '' if instance is None else ' (instance=%s)' % instance))
+        return True
 
 
     def get_capabilities(self):

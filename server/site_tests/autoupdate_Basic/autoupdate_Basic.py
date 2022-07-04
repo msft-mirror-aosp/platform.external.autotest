@@ -59,6 +59,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         if self._m2n:
             if self._host.get_board().endswith("-kernelnext"):
                 raise error.TestNAError("Skipping test on kernelnext board")
+            if self._host.get_board().endswith("-manatee"):
+                raise error.TestNAError("Skipping test on manatee board")
 
             # Provision latest stable build for the current build.
             build_name = self._get_latest_serving_stable_build()

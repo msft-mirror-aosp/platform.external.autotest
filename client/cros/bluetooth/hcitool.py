@@ -525,11 +525,11 @@ class SupportedFeatures:
             'Periodic Advertising Sync Transfer Sender',
             'Periodic Advertising Sync Transfer Recipient',
             'Sleep Clock Accuracy Updates', 'Remote Public Key Validation',
-            'Connected Isochronous Stream Master',
-            'Connected Isochronous Stream Slave', 'Isochronous Broadcaster',
-            'Synchronized Receiver', 'Isochronous Channels (Host Support)',
-            'LE Power Control Request', 'LE Power Change Indication',
-            'LE Path Loss Monitoring'
+            'Connected Isochronous Stream Central',
+            'Connected Isochronous Stream Peripheral',
+            'Isochronous Broadcaster', 'Synchronized Receiver',
+            'Isochronous Channels (Host Support)', 'LE Power Control Request',
+            'LE Power Change Indication', 'LE Path Loss Monitoring'
     ]
 
 

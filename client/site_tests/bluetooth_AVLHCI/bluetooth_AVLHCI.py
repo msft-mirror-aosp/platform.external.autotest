@@ -52,7 +52,12 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
     LE_EXTENDED_ADVERTISING_FEATURE = 'LE Extended Advertising'
     LE_TWO_MEGA_PHYSICAL_CHANNEL_FEATURE = 'LE 2M PHY'
     MIN_ADVERTISEMENT_SETS_NUMBER = 10
-    LE_ISOCHRONOUS_CHANNELS_FEATURE = 'Isochronous Channels (Host Support)'
+    LE_CONNECTED_ISOCHRONOUS_STREAM_CENTRAL_FEATURE = (
+            'Connected Isochronous Stream Central')
+    LE_CONNECTED_ISOCHRONOUS_STREAM_PERIPHERAL_FEATURE = (
+            'Connected Isochronous Stream Peripheral')
+    LE_ISOCHRONOUS_BROADCASTER_FEATURE = 'Isochronous Broadcaster'
+    LE_SYNCHRONIZED_RECEIVER_FEATURE = 'Synchronized Receiver'
     LE_POWER_CONTROL_REQUEST_FEATURE = 'LE Power Control Request'
     LE_POWER_CHANGE_INDICATION_FEATURE = 'LE Power Change Indication'
     GOOGLE_FEATURE_SPECIFICATION_VERSION = 98
@@ -453,7 +458,15 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
     def test_le_isochronous_channels_feature(self):
         """Checks if ISO channels feature is supported."""
         supported_features = self.hcitool.read_le_local_supported_features()[1]
-        self.verify_support(self.LE_ISOCHRONOUS_CHANNELS_FEATURE,
+        self.verify_support(
+                self.LE_CONNECTED_ISOCHRONOUS_STREAM_CENTRAL_FEATURE,
+                supported_features)
+        self.verify_support(
+                self.LE_CONNECTED_ISOCHRONOUS_STREAM_PERIPHERAL_FEATURE,
+                supported_features)
+        self.verify_support(self.LE_ISOCHRONOUS_BROADCASTER_FEATURE,
+                            supported_features)
+        self.verify_support(self.LE_SYNCHRONIZED_RECEIVER_FEATURE,
                             supported_features)
         return all(self.results.values())
 

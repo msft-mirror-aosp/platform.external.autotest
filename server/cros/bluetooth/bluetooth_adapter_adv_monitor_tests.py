@@ -2035,8 +2035,8 @@ class BluetoothAdapterAdvMonitorTests(
             # lost events.
             if not passed_device_lost and rotate_time > RSSI_LOW_TIMEOUT:
                 raise error.TestNAError(
-                        'Rotation took too much time: {:.3f}s, fails: %s'.
-                        format(rotate_time, self.fails))
+                        'Rotation took too much time: {:.3f}s'.format(
+                                rotate_time))
 
         finally:
             for monitor in monitors:

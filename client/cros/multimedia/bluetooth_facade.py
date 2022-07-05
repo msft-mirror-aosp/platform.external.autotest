@@ -1828,6 +1828,21 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return
 
     @dbus_safe(False)
+    def set_ll_privacy(self, enable):
+        """Enable or disable the link layer privacy feature in the DUT.
+
+        If the controller is on, the command will first turn it off, set
+        the value, then turn it back on.
+
+        @param enable: True to enable
+        """
+        debug_object = self.bus.get(
+                self.BLUEZ_SERVICE_NAME,
+                self.BLUEZ_DEBUG_LOG_PATH)[self.BLUEZ_DEBUG_LOG_IFACE]
+        debug_object.SetLLPrivacy(enable)
+        return True
+
+    @dbus_safe(False)
     def set_quality_debug_log(self, enable):
         """Enable or disable bluez quality debug log in the DUT
         @param enable: True to enable all of the debug log,

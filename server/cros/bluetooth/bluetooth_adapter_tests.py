@@ -1834,6 +1834,10 @@ class BluetoothAdapterTests(test.test):
                         if uuid not in adapter_UUIDs]
         return not bool(self.results)
 
+    @test_retry_and_log(False)
+    def test_set_ll_privacy(self, enable):
+        """Test set ll privacy status."""
+        return self.bluetooth_facade.set_ll_privacy(enable)
 
     @test_retry_and_log
     def test_start_discovery(self):

@@ -9,6 +9,7 @@ import random
 import re
 import subprocess
 import time
+import datetime
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
@@ -25,6 +26,7 @@ class audio_CrasStress(test.test):
     _LOOP_COUNT = 300
     _INPUT_BUFFER_LEVEL = '.*?READ_AUDIO.*?hw_level.*?(\d+).*?'
     _OUTPUT_BUFFER_LEVEL = '.*?FILL_AUDIO.*?hw_level.*?(\d+).*?'
+    _AUDIO_LOG_TIME_FMT = '%Y-%m-%dT%H:%M:%S.%f'
     _CHECK_PERIOD_TIME_SECS = 1 # Check buffer level every second.
 
     """
@@ -132,13 +134,28 @@ class audio_CrasStress(test.test):
                     self._check_buffer_level(_STREAM_TYPE_OUTPUT)
 
             loop_count += 1
+    def _get_timestamp(self, s):
+        """
+        Parse timespec from the audio log. The format is like
+        2020-07-16T00:36:40.819094632 cras ...
 
+        Args:
+            s: A string to parse.
+
+        Returns:
+            The timestamp created from the given string.
+        """
+        return datetime.datetime.timestamp(
+                    datetime.datetime.strptime(
+                        s.split(' ')[0][:-3], self._AUDIO_LOG_TIME_FMT))
     def _get_buffer_level(self, stream_type):
         """Gets a rough number about current buffer level.
 
         @returns: The current buffer level.
 
         """
+        select_time_start = time.time() - self._CHECK_PERIOD_TIME_SECS
+
         if stream_type == _STREAM_TYPE_INPUT:
             match_str = self._INPUT_BUFFER_LEVEL
         else:
@@ -151,6 +168,8 @@ class audio_CrasStress(test.test):
         for line in output.decode().split('\n'):
             search = re.match(match_str, line)
             if search:
+                if self._get_timestamp(line) < select_time_start:
+                    continue
                 tmp = int(search.group(1))
                 if tmp > buffer_level:
                     buffer_level = tmp

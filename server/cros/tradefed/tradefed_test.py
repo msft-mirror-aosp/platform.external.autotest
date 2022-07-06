@@ -1422,14 +1422,6 @@ class TradefedTest(test.test):
             steps += 1
             keep_media = media_asset and media_asset.uri and steps >= 1
             self._run_commands(login_precondition_commands, ignore_status=True)
-            # TODO(kinaba): Make it a general config (per-model choice
-            # of tablet,clamshell,default) if the code below works.
-            if utils.is_in_container() and not client_utils.is_moblab():
-                # Force laptop mode for non TABLET_MODE_BOARDS
-                if not self._is_tablet_mode_device():
-                    self._run_commands(
-                        ['inject_powerd_input_event --code=tablet --value=0'],
-                        ignore_status=True)
 
             session_log_dir = os.path.join(self.resultsdir,
                                            'login_session_log',
@@ -1466,6 +1458,15 @@ class TradefedTest(test.test):
                                 'Specified ABI %s is not in the device ABI list %s. Skipping.',
                                 abi, abilist)
                         return
+
+                # TODO(kinaba): Make it a general config (per-model choice
+                # of tablet,clamshell,default) if the code below works.
+                if utils.is_in_container() and not client_utils.is_moblab():
+                    # Force laptop mode for non TABLET_MODE_BOARDS
+                    if not self._is_tablet_mode_device():
+                        self._run_commands(
+                            ['inject_powerd_input_event --code=tablet --value=0'],
+                            ignore_status=True)
 
                 # For CtsMediaStressTestCases, push media assets in advance if
                 # applicable.

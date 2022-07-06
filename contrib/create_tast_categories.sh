@@ -42,7 +42,9 @@ types=( "remote" "local" )
 for type in "${types[@]}"; do
     mapfile -t categories < <(find \
     "${src_root}/platform/tast-tests/src/chromiumos/tast/${type}/bundles/cros" \
-    -maxdepth 1 -mindepth 1 -type d -printf "%f\n")
+    -maxdepth 1 -mindepth 1 -type d \
+    -not -name shimlessrma \
+    -printf "%f\n")
 done
 
 mapfile -t categories < <(printf '%s\n' "${categories[@]}" | sort -u)

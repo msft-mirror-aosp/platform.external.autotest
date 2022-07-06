@@ -4788,6 +4788,34 @@ class BluetoothAdapterTests(test.test):
         self.results = {'alias_found': alias_found}
         return all(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_le_secure_connection(self, device):
+        """ Tests that Secure Connection is used for LE pairing
+
+        @param device: the meta device containing a Bluetooth device
+
+        @returns: true if SC can be done
+        """
+
+        self.test_discover_device(device.address)
+        time.sleep(self.TEST_SLEEP_SECS)
+
+        self._get_btmon_log(lambda: self.test_pairing(
+                device.address, device.pin, trusted=True))
+
+        key_exchanged = self.bluetooth_facade.btmon_find(
+                'SMP: Pairing Public Key')
+        key_checked = self.bluetooth_facade.btmon_find(
+                'SMP: Pairing DHKey Check')
+
+        self.results = {
+                'key exchanged': key_exchanged,
+                'key checked': key_checked,
+        }
+
+        return key_exchanged and key_checked
+
+
     # -------------------------------------------------------------------
     # Autotest methods
     # -------------------------------------------------------------------

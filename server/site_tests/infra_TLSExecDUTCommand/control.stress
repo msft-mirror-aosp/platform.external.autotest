@@ -6,7 +6,7 @@ AUTHOR = "dbeckett"
 NAME = "infra_TLSExecDUTCommand.stress"
 TIME = "SHORT"
 TEST_TYPE = "server"
-ATTRIBUTES = 'suite:ent-nightly'
+ATTRIBUTES = ''
 PY_VERSION = 3
 
 DOC = """

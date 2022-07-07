@@ -4,6 +4,8 @@
 # found in the LICENSE file.
 
 import logging
+import os
+import shutil
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -64,13 +66,25 @@ class power_UiResume(arc.ArcTest):
             logging.error('%s is not running at start of test', service)
             err += 1
 
-        self.job.run_test('power_Resume',
-                          max_devs_returned=max_devs_returned,
-                          seconds=seconds,
-                          suspend_state=suspend_state,
-                          suspend_iterations=suspend_iterations,
-                          ignore_kernel_warns=ignore_kernel_warns,
-                          measure_arc=self._enable_arc)
+        res = self.job.run_test('power_Resume',
+                                max_devs_returned=max_devs_returned,
+                                seconds=seconds,
+                                suspend_state=suspend_state,
+                                suspend_iterations=suspend_iterations,
+                                ignore_kernel_warns=ignore_kernel_warns,
+                                measure_arc=self._enable_arc)
+        if res:
+            result_files = os.listdir(
+                    os.path.join(self.outputdir, "..", "power_Resume",
+                                 "results"))
+            for file in result_files:
+                shutil.copy2(
+                        os.path.join(self.outputdir, "..", "power_Resume",
+                                     "results", file), self.resultsdir)
+        else:
+            logging.error(
+                    "inner power_Resume test failed, see logs for details")
+            err += 1
 
         pid_end = upstart.get_pid('powerd')
         if not pid_end:
@@ -83,6 +97,7 @@ class power_UiResume(arc.ArcTest):
 
         if err:
             raise error.TestFail('Test failed.  See errors for details.')
+
 
     def cleanup(self):
         """

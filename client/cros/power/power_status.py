@@ -2375,15 +2375,22 @@ class VideoFpsLogger(MeasurementLogger):
             raise error.TestFail('Media playback failed: %s' % failed_videos)
         return time.time() - start_time
 
-    def __init__(self, tab, seconds_period=1.0, checkpoint_logger=None):
+    def __init__(self,
+                 tab,
+                 seconds_period=1.0,
+                 checkpoint_logger=None,
+                 lock=None):
         """Initialize a VideoFpsLogger.
 
         Args:
             tab: Chrome tab object
+            lock: lock used to serialize javascript execution on the tab.
+
         """
         super(VideoFpsLogger, self).__init__([], seconds_period,
                                              checkpoint_logger)
         self._tab = tab
+        self._lock = lock or threading.Lock()
         names = self._tab.EvaluateJavaScript(
             'Array.from(document.getElementsByTagName("video")).map(v => v.id)')
         self.domains =  [n or 'video_' + str(i) for i, n in enumerate(names)]
@@ -2393,9 +2400,10 @@ class VideoFpsLogger(MeasurementLogger):
     def refresh(self):
         @retry.retry(Exception, timeout_min=0.5, delay_sec=0.1)
         def get_fps():
-            return self._tab.EvaluateJavaScript(
-                'Array.from(document.getElementsByTagName("video")).map('
-                'v => v.webkitDecodedFrameCount)')
+            with self._lock:
+                return self._tab.EvaluateJavaScript(
+                    'Array.from(document.getElementsByTagName("video")).map('
+                    'v => v.webkitDecodedFrameCount)')
         current = get_fps()
         fps = [(b - a if b >= a else b) / self.seconds_period
                for a, b in zip(self._last , current)]

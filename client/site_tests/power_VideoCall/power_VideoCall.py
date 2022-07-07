@@ -152,6 +152,10 @@ class power_VideoCall(power_test.power_Test):
                         (time.time() - self._start_time) / 60)
                     break
 
+            # Manually stop the logger so we don't keep trying to refresh stats
+            # after chrome has been closed.
+            self._vlog.done = True
+            self._vlog.join()
             if multitask:
                 self.collect_keypress_latency(cr)
 

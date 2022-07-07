@@ -40,10 +40,10 @@ class audio_CrasDevSwitchStress(test.test):
     Buffer level of input device should stay between 0 and block size.
     Buffer level of output device should between 1 to 2 times of block size.
     Device switching sometimes cause the buffer level to grow more then
-    the ideal range, so we use tripple block size here.
+    the ideal range, so we use 5* block size here.
     """
-    _INPUT_BUFFER_DRIFT_CRITERIA = 3 * _STREAM_BLOCK_SIZE
-    _OUTPUT_BUFFER_DRIFT_CRITERIA = 3 * _STREAM_BLOCK_SIZE
+    _INPUT_BUFFER_DRIFT_CRITERIA = 5 * _STREAM_BLOCK_SIZE
+    _OUTPUT_BUFFER_DRIFT_CRITERIA = 5 * _STREAM_BLOCK_SIZE
 
     def initialize(self):
         """Initialize the test"""

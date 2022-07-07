@@ -493,6 +493,14 @@ class MeasurementLoggerDashboard(ClientTestDashboard):
         start_time = self._logger.times[0]
         return self._logger._checkpoint_logger.convert_relative(start_time)
 
+    def _get_domain_unit(self, domain):
+        """Gets the unit for the domain"""
+        return self._unit
+
+    def _get_domain_type(self, domain):
+        """Gets the type for the domain"""
+        return self._type
+
     def _convert(self):
         """Convert data from power_status.MeasurementLogger object to raw
         power measurement dictionary.
@@ -524,10 +532,14 @@ class MeasurementLoggerDashboard(ClientTestDashboard):
             power_dict['data'][domain] = domain_readings
             power_dict['average'][domain] = \
                     numpy.average(power_dict['data'][domain])
-            if self._unit:
-                power_dict['unit'][domain] = self._unit
-            if self._type:
-                power_dict['type'][domain] = self._type
+
+            domain_unit = self._get_domain_unit(domain)
+            if domain_unit:
+                power_dict['unit'][domain] = domain_unit
+
+            domain_type = self._get_domain_type(domain)
+            if domain_type:
+                power_dict['type'][domain] = domain_type
 
         self._tag_with_checkpoint(power_dict)
         return power_dict

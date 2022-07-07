@@ -13,7 +13,6 @@ from autotest_lib.client.cros.power import sys_power
 # - Should we test any of the other modes?  I chose magic as it meant that only
 #   the target device should be awaken.
 
-
 class network_EthCaps(test.test):
     """Base class of EthCaps test.
 
@@ -27,6 +26,7 @@ class network_EthCaps(test.test):
 
     # If WOL setting changed during test then restore to original during cleanup
     _restore_wol = False
+
 
     def _is_usb(self):
         """Determine if device is USB (or not)
@@ -77,6 +77,7 @@ class network_EthCaps(test.test):
 
         self._caps = caps
 
+
     def _check_eth_caps(self):
         """Check necessary LAN capabilities are present.
 
@@ -87,15 +88,14 @@ class network_EthCaps(test.test):
           error.TestError if above LAN capabilities are NOT supported.
         """
         default_eth_caps = {
-                'Supported link modes': [
-                        '10baseT/Half', '100baseT/Half', '1000baseT/Half',
-                        '10baseT/Full', '100baseT/Full', '1000baseT/Full'
-                ],
-                'Supports auto-negotiation': ['Yes'],
-                # TODO(tbroch): Other WOL caps: 'a': arp and 's': magicsecure are
-                # they important?  Are any of these undesirable/security holes?
-                'Supports Wake-on': ['pumbg']
-        }
+            'Supported link modes': ['10baseT/Half', '100baseT/Half',
+                                      '1000baseT/Half', '10baseT/Full',
+                                      '100baseT/Full', '1000baseT/Full'],
+            'Supports auto-negotiation': ['Yes'],
+            # TODO(tbroch): Other WOL caps: 'a': arp and 's': magicsecure are
+            # they important?  Are any of these undesirable/security holes?
+            'Supports Wake-on': ['pumbg']
+            }
         errors = 0
 
         for keyname in default_eth_caps:
@@ -117,13 +117,13 @@ class network_EthCaps(test.test):
                             (self._caps[keyname][0].find('g') >= 0):
                             continue
 
-                    logging.error(
-                            "\'%s\' not a supported mode in \'%s\' of %s",
-                            value, keyname, self._ethname)
+                    logging.error("\'%s\' not a supported mode in \'%s\' of %s",
+                                  value, keyname, self._ethname)
                     errors += 1
 
         if errors:
             raise error.TestError("Eth capability checks.  See errors")
+
 
     def _test_wol_magic_packet(self):
         """Check the Wake-on-LAN (WOL) magic packet capabilities of a device.
@@ -137,7 +137,7 @@ class network_EthCaps(test.test):
             logging.info("%s support magic number WOL", self._ethname)
         else:
             raise error.TestError('%s should support magic number WOL' %
-                                  self._ethname)
+                            self._ethname)
 
         # Check that WOL works
         if self._caps['Wake-on'][0] != 'g':
@@ -146,7 +146,7 @@ class network_EthCaps(test.test):
 
         # Set RTC as backup to WOL
         before_secs = rtc.get_seconds()
-        alarm_secs = before_secs + self._suspend_secs + self._threshold_secs
+        alarm_secs =  before_secs + self._suspend_secs + self._threshold_secs
         rtc.set_wake_alarm(alarm_secs)
 
         sys_power.do_suspend(self._suspend_secs)
@@ -158,6 +158,7 @@ class network_EthCaps(test.test):
         suspended_secs = after_secs - before_secs
         if suspended_secs >= (self._suspend_secs + self._threshold_secs):
             raise error.TestError("Device woke due to RTC not WOL")
+
 
     def _verify_wol_magic(self):
         """If possible identify wake source was caused by WOL.
@@ -173,9 +174,8 @@ class network_EthCaps(test.test):
         """
         fw_log = "/sys/firmware/log"
         if not os.path.isfile(fw_log):
-            logging.warning(
-                    "Unable to verify wake in s/w due to missing log %s",
-                    fw_log)
+            logging.warning("Unable to verify wake in s/w due to missing log %s",
+                         fw_log)
             return True
 
         log_info_str = utils.system_output("egrep '(SMI|PM1|GPE0)_STS:' %s" %
@@ -199,10 +199,12 @@ class network_EthCaps(test.test):
             ('PCIEXPWAK' in status_dict['PM1_STS']) and \
             len(status_dict['GPE0_STS']) == 0
 
+
     def cleanup(self):
         if self._restore_wol:
             utils.system_output("ethtool -s %s wol %s" %
                                 (self._ethname, self._caps['Wake-on'][0]))
+
 
     def run_once(self, ethname=None, suspend_secs=5, threshold_secs=10):
         """Run the test.

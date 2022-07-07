@@ -25,17 +25,16 @@ class EthernetDongle(object):
     def __init__(self, expect_speed='100', expect_duplex='full'):
         # Expected values for parameters.
         self.expected_parameters = {
-                'ifconfig_status': 0,
-                'duplex': expect_duplex,
-                'speed': expect_speed,
-                'mac_address': None,
-                'ipaddress': None,
+            'ifconfig_status': 0,
+            'duplex': expect_duplex,
+            'speed': expect_speed,
+            'mac_address': None,
+            'ipaddress': None,
         }
 
     def GetParam(self, parameter):
         """ pylint wants a docstring. """
         return self.expected_parameters[parameter]
-
 
 class network_EthernetStressPlug(test.test):
     """ base class for test """
@@ -48,23 +47,21 @@ class network_EthernetStressPlug(test.test):
         sysnet = os.path.join('/', 'sys', 'class', 'net')
 
         def get_ethernet_interface(interface):
-            """ Valid interface requires link status."""
-            avail_eth_interfaces = []
+            """ Valid interface requires link and duplex status."""
+            avail_eth_interfaces=[]
             if interface is None:
                 # This is not the (bridged) eth dev we are looking for.
                 for x in os.listdir(sysnet):
-                    sysdev = os.path.join(sysnet, x, 'device')
-                    syswireless = os.path.join(sysnet, x, 'wireless')
-                    if os.path.exists(
-                            sysdev) and not os.path.exists(syswireless):
+                    sysdev = os.path.join(sysnet,  x, 'device')
+                    syswireless = os.path.join(sysnet,  x, 'wireless')
+                    if os.path.exists(sysdev) and not os.path.exists(syswireless):
                         avail_eth_interfaces.append(x)
             else:
-                sysdev = os.path.join(sysnet, interface, 'device')
+                sysdev = os.path.join(sysnet,  interface, 'device')
                 if os.path.exists(sysdev):
                     avail_eth_interfaces.append(interface)
                 else:
-                    raise error.TestError(
-                            'Network Interface %s is not a device ' % iface)
+                    raise error.TestError('Network Interface %s is not a device ' % iface)
 
             link_status = 'unknown'
             duplex_status = 'unknown'
@@ -90,8 +87,8 @@ class network_EthernetStressPlug(test.test):
                 if link_status == 'up':
                     return iface
 
-            raise error.TestError('Network Interface %s not usable (%s, %s)' %
-                                  (iface, link_status, duplex_status))
+            raise error.TestError('Network Interface %s not usable (%s, %s)'
+                                  % (iface, link_status, duplex_status))
 
         def get_net_device_path(device=''):
             """ Uses udev to get the path of the desired internet device.
@@ -105,8 +102,8 @@ class network_EthernetStressPlug(test.test):
                 if dev.sys_path.endswith('net/%s' % device):
                     return dev.sys_path
 
-            raise error.TestError('Could not find /sys device path for %s' %
-                                  device)
+            raise error.TestError('Could not find /sys device path for %s'
+                                  % device)
 
         self.interface = get_ethernet_interface(interface)
         self.eth_syspath = get_net_device_path(self.interface)
@@ -123,16 +120,16 @@ class network_EthernetStressPlug(test.test):
             auth_path = os.path.split(auth_path)[0]
             auth_path = os.path.split(auth_path)[0]
 
-            self.eth_authpath = os.path.join(auth_path, 'authorized')
+            self.eth_authpath = os.path.join(auth_path,'authorized')
         else:
             self.eth_authpath = None
 
         # Stores the status of the most recently run iteration.
         self.test_status = {
-                'ipaddress': None,
-                'eth_state': None,
-                'reason': None,
-                'last_wait': 0
+            'ipaddress': None,
+            'eth_state': None,
+            'reason': None,
+            'last_wait': 0
         }
 
         self.secs_before_warning = 10
@@ -183,17 +180,12 @@ class network_EthernetStressPlug(test.test):
 
         eth_out = self.ParseEthTool()
         ethernet_status = {
-                'ifconfig_status':
-                utils.system('ifconfig %s' % self.interface,
-                             ignore_status=True),
-                'duplex':
-                eth_out.get('Duplex'),
-                'speed':
-                eth_out.get('Speed'),
-                'mac_address':
-                ReadEthVal('address'),
-                'ipaddress':
-                self.GetIPAddress()
+            'ifconfig_status': utils.system('ifconfig %s' % self.interface,
+                                            ignore_status=True),
+            'duplex': eth_out.get('Duplex'),
+            'speed': eth_out.get('Speed'),
+            'mac_address': ReadEthVal('address'),
+            'ipaddress': self.GetIPAddress()
         }
 
         self.test_status['ipaddress'] = ethernet_status['ipaddress']
@@ -241,7 +233,7 @@ class network_EthernetStressPlug(test.test):
         elif os.path.exists(self.eth_flagspath):
             try:
                 fp = open(self.eth_flagspath, mode='r')
-                val = int(fp.readline().strip(), 16)
+                val= int(fp.readline().strip(), 16)
                 fp.close()
             except:
                 raise error.TestError('Could not read %s' % self.eth_flagspath)
@@ -249,7 +241,7 @@ class network_EthernetStressPlug(test.test):
             if power:
                 newval = val | 1
             else:
-                newval = val & ~1
+                newval = val &  ~1
 
             if val != newval:
                 try:
@@ -267,8 +259,8 @@ class network_EthernetStressPlug(test.test):
                     'plug/unplug event control not found. '
                     'Use ifconfig %s %s instead', self.interface,
                     'up' if power else 'down')
-            result = subprocess.check_call(
-                    ['ifconfig', self.interface, 'up' if power else 'down'])
+            result = subprocess.check_call(['ifconfig', self.interface,
+                                            'up' if power else 'down'])
             if result:
                 raise error.TestError('Fail to change the power state of %s' %
                                       self.interface)
@@ -298,6 +290,7 @@ class network_EthernetStressPlug(test.test):
         while time.time() < end_time:
             status = self.GetEthernetStatus()
 
+
             # If GetEthernetStatus() detects the wrong link rate, "bouncing"
             # the link _should_ recover. Keep count of how many times this
             # happens. Test should fail if happens "frequently".
@@ -319,7 +312,7 @@ class network_EthernetStressPlug(test.test):
                 or \
                 (not power and not status and \
                 self.test_status['ipaddress'] is None):
-                return time.time() - start_time
+                return time.time()-start_time
 
             time.sleep(1)
 
@@ -337,7 +330,7 @@ class network_EthernetStressPlug(test.test):
             min_sleep: Minimum sleep parameter in miliseconds.
             max_sleep: Maximum sleep parameter in miliseconds.
         """
-        duration = random.randint(min_sleep, max_sleep) / 1000.0
+        duration = random.randint(min_sleep, max_sleep)/1000.0
         self.test_status['last_wait'] = duration
         time.sleep(duration)
 
@@ -359,12 +352,12 @@ class network_EthernetStressPlug(test.test):
 
         for speed_to_parse in line.split():
             speed_duplex = speed_to_parse.split('/')
-            parameters.append({
-                    'Speed':
-                    re.search('(\d*)', speed_duplex[0]).groups()[0],
-                    'Duplex':
-                    speed_duplex[1],
-            })
+            parameters.append(
+                {
+                    'Speed': re.search('(\d*)', speed_duplex[0]).groups()[0],
+                    'Duplex': speed_duplex[1],
+                }
+            )
         return parameters
 
     def ParseEthTool(self):
@@ -426,8 +419,7 @@ class network_EthernetStressPlug(test.test):
             }
         """
         parameters = {}
-        ethtool_out = os.popen('ethtool %s' %
-                               self.interface).read().split('\n')
+        ethtool_out = os.popen('ethtool %s' % self.interface).read().split('\n')
         if 'No data available' in ethtool_out:
             return parameters
 
@@ -450,16 +442,16 @@ class network_EthernetStressPlug(test.test):
                     parameters[current_key] = ''
                     if speed:
                         parameters[current_key] = speed.groups()[0]
-                elif (current_key == 'Supported link modes'
-                      or current_key == 'Advertised link modes'):
+                elif (current_key == 'Supported link modes' or
+                      current_key == 'Advertised link modes'):
                     parameters[current_key] = []
                     parameters[current_key] += \
                         self._ParseEthTool_LinkModes(current_line[2])
                 else:
                     parameters[current_key] = current_line[2].strip()
             else:
-                if (current_key == 'Supported link modes'
-                            or current_key == 'Advertised link modes'):
+                if (current_key == 'Supported link modes' or
+                            current_key == 'Advertised link modes'):
                     parameters[current_key] += \
                         self._ParseEthTool_LinkModes(current_line[0])
                 else:
@@ -510,7 +502,7 @@ class network_EthernetStressPlug(test.test):
                 linkdown_time = self.TestPowerEthernet(power=0)
                 linkdown_wait = self.test_status['last_wait']
                 if linkdown_time > self.secs_before_warning:
-                    self.warning_count += 1
+                    self.warning_count+=1
 
                 self.RandSleep(500, 2000)
 
@@ -518,7 +510,7 @@ class network_EthernetStressPlug(test.test):
                 linkup_wait = self.test_status['last_wait']
 
                 if linkup_time > self.secs_before_warning:
-                    self.warning_count += 1
+                    self.warning_count+=1
 
                 self.RandSleep(500, 2000)
                 logging.debug('Iteration: %d end (down:%f/%d up:%f/%d)', i,

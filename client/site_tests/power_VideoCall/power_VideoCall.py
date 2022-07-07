@@ -17,6 +17,7 @@ class power_VideoCall(power_test.power_Test):
     version = 1
 
     video_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_VideoCall/power_VideoCall.html'
+    webrtc_video_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_VideoCall/power_VideoCall.webrtc.html'
     doc_url = 'http://crospower.page.link/power_VideoCall_doc'
 
     def initialize(self,
@@ -38,7 +39,8 @@ class power_VideoCall(power_test.power_Test):
                  video_url='',
                  num_video=5,
                  multitask=True,
-                 min_run_time_percent=100):
+                 min_run_time_percent=100,
+                 webrtc=False):
         """run_once method.
 
         @param duration: time in seconds to display url and measure power.
@@ -54,12 +56,16 @@ class power_VideoCall(power_test.power_Test):
         @param min_run_time_percent: int between 0 and 100;
                                      run time must be longer than
                                      min_run_time_percent / 100.0 * duration.
+        @param webrtc: If true use WebRTC, otherwise use MediaEncoder.
         """
 
         if not preset and not video_url:
             preset = self._get_camera_preset()
         if not video_url:
-            video_url = self.video_url
+            if webrtc:
+                video_url = self.webrtc_video_url
+            else:
+                video_url = self.video_url
 
         # Append preset to self.video_url for camera preset.
         if preset:

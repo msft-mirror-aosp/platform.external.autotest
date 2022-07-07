@@ -2510,6 +2510,72 @@ class FreeMemoryLogger(MeasurementLogger):
     def calc(self, mtype='kB'):
         return super(FreeMemoryLogger, self).calc(mtype)
 
+class WebRTCMetricLogger(MeasurementLogger):
+    """Class to measure WebRTC metrics."""
+
+    LIMITATIONS = ['none', 'other', 'cpu', 'bandwidth']
+
+    def __init__(self, tab, lock, checkpoint_logger=None):
+        """Initialize a WebRTCMetricLogger.
+
+        Args:
+            tab: Chrome tab object.
+            lock: threading.Lock used to ensure only one thread access the tab.
+        """
+        super(WebRTCMetricLogger, self).__init__([], 1.0, checkpoint_logger)
+        self._tab = tab
+        self._lock = lock
+
+        self.domains = [
+            'src_width',
+            'src_height',
+            'src_fps', # Camera capture FPS
+            'out_width',
+            'out_height',
+            'out_fps', # Encoding FPS
+            'qp',
+            'frame_encode_time',
+            'bit_rate',
+            'packet_send_delay'
+        ]
+
+        for limitation in self.LIMITATIONS:
+            self.domains.append(f"limitation_{limitation}")
+
+    def refresh(self):
+        @retry.retry(Exception, timeout_min=0.5, delay_sec=0.1)
+        def get_metrics():
+            with self._lock:
+                json_string = self._tab.EvaluateJavaScript(
+                    'JSON.stringify(window.outboundWebRTCStats)')
+            return json.loads(json_string)
+        metrics = get_metrics()
+
+        metric_list = [
+            metrics.get('srcWidth', 0),
+            metrics.get('srcHeight', 0),
+            metrics.get('srcFramesPerSecond', 0),
+            metrics.get('frameWidth', 0),
+            metrics.get('frameHeight', 0),
+            metrics.get('framesPerSecond', 0),
+            metrics.get('qp', 0),
+            metrics.get('frameEncodeTimeMs', 0),
+            metrics.get('bitRateKbps', 0),
+            metrics.get('packetSendDelayMs', 0)
+        ]
+
+        for limitation in self.LIMITATIONS:
+            reason = metrics.get('qualityLimitationReason', 'other')
+            metric_list.append(1 if reason == limitation else 0)
+
+        return metric_list
+
+    def save_results(self, resultsdir, fname_prefix=None):
+        if not fname_prefix:
+            fname_prefix = 'webrtc_stats_%.0f' % time.time()
+        super(WebRTCMetricLogger, self).save_results(resultsdir, fname_prefix)
+
+
 
 def create_measurement_loggers(seconds_period=20.0, checkpoint_logger=None):
     """Create loggers for power test that is not test-specific.

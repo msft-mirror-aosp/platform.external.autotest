@@ -2,8 +2,10 @@
 # Copyright 2019 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 import logging
 import re
+import threading
 import time
 
 from autotest_lib.client.bin import utils
@@ -110,10 +112,26 @@ class power_VideoCall(power_test.power_Test):
                 tab_right.WaitForDocumentReadyStateToBeComplete()
                 time.sleep(5)
 
+            # We need to prevent the threads from issuing concurrent
+            # EvaluateJavaScript calls to the browser, otherwise the telemetry
+            # connection gets corrupt.
+            lock = threading.Lock()
+
             self._vlog = power_status.VideoFpsLogger(tab_left,
+                lock=lock,
                 seconds_period=self._seconds_period,
                 checkpoint_logger=self._checkpoint_logger)
             self._meas_logs.append(self._vlog)
+
+            if webrtc:
+                self._webrtc_logger = power_status.WebRTCMetricLogger(
+                        tab_left,
+                        lock=lock,
+                        checkpoint_logger=self._checkpoint_logger)
+                self._meas_logs.append(self._webrtc_logger)
+                # Sleep for a few seconds to allow the WebRTC bandwidth to
+                # stabilize.
+                time.sleep(5)
 
             # Start typing number block
             self.start_measurements()
@@ -156,6 +174,13 @@ class power_VideoCall(power_test.power_Test):
             # after chrome has been closed.
             self._vlog.done = True
             self._vlog.join()
+
+            if webrtc:
+                self._webrtc_logger.done = True
+                self._webrtc_logger.join()
+
+                tab_left.EvaluateJavaScript('window.stopWebRTC()')
+
             if multitask:
                 self.collect_keypress_latency(cr)
 

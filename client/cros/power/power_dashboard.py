@@ -776,6 +776,46 @@ class FreeMemoryLoggerDashboard(MeasurementLoggerDashboard):
         self._unit = 'point'
         self._type = 'mem'
 
+class WebRTCLoggerDashboard(MeasurementLoggerDashboard):
+    """Dashboard class for WebRTCMetricLogger."""
+
+    # Map of domains to type and unit
+    DOMAIN_DATA = {
+        'src_width': ('dimension', 'px'),
+        'src_height': ('dimension', 'px'),
+        'out_width': ('dimension', 'px'),
+        'out_height': ('dimension', 'px'),
+        'qp': ('quality', 'qps'),
+        'frame_encode_time': ('time', 'millisecond'),
+        'bit_rate': ('rate', 'kbps'),
+        'packet_send_delay': ('time', 'millisecond'),
+    }
+
+    def __init__(self, logger, testname, resultsdir, uploadurl, note):
+        super(WebRTCLoggerDashboard, self).__init__(
+            logger, testname, resultsdir, uploadurl, note)
+
+    def _get_domain_unit(self, domain):
+        """Gets the unit for the domain"""
+        if domain.startswith("limitation_"):
+            return "percent"
+
+        if domain.endswith("_fps"):
+            return "fps"
+
+        # TODO(b/237116643) Use real units once we update the schema
+        # return self.DOMAIN_DATA.get(domain, (None, None))[1]
+        return 'point'
+
+    def _get_domain_type(self, domain):
+        """Gets the type for the domain"""
+        if domain.startswith("limitation_"):
+            return "percent"
+
+        if domain.endswith("_fps"):
+            return "fps"
+
+        return self.DOMAIN_DATA.get(domain, (None, None))[0]
 
 dashboard_factory = None
 def get_dashboard_factory():
@@ -794,6 +834,7 @@ class LoggerDashboardFactory(object):
             power_status.VideoFpsLogger: VideoFpsLoggerDashboard,
             power_status.FanRpmLogger: FanRpmLoggerDashboard,
             power_status.FreeMemoryLogger: FreeMemoryLoggerDashboard,
+            power_status.WebRTCMetricLogger: WebRTCLoggerDashboard,
             KeyvalLogger: KeyvalLoggerDashboard,
     }
 

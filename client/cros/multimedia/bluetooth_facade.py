@@ -296,6 +296,8 @@ class BluetoothBaseFacadeLocal(object):
     # Upstart job name for ChromeOS Audio daemon
     CRAS_JOB = "cras"
 
+    # The VID:PID recorded here is the PCI vid:pid. lspci -nn command can be
+    # used to find it.
     CHIPSET_TO_VIDPID = {
             'MVL-8897': [(('0x02df', '0x912d'), 'SDIO')],
             'MVL-8997': [(('0x1b4b', '0x2b42'), 'USB')],

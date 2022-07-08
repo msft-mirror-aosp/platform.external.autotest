@@ -69,12 +69,13 @@ class firmware_Cr50InvalidateRW(test.test):
         return rv
 
 
-    def login(self, use_guest):
+    def login(self, use_guest, dont_override_profile=False):
         """Run the test to login."""
         if use_guest:
             self.client_at.run_test('login_CryptohomeIncognito')
         else:
-            self.client_at.run_test('login_LoginSuccess')
+            self.client_at.run_test('login_LoginSuccess',
+                                    dont_override_profile=dont_override_profile)
 
 
     def login_and_verify(self, use_guest=False, corrupt_login=None):
@@ -96,8 +97,9 @@ class firmware_Cr50InvalidateRW(test.test):
         """
         for i in range(self.LOGIN_ATTEMPTS):
             attempt = i + 1
-
-            self.login(use_guest)
+            # Dont override profile when we are not using guest and we are after first attempt
+            dont_override_profile = not use_guest and i > 0
+            self.login(use_guest, dont_override_profile)
             result = self.check_for_invalidated_rw()
 
             message = '%slogin %d: %s' % ('guest ' if use_guest else '',
@@ -142,9 +144,10 @@ class firmware_Cr50InvalidateRW(test.test):
     def run_once(self, host):
         """Login to validate ChromeOS corrupts the inactive header"""
         # The header is corrupted on the first non-guest login after clearing
-        # the tpm owner
+        # the tpm owner. The fist login attempt happens during second ever login
+        # for user in the AuthSession world. The first ever is just a key addition.
         self.clear_tpm_owner()
         self.take_tpm_owner()
 
         self.login_and_verify(use_guest=True)
-        self.login_and_verify(corrupt_login=1)
+        self.login_and_verify(corrupt_login=2)

@@ -126,8 +126,6 @@ class bluetooth_AdapterControllerRoleTests(
                                          'Test cannnot proceed on this'
                                          'kernel due to crbug/946835 ')
 
-        self.bluetooth_le_facade = self.bluetooth_facade
-
         if secondary_info is not None:
             (secondary_device_handle, secondary_test_func,
                     device_use) = secondary_info
@@ -205,8 +203,6 @@ class bluetooth_AdapterControllerRoleTests(
                                          '3.19',
                                          'Test cannnot proceed on this'
                                          'kernel due to crbug/946835 ')
-
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         if secondary_info is not None:
             (secondary_device_handle, secondary_test_func,
@@ -308,8 +304,6 @@ class bluetooth_AdapterControllerRoleTests(
                                          '3.19',
                                          'Test cannnot proceed on this'
                                          'kernel due to crbug/946835 ')
-
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         if secondary_info is not None:
             (secondary_device_handle, secondary_test_func,

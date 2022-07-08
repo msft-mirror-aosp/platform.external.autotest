@@ -101,7 +101,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         self.test_mouse_left_click(central)
 
         # Now establish second connection with DUT as LE Peripheral
-        self.bluetooth_le_facade = self.bluetooth_facade
         self.pair_and_test_central(peripheral)
         self.run_keyboard_tests(peripheral)
 
@@ -130,8 +129,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
 
         central = self.devices['BLE_MOUSE'][0]
         peripheral = self.devices['BLE_KEYBOARD'][0]
-        # Establish the first connection with DUT as LE Peripheral
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         # Connect to DUT from peer, putting DUT in peripheral role
         # Try transferring data over connection
@@ -170,8 +167,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
 
         central = self.devices['BLE_MOUSE'][0]
         peripheral = self.devices['BLE_KEYBOARD'][0]
-        # Establish the first connection with DUT as LE Peripheral
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         # Connect to DUT from peer, putting DUT in peripheral role
         # Try transferring data over connection
@@ -225,7 +220,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         self.test_smart_unlock_llt(address=central_1.address)
 
         # Establish third connection with DUT as LE Peripheral
-        self.bluetooth_le_facade = self.bluetooth_facade
         self.pair_and_test_central(peripheral)
         self.run_keyboard_tests(peripheral)
 
@@ -257,9 +251,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         central_1 = self.devices['BLE_PHONE'][0]
         central_2 = self.devices['BLE_MOUSE'][0]
         peripheral = self.devices['BLE_KEYBOARD'][0]
-
-        # Establish the first connection with DUT as LE Peripheral
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         # Connect to DUT from peer, putting DUT in peripheral role
         # Try transferring data over connection
@@ -310,9 +301,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         central_1.RemoveDevice(self.bluetooth_facade.address)
         self.test_smart_unlock_llt(address=central_1.address)
 
-        # Establish the second connection with DUT as LE Peripheral
-        self.bluetooth_le_facade = self.bluetooth_facade
-
         # Connect to DUT from peer, putting DUT in peripheral role
         # Try transferring data over connection
         self.pair_and_test_central(peripheral)
@@ -353,9 +341,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         central_1 = self.devices['BLE_MOUSE'][0]
         central_2 = self.devices['BLE_PHONE'][0]
         peripheral = self.devices['BLE_KEYBOARD'][0]
-
-        # Establish the first connection with DUT as LE Peripheral
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         # Connect to DUT from peer, putting DUT in peripheral role
         # Try transferring data over connection
@@ -404,7 +389,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         central_2 = self.devices['BLE_MOUSE'][0]
         peripheral = self.devices['BLE_KEYBOARD'][0]
 
-        self.bluetooth_le_facade = self.bluetooth_facade
         # Establish the first connection with DUT as LE Central
         # while advertising in progress
         self.start_connectable_advertisement()
@@ -456,8 +440,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         central_peer.RemoveDevice(self.bluetooth_facade.address)
         self.test_smart_unlock_llt(address=central_peer.address)
 
-        self.bluetooth_le_facade = self.bluetooth_facade
-
         # Connect to DUT from peer, putting DUT in peripheral role
         # Try transferring data over connection
         self.pair_and_test_central(peripheral_1)
@@ -497,8 +479,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         peripheral_1 = self.devices['BLE_KEYBOARD'][0]
         central_peer = self.devices['BLE_PHONE'][0]
         peripheral_2 = self.devices['BLE_MOUSE'][0]
-
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         # Connect to DUT from peer, putting DUT in peripheral role
         # Try transferring data over connection
@@ -543,8 +523,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         peripheral_1 = self.devices['BLE_KEYBOARD'][0]
         central_peer = self.devices['BLE_PHONE'][0]
         peripheral_2 = self.devices['BLE_MOUSE'][0]
-
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         # Connect to DUT from peer, putting DUT in peripheral role
         # Try transferring data over connection

@@ -441,8 +441,6 @@ class bluetooth_AdapterLEAdvertising(
         self.kernel_version = self.host.get_kernel_version()
         self.check_kernel_version()
 
-        self.bluetooth_le_facade = self.bluetooth_facade
-
         # Register some advertisements
         num_adv = 3
         self.test_reset_advertising()
@@ -450,7 +448,7 @@ class bluetooth_AdapterLEAdvertising(
         advertisements = advertisements_data.gen_advertisements(0, num_adv)
 
         for i in range(0, num_adv):
-            self.bluetooth_le_facade.register_advertisement(advertisements[i])
+            self.bluetooth_facade.register_advertisement(advertisements[i])
 
         discover_time = self.get_host_discovery_time(num_adv)
 
@@ -479,8 +477,6 @@ class bluetooth_AdapterLEAdvertising(
         self.kernel_version = self.host.get_kernel_version()
         self.check_kernel_version()
 
-        self.bluetooth_le_facade = self.bluetooth_facade
-
         # Register some advertisements
         num_adv = 3
         discover_time = self.get_host_discovery_time(num_adv)
@@ -489,7 +485,7 @@ class bluetooth_AdapterLEAdvertising(
         advertisements = advertisements_data.gen_advertisements(0, num_adv)
 
         for i in range(0, num_adv):
-            self.bluetooth_le_facade.register_advertisement(advertisements[i])
+            self.bluetooth_facade.register_advertisement(advertisements[i])
 
         # Verify they can all be discovered
         for i in range(0, num_adv):
@@ -1496,8 +1492,6 @@ class bluetooth_AdapterLEAdvertising(
         self.three_advertisements = advertisements[0:3]
         self.five_advertisements = advertisements[0:5]
         self.sixth_advertisement = advertisements[5]
-
-        self.bluetooth_le_facade = self.bluetooth_facade
 
         # Reset the adapter to forget previous stored data and turn it on.
         self.test_reset_on_adapter()

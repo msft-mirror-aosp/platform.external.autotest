@@ -1,0 +1,38 @@
+# Copyright (c) 2022 The Chromium OS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'rmekonnen'
+NAME = 'network_WiFi_PerfNoisyEnv.ht40_gaussian_ch006'
+ATTRIBUTES = ''
+TIME = 'SHORT'
+MAX_RESULT_SIZE_KB = 512000
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'wificell'
+PY_VERSION = 3
+
+DOC = """
+This test will measure and record the maximal receiving and transmitting
+throughput and point of disconneciton on a DUT with an open HT20 802.11n
+network while gaussian noise is being broadcasted at multiple gain values.
+"""
+
+from autotest_lib.server.cros.network import hostap_config
+
+def run(machine):
+    host = hosts.create_host(machine)
+    noise_file = 'gaussian_noise_sample_rate_8M_amplitude_1_signed_8bit.iq'
+    frequency = 2437000000
+    start_gain=0
+    gain_increment=1
+    noise_parameters = (noise_file, frequency, start_gain, gain_increment)
+    caps = [hostap_config.HostapConfig.N_CAPABILITY_HT40]
+    mode = hostap_config.HostapConfig.MODE_11N_PURE
+    ap_config = hostap_config.HostapConfig(n_capabilities=caps,
+                                           channel=6, mode=mode)
+    use_iperf=True
+    job.run_test('network_WiFi_PerfNoisyEnv',  tag=NAME.split('.')[1],
+                 host=host, raw_cmdline_args=args,
+                 additional_params=(noise_parameters, ap_config, use_iperf))
+
+parallel_simple(run, machines)

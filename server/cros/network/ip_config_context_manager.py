@@ -78,8 +78,7 @@ class IpConfigContextManager(object):
         logging.info('Cleaning up ip configs from test devices.')
         for host in self._ip_route_cleanup_dict:
             for command in self._ip_route_cleanup_dict[host]:
-                host.run(command)
-
+                host.run(command, ignore_status=True)
         for host in self._ip_addr_cleanup_dict:
             for command in self._ip_addr_cleanup_dict[host]:
                 host.run(command)

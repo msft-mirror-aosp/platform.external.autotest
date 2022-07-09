@@ -15,10 +15,14 @@ class RPiHackRFRunner(site_linux_rpi.LinuxRPi):
 
     RF_DATA_FILES_FOLDER = '/etc/hackrf_files'
     LATEST_FIRMWARE_VERSION = '2021.03.1'
-    # TODO (b/239568628): HackRF supports sample rates in the 8MHz-20MHz range,
-    # chose 10MHz as the default arbitrarily but need to update the sample rate
-    # after experimentation with the noisy environment tests.
-    DEFAULT_SAMPLE_RATE = 10000000
+    # TODO (b/239568628): HackRF supports sample rates in the 8MHz-20MHz range.
+    # Currently set to 8MHz because at this sample rate we can reliably transmit
+    # RF data for 250 seconds. Raising the sample rate would decrease the amount
+    # of time we could reliably broadcast noise. The default sample rate may get
+    # updated in the future once RF data can be transmitted indefinitely and
+    # properly terminated in tests.
+    DEFAULT_SAMPLE_RATE = 8000000
+
 
     def __init__(self, host):
         """Build a RPiHackRFRunner.

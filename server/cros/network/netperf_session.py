@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 import logging
+import time
 
 from autotest_lib.server.cros.network import netperf_runner
 
@@ -108,12 +109,17 @@ class NetperfSession(object):
         self.warmup_wifi_part(warmup_client=False)
 
 
-    def run(self, config):
+    def run(self, config, broadcast_rf_data=False, broadcast_rf_time=None):
         """Measure the average and standard deviation of a netperf test.
 
         @param config: NetperfConfig object.
+        @param broadcast_rf_data bool True iff RF data will be broadcast during
+                the netperf session.
+        @param broadcast_rf_time number of seconds RF data will be broadcast
+                if at all otherwise None.
 
         """
+        start_time = time.time()
         logging.info('Performing %s measurements in netperf session.',
                      config.human_readable_tag)
         history = []
@@ -125,6 +131,12 @@ class NetperfSession(object):
                                           self._server_interface) as runner:
             while len(history) + none_count < self.MEASUREMENT_MAX_SAMPLES:
                 result = runner.run(ignore_failures=self._ignore_failures)
+                if broadcast_rf_data:
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time > broadcast_rf_time:
+                        logging.info('Discarded most recent result because RF'
+                                     ' data stopped broadcasting.')
+                        break
                 if result is None:
                     none_count += 1
                     # Might occur when, e.g., signal strength is too low.

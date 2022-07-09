@@ -9,6 +9,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.server import hosts
+from autotest_lib.server import rpi_hackrf_runner
 from autotest_lib.server import site_linux_router
 from autotest_lib.server import site_linux_rpi
 from autotest_lib.server import site_linux_system
@@ -238,12 +239,28 @@ class WiFiTestContextManager(object):
                                   hosts.create_host(pcap_addr),'pcap')
 
 
-    def _setup_rpi(self):
-        """Set up the RaspberryPi device."""
-        self._rpi = site_linux_rpi.build_rpi_proxy(
+    def _setup_rpi(self, rpi_role=None):
+        """Set up the RaspberryPi device.
+
+        @param rpi_role string description of rpi host (eg. hackrf_runner, p2p)
+        """
+        rpi_addr=self._cmdline_args.get(self.CMDLINE_RPI_ADDR,
+                                        None)
+        rpi_hostname = site_linux_rpi.build_rpi_hostname(
                 client_hostname=self.client.host.hostname,
-                rpi_addr=self._cmdline_args.get(self.CMDLINE_RPI_ADDR,
-                                                None))
+                rpi_hostname=rpi_addr)
+        logging.info('Connecting to RaspberryPi at %s', rpi_hostname)
+        # Don't bother pinging if manually specified. It could, for instance, be
+        # only accessible over SSH.
+        if not rpi_addr:
+            ping_helper = ping_runner.PingRunner()
+            if not ping_helper.simple_ping(rpi_hostname):
+                raise error.TestError('RaspberryPi at %s is not pingable.' %
+                                      rpi_hostname)
+        if rpi_role == site_linux_rpi.RPiRole.HACKRF_RUNNER:
+            self._rpi = rpi_hackrf_runner.RPiHackRFRunner(host=hosts.create_host(rpi_hostname))
+        else:
+            self._rpi = site_linux_rpi.LinuxRPi(host=hosts.create_host(rpi_hostname))
         self.rpi.sync_host_times()
 
 
@@ -267,20 +284,22 @@ class WiFiTestContextManager(object):
                     attenuator_addr)
 
     def setup(self, include_router=True, include_pcap=True,
-            include_attenuator=True, pcap_as_router=False, include_rpi=False):
+              include_attenuator=True, pcap_as_router=False, include_rpi=False,
+              rpi_role=None):
         """
         Construct the state used in a WiFi test.
 
         @param include_router optional bool which should be False if the router
-                is not used by the test
+                is not used by the test.
         @param include_pcap optional bool which should be False if the pcap
-                device is not used by the test
+                device is not used by the test.
         @param include_attenuator optional bool which should be False if the
-                attenuator is not used by the test
+                attenuator is not used by the test.
         @param pcap_as_router optional bool which should be True if the pcap
                 should be configured as a router.
         @param include_rpi bool which should be False if a RaspberryPi
-                is not used by the test
+                is not used by the test.
+        @param rpi_role string description of rpi host (eg. hackrf_runner, p2p)
         """
         if include_router:
             self._setup_router()
@@ -290,7 +309,8 @@ class WiFiTestContextManager(object):
         if include_attenuator:
             self._setup_attenuator()
         if include_rpi:
-            self._setup_rpi()
+            self._setup_rpi(rpi_role)
+            self._rpi_role=rpi_role
 
         # Set up a clean context to conduct WiFi tests in.
         self.client.shill.init_test_network_state()

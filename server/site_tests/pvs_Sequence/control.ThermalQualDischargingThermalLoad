@@ -17,6 +17,8 @@ This is the PVS sequence to validate thermal stability in a thermal load
 (state: discharging)
 '''
 
+import datetime
+
 from autotest_lib.server import utils
 
 args_dict = utils.args_to_dict(args)

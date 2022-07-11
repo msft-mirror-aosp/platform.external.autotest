@@ -12,6 +12,7 @@ from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
 from autotest_lib.client.cros import service_stopper
 
+
 class power_BatteryDrain(test.test):
     """Not a test, but a utility for server tests to drain the battery below
     a certain threshold within a certain timeframe."""
@@ -37,7 +38,11 @@ class power_BatteryDrain(test.test):
             default_level = self.keyboard_backlight.get_default_level()
             self.keyboard_backlight.set_level(default_level)
 
-    def run_once(self, drain_to_percent, drain_timeout, force_discharge=False):
+    def run_once(self,
+                 drain_to_percent,
+                 drain_timeout,
+                 force_discharge=False,
+                 use_design_charge_capacity=False):
         '''
         Entry point of this test. The DUT must not be connected to AC.
 
@@ -51,9 +56,13 @@ class power_BatteryDrain(test.test):
         @param drain_to_percent: Battery percentage to drain to.
         @param drain_timeout: In seconds.
         @param force_discharge: Force discharge even with AC plugged in.
+        @param use_design_charge_capacity: If set, use charge_full_design rather than
+            charge_full for calculations. charge_full represents
+            wear-state of battery, vs charge_full_design representing
+            ideal design state.
         '''
         self._services = service_stopper.ServiceStopper(
-            service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
+                service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
 
         status = power_status.get_status()
         if not status.battery:
@@ -77,14 +86,18 @@ class power_BatteryDrain(test.test):
             logging.info("Assuming no keyboard backlight due to %s", str(e))
             self.keyboard_backlight = None
 
+        if use_design_charge_capacity:
+            self.charge_full = status.battery.charge_full_design
+        else:
+            self.charge_full = status.battery.charge_full
+
         # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
         # so that each test run does not remember info from last test run.
         extra_browser_args = ['--disable-sync']
         # b/228256145 to avoid powerd restart
         extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
-        with chrome.Chrome(
-                    extra_browser_args=extra_browser_args,
-                    init_network_controller=True) as cr:
+        with chrome.Chrome(extra_browser_args=extra_browser_args,
+                           init_network_controller=True) as cr:
             # Stop the services after the browser is setup. This ensures that
             # restart ui does not restart services e.g. powerd underneath us
             self._services.stop_services()
@@ -99,13 +112,15 @@ class power_BatteryDrain(test.test):
             def is_battery_low_enough():
                 """Check if battery level reach target."""
                 status.refresh()
+                current_percent = (status.battery.charge_now /
+                                   self.charge_full) * 100
                 if not force_discharge and status.on_ac():
                     raise ac_error
                 self.tick_count += 1
                 if self.tick_count % 60 == 0:
                     logging.info('Battery charge percent: {}'.format(
                             status.percent_display_charge()))
-                return status.percent_display_charge() <= drain_to_percent
+                return current_percent <= drain_to_percent
 
             err = error.TestFail(
                 "Battery did not drain to {} percent in {} seconds".format(

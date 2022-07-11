@@ -33,10 +33,12 @@ SEQUENCE = [
     # that we're starting at 70% each time
     ('power_BatteryDrain', {
         'force_discharge' : True, 'drain_to_percent' : 70,
-        'drain_timeout': 5 * HOURS}, False),
+        'drain_timeout': 5 * HOURS,
+        'use_design_charge_capacity': True}, False),
     ('power_BatteryCharge', {
         'percent_target_charge' : 70,
-        'max_run_time': 5 * HOURS}, False),
+        'max_run_time': 5 * HOURS,
+        'use_design_charge_capacity': True}, False),
     ('power_WaitForCoolDown', {}, False),
     ('power_VideoCall', {
         'force_discharge': True, 'pdash_note': pdash_note}, False),

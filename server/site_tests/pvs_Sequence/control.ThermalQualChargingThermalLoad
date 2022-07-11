@@ -34,10 +34,12 @@ SEQUENCE = [
     # that we're starting at 30% each time
     ('power_BatteryDrain', {
         'force_discharge': True, 'drain_to_percent': 30,
-        'drain_timeout': 5 * HOURS}, False),
+        'drain_timeout': 5 * HOURS,
+        'use_design_charge_capacity': False}, False),
     ('power_BatteryCharge', {
         'percent_target_charge': 30,
-        'max_run_time': 5 * HOURS}, False),
+        'max_run_time': 5 * HOURS,
+        'use_design_charge_capacity': False}, False),
     ('power_WaitForCoolDown', {}, False),
     ('power_ThermalLoad', {'pdash_note': pdash_note}, False),
     ('power_Speedometer2', {'pdash_note': pdash_note}, False)

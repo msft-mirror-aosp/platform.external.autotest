@@ -10,6 +10,7 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
+from autotest_lib.client.cros import service_stopper
 
 class power_BatteryDrain(test.test):
     """Not a test, but a utility for server tests to drain the battery below
@@ -30,6 +31,8 @@ class power_BatteryDrain(test.test):
                 logging.warning('Can not restore from force discharge.')
         if self.backlight:
             self.backlight.restore()
+        if self._services:
+            self._services.restore_services()
         if self.keyboard_backlight:
             default_level = self.keyboard_backlight.get_default_level()
             self.keyboard_backlight.set_level(default_level)
@@ -49,6 +52,9 @@ class power_BatteryDrain(test.test):
         @param drain_timeout: In seconds.
         @param force_discharge: Force discharge even with AC plugged in.
         '''
+        self._services = service_stopper.ServiceStopper(
+            service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
+
         status = power_status.get_status()
         if not status.battery:
             raise error.TestNAError('DUT has no battery. Test Skipped')
@@ -71,7 +77,18 @@ class power_BatteryDrain(test.test):
             logging.info("Assuming no keyboard backlight due to %s", str(e))
             self.keyboard_backlight = None
 
-        with chrome.Chrome(init_network_controller=True) as cr:
+        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
+        # so that each test run does not remember info from last test run.
+        extra_browser_args = ['--disable-sync']
+        # b/228256145 to avoid powerd restart
+        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
+        with chrome.Chrome(
+                    extra_browser_args=extra_browser_args,
+                    init_network_controller=True) as cr:
+            # Stop the services after the browser is setup. This ensures that
+            # restart ui does not restart services e.g. powerd underneath us
+            self._services.stop_services()
+
             tab = cr.browser.tabs.New()
             tab.Navigate(self.url)
 

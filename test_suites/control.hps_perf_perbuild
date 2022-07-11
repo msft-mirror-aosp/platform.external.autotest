@@ -19,7 +19,7 @@ Performance test suite for running on custom HPS dev board setup.
 @param check_hosts: require appropriate live hosts to exist in the lab.
 @param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
 @param file_bugs: If True your suite will file bugs on failures.
-@param max_run_time: Amount of time each test shoud run in minutes.i
+@param max_run_time: Amount of time each test should run in minutes.
 """
 
 import common

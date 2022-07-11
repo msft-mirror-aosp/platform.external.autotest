@@ -949,12 +949,12 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                              _PAYLOAD_TYPE enum.
 
         """
+        self._should_restore_stateful = True
         if job_repo_url is not None:
             self._job_repo_url = job_repo_url
             _, build = tools.get_devserver_build_from_package_url(
                     self._job_repo_url)
             self._build = build
-            self._should_restore_stateful = True
 
         payload_url = self._get_payload_url(full_payload=full_payload,
                                             payload_type=payload_type)
@@ -1092,6 +1092,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         logging.info("Getting payload for nebraska for build %s", self._build)
 
+        # TODO(kimjae): Restoring stateful logic should be more strict.
+        # Always restore stateful at this point, otherwise subsequent tasks
+        # might run with mismatching stateful partition.
+        self._should_restore_stateful = True
+
         if public_bucket:
             return self.get_payload_url_on_public_bucket(
                     full_payload=full_payload, payload_type=payload_type)
@@ -1100,7 +1105,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                         payload_type=payload_type)
         payload_url, _ = self._stage_payload_by_uri(payload)
         logging.info('Payload URL for Nebraska: %s', payload_url)
-        self._should_restore_stateful = True
         return payload_url
 
     def _get_paygen_json(self):

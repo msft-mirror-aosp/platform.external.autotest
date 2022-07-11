@@ -13,7 +13,7 @@ from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
 from autotest_lib.server.cros import gsutil_wrapper
-from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
 
 # TOT cr50 images are built as part of the reef image builder.
@@ -25,7 +25,7 @@ FIRMWARE_NAME = 'ChromeOS-firmware-%s-%s.tar.bz2'
 REMOTE_TMPDIR = '/tmp/cr50_tot_update'
 CR50_IMAGE_PATH = 'cr50/ec.bin'
 # Wait 10 seconds for the update to take effect.
-class provision_Cr50TOT(FirmwareTest):
+class provision_Cr50TOT(Cr50Test):
     """Update cr50 to TOT.
 
     The reef builder builds cr50. Fetch the image from the latest reef build
@@ -101,6 +101,7 @@ class provision_Cr50TOT(FirmwareTest):
         if not force:
             logging.info('skipping update')
             return
+        self._provision_update = True
         logging.info('cr50 version %s', host.servo.get('cr50_version'))
         self.host = host
         cr50_path = self.get_latest_cr50_build()

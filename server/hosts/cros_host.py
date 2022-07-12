@@ -229,9 +229,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param args_dict Dictionary from which to extract the chameleon
           arguments.
         """
-        chameleon_args = {key: args_dict[key]
-                          for key in ('chameleon_host', 'chameleon_port')
-                          if key in args_dict}
+        chameleon_args = {}
+        if 'chameleon_host' in args_dict:
+            chameleon_args['chameleon_host'] = args_dict['chameleon_host']
+        if 'chameleon_port' in args_dict:
+            chameleon_args['chameleon_port'] = int(args_dict['chameleon_port'])
         if 'chameleon_ssh_port' in args_dict:
             chameleon_args['port'] = int(args_dict['chameleon_ssh_port'])
         return chameleon_args

@@ -596,7 +596,8 @@ class PacTelemetryLogger(PowerTelemetryLogger):
 class ServodTelemetryLogger(PowerTelemetryLogger):
     """This logger class measures power by querying a servod instance."""
 
-    DEFAULT_INA_RATE = 20.0
+    DEFAULT_ADC_RATE = 20.0
+    DEFAULT_ADC_ACCUM_RATE = 60.0
     DEFAULT_VBAT_RATE = 60.0
 
     def __init__(self, config, resultsdir, host):
@@ -618,12 +619,15 @@ class ServodTelemetryLogger(PowerTelemetryLogger):
 
         self._servo_host = host.servo._servo_host.hostname
         self._servo_port = host.servo._servo_host.servo_port
-        self._ina_rate = float(config.get('ina_rate', self.DEFAULT_INA_RATE))
-        self._vbat_rate = float(config.get('vbat_rate', self.DEFAULT_VBAT_RATE))
+        adc_rate = float(config.get('adc_rate', self.DEFAULT_ADC_RATE))
+        adc_accum_rate = float(config.get('adc_accum_rate',
+                                          self.DEFAULT_ADC_ACCUM_RATE))
+        vbat_rate = float(config.get('vbat_rate', self.DEFAULT_VBAT_RATE))
         self._pm = measure_power.PowerMeasurement(host=self._servo_host,
                                                   port=self._servo_port,
-                                                  adc_rate=self._ina_rate,
-                                                  vbat_rate=self._vbat_rate)
+                                                  adc_rate=adc_rate,
+                                                  adc_accum_rate=adc_accum_rate,
+                                                  vbat_rate=vbat_rate)
 
     def _start_measurement(self):
         """Start power measurement by querying servod."""

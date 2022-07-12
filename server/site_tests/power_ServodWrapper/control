@@ -30,18 +30,38 @@ timezone with the DUT.
 Sample usage:
 test_that <ip address of DUT> power_ServodWrapper --args \
 'test=power_LoadTest.fast servo_host=localhost servo_port=9999 \
-ina_rate=20 vbat_rate=60'
+adc_rate=20 adc_accum_rate=60 vbat_rate=60'
 
 What are the parameters:
 test: the client test to run in wrapper test; DUT power is measured during this
       client test; required.
 servo_host: host of servod instance; required.
 servo_port: port that the servod instance is on; required.
-ina_rate: power measurement from INAs are logged every ina_rate seconds;
+adc_rate: power measurement from ADCs are logged every adc_rate seconds;
           optional.
+adc_accum_rate: power measurement from ADCs with an accumulator are logged
+                every adc_accum_rate seconds*; optional.
 vbat_rate: power measurement from EC is logged every vbat_rate seconds;
            optional.
 note: User supplied note to tag the specific test; optional.
+
+
+* A note on ADCs with and without accumulator. The accumulator can accumulate
+measurements in hardware at a much higher sampling speed than our software
+tools. We can then grab the average of those measurements at the
+|adc_accum_rate|. This has a few implications
+1. The dut-power code (underlying this functionality) will prefer to use the
+   accumulator over collecting individual samples in a loop.
+   Therefore, when an accumulator is available, it will be used, and sampled
+   at |adc_accum_rate| rather than |adc_rate|.
+2. The system automatically identifies whether a rail has an accumulator.
+3. If you wish to run without accumulator functionality - which you
+   really should not - set |adc_accum_rate| to 0.
+4. The accumulators are *large* - meaning you won't lose samples at higher
+   sampling rates - however, you lose time-step granularity. Meaning a sampling
+   rate of 60s and 1s will collect the exact same number of samples on the ADC
+   but you will see 1 value or 60 values in the output depending on the rate
+   - this might be useful for debugging.
 """
 
 # Workaround to make it compatible with moblab autotest UI.

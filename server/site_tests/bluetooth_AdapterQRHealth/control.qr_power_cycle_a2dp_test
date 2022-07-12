@@ -9,7 +9,7 @@ NAME = 'bluetooth_AdapterQRHealth.qr_power_cycle_a2dp_test'
 PURPOSE = ('Check Quality Report function working well after Bluetooth power '
            'reset')
 CRITERIA = 'Pass all the Bluetooth log checking'
-ATTRIBUTES = 'suite:bluetooth'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_flaky'
 TIME = 'SHORT'  # Approximately 2 mins
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

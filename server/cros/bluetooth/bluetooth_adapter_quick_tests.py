@@ -202,6 +202,13 @@ class BluetoothAdapterQuickTests(
             self.btpeer_group_copy = dict()
             self.group_btpeers_type()
 
+        try:
+            self.audio_facade = self.factory.create_audio_facade()
+        except Exception as e:
+            logging.error('Exception %s while creating audio_facade',
+                          str(e))
+            raise error.TestFail('Unable to create audio_facade')
+
         # Clear the active devices for this test
         self.active_test_devices = {}
 

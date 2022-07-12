@@ -270,6 +270,15 @@ class AudioFacadeRemoteAdapter(object):
         return self._audio_proxy.get_audio_availability()
 
 
+    def set_system_volume(self, volume):
+        """Set the system volume.
+
+        @param volume: the system output vlume to be set(0 - 100).
+
+        """
+        self._audio_proxy.set_system_volume(volume)
+
+
     def set_chrome_active_volume(self, volume):
         """Sets the active audio output volume using chrome.audio API.
 

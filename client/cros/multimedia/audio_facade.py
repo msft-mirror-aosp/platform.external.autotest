@@ -116,6 +116,15 @@ class AudioFacadeLocal(object):
         return self._extension_handler.get_audio_devices()
 
 
+    def set_system_volume(self, volume):
+        """Set the system volume.
+
+        @param volume: the system output vlume to be set(0 - 100).
+
+        """
+        cras_utils.set_system_volume(volume)
+
+
     def set_chrome_active_volume(self, volume):
         """Sets the active audio output volume using chrome.audio API.
 

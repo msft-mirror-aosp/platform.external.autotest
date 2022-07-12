@@ -2213,6 +2213,11 @@ class FirmwareTest(test.test):
         if self.fwmp_is_cleared():
             return
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
+        # wait for cryptohome.
+        self.host.run('/usr/bin/gdbus wait --system --timeout 15 '
+                      'org.chromium.UserDataAuth')
+        self.host.run('/usr/bin/gdbus wait --system --timeout 15 '
+                      'org.chromium.TpmManager')
         self.host.run('tpm_manager_client take_ownership')
         if not utils.wait_for_value(self._tpm_is_owned, expected_value=True):
             raise error.TestError('Unable to own tpm while clearing fwmp.')

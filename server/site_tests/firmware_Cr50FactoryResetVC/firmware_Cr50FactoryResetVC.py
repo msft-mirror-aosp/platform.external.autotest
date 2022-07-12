@@ -171,11 +171,6 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
         """Clear the FWMP and reset CCD"""
         self.host.reboot()
         self._try_to_bring_dut_up()
-        # wait for cryptohome.
-        self.host.run('/usr/bin/gdbus wait --system --timeout 15 '
-                      'org.chromium.UserDataAuth')
-        self.host.run('/usr/bin/gdbus wait --system --timeout 15 '
-                      'org.chromium.TpmManager')
         # Clear the FWMP
         self.clear_fwmp()
         # make sure all of the ccd stuff is reset

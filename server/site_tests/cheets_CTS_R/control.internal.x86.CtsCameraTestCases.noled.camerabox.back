@@ -6,7 +6,7 @@
 
 AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_R.internal.x86.CtsCameraTestCases.noled.camerabox.back'
-ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-camera, suite:arc-cts-r, suite:arc-cts-unibuild, suite:arc-cts-unibuild-hw'
+ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-camera, suite:arc-cts-r, suite:arc-cts-unibuild, suite:arc-cts-unibuild-hw, suite:arc-cts-vm'
 DEPENDENCIES = 'arc, cts_abi_x86, camerabox_light:noled, camerabox_facing:back'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

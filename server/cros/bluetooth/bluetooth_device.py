@@ -173,6 +173,14 @@ class BluetoothDevice(object):
         return self._proxy.set_quality_debug_log(enable)
 
     @proxy_thread_safe
+    def set_quality_report(self, action):
+        """Enable or disable the Bluetooth quality debug
+        @param action: 1 to enable the quality report
+                       0 to disable the quality report.
+        """
+        return self._proxy.set_quality_report(action)
+
+    @proxy_thread_safe
     def log_message(self, msg, dut=True, peer=True):
         """ Log a message in DUT log and peer logs with timestamp.
 

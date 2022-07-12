@@ -411,11 +411,12 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         return True
 
     @test_retry_and_log(False)
-    def test_not_receive_qr_event_log(self):
+    def test_no_receive_qr_event_log(self):
         """Checking if not reveice the qr event log"""
         all_reports = self.collect_qr_event_from_log()
-        logging.debug("all_reports: %s", all_reports)
-        return len(all_reports) == 0
+        no_receiving = len(all_reports) == 0
+        self.results = {'no receiving qr debug log': no_receiving}
+        return no_receiving
 
     # ---------------------------------------------------------------
     # Definitions of all bluetooth audio test sequences
@@ -477,17 +478,17 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         @param device: the bluetooth peer device.
         @param test_profile: the test profile to used.
         """
-        self.enable_disable_debug_log(enable=True)
+        self.enable_disable_quality_report(action=1)
         self.enable_disable_quality_debug_log(enable=True)
         time.sleep(3)
         self.enable_disable_quality_debug_log(enable=False)
-        self.enable_disable_debug_log(enable=False)
+        self.enable_disable_quality_report(action=0)
         time.sleep(3)
 
         self.dut_btmon_log_path = self.start_new_btmon()
         self.test_a2dp_sinewaves(device, test_profile, duration=None)
         self.test_send_log()
-        self.test_not_receive_qr_event_log()
+        self.test_no_receive_qr_event_log()
 
     def qr_a2dp_cl_keyboard(self, audio_device, keyboard_device, test_profile):
         """Checking if quality event works fine with multiple devices.

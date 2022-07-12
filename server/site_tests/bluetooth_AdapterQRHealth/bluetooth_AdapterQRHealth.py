@@ -71,7 +71,7 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
 
         if logging_and_check:
             self.dut_btmon_log_path = self.start_new_btmon()
-            self.enable_disable_debug_log(enable=True)
+            self.enable_disable_quality_report(action=1)
             self.enable_disable_quality_debug_log(enable=True)
 
         test_method()
@@ -80,7 +80,7 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
             self.test_send_log()
             self.check_qr_event_log(num_devices=num_devices)
             self.enable_disable_quality_debug_log(enable=False)
-            self.enable_disable_debug_log(enable=False)
+            self.enable_disable_quality_report(action=0)
 
         for device in devices:
             self.test_disconnection_by_adapter(device.address)

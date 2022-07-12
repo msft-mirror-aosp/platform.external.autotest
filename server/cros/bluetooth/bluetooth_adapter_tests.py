@@ -1516,12 +1516,21 @@ class BluetoothAdapterTests(test.test):
         level = int(enable)
         self.bluetooth_facade.set_debug_log_levels(level, level)
 
+
     def enable_disable_quality_debug_log(self, enable):
         """Enable or disable bluez quality debug log in the DUT
         @param enable: True to enable all of the debug log,
                        False to disable all of the debug log.
         """
         self.bluetooth_facade.set_quality_debug_log(bool(enable))
+
+
+    def enable_disable_quality_report(self, action):
+        """Enable or disable the Bluetooth quality debug
+        @param action: 1 to enable the quality report
+                       0 to disable the quality report.
+        """
+        self.bluetooth_facade.set_quality_report(action)
 
     def start_new_btmon(self):
         """ Start a new btmon process and save the log """

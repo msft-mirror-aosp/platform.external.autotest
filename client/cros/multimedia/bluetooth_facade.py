@@ -1838,6 +1838,17 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         bluez_debug.SetQualityDebug(enable)
 
     @dbus_safe(False)
+    def set_quality_report(self, action):
+        """Enable or disable the Bluetooth quality debug
+        @param action: 1 to enable the quality report
+                       0 to disable the quality report.
+        """
+        bluez_debug = self.bus.get(
+                self.BLUEZ_SERVICE_NAME, self.BLUEZ_DEBUG_LOG_PATH)[
+                        self.BLUEZ_DEBUG_LOG_IFACE]
+        bluez_debug.SetQuality(action)
+
+    @dbus_safe(False)
     def start_bluetoothd(self):
         """start bluetoothd.
 

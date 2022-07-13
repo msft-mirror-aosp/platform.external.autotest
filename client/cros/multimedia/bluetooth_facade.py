@@ -325,6 +325,7 @@ class BluetoothBaseFacadeLocal(object):
             'Realtek-RTL8822C-USB': [(('0x10ec', '0xc822'), 'USB')],
             'Realtek-RTL8822C-UART': [(('0x10ec', '0xc822'), 'UART')],
             'Realtek-RTL8852A-USB': [(('0x10ec', '0x8852'), 'USB')],
+            'Realtek-RTL8852C-USB': [(('0x10ec', '0xc852'), 'USB')],
             'Mediatek-MTK7921-USB': [(('0x14c3', '0x7961'), 'USB')],
             'Mediatek-MTK7921-SDIO': [(('0x037a', '0x7901'), 'SDIO')]
 

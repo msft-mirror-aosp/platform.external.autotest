@@ -32,6 +32,7 @@ _chip_info = {
         'Realtek-RTL8822C-USB': ChipInfo(True, False, 0),
         'Realtek-RTL8822C-UART': ChipInfo(True, False, 0),
         'Realtek-RTL8852A-USB': ChipInfo(True, False, 0),
+        'Realtek-RTL8852C-USB': ChipInfo(True, False, 0),
         'Mediatek-MTK7921-USB': ChipInfo(True, True, 0x0130),
         'Mediatek-MTK7921-SDIO': ChipInfo(True, True, 0x0130)
 }

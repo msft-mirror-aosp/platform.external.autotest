@@ -9,7 +9,7 @@ NAME = 'tast.category-wifi'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-wifi'
+ATTRIBUTES = 'suite:bvt-tast-cq-wifi, suite:bvt-tast-cq-wifi-cft'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

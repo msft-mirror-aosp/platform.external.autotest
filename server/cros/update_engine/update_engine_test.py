@@ -1154,7 +1154,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
       """
         if lsbrelease_utils.is_moblab():
-            raise error.TestNA("Moblab cannot run M2N tests. See b/193438616.")
+            raise error.TestNAError("Moblab cannot run M2N tests. See b/193438616.")
         board = self._host.get_board().split(':')[1]
         # Boards like auron_paine are auron-paine in paygen.json and builders.
         if '_' in board:

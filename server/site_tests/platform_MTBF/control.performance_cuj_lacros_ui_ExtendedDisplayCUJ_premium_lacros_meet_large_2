@@ -3,17 +3,17 @@
 # found in the LICENSE file.
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = 'ui_TabSwitchCUJ2_basic_lacros_noproxy_1'
+NAME = 'ui_ExtendedDisplayCUJ_premium_lacros_meet_large_2'
 ATTRIBUTES = 'suite:performance_cuj_lacros'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
-PRIORITY = 4986
+PRIORITY = 4963
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 5
 REQUIRE_SSP = True
-DEPENDENCIES = ''
+DEPENDENCIES = 'external_display, premium'
 PY_VERSION = 3
 
 DOC = '''
@@ -43,8 +43,8 @@ test_args['test_version'] = 1
 
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
-  labels['test'] = 'ui.TabSwitchCUJ2.basic_lacros_noproxy'
-  labels['test_iteration'] = '1'
+  labels['test'] = 'ui.ExtendedDisplayCUJ.premium_lacros_meet_large'
+  labels['test_iteration'] = '2'
   utils.write_keyval(job.resultdir, labels)
   # Try to retrieve and report DUT HWID and serial number.
   try:
@@ -101,7 +101,7 @@ def run(machine):
                     allow_unicode=True)
       job.run_test('tast',
                   host=host,
-                  test_exprs=['ui.TabSwitchCUJ2.basic_lacros_noproxy'],
+                  test_exprs=['ui.ExtendedDisplayCUJ.premium_lacros_meet_large'],
                   clear_tpm=False,
                   ignore_test_failures=False,
                   max_run_sec=3600,

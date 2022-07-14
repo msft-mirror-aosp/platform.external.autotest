@@ -57,6 +57,13 @@
       "deps": ["plus"]
     },
     {
+      "name": "meet-plus-large-lacros",
+      "tool": "tast",
+      "test_expr": "ui.GoogleMeetCUJ.plus_lacros_large",
+      "attributes": ["plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
       "name": "meet-plus-class",
       "tool": "tast",
       "test_expr": "ui.GoogleMeetCUJ.plus_class",
@@ -64,10 +71,24 @@
       "deps": ["plus"]
     },
     {
+      "name": "meet-plus-class-lacros",
+      "tool": "tast",
+      "test_expr": "ui.GoogleMeetCUJ.plus_lacros_class",
+      "attributes": ["plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
       "name": "meet-premium-large",
       "tool": "tast",
       "test_expr": "ui.GoogleMeetCUJ.premium_large",
       "attributes": ["premium"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "meet-premium-large-lacros",
+      "tool": "tast",
+      "test_expr": "ui.GoogleMeetCUJ.premium_lacros_large",
+      "attributes": ["premium", "lacros"],
       "deps": ["premium"]
     },
     {
@@ -217,6 +238,13 @@
       "tool": "tast",
       "test_expr": "ui.ExtendedDisplayCUJ.premium_meet_large",
       "attributes": ["premium"],
+      "deps": ["external_display", "premium"]
+    },
+    {
+      "name": "extended-display-meet-lacros",
+      "tool": "tast",
+      "test_expr": "ui.ExtendedDisplayCUJ.premium_lacros_meet_large",
+      "attributes": ["premium", "lacros"],
       "deps": ["external_display", "premium"]
     },
     {
@@ -407,6 +435,9 @@
         {"test": "meet-basic-small-lacros", "repeats": 2},
         {"test": "meet-basic-large-lacros", "repeats": 2},
         {"test": "meet-basic-class-lacros", "repeats": 2},
+	{"test": "meet-plus-large-lacros", "repeats": 2},
+	{"test": "meet-plus-class-lacros", "repeats": 2},
+	{"test": "meet-premium-large-lacros", "repeats": 2},
         {"test": "tabswitch-basic-noproxy-lacros", "repeats": 2},
         {"test": "tabswitch-plus-noproxy-lacros", "repeats": 2},
         {"test": "tabswitch-premium-noproxy-lacros", "repeats": 2},
@@ -418,7 +449,8 @@
         {"test": "video-premium-youtube-app-lacros", "repeats": 2},
         {"test": "everyday-basic-ytmusic-lacros", "repeats": 2},
         {"test": "everyday-plus-ytmusic-lacros", "repeats": 2},
-        {"test": "extended-display-video-lacros", "repeats": 2}
+        {"test": "extended-display-meet-lacros", "repeats": 2},
+	{"test": "extended-display-video-lacros", "repeats": 2}
       ]
     },
     {

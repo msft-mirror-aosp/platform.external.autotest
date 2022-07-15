@@ -30,7 +30,7 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=['('
                              '"group:crosbolt" && '
-                             'crosbolt_arc_perf_qual && '
+                             'crosbolt_arc_perf_qual'
                              ')'],
                  ignore_test_failures=True,
                  max_run_sec=21600,  # 6 hours.

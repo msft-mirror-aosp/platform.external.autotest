@@ -83,6 +83,10 @@ class FirmwareError(SuspendFailure):
             # version. This will be removed once all Ti50 stocks are updated to
             # 0.0.15 or higher (tracked in b/236911319).
             ('^nissa', r'Reading Ti50 firmware version is not supported'),
+            # Individual EC error responses are meaningless on their own.
+            # Ignore such low-level errors in favor of capturing any errors
+            # they generate instead.
+            (r'.*', r'EC returned error result code')
     ]
 
 

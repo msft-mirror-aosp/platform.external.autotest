@@ -7,12 +7,10 @@ import logging
 import random
 import time
 
-from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.common_lib.cros import tpm_utils
-from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
@@ -113,7 +111,9 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                  cellular=False,
                  interrupt=None,
                  moblab=False,
-                 m2n=False):
+                 m2n=False,
+                 running_at_desk=False,
+                 build=None):
         """
         Runs a forced autoupdate during ChromeOS OOBE.
 
@@ -124,35 +124,33 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         @param moblab: True if we are running on moblab.
         @param m2n: True if we should first provision the latest stable version
                     for the current board so that we can perform a M->N update.
+        @param running_at_desk: Indicates test is run locally on a DUT which is
+                                not in the lab network.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used. In the lab, the
+                      job_repo_url from the host attributes will override this.
 
         """
         if interrupt and interrupt not in self._SUPPORTED_INTERRUPTS:
             raise error.TestFail('Unknown interrupt type: %s' % interrupt)
         tpm_utils.ClearTPMOwnerRequest(self._host)
 
-        self._m2n = m2n
-        if self._m2n:
-            # Provision latest stable build for the current build.
-            build_name = self._get_latest_serving_stable_build()
-
-            # Install the matching build with quick provision.
-            autotest_devserver = dev_server.ImageServer.resolve(
-                    build_name, self._host.hostname)
-            update_url = autotest_devserver.get_update_url(build_name)
-            logging.info('Installing source image with update url: %s',
-                         update_url)
-            provisioner.ChromiumOSProvisioner(
-                    update_url, host=self._host,
-                    is_release_bucket=True).run_provision()
-
         payload_url = None
-        public_bucket = False
+        public_bucket = running_at_desk
         if cellular:
             self._set_update_over_cellular_setting(True)
             public_bucket = True
 
         payload_url = self.get_payload_for_nebraska(
-                full_payload=full_payload, public_bucket=public_bucket)
+                full_payload=full_payload,
+                public_bucket=public_bucket,
+                build=build)
+
+        self._m2n = m2n
+        if self._m2n:
+            self.provision_dut(public_bucket=running_at_desk)
+
         before_version = self._host.get_release_version()
 
         # Clear any previously started updates.

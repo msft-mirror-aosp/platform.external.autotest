@@ -563,6 +563,10 @@ class ChromiumOSProvisioner(object):
                 raise NewBuildUpdateError(self.update_version, str(e))
 
         image_name = url_to_image_name(self.update_url)
+
+        # Return early without any cache server info, since we didn't use one.
+        if self._public_bucket:
+            return image_name, None
         # update_url is different from devserver url needed to stage autotest
         # packages, therefore, resolve a new devserver url here.
         if self._cache_server_url:

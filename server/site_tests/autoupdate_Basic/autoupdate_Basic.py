@@ -4,12 +4,10 @@
 # found in the LICENSE file.
 
 import logging
-import os
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import cryptohome
-from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 class autoupdate_Basic(update_engine_test.UpdateEngineTest):
@@ -53,34 +51,9 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
 
         self._m2n = m2n
         if self._m2n:
-            if self._host.get_board().endswith("-kernelnext"):
-                raise error.TestNAError("Skipping test on kernelnext board")
-            if self._host.get_board().endswith("-manatee"):
-                raise error.TestNAError("Skipping test on manatee board")
-
-            # Provision latest stable build for the current build.
-            build_name = self._get_latest_serving_stable_build()
-            logging.debug('build name is %s', build_name)
-
-            # Install the matching build with quick provision.
-            cache_server_url = None
-            if running_at_desk:
-                self._copy_quick_provision_to_dut()
-                update_url = self._get_provision_url_on_public_bucket(
-                        build_name)
-            else:
-                cache_server_url = self._get_cache_server_url()
-                update_url = os.path.join(cache_server_url, 'update',
-                                          build_name)
-
-            logging.info('Installing source image with update url: %s',
-                         update_url)
-            provisioner.ChromiumOSProvisioner(
-                    update_url,
-                    host=self._host,
-                    is_release_bucket=True,
-                    public_bucket=running_at_desk,
-                    cache_server_url=cache_server_url).run_provision()
+            skip_board_suffixes = ['-kernelnext', '-manatee']
+            self.provision_dut(public_bucket=running_at_desk,
+                               skip_board_suffixes=skip_board_suffixes)
 
         # Login to device before update
         if pin_login:

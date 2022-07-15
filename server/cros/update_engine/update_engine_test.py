@@ -27,7 +27,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib import utils
-from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros.update_engine import dlc_util
 from autotest_lib.client.cros.update_engine import update_engine_event as uee
@@ -35,6 +34,7 @@ from autotest_lib.client.cros.update_engine import update_engine_util
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.cros import gsutil_wrapper
+from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.utils.frozen_chromite.lib import constants as chromite_constants
 from autotest_lib.utils.frozen_chromite.lib import gob_util
@@ -309,24 +309,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         url_pattern = '%s/static/%s'
         return ('/'.join([(url_pattern % (cache_server_url, build_name)), f])
                 for f in filenames)
-
-
-    def _get_devserver_for_test(self, test_conf):
-        """Find a devserver to use.
-
-        We use the payload URI as the hash for ImageServer.resolve. The chosen
-        devserver needs to respect the location of the host if
-        'prefer_local_devserver' is set to True or 'restricted_subnets' is set.
-
-        @param test_conf: a dictionary of test settings.
-
-        """
-        autotest_devserver = dev_server.ImageServer.resolve(
-            test_conf['target_payload_uri'], self._host.hostname)
-        devserver_hostname = six.moves.urllib.parse.urlparse(
-                autotest_devserver.url()).hostname
-        logging.info('Devserver chosen for this run: %s', devserver_hostname)
-        return autotest_devserver
 
 
     def _get_payload_url(self,
@@ -1165,3 +1147,57 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 stable_paygen_data, key=(lambda key: key['chrome_os_version']))
         return os.path.join(channel, board,
                             latest_stable_paygen_data["chrome_os_version"])
+
+    def provision_dut(self,
+                      build_name=None,
+                      is_release_bucket=True,
+                      public_bucket=False,
+                      skip_board_suffixes=[]):
+        """
+        Provisions the DUT with the latest version from stable channel.
+
+        @param build_name: The build name to use, such as
+                           dev-channel/asurada/14515.0.0 for the release
+                           bucket, or asurada-release/14515.0.0 for the archive
+                           bucket.
+        @param is_release_bucket: If True (default), use release bucket
+                                  gs://chromeos-releases else use archive bucket
+                                  gs://chromeos-image-archive.
+        @param public_bucket: True to use a public GS bucket for provisioning
+                              when the DUT is not connected to the lab network.
+                              False assumes the DUT is connected to the lab
+                              network and will use a lab cache server for
+                              provisioning.
+        @param skip_board_suffixes: list of strings with suffixes for boards to
+                                    skip. This is only intended for skipping
+                                    variants such as '-kernelnext', so a
+                                    leading '-' will be prepended if not
+                                    already included.
+
+        """
+        for suffix in skip_board_suffixes:
+            suffix = suffix if suffix.startswith('-') else '-' + suffix
+            if self._host.get_board().endswith(suffix):
+                raise error.TestNAError("Skipping test on %s board" % suffix)
+
+        # Provision latest stable build for the current build.
+        build_name = build_name or self._get_latest_serving_stable_build()
+        logging.debug('build name is %s', build_name)
+
+        # Install the matching build with quick provision.
+        cache_server_url = None
+        if public_bucket:
+            self._copy_quick_provision_to_dut()
+            update_url = self._get_provision_url_on_public_bucket(
+                    build_name, is_release_bucket=is_release_bucket)
+        else:
+            cache_server_url = self._get_cache_server_url()
+            update_url = os.path.join(cache_server_url, 'update', build_name)
+
+        logging.info('Installing source image with update url: %s', update_url)
+        provisioner.ChromiumOSProvisioner(
+                update_url,
+                host=self._host,
+                is_release_bucket=True,
+                public_bucket=public_bucket,
+                cache_server_url=cache_server_url).run_provision()

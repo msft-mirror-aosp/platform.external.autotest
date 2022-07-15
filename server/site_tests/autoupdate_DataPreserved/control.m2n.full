@@ -15,7 +15,12 @@ DOC = """
 This tests that user's timezone, input methods, and downloaded files remain
 unchanged after an update.
 
-test_that <hostname>.cros autoupdate_DataPreserved.full --args="job_repo_url='http://<IP>:<port>/static/<board>-release/RXX-XXXX.X.X/autotest/packages'"
+Refer to autoupdate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
+
+Note: for m2n tests, the source version is the currently serving stable channel
+version.
+
 """
 
 from autotest_lib.client.common_lib import utils

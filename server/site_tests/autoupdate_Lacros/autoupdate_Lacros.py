@@ -5,9 +5,7 @@
 
 import logging
 
-from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
-from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -20,33 +18,28 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
 
     def run_once(self,
                  full_payload,
-                 job_repo_url=None,
                  m2n=False,
-                 running_at_desk=False):
+                 running_at_desk=False,
+                 build=None):
         """
         Performs autoupdate with Nebraska and checks rootfs-lacros.
 
         @param full_payload: True for full payload, False for delta
-        @param job_repo_url: A url pointing to the devserver where the autotest
-            package for this build should be staged.
         @param running_at_desk: Indicates test is run locally from workstation.
                                 Flag does not work with M2N tests.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
-        if m2n:
-            # Provision latest stable build for the current board.
-            build_name = self._get_latest_serving_stable_build()
-            logging.debug('build name is %s', build_name)
+        # Get a payload to use for the test.
+        payload_url = self.get_payload_for_nebraska(
+                full_payload=full_payload,
+                public_bucket=running_at_desk,
+                build=build)
 
-            # Install the matching build with quick provision.
-            autotest_devserver = dev_server.ImageServer.resolve(
-                    build_name, self._host.hostname)
-            update_url = autotest_devserver.get_update_url(build_name)
-            logging.info('Installing source image with update url: %s',
-                         update_url)
-            provisioner.ChromiumOSProvisioner(
-                    update_url, host=self._host,
-                    is_release_bucket=True).run_provision()
+        if m2n:
+            self.provision_dut(public_bucket=running_at_desk)
 
         # Login and check rootfs-lacros version
         self._run_client_test_and_check_result('desktopui_RootfsLacros',
@@ -55,11 +48,6 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
                                          '/tmp/lacros_version.txt']).stdout
         logging.info('rootfs-lacros version before update: %s', before_version)
 
-        # Get a payload to use for the test.
-        payload_url = self.get_payload_for_nebraska(
-                job_repo_url,
-                full_payload=full_payload,
-                public_bucket=running_at_desk)
 
         # Record DUT state before the update.
         active, inactive = kernel_utils.get_kernel_state(self._host)

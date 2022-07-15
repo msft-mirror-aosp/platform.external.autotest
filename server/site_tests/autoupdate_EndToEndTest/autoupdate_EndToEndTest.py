@@ -12,7 +12,6 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
-from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -22,7 +21,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
     Performs an end-to-end test of updating a ChromeOS device from one version
     to another. The test performs the following steps:
 
-      - Stages the source (full) and target update payloads on a devserver.
       - Installs source image on the DUT (if provided) and reboots to it.
       - Verifies that sign in works correctly on the source image.
       - Installs target image on the DUT and reboots.
@@ -83,8 +81,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         else:
             update_parameters = self._get_update_parameters_from_uri(
                     test_conf['target_payload_uri'])
-            payload_url = os.path.join(self._autotest_devserver.url(),
-                                       'static', update_parameters[0],
+            payload_url = os.path.join(self._get_cache_server_url(), 'static',
+                                       update_parameters[0],
                                        update_parameters[1])
 
         # Perform the update.
@@ -115,7 +113,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         logging.info('Update successful, test completed')
 
 
-    def run_once(self, test_conf, m2n=False, build=None):
+    def run_once(self, test_conf, m2n=False, build=None,
+                 running_at_desk=False):
         """Performs a complete auto update test.
 
         @param test_conf: a dictionary containing test configuration values.
@@ -123,6 +122,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                     version of this board before updating to ToT.
         @param build: target build for the update, i.e. R102-14650.0.0. Optional
                       argument for running locally.
+        @param running_at_desk: Indicates test is run locally on a DUT which is
+                                not in the lab network.
 
         """
         if m2n:
@@ -134,7 +135,8 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                     '/')[-1]
             target_release = build.split(
                     '-')[1] if build else self._host.get_release_version()
-            target_uri = self.get_payload_for_nebraska(build=build)
+            target_uri = self.get_payload_for_nebraska(
+                    build=build, public_bucket=running_at_desk)
             test_conf = {
                     'target_release': target_release,
                     'target_payload_uri': target_uri,
@@ -145,7 +147,6 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         logging.debug('The test configuration supplied: %s', test_conf)
         if not m2n:
             self._print_rerun_command(test_conf)
-        self._autotest_devserver = self._get_devserver_for_test(test_conf)
 
         # Copy nebraska from the initially provisioned version to use for the
         # update. We don't want to use the potentially very old nebraska script
@@ -164,13 +165,9 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                 source_payload_uri)
 
         if build_name is not None:
-            update_url = self._autotest_devserver.get_update_url(
-                build_name)
-            logging.info('Installing source image with update url: %s',
-                         update_url)
-            provisioner.ChromiumOSProvisioner(
-                    update_url, host=self._host,
-                    is_release_bucket=True).run_provision()
+            # Install the matching build with quick provision.
+            self.provision_dut(build_name=build_name,
+                               public_bucket=running_at_desk)
 
             self._run_client_test_and_check_result(
                     self._LOGIN_TEST,

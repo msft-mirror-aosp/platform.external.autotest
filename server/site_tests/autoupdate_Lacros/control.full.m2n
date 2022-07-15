@@ -14,10 +14,11 @@ PY_VERSION = 3
 DOC = """
 Logs in and launches rootfs-lacros before and after a M-to-N autoupdate.
 
-Use the `running_at_desk` arg when testing locally.
+Refer to autoupdate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
 
-Example usage:
-test_that autoupdate_Lacros <DUT> --board=<board> --args="job_repo_url=http://<IP>:8082/static/<board>-release/RXX-XXXXX.X.X/autotest/packages running_at_desk=True"
+Note: for m2n tests, the source version is the currently serving stable channel
+version.
 """
 
 from autotest_lib.client.common_lib import utils

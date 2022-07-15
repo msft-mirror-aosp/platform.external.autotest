@@ -14,10 +14,8 @@ PY_VERSION = 3
 DOC = """
 This tests the forced autoupdate flow at OOBE.
 
-See the control file for the full payload for instructions on running locally.
-Kick it off using this command:
-
-test_that <hostname>.cros autoupdate_ForcedOOBEUpdate.delta --args="job_repo_url='http://<IP>:<port>/static/<board>-release/RXX-XXXX.X.X/autotest/packages'"
+Refer to autoupdate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
 
 """
 

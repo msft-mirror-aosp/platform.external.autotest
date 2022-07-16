@@ -172,7 +172,7 @@ suite:bvt-tast-cq-vm
 suite:bvt-tast-cq-wallpaper
 suite:bvt-tast-cq-webrtc
 suite:bvt-tast-cq-wifi
-suite:bvt-tast-cq-wifi-cft
+suite:bvt-tast-cq-cft-wifi
 suite:bvt-tast-cq-wilco
 suite:bvt-tast-cq-wmp
 suite:bvt-tast-informational

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "bvt-tast-cq-wifi-cft"
+NAME = "bvt-tast-cq-cft-wifi"
 PURPOSE = 'Tests the critical Tast tests in the "wifi" category.'
 
 TIME = "SHORT"

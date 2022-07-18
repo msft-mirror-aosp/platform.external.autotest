@@ -18,6 +18,7 @@ import time
 import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS, HFP_WBS_MEDIUM,
         AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH, DATA_DIR, VISQOL_PATH,
@@ -48,6 +49,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # and NBS.
     CRAS_HFP_BLUETOOTH_INPUT_NODE_TYPE = {HFP_WBS: 'BLUETOOTH',
                                           HFP_NBS: 'BLUETOOTH_NB_MIC'}
+
+    # The real IP replacent when used in ssh tunneling environment
+    real_ip = None
 
     def _get_pulseaudio_bluez_source(self, get_source_method, device,
                                      test_profile):
@@ -209,6 +213,23 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             logging.error('Failure at checking primary frequencies')
         return final_result
 
+    def _get_real_ip(self):
+        # Localhost is unlikely to be the correct ip target so take the local
+        # host ip if it exists.
+        # When used ssh tunneling i.e. from cloudtop we need to provide
+        # DUT ip
+        if self.real_ip is None:
+            if self.host.ip in ('127.0.0.1', 'localhost', '::1'):
+                if self.local_host_ip:
+                    self.real_ip = self.local_host_ip
+                    logging.info('Using local host ip = %s', self.real_ip)
+                else:
+                   dut_if = interface.Interface('eth0', self.host)
+                   self.real_ip = dut_if.ipv4_address
+                   logging.info('Using DUT ip = %s', self.real_ip)
+            else:
+                self.real_ip = self.host.ip
+
 
     def _poll_for_condition(self, condition, timeout=20, sleep_interval=1,
                             desc='waiting for condition'):
@@ -222,14 +243,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
     def _scp_to_dut(self, device, src_file, dest_file):
         """SCP file from peer device to DuT."""
-        ip = self.host.ip
-        # Localhost is unlikely to be the correct ip target so take the local
-        # host ip if it exists.
-        if self.host.ip == '127.0.0.1' and self.local_host_ip:
-            ip = self.local_host_ip
-            logging.info('Using local host ip = %s', ip)
+        self._get_real_ip()
 
-        device.ScpToDut(src_file, dest_file, ip)
+        device.ScpToDut(src_file, dest_file, self.real_ip)
 
     def check_wbs_capability(self):
         """Check if the DUT supports WBS capability.
@@ -476,24 +492,20 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
     def handle_one_chunk(self, device, chunk_in_secs, index, test_profile):
         """Handle one chunk of audio data by calling chameleon api."""
-
-        ip = self.host.ip
-        # Localhost is unlikely to be the correct ip target so take the local
-        # host ip if it exists.
-        if self.host.ip == '127.0.0.1' and self.local_host_ip:
-            ip = self.local_host_ip
-            logging.info('Using local host ip = %s', ip)
+        self._get_real_ip()
 
         # TODO(b/207046142): Remove the old version fallback after the new
         # Chameleon bundle is deployed.
         try:
-            recorded_file = device.HandleOneChunk(chunk_in_secs, index, ip)
+            recorded_file = device.HandleOneChunk(chunk_in_secs, index,
+                                                  self.real_ip)
         except Exception as e:
             logging.debug("Unable to use new version of HandleOneChunk;"
                           "fall back to use the old one.")
             try:
                 recorded_file = device.HandleOneChunk(chunk_in_secs, index,
-                                                      test_profile, ip)
+                                                      test_profile,
+                                                      self.real_ip)
             except Exception as e:
                 raise error.TestError('Failed to handle chunk (%s)', e)
 

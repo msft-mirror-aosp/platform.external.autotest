@@ -118,7 +118,8 @@ class BluetoothAdapterQuickTests(
                         flag='Quick Health',
                         args_dict=None,
                         start_browser=False,
-                        floss=False):
+                        floss=False,
+                        llprivacy=False):
         """Inits the test batch"""
 
         super().quick_test_init(flag)
@@ -128,6 +129,7 @@ class BluetoothAdapterQuickTests(
         self.use_btpeer = use_btpeer
         self.floss = floss
         self.local_host_ip = None
+        self.llprivacy = llprivacy
 
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
@@ -388,6 +390,15 @@ class BluetoothAdapterQuickTests(
         time.sleep(self.TEST_SLEEP_SECS)
         self.log_message('Starting test: %s' % test_name)
 
+        if not self.test_set_ll_privacy(self.llprivacy):
+            logging.error('DBus call to set ll privacy %r failed',
+                          self.llprivacy)
+            if self.llprivacy:
+                raise error.TestError('Failed to enable LL privacy.')
+        else:
+            if self.llprivacy:
+                logging.info('Enabled LL privacy for this test.')
+
     def quick_test_test_posttest(self):
         """Runs posttest cleanups."""
 
@@ -401,6 +412,10 @@ class BluetoothAdapterQuickTests(
         # is ok and recover if needed. This is done as part of clean-up as well
         # to make sure we can fully remove pairing info between tests
         self.test_is_facade_valid()
+
+        # Set ll privacy to false because default is false
+        if self.llprivacy:
+            self.test_set_ll_privacy(False)
 
         self.bluetooth_facade.stop_discovery()
 

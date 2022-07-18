@@ -273,7 +273,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                 kbd, kbd_test_func, secondary_info=hid_test_device)
 
 
-    @test_wrapper('LE Sender Role Test', devices={'BLE_KEYBOARD':1},
+    @test_wrapper('LE Sender Role Test',
+                  devices={'BLE_KEYBOARD': 1},
                   skip_models=LAB_VEYRON_MODELS)
     def le_role_sender(self):
         """Tests basic Nearby Sender role"""
@@ -290,7 +291,10 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('LE Sender Role Test During HID',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
                   skip_models=LAB_VEYRON_MODELS)
     def le_role_sender_during_hid(self):
         """Tests Nearby Sender role while already connected to HID device"""
@@ -312,7 +316,10 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('LE HID Test During Sender Role',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1},
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
                   skip_models=LAB_VEYRON_MODELS)
     def le_role_hid_during_sender(self):
         """Tests HID device while already in Nearby Sender role"""
@@ -440,8 +447,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
            which is taking care for whether to run a specific test or the
            batch as a whole, and running the batch in iterations
 
-           @param num_iterations: how many interations to run
-           @param test_name: specifc test to run otherwise None to run the
+           @param num_iterations: how many iterations to run
+           @param test_name: specific test to run otherwise None to run the
                              whole batch
         """
         self.le_connect_disconnect_by_device_loop()

@@ -246,8 +246,8 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
            which is taking care for whether to run a specific test or the
            batch as a whole, and running the batch in iterations
 
-           @param num_iterations: how many interations to run
-           @param test_name: specifc test to run otherwise None to run the
+           @param num_iterations: how many iterations to run
+           @param test_name: specific test to run otherwise None to run the
                              whole batch
         """
         self.sa_noop()

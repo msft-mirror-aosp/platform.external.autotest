@@ -1,0 +1,33 @@
+# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+AUTHOR = 'chromeos-bluetooth'
+NAME = 'bluetooth_AdapterLLPrivacyHealth'
+PURPOSE = ('Package of Bluetooth link layer privacy health tests with LL privacy turned on')
+CRITERIA = 'Pass all health test'
+ATTRIBUTES = ''
+TIME = 'MEDIUM' # Takes 10 minutes on Guado
+TEST_CATEGORY = 'Functional'
+TEST_CLASS = 'bluetooth'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
+PY_VERSION = 3
+
+DOC = """
+    This class implements a Bluetooth ll privacy health package, using
+    methods provided in BluetoothAdapterQuickTests,
+    The package is running several sub batches of tests.
+    """
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterLLPrivacyHealth', host=host,
+                 num_iterations=1, args_dict=args_dict,
+                 flag='Quick Health')
+
+parallel_simple(run, machines)

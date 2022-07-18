@@ -34,7 +34,7 @@ TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'audio'
 TEST_TYPE = 'client'
-DEPENDENCIES = 'fakedep1'
+DEPENDENCIES = 'chameleon,servo_state:WORKING'
 
 DOC = '''
 a doc
@@ -125,11 +125,17 @@ class MetadataTest(unittest.TestCase):
         self.assertEqual(meta_data.test_case.name, 'fake_test1')
         # verify tags
         expected_tags = set([
-                'fakedep1', 'test_class:audio', 'suite:fake_suite1',
+                'test_class:audio', 'suite:fake_suite1',
                 'suite:fake_suite2'
         ])
         actual_tags = set([item.value for item in meta_data.test_case.tags])
         self.assertEqual(expected_tags, actual_tags)
+
+        # Verify Deps
+        expected_deps = set(['chameleon', 'servo_state:WORKING'])
+        actual_deps = set([
+                item.value for item in meta_data.test_case.dependencies])
+        self.assertEqual(expected_deps, actual_deps)
         # verify harness. This is a bit of a hack but works and keeps import
         # hacking down.
         self.assertIn('tauto', str(meta_data.test_case_exec.test_harness))

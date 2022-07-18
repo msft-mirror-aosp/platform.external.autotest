@@ -76,11 +76,17 @@ def serialize_test_case_info(data):
     return tc_metadata_pb.TestCaseInfo(owners=[serialized_contacts])
 
 
+def serialized_deps(data):
+    """Return a serialized deps obj (list)."""
+    serialized_deps = []
+    for value in data.dependencies:
+        serialized_deps.append(tc_pb.TestCase.Dependency(value=value))
+    return serialized_deps
+
+
 def serialize_tags(data):
     """Return a serialized tags obj (list)."""
     serialized_tags = []
-    for value in data.dependencies:
-        serialized_tags.append(tc_pb.TestCase.Tag(value=value))
     for value in data.attributes:
         serialized_tags.append(tc_pb.TestCase.Tag(value=value))
     if data.test_class:
@@ -94,7 +100,9 @@ def serialize_test_case(data):
     """Return a serialized api.TestCase obj."""
     serialized_testcase_id = tc_pb.TestCase.Id(value="tauto." + data.name)
     tags = serialize_tags(data)
-    return tc_pb.TestCase(id=serialized_testcase_id, name=data.name, tags=tags)
+    deps = serialized_deps(data)
+    return tc_pb.TestCase(id=serialized_testcase_id, name=data.name, tags=tags,
+                          dependencies=deps)
 
 
 def serialized_test_case_exec(data):

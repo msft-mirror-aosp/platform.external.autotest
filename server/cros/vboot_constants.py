@@ -80,7 +80,7 @@ RECOVERY_REASON = {
     'RW_DEV_MISMATCH':    '69',  # 0x45
     # Shared data error in rewritable firmware
     'RW_SHARED_DATA':     '70',  # 0x46
-    # Test error from LoadKernel()
+    # Test error from vb2api_load_kernel()
     'RW_TEST_LK':         '71',  # 0x47
     # No bootable disk found (deprecated)
     'DEP_RW_NO_DISK':     '72',  # 0x48

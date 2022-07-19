@@ -234,6 +234,7 @@ suite:enrollment_per-build
 suite:ent-nightly
 suite:ent-wificell
 suite:enterprise
+suite:enterprise-reporting_per-build
 suite:experimental
 suite:factory
 suite:faft_bios

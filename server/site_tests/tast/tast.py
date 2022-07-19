@@ -310,11 +310,17 @@ class tast(test.test):
 
         # Need to pass in dut_servers for every test in CFT.
         # But only add it if not already in varslist.
+        dut_serversFound = False
         if not any(
                 [True if 'dut.servers' in arg else False for arg in varslist]):
             dut_server = _dut_server_arg(command_args)
             if dut_server:
                 self._varslist.append('servers.dut=:%s' % dut_server)
+                dut_serversFound = True
+
+        # Without dut_servers, trying to download private will to fail in CFT.
+        if self._f20_container and not dut_serversFound:
+            self._run_private_tests = False
 
         # List of JSON objects describing tests that will be run. See Test in
         # src/platform/tast/src/chromiumos/tast/testing/test.go for details.

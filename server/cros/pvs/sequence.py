@@ -68,15 +68,15 @@ class test_sequence(test.test):
         try:
             self._sequence_verdicts[test] = True
             if server_test:
-                err = self.job.run_test(test, **argv)
-                if err == False:
-                    raise error.TestFail()
+                res, err = self.job.run_test_with_exception(test, **argv)
+                if res == False:
+                    raise err
             else:
                 client.run_test(test, check_client_result=True, **argv)
-        except:
+        except BaseException as err:
             self._sequence_verdicts[test] = False
             self.postprocess()
-            raise error.TestFail('Sequenced test %s failed, reason: ' % test)
+            raise error.TestFail('Sequenced test error: %s' % err)
 
     def surface_client_test_resultsdir(self, test):
         """

@@ -1026,10 +1026,49 @@ class server_job(base_job.base_job):
         """
         Summon a test object and run it.
 
-        tag
-                tag to add to testname
         url
                 url of the test to run
+
+        @returns (bool): if the test passed, returns true
+                else returns false
+        """
+        testname, subdir, group_func = self._run_test(url, *args, **dargs)
+        try:
+            result = self._run_group(testname, subdir, group_func)
+        except error.TestBaseException as e:
+            return False
+        else:
+            return True
+
+    def run_test_with_exception(self, url, *args, **dargs):
+        """
+        Summon a test object and run it, surfacing the exception if present
+
+        url
+                url of the test to run
+
+        @returns (bool): if the test passed, returns true
+                else returns false
+        """
+        testname, subdir, group_func = self._run_test(url, *args, **dargs)
+        try:
+            result = self._run_group(testname, subdir, group_func)
+        except error.TestBaseException as e:
+            return False, e
+        else:
+            return True, None
+
+    def _run_test(self, url, *args, **dargs):
+        """
+        Prepare to run a test from the server job, called from both options for
+        run_test_.*
+
+        url
+                url of the test to run
+
+        @returns (testname, subdir, group_func): the name of the test (with
+                tag), the output directory created for the run, and the
+                group_func used to execute the test
         """
         if self._disable_sysinfo:
             dargs['disable_sysinfo'] = True
@@ -1051,13 +1090,7 @@ class server_job(base_job.base_job):
             else:
                 self.record('GOOD', subdir, testname, 'completed successfully')
 
-        try:
-            result = self._run_group(testname, subdir, group_func)
-        except error.TestBaseException as e:
-            return False
-        else:
-            return True
-
+        return testname, subdir, group_func
 
     def _run_group(self, name, subdir, function, *args, **dargs):
         """Underlying method for running something inside of a group."""

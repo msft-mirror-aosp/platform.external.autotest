@@ -398,6 +398,7 @@
         {"test": "quick-check-unlock", "repeats": 1},
         {"test": "quick-check-wakeup", "repeats": 1},
         {"test": "video-basic-youtube-web", "repeats": 1},
+        {"test": "video-basic-youtube-app", "repeats": 1},
         {"test": "everyday-basic-ytmusic", "repeats": 1},
         {"test": "extended-display-meet", "repeats": 1}
       ]
@@ -435,9 +436,9 @@
         {"test": "meet-basic-small-lacros", "repeats": 2},
         {"test": "meet-basic-large-lacros", "repeats": 2},
         {"test": "meet-basic-class-lacros", "repeats": 2},
-	{"test": "meet-plus-large-lacros", "repeats": 2},
-	{"test": "meet-plus-class-lacros", "repeats": 2},
-	{"test": "meet-premium-large-lacros", "repeats": 2},
+        {"test": "meet-plus-large-lacros", "repeats": 2},
+        {"test": "meet-plus-class-lacros", "repeats": 2},
+        {"test": "meet-premium-large-lacros", "repeats": 2},
         {"test": "tabswitch-basic-noproxy-lacros", "repeats": 2},
         {"test": "tabswitch-plus-noproxy-lacros", "repeats": 2},
         {"test": "tabswitch-premium-noproxy-lacros", "repeats": 2},
@@ -450,7 +451,7 @@
         {"test": "everyday-basic-ytmusic-lacros", "repeats": 2},
         {"test": "everyday-plus-ytmusic-lacros", "repeats": 2},
         {"test": "extended-display-meet-lacros", "repeats": 2},
-	{"test": "extended-display-video-lacros", "repeats": 2}
+        {"test": "extended-display-video-lacros", "repeats": 2}
       ]
     },
     {

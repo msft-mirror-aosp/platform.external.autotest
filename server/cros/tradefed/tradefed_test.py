@@ -1178,7 +1178,11 @@ class TradefedTest(test.test):
             output = self._run_tradefed(command)
         except Exception as e:
             self._log_java_version()
-            if not isinstance(e, error.CmdTimeoutError):
+            if isinstance(e, error.CmdTimeoutError):
+                pass
+            elif isinstance(e, error.CmdError) and e.result_obj.exit_status == 137:
+                logging.error('Killed by SIGKILL.')
+            else:
                 # In case this happened due to file corruptions, try to
                 # force to recreate the cache.
                 logging.error('Failed to run tradefed! Cleaning up now.')

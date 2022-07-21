@@ -40,24 +40,25 @@ class autoupdate_DeferredUpdate(update_engine_test.UpdateEngineTest):
     def run_once(self,
                  periodic_interval=5,
                  full_payload=True,
-                 job_repo_url=None,
-                 running_at_desk=False):
+                 running_at_desk=False,
+                 build=None):
         """
         Runs the deferred update check test.
 
         @param periodic_interval: Seconds between each periodic update check.
         @param full_payload: True for full payload. False for delta.
-        @param job_repo_url: A url pointing to the devserver where the autotest
-            package for this build should be staged.
         @param running_at_desk: True if the test is being run locally.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
 
         # Get a payload to use for the test.
         payload_url = self.get_payload_for_nebraska(
-                job_repo_url,
                 full_payload=full_payload,
-                public_bucket=running_at_desk)
+                public_bucket=running_at_desk,
+                build=build)
 
         # Record kernel state before any updates.
         active, inactive = kernel_utils.get_kernel_state(self._host)

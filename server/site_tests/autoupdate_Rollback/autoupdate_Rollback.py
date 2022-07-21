@@ -58,19 +58,26 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
         self._restart_update_engine(ignore_status=True)
 
 
-    def run_once(self, job_repo_url=None, powerwash_before_rollback=False):
+    def run_once(self,
+                 powerwash_before_rollback=False,
+                 running_at_desk=False,
+                 build=None):
         """Runs the test.
 
-        @param job_repo_url: URL to get the image.
         @param powerwash_before_rollback: True if we should rollback before
                                           powerwashing.
+        @param running_at_desk: True if the test is being run locally.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         @raise error.TestError if anything went wrong with setting up the test;
                error.TestFail if any part of the test has failed.
 
         """
         self._powerwash_attempted = False
-        payload_url = self.get_payload_for_nebraska(job_repo_url)
+        payload_url = self.get_payload_for_nebraska(
+                build=build, public_bucket=running_at_desk)
         active, inactive = kernel_utils.get_kernel_state(self._host)
         logging.info('Initial device state: active kernel %s, '
                      'inactive kernel %s.', active, inactive)

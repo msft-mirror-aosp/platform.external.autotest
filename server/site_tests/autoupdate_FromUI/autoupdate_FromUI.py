@@ -19,22 +19,21 @@ class autoupdate_FromUI(update_engine_test.UpdateEngineTest):
     _UI_TEST = 'autoupdate_UpdateFromUI'
 
 
-    def run_once(self, full_payload=True, job_repo_url=None,
-                 running_at_desk=False):
+    def run_once(self, full_payload=True, running_at_desk=False, build=None):
         """
         Tests that we can successfully perform an update via the UI.
 
         @param full_payload: True for a full payload. False for delta.
-        @param job_repo_url: Used for debugging locally. This is used to figure
-                             out the current build and the devserver to use.
-                             The test will read this from a host argument
-                             when run in the lab.
         @param running_at_desk: True if the test is being run locally.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
         payload_url = self.get_payload_for_nebraska(
-            job_repo_url, full_payload=full_payload,
-            public_bucket=running_at_desk)
+                full_payload=full_payload,
+                public_bucket=running_at_desk,
+                build=build)
 
         active, inactive = kernel_utils.get_kernel_state(self._host)
         # Login and click 'Check for update' in the Settings app.

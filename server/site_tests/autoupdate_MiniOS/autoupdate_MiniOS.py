@@ -36,11 +36,14 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
                      (self._MINIOS_PREFS_DIR, True)):
             self._remove_update_engine_pref(pref=pref[0], is_dir=pref[1])
 
-    def _setup_minios_update(self, has_update, with_exclusion=False):
+    def _setup_minios_update(self,
+                             has_update,
+                             with_exclusion=False,
+                             build=None):
         # Get payload URL for the MiniOS update.
         # We'll always need a full payload for MiniOS update.
         payload_url = self.get_payload_for_nebraska(
-                job_repo_url=self._job_repo_url,
+                build=build,
                 full_payload=True,
                 payload_type=self._PAYLOAD_TYPE.MINIOS,
                 public_bucket=self._running_at_desk)
@@ -58,12 +61,12 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         if has_update:
             self._verifications.append(self._boot_minios)
 
-    def _setup_cros_update(self, has_update):
+    def _setup_cros_update(self, has_update, build=None):
         if has_update:
             # Get payload URL for the platform (OS) update.
             self._payload_urls.append(
                     self.get_payload_for_nebraska(
-                            job_repo_url=self._job_repo_url,
+                            build=build,
                             full_payload=self._full_payload,
                             public_bucket=self._running_at_desk))
 
@@ -71,20 +74,20 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         self._verifications.append(lambda: self._verify_cros_update(
                 updated=has_update))
 
-    def _setup_dlc_update(self):
+    def _setup_dlc_update(self, build=None):
         # Payload URLs for sample-dlc, a test DLC package.
         # We'll always need a full payload for DLC installation,
         # and optionally a delta payload if required by the test.
         self._payload_urls.append(
                 self.get_payload_for_nebraska(
-                        job_repo_url=self._job_repo_url,
+                        build=build,
                         full_payload=True,
                         payload_type=self._PAYLOAD_TYPE.DLC,
                         public_bucket=self._running_at_desk))
         if not self._full_payload:
             self._payload_urls.append(
                     self.get_payload_for_nebraska(
-                            job_repo_url=self._job_repo_url,
+                            build=build,
                             full_payload=False,
                             payload_type=self._PAYLOAD_TYPE.DLC,
                             public_bucket=self._running_at_desk))
@@ -120,18 +123,15 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
 
     def run_once(self,
                  full_payload=True,
-                 job_repo_url=None,
                  with_os=False,
                  with_dlc=False,
                  with_exclusion=False,
-                 running_at_desk=False):
+                 running_at_desk=False,
+                 build=None):
         """
         Tests that we can successfully update MiniOS along with the OS.
 
         @param full_payload: True for full OS and DLC payloads. False for delta.
-        @param job_repo_url: This is used to figure out the current build and
-                             the devserver to use. The test will read this
-                             from a host argument when run in the lab.
         @param with_os: True for MiniOS update along with Platform (OS)
                              update. False for MiniOS only update.
         @param with_dlc: True for MiniOS update with Platform (OS) and DLC.
@@ -139,10 +139,12 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         @param with_exclusion: True for excluding MiniOS payload.
         @param running_at_desk: Indicates test is run locally from a
                                 workstation.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
         self._full_payload = full_payload
-        self._job_repo_url = job_repo_url
         self._running_at_desk = running_at_desk
 
         if not with_os and with_dlc:
@@ -167,11 +169,12 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
 
         # Get payload URLs and setup tests.
         self._payload_urls = []
-        self._setup_cros_update(has_update=with_os)
+        self._setup_cros_update(has_update=with_os, build=build)
         if with_dlc:
-            self._setup_dlc_update()
+            self._setup_dlc_update(build=build)
         self._setup_minios_update(has_update=minios_update,
-                                  with_exclusion=with_exclusion)
+                                  with_exclusion=with_exclusion,
+                                  build=build)
 
         # Update MiniOS.
         if with_dlc:

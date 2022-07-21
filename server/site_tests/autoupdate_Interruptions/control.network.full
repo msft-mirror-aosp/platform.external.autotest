@@ -14,7 +14,8 @@ PY_VERSION = 3
 DOC = """
 Tests disabling the network on the chromebook during an update.
 
-test_that <hostname>.cros autoupdate_Interruptions.network.full --args="job_repo_url='http://<IP>:<port>/static/<board>-release/RXX-XXXX.X.X/autotest/packages'"
+Refer to autoupdate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
 """
 
 from autotest_lib.client.common_lib import utils

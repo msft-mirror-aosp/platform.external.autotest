@@ -39,6 +39,7 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
                 build=build)
 
         if m2n:
+            # Provision latest stable build for the current board.
             self.provision_dut(public_bucket=running_at_desk)
 
         # Login and check rootfs-lacros version
@@ -47,7 +48,6 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
         before_version = self._host.run(['cat',
                                          '/tmp/lacros_version.txt']).stdout
         logging.info('rootfs-lacros version before update: %s', before_version)
-
 
         # Record DUT state before the update.
         active, inactive = kernel_utils.get_kernel_state(self._host)

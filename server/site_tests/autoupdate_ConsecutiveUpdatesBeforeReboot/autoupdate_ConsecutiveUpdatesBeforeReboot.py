@@ -18,11 +18,12 @@ class autoupdate_ConsecutiveUpdatesBeforeReboot(
         self._set_feature(feature_name=self._REPEATED_UPDATES_FEATURE,
                           enable=False)
 
-    def run_once(self, job_repo_url=None, running_at_desk=False):
+    def run_once(self, running_at_desk=False, build=None):
         """
-        @param job_repo_url: A url pointing to the devserver where the autotest
-            package for this build should be staged.
         @param running_at_desk: indicates test is run locally from a workstation.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
         # Enable repeated updates using update_engine_client.
@@ -31,7 +32,7 @@ class autoupdate_ConsecutiveUpdatesBeforeReboot(
 
         # Get a payload to use for the test.
         payload_url_full = self.get_payload_for_nebraska(
-                job_repo_url, full_payload=True, public_bucket=running_at_desk)
+                full_payload=True, public_bucket=running_at_desk, build=build)
 
         # Record DUT state before the update.
         _, inactive = kernel_utils.get_kernel_state(self._host)
@@ -44,9 +45,7 @@ class autoupdate_ConsecutiveUpdatesBeforeReboot(
         self._wait_for_update_to_complete()
 
         payload_url_delta = self.get_payload_for_nebraska(
-                job_repo_url,
-                full_payload=False,
-                public_bucket=running_at_desk)
+                full_payload=False, public_bucket=running_at_desk, build=build)
 
         # Perform another update. This should also succeed because the delta
         # and full payloads have different fingerprint values.

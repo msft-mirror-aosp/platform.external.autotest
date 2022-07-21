@@ -15,11 +15,7 @@ PY_VERSION = 3
 DOC = """
 This tests autoupdate over a cellular connection.
 
-To run locally you need to pass in a job_repo_url arg. This is used to tell
-the test what build it is running. In the lab this is setup when the DUT is
-provisioned.
-
-test_that <hostname>.cros autoupdate_Cellular.delta --args="job_repo_url='http://<IP>:<port>/static/<board>-release/RXX-XXXX.X.X/autotest/packages'"
+test_that <hostname>.cros autoupdate_Cellular.delta --args="build=RXX-XXXX.X.X"
 
 """
 

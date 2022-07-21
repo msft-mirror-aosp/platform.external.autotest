@@ -14,9 +14,9 @@ JOB_RETRIES = 2
 PY_VERSION = 3
 DOC = """
 This tests that DLC can be installed, and auto-updated together with the OS.
-Use the `running_at_desk` arg when testing locally.
 
-test_that <hostname>.cros autoupdate_WithDLC.full --args="job_repo_url='http://<IP>:<port>/static/<board>-release/RXX-XXXX.X.X/autotest/packages' running_at_desk=True"
+Refer to autoupdate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
 """
 
 from autotest_lib.client.common_lib import utils

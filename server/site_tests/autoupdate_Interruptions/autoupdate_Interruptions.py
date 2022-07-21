@@ -24,16 +24,15 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         super(autoupdate_Interruptions, self).cleanup()
 
 
-    def run_once(self, full_payload=True, interrupt=None, job_repo_url=None):
+    def run_once(self, full_payload=True, interrupt=None, build=None):
         """
         Runs an update with interruptions from the user.
 
         @param full_payload: True for a full payload. False for delta.
         @param interrupt: The interrupt to perform: See _SUPPORTED_INTERRUPTS.
-        @param job_repo_url: Used for debugging locally. This is used to figure
-                             out the current build and the devserver to use.
-                             The test will read this from a host argument
-                             when run in the lab.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
         if interrupt and interrupt not in self._SUPPORTED_INTERRUPTS:
@@ -43,7 +42,7 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         self._remove_update_engine_pref(self._UPDATE_CHECK_RESPONSE_HASH)
         self._restart_update_engine(ignore_status=True)
 
-        payload_url = self.get_payload_for_nebraska(job_repo_url,
+        payload_url = self.get_payload_for_nebraska(build=build,
                                                     full_payload=full_payload)
         chromeos_version = self._host.get_release_version()
         active, inactive = kernel_utils.get_kernel_state(self._host)

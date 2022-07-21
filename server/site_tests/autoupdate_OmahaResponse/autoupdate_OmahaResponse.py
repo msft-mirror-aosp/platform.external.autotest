@@ -18,9 +18,15 @@ class autoupdate_OmahaResponse(update_engine_test.UpdateEngineTest):
         super(autoupdate_OmahaResponse, self).cleanup()
         self._host.reboot()
 
-    def run_once(self, full_payload=True, switch_urls=False, bad_sha256=False,
-                 bad_metadata_size=False, test_backoff=False, backoff=False,
-                 job_repo_url=None, running_at_desk=False):
+    def run_once(self,
+                 full_payload=True,
+                 switch_urls=False,
+                 bad_sha256=False,
+                 bad_metadata_size=False,
+                 test_backoff=False,
+                 backoff=False,
+                 running_at_desk=False,
+                 build=None):
         """
         Runs the Omaha response test. This test can be configured to respond
         to an update client in variaty of ways.
@@ -33,9 +39,10 @@ class autoupdate_OmahaResponse(update_engine_test.UpdateEngineTest):
             metadta size.
         @param test_backoff: True if we want to test the backoff functionality.
         @param backoff: Whether the backoff is enabled or not.
-        @param job_repo_url: A url pointing to the devserver where the autotest
-            package for this build should be staged.
         @param running_at_desk: True if the test is being run locally.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
         # Reboot DUT if a previous test left update_engine not idle.
@@ -43,8 +50,9 @@ class autoupdate_OmahaResponse(update_engine_test.UpdateEngineTest):
             self._host.reboot()
 
         payload_url = self.get_payload_for_nebraska(
-            job_repo_url, full_payload=full_payload,
-            public_bucket=running_at_desk)
+                build=build,
+                full_payload=full_payload,
+                public_bucket=running_at_desk)
 
         if switch_urls:
             self._run_client_test_and_check_result('autoupdate_UrlSwitch',

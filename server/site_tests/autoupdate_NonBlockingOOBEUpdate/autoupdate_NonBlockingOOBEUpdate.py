@@ -20,10 +20,7 @@ class autoupdate_NonBlockingOOBEUpdate(update_engine_test.UpdateEngineTest):
         super(autoupdate_NonBlockingOOBEUpdate, self).cleanup()
 
 
-    def run_once(self,
-                 full_payload=True,
-                 job_repo_url=None,
-                 running_at_desk=False):
+    def run_once(self, full_payload=True, running_at_desk=False, build=None):
         """
         Tries an autoupdate during ChromeOS OOBE without a deadline.
 
@@ -32,17 +29,16 @@ class autoupdate_NonBlockingOOBEUpdate(update_engine_test.UpdateEngineTest):
         not have a deadline and should not be executed.
 
         @param full_payload: True for a full payload. False for delta.
-        @param job_repo_url: Used for debugging locally. This is used to figure
-                             out the current build and the devserver to use.
-                             The test will read this from a host argument
-                             when run in the lab.
         @param running_at_desk: Indicates test is run locally from a
                                 workstation.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
         tpm_utils.ClearTPMOwnerRequest(self._host)
         payload_url = self.get_payload_for_nebraska(
-                job_repo_url,
+                build=build,
                 full_payload=full_payload,
                 public_bucket=running_at_desk)
         self._run_client_test_and_check_result('autoupdate_StartOOBEUpdate',

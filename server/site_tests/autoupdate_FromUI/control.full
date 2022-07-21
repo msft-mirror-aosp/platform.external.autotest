@@ -15,7 +15,9 @@ DOC = """
 This tests that an update can be triggered by clicking the 'Check for updates'
 button in the ChromeOS Settings app.
 
-test_that <hostname>.cros autoupdate_FromUI.full --args="job_repo_url='http://<IP>:<port>/static/<board>-release/RXX-XXXX.X.X/autotest/packages'"
+Refer to autopudate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
+
 """
 
 from autotest_lib.client.common_lib import utils

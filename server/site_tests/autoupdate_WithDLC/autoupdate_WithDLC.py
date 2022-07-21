@@ -31,28 +31,24 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
         super(autoupdate_WithDLC, self).cleanup()
 
 
-    def run_once(self,
-                 full_payload=True,
-                 job_repo_url=None,
-                 running_at_desk=False):
+    def run_once(self, full_payload=True, running_at_desk=False, build=None):
         """
         Tests that we can successfully install a DLC, and then update it along
         with the OS.
 
         @param full_payload: True for a full payload. False for delta.
-        @param job_repo_url: Used for debugging locally. This is used to figure
-                             out the current build and the devserver to use.
-                             The test will read this from a host argument
-                             when run in the lab.
         @param running_at_desk: Indicates test is run locally from a
                                 workstation.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
         payload_urls = []
 
         # Payload URL for the platform (OS) update
         payload_urls.append(
-                self.get_payload_for_nebraska(job_repo_url=job_repo_url,
+                self.get_payload_for_nebraska(build=build,
                                               full_payload=full_payload,
                                               public_bucket=running_at_desk))
 
@@ -61,14 +57,14 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
         # and optionally a delta payload if required by the test.
         payload_urls.append(
                 self.get_payload_for_nebraska(
-                        job_repo_url=job_repo_url,
+                        build=build,
                         full_payload=True,
                         payload_type=self._PAYLOAD_TYPE.DLC,
                         public_bucket=running_at_desk))
         if not full_payload:
             payload_urls.append(
                     self.get_payload_for_nebraska(
-                            job_repo_url=job_repo_url,
+                            build=build,
                             full_payload=False,
                             payload_type=self._PAYLOAD_TYPE.DLC,
                             public_bucket=running_at_desk))

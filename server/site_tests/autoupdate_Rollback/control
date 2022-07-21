@@ -18,14 +18,8 @@ This is a rollback test for ChromeOS releases. It first updates a machine and
 then invokes rollback to boot from its previously booted partition. It tests
 rollback using the update_engine_client rather than manipulating the UI.
 
-To run locally:
-  1) Lease a DUT in the lab
-  2) Edit your shadow_config.ini to point to a devserver that the leased DUT can reach.
-  3) Run with test_that passing job_repo_url
-
-For example:
-
-test_that <dut_ip> autoupdate_Rollback --args="job_repo_url='http://<IP>:<port>/static/<board>-release/RXX-XXXX.X.X/autotest/packages'"
+Refer to autoupdate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
 
 """
 

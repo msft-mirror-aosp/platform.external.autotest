@@ -231,11 +231,11 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         return tools.get_devserver_build_from_package_url(repo_url)
 
 
-    def _verify_hosts(self, job_repo_url):
+    def _verify_hosts(self, running_at_desk):
         """
         Ensure that the hosts scheduled for the test are valid.
 
-        @param job_repo_url: URL to work out the current build.
+        @param running_at_desk: True if running from your workstation.
 
         """
         lab1 = self._hosts[0].hostname.partition('-')[0]
@@ -251,7 +251,7 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         if result.exit_status != 0:
             raise error.TestFail('Devices failed to ping each other.')
         # Get the current build. e.g samus-release/R65-10200.0.0
-        if job_repo_url is None:
+        if not running_at_desk:
             logging.info('Making sure hosts have the same build.')
             _, build1 = self._get_build_from_job_repo_url(self._hosts[0])
             _, build2 = self._get_build_from_job_repo_url(self._hosts[1])
@@ -263,16 +263,15 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
 
     def run_once(self,
                  companions,
-                 job_repo_url=None,
                  too_many_attempts=False,
                  deadline_expired=False,
                  with_dlc=False,
-                 running_at_desk=False):
+                 running_at_desk=False,
+                 build=None):
         """
         Testing autoupdate via P2P.
 
         @param companions: List of other DUTs used in the test.
-        @param job_repo_url: A url linking to autotest packages.
         @param too_many_attempts: True to test what happens with too many
                                   failed update attempts.
         @param deadline_expired: True to test what happens when the deadline
@@ -280,6 +279,9 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         @param with_dlc: Whether to include sample-dlc in the test.
         @param running_at_desk: True to stage files on public bucket. Useful
                                 for debugging locally.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
 
         """
         self._hosts = [self._host, companions[0]]
@@ -289,7 +291,7 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         self._deadline_expired = deadline_expired
         self._with_dlc = with_dlc
 
-        self._verify_hosts(job_repo_url)
+        self._verify_hosts(running_at_desk)
         self._enable_p2p_update_on_hosts()
         self._setup_second_hosts_prefs()
 
@@ -297,19 +299,19 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         # updates are very slow so we will only update with a delta payload. In
         # addition we need the full DLC payload so we can perform its install.
         self._payload_urls = [
-                self.get_payload_for_nebraska(job_repo_url,
+                self.get_payload_for_nebraska(build=build,
                                               full_payload=False,
                                               public_bucket=running_at_desk)
         ]
         if self._with_dlc:
             self._payload_urls += [
                     self.get_payload_for_nebraska(
-                            job_repo_url=job_repo_url,
+                            build=build,
                             full_payload=True,
                             payload_type=self._PAYLOAD_TYPE.DLC,
                             public_bucket=running_at_desk),
                     self.get_payload_for_nebraska(
-                            job_repo_url=job_repo_url,
+                            build=build,
                             full_payload=False,
                             payload_type=self._PAYLOAD_TYPE.DLC,
                             public_bucket=running_at_desk)

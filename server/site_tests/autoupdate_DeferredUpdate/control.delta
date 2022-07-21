@@ -16,6 +16,9 @@ Tests that the DUT handles deferred updates.
 
 Deferred updates only apply on periodic update checks, hence it's required to
 schedule periodic update checks using (test-update-check-internal-timeout).
+
+Refer to autoupdate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
 """
 
 from autotest_lib.client.common_lib import utils

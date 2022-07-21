@@ -38,16 +38,20 @@ class autoupdate_Cellular(update_engine_test.UpdateEngineTest):
         super(autoupdate_Cellular, self).cleanup()
 
 
-    def run_once(self, job_repo_url=None, full_payload=True):
+    def run_once(self, full_payload=True, build=None):
         """
         Runs the autoupdate test over cellular once.
 
-        @param job_repo_url: The URL of the current build.
         @param full_payload: Whether the payload should be full or delta.
+        @param build: An optional parameter to specify the target build for the
+                      update when running locally. If no build is supplied, the
+                      current version on the DUT will be used.
+                      job_repo_url from the host attributes will override this.
 
         """
-        payload_url = self.get_payload_for_nebraska(
-            job_repo_url, full_payload=full_payload, public_bucket=True)
+        payload_url = self.get_payload_for_nebraska(full_payload=full_payload,
+                                                    public_bucket=True,
+                                                    build=build)
         active, inactive = kernel_utils.get_kernel_state(self._host)
         self._set_update_over_cellular_setting(True)
         self._run_client_test_and_check_result('autoupdate_CannedOmahaUpdate',

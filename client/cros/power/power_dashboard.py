@@ -141,7 +141,7 @@ class BaseDashboard(object):
             A dictionary of powerlog
         """
         powerlog_dict = {
-                'format_version': 6,
+                'format_version': 7,
                 'timestamp': self._start_ts,
                 'test': self._testname,
                 'dut': self._create_dut_info_dict(
@@ -420,6 +420,17 @@ class ClientTestDashboard(BaseDashboard):
                         utils.get_disk_size_gb(utils.get_root_device()),
                         'display_resolution': utils.get_screen_resolution(),
                         'hwid': utils.get_hardware_id(),
+                        'cpu_count': utils.count_cpus(),
+                        'cpu_cores': utils.count_cpu_cores(),
+                        'cpu_threads': utils.count_cpu_threads(),
+                        'cpu_vendor': utils.get_cpu_vendor(),
+                        'cpu_cache': utils.get_cpu_cache_size(),
+                        'gpu': utils.get_gpu_model(),
+                        'memory_type': utils.get_memory_type(),
+                        'memory_frequency': utils.get_memory_frequency(),
+                        'storage_type': utils.get_storage_type(),
+                        'screen_size': utils.get_screen_size(),
+                        'screen_refresh_rate': utils.get_screen_refresh_rate(),
                 },
                 'ina': {
                         'version': 0,

@@ -480,6 +480,47 @@ def count_cpus():
     return len(cpuinfo) or 1
 
 
+def count_cpu_cores():
+    """number of cores per CPU according to lscpu"""
+    cmds = ["lscpu", "grep 'Core(s)'", "cut -d ':' -f 2"]
+    cmd = " | ".join(cmds)
+    cores_per_socket = int(utils.system_output(cmd))
+    cmds = ["lscpu", "grep 'Socket(s)'", "cut -d ':' -f 2"]
+    cmd = " | ".join(cmds)
+    sockets = int(utils.system_output(cmd))
+    return cores_per_socket * sockets
+
+
+def count_cpu_threads():
+    """number of threads per cpu"""
+    cmd = "cat /sys/devices/system/cpu/present"
+    res = utils.system_output(cmd)
+    return int(res.split('-')[1]) + 1
+
+
+def get_cpu_vendor():
+    """cpu vendor according to lscpu"""
+    cmds = ["lscpu", "grep 'Vendor'", "cut -d ':' -f 2"]
+    cmd = " | ".join(cmds)
+    return utils.system_output(cmd).strip()
+
+
+def get_cpu_cache_size():
+    """cpu L3 cache size according to
+    /sys/devices/system/cpu/cpu0/cache/index3/size"""
+    cmd = "cat /sys/devices/system/cpu/cpu0/cache/index3/size"
+    ret = utils.run(cmd, ignore_status=True)
+    if ret.exit_status != 0:
+        return 0
+    res = ret.stdout.strip()
+    if 'K' in res:
+      return int(res.split('K')[0])
+    elif 'M' in res:
+      return int(res.split('M')[0])*1000
+    else:
+      return 0
+
+
 def cpu_online_map():
     """
     Check out the available cpu online map
@@ -490,6 +531,30 @@ def cpu_online_map():
         cpus.append(cpu['processor'])  # grab cpu number
     return cpus
 
+
+def get_gpu_model():
+    """get gpu model from lshw"""
+    cmds = ["lshw -businfo", "grep -i display"]
+    cmd = " | ".join(cmds)
+    return utils.system_output(cmd).split('display')[1].strip()
+
+
+def get_memory_type():
+    """get memory type e.g. LPDDR3"""
+    cmds = ["mosys -s dram memory spd print type", "uniq"]
+    cmd = " | ".join(cmds)
+    return utils.system_output(cmd).strip()
+
+
+def get_memory_frequency():
+    """get memory type e.g. LPDDR3"""
+    cmds = [
+            "dmidecode --type memory", "grep $'\tSpeed:'", "uniq",
+            "cut -d ':' -f 2"
+    ]
+    cmd = " | ".join(cmds)
+    res = utils.system_output(cmd).strip().split('MT')[0]
+    return int(res)
 
 # Returns total memory in kb
 def read_from_meminfo(key):
@@ -726,6 +791,13 @@ def running_os_release():
 def running_os_ident():
     (version, timestamp) = running_os_release()
     return version + '::' + timestamp
+
+
+def get_storage_type():
+    """Get storage type according to rootdev"""
+    cmd = "rootdev -s"
+    res = utils.system_output(cmd)
+    return res.split('/')[2].strip()
 
 
 def freespace(path):
@@ -1909,6 +1981,45 @@ def get_screen_resolution():
     if ret.exit_status != 0:
         return ''
     return ret.stdout.strip().replace('\n', '+')
+
+
+def has_screen():
+    """Return True if the device has a screen. False otherwise."""
+    command = 'for f in /sys/class/drm/*/*/modes; do head -1 $f; done'
+    ret = utils.run(command, ignore_status=True)
+    if ret.exit_status != 0:
+        return False
+    return True
+
+
+def get_screen_size():
+    """Get the screen size in mm.
+    If the device does not have a screen we return an empty string."""
+    if not has_screen():
+        return ''
+    cmds = ["modetest -c", "sed -n '/size (mm)/{n;p}'"]
+    cmd = " | ".join(cmds)
+    res = utils.system_output(cmd).strip()
+    res = re.search("[0-9]+x[0-9]+", res).group(0)
+    return res
+
+
+def get_screen_refresh_rate():
+    """Get screen refresh rate.
+    If the device does not have a screen we return an empty string."""
+    if not has_screen():
+        return -1
+    cmds = ["modetest -c", "grep 'refresh (Hz)'"]
+    cmd = " | ".join(cmds)
+    res = utils.system_output(cmd).strip()
+    res = re.sub('\s+', ' ', res).split(' ')
+    pos = res.index('refresh')
+
+    cmds = ["modetest -c", "sed -n '/refresh (Hz)/{n;p}'"]
+    cmd = " | ".join(cmds)
+    res = utils.system_output(cmd).strip()
+    res = re.sub('\s+', ' ', res)
+    return round(float(res.split(' ')[pos]))
 
 
 def get_board_with_frequency_and_memory():

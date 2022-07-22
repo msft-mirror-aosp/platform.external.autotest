@@ -5,7 +5,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import os, logging, time
-import six
 from six.moves import urllib
 import re
 
@@ -224,7 +223,7 @@ class RemoteHost(base_classes.Host):
             while time_counter < timeout + 60:
                 # Check if the machine is back. We check regularely to
                 # ensure the machine was suspended long enough.
-                if utils.ping(self.hostname, tries=1, deadline=1) == 0:
+                if self.is_up():
                     return
                 else:
                     if time_counter > timeout - 10:
@@ -232,7 +231,7 @@ class RemoteHost(base_classes.Host):
                     time.sleep(time_slice)
                     time_counter += time_slice
 
-            if utils.ping(self.hostname, tries=1, deadline=1) != 0:
+            if not self.is_up():
                 raise error.AutoservSuspendError(
                     "DUT is not responding after %d seconds" % (time_counter))
 

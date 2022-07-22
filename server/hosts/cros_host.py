@@ -2278,13 +2278,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if sleep_timeout is None:
             sleep_timeout = self.SLEEP_TIMEOUT
 
-        # If the dut is accessed over SSH port-forwarding, `ping` is not useful
-        # for detecting the dut is down since a ping to localhost will always
-        # succeed. In this case, fall back to wait_down() which uses SSH.
-        if self._is_host_port_forwarded():
-            success = self.wait_down(timeout=sleep_timeout)
-        else:
-            success = self.ping_wait_down(timeout=sleep_timeout)
+        success = self.wait_down(timeout=sleep_timeout)
 
         if not success:
             raise error.TestFail(

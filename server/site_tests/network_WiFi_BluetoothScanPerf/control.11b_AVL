@@ -7,7 +7,7 @@ from autotest_lib.server.cros.connectivity_common.connectivity_test_version_cont
 
 AUTHOR = 'billyzhao'
 NAME = 'network_WiFi_BluetoothScanPerf.11b_AVL'
-ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+ATTRIBUTES = ''
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'

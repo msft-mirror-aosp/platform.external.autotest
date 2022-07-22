@@ -5,7 +5,6 @@
 import logging
 
 from autotest_lib.client.common_lib.cros import kernel_utils
-from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server.cros.minios import minios_test
 
 
@@ -14,7 +13,6 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
     version = 1
 
     def run_once(self,
-                 job_repo_url=None,
                  build=None,
                  n2m=True,
                  corrupt_partitions=False,
@@ -24,8 +22,6 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
         """
         Validates the network based recovery flow.
 
-        @param job_repo_url: A url pointing to the devserver where the autotest
-            package for this build should be staged.
         @param build: An optional parameter to specify the target build for the
             update when running locally. job_repo_url will override this value.
         @param n2m: Perform recovery from ToT to current stable version.
@@ -37,22 +33,17 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
 
         """
         self._use_public_bucket = running_at_desk
-        update_url = job_repo_url
         if n2m:
-            build_name = self._get_latest_serving_stable_build()
-            logging.debug('stable build name is %s', build_name)
+            build = self._get_latest_serving_stable_build(
+                    release_archive_path=False)
+            logging.debug('stable build name is %s', build)
 
-            # Determine the URL for the stable build.
-            autotest_devserver = dev_server.ImageServer.resolve(
-                    build_name, self._host.hostname)
-            update_url = autotest_devserver.get_update_url(build_name)
-
-        logging.info('Performing recovery with update url: %s', update_url)
         payload_url = self.get_payload_for_nebraska(
-                job_repo_url=update_url,
                 build=build,
                 full_payload=True,
                 public_bucket=running_at_desk)
+
+        logging.info('Performing recovery with payload url: %s', payload_url)
 
         logging.info("Booting into MiniOS")
         self._boot_minios()

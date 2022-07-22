@@ -1003,7 +1003,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         return None
 
     def get_payload_for_nebraska(self,
-                                 job_repo_url=None,
                                  build=None,
                                  full_payload=True,
                                  public_bucket=False,
@@ -1020,11 +1019,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
           CrOS lab network (no job_repo_url/can't ping static cache server),
           the test will get payloads from the public throwaway GS bucket.
 
-        @param job_repo_url: unused, but can only remove once all users of this
-                             function have stopped passing in the arg.
         @param build: string containing the build to use for the update,
                       like R102-14644.0.0 (the milestone number is required).
-                      Only used for the public bucket update flow.
         @param full_payload: bool whether we want a full payload.
         @param public_bucket: True to return a payload on a public bucket.
         @param payload_type: The type of payload to get. Can be a value of the
@@ -1035,11 +1031,17 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         if build is not None:
-            logging.info('Getting payload for the build provided in test_that')
+            logging.info(
+                    'Getting payload for the build specified in the `build` parameter'
+            )
             # self._build looks like this: octopus-release/R102-14650.0.0
-            # Replace the version with the one provided in test_that.
+            # Replace the version with the one provided in the `build` arg.
             self._build = self._get_release_builder_path().rsplit(
                     '/')[0] + '/' + build
+        elif self._get_job_repo_url():
+            logging.info('Getting payload for the build in job_repo_url')
+            _, self._build = tools.get_devserver_build_from_package_url(
+                    self._get_job_repo_url())
         else:
             logging.info('Getting payload for the current build on the DUT')
             self._build = self._get_release_builder_path()
@@ -1059,11 +1061,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                     self._build)
             return self.get_payload_url_on_public_bucket(
                     full_payload=full_payload, payload_type=payload_type)
-
-        if self._get_job_repo_url():
-            logging.info('Getting payload for the build in job_repo_url')
-            _, self._build = tools.get_devserver_build_from_package_url(
-                    self._get_job_repo_url())
 
         logging.info(
                 "Getting payload for nebraska for build %s on lab cache server %s",
@@ -1111,7 +1108,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 result.append(delta)
         return result
 
-    def _get_latest_serving_stable_build(self):
+    def _get_latest_serving_stable_build(self, release_archive_path=True):
         """
       Returns the latest serving stable build on Omaha for the current board.
 
@@ -1119,7 +1116,16 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
       be passed to quick_provision. This is useful for M2N tests to easily find
       the first build to provision.
 
-      @returns latest stable serving omaha build.
+      @param release_archive_path: True to return the build's release archive
+                                   path, i.e.
+                                   <channel>-channel/<board>/<build number>
+                                   False to return the build name in the format
+                                   RXX-XXXXX.X.X
+
+      @returns release archive path to the build or the build name, depending
+               on the value of the release_archive_path arg. Example:
+               - dev-channel/asurada/14515.0.0 if release_archive_path is True
+               - R100-14515.0.0 if release_archive_path is False
 
       """
         if lsbrelease_utils.is_moblab():
@@ -1145,8 +1151,15 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                     'No stable build found in paygen.json for %s' % board)
         latest_stable_paygen_data = max(
                 stable_paygen_data, key=(lambda key: key['chrome_os_version']))
-        return os.path.join(channel, board,
-                            latest_stable_paygen_data["chrome_os_version"])
+
+        if release_archive_path:
+            return os.path.join(channel, board,
+                                latest_stable_paygen_data["chrome_os_version"])
+
+        return 'R' + '-'.join([
+                str(latest_stable_paygen_data['milestone']),
+                latest_stable_paygen_data["chrome_os_version"]
+        ])
 
     def provision_dut(self,
                       build_name=None,

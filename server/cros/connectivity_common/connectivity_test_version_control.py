@@ -23,6 +23,30 @@ WIFI_BUNDLE_PATH = 'distfiles/wifi_bundle'
 LATEST_STABLE_AUTOTEST_COMMIT = 'LATEST_STABLE_AUTOTEST_COMMIT'
 
 
+class Args(object):
+    """An Args class for test_that"""
+
+    BOOL_DICT = {'true': True, 'false': False}
+
+    @classmethod
+    def get_bool(cls, arg_name, args_dict, default_value):
+        """Get the bool argument value of arg_name from args_dict.
+
+        @param arg_name: the target argument to query
+        @param args_dict: the argument dictionary
+        @param default_value: the default value of the argument
+                if args_dict is not a dict or
+                if the arg_name is not in args_dict or
+                if the argument value is neither 'true' nor 'false'
+
+        @returns: the bool value of the target argument
+        """
+        if type(args_dict) is dict and arg_name in args_dict:
+            arg_value = str(args_dict[arg_name]).lower()
+            return cls.BOOL_DICT.get(arg_value, default_value)
+        return default_value
+
+
 def get_latest_stable_autotest_commit_url(phy):
     """ Yield the correct API url depending on the connectivity type
     as different connectivity teams may have different autotest commit pins.
@@ -110,7 +134,7 @@ def test_version_setup_exit_print():
     os.chdir(CWD)
 
 
-def test_version_setup(phy):
+def test_version_setup(phy, args_dict={}):
     """This and above functions hope to sync the AVL test environments
     among different vendors, partners, and developers by providing an
     automatic process to fetch a commit hash of the "released"
@@ -118,12 +142,20 @@ def test_version_setup(phy):
     checkout locally. No manual interaction should be expected.
 
     @params phy: The name of the connectivity phy (e.g wifi, bluetooth).
+    @params args_dict: The argument dictionary passed to test_that through
+            --args. For example, to skip test_version_setup, one can use
+            the argument as
+            test_that --args "version_check=false" ...
 
     @returns: True if current commit version satisfied requirement, the
               test shall proceed. False otherwise.
     """
     logging.info('=======================================================\n'
                  '                    AVL Test Setup\n')
+
+    if not Args.get_bool('version_check', args_dict, default_value=True):
+        logging.info('Skip test_version_setup() because version_check=false.')
+        return True
 
     os.chdir(CONNECTIVITY_DIR)
     if not check_git_tree_clean():

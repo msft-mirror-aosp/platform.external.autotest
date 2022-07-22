@@ -32,7 +32,7 @@ DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
 args_dict = utils.args_to_dict(args)
 
 def run(machine):
-    if not test_version_setup('bluetooth'):
+    if not test_version_setup('bluetooth', args_dict):
         return
 
     host = hosts.create_host(machine)

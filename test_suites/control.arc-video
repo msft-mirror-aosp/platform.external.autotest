@@ -1,0 +1,27 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'Chromium OS team'
+NAME = 'arc-video'
+PURPOSE = "ARC video tests"
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This is the part of the standalone ARC video test suite`
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = 'arc-video'
+args_dict['add_experimental'] = True
+args_dict['max_runtime_mins'] = 960
+args_dict['timeout_mins'] = 1440
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

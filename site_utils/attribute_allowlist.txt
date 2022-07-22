@@ -20,6 +20,7 @@ suite:arc-cts-vm
 suite:arc-data-snapshot_per-build
 suite:arc-gts
 suite:arc-gts-qual
+suite:arc-video
 suite:au-m2n
 suite:au-oobe
 suite:au-p2p

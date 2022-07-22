@@ -59,14 +59,17 @@ class TradefedTestTest(unittest.TestCase):
                                             ignore_status=ANY,
                                             timeout=ANY)
 
-    # Verify that _run_tradefed_with_timeout works.
+    # Verify that _run_tradefed_with_timeout works in a container.
+    @patch('autotest_lib.client.bin.utils.is_moblab')
+    @patch('autotest_lib.server.utils.is_in_container')
     @patch('autotest_lib.server.cros.tradefed.tradefed_test.TradefedTest._run')
     @patch('autotest_lib.server.cros.tradefed.tradefed_test.TradefedTest._tradefed_cmd_path'
            )
     @patch('autotest_lib.server.cros.tradefed.tradefed_utils.adb_keepalive')
     @patch('autotest_lib.server.cros.tradefed.adb.get_adb_targets')
-    def test_run_tradefed_with_timeout(self, mock_get_adb_targets, _,
-                                       mock_tradefed_cmd_path, mock_run):
+    def test_run_tradefed_with_timeout_in_container(
+            self, mock_get_adb_targets, _, mock_tradefed_cmd_path, mock_run,
+            mock_is_in_container, mock_is_moblab):
         self.tradefed._install_paths = '/any/install/path'
 
         mock_host1 = Mock()
@@ -74,11 +77,74 @@ class TradefedTestTest(unittest.TestCase):
         self.tradefed._hosts = [mock_host1, mock_host2]
 
         mock_get_adb_targets.return_value = ['host1:4321', 'host2:22']
-
         mock_tradefed_cmd_path.return_value = '/any/path'
+        mock_is_in_container.return_value = True
+        mock_is_moblab.return_value = False
 
         self.tradefed._run_tradefed_with_timeout(['command'], 1234)
         mock_get_adb_targets.assert_called_with(self.tradefed._hosts)
+
+        _, kwargs = mock_run.call_args
+        self.assertIn('env', kwargs)
+        env = kwargs['env']
+        self.assertEquals(env.get('JAVA_TOOL_OPTIONS'), '-XX:MaxRAM=40g')
+
+    # Verify that _run_tradefed_with_timeout works outside a container.
+    # It should not have JAVA_TOOL_OPTIONS for now.
+    @patch('autotest_lib.client.bin.utils.is_moblab')
+    @patch('autotest_lib.server.utils.is_in_container')
+    @patch('autotest_lib.server.cros.tradefed.tradefed_test.TradefedTest._run')
+    @patch('autotest_lib.server.cros.tradefed.tradefed_test.TradefedTest._tradefed_cmd_path'
+           )
+    @patch('autotest_lib.server.cros.tradefed.tradefed_utils.adb_keepalive')
+    @patch('autotest_lib.server.cros.tradefed.adb.get_adb_targets')
+    def test_run_tradefed_with_timeout_not_in_container(
+            self, mock_get_adb_targets, _, mock_tradefed_cmd_path, mock_run,
+            mock_is_in_container, mock_is_moblab):
+        self.tradefed._install_paths = '/any/install/path'
+
+        mock_host1 = Mock()
+        mock_host2 = Mock()
+        self.tradefed._hosts = [mock_host1, mock_host2]
+
+        mock_get_adb_targets.return_value = ['host1:4321', 'host2:22']
+        mock_tradefed_cmd_path.return_value = '/any/path'
+        mock_is_in_container.return_value = False
+        mock_is_moblab.return_value = False
+
+        self.tradefed._run_tradefed_with_timeout(['command'], 1234)
+        mock_get_adb_targets.assert_called_with(self.tradefed._hosts)
+
+        _, kwargs = mock_run.call_args
+        self.assertEquals(kwargs.get('env'), None)
+
+    # Verify that _run_tradefed_with_timeout works in moblab.
+    @patch('autotest_lib.client.bin.utils.is_moblab')
+    @patch('autotest_lib.server.utils.is_in_container')
+    @patch('autotest_lib.server.cros.tradefed.tradefed_test.TradefedTest._run')
+    @patch('autotest_lib.server.cros.tradefed.tradefed_test.TradefedTest._tradefed_cmd_path'
+           )
+    @patch('autotest_lib.server.cros.tradefed.tradefed_utils.adb_keepalive')
+    @patch('autotest_lib.server.cros.tradefed.adb.get_adb_targets')
+    def test_run_tradefed_with_timeout_in_moblab(
+            self, mock_get_adb_targets, _, mock_tradefed_cmd_path, mock_run,
+            mock_is_in_container, mock_is_moblab):
+        self.tradefed._install_paths = '/any/install/path'
+
+        mock_host1 = Mock()
+        mock_host2 = Mock()
+        self.tradefed._hosts = [mock_host1, mock_host2]
+
+        mock_get_adb_targets.return_value = ['host1:4321', 'host2:22']
+        mock_tradefed_cmd_path.return_value = '/any/path'
+        mock_is_in_container.return_value = False
+        mock_is_moblab.return_value = True
+
+        self.tradefed._run_tradefed_with_timeout(['command'], 1234)
+        mock_get_adb_targets.assert_called_with(self.tradefed._hosts)
+
+        _, kwargs = mock_run.call_args
+        self.assertEquals(kwargs.get('env'), None)
 
     def test_kill_adb_server(self):
         mock_run = self.mock_adb.run

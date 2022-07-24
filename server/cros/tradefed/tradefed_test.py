@@ -1346,25 +1346,10 @@ class TradefedTest(test.test):
                 adb_utils.get_adb_targets(self._hosts), self._install_paths):
             logging.info('RUN(timeout=%d): %s', timeout,
                          ' '.join([tradefed] + command))
-
-            env = self._tradefed_env()
-            if utils.is_in_container() and not client_utils.is_moblab():
-                env = env or os.environ.copy()
-                # For b/237990639, it is possible that Java is a lot of memory.
-                # Running the tests in the lab in a container, it might
-                # exceed the size limit of the container which would cause the
-                # process to get SIGKILL-ed due to OOM.
-                # Since tradefed does not provide a way to inject java options,
-                # JAVA_TOOL_OPTIONS is used instead.
-                # TODO(b/239904207): Get this value dynamically.
-                # For now, the 40GB value is an estimate value that should work
-                # given the lab configuration.
-                env['JAVA_TOOL_OPTIONS'] = '-XX:MaxRAM=40g'
-
             output = self._run(
                 tradefed,
                 args=tuple(command),
-                env=env,
+                env=self._tradefed_env(),
                 timeout=timeout,
                 verbose=True,
                 ignore_status=False,

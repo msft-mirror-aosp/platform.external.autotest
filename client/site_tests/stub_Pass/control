@@ -9,7 +9,8 @@ CRITERIA = "This test will always succeed."
 ATTRIBUTES = (
         "suite:stub, suite:stubclientretries, suite:push_to_prod,"
         " suite:skylab_staging_test, suite:something_else,"
-        " suite:dev_drone_image_test, suite:infra_qual"
+        " suite:dev_drone_image_test, suite:infra_qual,"
+        " suite:cft-nightly"
 )
 TIME = "SHORT"
 TEST_CATEGORY = "General"

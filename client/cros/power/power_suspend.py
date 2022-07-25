@@ -378,12 +378,16 @@ class Suspender(object):
         """Return dict of individual device suspend and resume times."""
         self.device_times.append(dict())
         dev_details = collections.defaultdict(dict)
-        regex = re.compile(r'call ([^ ]+)\+ returned 0 after ([0-9]+) usecs')
+        # Need to parse device and time taken. ex log below
+        # 2022-02-09T19:34:11.295506Z INFO kernel: [   90.035439] ieee80211 phy0: wiphy_resume+0x0/0x138 [cfg80211] returned 0 after 47911 usecs
+        # 2022-07-18T08:23:55.328597Z INFO kernel: [ 1093.127017] xhci_hcd 0000:04:00.4: PM: pci_pm_suspend+0x0/0x1f1 returned 0 after 873 usecs
+        # Identify "ieee80211 phy0/xhci_hcd 0000:04:00.4" and "47911/873" using below regex
+        regex = re.compile(r'] (.*): .* returned 0 after ([0-9]+) usecs')
         phase_table = self._get_phase_times()
         for line in self._logs:
             match = regex.search(line)
             if match:
-                device = match.group(1).replace(':', '-')
+                device = match.group(1).replace(' ', '_').replace(':','-')
                 key = 'seconds_dev_' + device
                 secs = float(match.group(2)) / 1e6
                 ts = cros_logging.extract_kernel_timestamp(line)

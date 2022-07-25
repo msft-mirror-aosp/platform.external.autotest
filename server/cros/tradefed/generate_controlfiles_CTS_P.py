@@ -185,6 +185,10 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsViewTestCases',
 ]
 
+CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
+        'CtsMediaTestCases',
+]
+
 # See b/149889853. Non-media test basically does not require dynamic
 # config. To reduce the flakiness, let us suppress the config.
 CONFIG['NEEDS_DYNAMIC_CONFIG_ON_COLLECTION'] = False

@@ -36,6 +36,7 @@ DOC = """
     - hci_ext_msft_test
     - hci_ext_aosp_bqr_test
     - hci_ext_aosp_non_bqr_test
+    - voice_path_test
 
     """
 

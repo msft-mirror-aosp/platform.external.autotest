@@ -63,6 +63,7 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
     GOOGLE_FEATURE_SPECIFICATION_VERSION = 98
     LE_ADV_RSSI_MONITORING = 'RSSI Monitoring of LE advertisements'
     LE_ADV_MONITORING = 'Advertising Monitoring of LE advertisements'
+    CVSD_SYNCHRONOUS_DATA_FEATURE = 'CVSD synchronous data'
 
     CHIPSETS_UNSUPPORT_LEGACY = [
             'MVL-8897', 'MVL-8997', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB'
@@ -211,6 +212,11 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         self.test_le_extended_set_scan_parameters()
         self.test_le_get_controller_activity_energy_info()
         self.test_get_controller_debug_info_sub_event()
+
+    @test_wrapper('Voice Path test')
+    def voice_path_test(self):
+        """Checks HFP related features."""
+        self.test_au_nbs_cvsd()
 
     def verify_not_support(self, feature, supported_features):
         """Verifies that the feature is not supported.
@@ -580,6 +586,14 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
                      'supported'] = debug_logging_support
         return all(self.results.values())
 
+    @test_log_result
+    def test_au_nbs_cvsd(self):
+        """Checks if narrowband speech CVSD codec feature is supported."""
+        supported_features = self.hcitool.read_local_supported_features()[1]
+        self.verify_support(self.CVSD_SYNCHRONOUS_DATA_FEATURE,
+                            supported_features)
+        return all(self.results.values())
+
     @batch_wrapper('AVLHCI batch')
     def avl_hci_batch_run(self, num_iterations=1, test_name=None):
         """Runs bluetooth_AVLHCI test batch (all test).
@@ -602,6 +616,7 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         self.hci_ext_msft_test()
         self.hci_ext_aosp_bqr_test()
         self.hci_ext_aosp_non_bqr_test()
+        self.voice_path_test()
 
     def run_once(self, num_iterations=1, test_name=None):
         """Runs bluetooth_AVLHCI.

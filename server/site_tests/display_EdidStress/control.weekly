@@ -16,7 +16,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "display"
 TEST_TYPE = "server"
-DEPENDENCIES = 'chameleon'
+DEPENDENCIES = "chameleon:hdmi, chameleon"
 PY_VERSION = 3
 
 DOC = """

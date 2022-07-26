@@ -51,6 +51,15 @@ batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 STRESS_ITERATIONS = 50
 
+# Intel controllers may have up to 2 seconds deviation.
+# Use a longer suspend delay to make sure QR events are received during
+# the pre-suspend phase.
+SUSPEND_DELAY_FOR_QR_SECS = QR_EVENT_PERIOD + 3
+SUSPEND_DELAY_TIMEOUT_FOR_QR_SECS = QR_EVENT_PERIOD * 2
+WAKEUP_TIMEOUT_FOR_QR_SECS = 30
+RESUME_TIMEOUT_FOR_QR_SECS = (WAKEUP_TIMEOUT_FOR_QR_SECS -
+                              SUSPEND_DELAY_TIMEOUT_FOR_QR_SECS)
+
 
 class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                                 BluetoothAdapterQRTests):
@@ -548,6 +557,76 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                     self.cleanup_bluetooth_audio(device, test_profile)
                 self.test_remove_pairing(device.address)
 
+    def _sr_suspend_delay(self, devices, enable_BQR):
+        """Suspend with a delay to check the health.
+
+        @param enable_BQR: to enable BQR for testing.
+        """
+        boot_id = self.host.get_boot_id()
+        audio_test_profile = A2DP
+
+        # Enable BQR
+        if enable_BQR:
+            self.enable_disable_quality_report(action=1)
+            self.enable_disable_quality_debug_log(enable=True)
+
+        try:
+            # Connecting to all devices
+            for device in devices:
+                if device.device_type == 'BLUETOOTH_AUDIO':
+                    self.initialize_bluetooth_audio(device, audio_test_profile)
+
+                self.test_discover_device(device.address)
+                self.test_pairing(device.address, device.pin, trusted=True)
+                self.test_connection_by_device(device)
+                time.sleep(2)
+
+                # Connect to the audio device with A2DP profile.
+                if device.device_type == 'BLUETOOTH_AUDIO':
+                    self.test_device_a2dp_connected(device)
+
+            # Start the suspend delay thread
+            suspend_delay_thread = self.suspend_delay_async(
+                    SUSPEND_DELAY_FOR_QR_SECS,
+                    SUSPEND_DELAY_TIMEOUT_FOR_QR_SECS,
+                    WAKEUP_TIMEOUT_FOR_QR_SECS)
+            start_time = self.bluetooth_facade.get_device_utc_time()
+
+            # Trigger suspend, wait for regular resume. Verify the system
+            # can suspend and resume correctly.
+            self.test_suspend_and_wait_for_sleep(suspend_delay_thread,
+                                                 sleep_timeout=SUSPEND_SEC)
+            self.test_wait_for_resume(boot_id,
+                                      suspend_delay_thread,
+                                      resume_timeout=RESUME_TIMEOUT_FOR_QR_SECS,
+                                      test_start_time=start_time)
+
+        finally:
+            # Disable BQR
+            if enable_BQR:
+                self.enable_disable_quality_debug_log(enable=False)
+                self.enable_disable_quality_report(action=0)
+
+            for device in devices:
+                if device.device_type == 'BLUETOOTH_AUDIO':
+                    self.cleanup_bluetooth_audio(device, audio_test_profile)
+                self.test_remove_pairing(device.address)
+
+    @test_wrapper('Suspend with a delay while receiving BQR test',
+                  devices={
+                          'BLUETOOTH_AUDIO': 1,
+                          'KEYBOARD': 1
+                  },
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS +
+                  SUSPEND_POWER_DOWN_CHIPSETS)
+    def sr_suspend_delay_while_receiving_bqr(self):
+        """Suspend with a delay while receiving BQR to check the health."""
+        audio_device = self.devices['BLUETOOTH_AUDIO'][0]
+        keyboard_device = self.devices['KEYBOARD'][0]
+        devices = (audio_device, keyboard_device)
+        self._sr_suspend_delay(devices, enable_BQR=True)
+
     @batch_wrapper('SR with Peer Health')
     def sr_health_batch_run(self, num_iterations=1, test_name=None):
         """ Batch of suspend/resume peer health tests. """
@@ -558,6 +637,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self.sr_while_discovering()
         self.sr_while_advertising()
         self.sr_while_receiving_bqr()
+        self.sr_suspend_delay_while_receiving_bqr()
         self.sr_reconnect_multiple_classic_hid()
         self.sr_reconnect_multiple_le_hid()
         self.sr_reconnect_multiple_classic_le_hid()

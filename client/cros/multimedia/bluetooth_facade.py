@@ -60,6 +60,7 @@ from autotest_lib.client.cros.bluetooth.floss.adapter_client import (
         BondState, SspVariant, Transport)
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import GLIB_THREAD_NAME
+from autotest_lib.client.cros.power import power_suspend_delay
 from autotest_lib.client.cros.power import sys_power
 import six
 from six.moves import map
@@ -1101,6 +1102,18 @@ class BluetoothBaseFacadeLocal(object):
         #   raise sys_power.SuspendFailure('BT wake did not come early')
 
         return True
+
+    def suspend_delay(self, suspend_delay_secs, suspend_delay_timeout_secs,
+                      wakeup_timeout_secs):
+        """Enforce a suspend delay before system suspending.
+
+        @param suspend_delay_secs: the suspend delay in seconds
+        @param suspend_delay_timeout_secs: the suspend delay timeout in seconds
+        @param wakeup_timeout_secs: the wakeup_timeout in seconds
+        """
+        return power_suspend_delay.suspend_delay(suspend_delay_secs,
+                                                 suspend_delay_timeout_secs,
+                                                 wakeup_timeout_secs)
 
     def get_wlan_vid_pid(self):
         """ Return vendor id and product id of the wlan chip on BT/WiFi module

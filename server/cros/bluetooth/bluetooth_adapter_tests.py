@@ -4644,6 +4644,38 @@ class BluetoothAdapterTests(test.test):
         return proc
 
 
+    def suspend_delay_async(self, suspend_delay_secs,
+                            suspend_delay_timeout_secs, wakeup_timeout_secs):
+        """ Suspend asynchronously with a suspend delay and return process
+            for joining
+
+        @param suspend_time: how long to stay in suspend
+        @param expect_bt_wake: Whether we expect bluetooth to wake us from
+            suspend. If true, we expect this resume will occur early
+
+        @returns multiprocessing.Process object with suspend task
+        """
+
+        def _action_suspend_delay():
+            try:
+                self.bluetooth_facade.suspend_delay(suspend_delay_secs,
+                                                    suspend_delay_timeout_secs,
+                                                    wakeup_timeout_secs)
+            except socket.error as e:
+                # Socket errors may occur after suspend if the underlying
+                # connection is lost during suspend (happens if usb-ethernet
+                # disconnects and reconnects on resume). Catch all these errors
+                # and swallow them.
+                logging.warning(
+                        'Socket error on suspend. Swallowing error: %s',
+                        str(e))
+            return 0
+
+        proc = multiprocessing.Process(target=_action_suspend_delay)
+        proc.daemon = True
+        return proc
+
+
     def device_connect_async(self,
                              device_type,
                              device,

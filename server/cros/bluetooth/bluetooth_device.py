@@ -1693,6 +1693,18 @@ class BluetoothDevice(object):
         # Do not retry this RPC if it fails or times out
         return self._proxy.do_suspend(seconds, expect_bt_wake, __no_retry=True)
 
+    @proxy_thread_safe
+    def suspend_delay(self, suspend_delay_secs, suspend_delay_timeout_secs,
+                      wakeup_timeout_secs):
+        """Enforce a suspend delay before system suspending.
+
+        @param suspend_delay_secs: the suspend delay in seconds
+        @param suspend_delay_timeout_secs: the suspend delay timeout in seconds
+        @param wakeup_timeout_secs: the wakeup_timeout in seconds
+        """
+        return self._proxy.suspend_delay(suspend_delay_secs,
+                                         suspend_delay_timeout_secs,
+                                         wakeup_timeout_secs)
 
     @proxy_thread_safe
     def get_wlan_vid_pid(self):

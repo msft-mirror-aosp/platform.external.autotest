@@ -10,7 +10,7 @@ PURPOSE = "Verify cr50 open"
 ATTRIBUTES = "suite:faft_cr50_pvt"
 TIME = "SHORT"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING"
+DEPENDENCIES = "cr50:pvt, servo_state:WORKING"
 PY_VERSION = 3
 
 DOC = """

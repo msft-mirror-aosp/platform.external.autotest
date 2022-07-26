@@ -65,6 +65,9 @@ def run(machine):
                     os.path.dirname(path_to_chrome)
     )
 
+    total_shards=args_dict.get('total_shards', 1)
+    shard_index=args_dict.get('shard_index', 0)
+
     def cleanup():
         chrome_sideloader.cleanup_host(host, CHROME_DIR, None)
 
@@ -77,6 +80,8 @@ def run(machine):
                  ignore_test_failures=False, max_run_sec=3600,
                  command_args=args,
                  varslist=varslist,
-                 clear_tpm=True)
+                 clear_tpm=True,
+                 totalshards=total_shards,
+                 shardindex=shard_index)
 
 parallel_simple(run, machines)

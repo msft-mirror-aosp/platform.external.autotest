@@ -354,6 +354,19 @@ class BatteryStat(DevStat):
         raise error.TestError('Failed to read battery state')
 
 
+    def _scale(self, fields):
+        """
+        The battery data is reported in microvolt/amp/watt.
+        This helper function scales the data in the given fields.
+        """
+        for field in fields:
+            if not hasattr(self, field):
+                logging.warning('Battery does not have field: %s', field)
+                continue
+            val = getattr(self, field)
+            setattr(self, field, val / BATTERY_DATA_SCALE)
+
+
     def _read_battery(self):
         self.read_all_vals()
 
@@ -361,6 +374,15 @@ class BatteryStat(DevStat):
             battery_type = BatteryDataReportType.ENERGY
         else:
             battery_type = BatteryDataReportType.CHARGE
+
+        # Scale the battery data first.
+        self._scale([
+            'voltage_now', 'voltage_min_design', 'voltage_max_design',
+            'charge_now', 'charge_full', 'charge_full_design',
+            'energy', 'energy_full', 'energy_full_design',
+            'current_now',
+            'power_now',
+        ])
 
         if self.voltage_min_design != 0:
             voltage_nominal = self.voltage_min_design
@@ -377,52 +399,24 @@ class BatteryStat(DevStat):
         if battery_type == BatteryDataReportType.CHARGE:
             self.charge_full_design *= battery_design_full_scale
 
-            self.charge_full = self.charge_full / BATTERY_DATA_SCALE
-            self.charge_full_design = self.charge_full_design / \
-                                      BATTERY_DATA_SCALE
-            self.charge_now = self.charge_now / BATTERY_DATA_SCALE
+            self.energy = voltage_nominal * self.charge_now
+            self.energy_full = voltage_nominal * self.charge_full
+            self.energy_full_design = voltage_nominal * self.charge_full_design
 
-            self.current_now = math.fabs(self.current_now) / \
-                               BATTERY_DATA_SCALE
-
-            self.energy =  voltage_nominal * \
-                           self.charge_now / \
-                           BATTERY_DATA_SCALE
-            self.energy_full = voltage_nominal * \
-                               self.charge_full / \
-                               BATTERY_DATA_SCALE
-            self.energy_full_design = voltage_nominal * \
-                                      self.charge_full_design / \
-                                      BATTERY_DATA_SCALE
+            self.current_now = math.fabs(self.current_now)
 
         # Charge data not present, so calculate parameters based upon
         # reported energy data.
         elif battery_type == BatteryDataReportType.ENERGY:
             self.energy_full_design *= battery_design_full_scale
 
-            self.charge_full = self.energy_full / voltage_nominal
-            self.charge_full_design = self.energy_full_design / \
-                                      voltage_nominal
             self.charge_now = self.energy / voltage_nominal
+            self.charge_full = self.energy_full / voltage_nominal
+            self.charge_full_design = self.energy_full_design / voltage_nominal
 
             # TODO(shawnn): check if power_now can really be reported
             # as negative, in the same way current_now can
-            self.current_now = math.fabs(self.power_now) / \
-                               voltage_nominal
-
-            self.energy = self.energy / BATTERY_DATA_SCALE
-            self.energy_full = self.energy_full / BATTERY_DATA_SCALE
-            self.energy_full_design = self.energy_full_design / \
-                                      BATTERY_DATA_SCALE
-
-        self.voltage_min_design = self.voltage_min_design / \
-                                  BATTERY_DATA_SCALE
-        self.voltage_max_design = self.voltage_max_design / \
-                                  BATTERY_DATA_SCALE
-        self.voltage_now = self.voltage_now / \
-                           BATTERY_DATA_SCALE
-        voltage_nominal = voltage_nominal / \
-                          BATTERY_DATA_SCALE
+            self.current_now = math.fabs(self.power_now) / voltage_nominal
 
         self.energy_rate =  self.voltage_now * self.current_now
 

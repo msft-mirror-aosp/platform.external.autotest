@@ -7,7 +7,6 @@ import logging
 import time
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.server.cros.network import expected_performance_results
 from autotest_lib.server.cros.network import ip_config_context_manager
@@ -41,24 +40,10 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         @param additional_params list of HostapConfig objects.
         """
         self._should_required = 'should' in commandline_args
-        self._power_save_off = 'power_save_off' in commandline_args
 
         super(network_WiFi_Perf, self).parse_additional_arguments(
                 commandline_args)
 
-        if 'governor' in commandline_args:
-            self._governor = commandline_args['governor']
-            # validate governor string. Not all machines will support all of
-            # these governors, but this at least ensures that a potentially
-            # valid governor was passed in
-            if self._governor not in ('performance', 'powersave', 'userspace',
-                                      'ondemand', 'conservative', 'schedutil'):
-                logging.warning(
-                        'Unrecognized CPU governor %s. Running test '
-                        'without setting CPU governor...', self._governor)
-                self._governor = None
-        else:
-            self._governor = None
         self._ap_configs, self._use_iperf = additional_params
 
     def verify_result(self, result, must_expected_throughput,
@@ -128,37 +113,11 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                            (boolean)
         @ return set of failed configs
         """
-        def get_current_governor(host):
-            """
-            @ return the CPU governor name used on a machine. If cannot find
-                     the governor info of the host, or if there are multiple
-                     different governors being used on different cores, return
-                     'default'.
-            """
-            try:
-                governors = set(utils.get_scaling_governor_states(host))
-                if len(governors) != 1:
-                    return 'default'
-                return next(iter(governors))
-            except:
-                return 'default'
-        if governor:
-            client_governor = utils.get_scaling_governor_states(
-                    self.context.client.host)
-            router_governor = utils.get_scaling_governor_states(
-                    self.context.router.host)
-            utils.set_scaling_governors(governor, self.context.client.host)
-            utils.set_scaling_governors(governor, self.context.router.host)
-            governor_name = governor
-        else:
-            # try to get machine's current governor
-            governor_name = get_current_governor(self.context.client.host)
-            if governor_name != get_current_governor(self.context.router.host):
-                governor_name = 'default'
-            if governor_name == self._governor:
-                # If CPU governor is already set to self._governor, don't
-                # perform the run twice
-                return
+        governor_name = self.setup_governor(governor)
+        # If CPU governor is already set to self._governor, don't
+        # perform the run twice
+        if governor_name == self._governor:
+            return
 
         failed_test_types = set()
         self.context.client.powersave_switch(power_save)
@@ -202,11 +161,10 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
             self.write_perf_keyval(
                     result.get_keyval(
                             prefix='_'.join([ap_config_tag, test_type])))
+
         if governor:
-            utils.restore_scaling_governor_states(client_governor,
-                    self.context.client.host)
-            utils.restore_scaling_governor_states(router_governor,
-                    self.context.router.host)
+            self.restore_scaling_governors()
+
         return failed_test_types
 
 

@@ -2,7 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server.cros.network import ip_config_context_manager
 from autotest_lib.server.cros.network import wifi_cell_test_base
@@ -28,6 +31,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
 
         @param commandline_args dict of parsed parameters from the autotest.
         """
+        self._power_save_off = 'power_save_off' in commandline_args
+
         self._router_lan_ip_addr = commandline_args.get(
                 'router_lan_ip_addr', self.DEFAULT_ROUTER_LAN_IP_ADDRESS)
         self._router_lan_iface_name = commandline_args.get(
@@ -36,6 +41,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
                 'pcap_lan_ip_addr', self.DEFAULT_PCAP_LAN_IP_ADDRESS)
         self._pcap_lan_iface_name = commandline_args.get(
                 'pcap_lan_iface_name', self.DEFAULT_PCAP_LAN_IFACE_NAME)
+
+        self.parse_governor(commandline_args)
 
 
     def configure_and_connect_to_ap(self, ap_config):
@@ -65,20 +72,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
 
         with ip_config_context_manager.IpConfigContextManager() as ip_context:
             try:
-                ip_context.bring_interface_up(
-                        self.context.router.host,
-                        self._router_lan_iface_name)
-                ip_context.bring_interface_up(
-                        self.context.pcap_host.host,
-                        self._pcap_lan_iface_name)
-                ip_context.assign_ip_addr_to_iface(
-                        self.context.router.host,
-                        self._router_lan_ip_addr,
-                        self._router_lan_iface_name)
-                ip_context.assign_ip_addr_to_iface(
-                        self.context.pcap_host.host,
-                        self._pcap_lan_ip_addr,
-                        self._pcap_lan_iface_name)
+                self._setup_ip_config(ip_context, False)
+
                 ping_config = ping_runner.PingConfig(
                         self._pcap_lan_ip_addr,
                         count=5,
@@ -94,7 +89,7 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
                         'Ethernet connection over their LAN ports to run '
                         'performance tests: %s' % (e))
 
-    def _setup_ip_config(self, ip_context):
+    def _setup_ip_config(self, ip_context, add_ip_route=True):
         """Set up the IP configs required by the test.
 
         @param ip_context: IpConfigContextManager object within which to make
@@ -110,11 +105,82 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         ip_context.assign_ip_addr_to_iface(self.context.pcap_host.host,
                                            self._pcap_lan_ip_addr,
                                            self._pcap_lan_iface_name)
-        ip_context.add_ip_route(self.context.client.host,
-                                self._pcap_lan_ip_addr,
-                                self.context.client.wifi_if,
-                                self.context.router.wifi_ip)
-        ip_context.add_ip_route(self.context.pcap_host.host,
-                                self.context.client.wifi_ip,
-                                self._router_lan_iface_name,
-                                self._router_lan_ip_addr)
+        if add_ip_route:
+                ip_context.add_ip_route(self.context.client.host,
+                                        self._pcap_lan_ip_addr,
+                                        self.context.client.wifi_if,
+                                        self.context.router.wifi_ip)
+                ip_context.add_ip_route(self.context.pcap_host.host,
+                                        self.context.client.wifi_ip,
+                                        self._router_lan_iface_name,
+                                        self._router_lan_ip_addr)
+
+    def parse_governor(self, commandline_args):
+        """Validate governor string.
+
+        Not all machines will support all of these governors, but this at least
+        ensures that a potentially valid governor was passed in.
+        """
+        if 'governor' in commandline_args:
+            self._governor = commandline_args['governor']
+
+            if self._governor not in ('performance', 'powersave', 'userspace',
+                                      'ondemand', 'conservative', 'schedutil'):
+                logging.warning(
+                        'Unrecognized CPU governor %s. Running test '
+                        'without setting CPU governor...', self._governor)
+                self._governor = None
+        else:
+            self._governor = None
+
+    @staticmethod
+    def get_current_governor(host):
+        """
+        @return the CPU governor name used on a machine. If cannot find
+                the governor info of the host, or if there are multiple
+                different governors being used on different cores, return
+                'default'.
+        """
+        try:
+            governors = set(utils.get_scaling_governor_states(host))
+            if len(governors) != 1:
+                return 'default'
+            return next(iter(governors))
+        except:
+            return 'default'
+
+    def setup_governor(self, governor):
+        """Set the governor if provided. Otherwise, read it from client and
+        router hosts. Fallback to the 'default' name if different values were
+        read.
+        """
+        if governor:
+            self.set_scaling_governors(governor)
+            governor_name = governor
+        else:
+            # try to get machine's current governor
+            governor_name = self.get_current_governor(self.context.client.host)
+            if governor_name != self.get_current_governor(self.context.router.host):
+                governor_name = 'default'
+        return governor_name
+
+    def set_scaling_governors(self, governor):
+        """Set governors for client and router hosts.
+
+        Record the current governors to be able to restore to the
+        original state.
+        """
+        self.client_governor = utils.get_scaling_governor_states(
+                self.context.client.host)
+        self.router_governor = utils.get_scaling_governor_states(
+                self.context.router.host)
+        utils.set_scaling_governors(governor, self.context.client.host)
+        utils.set_scaling_governors(governor, self.context.router.host)
+
+    def restore_scaling_governors(self):
+        """Restore governors to the original states.
+        """
+        utils.restore_scaling_governor_states(self.client_governor,
+                self.context.client.host)
+        utils.restore_scaling_governor_states(self.router_governor,
+                self.context.router.host)

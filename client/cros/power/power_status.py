@@ -349,7 +349,7 @@ class BatteryStat(DevStat):
             except error.TestError as e:
                 logging.warning(e)
                 for field, prop in self.battery_fields.items():
-                    logging.warning(field + ': ' + repr(getattr(self, field)))
+                    logging.warning('%s: %s', field, repr(getattr(self, field)))
                 continue
         raise error.TestError('Failed to read battery state')
 

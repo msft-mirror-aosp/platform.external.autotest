@@ -232,7 +232,14 @@ class FirmwareTest(test.test):
             try:
                 # Check that the gsc console works before declaring the
                 # connection exists and enabling uart capture.
-                gsc.get_version()
+                gsc_version = gsc.get_version()
+                # If the ti50_version control exists but actually
+                # the version reports not ti50, reassign a cr50 instance
+                # instead.
+                if (gsc.NAME not in gsc_version) and (isinstance(
+                        gsc, chrome_ti50.ChromeTi50)):
+                    gsc = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
+                    logging.warning('Has control ti50_version but gsc is cr50.')
                 self.cr50 = gsc
             except servo.ControlUnavailableError:
                 logging.warning('gsc console not supported.')

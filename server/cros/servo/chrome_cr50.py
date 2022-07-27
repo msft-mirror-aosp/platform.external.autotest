@@ -87,6 +87,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     MAX_RETRY_COUNT = 10
     CCDSTATE_MAX_RETRY_COUNT = 20
     START_STR = ['((Havn|UART).*Console is enabled;)']
+    NAME = 'cr50'
     REBOOT_DELAY_WITH_CCD = 60
     REBOOT_DELAY_WITH_FLEX = 3
     ON_STRINGS = ['enable', 'enabled', 'on']

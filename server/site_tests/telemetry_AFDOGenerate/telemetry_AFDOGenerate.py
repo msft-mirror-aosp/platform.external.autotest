@@ -268,20 +268,9 @@ class telemetry_AFDOGenerate(test.test):
         @returns None.
         """
         self._host = host
-        host_board = host.get_board().split(':')[1]
-
-        if host_board not in LLVM_BOARDS:
-            raise error.TestFail(
-                f'This test cannot be run on board {host_board}')
+        self._board = host.get_board().split(':')[1]
 
         self._parse_args(args)
-
-        # Verify board: arch.
-        if self._arch != LLVM_BOARDS[host_board]:
-            raise error.TestFail(
-                'Mismatch of the board and architecture: '
-                f'board: {host_board}, arch: {self._arch}.'
-                'Check the arguments')
 
         # Remove write protection on host, as now telemetry code will
         # try to remove write protection that causes the machine to
@@ -342,20 +331,25 @@ class telemetry_AFDOGenerate(test.test):
         os.remove(perf_data)
 
     def _parse_args(self, args):
-        """Parses input arguments to this autotest.
+        """Parses and validates input arguments to this autotest.
 
         @param args: Options->values dictionary.
         @raises error.TestFail if a bad option is passed.
         """
-
         # Set default values for the options.
-        # Architecture for which we are collecting afdo data.
-        self._arch = 'amd64'
+
+        # Architecture for which we are collecting afdo data
+        # is based on the board.
+        if self._board not in LLVM_BOARDS:
+            raise error.TestFail(
+                f'This test cannot be run on board {self._board}. '
+                f'Try one of {sorted(LLVM_BOARDS)}')
+        self._arch = LLVM_BOARDS[self._board]
         # Use an alternate GS location where everyone can write.
         # Set default depending on whether this is executing in
         # the lab environment or not
         self._gs_test_location = not utils.host_is_in_lab_zone(
-                self._host.hostname)
+            self._host.hostname)
         # Ignore individual test failures.
         self._ignore_failures = False
         # Use local copy of telemetry instead of using the dev server copy.
@@ -374,7 +368,12 @@ class telemetry_AFDOGenerate(test.test):
 
         for option_name, value in args.items():
             if option_name == 'arch':
-                self._arch = value
+                # Verify board: arch.
+                if self._arch != value:
+                    raise error.TestFail(
+                        'Mismatch of the board and architecture: '
+                        f'board: {self._board}, arch: {value}. '
+                        f'Did you mean "arch={self._arch}"?')
             elif option_name == 'gs_test_location':
                 self._gs_test_location = (value == 'True')
             elif option_name == 'ignore_failures':
@@ -514,14 +513,13 @@ class telemetry_AFDOGenerate(test.test):
                         f'{remote_basename}')
         GS_ACL = 'project-private'
 
-        board = self._host.get_board().split(':')[1]
-
         if self._gs_test_location:
             remote_file = GS_TEST_DEST
-        elif board in LLVM_BOARDS:
+        elif self._board in LLVM_BOARDS:
             remote_file = GS_LLVM_DEST
         else:
-            raise error.TestFail(f'This test cannot be run on board {board}')
+            raise error.TestFail(
+                f'This test cannot be run on board {self._board}')
 
         logging.info('About to upload to GS: %s', remote_file)
         if not utils.gs_upload(

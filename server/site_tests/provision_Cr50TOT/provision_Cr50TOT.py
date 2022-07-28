@@ -8,6 +8,7 @@
 
 import logging
 import os
+import re
 
 from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.client.common_lib import error
@@ -24,6 +25,8 @@ GS_URL = 'gs://chromeos-releases/dev-channel/' + BUILDER
 FIRMWARE_NAME = 'ChromeOS-firmware-%s-%s.tar.bz2'
 REMOTE_TMPDIR = '/tmp/cr50_tot_update'
 CR50_IMAGE_PATH = 'cr50/ec.bin'
+VER_RE = r'R(\d*)-(\d*).(\d*).(\d*)'
+
 # Wait 10 seconds for the update to take effect.
 class provision_Cr50TOT(Cr50Test):
     """Update cr50 to TOT.
@@ -52,10 +55,17 @@ class provision_Cr50TOT(Cr50Test):
         cmd = 'gsutil ls -- %s' % path
         try:
             contents = utils.system_output(cmd).splitlines()
-            latest_contents = contents[(num_builds * -1):]
-            latest_builds = []
-            for content in latest_contents:
-                latest_builds.append(content.strip(path).strip('/'))
+            builds = []
+            for content in contents:
+                m = re.search(VER_RE, content)
+                if not m:
+                    continue
+                builds.append(m.group())
+            if not builds:
+                return error.TestError('No builds found %r' % contents)
+            latest_builds = sorted(builds, key=lambda x:
+                    [int(v or 0) for v in re.search(VER_RE, x).groups()])
+            latest_builds = latest_builds[(num_builds * -1):]
             latest_builds.reverse()
             logging.info('Checking latest builds %s', latest_builds)
             return latest_builds

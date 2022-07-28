@@ -1,0 +1,26 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'chromeos-bluetooth'
+NAME = 'bluetooth_AdapterQuickHealthClient.quick_health'
+PURPOSE = ('Package of Bluetooth quick health client side tests')
+CRITERIA = 'Pass all health test'
+ATTRIBUTES = 'suite:bluetooth_health'
+TIME = 'SHORT' # Takes ~1 minute on zork
+TEST_CATEGORY = 'Functional'
+TEST_CLASS = 'bluetooth'
+TEST_TYPE = 'client'
+PY_VERSION = 3
+
+DOC = """
+    This test runs a client side Bluetooth quick health package.
+    The package is running several sub batches of tests.
+    A batch is defined as a set of tests, preferably with a common subject, e.g
+    'AVLHCI' batch, or the 'AVLDriver' batch.
+    The quick health test package is improving test time by doing the minimal
+    cleanups between each test and test batches, saving the auto-test ramp up
+    time of about 90-120 second per test.
+    """
+
+job.run_test('bluetooth_AdapterQuickHealthClient', flag='Quick Health')

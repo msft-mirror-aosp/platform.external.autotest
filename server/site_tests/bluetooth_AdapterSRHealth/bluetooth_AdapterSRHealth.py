@@ -149,7 +149,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
             for _, device, __ in devtuples:
                 self.test_remove_pairing(device.address)
 
-    @test_wrapper('Reconnect Classic HID', devices={'MOUSE': 1})
+    @test_wrapper('Reconnect Classic HID',
+                  devices={'MOUSE': 1},
+                  supports_floss=True)
     def sr_reconnect_classic_hid(self):
         """ Reconnects a classic HID device after suspend/resume. """
         device_type = 'MOUSE'
@@ -157,7 +159,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self.run_reconnect_device([(device_type, device,
                                     self._test_mouse)])
 
-    @test_wrapper('Reconnect LE HID', devices={'BLE_MOUSE': 1})
+    @test_wrapper('Reconnect LE HID',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def sr_reconnect_le_hid(self):
         """ Reconnects a LE HID device after suspend/resume. """
         device_type = 'BLE_MOUSE'
@@ -171,7 +175,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                           'MOUSE': 1,
                           'KEYBOARD': 1
                   },
-                  skip_models=['hana'])
+                  skip_models=['hana'],
+                  supports_floss=True)
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
         devices = [('MOUSE', self.devices['MOUSE'][0],
@@ -184,7 +189,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_MOUSE': 1,
                           'BLE_KEYBOARD': 1
-                  })
+                  },
+                  supports_floss=True)
     def sr_reconnect_multiple_le_hid(self):
         """ Reconnects multiple LE HID devices after suspend/resume. """
         devices = [('BLE_MOUSE', self.devices['BLE_MOUSE'][0],
@@ -197,7 +203,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_MOUSE': 1,
                           'KEYBOARD': 1
-                  })
+                  },
+                  supports_floss=True)
     def sr_reconnect_multiple_classic_le_hid(self):
         """ Reconnects one of each classic and LE HID devices after
             suspend/resume.
@@ -410,7 +417,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                   devices={'MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
+                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
+                  supports_floss=True)
     def sr_while_advertising(self):
         """ Suspend while advertising. """
         device = self.devices['MOUSE'][0]
@@ -559,7 +567,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                  num_iterations=1,
                  args_dict=None,
                  test_name=None,
-                 flag='Quick Health'):
+                 flag='Quick Health',
+                 floss=False):
         """Running Bluetooth adapter suspend resume with peer autotest.
 
         @param host: the DUT, usually a chromebook
@@ -573,6 +582,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self.quick_test_init(host,
                              use_btpeer=True,
                              flag=flag,
-                             args_dict=args_dict)
+                             args_dict=args_dict,
+                             floss=floss)
         self.sr_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -427,15 +427,15 @@ class BluetoothQuickTestsBase(object):
         if self.pkg_fail_count > 0:
             logging.error('===> Test Package Failed! More than one failure')
             self._print_delimiter()
-            raise error.TestFail(self.bat_tests_results)
+            raise error.TestFail(self.pkg_tests_results)
         elif self.pkg_testna_count > 0:
             logging.error('===> Test Package Passed! Some TestNA results')
             self._print_delimiter()
-            raise error.TestNAError(self.bat_tests_results)
+            raise error.TestNAError(self.pkg_tests_results)
         elif self.pkg_warn_count > 0:
             logging.error('===> Test Package Passed! Some WARN results')
             self._print_delimiter()
-            raise error.TestWarn(self.bat_tests_results)
+            raise error.TestWarn(self.pkg_tests_results)
         else:
             logging.info('===> Test Package Passed! zero failures')
             self._print_delimiter()

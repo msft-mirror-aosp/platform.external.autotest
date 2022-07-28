@@ -1,0 +1,64 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'ChromeOS PVS Team'
+NAME = 'pvs_Sequence.ChargeActiveState'
+PURPOSE = 'PVS test for pwr-chg-0003-v01'
+TIME = 'LENGTHY'
+TEST_CLASS = 'pvs'
+TEST_TYPE = 'server'
+PY_VERSION = 3
+DOC = '''
+PVS Sequence for qualification for charging while system is running
+
+- power_BatteryDrain
+- power_BatteryCharge (charging to full battery)
+'''
+
+from autotest_lib.server import utils
+import datetime
+
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+# Use time as pdash_note if not supplied to track all tests in same suite.
+pdash_note = args_dict.get('pdash_note',
+                           NAME + '_' + datetime.datetime.utcnow().isoformat())
+
+MINUTES = 60
+HOURS = 60 * MINUTES
+# Fill this list with tuples of (<test-name>, <args_dict>, <is_server_test>)
+SEQUENCE = [
+    ('power_BatteryDrain', {
+            'force_discharge' : True,
+            'drain_to_percent' : 5,
+            'drain_timeout': 8 * HOURS,
+            'use_design_charge_capacity': False,
+            'pdash_note': pdash_note,
+        },
+        False
+    ),
+    ('power_BatteryCharge',
+        {
+            'percent_initial_charge_max': 10,
+            'percent_target_charge': 100,
+            'max_run_time': 5 * HOURS,
+            'use_design_charge_capacity': False,
+            'pdash_note': pdash_note
+        },
+        False
+    ),
+]
+
+def run(machine):
+    # Setup the client machine.
+    host = hosts.create_host(machine, servo_args=servo_args)
+
+    # run the pvs_Sequence wrapper, with the input of the SEQUENCE
+    # defined above
+    job.run_test('pvs_Sequence',
+                           tag=NAME.split('.')[1],
+                           host=host,
+                           sequence=SEQUENCE)
+
+parallel_simple(run, machines)

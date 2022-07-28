@@ -112,7 +112,9 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         """Initializes Autotest."""
         self.hcitool = Hcitool()
 
-    @test_wrapper('spec_legacy_test', skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY)
+    @test_wrapper('spec_legacy_test',
+                  skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY,
+                  flags=['Quick Health'])
     def spec_legacy_test(self):
         """Checks Bluetooth legacy specification."""
         self.test_flushable_data_packets()
@@ -124,57 +126,68 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         self.test_sco_min_buffer_size()
 
     @test_wrapper('spec_legacy_optional_test',
-                  skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY_OPTIONAL)
+                  skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY_OPTIONAL,
+                  flags=['Quick Health'])
     def spec_legacy_optional_test(self):
         """Checks Bluetooth legacy optional specification."""
         self.test_acl_min_buffer_number_optional()
 
-    @test_wrapper('spec_4_0_test')
+    @test_wrapper('spec_4_0_test', flags=['Quick Health'])
     def spec_4_0_test(self):
         """Checks Bluetooth version 4.0 specification."""
         self.test_low_energy_feature()
         self.test_accept_list_size()
 
-    @test_wrapper('spec_4_1_basic_test', skip_chipsets=CHIPSETS_UNSUPPORT_4_1)
+    @test_wrapper('spec_4_1_basic_test',
+                  skip_chipsets=CHIPSETS_UNSUPPORT_4_1,
+                  flags=['Quick Health'])
     def spec_4_1_basic_test(self):
         """Checks Bluetooth version 4.1 basic specification."""
         self.test_le_dual_mode_topology_feature()
 
     @test_wrapper('spec_4_1_llt_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_1 +
-                  CHIPSETS_UNSUPPORT_LLT_QUIRK)
+                  CHIPSETS_UNSUPPORT_LLT_QUIRK,
+                  flags=['Quick Health'])
     def spec_4_1_llt_test(self):
         """Checks Bluetooth version 4.1 llt feature."""
         self.test_link_layer_topology_feature()
 
     @test_wrapper('spec_4_1_br_edr_secure_conn_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_1 +
-                  CHIPSETS_UNSUPPORT_BR_EDR_SECURE_CONNECTION)
+                  CHIPSETS_UNSUPPORT_BR_EDR_SECURE_CONNECTION,
+                  flags=['Quick Health'])
     def spec_4_1_br_edr_secure_conn_test(self):
         """Checks Bluetooth version 4.1 BR/EDR secure connection feature."""
         self.test_br_edr_controller_secure_connection_feature()
 
-    @test_wrapper('spec_4_2_basic_test', skip_chipsets=CHIPSETS_UNSUPPORT_4_2)
+    @test_wrapper('spec_4_2_basic_test',
+                  skip_chipsets=CHIPSETS_UNSUPPORT_4_2,
+                  flags=['Quick Health'])
     def spec_4_2_basic_test(self):
         """Checks Bluetooth version 4.2 basic specification."""
         self.test_le_data_packet_length_extension_feature()
 
     @test_wrapper('spec_4_2_packet_data_len_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_2 +
-                  CHIPSETS_UNSUPPORT_PACKET_DATA_LENGTH)
+                  CHIPSETS_UNSUPPORT_PACKET_DATA_LENGTH,
+                  flags=['Quick Health'])
     def spec_4_2_packet_data_len_test(self):
         """Checks Bluetooth version 4.2 packet data length feature."""
         self.test_packet_data_length()
 
     @test_wrapper('spec_4_2_ll_privacy_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_2 +
-                  CHIPSETS_UNSUPPORT_LL_PRIVACY)
+                  CHIPSETS_UNSUPPORT_LL_PRIVACY,
+                  flags=['Quick Health'])
     def spec_4_2_ll_privacy_test(self):
         """Checks Bluetooth version 4.2 LL privacy features."""
         self.test_le_link_layer_privacy_feature()
         self.test_resolving_list_size()
 
-    @test_wrapper('spec_5_0_basic_test', skip_chipsets=CHIPSETS_UNSUPPORT_5_0)
+    @test_wrapper('spec_5_0_basic_test',
+                  skip_chipsets=CHIPSETS_UNSUPPORT_5_0,
+                  flags=['Quick Health'])
     def spec_5_0_basic_test(self):
         """Check Bluetooth version 5.0 basic specification."""
         self.test_le_extended_advertising_feature()
@@ -182,29 +195,33 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
 
     @test_wrapper('spec_5_0_adv_sets_number_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_5_0 +
-                  CHIPSETS_UNSUPPORT_ADV_SETS_NUMBER)
+                  CHIPSETS_UNSUPPORT_ADV_SETS_NUMBER,
+                  flags=['Quick Health'])
     def spec_5_0_adv_sets_number_test(self):
         """Check Bluetooth version 5.0 advertisement sets number."""
         self.test_advertisement_sets_number()
 
-    @test_wrapper('spec_5_2_test', skip_chipsets=CHIPSETS_UNSUPPORT_5_2)
+    @test_wrapper('spec_5_2_test',
+                  skip_chipsets=CHIPSETS_UNSUPPORT_5_2,
+                  flags=['Quick Health'])
     def spec_5_2_test(self):
         """Checks Bluetooth version 5.0 specification."""
         self.test_le_isochronous_channels_feature()
         self.test_le_power_control_feature()
 
-    @test_wrapper('hci_ext_msft_test')
+    @test_wrapper('hci_ext_msft_test', flags=['Quick Health'])
     def hci_ext_msft_test(self):
         """Checks Microsoft Bluetooth HCI command execution."""
         self.test_hci_vs_msft_read_supported_features()
 
-    @test_wrapper('hci_ext_aosp_bqr_test')
+    @test_wrapper('hci_ext_aosp_bqr_test', flags=['Quick Health'])
     def hci_ext_aosp_bqr_test(self):
         """Checks Android Bluetooth HCI extension BQR feature."""
         self.test_aosp_quality_report()
 
     @test_wrapper('hci_ext_aosp_non_bqr_test',
-                  skip_chipsets=CHIPSETS_SUPPORT_BQR_ONLY)
+                  skip_chipsets=CHIPSETS_SUPPORT_BQR_ONLY,
+                  flags=['Quick Health'])
     def hci_ext_aosp_non_bqr_test(self):
         """Checks Android Bluetooth HCI extension non-BQR feature."""
         self.test_le_apcf()
@@ -213,7 +230,7 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         self.test_le_get_controller_activity_energy_info()
         self.test_get_controller_debug_info_sub_event()
 
-    @test_wrapper('Voice Path test')
+    @test_wrapper('Voice Path test', flags=['Quick Health'])
     def voice_path_test(self):
         """Checks HFP related features."""
         self.test_au_nbs_cvsd()
@@ -624,5 +641,5 @@ class bluetooth_AVLHCI(BluetoothQuickTests):
         @param num_iterations: Number of times to repeat run.
         @param test_name: test name as string from control file.
         """
-        self.quick_test_init(flag='All')
+        self.quick_test_init(flag='Quick Health')
         self.avl_hci_batch_run(num_iterations, test_name)

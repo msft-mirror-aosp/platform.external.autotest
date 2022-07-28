@@ -33,7 +33,7 @@ class BluetoothQuickTests(test.test,
 
     def quick_test_init(self, flag='Quick Health'):
         """Initializes Bluetooth facade, BTMON and USBMON."""
-        super().quick_test_init()
+        super().quick_test_init(flag=flag)
         # Run through every tests and collect failed tests in self.fails.
         self.fails = []
 

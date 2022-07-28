@@ -17,7 +17,7 @@ class bluetooth_AVLDriver(BluetoothQuickTests):
     batch_wrapper = BluetoothQuickTests.quick_test_batch_decorator
     test_log_result = BluetoothQuickTests.test_log_result
 
-    @test_wrapper('Driver support test')
+    @test_wrapper('Driver support test', flags=['Quick Health'])
     def driver_support_test(self):
         """Tests - AVL Linux Driver Requirements - Driver Support."""
 
@@ -67,5 +67,5 @@ class bluetooth_AVLDriver(BluetoothQuickTests):
         @param num_iterations: Number of times to repeat run.
         @param test_name: test name as string from control file.
         """
-        self.quick_test_init(flag='All')
+        self.quick_test_init(flag='Quick Health')
         self.avl_driver_batch_run(num_iterations, test_name)

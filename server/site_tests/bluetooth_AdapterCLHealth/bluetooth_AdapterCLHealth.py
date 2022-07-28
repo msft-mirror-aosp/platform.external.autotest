@@ -193,7 +193,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         self.connect_disconnect_loop(device=device, loops=3)
 
 
-    @test_wrapper('Page scan during Inquiry', devices={"MOUSE": 1})
+    @test_wrapper('Page scan during Inquiry',
+                  devices={"MOUSE": 1},
+                  supports_floss=True)
     def cl_page_scan_during_inquiry(self):
         """Checks page scan is working during inquiry.
 

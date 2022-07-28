@@ -523,10 +523,10 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
             self.dut_btmon_log_path = self.start_new_btmon()
 
             # After suspend/resume DUT should be able to connect to devices.
-            for device in devices:
-                self.test_discover_device(device.address)
-                self.test_pairing(device.address, device.pin, trusted=True)
-                self.test_connection_by_device(device)
+            # Expect the A2DP devices are connected after suspend/resume.
+            self.test_connection_by_device(keyboard_device)
+
+            self.test_device_a2dp_connected(audio_device)
 
             # Checking the bqr logs after suspend/resume.
             time.sleep(QR_EVENT_PERIOD * 2)

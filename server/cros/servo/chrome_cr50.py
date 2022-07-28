@@ -1032,6 +1032,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         # If the last power button press left the AP powered off, and it was on
         # before, turn it back on.
+        # TODO(b/151156740): This sleep is too long, and probably unneeded.
         time.sleep(self.faft_config.shutdown)
         if ensure_ap_on and not self.ap_is_on():
             logging.info('AP is off. Pressing the power button to turn it on')

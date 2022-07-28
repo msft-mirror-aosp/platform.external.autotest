@@ -1165,6 +1165,7 @@ class FirmwareTest(test.test):
 
         if target_power_state == self.POWER_STATE_G3:
             self.run_shutdown_cmd()
+            # TODO(b/151156740): Poll for G3 instead of sleeping.
             time.sleep(self.faft_config.shutdown)
         elif target_power_state == self.POWER_STATE_SUSPEND:
             self.suspend()
@@ -1523,6 +1524,7 @@ class FirmwareTest(test.test):
         # device can take 44-51 seconds to restart,
         # add buffer from the default timeout of 60 seconds.
         self.switcher.wait_for_client_offline(timeout=100, orig_boot_id=boot_id)
+        # TODO(b/151156740): Poll for G3 instead of sleeping.
         time.sleep(self.faft_config.shutdown)
         if self.faft_config.chrome_ec:
             self.check_shutdown_power_state(self.POWER_STATE_G3,

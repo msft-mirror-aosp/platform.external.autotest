@@ -145,36 +145,50 @@ class network_WiFi_BluetoothStreamPerf(
 
             manager = perf_manager.PerfTestManager(self._use_iperf)
 
-            ap_config_tag = ap_config.perf_loggable_description
+            for governor in sorted(set([None, self._governor])):
+                governor_name = self.setup_governor(governor)
+                # If CPU governor is already set to self._governor, don't
+                # perform the run twice
+                if governor_name == self._governor:
+                    return
 
-            for test_type in self.PERF_TEST_TYPES:
-                config = manager.get_config(test_type)
+                self.context.client.powersave_switch(not self._power_save_off)
+                ps_tag = 'PS%s' % ('off' if self._power_save_off else 'on')
+                governor_tag = 'governor-%s' % governor_name
+                ap_config_tag = '_'.join([ap_config.perf_loggable_description,
+                                          ps_tag, governor_tag])
 
-                session = manager.get_session(test_type, self.context.client,
-                                              self.context.router)
+                for test_type in self.PERF_TEST_TYPES:
+                    config = manager.get_config(test_type)
 
-                session.MEASUREMENT_MAX_SAMPLES = 6.
+                    session = manager.get_session(test_type, self.context.client,
+                                                  self.context.router)
 
-                self.base_through = 0
-                self.test_one(manager, session, config, ap_config_tag,
-                              'BT_disconnected')
+                    session.MEASUREMENT_MAX_SAMPLES = 6.
 
-                self.test_connection_by_device(device)
-                self.test_one(manager, session, config, ap_config_tag,
-                              'BT_connected_but_not_streaming')
+                    self.base_through = 0
+                    self.test_one(manager, session, config, ap_config_tag,
+                                  'BT_disconnected')
 
-                # Start playing audio in background
-                audio_thread = threading.Thread(target=self.do_audio_test,
-                                                args=(device, ))
-                audio_thread.start()
-                self.test_one(manager, session, config, ap_config_tag,
-                              'BT_streaming_audiofile')
+                    self.test_connection_by_device(device)
+                    self.test_one(manager, session, config, ap_config_tag,
+                                  'BT_connected_but_not_streaming')
 
-                # Wait for audio thread to complete
-                audio_thread.join()
-                self.test_disconnection_by_adapter(device.address)
-                self.test_one(manager, session, config, ap_config_tag,
-                              'BT_disconnected_again')
+                    # Start playing audio in background
+                    audio_thread = threading.Thread(target=self.do_audio_test,
+                                                    args=(device, ))
+                    audio_thread.start()
+                    self.test_one(manager, session, config, ap_config_tag,
+                                  'BT_streaming_audiofile')
+
+                    # Wait for audio thread to complete
+                    audio_thread.join()
+                    self.test_disconnection_by_adapter(device.address)
+                    self.test_one(manager, session, config, ap_config_tag,
+                                  'BT_disconnected_again')
+
+                if governor:
+                    self.restore_scaling_governors()
 
             # Clean up router and client state for the next run.
             self.context.client.shill.disconnect(self.context.router.get_ssid())

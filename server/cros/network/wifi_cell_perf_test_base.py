@@ -30,20 +30,23 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         """Hook into super class to take control files parameters.
 
         @param commandline_args dict of parsed parameters from the autotest.
+
         """
         self._power_save_off = 'power_save_off' in commandline_args
 
-        self._router_lan_ip_addr = commandline_args.get(
-                'router_lan_ip_addr', self.DEFAULT_ROUTER_LAN_IP_ADDRESS)
-        self._router_lan_iface_name = commandline_args.get(
-                'router_lan_iface_name', self.DEFAULT_ROUTER_LAN_IFACE_NAME)
-        self._pcap_lan_ip_addr = commandline_args.get(
-                'pcap_lan_ip_addr', self.DEFAULT_PCAP_LAN_IP_ADDRESS)
-        self._pcap_lan_iface_name = commandline_args.get(
-                'pcap_lan_iface_name', self.DEFAULT_PCAP_LAN_IFACE_NAME)
+        def get_arg_value_or_default(attr, default): return commandline_args[
+            attr] if attr in commandline_args else default
+
+        self._router_lan_ip_addr = get_arg_value_or_default(
+            'router_lan_ip_addr', self.DEFAULT_ROUTER_LAN_IP_ADDRESS)
+        self._router_lan_iface_name = get_arg_value_or_default(
+            'router_lan_iface_name', self.DEFAULT_ROUTER_LAN_IFACE_NAME)
+        self._pcap_lan_ip_addr = get_arg_value_or_default(
+            'pcap_lan_ip_addr', self.DEFAULT_PCAP_LAN_IP_ADDRESS)
+        self._pcap_lan_iface_name = get_arg_value_or_default(
+            'pcap_lan_iface_name', self.DEFAULT_PCAP_LAN_IFACE_NAME)
 
         self.parse_governor(commandline_args)
-
 
     def configure_and_connect_to_ap(self, ap_config):
         """Configure the router as an AP with the given config and connect

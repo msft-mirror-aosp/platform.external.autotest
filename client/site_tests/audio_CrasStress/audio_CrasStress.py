@@ -39,7 +39,7 @@ class audio_CrasStress(test.test):
     _RATES = ['48000', '44100']
     _BLOCK_SIZES = ['512', '1024']
     _INPUT_BUFFER_DRIFT_CRITERIA = 2 * 1024
-    _OUTPUT_BUFFER_DRIFT_CRITERIA = 3 * 1024
+    _OUTPUT_BUFFER_DRIFT_CRITERIA = 5 * 1024
 
     def initialize(self):
         """Initialize the test"""

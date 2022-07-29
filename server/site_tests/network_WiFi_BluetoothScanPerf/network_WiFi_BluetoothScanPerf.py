@@ -120,12 +120,12 @@ class network_WiFi_BluetoothScanPerf(wifi_cell_test_base.WiFiCellTestBase):
 
             for config in self.NETPERF_CONFIGS:
                 self.test_one(session, config, ap_config_tag, 'BT_quiet')
-                if not bt_device.start_discovery():
+                if not bt_device.start_discovery()[0]:
                     raise error.TestFail('Could not start discovery on DUT')
                 try:
                     self.test_one(session, config, ap_config_tag, 'BT_scanning')
                 finally:
-                    if not bt_device.stop_discovery():
+                    if not bt_device.stop_discovery()[0]:
                         logging.warning('Failed to stop discovery on DUT')
                 self.test_one(session, config, ap_config_tag, 'BT_quiet_again')
 

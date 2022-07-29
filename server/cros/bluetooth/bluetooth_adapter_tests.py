@@ -2198,7 +2198,7 @@ class BluetoothAdapterTests(test.test):
                               device_address)
                 self.bluetooth_facade.remove_device_object(device_address)
 
-            discovery_started = self.bluetooth_facade.start_discovery()
+            discovery_started, _ = self.bluetooth_facade.start_discovery()
 
         if discovery_started:
             try:

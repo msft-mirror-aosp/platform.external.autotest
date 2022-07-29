@@ -1,12 +1,13 @@
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.server import utils
 
 AUTHOR = "Cr50 FW team"
-NAME = "firmware_Cr50CCDUartStress"
-PURPOSE = "Run uart stress through the main servo device"
+NAME = "firmware_Cr50CCDUartStress.ccd.ec"
+PURPOSE = "Uart Stress Test in ccd mode"
+ATTRIBUTES = "suite:faft_cr50_nightly, suite:faft_ccd, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
@@ -27,6 +28,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test('firmware_Cr50CCDUartStress', host=host, cmdline_args=args,
-                 duration=600, use_ccd=False, console='ec')
+                 duration=600, use_ccd=True, console='ec')
 
 parallel_simple(run, machines)

@@ -35,6 +35,6 @@ args_dict['tot_test_run'] = 'true'
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test('firmware_Cr50CCDUartStress', host=host, cmdline_args=args,
-                 full_args=args_dict, duration=600)
+                 duration=600, use_ccd=True, console='ec')
 
 parallel_simple(run, machines)

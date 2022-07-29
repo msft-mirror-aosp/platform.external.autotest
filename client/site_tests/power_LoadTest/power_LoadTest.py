@@ -752,7 +752,7 @@ class power_LoadTest(arc.ArcTest):
         self._tmp_keyvals[_loop_keyname(loop, 'level_backlight')] = \
             self._backlight.get_level()
         self._tmp_keyvals[_loop_keyname(loop, 'level_backlight_percent')] = \
-            float(self._backlight.get_level())/float(self._backlight.get_max_level())*100.0
+            self._backlight.get_percent()
 
 
     def _set_lightbar_level(self, level='off'):

@@ -247,12 +247,7 @@ class power_Test(test.test):
         keyvals = self._stats.publish()
         keyvals['level_backlight_max'] = self.backlight.get_max_level()
         keyvals['level_backlight_current'] = self.backlight.get_level()
-        if keyvals['level_backlight_max'] == 0:
-            keyvals['level_backlight_percent'] = 0.0
-        else:
-            keyvals['level_backlight_percent'] = float(
-                    self.backlight.get_level()) / float(
-                            self.backlight.get_max_level()) * 100.0
+        keyvals['level_backlight_percent'] = self.backlight.get_percent()
 
         # record battery stats if battery exists
         keyvals['b_on_ac'] = int(not self._force_discharge_success

@@ -207,6 +207,7 @@ suite:cft-nightly
 suite:cft_ctf_test_suite
 suite:chameleon_hdmi
 suite:chameleon_hdmi_perbuild
+suite:chameleon_igt_daily
 suite:check_setup_cts_N
 suite:check_setup_storage_qual
 suite:chrome-informational

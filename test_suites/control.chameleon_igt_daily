@@ -1,0 +1,42 @@
+# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'Chromium OS Display team'
+NAME = "chameleon_igt_daily"
+PURPOSE = "An IGT test suite running on Chameleon."
+
+TIME = "LENGTHY"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+IGT tests which require Chameleon board connected via HDMI connection.
+The Chameleon board can emulate a monitor such that the test can control
+its behaviors in order to test the ChromeOS graphic stack.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+# Values specified in this bug template will override default values when
+# filing bugs on tests that are a part of this suite. If left unspecified
+# the bug filer will fallback to it's defaults.
+_BUG_TEMPLATE = {
+    'labels': ['OS-Chrome', 'Chameleon'],
+    'components': ['ChromeOS>Platform>Graphics>Display'],
+    'owner': 'chromeos-gfx-display@google.com',
+    'status': None,
+    'summary': None,
+    'title': None,
+    'cc': ['markyacoub@google.com']
+}
+
+args_dict['name'] = NAME
+args_dict['max_runtime_mins'] = 240
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+args_dict['bug_template'] = _BUG_TEMPLATE
+
+dynamic_suite.reimage_and_run(**args_dict)

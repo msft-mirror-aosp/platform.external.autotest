@@ -612,6 +612,23 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                     self.cleanup_bluetooth_audio(device, audio_test_profile)
                 self.test_remove_pairing(device.address)
 
+    @test_wrapper('Suspend with a delay',
+                  devices={
+                          'BLUETOOTH_AUDIO': 1,
+                          'BLE_MOUSE': 1
+                  },
+                  flags=['Quick Health'])
+    def sr_suspend_delay(self):
+        """Suspend with a delay to check the health.
+
+        In this test, the BQR feature is not enabled. Hence, this test is
+        expected to execute on all DUTs.
+        """
+        audio_device = self.devices['BLUETOOTH_AUDIO'][0]
+        ble_mouse_device = self.devices['BLE_MOUSE'][0]
+        devices = (audio_device, ble_mouse_device)
+        self._sr_suspend_delay(devices, enable_BQR=False)
+
     @test_wrapper('Suspend with a delay while receiving BQR test',
                   devices={
                           'BLUETOOTH_AUDIO': 1,
@@ -637,6 +654,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self.sr_while_discovering()
         self.sr_while_advertising()
         self.sr_while_receiving_bqr()
+        # Promote the sr_suspend_delay test later when proving to be stable.
+        # self.sr_suspend_delay()
         self.sr_suspend_delay_while_receiving_bqr()
         self.sr_reconnect_multiple_classic_hid()
         self.sr_reconnect_multiple_le_hid()

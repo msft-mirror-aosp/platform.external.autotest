@@ -408,10 +408,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                                        kbd_test_func,
                                        secondary_info=hid_test_device)
 
-    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
-    @test_wrapper('LE Secure Connection',
-                  devices={'BLE_MOUSE': 1},
-                  flags=['Quick Health'])
+    @test_wrapper('LE Secure Connection', devices={'BLE_MOUSE': 1})
     def le_secure_connection(self):
         """Tests that Secure Connection is used for LE pairing"""
 

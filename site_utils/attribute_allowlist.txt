@@ -204,6 +204,7 @@ suite:cellular_qual
 suite:cft-beta
 suite:cft-critical
 suite:cft-nightly
+suite:cft_ctf_test_suite
 suite:chameleon_hdmi
 suite:chameleon_hdmi_perbuild
 suite:check_setup_cts_N

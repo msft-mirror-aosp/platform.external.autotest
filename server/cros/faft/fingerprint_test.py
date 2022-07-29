@@ -329,6 +329,13 @@ class FingerprintTest(test.test):
         if hasattr(self, '_timberslide_running') and self._timberslide_running:
             logging.info('Restarting timberslide')
             self.host.upstart_restart(self._TIMBERSLIDE_UPSTART_JOB_NAME)
+        running_ro_firmware_version = self.get_running_ro_firmware_version()
+        running_rw_firmware_version = self.get_running_rw_firmware_version()
+        logging.info('RO firmware running: {}'.format(
+            running_ro_firmware_version))
+        logging.info('RW firmware running: {}'.format(
+            running_rw_firmware_version))
+
 
         super(FingerprintTest, self).cleanup()
 

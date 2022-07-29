@@ -9,7 +9,7 @@ NAME = 'tast.category-printer'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-printer'
+ATTRIBUTES = 'suite:bvt-tast-cq-printer, suite:bvt-tast-cq-cft-printer'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

@@ -9,7 +9,7 @@ NAME = 'tast.category-taskmanager'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-taskmanager'
+ATTRIBUTES = 'suite:bvt-tast-cq-taskmanager, suite:bvt-tast-cq-cft-taskmanager'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

@@ -9,7 +9,7 @@ NAME = 'tast.category-telemetryextension'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-telemetryextension'
+ATTRIBUTES = 'suite:bvt-tast-cq-telemetryextension, suite:bvt-tast-cq-cft-telemetryextension'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

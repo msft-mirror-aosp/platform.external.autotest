@@ -9,7 +9,7 @@ NAME = 'tast.category-phonehub'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-phonehub'
+ATTRIBUTES = 'suite:bvt-tast-cq-phonehub, suite:bvt-tast-cq-cft-phonehub'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

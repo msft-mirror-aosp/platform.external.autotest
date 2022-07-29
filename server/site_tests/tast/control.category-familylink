@@ -9,7 +9,7 @@ NAME = 'tast.category-familylink'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-familylink'
+ATTRIBUTES = 'suite:bvt-tast-cq-familylink, suite:bvt-tast-cq-cft-familylink'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

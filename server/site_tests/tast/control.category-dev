@@ -9,7 +9,7 @@ NAME = 'tast.category-dev'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-dev'
+ATTRIBUTES = 'suite:bvt-tast-cq-dev, suite:bvt-tast-cq-cft-dev'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

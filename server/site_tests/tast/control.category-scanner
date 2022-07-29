@@ -9,7 +9,7 @@ NAME = 'tast.category-scanner'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-scanner'
+ATTRIBUTES = 'suite:bvt-tast-cq-scanner, suite:bvt-tast-cq-cft-scanner'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

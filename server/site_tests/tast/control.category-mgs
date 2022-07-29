@@ -9,7 +9,7 @@ NAME = 'tast.category-mgs'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-mgs'
+ATTRIBUTES = 'suite:bvt-tast-cq-mgs, suite:bvt-tast-cq-cft-mgs'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

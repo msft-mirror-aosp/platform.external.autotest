@@ -9,7 +9,7 @@ NAME = 'tast.category-firmwareupdate'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-firmwareupdate'
+ATTRIBUTES = 'suite:bvt-tast-cq-firmwareupdate, suite:bvt-tast-cq-cft-firmwareupdate'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

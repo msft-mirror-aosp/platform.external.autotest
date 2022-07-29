@@ -9,7 +9,7 @@ NAME = 'tast.category-qemu'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-qemu'
+ATTRIBUTES = 'suite:bvt-tast-cq-qemu, suite:bvt-tast-cq-cft-qemu'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

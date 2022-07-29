@@ -9,7 +9,7 @@ NAME = 'tast.category-policy'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-policy'
+ATTRIBUTES = 'suite:bvt-tast-cq-policy, suite:bvt-tast-cq-cft-policy'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

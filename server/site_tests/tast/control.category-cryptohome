@@ -9,7 +9,7 @@ NAME = 'tast.category-cryptohome'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-cryptohome'
+ATTRIBUTES = 'suite:bvt-tast-cq-cryptohome, suite:bvt-tast-cq-cft-cryptohome'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

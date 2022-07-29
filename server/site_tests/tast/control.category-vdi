@@ -9,7 +9,7 @@ NAME = 'tast.category-vdi'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-vdi'
+ATTRIBUTES = 'suite:bvt-tast-cq-vdi, suite:bvt-tast-cq-cft-vdi'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

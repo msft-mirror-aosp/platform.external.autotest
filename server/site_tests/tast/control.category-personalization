@@ -9,7 +9,7 @@ NAME = 'tast.category-personalization'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-personalization'
+ATTRIBUTES = 'suite:bvt-tast-cq-personalization, suite:bvt-tast-cq-cft-personalization'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

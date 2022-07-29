@@ -9,7 +9,7 @@ NAME = 'tast.category-diagnostics'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-diagnostics'
+ATTRIBUTES = 'suite:bvt-tast-cq-diagnostics, suite:bvt-tast-cq-cft-diagnostics'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

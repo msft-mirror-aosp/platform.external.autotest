@@ -9,7 +9,7 @@ NAME = 'tast.category-factory'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-factory'
+ATTRIBUTES = 'suite:bvt-tast-cq-factory, suite:bvt-tast-cq-cft-factory'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

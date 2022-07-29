@@ -9,7 +9,7 @@ NAME = 'tast.category-wallpaper'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-wallpaper'
+ATTRIBUTES = 'suite:bvt-tast-cq-wallpaper, suite:bvt-tast-cq-cft-wallpaper'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

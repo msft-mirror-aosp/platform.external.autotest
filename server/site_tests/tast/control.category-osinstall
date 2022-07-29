@@ -9,7 +9,7 @@ NAME = 'tast.category-osinstall'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-osinstall'
+ATTRIBUTES = 'suite:bvt-tast-cq-osinstall, suite:bvt-tast-cq-cft-osinstall'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

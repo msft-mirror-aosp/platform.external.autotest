@@ -9,7 +9,7 @@ NAME = 'tast.category-settings'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-settings'
+ATTRIBUTES = 'suite:bvt-tast-cq-settings, suite:bvt-tast-cq-cft-settings'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

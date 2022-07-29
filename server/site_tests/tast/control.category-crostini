@@ -9,7 +9,7 @@ NAME = 'tast.category-crostini'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-crostini'
+ATTRIBUTES = 'suite:bvt-tast-cq-crostini, suite:bvt-tast-cq-cft-crostini'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 
@@ -41,7 +41,7 @@ def run(machine):
                              '!informational && '
                              '"name:crostini.*"'
                              ')'],
-                 ignore_test_failures=False, max_run_sec=5400,
+                 ignore_test_failures=False, max_run_sec=1800,
                  command_args=args,
                  clear_tpm=True,
                  retries=2)

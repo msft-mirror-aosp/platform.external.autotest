@@ -9,7 +9,7 @@ NAME = 'tast.category-a11y'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-a11y'
+ATTRIBUTES = 'suite:bvt-tast-cq-a11y, suite:bvt-tast-cq-cft-a11y'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

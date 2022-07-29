@@ -9,7 +9,7 @@ NAME = 'tast.category-hwsec'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-hwsec'
+ATTRIBUTES = 'suite:bvt-tast-cq-hwsec, suite:bvt-tast-cq-cft-hwsec'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

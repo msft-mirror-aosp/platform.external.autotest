@@ -9,7 +9,7 @@ NAME = 'tast.category-firmware'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-firmware'
+ATTRIBUTES = 'suite:bvt-tast-cq-firmware, suite:bvt-tast-cq-cft-firmware'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

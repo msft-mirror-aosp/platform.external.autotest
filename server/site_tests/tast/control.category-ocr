@@ -9,7 +9,7 @@ NAME = 'tast.category-ocr'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-ocr'
+ATTRIBUTES = 'suite:bvt-tast-cq-ocr, suite:bvt-tast-cq-cft-ocr'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

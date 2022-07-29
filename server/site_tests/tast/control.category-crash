@@ -9,7 +9,7 @@ NAME = 'tast.category-crash'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-crash'
+ATTRIBUTES = 'suite:bvt-tast-cq-crash, suite:bvt-tast-cq-cft-crash'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

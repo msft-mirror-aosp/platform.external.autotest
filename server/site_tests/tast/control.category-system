@@ -9,7 +9,7 @@ NAME = 'tast.category-system'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-system'
+ATTRIBUTES = 'suite:bvt-tast-cq-system, suite:bvt-tast-cq-cft-system'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

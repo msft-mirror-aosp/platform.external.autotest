@@ -9,7 +9,7 @@ NAME = 'tast.category-crosh'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-crosh'
+ATTRIBUTES = 'suite:bvt-tast-cq-crosh, suite:bvt-tast-cq-cft-crosh'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

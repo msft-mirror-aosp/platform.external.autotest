@@ -9,7 +9,7 @@ NAME = 'tast.category-loginminutemaid'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-loginminutemaid'
+ATTRIBUTES = 'suite:bvt-tast-cq-loginminutemaid, suite:bvt-tast-cq-cft-loginminutemaid'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

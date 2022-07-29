@@ -9,7 +9,7 @@ NAME = 'tast.category-documentscanapi'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-documentscanapi'
+ATTRIBUTES = 'suite:bvt-tast-cq-documentscanapi, suite:bvt-tast-cq-cft-documentscanapi'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

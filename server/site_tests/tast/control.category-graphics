@@ -9,7 +9,7 @@ NAME = 'tast.category-graphics'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-graphics'
+ATTRIBUTES = 'suite:bvt-tast-cq-graphics, suite:bvt-tast-cq-cft-graphics'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

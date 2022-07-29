@@ -9,7 +9,7 @@ NAME = 'tast.category-ui'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-ui'
+ATTRIBUTES = 'suite:bvt-tast-cq-ui, suite:bvt-tast-cq-cft-ui'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

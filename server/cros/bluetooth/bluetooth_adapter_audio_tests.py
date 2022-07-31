@@ -945,6 +945,43 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         return all(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_start_custom_chrome(self, kwargs):
+        """Tests starting a custom chrome.
+
+        This is useful for running tests that require chrome.
+        However, since the bluetooth_adapter_audio_tests is designed for
+        testing without ui enabled originally, remember to call
+        self.test_stop_ui after each test if this function is called.
+
+        @param kwargs: a dict that will be passed to the start_custom_chrome.
+                For example, {'extra_browser_args':
+                ['--enable-features=CrOSLateBootAudioHFPMicSR']}
+
+        @returns: True on success. False otherwise.
+        """
+        is_enabled = self.enable_disable_ui(enable=True)
+        is_started = self.factory.create_browser_facade().start_custom_chrome(kwargs)
+
+        self.results = {
+                'enable_disable_ui': is_enabled,
+                'start custom chrome': is_started,
+        }
+
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_stop_ui(self):
+        """Tests stopping ui.
+
+        @returns: True on success. False otherwise.
+        """
+        is_disabled = self.enable_disable_ui(enable=False)
+
+        self.results = {'enabled_disable_ui': is_disabled}
+
+        return all(self.results.values())
+
 
     @test_retry_and_log(False)
     def test_send_audio_to_dut_and_unzip(self):
@@ -1561,6 +1598,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_dut_to_stop_capturing_audio_subprocess()
         self.test_check_audio_file(device, test_profile, hfp_test_data,
                                    'recorded_by_dut')
+
+
+    def hfp_dut_as_sink_with_super_resolution(self, device, test_profile):
+        """Test Case: HFP sinewave streaming with super_resolution from peer device to the DUT.
+
+        @param device: the Bluetooth peer device.
+        @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        """
+        self.test_start_custom_chrome({
+            'extra_browser_args':
+            ['--enable-features=CrOSLateBootAudioHFPMicSR']})
+        self.hfp_dut_as_sink(device, test_profile)
+        self.test_stop_ui()
 
 
     def hfp_dut_as_source_back2back(self, device, test_profile):

@@ -218,6 +218,14 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_hfp_run_method(device, self.hfp_dut_as_sink, HFP_WBS)
 
 
+    @test_wrapper('HFP WBS sinewave test with dut as sink with super resolution',
+                  devices={'BLUETOOTH_AUDIO':1})
+    def au_hfp_wbs_dut_as_sink_with_super_resolution_test(self):
+        """HFP WBS test with sinewave and super_resolution streaming from peer to dut."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.hfp_dut_as_sink_with_super_resolution, HFP_WBS)
+
+
     @test_wrapper('HFP NBS sinewave test with dut as source',
                   devices={'BLUETOOTH_AUDIO': 1},
                   supports_floss=True)
@@ -234,6 +242,14 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         """HFP NBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_hfp_run_method(device, self.hfp_dut_as_sink, HFP_NBS)
+
+
+    @test_wrapper('HFP NBS sinewave test with dut as sink with super resolution',
+                  devices={'BLUETOOTH_AUDIO': 1})
+    def au_hfp_nbs_dut_as_sink_with_super_resolution_test(self):
+        """HFP NBS test with sinewave and super_resolution streaming from peer to dut."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_hfp_run_method(device, self.hfp_dut_as_sink_with_super_resolution, HFP_NBS)
 
 
     @test_wrapper('HFP WBS VISQOL test with dut as sink',
@@ -394,6 +410,11 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_a2dp_to_hfp_wbs_dut_as_source_test()
         self.au_hfp_nbs_to_a2dp_dut_as_source_test()
         self.au_hfp_wbs_to_a2dp_dut_as_source_test()
+        # The following tests will try to start custom chrome before running the
+        # tests because the feature is currently controlled by chrome flags.
+        # They will also try to stop ui after the test run.
+        self.au_hfp_nbs_dut_as_sink_with_super_resolution_test()
+        self.au_hfp_wbs_dut_as_sink_with_super_resolution_test()
 
 
     def run_once(self,

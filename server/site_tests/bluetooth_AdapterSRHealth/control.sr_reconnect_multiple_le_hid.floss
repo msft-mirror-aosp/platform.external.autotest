@@ -6,7 +6,10 @@ from autotest_lib.server import utils
 
 AUTHOR = 'Manal Lubbadeh <manal.lubbadeh@exalt.ps>'
 NAME = 'bluetooth_AdapterSRHealth.sr_reconnect_multiple_le_hid.floss'
-PURPOSE = ('Single run of a test')
+PURPOSE = (
+    'Verify the DUT reconnects to multiple LE HID devices '
+    'after suspend/resume'
+)
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth_floss'
 TIME = 'SHORT'
@@ -16,7 +19,15 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
 PY_VERSION = 3
 
-DOC = """ Single run of a Suspend-Resume health testcase. """
+DOC = """
+This test verifies that the DUT reconnects to multiple LE HID devices
+after suspend/resume.
+
+Steps:
+1. The DUT pairs and connects to an LE keyboard and mouse.
+2. Suspend the DUT then resume it.
+3. Expect the DUT reconnects to both HID devices.
+"""
 
 args_dict = utils.args_to_dict(args)
 

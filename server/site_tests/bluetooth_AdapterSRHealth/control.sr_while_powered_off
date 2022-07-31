@@ -6,7 +6,9 @@ from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_while_powered_off'
-PURPOSE = ('Single run of a test')
+PURPOSE = (
+    'Verify the DUT can suspend and resume while the adapter is powered off'
+)
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
 TIME = 'SHORT'
@@ -16,7 +18,17 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 PY_VERSION = 3
 
-DOC = """ Single run of suspend/resume with adapter powered off. """
+DOC = """
+This test verifies that the adapter should be able to power on and reconnect
+after it was powered off during suspend and resume
+
+Steps:
+1. Pair a HID device
+2. Power off the BT adapter
+3. Suspend and resume the DUT
+4. Power on the BT adapter; expect success
+5. Expect that the device can initiate connection to the DUT
+"""
 
 args_dict = utils.args_to_dict(args)
 

@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_peer_wake_a2dp_should_fail'
-PURPOSE = ('Single run of a test')
+PURPOSE = 'Verify A2DP peer device cannot wake the DUT up'
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
 TIME = 'SHORT'
@@ -16,7 +16,15 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 PY_VERSION = 3
 
-DOC = """ A2DP peer should not wake system from suspend. """
+DOC = """
+The test verifies that a paired A2DP device cannot wake the DUT up.
+
+Steps:
+1. The DUT pairs and connects to an A2DP device.
+2. Suspend the DUT.
+3. Use the A2DP device to try waking up the DUT.
+4. Expect the DUT doesn't resume.
+"""
 
 args_dict = utils.args_to_dict(args)
 

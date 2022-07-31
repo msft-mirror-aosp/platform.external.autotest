@@ -4,10 +4,11 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
+AUTHOR = 'Manal Lubbadeh <manal.lubbadeh@exalt.ps>'
 NAME = 'bluetooth_AdapterSRHealth.sr_while_discovering.floss'
 PURPOSE = (
-    'Verifies discovering is paused during suspend and restored after resume'
+    'Verify discovering is restored after suspend/resume '
+    'with and without setting discovery filter'
 )
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth_floss'
@@ -19,8 +20,23 @@ DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 PY_VERSION = 3
 
 DOC = """
-This test verifies that discovering is not available
-while suspend and is restored afterwards.
+Verify the DUT's discoverable behavior during suspend and after resume
+with and without setting a discovery filter.
+
+Test Discovery without setting discovery filter:
+1. Get current time to use it in the resume as start time
+2. Start discovering
+3. Suspend the DUT.
+4. Resume the DUT.
+5. Expect discovering to restore after suspend/resume
+
+Test discovery with discovery filter set:
+1. Get current time to use it in the resume as start time
+2. Set discovery filter (Transport:Auto)
+3. Start discovering
+4. Suspend the DUT
+5. Resume the DUT
+6. Expect discovering to restore after suspend/resume
 """
 
 args_dict = utils.args_to_dict(args)

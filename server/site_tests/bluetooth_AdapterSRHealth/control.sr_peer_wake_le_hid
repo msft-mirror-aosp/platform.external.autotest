@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_peer_wake_le_hid'
-PURPOSE = ('Single run of a test')
+PURPOSE = 'Verify that an LE HID peer device can wake the DUT up'
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
 TIME = 'SHORT'
@@ -16,7 +16,15 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 PY_VERSION = 3
 
-DOC = """ Single run of a Suspend-Resume health testcase. """
+DOC = """
+The test verifies that an LE HID device should wake the DUT up.
+
+Steps:
+1. The DUT pairs and connects to an LE HID device.
+2. Suspend the DUT.
+3. Use the HID device to try waking up the DUT.
+4. Expect the DUT resumes in time.
+"""
 
 args_dict = utils.args_to_dict(args)
 

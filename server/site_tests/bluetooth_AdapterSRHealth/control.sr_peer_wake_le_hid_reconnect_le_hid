@@ -6,7 +6,10 @@ from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_peer_wake_le_hid_reconnect_le_hid'
-PURPOSE = ('Single run of a test')
+PURPOSE = (
+    'Verify that the DUT can be waken by an LE HID device '
+    'then the DUT reconnects to another paired HID device'
+)
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
 TIME = 'SHORT'
@@ -16,11 +19,19 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
 PY_VERSION = 3
 
-DOC = """ Single run of the Suspend-Resume health testcase:
-sr_peer_wake_le_hid_reconnect_le_hid
+DOC = """
+The test verifies that an LE HID device should wake the DUT up and the DUT will
+reconnect all paired LE HID devices.
 
-It can discover the failure of pairing more than one LE devices after
-suspend-resume (b/219952140).
+Steps:
+1. The DUT pairs and connects to two LE HID devices.
+2. Suspend the DUT.
+3. Use one HID device to try waking up the DUT.
+4. Expect the DUT resumes in time.
+5. Expect the DUT reconnects to another LE HID device.
+
+Note: It can discover the issue of unable to pair more than one LE devices
+after suspend-resume (b/219952140).
 """
 
 args_dict = utils.args_to_dict(args)

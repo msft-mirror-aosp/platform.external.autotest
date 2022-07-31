@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_while_receiving_bqr'
-PURPOSE = ('Single run of a test')
+PURPOSE = 'Verify suspend/resume works well with BQR'
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_flaky'
 TIME = 'SHORT'
@@ -17,9 +17,18 @@ DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
 PY_VERSION = 3
 
 DOC = """
-Suspend/Resume should work well with BQR. The test check
-BQR functionality before and after suspend/resume to make sure that
-BQR doesn't break the suspend/resume and vice versa.
+The test verifies that the DUT's suspend/resume
+should work well with BQR (Bluetooth Quality Report).
+
+Steps:
+1. Enable BQR
+2. Connect to the audio device with A2DP profile
+3. Check the bqr logs before suspend/resume
+4. Starting to suspend/resume
+5. Open a 2nd btmon log for BQR log checking
+6. After suspend/resume DUT should be able to connect to devices
+7. Expect the A2DP devices are connected after suspend/resume
+8. Check that BQR doesn't break the suspend/resume and vice versa
 """
 
 args_dict = utils.args_to_dict(args)

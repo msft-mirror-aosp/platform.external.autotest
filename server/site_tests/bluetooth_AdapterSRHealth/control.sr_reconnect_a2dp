@@ -6,7 +6,9 @@ from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_reconnect_a2dp'
-PURPOSE = ('Single run of a test')
+PURPOSE = (
+    'Verify that the DUT reconnects to the A2DP device after suspend/resume'
+)
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TIME = 'SHORT'
@@ -16,7 +18,15 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 PY_VERSION = 3
 
-DOC = """ Auto-reconnect A2DP peer after suspend/resume. """
+DOC = """
+This test verifies that the DUT reconnects to the A2DP device after
+suspend/resume.
+
+Steps:
+1. The DUT pairs and connects to an A2DP device.
+2. Suspend the DUT then resume it.
+3. Expect the DUT reconnects to the A2DP device.
+"""
 
 args_dict = utils.args_to_dict(args)
 

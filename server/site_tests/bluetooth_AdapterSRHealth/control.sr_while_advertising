@@ -6,7 +6,9 @@ from autotest_lib.server import utils
 
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_while_advertising'
-PURPOSE = ('Single run of a test')
+PURPOSE = (
+    "Verify the DUT's discoverable behavior during suspend and after resume"
+)
 CRITERIA = 'Pass test'
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
 TIME = 'SHORT'
@@ -16,7 +18,17 @@ TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 PY_VERSION = 3
 
-DOC = """ Single run of a Suspend-Resume health testcase. """
+DOC = """
+Verify the DUT's discoverable behavior during suspend and after resume.
+
+Steps:
+1. Set the DUT to discoverable and use a peer device to verify.
+2. Suspend the DUT.
+3. Expect the peer device cannot discover the suspended DUT.
+4. Resume the DUT.
+5. Expect the peer device can discover the DUT.
+6. Set the DUT to undiscoverable and use the peer device to verify.
+"""
 
 args_dict = utils.args_to_dict(args)
 

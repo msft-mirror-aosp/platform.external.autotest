@@ -98,6 +98,7 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
             self.host.test_wait_for_resume(boot_id, self.RESUME_TIMEOUT_SECS)
         except error.TestFail as ex:
             self.errors.append("%s - %s" % (test_case, str(ex)))
+            raise error.TestError("DUT failed to resume after suspend")
 
 
     def check_correct_audio_node_selected(self):

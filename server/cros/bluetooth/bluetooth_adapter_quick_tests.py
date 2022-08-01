@@ -390,14 +390,19 @@ class BluetoothAdapterQuickTests(
         time.sleep(self.TEST_SLEEP_SECS)
         self.log_message('Starting test: %s' % test_name)
 
-        if not self.test_set_ll_privacy(self.llprivacy):
-            logging.error('DBus call to set ll privacy %r failed',
-                          self.llprivacy)
-            if self.llprivacy:
-                raise error.TestError('Failed to enable LL privacy.')
-        else:
-            if self.llprivacy:
-                logging.info('Enabled LL privacy for this test.')
+        if self.floss and self.llprivacy:
+            raise error.TestError('LL Privacy is not yet supported on Floss')
+
+        # Explicitly enable/disable LL Privacy if we are not running Floss.
+        if not self.floss:
+            if not self.test_set_ll_privacy(self.llprivacy):
+                logging.error('DBus call to set ll privacy %r failed',
+                              self.llprivacy)
+                if self.llprivacy:
+                    raise error.TestError('Failed to enable LL privacy.')
+            else:
+                if self.llprivacy:
+                    logging.info('Enabled LL privacy for this test.')
 
     def quick_test_test_posttest(self):
         """Runs posttest cleanups."""

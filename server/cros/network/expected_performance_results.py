@@ -212,6 +212,10 @@ max_throughput_expectation_for_boards = {
                 perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: 70,
                 perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: 130,
                 perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 130
+        },
+        # kevin throughput results tracked in b:237404049.
+        "kevin": {
+                perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: 80
         }
 }
 

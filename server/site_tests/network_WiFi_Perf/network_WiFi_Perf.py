@@ -34,11 +34,6 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
             perf_manager.PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL,
     ]
 
-    DEFAULT_ROUTER_LAN_IP_ADDRESS = "192.168.1.50"
-    DEFAULT_PCAP_LAN_IP_ADDRESS = "192.168.1.51"
-    DEFAULT_ROUTER_LAN_IFACE_NAME = "eth1"
-    DEFAULT_PCAP_LAN_IFACE_NAME = "eth1"
-
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hook into super class to take control files parameters.
 
@@ -48,16 +43,8 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         self._should_required = 'should' in commandline_args
         self._power_save_off = 'power_save_off' in commandline_args
 
-        get_arg_value_or_default = lambda attr, default: commandline_args[
-                attr] if attr in commandline_args else default
-        self._router_lan_ip_addr = get_arg_value_or_default(
-                'router_lan_ip_addr', self.DEFAULT_ROUTER_LAN_IP_ADDRESS)
-        self._router_lan_iface_name = get_arg_value_or_default(
-                'router_lan_iface_name', self.DEFAULT_ROUTER_LAN_IFACE_NAME)
-        self._pcap_lan_ip_addr = get_arg_value_or_default(
-                'pcap_lan_ip_addr', self.DEFAULT_PCAP_LAN_IP_ADDRESS)
-        self._pcap_lan_iface_name = get_arg_value_or_default(
-                'pcap_lan_iface_name', self.DEFAULT_PCAP_LAN_IFACE_NAME)
+        super(network_WiFi_Perf, self).parse_additional_arguments(
+                commandline_args)
 
         if 'governor' in commandline_args:
             self._governor = commandline_args['governor']
@@ -234,25 +221,7 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
             self.configure_and_connect_to_ap(ap_config)
             with ip_config_context_manager.IpConfigContextManager(
             ) as ip_context:
-
-                ip_context.bring_interface_up(self.context.router.host,
-                                              self._router_lan_iface_name)
-                ip_context.bring_interface_up(self.context.pcap_host.host,
-                                              self._pcap_lan_iface_name)
-                ip_context.assign_ip_addr_to_iface(self.context.router.host,
-                                                   self._router_lan_ip_addr,
-                                                   self._router_lan_iface_name)
-                ip_context.assign_ip_addr_to_iface(self.context.pcap_host.host,
-                                                   self._pcap_lan_ip_addr,
-                                                   self._pcap_lan_iface_name)
-                ip_context.add_ip_route(self.context.client.host,
-                                        self._pcap_lan_ip_addr,
-                                        self.context.client.wifi_if,
-                                        self.context.router.wifi_ip)
-                ip_context.add_ip_route(self.context.pcap_host.host,
-                                        self.context.client.wifi_ip,
-                                        self._router_lan_iface_name,
-                                        self._router_lan_ip_addr)
+                self._setup_ip_config(ip_context)
 
                 manager = perf_manager.PerfTestManager(self._use_iperf)
                 # Flag a test error if we disconnect for any reason.

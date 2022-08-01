@@ -112,8 +112,10 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
         """Initializes Autotest."""
         self.hcitool = Hcitool()
 
+    # TODO(b/236922299): Un-skip QCA chipsets after the firmware fix landed.
     @test_wrapper('spec_legacy_test',
-                  skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY,
+                  skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY +
+                  ['QCA-WCN6856', 'WCN3991'],
                   flags=['Quick Health'])
     def spec_legacy_test(self):
         """Checks Bluetooth legacy specification."""
@@ -335,7 +337,6 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
                                   'ACL buffers count')
         return all(self.results.values())
 
-    # TODO(b/224580226): Move optional requirement to a separated test.
     @test_log_result
     def test_acl_min_buffer_number_optional(self):
         """Checks if ACL minimum buffers count(number of data packets) >=6."""

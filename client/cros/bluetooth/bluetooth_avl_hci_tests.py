@@ -163,24 +163,30 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
         """Checks Bluetooth version 4.1 BR/EDR secure connection feature."""
         self.test_br_edr_controller_secure_connection_feature()
 
+    # TODO(b/235453469): Un-skip the RTK chipset after the firmware fix landed.
     @test_wrapper('spec_4_2_basic_test',
-                  skip_chipsets=CHIPSETS_UNSUPPORT_4_2,
+                  skip_chipsets=CHIPSETS_UNSUPPORT_4_2 +
+                  ['Realtek-RTL8822C-UART'],
                   flags=['Quick Health'])
     def spec_4_2_basic_test(self):
         """Checks Bluetooth version 4.2 basic specification."""
         self.test_le_data_packet_length_extension_feature()
 
+    # TODO(b/235453469): Un-skip the RTK chipset after the firmware fix landed.
     @test_wrapper('spec_4_2_packet_data_len_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_2 +
-                  CHIPSETS_UNSUPPORT_PACKET_DATA_LENGTH,
+                  CHIPSETS_UNSUPPORT_PACKET_DATA_LENGTH +
+                  ['Realtek-RTL8822C-UART'],
                   flags=['Quick Health'])
     def spec_4_2_packet_data_len_test(self):
         """Checks Bluetooth version 4.2 packet data length feature."""
         self.test_packet_data_length()
 
+    # TODO(b/235453469): Un-skip RTK chipsets after the firmware fix landed.
     @test_wrapper('spec_4_2_ll_privacy_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_2 +
-                  CHIPSETS_UNSUPPORT_LL_PRIVACY,
+                  CHIPSETS_UNSUPPORT_LL_PRIVACY +
+                  ['Realtek-RTL8822C-UART', 'Realtek-RTL8852A-USB'],
                   flags=['Quick Health'])
     def spec_4_2_ll_privacy_test(self):
         """Checks Bluetooth version 4.2 LL privacy features."""

@@ -105,11 +105,9 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         """Tests interleave scan."""
         self.advmon_test_interleaved_scan()
 
-    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Condition Device Count Tests',
                   devices={'BLE_MOUSE': 1},
-                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS,
-                  flags=['Quick Health'])
+                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS)
     def advmon_condition_device_count_tests(self):
         """Tests minimum supported condition and device count."""
         self.advmon_test_condition_device_count()

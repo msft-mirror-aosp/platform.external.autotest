@@ -23,7 +23,7 @@ class network_WiFi_PerfNoisyEnv(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
     For a given router configuration, broadcast noise while the gain is
     increased step by step until the DUT disconnects or no throughput is
     detected. The throughput at different gain values and the maximum gain
-    at which there were meaningful throughput values are logged.
+    at which there were meaningful throughput values are logged as keyval pairs.
 
     After running it on more boards to gather more data, this test will include
     pass/fail criteria.
@@ -77,6 +77,10 @@ class network_WiFi_PerfNoisyEnv(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                 the test including the absolute path to it on the HackRF Runner
                 or None.
         """
+        ap_config_tag = self._ap_config.perf_loggable_description
+        signal_level = self.context.client.wifi_signal_level
+        signal_description = '_'.join([ap_config_tag, 'signal'])
+        self.write_perf_keyval({signal_description: signal_level})
         for test_type in self.PERF_TEST_TYPES:
             config = manager.get_config(test_type)
             pcap_lan_iface = interface.Interface(self._pcap_lan_iface_name,
@@ -116,6 +120,17 @@ class network_WiFi_PerfNoisyEnv(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                 logging.warning('Unable to take measurement for %s; '
                                 'aborting', config.test_type)
                 break
+            graph_name = '.'.join(
+                    [self._ap_config.perf_loggable_description,
+                     config.test_type])
+            values = [sample.throughput for sample in results]
+            self.output_perf_value(gain_tag, values, units='Mbps',
+                                   higher_is_better=True, graph=graph_name)
+            result = manager.get_result(results)
+            keyval_prefix = '_'.join(
+                    [self._ap_config.perf_loggable_description,
+                     config.test_type, gain_tag])
+            self.write_perf_keyval(result.get_keyval(prefix=keyval_prefix))
         return results
 
     def run_once(self):
@@ -184,6 +199,8 @@ class network_WiFi_PerfNoisyEnv(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                 raise error.TestFail('Did not succeed at any gain level')
             else:
                 logging.info('Reached gain of: %d dB', max_gain)
+            self.write_perf_keyval({'ch%03d_max_gain' % self._ap_config.channel:
+                    max_gain})
 
         # Clean up router and client state for the next run.
         self.context.client.shill.disconnect(self.context.router.get_ssid())

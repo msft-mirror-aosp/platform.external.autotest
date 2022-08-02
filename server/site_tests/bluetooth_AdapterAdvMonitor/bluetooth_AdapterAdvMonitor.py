@@ -88,8 +88,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                   },
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
-                  flags=['Quick Health'])
+                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
     def advmon_suspend_resume_tests(self):
         """Tests working of background scanning with suspend resume."""
         self.advmon_test_suspend_resume()

@@ -7,20 +7,20 @@
 
 import time
 
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests\
-        import bluetooth_AdapterControllerRoleTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests \
+    import bluetooth_AdapterControllerRoleTests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import (
         BluetoothAdapterPairingTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
-        import BluetoothAdapterHIDReportTests
+    import BluetoothAdapterHIDReportTests
 
 
 class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
-        BluetoothAdapterPairingTests,
-        BluetoothAdapterHIDReportTests,
-        bluetooth_AdapterControllerRoleTests):
+                                BluetoothAdapterPairingTests,
+                                BluetoothAdapterHIDReportTests,
+                                bluetooth_AdapterControllerRoleTests):
     """A Batch of Bluetooth LE health tests. This test is written as a batch
        of tests in order to reduce test time, since auto-test ramp up time is
        costly. The batch is using BluetoothAdapterQuickTests wrapper methods to
@@ -46,7 +46,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         # the advertised name, causing this test to fail
         # self.test_device_name(device.address, device.name)
 
-
     @test_wrapper('Connect Disconnect by Device Loop',
                   devices={'BLE_MOUSE': 1},
                   flags=['Quick Health'])
@@ -63,8 +62,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                 device_type='BLE_MOUSE',
                 check_connected_method=self.test_mouse_move_in_xy)
 
-
-    @test_wrapper('Connect Disconnect Loop', devices={'BLE_MOUSE':1})
+    @test_wrapper('Connect Disconnect Loop', devices={'BLE_MOUSE': 1})
     def le_connect_disconnect_loop(self):
         """Run connect/disconnect loop initiated by DUT.
            The test also checks that there are no undesired
@@ -76,7 +74,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         self.connect_disconnect_loop(device=device, loops=3)
 
-
     @test_wrapper('HID Reconnect Speed',
                   devices={'BLE_MOUSE': 1},
                   flags=['Quick Health'],
@@ -86,7 +83,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
         device = self.devices['BLE_MOUSE'][0]
         self.hid_reconnect_speed(device=device, device_type='BLE_MOUSE')
-
 
     @test_wrapper('HID Report Reboot',
                   devices={'BLE_MOUSE': 1},
@@ -115,7 +111,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                 check_connected_method=self.test_mouse_move_in_xy,
                 restart=True)
 
-
     @test_wrapper('Mouse Reports',
                   devices={'BLE_MOUSE': 1},
                   supports_floss=True)
@@ -134,7 +129,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         time.sleep(1)
         self.run_mouse_tests(device=device)
 
-
     @test_wrapper('Keyboard Reports',
                   devices={'BLE_KEYBOARD': 1},
                   supports_floss=True)
@@ -152,7 +146,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         # doesn't find the device
         time.sleep(1)
         self.run_keyboard_tests(device=device)
-
 
     @test_wrapper('Battery Reporting', devices={'BLE_MOUSE': 1})
     def battery_reporting(self):
@@ -193,8 +186,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                 check_connected_method=self.test_mouse_left_click,
                 restart_adapter=True)
 
-
-    @test_wrapper('GATT Client', devices={'BLE_KEYBOARD':1})
+    @test_wrapper('GATT Client', devices={'BLE_KEYBOARD': 1})
     def le_gatt_client_attribute_browse_test(self):
         """Browse the whole tree-structured GATT attributes"""
 
@@ -205,7 +197,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         self.test_service_resolved(device.address)
         self.test_gatt_browse(device.address)
 
-
     # TODO (b/165949047) Flaky behavior on MVL/4.4 kernel causes flakiness when
     # connection is initiated by the peripheral. Skip the test until 2021 uprev
     @test_wrapper('LE secondary Test',
@@ -214,24 +205,24 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     def le_role_secondary(self):
         """Tests connection as secondary"""
 
-        self.verify_controller_capability(
-                        required_roles=['peripheral'],
-                        test_type=self.flag)
+        self.verify_controller_capability(required_roles=['peripheral'],
+                                          test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
                 device, 'simple_text')
         self.controller_secondary_role_test(kbd, kbd_test_func)
 
-
     @test_wrapper('LE primary Before secondary Test',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  })
     def le_role_primary_before_secondary(self):
         """Tests connection as primary and then as secondary"""
 
         self.verify_controller_capability(
-                        required_roles=['central-peripheral'],
-                        test_type=self.flag)
+                required_roles=['central-peripheral'], test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -241,18 +232,20 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'pre')
-        self.controller_secondary_role_test(
-                kbd, kbd_test_func, secondary_info=hid_test_device)
+        self.controller_secondary_role_test(kbd,
+                                            kbd_test_func,
+                                            secondary_info=hid_test_device)
 
-
-    @test_wrapper('LE secondary Before primary Test', devices={'BLE_KEYBOARD':1,
-                                                          'BLE_MOUSE':1})
+    @test_wrapper('LE secondary Before primary Test',
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  })
     def le_role_secondary_before_primary(self):
         """Tests connection as secondary and then as primary"""
 
         self.verify_controller_capability(
-                        required_roles=['central-peripheral'],
-                        test_type=self.flag)
+                required_roles=['central-peripheral'], test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -262,25 +255,23 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'mid')
-        self.controller_secondary_role_test(
-                kbd, kbd_test_func, secondary_info=hid_test_device)
-
+        self.controller_secondary_role_test(kbd,
+                                            kbd_test_func,
+                                            secondary_info=hid_test_device)
 
     @test_wrapper('LE Sender Role Test',
                   devices={'BLE_KEYBOARD': 1})
     def le_role_sender(self):
         """Tests basic Nearby Sender role"""
 
-        self.verify_controller_capability(
-                        required_roles=['central'],
-                        test_type=self.flag)
+        self.verify_controller_capability(required_roles=['central'],
+                                          test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
                 device, 'simple_text')
 
         self.nearby_sender_role_test(kbd, kbd_test_func)
-
 
     @test_wrapper('LE Sender Role Test During HID',
                   devices={
@@ -291,8 +282,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         """Tests Nearby Sender role while already connected to HID device"""
 
         self.verify_controller_capability(
-                        required_roles=['central-peripheral'],
-                        test_type=self.flag)
+                required_roles=['central-peripheral'], test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -302,9 +292,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'pre')
-        self.nearby_sender_role_test(
-                kbd, kbd_test_func, secondary_info=hid_test_device)
-
+        self.nearby_sender_role_test(kbd,
+                                     kbd_test_func,
+                                     secondary_info=hid_test_device)
 
     @test_wrapper('LE HID Test During Sender Role',
                   devices={
@@ -314,9 +304,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     def le_role_hid_during_sender(self):
         """Tests HID device while already in Nearby Sender role"""
 
-        self.verify_controller_capability(
-                        required_roles=['central'],
-                        test_type=self.flag)
+        self.verify_controller_capability(required_roles=['central'],
+                                          test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -326,9 +315,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'mid')
-        self.nearby_sender_role_test(
-                kbd, kbd_test_func, secondary_info=hid_test_device)
-
+        self.nearby_sender_role_test(kbd,
+                                     kbd_test_func,
+                                     secondary_info=hid_test_device)
 
     # TODO (b/165949047) Flaky behavior on MVL/4.4 kernel causes flakiness when
     # connection is initiated by the peripheral. Skip the test until 2021 uprev
@@ -338,9 +327,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 
-        self.verify_controller_capability(
-                        required_roles=['peripheral'],
-                        test_type=self.flag)
+        self.verify_controller_capability(required_roles=['peripheral'],
+                                          test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
@@ -348,15 +336,16 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
         self.nearby_receiver_role_test(kbd, kbd_test_func)
 
-
     @test_wrapper('LE Receiver Role Test During HID',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  })
     def le_role_receiver_during_hid(self):
         """Tests Nearby Receiver role while already connected to HID device"""
 
         self.verify_controller_capability(
-                        required_roles=['central-peripheral'],
-                        test_type=self.flag)
+                required_roles=['central-peripheral'], test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -366,9 +355,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'pre')
-        self.nearby_receiver_role_test(
-                kbd, kbd_test_func, secondary_info=hid_test_device)
-
+        self.nearby_receiver_role_test(kbd,
+                                       kbd_test_func,
+                                       secondary_info=hid_test_device)
 
     @test_wrapper('LE HID Test During Receiver Adv',
                   devices={
@@ -379,8 +368,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         """Tests HID device while already in Nearby Receiver role adv state"""
 
         self.verify_controller_capability(
-                        required_roles=['central-peripheral'],
-                        test_type=self.flag)
+                required_roles=['central-peripheral'], test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -390,18 +378,20 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'mid')
-        self.nearby_receiver_role_test(
-                kbd, kbd_test_func, secondary_info=hid_test_device)
-
+        self.nearby_receiver_role_test(kbd,
+                                       kbd_test_func,
+                                       secondary_info=hid_test_device)
 
     @test_wrapper('LE HID Test During Receiver Role',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  })
     def le_role_hid_during_receiver_connection(self):
         """Tests HID device while already in Nearby Receiver role connection"""
 
         self.verify_controller_capability(
-                        required_roles=['central-peripheral'],
-                        test_type=self.flag)
+                required_roles=['central-peripheral'], test_type=self.flag)
 
         kbd = self.devices['BLE_KEYBOARD'][0]
         mouse = self.devices['BLE_MOUSE'][0]
@@ -411,9 +401,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         mouse_test_func = self.test_mouse_left_click
 
         hid_test_device = (mouse, mouse_test_func, 'end')
-        self.nearby_receiver_role_test(
-                kbd, kbd_test_func, secondary_info=hid_test_device)
-
+        self.nearby_receiver_role_test(kbd,
+                                       kbd_test_func,
+                                       secondary_info=hid_test_device)
 
     # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('LE Secure Connection',
@@ -459,7 +449,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         self.le_role_secondary()
         self.le_role_sender()
         self.le_role_sender_during_hid()
-
 
     def run_once(self,
                  host,

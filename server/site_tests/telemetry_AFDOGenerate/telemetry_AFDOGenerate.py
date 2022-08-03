@@ -92,13 +92,15 @@ TELEMETRY_AFDO_BENCHMARKS = (
             'args': ('--pageset-repeat=1', '--story-tag-filter=typical'),
             'archs': ('amd64',)
         },
-        # TODO(b:229298221): Re-enabled "intl_ja_zh" when fixed.
-        {
-            'name': 'loading.desktop',
-            'args': ('--pageset-repeat=1',
-                     '--story-tag-filter=intl_es_fr_pt_BR'),
-            'archs': ('arm',)
-        },
+        # TODO(b:229298221): Re-enable loading.desktop "intl_ja_zh" when fixed.
+        # TODO(b:203556061): Re-enable "intl_es_fr_pt_BR" when
+        # perf inject timeout is fixed.
+        # {
+        #     'name': 'loading.desktop',
+        #     'args': ('--pageset-repeat=1',
+        #              '--story-tag-filter=intl_es_fr_pt_BR'),
+        #     'archs': ('arm',)
+        # },
         {
             'name': 'tab_switching.typical_25',
             'archs': ('arm',)

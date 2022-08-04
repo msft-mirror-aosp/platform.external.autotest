@@ -325,6 +325,12 @@ class SetMethodTests(unittest.TestCase):
 
         self.assertRaises(control_data.ControlVariableException, fail)
 
+    def test_set_metadata(self):
+        test_data = {'key1': 'val1',
+                     'key2': 'val'}
+        cd = ControlData({}, 'filename')
+        cd.set_metadata(test_data)
+        self.assertDictEqual(cd.metadata, test_data)
 
 # this is so the test can be run in standalone mode
 if __name__ == '__main__':

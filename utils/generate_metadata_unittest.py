@@ -35,6 +35,10 @@ TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'audio'
 TEST_TYPE = 'client'
 DEPENDENCIES = 'chameleon,servo_state:WORKING'
+METADATA = {
+    'requirements': ['req1', 'req2'],
+    'bugcomponent': 'xyz123'
+}
 
 DOC = '''
 a doc
@@ -67,6 +71,31 @@ job.run_test('fake_test2')
 
 """
 
+CONTROL_DATA3 = """
+# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'an author with email@google.com'
+NAME = 'fake_test3'
+PURPOSE = 'A fake test.'
+ATTRIBUTES = 'suite:fake_suite3, suite:fake_suite4'
+TIME = 'SHORT'
+TEST_CATEGORY = 'Functional'
+TEST_CLASS = 'audio'
+TEST_TYPE = 'client'
+DEPENDENCIES = 'fakedep3'
+METADATA = {
+    'criteria': 'overriding purpose',
+    'contacts': ['overriding_contact@google.com']
+}
+DOC = '''
+a doc
+'''
+
+job.run_test('fake_test3')
+
+"""
 
 class Namespace:
     """Stub for mocking args."""
@@ -87,12 +116,19 @@ class MetadataTest(unittest.TestCase):
                                   'control.1')
         self.path2 = os.path.join(self.tmp_dir, 'client/site_tests',
                                   'control.2')
+
+        self.path3 = os.path.join(self.tmp_dir, 'client/site_tests',
+                                  'control.3')
         self.test1 = control_data.parse_control_string(CONTROL_DATA1,
                                                        raise_warnings=True,
                                                        path=self.path1)
         self.test2 = control_data.parse_control_string(CONTROL_DATA2,
                                                        raise_warnings=True,
                                                        path=self.path2)
+
+        self.test3 = control_data.parse_control_string(CONTROL_DATA3,
+                                                       raise_warnings=True,
+                                                       path=self.path3)
 
     def tearDown(self):
         """Delete the tmp directory."""
@@ -145,6 +181,24 @@ class MetadataTest(unittest.TestCase):
         self.assertEqual(expected_owners,
                          set(['an author with email@google.com']))
 
+        expected_requirements = ['req1', 'req2']
+        actual_requirements = [req.value for req in meta_data.test_case_info.requirements]
+        self.assertListEqual(expected_requirements, actual_requirements)
+
+        expected_bug_component = 'xyz123'
+        actual_bug_component = meta_data.test_case_info.bug_component.value
+        self.assertEqual(expected_bug_component, actual_bug_component)
+
+        # Test override of criteria and contacts
+        meta_data = generate_metadata.serialized_test_case_metadata(self.test3)
+        expected_criteria = 'overriding purpose'
+        actual_criteria = meta_data.test_case_info.criteria.value
+        self.assertEqual(expected_criteria, actual_criteria)
+
+        expected_contacts = set(['overriding_contact@google.com'])
+        actual_contacts = set([item.email for item in meta_data.test_case_info.owners])
+        self.assertEqual(expected_contacts, actual_contacts)
+
     def test_serialized_test_case_metadata_list(self):
         """Test all control file get properly serialized."""
         serialized_list = generate_metadata.serialized_test_case_metadata_list(
@@ -152,10 +206,12 @@ class MetadataTest(unittest.TestCase):
                         generate_metadata.serialized_test_case_metadata(
                                 self.test1),
                         generate_metadata.serialized_test_case_metadata(
-                                self.test2)
+                                self.test2),
+                        generate_metadata.serialized_test_case_metadata(
+                                self.test3)
                 ])
         names = set([item.test_case.name for item in serialized_list.values])
-        self.assertEqual(set(['fake_test1', 'fake_test2']), names)
+        self.assertEqual(set(['fake_test1', 'fake_test2', 'fake_test3']), names)
 
 
 if __name__ == '__main__':

@@ -69,11 +69,46 @@ def all_control_files(args):
         os.chdir(start_cwd)
     return f._get_control_file_list()
 
+def serialize_contacts(data):
+    """Return a serialized Contact obj list"""
+    serialized_contacts = []
+    if hasattr(data, 'metadata') and 'contacts' in data.metadata:
+        serialized_contacts = [tc_metadata_pb.Contact(email=e) for e in data.metadata['contacts']]
+    else:
+        serialized_contacts = [tc_metadata_pb.Contact(email=data.author)]
+
+    return serialized_contacts
+
+def serialize_requirements(data):
+    """Return a serialized Requirements obj list"""
+    requirements = []
+    if hasattr(data, 'metadata') and 'requirements' in data.metadata:
+        requirements = [tc_metadata_pb.Requirement(value=r) for r in data.metadata['requirements']]
+
+    return requirements
+
+def serialize_bug_component(data):
+    """Return a serialized BugComponent obj"""
+    bug_component = None
+    if hasattr(data, 'metadata') and 'bugcomponent' in data.metadata:
+        bug_component = tc_metadata_pb.BugComponent(value=data.metadata['bugcomponent'])
+    return bug_component
+
+
+def serialize_criteria(data):
+    """Return a serialized Criteria obj"""
+    criteria = None
+    if hasattr(data, 'metadata') and 'criteria' in data.metadata:
+        criteria = tc_metadata_pb.Criteria(value=data.metadata['criteria'])
+    return criteria
 
 def serialize_test_case_info(data):
     """Return a serialized TestCaseInfo obj."""
-    serialized_contacts = tc_metadata_pb.Contact(email=data.author)
-    return tc_metadata_pb.TestCaseInfo(owners=[serialized_contacts])
+
+    return tc_metadata_pb.TestCaseInfo(owners=serialize_contacts(data),
+                                       requirements=serialize_requirements(data),
+                                       bug_component=serialize_bug_component(data),
+                                       criteria=serialize_criteria(data))
 
 
 def serialized_deps(data):

@@ -91,6 +91,7 @@ class ControlData(object):
         # Defaults
         self.path = path
         self.dependencies = set()
+        self.metadata = {}
         # TODO(jrbarnette): This should be removed once outside
         # code that uses can be changed.
         self.experimental = False
@@ -221,6 +222,9 @@ class ControlData(object):
         setattr(self, attr, set(items))
 
 
+    def _set_dict(self, attr, val):
+        setattr(self, attr, val)
+
     def set_author(self, val):
         self._set_string('author', val)
 
@@ -228,6 +232,9 @@ class ControlData(object):
     def set_dependencies(self, val):
         self._set_set('dependencies', val)
 
+
+    def set_metadata(self, val):
+        self._set_dict('metadata', val)
 
     def set_doc(self, val):
         self._set_string('doc', val)
@@ -330,7 +337,7 @@ class ControlData(object):
 
 
 def _extract_const(expr):
-    assert (expr.__class__ == ast.Str)
+    assert (expr.__class__ in (ast.Str, ast.Constant))
     if six.PY2:
         assert (expr.s.__class__ in (str, int, float, unicode))
     else:

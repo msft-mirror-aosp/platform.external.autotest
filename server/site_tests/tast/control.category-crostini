@@ -41,7 +41,7 @@ def run(machine):
                              '!informational && '
                              '"name:crostini.*"'
                              ')'],
-                 ignore_test_failures=False, max_run_sec=1800,
+                 ignore_test_failures=False, max_run_sec=5400,
                  command_args=args,
                  clear_tpm=True,
                  retries=2)

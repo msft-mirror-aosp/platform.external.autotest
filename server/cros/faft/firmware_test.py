@@ -232,7 +232,7 @@ class FirmwareTest(test.test):
             try:
                 # Check that the gsc console works before declaring the
                 # connection exists and enabling uart capture.
-                gsc_version = gsc.get_version()
+                gsc_version = gsc.get_full_version()
                 # If the ti50_version control exists but actually
                 # the version reports not ti50, reassign a cr50 instance
                 # instead.

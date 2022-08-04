@@ -93,6 +93,7 @@ class FingerprintTest(test.test):
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
             _FP_BOARD_NAME_BLOONCHIPPER: {
                     'hatch': 'bloonchipper_v2.0.4277-9f652bb3',
+                    'hatch-kernelnext': 'bloonchipper_v2.0.4277-9f652bb3',
                     'zork': 'bloonchipper_v2.0.5938-197506c1',
                     'volteer': 'bloonchipper_v2.0.5938-197506c1',
                     'brya': 'bloonchipper_v2.0.5938-197506c1',

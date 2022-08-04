@@ -4441,11 +4441,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         Returns:
             True if default adapter is enabled successfully. False otherwise.
         """
-        # Start manager and enable Floss
-        if not self.configure_floss(enabled=True):
-            return False
-
-        # Restarts the default adapter
+        # Start manager and enable Floss, then restart the default adapter.
         if not self.reset_on():
             return False
 

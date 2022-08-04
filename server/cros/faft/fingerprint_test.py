@@ -332,13 +332,23 @@ class FingerprintTest(test.test):
             self.host.upstart_restart(self._TIMBERSLIDE_UPSTART_JOB_NAME)
         running_ro_firmware_version = self.get_running_ro_firmware_version()
         running_rw_firmware_version = self.get_running_rw_firmware_version()
+        chrome_os_version = self.get_chromeos_version()
         logging.info('RO firmware running: {}'.format(
             running_ro_firmware_version))
         logging.info('RW firmware running: {}'.format(
             running_rw_firmware_version))
+        logging.info('The OS version is: {}'.format(chrome_os_version ))
 
 
         super(FingerprintTest, self).cleanup()
+
+    def get_chromeos_version(self):
+        """Returns the chrome os version."""
+        cmd = 'cat /etc/lsb-release | grep CHROMEOS_RELEASE_BUILDER_PATH'
+        result = self.run_cmd(cmd)
+        result = result.stdout
+        result = result.split("=")
+        return result[1].strip()
 
     def after_run_once(self):
         """Logs which iteration just ran."""

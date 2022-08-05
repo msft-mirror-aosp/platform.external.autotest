@@ -1,0 +1,35 @@
+# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Bluetooth Team"
+NAME = "bluetooth_avl"
+PURPOSE = "Collection of Bluetooth tests used for AVL"
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite runs the set of tests which is used for AVL qualification. It consists of two collection of tests
+(server tests and client tests) which are used by the team and partners for bringup and qualification
+of new Bluetooth chipsets.
+
+This suite is not scheduled in the lab.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

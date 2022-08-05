@@ -39,11 +39,13 @@ suite:av-analysis_trace_per-week
 suite:bluestreak-partners
 suite:bluestreak-pre-cq
 suite:bluetooth
+suite:bluetooth_avl
 suite:bluetooth_e2e
 suite:bluetooth_e2e_cq
 suite:bluetooth_flaky
 suite:bluetooth_floss
 suite:bluetooth_floss_cq
+suite:bluetooth_fw
 suite:bluetooth_mtbf
 suite:bluetooth_standalone
 suite:bluetooth_standalone_cq

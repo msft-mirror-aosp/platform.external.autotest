@@ -1,0 +1,32 @@
+# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Bluetooth Team"
+NAME = "bluetooth_fw"
+PURPOSE = "Bluetooth tests which checks firmware/hardware properties"
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite consists of Bluetooth tests that checks attributes that depend on firmware or hardware
+and not ChromeOS software.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

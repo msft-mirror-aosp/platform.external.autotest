@@ -1,10 +1,10 @@
-# Copyright (c) 2017 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
-NAME = "bluetooth_stress"
-PURPOSE = "Automated stress testing of Bluetooth."
+AUTHOR = "ChromeOS Bluetooth Team"
+NAME = "bluetooth_dep_feature"
+PURPOSE = "Collection of tests for features that use Bluetooth"
 
 TIME = "LONG"
 TEST_CATEGORY = "General"
@@ -12,11 +12,8 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite runs a series of stress tests against our Bluetooth hardware
-and software. It is the necessary to ensure Bluetooth works on a
-particular build or board
-
-Note: Tests in this suite is not included in suite:bluetooth/bluetooth_sa
+This suite contains tests for features which depends uses Bluetooth.
+Examples are Cros Device features like Nearby Share, Phone Hub etc.
 
 
 More documentation available at
@@ -24,14 +21,13 @@ https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connecti
 
 Contact: chromeos-bluetooth-engprod@google.com or
          chromeos-bt-team@google.com
-
 """
 
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
+args_dict['name'] = NAME
 args_dict['add_experimental'] = True
-args_dict['name'] = 'bluetooth_stress'
 args_dict['job'] = job
 
 dynamic_suite.reimage_and_run(**args_dict)

@@ -4,7 +4,7 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "bluetooth"
-PURPOSE = "Automated testing of Bluetooth."
+PURPOSE = "Automated tests for Bluetooth which requires peer devices"
 
 TIME = "LONG"
 TEST_CATEGORY = "General"
@@ -12,10 +12,21 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite runs the complete set of stable Bluetooth functional tests for our hardware and
-software.
+This suite runs the complete set of all stable Bluetooth functional tests for
+hardware and software that requires a peer device(s).
 
-suite:bluetooth is a combination of suite:bluetooth_standalone and suite:bluetooth_e2e
+bluetooth_sa is the equivalent suite for tests which does not require a peer
+device.
+
+All stable bluetooth tests will be added to one of bluetooth/bluetooth_sa
+suites except for stress tests, performance tests and MTBF tests.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+
 """
 
 import common

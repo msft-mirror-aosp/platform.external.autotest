@@ -4,7 +4,7 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "bluetooth_mtbf"
-PURPOSE = "Automated mtbf testing of Bluetooth."
+PURPOSE = "Automated MTBF testing of Bluetooth."
 
 TIME = "LONG"
 TEST_CATEGORY = "General"
@@ -12,14 +12,20 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite runs a series of bluetooth mtbf tests against our Bluetooth hardware
+This suite runs a series of bluetooth MTBF tests against our Bluetooth hardware
 and software.
+
+
+MTBF stands for  "Mean Time Between Failures"
+
+Note: Tests in this suite is not included in suite:bluetooth/bluetooth_sa
 
 More documentation available at
 https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
 
 Contact: chromeos-bluetooth-engprod@google.com or
          chromeos-bt-team@google.com
+
 """
 
 import common

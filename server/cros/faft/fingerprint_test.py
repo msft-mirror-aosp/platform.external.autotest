@@ -691,11 +691,17 @@ class FingerprintTest(test.test):
         """Returns RO firmware version used in factory."""
         board = self.get_fp_board()
         golden_version = self._GOLDEN_RO_FIRMWARE_VERSION_MAP.get(board)
-        if isinstance(golden_version, dict):
-            golden_version = golden_version.get(self.get_host_board())
         if golden_version is None:
             raise error.TestFail('Unable to get golden RO version for board: %s'
                                  % board)
+        if isinstance(golden_version, dict):
+            host_board = self.get_host_board()
+            golden_version = golden_version.get(host_board)
+            if golden_version is None:
+                raise error.TestFail('Unable to get golden RO version'
+                                     ' for host board: %s'
+                                     % host_board)
+
         if use_dev_signed_fw:
             golden_version = self._construct_dev_version(golden_version)
         return golden_version

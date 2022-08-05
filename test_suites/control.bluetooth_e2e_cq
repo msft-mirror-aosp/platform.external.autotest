@@ -14,6 +14,13 @@ TEST_TYPE = "Server"
 DOC = """
 This suite contains e2e bluetooth tests that require Bluetooth peers
 to be run in rfcell CQ
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+
 """
 
 import common

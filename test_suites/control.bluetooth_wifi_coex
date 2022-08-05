@@ -13,6 +13,11 @@ TEST_TYPE = "Server"
 
 DOC = """
 This suite tests Bluetooth/WiFi coexistence.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: cros-conn-test-team@google.com
 """
 
 import common

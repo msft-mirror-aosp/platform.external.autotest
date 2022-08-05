@@ -46,7 +46,6 @@ suite:bluetooth_floss
 suite:bluetooth_floss_cq
 suite:bluetooth_health
 suite:bluetooth_mtbf
-suite:bluetooth_qualification
 suite:bluetooth_standalone
 suite:bluetooth_standalone_cq
 suite:bluetooth_stress

@@ -8,7 +8,8 @@ TIME = "MEDIUM"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:power_daily"
+# Disabled due to 0% pass rate over 30 days. See b/241832890
+# ATTRIBUTES = "suite:power_daily"
 PY_VERSION = 3
 
 DOC = """

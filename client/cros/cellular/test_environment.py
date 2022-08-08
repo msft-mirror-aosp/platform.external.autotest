@@ -190,7 +190,8 @@ class CellularTestEnvironment(object):
         # priority over the previous failure.
         crash_files = self.detect_crash.get_new_crash_files()
         if any(cf for cf in crash_files if any(pr in cf for pr in [
-                'ModemManager', 'shill', 'qmi', 'mbim', 'hermes', 'modemfwd'
+                'ModemManager', 'shill', 'qmi', 'mbim', 'hermes', 'modemfwd',
+                'ath10k'
         ])):
             logging.info(
                     'A crash was encountered. '

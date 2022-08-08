@@ -369,7 +369,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS)
+                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
+                  supports_floss=True)
     def sr_while_discovering(self):
         """ Suspend while discovering. """
         device = self.devices['BLE_MOUSE'][0]
@@ -405,7 +406,10 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
         start_time = self.bluetooth_facade.get_device_utc_time()
 
-        self.test_set_discovery_filter({'Transport': 'auto'})
+        # SetDiscoveryFilter was used for catching a regression around suspend
+        # on BlueZ. It won't be implemented on Floss.
+        if not self.floss:
+            self.test_set_discovery_filter({'Transport': 'auto'})
         self.test_start_discovery()
         self.test_suspend_and_wait_for_sleep(suspend,
                                              sleep_timeout=SUSPEND_SEC)

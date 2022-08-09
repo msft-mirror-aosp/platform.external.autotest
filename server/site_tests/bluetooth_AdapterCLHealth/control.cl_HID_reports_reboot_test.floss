@@ -9,7 +9,8 @@ NAME = 'bluetooth_AdapterCLHealth.cl_HID_reports_reboot_test.floss'
 PURPOSE = ('Test bluetooth adapter receiving reports from '
            'bluetooth HID devices after a reboot.')
 CRITERIA = 'Adapter should receive HID events correctly.'
-ATTRIBUTES = 'suite:bluetooth_floss'
+# Disabled due to 0% pass rate over 30 days. See b/241833160
+# ATTRIBUTES = 'suite:bluetooth_floss'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

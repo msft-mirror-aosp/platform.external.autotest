@@ -20,7 +20,6 @@ This verifies Wilco-specific firmware behaviors.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['suite_dependencies'] = 'board:sarien'
 args_dict['name'] = 'faft_wilco'
 args_dict['add_experimental'] = True
 args_dict['job'] = job

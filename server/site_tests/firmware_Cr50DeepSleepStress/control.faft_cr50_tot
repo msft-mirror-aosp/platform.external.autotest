@@ -7,7 +7,8 @@ from autotest_lib.server import utils
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50DeepSleepStress.faft_cr50_tot"
 PURPOSE = "Verify deep sleep"
-ATTRIBUTES = "suite:faft_cr50_tot"
+# Disabled due to 0% pass rate over 30 days. See b/241833065
+# ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "LONG"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"

@@ -9,7 +9,8 @@ PURPOSE = "Play bar-coded video on ChromeOS DUT so it can be recorded for analys
 CRITERIA = """
 This test does not verify anything yet. Just plays a video so it can be recorded.
 """
-ATTRIBUTES = "suite:cros-av-analysis"
+# Disabled due to 0% pass rate over 30 days. See b/241832851
+# ATTRIBUTES = "suite:cros-av-analysis"
 TIME = "LONG"
 TEST_CATEGORY = "General"
 TEST_CLASS = "video"

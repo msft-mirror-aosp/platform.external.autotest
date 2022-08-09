@@ -9,7 +9,8 @@ TIME = "Short"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:rlz"
+# Disabled due to 0% pass rate over 30 days. See b/241833063
+# ATTRIBUTES = "suite:rlz"
 PY_VERSION = 3
 DOC = """
 This tests the RLZ client install (CAI) and first-use event (CAF) pings are

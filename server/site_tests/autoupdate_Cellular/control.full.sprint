@@ -9,7 +9,8 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:cellular_au"
+# Disabled due to 0% pass rate over 30 days. See b/241834722
+# ATTRIBUTES = "suite:cellular_au"
 DEPENDENCIES = "carrier:sprint"
 PY_VERSION = 3
 DOC = """

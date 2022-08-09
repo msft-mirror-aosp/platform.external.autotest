@@ -494,8 +494,10 @@ def count_cpu_cores():
 def count_cpu_threads():
     """number of threads per cpu"""
     cmd = "cat /sys/devices/system/cpu/present"
-    res = utils.system_output(cmd)
-    return int(res.split('-')[1]) + 1
+    ret = utils.run(cmd, ignore_status=True)
+    if ret.exit_status != 0:
+        return 0
+    return int(ret.stdout.split('-')[1]) + 1
 
 
 def get_cpu_vendor():
@@ -536,7 +538,10 @@ def get_gpu_model():
     """get gpu model from lshw"""
     cmds = ["lshw -businfo", "grep -i display"]
     cmd = " | ".join(cmds)
-    return utils.system_output(cmd).split('display')[1].strip()
+    ret = utils.run(cmd, ignore_status=True)
+    if ret.exit_status != 0:
+        return ''
+    return ret.stdout.split('display')[1].strip()
 
 
 def get_memory_type():
@@ -553,8 +558,13 @@ def get_memory_frequency():
             "cut -d ':' -f 2"
     ]
     cmd = " | ".join(cmds)
-    res = utils.system_output(cmd).strip().split('MT')[0]
-    return int(res)
+    ret = utils.run(cmd, ignore_status=True)
+    if ret.exit_status != 0:
+        return 0
+    res = ret.stdout.strip().split('MT')[0]
+    if res:
+      return int(res)
+    return 0
 
 # Returns total memory in kb
 def read_from_meminfo(key):

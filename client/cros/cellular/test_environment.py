@@ -189,10 +189,12 @@ class CellularTestEnvironment(object):
         # If a test fails and a crash is detected, the crash error takes
         # priority over the previous failure.
         crash_files = self.detect_crash.get_new_crash_files()
-        if any(cf for cf in crash_files if any(pr in cf for pr in [
-                'ModemManager', 'shill', 'qmi', 'mbim', 'hermes', 'modemfwd',
-                'ath10k'
-        ])):
+        critical_crash = any(cf for cf in crash_files if any(
+            pr in cf for pr in ['ModemManager', 'shill', 'qmi', 'mbim',
+                                'hermes', 'modemfwd']))
+        non_critical_crash = any(cf for cf in crash_files if any(
+            pr in cf for pr in ['ath10k']))
+        if critical_crash or (value is not None and non_critical_crash):
             logging.info(
                     'A crash was encountered. '
                     'Overriding the previous error: %s', value)

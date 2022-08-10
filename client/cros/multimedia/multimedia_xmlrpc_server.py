@@ -90,10 +90,9 @@ class MultimediaXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
 
     def __exit__(self, exception, value, traceback):
         """Clean up the resources."""
-        self._facades['audio'].cleanup()
-
-        if 'floss' in self._facades:
-            self._facades['floss'].cleanup()
+        for component in ('audio', 'floss', 'bluetooth'):
+            if component in self._facades:
+                self._facades[component].cleanup()
 
     def _dispatch(self, method, params):
         """Dispatches the method to the proper facade.

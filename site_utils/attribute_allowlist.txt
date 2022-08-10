@@ -3,7 +3,7 @@ suite:AFDO_page_replay
 suite:AFDO_record
 suite:android_wifi_interop
 suite:another_suite
-suite:appcompat
+suite:appcompat_default
 suite:appcompat_release
 suite:appcompat_smoke
 suite:appcompat_top_apps

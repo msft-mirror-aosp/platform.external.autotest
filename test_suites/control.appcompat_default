@@ -1,17 +1,17 @@
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = "Chromium OS team"
-NAME = "appcompat"
-PURPOSE = "Suite for automated app compat tests."
+NAME = "appcompat_default"
+PURPOSE = "Suite for automated appcompat default tests."
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite runs the app compat tests on various devices in the lab.
+This suite runs the appcompat default tests on various devices in the lab.
 """
 
 import common

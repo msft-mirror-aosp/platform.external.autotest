@@ -8,6 +8,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from autotest_lib.server import autotest
 from autotest_lib.server.site_tests.bluetooth_AdapterAdvHealth import (
         bluetooth_AdapterAdvHealth)
 from autotest_lib.server.site_tests.bluetooth_AdapterAdvMonitor import (
@@ -57,6 +58,15 @@ class bluetooth_AdapterQuickHealth(
         @param host: the DUT, usually a chromebook
         @param num_iterations: the number of rounds to execute the test
         """
+
+        # Run the client side QuickHealth test first. Otherwise, the cleanup
+        # process of server side QuickHealth may raise and the following client
+        # side tests are unable to run. The client side tests won't affect the
+        # server side tests as server side tests can reset the DUT when needed.
+        client_at = autotest.Autotest(host)
+        client_at.run_test('bluetooth_AdapterQuickHealthClient',
+                           num_iterations=num_iterations,
+                           flag=flag)
 
         # Init the quick test and start the package
         self.quick_test_init(host,

@@ -47,7 +47,7 @@ class firmware_FWMPDisableCCD(Cr50Test):
         except error.TestFail as e:
             logging.info(e)
             if fwmp_disabled_ccd:
-                if ("FWMP disabled 'ccd open'" in str(e) or
+                if ("FWMP disabled 'ccd open" in str(e) or
                     'Console unlock not allowed' in str(e)):
                     logging.info('FWMP successfully disabled ccd %s', level)
                     return

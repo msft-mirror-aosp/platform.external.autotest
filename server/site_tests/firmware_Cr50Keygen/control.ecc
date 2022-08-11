@@ -7,7 +7,7 @@ from autotest_lib.server import utils
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50Keygen.ecc"
 PURPOSE = "Verify ecc key generation."
-ATTRIBUTES = "suite:faft_cr50_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
+ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
 TEST_TYPE = "server"

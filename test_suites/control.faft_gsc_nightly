@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "faft_cr50_nightly"
-PURPOSE = "Suite to run faft cr50 tests nightly."
+NAME = "faft_gsc_nightly"
+PURPOSE = "Suite to run faft gsc tests nightly."
 
 TIME = "LONG"
 TEST_CATEGORY = "Stress"
@@ -12,11 +12,11 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This is the faft_cr50_nightly test suite.
+This is the faft_gsc_nightly test suite.
 
-This will verify cr50 images before they are released to ChromeOS. After the
+This will verify gsc images before they are released to ChromeOS. After the
 image is released and verified, we will update the chromeos image to include
-the new cr50 image.
+the new gsc image.
 
 @param build: The name of the image to test.
               Ex: x86-mario-release/R17-1412.33.0-a1-b29
@@ -30,7 +30,7 @@ the new cr50 image.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['name'] = 'faft_cr50_nightly'
+args_dict['name'] = 'faft_gsc_nightly'
 args_dict['add_experimental'] = True
 args_dict['job'] = job
 

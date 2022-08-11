@@ -7,7 +7,7 @@ from autotest_lib.server import utils
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50Open.ccd_open_restricted"
 PURPOSE = "Verify cr50 open"
-ATTRIBUTES = "suite:faft_cr50_nightly, suite:faft_cr50_pvt"
+ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_pvt"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "cr50:pvt, servo_state:WORKING"

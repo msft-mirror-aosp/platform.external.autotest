@@ -10,7 +10,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:faft_cr50_nightly, suite:faft_cr50_prepvt"
+ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt"
 PY_VERSION = 3
 
 DOC = """

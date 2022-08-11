@@ -167,7 +167,9 @@ class LinuxSystem(object):
         """Setup the logs for this system."""
         # Log the most recent message on the device.
         last_log_line = self.host.run('tail -1 /var/log/messages',
-                                      ignore_status=False).stdout
+                                      ignore_status=True).stdout
+        if not last_log_line:
+            return
         # We're trying to get the timestamp from:
         # 2014-07-23T17:29:34.961056+00:00 localhost kernel: blah blah blah
         self._log_start_timestamp = last_log_line.strip().partition(' ')[0]

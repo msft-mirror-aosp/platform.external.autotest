@@ -36,6 +36,7 @@ class IperfResult(object):
             DATA_TRANSFERED_INDEX = 7
             PERCENT_LOSS_INDEX = 12
 
+        NUM_FIELDS_IN_CLIENT_OUTPUT = 9
         NUM_FIELDS_IN_SERVER_OUTPUT = 14
 
         lines = results.splitlines()
@@ -67,6 +68,28 @@ class IperfResult(object):
                 percent_losses.append(
                         float(fields[IperfIndex.PERCENT_LOSS_INDEX]))
 
+        # OpenWrt iperf clients and the ones connected to OpenWrt iperf server
+        # don't show server side results for UDP. The fallback approach to
+        # calculate the throughput is to use client side results, although
+        # they are missing packet loss columns.
+        if config.udp and len(test_durations) == 0:
+            for line in lines:
+                fields = line.split(',')
+                # Negative Log ID values are used for sum total output which we
+                # don't use.
+                if float(fields[IperfIndex.LOG_ID_INDEX]) < 0:
+                    continue
+                if len(fields) > NUM_FIELDS_IN_CLIENT_OUTPUT:
+                    continue
+                total_data_bytes = float(
+                        fields[IperfIndex.DATA_TRANSFERED_INDEX])
+                test_interval = fields[IperfIndex.INTERVAL_INDEX]
+                test_start_end = test_interval.split('-')
+                duration = float(test_start_end[1]) - float(test_start_end[0])
+                test_durations.append(duration)
+                total_throughput += IperfResult._calculate_throughput(
+                        total_data_bytes, duration)
+
         # We should get one line of output for each port used in the test. In
         # rare cases, the data from one of the ports is not included in the
         # iperf output, so discard results in these cases.
@@ -80,7 +103,7 @@ class IperfResult(object):
             return None
 
         test_duration = math.fsum(test_durations) / len(test_durations)
-        if config.udp:
+        if config.udp and len(percent_losses):
             percent_loss = math.fsum(percent_losses) / len(percent_losses)
         else:
             percent_loss = None
@@ -334,16 +357,26 @@ class IperfRunner(object):
                 raise error.TestFail('Client device has no WiFi IP address, '\
                     'and no alternate interface was specified.')
 
-        # Assume minijail0 is on ${PATH}, but raise exception if it's not
-        # available on both server and client.
+        # minijail isn't available on openwrt, but is required on gale
+        # If minijail0 is on ${PATH} on any host, use it. If not,
+        # use the original invocation.
         self._minijail = 'minijail0'
-        path_utils.must_be_installed(self._minijail, host=self._server_host)
-        path_utils.must_be_installed(self._minijail, host=self._client_host)
+        self._server_minijail = ''
+        self._client_minijail = ''
+        if path_utils.get_install_path(self._minijail, host=self._server_host):
+            self._server_minijail = (
+                    "%s -v -k 'tmpfs,/tmp,tmpfs,"
+                    "MS_NODEV|MS_NOEXEC|MS_NOSUID,mode=755,size=10M'" %
+                    self._minijail)
+
+        if path_utils.get_install_path(self._minijail, host=self._client_host):
+            self._client_minijail = (
+                    "%s -v -k 'tmpfs,/tmp,tmpfs,"
+                    "MS_NODEV|MS_NOEXEC|MS_NOSUID,mode=755,size=10M'" %
+                    self._minijail)
+
         # Bind mount a tmpfs over /tmp, since netserver hard-codes the /tmp
         # path. netserver's log files aren't useful anyway.
-        self._minijail = ("%s -v -k 'tmpfs,/tmp,tmpfs,"
-                          "MS_NODEV|MS_NOEXEC|MS_NOSUID,mode=755,size=10M'" %
-                          self._minijail)
 
         self._config = config
         self._command_iperf_server = path_utils.must_be_installed(
@@ -381,15 +414,14 @@ class IperfRunner(object):
         """
         logging.info('Starting iperf server...')
         self._kill_iperf_server()
-        logging.debug('iperf server invocation: %s %s -s -B %s -D %s -w 320k',
-                      self._minijail, self._command_iperf_server,
-                      self._server_ip, self._udp_flag)
+        sock_buf = '-w %dk' % self._server_host._max_sock_buf if self._server_host._max_sock_buf else ''
+        server_invocation = "%s %s -s -B %s -D %s %s" % (
+                self._server_minijail, self._command_iperf_server,
+                self._server_ip, self._udp_flag, sock_buf)
+        logging.debug('iperf server invocation: %s', server_invocation)
         devnull = open(os.devnull, "w")
         # 320kB is the maximum socket buffer size on Gale (default is 208kB).
-        self._server_host.run('%s %s -s -B %s -D %s -w 320k' %
-                              (self._minijail, self._command_iperf_server,
-                               self._server_ip, self._udp_flag),
-                              stderr_tee=devnull)
+        self._server_host.run(server_invocation, stderr_tee=devnull)
         startup_time = time.time()
         # Ensure the endpoints aren't firewalled.
         protocol = 'udp' if self._config.udp else 'tcp'

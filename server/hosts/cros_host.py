@@ -432,6 +432,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self._ssh_options = ssh_options
         self.health_profile = None
         self._default_power_method = None
+        self._max_sock_buf = 320
         dut_health_profile = device_health_profile.DeviceHealthProfile(
                 hostname=self.hostname,
                 host_info=self.host_info_store.get(),

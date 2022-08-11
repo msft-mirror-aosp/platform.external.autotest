@@ -145,6 +145,8 @@ class AbstractSSHHost(remote.RemoteHost):
         self._cached_up_status = None
         # The timestamp when the value of _cached_up_status is set.
         self._cached_up_status_updated = None
+        # The maximum size of socket buffer in KB
+        self._max_sock_buf = None
 
 
     @property

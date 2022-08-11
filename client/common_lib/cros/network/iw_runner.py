@@ -1094,6 +1094,27 @@ class IwRunner(object):
         return list(matching_iwbsses)
 
 
+    def get_configured_antenna_bitmap(self, phy):
+        """Get configured antenna chain mask on given phy (radio)
+
+        This function will return a tuple (tx_bitmap, rx_bitmap)
+        representing the configured chain mask for |phy|.
+
+        @param phy: phy name
+
+        """
+        command = '%s phy %s info' % (self._command_iw, phy)
+        output = self._run(command).stdout
+
+        configed_antennas = re.search(
+                '\s*Configured Antennas: TX (\S+)'
+                ' RX (\S+)', output, re.MULTILINE)
+        if configed_antennas:
+            configed_phy_tx_antennas = int(configed_antennas.group(1), 16)
+            configed_phy_rx_antennas = int(configed_antennas.group(2), 16)
+            return (configed_phy_tx_antennas, configed_phy_rx_antennas)
+        return (0, 0)
+
     def set_antenna_bitmap(self, phy, tx_bitmap, rx_bitmap):
         """Set antenna chain mask on given phy (radio).
 
@@ -1106,9 +1127,13 @@ class IwRunner(object):
         @param rx_bitmap: bitmap of allowed antennas to use for RX
 
         """
-        command = '%s phy %s set antenna %d %d' % (self._command_iw, phy,
-                                                   tx_bitmap, rx_bitmap)
-        self._run(command)
+        configed_tx_bitmap, configed_rx_bitmap = self.get_configured_antenna_bitmap(
+                phy)
+
+        if configed_tx_bitmap != tx_bitmap or configed_rx_bitmap != rx_bitmap:
+            command = '%s phy %s set antenna %d %d' % (self._command_iw, phy,
+                                                       tx_bitmap, rx_bitmap)
+            self._run(command)
 
 
     def get_event_logger(self):

@@ -130,11 +130,16 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         self.write_perf_keyval({signal_description: signal_level})
         for test_type in self.PERF_TEST_TYPES:
             config = manager.get_config(test_type)
-            pcap_lan_iface = interface.Interface(self._pcap_lan_iface_name,
-                                                 self.context.pcap_host.host)
+            if not self._use_2way_setup:
+                peer_router = self.context.pcap_host
+                pcap_lan_iface = interface.Interface(
+                        self._pcap_lan_iface_name, self.context.pcap_host.host)
+            else:
+                peer_router = self.context.router
+                pcap_lan_iface = None
             session = manager.get_session(test_type,
                                           self.context.client,
-                                          self.context.pcap_host,
+                                          peer_router,
                                           peer_device_interface=pcap_lan_iface)
             ch_width = ap_config.channel_width
             if ch_width is None:

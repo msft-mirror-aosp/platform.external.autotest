@@ -21,6 +21,7 @@ from autotest_lib.server.hosts import cros_host
 from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import jetstream_host
 from autotest_lib.server.hosts import moblab_host
+from autotest_lib.server.hosts import openwrt_host
 from autotest_lib.server.hosts import gce_host
 from autotest_lib.server.hosts import gsc_devboard_host
 from autotest_lib.server.hosts import ssh_host
@@ -43,14 +44,17 @@ _started_hostnames = set()
 # A list of all the possible host types, ordered according to frequency of
 # host types in the lab, so the more common hosts don't incur a repeated ssh
 # overhead in checking for less common host types.
-host_types = [cros_host.CrosHost, labstation_host.LabstationHost,
-              moblab_host.MoblabHost, jetstream_host.JetstreamHost,
-              gce_host.GceHost]
+host_types = [
+        cros_host.CrosHost, labstation_host.LabstationHost,
+        moblab_host.MoblabHost, jetstream_host.JetstreamHost, gce_host.GceHost,
+        openwrt_host.OpenWrtHost
+]
 OS_HOST_DICT = {
         'android': android_host.AndroidHost,
         'cros': cros_host.CrosHost,
         'jetstream': jetstream_host.JetstreamHost,
         'moblab': moblab_host.MoblabHost,
+        'openwrt': openwrt_host.OpenWrtHost,
         'labstation': labstation_host.LabstationHost
 }
 
@@ -58,6 +62,7 @@ LOOKUP_DICT = {
         'CrosHost': cros_host.CrosHost,
         'JetstreamHost': jetstream_host.JetstreamHost,
         'MoblabHost': moblab_host.MoblabHost,
+        'OpenWrtHost': openwrt_host.OpenWrtHost,
         'LabstationHost': labstation_host.LabstationHost
 }
 

@@ -26,6 +26,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
     DEFAULT_PCAP_LAN_IP_ADDRESS = "192.168.1.51"
     DEFAULT_ROUTER_LAN_IFACE_NAME = "eth1"
     DEFAULT_PCAP_LAN_IFACE_NAME = "eth1"
+    DEFAULT_2WAY_ROUTER_LAN_IFACE_NAME = "eth0"
+    DEFAULT_2WAY_PCAP_LAN_IFACE_NAME = "eth0"
 
     def parse_additional_arguments(self, commandline_args):
         """Hook into super class to take control files parameters.
@@ -38,14 +40,20 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         def get_arg_value_or_default(attr, default): return commandline_args[
             attr] if attr in commandline_args else default
 
+        self._use_2way_setup = get_arg_value_or_default(
+                'use_2way_setup', False)
+
         self._router_lan_ip_addr = get_arg_value_or_default(
             'router_lan_ip_addr', self.DEFAULT_ROUTER_LAN_IP_ADDRESS)
         self._router_lan_iface_name = get_arg_value_or_default(
-            'router_lan_iface_name', self.DEFAULT_ROUTER_LAN_IFACE_NAME)
+                'router_lan_iface_name',
+                self.DEFAULT_2WAY_ROUTER_LAN_IFACE_NAME if self._use_2way_setup
+                else self.DEFAULT_ROUTER_LAN_IFACE_NAME)
         self._pcap_lan_ip_addr = get_arg_value_or_default(
             'pcap_lan_ip_addr', self.DEFAULT_PCAP_LAN_IP_ADDRESS)
         self._pcap_lan_iface_name = get_arg_value_or_default(
-            'pcap_lan_iface_name', self.DEFAULT_PCAP_LAN_IFACE_NAME)
+                'pcap_lan_iface_name', self.DEFAULT_2WAY_PCAP_LAN_IFACE_NAME
+                if self._use_2way_setup else self.DEFAULT_PCAP_LAN_IFACE_NAME)
 
         self.parse_governor(commandline_args)
 
@@ -74,7 +82,13 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         """Ensure that the router and pcap device in the cell have a direct
         connection available over their respective LAN ports. Raises a test NA
         error if this connection cannot be verified.
+
+        If |_use_2way_setup| is True, the above verification is skipped.
         """
+
+        if self._use_2way_setup:
+            logging.info('User sets use_2way_setup=True, skip 3-way setup')
+            return
 
         with ip_config_context_manager.IpConfigContextManager() as ip_context:
             try:
@@ -112,14 +126,14 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
                                            self._pcap_lan_ip_addr,
                                            self._pcap_lan_iface_name)
         if add_ip_route:
-                ip_context.add_ip_route(self.context.client.host,
-                                        self._pcap_lan_ip_addr,
-                                        self.context.client.wifi_if,
-                                        self.context.router.wifi_ip)
-                ip_context.add_ip_route(self.context.pcap_host.host,
-                                        self.context.client.wifi_ip,
-                                        self._router_lan_iface_name,
-                                        self._router_lan_ip_addr)
+            ip_context.add_ip_route(self.context.client.host,
+                                    self._pcap_lan_ip_addr,
+                                    self.context.client.wifi_if,
+                                    self.context.router.wifi_ip)
+            ip_context.add_ip_route(self.context.pcap_host.host,
+                                    self.context.client.wifi_ip,
+                                    self._router_lan_iface_name,
+                                    self._router_lan_ip_addr)
 
     def parse_governor(self, commandline_args):
         """Validate governor string.
@@ -211,7 +225,8 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
             with ip_config_context_manager.IpConfigContextManager(
             ) as ip_context:
 
-                self._setup_ip_config(ip_context)
+                if not self._use_2way_setup:
+                    self._setup_ip_config(ip_context)
 
                 manager = perf_manager.PerfTestManager(self._use_iperf)
                 # Flag a test error if we disconnect for any reason.

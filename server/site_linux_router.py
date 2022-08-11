@@ -102,7 +102,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
     """
 
     KNOWN_TEST_PREFIX = 'network_WiFi_'
-    UP_INTERFACES = ("eth0", "lo")
+    UP_INTERFACES = ("eth0", "lo", "br-lan", "lan")
     STARTUP_TIMEOUT_SECONDS = 30
     SUFFIX_LETTERS = string.ascii_lowercase + string.digits
     SUBNET_PREFIX_OCTETS = (192, 168)
@@ -315,8 +315,9 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         @raise error.TestFail if there was a bad config or hostapd terminated.
         """
         success = self.router.run(
-            'grep "Setup of interface done" %s' % log_file,
-            ignore_status=True).exit_status == 0
+                'grep -e "Setup of interface done" -e "AP-ENABLED" %s' %
+                log_file,
+                ignore_status=True).exit_status == 0
         if success:
             return True
 
@@ -1073,8 +1074,8 @@ class LinuxRouter(site_linux_system.LinuxSystem):
                                     (self.cmd_ip, output.stderr))
         content = output.stdout.strip().split('\n')
         for line in content:
-           interface_name = self.get_interface_name(line)
-           if interface_name:
+            interface_name = self.get_interface_name(line)
+            if interface_name:
                 all_interfaces.append(interface_name)
 
         for interface_name in all_interfaces:

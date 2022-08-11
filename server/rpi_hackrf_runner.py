@@ -112,15 +112,15 @@ class RPiHackRFRunner(site_linux_rpi.LinuxRPi):
             self._command_hackrf_info = path_utils.must_be_installed(
                     'hackrf_info',
                     host=self.host)
-        hackrf_information = self.host.run(self._command_hackrf_info,
-                                           ignore_status=True).stdout
-        if 'No HackRF boards found' in hackrf_information:
-            raise error.TestNAError('Could not identify any connected HackRFs.')
 
         # Stop broadcasting RF data before extracting the firmware version
         # because hackrf_info doesn't display firmware version unless the HackRF
         # is freed up.
         self.stop_broadcasting_file()
+        hackrf_information = self.host.run(self._command_hackrf_info,
+                                           ignore_status=True).stdout
+        if 'No HackRF boards found' in hackrf_information:
+            raise error.TestNAError('Could not identify any connected HackRFs.')
         # Extract the serial number and firmware version of first HackRF.
         first_hackrf = hackrf_information.split('Found HackRF')[1]
         for line in first_hackrf.split('\n'):
@@ -188,7 +188,7 @@ class RPiHackRFRunner(site_linux_rpi.LinuxRPi):
         transmit_command += ' -n %s' % str(num_samples)
         transmit_command += ' -s %s' % str(sample_rate)
         if frequency: transmit_command += ' -f %s' % str(frequency)
-        if gain:
+        if gain != None:
             if gain < 0 or gain > 47 or not isinstance(gain, int):
                 logging.error('Please specify an integer gain in the 0-47dB'
                               'range')

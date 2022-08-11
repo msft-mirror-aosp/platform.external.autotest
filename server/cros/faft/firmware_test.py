@@ -887,7 +887,7 @@ class FirmwareTest(test.test):
         if not required_cap:
             return True
 
-        if target not in ['ec', 'cr50']:
+        if target not in ['ec', 'cr50', 'minidiag']:
             raise error.TestError('Invalid capability target %r' % target)
 
         for cap in required_cap:
@@ -929,6 +929,24 @@ class FirmwareTest(test.test):
                 logging.warning('Requires Chrome Cr50 to run this test.')
             return False
         return self._check_capability('cr50', required_cap, suppress_warning)
+
+
+    def check_minidiag_capability(self, required_cap=None,
+                                  suppress_warning=False):
+        """Check if current platform has required MiniDiag capabilities.
+
+        @param required_cap: A list containing required MiniDiag capabilities.
+                             Pass in None to only check for presence of
+                             MiniDiag.
+        @param suppress_warning: True to suppress any warning messages.
+        @return: True if requirements are met. Otherwise, False.
+        """
+        if not self.faft_config.minidiag_enabled:
+            if not suppress_warning:
+                logging.warning('Requires MiniDiag to run this test.')
+            return False
+        return self._check_capability('minidiag', required_cap,
+                                      suppress_warning)
 
 
     def check_root_part_on_non_recovery(self, part):

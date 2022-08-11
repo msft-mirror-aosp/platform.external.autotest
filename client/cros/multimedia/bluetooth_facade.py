@@ -297,6 +297,8 @@ class BluetoothBaseFacadeLocal(object):
     # Upstart job name for ChromeOS Audio daemon
     CRAS_JOB = "cras"
 
+    BTMON_STOP_DELAY_SECS = 3
+
     # The VID:PID recorded here is the PCI vid:pid. lspci -nn command can be
     # used to find it.
     CHIPSET_TO_VIDPID = {
@@ -342,6 +344,15 @@ class BluetoothBaseFacadeLocal(object):
 
         # Set up cras test client for audio tests
         self._cras_test_client = cras_utils.CrasTestClient()
+
+        # Open the Bluetooth Raw socket to the kernel which provides us direct,
+        # raw, access to the HCI controller.
+        self._raw_socket = bluetooth_socket.BluetoothRawSocket()
+
+        # Initialize a btmon object to record bluetoothd's activity.
+        self.btmon = output_recorder.OutputRecorder(
+                ['btmon', '-c', 'never'],
+                stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
 
     def configure_floss(self, enabled):
         """Start and configure the Floss manager daemon.
@@ -1654,6 +1665,122 @@ class BluetoothBaseFacadeLocal(object):
         """
         return os.path.exists(self.BTMANGERD_FILE_PATH)
 
+    @property
+    def _control_socket(self):
+        # BluetoothControlSocket failed to send after idling for a few seconds,
+        # so we always create new sockets whenever needed. See b/137603211.
+        return bluetooth_socket.BluetoothControlSocket()
+
+    def read_version(self):
+        """Reads the version of the management interface from the Kernel.
+
+        @return the information as a JSON-encoded tuple of:
+          ( version, revision )
+
+        """
+        return json.dumps(self._control_socket.read_version())
+
+    def read_supported_commands(self):
+        """Reads the set of supported commands from the Kernel.
+
+        @return the information as a JSON-encoded tuple of:
+          ( commands, events )
+
+        """
+        return json.dumps(self._control_socket.read_supported_commands())
+
+    def read_index_list(self):
+        """Reads the list of currently known controllers from the Kernel.
+
+        @return the information as a JSON-encoded array of controller indexes.
+
+        """
+        return json.dumps(self._control_socket.read_index_list())
+
+    def read_info(self):
+        """Reads the adapter information from the Kernel.
+
+        @return the information as a JSON-encoded tuple of:
+          ( address, bluetooth_version, manufacturer_id,
+            supported_settings, current_settings, class_of_device,
+            name, short_name )
+
+        """
+        return json.dumps(self._control_socket.read_info(0))
+
+    def add_device(self, address, address_type, action):
+        """Adds a device to the Kernel action list.
+
+        @param address: Address of the device to add.
+        @param address_type: Type of device in @address.
+        @param action: Action to take.
+
+        @return on success, a JSON-encoded typle of:
+          ( address, address_type ), None on failure.
+
+        """
+        return json.dumps(
+                self._control_socket.add_device(0, address, address_type,
+                                                action))
+
+    def remove_device(self, address, address_type):
+        """Removes a device from the Kernel action list.
+
+        @param address: Address of the device to remove.
+        @param address_type: Type of device in @address.
+
+        @return on success, a JSON-encoded typle of:
+          ( address, address_type ), None on failure.
+
+        """
+        return json.dumps(
+                self._control_socket.remove_device(0, address, address_type))
+
+    def get_dev_info(self):
+        """Reads raw HCI device information.
+
+        @return JSON-encoded tuple of:
+                (index, name, address, flags, device_type, bus_type,
+                       features, pkt_type, link_policy, link_mode,
+                       acl_mtu, acl_pkts, sco_mtu, sco_pkts,
+                       err_rx, err_tx, cmd_tx, evt_rx, acl_tx, acl_rx,
+                       sco_tx, sco_rx, byte_rx, byte_tx) on success,
+                None on failure.
+
+        """
+        return json.dumps(self._raw_socket.get_dev_info(0))
+
+    def btmon_start(self):
+        """Starts btmon monitoring."""
+        self.btmon.start()
+
+    def btmon_stop(self):
+        """Stops btmon monitoring."""
+        self.btmon.stop()
+
+    def btmon_get(self, search_str, start_str):
+        """Gets btmon output contents.
+
+        @param search_str: only lines with search_str would be kept.
+        @param start_str: all lines before the occurrence of start_str would be
+                filtered.
+
+        @returns: the recorded btmon output.
+
+        """
+        return self.btmon.get_contents(search_str=search_str,
+                                       start_str=start_str)
+
+    def btmon_find(self, pattern_str):
+        """Finds if a pattern string exists in btmon output.
+
+        @param pattern_str: the pattern string to find.
+
+        @returns: True on success. False otherwise.
+
+        """
+        return self.btmon.find(pattern_str)
+
 
 class BluezPairingAgent:
     """The agent handling the authentication process of bluetooth pairing.
@@ -1762,8 +1889,6 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
     DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
     AGENT_PATH = '/test/agent'
 
-    BTMON_STOP_DELAY_SECS = 3
-
     # Timeout for how long we'll wait for BlueZ and the Adapter to show up
     # after reset.
     ADAPTER_TIMEOUT = 30
@@ -1778,16 +1903,9 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         # Init the BaseFacade first
         super(BluezFacadeLocal, self).__init__()
 
-        # Open the Bluetooth Raw socket to the kernel which provides us direct,
-        # raw, access to the HCI controller.
-        self._raw = bluetooth_socket.BluetoothRawSocket()
-
-        # Open the Bluetooth Control socket to the kernel which provides us
-        # raw management access to the Bluetooth Host Subsystem. Read the list
-        # of adapter indexes to determine whether or not this device has a
-        # Bluetooth Adapter or not.
-        self._control = bluetooth_socket.BluetoothControlSocket()
-        self._has_adapter = len(self._control.read_index_list()) > 0
+        # Read the list of adapter indexes to determine whether or not this
+        # device has a Bluetooth Adapter or not.
+        self._has_adapter = len(self._control_socket.read_index_list()) > 0
 
         # Create an Advertisement Monitor App Manager instance.
         # This needs to be created before making any dbus connections as
@@ -1810,11 +1928,6 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         self._pairing_agent = None
         # The default capability of the agent.
         self._capability = 'KeyboardDisplay'
-
-        # Initialize a btmon object to record bluetoothd's activity.
-        self.btmon = output_recorder.OutputRecorder(
-                ['btmon', '-c', 'never'],
-                stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
 
         self.advertisements = []
         self.advmon_interleave_logger = logger_helper.InterleaveLogger()
@@ -2062,7 +2175,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         self._adapter_path = None
 
         # Re-check kernel to make sure adapter is available
-        self._has_adapter = len(self._control.read_index_list()) > 0
+        self._has_adapter = len(self._control_socket.read_index_list()) > 0
 
         if self._bluez is None:
             logging.warning('Bluez not found!')
@@ -2465,93 +2578,6 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         """
         return str(self._get_adapter_properties().get('Class', ''))
 
-    def read_version(self):
-        """Read the version of the management interface from the Kernel.
-
-        @return the information as a JSON-encoded tuple of:
-          ( version, revision )
-
-        """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.read_version())
-
-    def read_supported_commands(self):
-        """Read the set of supported commands from the Kernel.
-
-        @return the information as a JSON-encoded tuple of:
-          ( commands, events )
-
-        """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.read_supported_commands())
-
-    def read_index_list(self):
-        """Read the list of currently known controllers from the Kernel.
-
-        @return the information as a JSON-encoded array of controller indexes.
-
-        """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.read_index_list())
-
-    def read_info(self):
-        """Read the adapter information from the Kernel.
-
-        @return the information as a JSON-encoded tuple of:
-          ( address, bluetooth_version, manufacturer_id,
-            supported_settings, current_settings, class_of_device,
-            name, short_name )
-
-        """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.read_info(0))
-
-    def add_device(self, address, address_type, action):
-        """Add a device to the Kernel action list.
-
-        @param address: Address of the device to add.
-        @param address_type: Type of device in @address.
-        @param action: Action to take.
-
-        @return on success, a JSON-encoded typle of:
-          ( address, address_type ), None on failure.
-
-        """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.add_device(0, address, address_type,
-                                              action))
-
-    def remove_device(self, address, address_type):
-        """Remove a device from the Kernel action list.
-
-        @param address: Address of the device to remove.
-        @param address_type: Type of device in @address.
-
-        @return on success, a JSON-encoded typle of:
-          ( address, address_type ), None on failure.
-
-        """
-        #TODO(howardchung): resolve 'cannot allocate memory' error when
-        #                   BluetoothControlSocket idle too long(about 3 secs)
-        #                   (b:137603211)
-        _control = bluetooth_socket.BluetoothControlSocket()
-        return json.dumps(_control.remove_device(0, address, address_type))
-
     @dbus_safe(False)
     def _get_devices(self):
         """Read information about remote devices known to the adapter.
@@ -2711,20 +2737,6 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @return: List of str indicates the supported LE roles.
         """
         return self._get_adapter_properties().get('Roles', [])
-
-    def get_dev_info(self):
-        """Read raw HCI device information.
-
-        @return JSON-encoded tuple of:
-                (index, name, address, flags, device_type, bus_type,
-                       features, pkt_type, link_policy, link_mode,
-                       acl_mtu, acl_pkts, sco_mtu, sco_pkts,
-                       err_rx, err_tx, cmd_tx, evt_rx, acl_tx, acl_rx,
-                       sco_tx, sco_rx, byte_rx, byte_tx) on success,
-                None on failure.
-
-        """
-        return json.dumps(self._raw.get_dev_info(0))
 
     @dbus_safe(None, return_error=True)
     def get_supported_capabilities(self):
@@ -3199,37 +3211,6 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
             return False
 
         return self._device_services_resolved(device)
-
-    def btmon_start(self):
-        """Start btmon monitoring."""
-        self.btmon.start()
-
-    def btmon_stop(self):
-        """Stop btmon monitoring."""
-        self.btmon.stop()
-
-    def btmon_get(self, search_str, start_str):
-        """Get btmon output contents.
-
-        @param search_str: only lines with search_str would be kept.
-        @param start_str: all lines before the occurrence of start_str would be
-                filtered.
-
-        @returns: the recorded btmon output.
-
-        """
-        return self.btmon.get_contents(search_str=search_str,
-                                       start_str=start_str)
-
-    def btmon_find(self, pattern_str):
-        """Find if a pattern string exists in btmon output.
-
-        @param pattern_str: the pattern string to find.
-
-        @returns: True on success. False otherwise.
-
-        """
-        return self.btmon.find(pattern_str)
 
     def dbus_method_with_handlers(self, dbus_method, reply_handler,
                                   error_handler, *args, **kwargs):

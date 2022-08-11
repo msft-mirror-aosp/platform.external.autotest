@@ -1233,7 +1233,10 @@ class BluetoothAdapterTests(test.test):
 
         self.start_new_btmon()
         self.start_new_usbmon(reboot=True)
-
+        # Chrome always sets the BT daemon back to default on boot. Use
+        # test_is_facade_valid() to restart the desired Bluetooth daemon if
+        # needed.
+        self.test_is_facade_valid()
 
     def _wait_till_condition_holds(self, func, method_name,
                                    timeout=DEFAULT_HOLD_TIMEOUT_SECS,

@@ -707,8 +707,8 @@ class BluetoothAdapterTests(test.test):
     DEFAULT_HOLD_SLEEP_SECS = 1
 
     # Default suspend time in seconds for suspend resume.
-    SUSPEND_TIME_SECS=10
-    SUSPEND_ENTER_SECS=5
+    SUSPEND_TIME_SECS=15
+    SUSPEND_ENTER_SECS=10
     RESUME_TIME_SECS=30
     RESUME_INTERNAL_TIMEOUT_SECS = 180
 

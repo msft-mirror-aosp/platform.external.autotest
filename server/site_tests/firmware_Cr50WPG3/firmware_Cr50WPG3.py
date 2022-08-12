@@ -16,44 +16,61 @@ class firmware_Cr50WPG3(Cr50Test):
 
     WAIT_FOR_STATE = 10
     WP_REGEX = r'write protect is ((en|dis)abled)\.'
-    FLASHROM_WP_CMD = ('sudo flashrom -p raiden_debug_spi:target=AP,serial=%s '
-                       '--wp-status')
+    FLASHROM_WP_CMD = 'sudo flashrom -p raiden_debug_spi:target=AP,serial=%s '
+    STATUS_CMD = '--wp-status'
+    WP_ENABLE_CMD = '--wp-enable'
+    WP_DISABLE_CMD = '--wp-disable'
+    DISABLED = 'disabled'
+    ENABLED = 'enabled'
 
     def cleanup(self):
         """Reenable servo wp."""
-        self.cr50.send_command('rddkeepalive disable')
-        self.cr50.send_command('ccdblock IGNORE_SERVO disable')
-        self.servo.enable_main_servo_device()
+        self.cr50.send_command('ccd testlab open')
         try:
+            # Reset the WP state.
             if hasattr(self, '_start_fw_wp_vref'):
+                self.cr50.send_command('ccdblock IGNORE_SERVO enable')
+                self.cr50.set_wp_state('disable atboot')
+                self.set_sw_wp(self.WP_DISABLE_CMD)
+                self.cr50.set_wp_state('follow_batt_pres atboot')
                 self.servo.set_nocheck('fw_wp_state', self._start_fw_wp_state)
                 self.servo.set_nocheck('fw_wp_vref', self._start_fw_wp_vref)
+            self.cr50.send_command('rddkeepalive disable')
+            self.cr50.send_command('ccdblock IGNORE_SERVO disable')
+            self.servo.enable_main_servo_device()
         finally:
             super(firmware_Cr50WPG3, self).cleanup()
 
-
     def generate_flashrom_wp_cmd(self):
         """Use the cr50 serialname to generate the flashrom command."""
-        self._flashrom_wp_cmd = self.FLASHROM_WP_CMD % self.cr50.get_serial()
-
+        self._flashrom_cmd = self.FLASHROM_WP_CMD % self.cr50.get_serial()
 
     def get_wp_state(self):
         """Returns 'on' if write protect is enabled. 'off' if it's disabled."""
-        flashrom_output = self.servo.system_output(self._flashrom_wp_cmd)
-        match = re.search(self.WP_REGEX, flashrom_output)
-        logging.info('WP is %s', match.group(1) if match else 'UKNOWN')
-        logging.info('flashrom output\n%s', flashrom_output)
-        if not match:
+        output = self.servo.system_output(
+                self._flashrom_cmd + self.STATUS_CMD)
+        m = re.search(self.WP_REGEX, output)
+        logging.info('WP is %s', m.group(1) if m else 'UKNOWN')
+        logging.info('flashrom output\n%s', output)
+        if not m:
             raise error.TestError('Unable to find WP status in flashrom output')
-        return match.group(1)
+        return m.group(1)
 
+    def set_sw_wp(self, cmd):
+        """Set SW WP."""
+        time.sleep(self.cr50.SHORT_WAIT)
+        output = self.servo.system_output(self._flashrom_cmd + cmd,
+                ignore_status=True)
+        logging.debug('output: %r', output)
+        time.sleep(self.cr50.SHORT_WAIT)
+        return self.get_wp_state()
 
     def run_once(self):
         """Verify WP in G3."""
+        if not self.servo.get_ccd_servo_device():
+            raise error.TestNAError('Only supported with dual-v4')
         if self.check_cr50_capability(['wp_on_in_g3'], suppress_warning=True):
             raise error.TestNAError('WP not pulled up in G3')
-        if not self.servo.dts_mode_is_valid():
-            raise error.TestNAError('Type-C servo v4 required to check wp.')
         try:
             self.cr50.ccd_enable(True)
         except:
@@ -75,14 +92,26 @@ class firmware_Cr50WPG3(Cr50Test):
             self.servo.set_nocheck('fw_wp_state', 'reset')
             self.servo.set_nocheck('fw_wp_vref', 'off')
 
-        # disable write protect
-        self.cr50.send_command('wp disable atboot')
+        # Disable HW WP.
+        self.cr50.set_wp_state('disable atboot')
+
+        # Disable SW WP.
+        wp_state = self.set_sw_wp(self.WP_DISABLE_CMD)
+        # Bring the DUT up since flashrom commands put the EC in reset.
+        self._try_to_bring_dut_up()
+        if wp_state != self.DISABLED:
+            raise error.TestFail('Unable to disable SW WP with HW WP enabled')
 
         # Verify we can see it's disabled. This should always work. If it
         # doesn't, it may be a setup issue.
         logging.info('Checking WP from DUT')
-        if self.checkers.crossystem_checker({'wpsw_cur': '1'}):
+        if not self.checkers.crossystem_checker({'wpsw_cur': '0'}):
             raise error.TestError("WP isn't disabled in S0")
+
+        # Enable HW WP.
+        self.cr50.set_wp_state('enable atboot')
+        if not self.checkers.crossystem_checker({'wpsw_cur': '1'}):
+            raise error.TestError("WP isn't enabled in S0")
 
         self.faft_client.system.run_shell_command('poweroff')
         time.sleep(self.WAIT_FOR_STATE)
@@ -90,9 +119,27 @@ class firmware_Cr50WPG3(Cr50Test):
             self.ec.send_command('hibernate')
             time.sleep(self.WAIT_FOR_STATE)
 
-        servo_wp_g3 = self.get_wp_state()
+        # SW WP can be enabled at any time.
+        logging.info('Check enabling SW WP with HW WP enabled')
+        if self.set_sw_wp(self.WP_ENABLE_CMD) != self.ENABLED:
+            self.cr50.reboot()
+            self._try_to_bring_dut_up()
+            raise error.TestFail('Unable to enable wp in G3')
+
+        # It shouldn't be possible to disable SW WP with HW WP enabled.
+        logging.info('Check disabling SW WP with HW WP enabled')
+        if self.set_sw_wp(self.WP_DISABLE_CMD) == self.DISABLED:
+            self.cr50.reboot()
+            self._try_to_bring_dut_up()
+            raise error.TestFail('Disabled SW WP with HW WP enabled')
+
+        # It should be possible to disable SW WP after HW WP is disabled.
+        logging.info('Check disabling SW WP with HW WP disabled')
+        # Disable HW WP.
+        self.cr50.set_wp_state('disable atboot')
+        # Verify setting SW WP.
+        if self.set_sw_wp(self.WP_DISABLE_CMD) != self.DISABLED:
+            self.cr50.reboot()
+            self._try_to_bring_dut_up()
+            raise error.TestFail('Disabled SW WP with HW WP enabled')
         self._try_to_bring_dut_up()
-        # Some boards don't power the EC_WP signal in G3, so it can't be
-        # disabled by cr50 in G3.
-        if servo_wp_g3 == 'enabled':
-            raise error.TestFail("WP can't be disabled by Cr50 in G3")

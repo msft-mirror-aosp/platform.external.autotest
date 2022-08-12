@@ -346,6 +346,9 @@ class BluetoothQuickTests(test.test,
 
     def pretest_function(self):
         """Runs before each test."""
+        if not self.bluetooth_facade.has_adapter():
+            raise error.TestNAError('Adapter is missing')
+
         self.bluetooth_facade.reset_on()
         time.sleep(self.TEST_SLEEP_SECS)
 

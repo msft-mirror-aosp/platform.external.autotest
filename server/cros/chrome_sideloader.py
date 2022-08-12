@@ -3,25 +3,40 @@
 # found in the LICENSE file.
 
 import base64
+import json
 import logging
 import os
-import json
 import random
+import requests
 import stat
 import string
+import subprocess
+import tempfile
+import zipfile
+
 
 # Shell command to force unmount a mount point if it is mounted
 FORCED_UMOUNT_DIR_IF_MOUNTPOINT_CMD = (
-        'if mountpoint -q %(dir)s; then umount -l %(dir)s; fi')
+    'if mountpoint -q %(dir)s; then umount -l %(dir)s; fi')
 # Shell command to set exec and suid flags
 SET_MOUNT_FLAGS_CMD = 'mount -o remount,exec,suid %s'
 # Shell command to send SIGHUP to dbus daemon
 DBUS_RELOAD_COMMAND = 'killall -HUP dbus-daemon'
 
+# Lacros artifact path mask
+_LACROS_PATH_MASK = 'gs://chrome-unsigned/desktop-5c0tCh/{version}/{variant}/lacros.zip'
+# Architecture to Lacros variant dictionary
+_ARCH_LACROS_VARIANT_DICT = {
+    'arm': 'lacros-arm32',
+    'arm64': 'lacros-arm64',
+    'i386': 'lacros64',
+    'x86_64': 'lacros64'
+}
+
 
 def extract_from_image(host, image_name, dest_dir):
     """
-    Extract contents of an image to a directory.
+    Extracts contents of an image to a directory.
 
     @param host: The DUT to execute the command on
     @param image_name: Name of image
@@ -42,7 +57,7 @@ def extract_from_image(host, image_name, dest_dir):
 
         """
         return ''.join(
-                [random.choice(string.hexdigits) for _ in range(length)])
+            [random.choice(string.hexdigits) for _ in range(length)])
 
     image_mount_point = '/tmp/image_%s' % gen_random_str(8)
 
@@ -53,28 +68,28 @@ def extract_from_image(host, image_name, dest_dir):
     try:
         # Mount image and copy content to the destination directory
         host.run([
-                'imageloader', '--mount',
-                '--mount_component=%s' % image_name,
-                '--mount_point=%s' % image_mount_point
+            'imageloader', '--mount',
+            '--mount_component=%s' % image_name,
+            '--mount_point=%s' % image_mount_point
         ])
 
         host.run(['cp', '-r', '%s/*' % image_mount_point, '%s/' % dest_dir])
     except Exception as e:
         raise Exception(
-                'Error extracting content from image %s on host %s ' %
-                (image_name, host), e)
+            'Error extracting content from image %s on host %s ' %
+            (image_name, host), e)
     finally:
         # Unmount image and remove the temporary directory
         host.run([
-                'imageloader', '--unmount',
-                '--mount_point=%s' % image_mount_point
+            'imageloader', '--unmount',
+            '--mount_point=%s' % image_mount_point
         ])
         host.run(['rm', '-rf', image_mount_point])
 
 
 def _stop_chrome_if_necessary(host):
     """
-    Stop chrome if it is running.
+    Stops chrome if it is running.
 
     @param host: The DUT to execute the command on
 
@@ -90,7 +105,7 @@ def _stop_chrome_if_necessary(host):
 
 def _mount_chrome(host, chrome_dir, chrome_mount_point):
     """
-    Mount chrome to a mount point
+    Mounts chrome to a mount point
 
     @param host: The DUT to execute the command on
     @param chrome_dir: directory where the chrome binary and artifacts
@@ -120,7 +135,7 @@ def _mount_chrome(host, chrome_dir, chrome_mount_point):
 
 def _umount_chrome(host, chrome_mount_point):
     """
-    Unmount chrome
+    Unmounts chrome
 
     @param host: The DUT to execute the command on
     @param chrome_mount_point: Chrome mount point
@@ -141,9 +156,9 @@ def _umount_chrome(host, chrome_mount_point):
 
 def setup_host(host, chrome_dir, chrome_mount_point):
     """
-    Perform setup on host.
+    Performs setup on host.
 
-    Mount chrome to point to the version provisioned by TLS.
+    Mounts chrome to point to the version provisioned by TLS.
     The provisioning mechanism of chrome from the chrome builder is
     based on Lacros Tast Test on Skylab (go/lacros-tast-on-skylab).
 
@@ -156,7 +171,7 @@ def setup_host(host, chrome_dir, chrome_mount_point):
     @param chrome_mount_point: Chrome mount point
 
     """
-    logging.info("Setting up host:%s", host)
+    logging.info('Setting up host:%s', host)
     try:
         extract_from_image(host, 'lacros', chrome_dir)
         if chrome_mount_point:
@@ -164,13 +179,13 @@ def setup_host(host, chrome_dir, chrome_mount_point):
                           chrome_mount_point)
     except Exception as e:
         raise Exception(
-                'Exception while mounting %s on host %s' %
-                (chrome_mount_point, host), e)
+            'Exception while mounting %s on host %s' %
+            (chrome_mount_point, host), e)
 
 
 def cleanup_host(host, chrome_dir, chrome_mount_point):
     """
-    Umount chrome and perform cleanup.
+    Umounts chrome and performs cleanup.
 
     @param host: The DUT to execute the command on
     @param chrome_dir: directory where the chrome binary and artifacts
@@ -178,7 +193,7 @@ def cleanup_host(host, chrome_dir, chrome_mount_point):
     @param chrome_mount_point: Chrome mount point
 
     """
-    logging.info("Unmounting chrome on host: %s", host)
+    logging.info('Unmounting chrome on host: %s', host)
     try:
         if chrome_mount_point:
             _umount_chrome(host, chrome_mount_point)
@@ -189,7 +204,7 @@ def cleanup_host(host, chrome_dir, chrome_mount_point):
 
 def get_tast_expr_from_file(host, args_dict, results_dir, base_path=None):
     """
-    Get Tast expression from argument dictionary using a file.
+    Gets Tast expression from argument dictionary using a file.
     If the tast_expr_file and tast_expr_key are in the dictionary returns the
     tast expression from the file. If either/both args are not in the dict,
     None is returned.
@@ -200,8 +215,8 @@ def get_tast_expr_from_file(host, args_dict, results_dir, base_path=None):
     expressions like:
 
     {
-    "default": "(\"group:mainline\" && \"dep:lacros\" && !informational)",
-    "tast_disabled_tests_from_lacros_example": "(\"group:mainline\" && \"dep:lacros\" && !informational && !\"name:lacros.Basic\")"
+    'default': '("group:mainline" && "dep:lacros" && !informational)',
+    'tast_disabled_tests_from_lacros_example': '("group:mainline" && "dep:lacros" && !informational && !"name:lacros.Basic")'
     }
 
     @param host: Host having the provisioned lacros image with the file
@@ -219,8 +234,8 @@ def get_tast_expr_from_file(host, args_dict, results_dir, base_path=None):
         # Get the tast expr file from the provisioned lacros folder
         if not host.path_exists(tast_expr_file_name):
             raise Exception(
-                    'tast_expr_file: %s could not be found on the dut' %
-                    tast_expr_file_name)
+                'tast_expr_file: %s could not be found on the dut' %
+                tast_expr_file_name)
         local_file_name = os.path.join(results_dir,
                                        os.path.basename(tast_expr_file_name))
         st = os.stat(results_dir)
@@ -234,14 +249,14 @@ def get_tast_expr_from_file(host, args_dict, results_dir, base_path=None):
             if not expr:
                 raise Exception('tast_expr_key: %s could not be found' %
                                 tast_expr_key)
-            logging.info("tast_expr retreived from:%s", tast_expr_file)
+            logging.info('tast_expr retrieved from:%s', tast_expr_file)
             return expr
     return None
 
 
 def get_tast_expr(args_dict):
     """
-    Get Tast expression from argument dictionary.
+    Gets Tast expression from argument dictionary.
     Users have options of using tast_expr or tast_expr_b64 in dictionary.
     tast_expr_b64 expects a base64 encoded tast_expr, for instance:
       tast_expr = '("group:mainline" && "dep:lacros")'
@@ -264,15 +279,145 @@ def get_tast_expr(args_dict):
                             expr_b64) from e
 
     raise Exception(
-            '''Tast expression is unspecified: set tast_expr or tast_expr_b64 in --args.\n'''
-            '''  Example: test_that --args="tast_expr=lacros.Basic"\n'''
-            '''  If the expression contains spaces, consider transforming it to\n'''
-            '''  base64 and passing it via tast_expr_b64 flag.\n'''
-            '''  Example:\n'''
-            '''    In Python:\n'''
-            '''      tast_expr = '("group:mainline" && "dep:lacros")'\n'''
-            '''      # Yields 'KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=='\n'''
-            '''      tast_expr_b64 = base64.b64encode(s.encode('utf-8')).decode('ascii')\n'''
-            '''    Then in Autotest CLI:\n'''
-            '''      test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'''
-            '''  More details at go/lacros-on-skylab.''')
+        '''Tast expression is unspecified: set tast_expr or tast_expr_b64 in --args.\n'''
+        '''  Example: test_that --args="tast_expr=lacros.Basic"\n'''
+        '''  If the expression contains spaces, consider transforming it to\n'''
+        '''  base64 and passing it via tast_expr_b64 flag.\n'''
+        '''  Example:\n'''
+        '''    In Python:\n'''
+        '''      tast_expr = '("group:mainline" && "dep:lacros")'\n'''
+        '''      # Yields "KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'''
+        '''      tast_expr_b64 = base64.b64encode(s.encode("utf-8")).decode("ascii")\n'''
+        '''    Then in Autotest CLI:\n'''
+        '''      test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'''
+        '''  More details at go/lacros-on-skylab.''')
+
+
+def _lookup_lacros_variant(host):
+    """
+    Looks up the Lacros variant for host
+
+    @param host: The DUT to execute the command on
+
+    @return: Lacros variant. e.g. lacros-arm32, lacros64
+    """
+    arch = host.get_arch()
+    if arch not in _ARCH_LACROS_VARIANT_DICT:
+        raise Exception(
+            'Failed to find Lacros variant due to unknown architecture: %s' % arch)
+
+    return _ARCH_LACROS_VARIANT_DICT[arch]
+
+
+def _lookup_lacros_path(host, channel):
+    """
+    Looks up the Lacros artifact path.
+
+    @param host: The DUT to execute the command on
+    @param channel: The lacros channel. e.g. 'stable','beta','dev'
+
+    @return: Lacros variant. e.g. 'lacros-arm32', 'lacros64'
+    """
+    variant = _lookup_lacros_variant(host)
+    logging.info('Host uses Lacros variant: %s', variant)
+
+    version = _lookup_lacros_latest_version(channel)
+    logging.info('Latest Lacros version for channel %s : %s',
+                 channel, version)
+
+    gs_path = _LACROS_PATH_MASK.format(version=version, variant=variant)
+    return gs_path
+
+
+def _lookup_lacros_latest_version(channel):
+    """
+    Looks up the latest Lacros version for a channel.
+
+    @param channel: The Lacros channel. e.g. 'stable','beta','dev'
+
+    @return: Latest Lacros version
+    """
+    # Retrieve latest version of all channels
+    api_url = 'https://versionhistory.googleapis.com/v1/chrome/platforms/lacros/channels/all/versions/all/releases?filter=endtime=none'
+    try:
+        res = requests.get(api_url)
+    except requests.exceptions.RequestException as e:
+        raise Exception('Failed when call versionhistory api.') from e
+
+    release_prefix = 'chrome/platforms/lacros/channels/' + channel
+    json_object = json.loads(res.text)
+
+    version = [r['version'] for r in json_object['releases']
+               if r['name'].startswith(release_prefix)]
+    if len(version) != 1:
+        raise Exception(
+            'Failed to extract latest version for channel %s from json: %s' % (channel, res.text))
+
+    return version[0]
+
+
+def deploy_lacros(host, channel=None, gs_path=None):
+    """
+    Deploys Lacros to DUT.
+
+    Users can either specify channel or gs_path.
+
+    @param channel: The Lacros channel. e.g. 'stable','beta','dev'
+    @param gs_path: The GCS path of the Lacros artifacts.
+    """
+    logging.info('deploy_lacros to host: %s channel: %s gs_path: %s',
+                 host, channel, gs_path)
+
+    # lookup lacros artifact path based on channel
+    if channel:
+        gs_path = _lookup_lacros_path(host, channel)
+
+    if not gs_path:
+        raise Exception(
+            'Failed to find lacros path. Please specify either channel or gs_path.')
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        logging.info('Created temporary directory: %s', tmp_dir)
+
+        # download zip to machine
+        zip_name = os.path.basename(gs_path)
+        temp_zip_path = os.path.join(tmp_dir, zip_name)
+        logging.info('Downloading lacros artifact from %s to %s',
+                     gs_path, temp_zip_path)
+        cmd = ['gsutil', 'cp', gs_path, temp_zip_path]
+
+        returncode, stdout_data, stderr_data = _subprocess(cmd)
+        if returncode != 0:
+            raise Exception('Failed to copy data from %s. stdout: %s stderr: %s' % (
+                gs_path, stdout_data, stderr_data))
+
+        # unzip the content
+        unzip_dir = os.path.join(tmp_dir, 'out')
+        logging.info('Unzipping contents to %s', unzip_dir)
+        with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+            zip_ref.extractall(unzip_dir)
+
+        # use chromite to deploy Lacros to DUT
+        cmd = ['deploy_chrome', '--build-dir=%s' % unzip_dir, '--device=%s' % host.host_port,
+               '--lacros', '--force', '--nostrip']
+        returncode, stdout_data, stderr_data = _subprocess(cmd)
+        if returncode != 0:
+            raise Exception('Failed to deploy lacros onto DUT. stdout: %s stderr: %s' % (
+                stdout_data, stderr_data))
+
+
+def _subprocess(cmd):
+    """
+    Calls a local process.
+
+    @param cmd: process command and arguments as a list of strings.
+
+    @return: tuple of (process return code, stdout, stderr)
+    """
+    logging.info('Running cmd: %s', cmd)
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    stdout_data, stderr_data = process.communicate()
+
+    return process.returncode, stdout_data, stderr_data

@@ -17,7 +17,7 @@ class BluetoothAVLDriverTests(BluetoothQuickTests):
     batch_wrapper = BluetoothQuickTests.quick_test_batch_decorator
     test_log_result = BluetoothQuickTests.test_log_result
 
-    @test_wrapper('Driver support test', flags=['Quick Health'])
+    @test_wrapper('Driver support test')
     def driver_support_test(self):
         """Tests - AVL Linux Driver Requirements - Driver Support."""
 

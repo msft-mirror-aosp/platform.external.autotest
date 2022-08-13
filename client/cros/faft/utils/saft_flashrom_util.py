@@ -308,7 +308,7 @@ class flashrom_util(object):
         cmd = 'flashrom %s --verbose --wp-disable' % self._target_command
         self.os_if.run_shell_command(cmd, modifies_device=True)
 
-    def set_write_protect_region(self, image_file, region, enabled=None):
+    def set_write_protect_region(self, image_file, region, enabled):
         """
         Set write protection region, using specified image's layout.
 
@@ -319,30 +319,42 @@ class flashrom_util(object):
         @param region: Region to set (usually WP_RO)
         @param enabled: if True, run --wp-enable; if False, run --wp-disable.
         """
-        cmd = 'flashrom %s --verbose --image %s:%s --wp-region %s' % (
-                self._target_command, region, image_file, region)
-        if enabled is not None:
-            cmd += ' '
-            cmd += '--wp-enable' if enabled else '--wp-disable'
+        cmd = ['flashrom', self._target_command, '--verbose',
+               '--image', '%s:%s' % (region, image_file)]
+        if enabled:
+            cmd.extend(['--wp-enable', '--wp-region', region])
+        else:
+            # Refer to the comment in `set_write_protect_range`.
+            cmd.extend(['--wp-disable', '--wp-range', '0,0'])
 
-        self.os_if.run_shell_command(cmd, modifies_device=True)
+        self.os_if.run_shell_command(' '.join(cmd), modifies_device=True)
 
-    def set_write_protect_range(self, start, length, enabled=None):
+    def set_write_protect_range(self, start, length, enabled):
         """
         Set write protection range by offset, using current image's layout.
 
         @param start: offset (bytes) from start of flash to start of range
         @param length: offset (bytes) from start of range to end of range
         @param enabled: If True, run --wp-enable; if False, run --wp-disable.
-                        If None (default), don't specify either one.
         """
-        cmd = 'flashrom %s --verbose --wp-range %s,%s' % (
-                self._target_command, start, length)
-        if enabled is not None:
-            cmd += ' '
-            cmd += '--wp-enable' if enabled else '--wp-disable'
+        # For --wp-disable case.
+        #
+        # On ARM, SPI-NOR linux driver clears SRP bit (--wp-disable) only if the
+        # protection range is empty. (b/242010682#9)
+        #
+        # On x86, it is possible for flashrom to write/erase the protection
+        # region if SRP is disabled. (b/242010682#12)
+        #
+        # Since SPR is disabled eventually, simply set protection range to empty.
+        if not enabled:
+            start = 0
+            length = 0
 
-        self.os_if.run_shell_command(cmd, modifies_device=True)
+        cmd = ['flashrom', self._target_command, '--verbose',
+               '--wp-range', '%s,%s' % (start, length)]
+        cmd.append('--wp-enable' if enabled else '--wp-disable')
+
+        self.os_if.run_shell_command(' '.join(cmd), modifies_device=True)
 
     def get_write_protect_status(self):
         """Get a dict describing the status of the write protection

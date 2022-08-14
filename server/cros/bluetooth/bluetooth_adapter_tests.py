@@ -732,13 +732,19 @@ class BluetoothAdapterTests(test.test):
     ERROR_INVALID_ADVERTISING_INTERVALS = (
             'org.bluez.Error.InvalidArguments: Invalid arguments')
 
-    # Supported profiles by ChromeOS.
-    SUPPORTED_UUIDS = {
-            'GATT_UUID': '00001801-0000-1000-8000-00805f9b34fb',
-            'A2DP_SOURCE_UUID': '0000110a-0000-1000-8000-00805f9b34fb',
-            'HFP_AG_UUID': '0000111f-0000-1000-8000-00805f9b34fb',
-            'PNP_UUID': '00001200-0000-1000-8000-00805f9b34fb',
-            'GAP_UUID': '00001800-0000-1000-8000-00805f9b34fb'}
+    # Supported profiles by ChromeOS for Bluez.
+    BLUEZ_SUPPORTED_UUIDS = {
+        'GATT_UUID': '00001801-0000-1000-8000-00805f9b34fb',
+        'A2DP_SOURCE_UUID': '0000110a-0000-1000-8000-00805f9b34fb',
+        'HFP_AG_UUID': '0000111f-0000-1000-8000-00805f9b34fb',
+        'PNP_UUID': '00001200-0000-1000-8000-00805f9b34fb',
+        'GAP_UUID': '00001800-0000-1000-8000-00805f9b34fb'}
+
+    # Supported profiles by ChromeOS for Floss.
+    FLOSS_SUPPORTED_UUIDS = {
+        'A2DP_SOURCE_UUID': '0000110a-0000-1000-8000-00805f9b34fb',
+        'HFP_AG_UUID': '0000111f-0000-1000-8000-00805f9b34fb',
+        'HSP_AG_UUID': '00001112-0000-1000-8000-00805f9b34fb'}
 
     # Board list for name/ID test check. These devices don't need to be tested
     REFERENCE_BOARDS = [
@@ -1834,7 +1840,12 @@ class BluetoothAdapterTests(test.test):
     def test_UUIDs(self):
         """Test that basic profiles are supported."""
         adapter_UUIDs = self.bluetooth_facade.get_UUIDs()
-        self.results = [uuid for uuid in self.SUPPORTED_UUIDS.values()
+        if self.bluetooth_facade.floss:
+            supported_UUIDs = self.FLOSS_SUPPORTED_UUIDS.values()
+        else:
+            supported_UUIDs = self.BLUEZ_SUPPORTED_UUIDS.values()
+
+        self.results = [uuid for uuid in supported_UUIDs
                         if uuid not in adapter_UUIDs]
         return not bool(self.results)
 

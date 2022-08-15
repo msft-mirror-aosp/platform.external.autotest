@@ -233,6 +233,39 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     DUT_PREPVT = DUT_FW + 'cr50.bin.prepvt'
     # ===============================================================
 
+    # Cr50 interrupt numbers reported in taskinfo
+    IRQ_DICT = {
+        4 : 'HOST_CMD_DONE',
+        81  : 'GPIO0',
+        98  : 'GPIO1',
+        103 : 'I2CS WRITE',
+        112 : 'PMU WAKEUP',
+        113 : 'AC present FED',
+        114 : 'AC present RED',
+        124 : 'RBOX_INTR_PWRB',
+        130 : 'SPS CS deassert',
+        138 : 'SPS RXFIFO LVL',
+        159 : 'SPS RXFIFO overflow',
+        160 : 'EVENT TIMER',
+        174 : 'CR50_RX_SERVO_TX',
+        177 : 'CR50_TX_SERVO_RX',
+        181 : 'AP_TX_CR50_RX',
+        184 : 'AP_RX_CR50_TX',
+        188 : 'EC_TX_CR50_RX',
+        191 : 'EC_RX_CR50_TX',
+        193 : 'USB',
+    }
+    # USB, AP UART, and EC UART should be disabled if ccd is disabled.
+    CCD_IRQS = [ 181, 184, 188, 191, 193 ]
+    # Each line relevant taskinfo output should be 13 characters long with only
+    # digits or spaces. Use this information to make sure every taskinfo command
+    # gets the full relevant output. There are 4 characters for the irq number
+    # and 9 for the count.
+    GET_TASKINFO = ['IRQ counts by type:\s+(([\d ]{13}\r\n)+)Service calls']
+    # Cr50 should wake up twice per second while in regular sleep
+    SLEEP_RATE = 2
+    DS_RESETS_TIMER = True
+
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.
 

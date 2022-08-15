@@ -54,6 +54,30 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     DUT_PREPVT = DUT_FW + 'ti50.bin.prepvt'
     # ===============================================================
 
+    # Ti50 interrupt numbers reported in taskinfo
+    IRQ_DICT = {
+        0 : 'UART0_GRP0',
+        1 : 'UART1_GRP0',
+        2 : 'UART2_GRP0',
+        3 : 'UART3_GRP0',
+        79 : 'I2CS0_GRP0',
+        99 : 'RBOX0_GRP1',
+        106 : 'TIMER0_TIMER0_MATCH1',
+        108 : 'TIMER0_TIMER1_MATCH0',
+        115 : 'USB0_USBINTR',
+        257 : 'WAKEUP',
+    }
+    # USB should be disabled if ccd is disabled.
+    CCD_IRQS = [ 115 ]
+    # Each line relevant taskinfo output should be 13 characters long with only
+    # digits or spaces. Use this information to make sure every taskinfo command
+    # gets the full relevant output. There are 4 characters for the irq number
+    # and 9 for the count.
+    GET_TASKINFO = ['IRQ counts by type:\s+(([\d ]{13}[\r\n]+)+)>']
+    # Ti50 has no periodic wake from regular sleep
+    SLEEP_RATE = 0
+    DS_RESETS_TIMER = False
+
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.
 

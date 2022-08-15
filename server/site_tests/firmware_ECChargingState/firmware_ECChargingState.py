@@ -63,17 +63,22 @@ class firmware_ECChargingState(FirmwareTest):
             logging.error("Caught exception: %s", str(e))
         super(firmware_ECChargingState, self).cleanup()
 
-    def check_ac_state(self):
+    def check_ac_state(self, want_charging):
         """Check if AC is plugged."""
-        ac_state = int(
+        for retry in range(25):
+            ac_state = int(
                 self.ec.send_command_get_output("chgstate",
-                                                ["ac\s*=\s*(0|1)\s*"])[0][1])
-        if ac_state == 1:
-            return 'on'
-        elif ac_state == 0:
-            return 'off'
-        else:
-            return 'unknown'
+                                                ["ac\\s*=\\s*(0|1)\\s*"])[0][1])
+            if want_charging and ac_state == 1:
+                return
+            if not want_charging and ac_state == 0:
+                return
+            logging.info(
+                "Expected ac state %s, got %s",
+                want_charging,
+                ac_state)
+            time.sleep(1)
+        raise error.TestFail("Failed to verify ac state.")
 
     def _retry_send_cmd(self, command, regex_list):
         """Send an EC command, and retry if it fails."""
@@ -173,8 +178,7 @@ class firmware_ECChargingState(FirmwareTest):
         time.sleep(self.AC_STATE_UPDATE_DELAY)
 
         # Verify servo v4 is sinking power.
-        if self.check_ac_state() != 'off':
-            raise error.TestFail("Fail to unplug AC.")
+        self.check_ac_state(False)
 
         self.servo.power_normal_press()
         self.switcher.wait_for_client()
@@ -193,8 +197,7 @@ class firmware_ECChargingState(FirmwareTest):
         time.sleep(self.AC_STATE_UPDATE_DELAY)
 
         # Verify servo v4 is sourcing power.
-        if self.check_ac_state() != 'on':
-            raise error.TestFail("Fail to plug AC.")
+        self.check_ac_state(True)
 
         self.servo.power_normal_press()
         self.switcher.wait_for_client()

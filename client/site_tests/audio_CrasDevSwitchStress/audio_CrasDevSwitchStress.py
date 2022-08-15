@@ -35,7 +35,8 @@ class audio_CrasDevSwitchStress(test.test):
     _STREAM_BLOCK_SIZE = 480
     _AUDIO_LOG_TIME_FMT = '%Y-%m-%dT%H:%M:%S.%f'
     _last_audio_log = ''
-
+    """TODO(b/242480897): remove "coral" when b/242480897 is fixed."""
+    _SKIP_BOARD=['coral']
     """
     Buffer level of input device should stay between 0 and block size.
     Buffer level of output device should between 1 to 2 times of block size.
@@ -206,6 +207,10 @@ class audio_CrasDevSwitchStress(test.test):
         node_pinned = None
         self._streams = []
 
+        board = utils.get_board()
+        if board in self._SKIP_BOARD:
+            raise error.TestNAError(
+                    'Test skipped on this board: [%s] for buffer level drift too high ', board)
         """Store the selected nodes at the start of the test."""
         (output_type, input_type) = cras_utils.get_selected_node_types()
 

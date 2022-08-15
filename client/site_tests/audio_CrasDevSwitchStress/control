@@ -4,7 +4,7 @@
 
 AUTHOR = 'The Chromium OS Authors,chromeos-audio@google.com'
 NAME = 'audio_CrasDevSwitchStress'
-ATTRIBUTES = "suite:audio"
+ATTRIBUTES = "suite:audio, suite:bvt-perbuild"
 PURPOSE = 'Test device buffer can stay at reasonable level at repeated switching'
 CRITERIA = """
 Fail if device buffer drifts too high.

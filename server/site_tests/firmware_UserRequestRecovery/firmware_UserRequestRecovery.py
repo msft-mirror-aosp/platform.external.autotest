@@ -56,12 +56,14 @@ class firmware_UserRequestRecovery(FirmwareTest):
         #   dut-control warm_reset:on sleep:0.5000 warm_reset:off
         self.switcher.simple_reboot()
 
-        # DUT should be waiting for USB after reboot.
+        # DUT would stay at BROKEN_SCREEN after reboot.
+        # First try in bypass_rec_mode will issue power_state:rec to boot into
+        # recovery mode again, and DUT should be waiting for USB after reboot.
         # Connect servo USB to DUT and DUT should boot from USB.
         # dut-control usb_mux_sel1:dut_sees_usbkey
-        # bypass_rec_mode will issue power_state:rec if host did not response in
-        # delay_reboot_to_ping seconds, which may reset recovery_reason and
-        # fail this tests.
+        # if host did not response in delay_reboot_to_ping seconds,
+        # the second try of bypass_rec_mode would issue power_state:rec again,
+        # reset recovery_reason and fail this tests.
         self.switcher.bypass_rec_mode()
         self.switcher.wait_for_client()
 

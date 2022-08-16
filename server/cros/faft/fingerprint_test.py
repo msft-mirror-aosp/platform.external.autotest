@@ -93,7 +93,6 @@ class FingerprintTest(test.test):
     _GOLDEN_RO_FIRMWARE_VERSION_MAP = {
             _FP_BOARD_NAME_BLOONCHIPPER: {
                     'hatch': 'bloonchipper_v2.0.4277-9f652bb3',
-                    'hatch-kernelnext': 'bloonchipper_v2.0.4277-9f652bb3',
                     'zork': 'bloonchipper_v2.0.5938-197506c1',
                     'volteer': 'bloonchipper_v2.0.5938-197506c1',
                     'brya': 'bloonchipper_v2.0.5938-197506c1',
@@ -485,7 +484,10 @@ class FingerprintTest(test.test):
 
     def get_host_board(self):
         """Returns name of the host board."""
-        return self.host.get_board().split(':')[-1]
+        board = self.host.get_board().split(':')[-1]
+        """Parses to get platform base."""
+        platformbase = board.split('-')[0]
+        return platformbase
 
     def get_build_fw_file(self):
         """Returns full path to build FW file on DUT."""

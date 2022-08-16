@@ -33,11 +33,14 @@ class Hcitool(object):
         params.extend(parameter)
         cmd = ' '.join(params)
         logging.debug('Running "%s"', cmd)
-        # Output format of hcitool command:
-        # < HCI Command: ogf 0xXX, ocf 0xXXXX, plen X
-        # > HCI Event: 0xXX plen XX
-        #   XX XX XX XX XX XX XX XX XX XX ...
-        output = utils.system_output(cmd, retain_output=True)
+        try:
+            # Output format of hcitool command:
+            # < HCI Command: ogf 0xXX, ocf 0xXXXX, plen X
+            # > HCI Event: 0xXX plen XX
+            #   XX XX XX XX XX XX XX XX XX XX ...
+            output = utils.system_output(cmd, retain_output=True)
+        except error.CmdError as e:
+            raise error.TestNAError(e)
         output_parse_value = HciToolParser.parse_output(output)
         event_type, plen_value, status, event_bytearray = output_parse_value
         if event_type != self.HCI_COMMAND_COMPLETE_EVENT:

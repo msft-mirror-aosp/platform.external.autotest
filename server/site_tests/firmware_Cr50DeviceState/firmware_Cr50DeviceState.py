@@ -105,6 +105,12 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     TMP_POWER_MANAGER_PATH = '/tmp/power_manager'
     POWER_MANAGER_PATH = '/var/lib/power_manager'
+    MEM_SLEEP_PATH = '/sys/power/mem_sleep'
+    MEM_SLEEP_S0IX = 'echo %s > %s ; sleep 1' % ('s2idle', MEM_SLEEP_PATH)
+    MEM_SLEEP_S3 = 'echo %s > %s ; sleep 1' % ('deep', MEM_SLEEP_PATH)
+    POWER_STATE_PATH = '/sys/power/state'
+    POWER_STATE_S0IX = 'echo %s > %s' % ('freeze', POWER_STATE_PATH)
+    POWER_STATE_S3 = 'echo %s > %s' % ('mem', POWER_STATE_PATH)
     # TODO(mruthven): remove ec chan restriction once soraka stops spamming host
     # command output. The extra activity makes it look like a interrupt storm on
     # the EC uart.
@@ -124,10 +130,13 @@ class firmware_Cr50DeviceState(Cr50Test):
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
 
+        self.deep_sleep_in_s0i3 = self.check_cr50_capability(
+            ['deep_sleep_in_s0i3'])
+
         # If the TPM is reset in S0i3, the CR50 may enter deep sleep during S0i3.
         # Cr50 may enter deep sleep an extra time, because of how the test
         # collects taskinfo counts. So the range is set conservatively to 0-2.
-        if self.check_cr50_capability(['deep_sleep_in_s0i3']):
+        if self.deep_sleep_in_s0i3:
             irq_s0ix_deep_sleep_key = 'S0ix' + self.DEEP_SLEEP_STEP_SUFFIX
             self.EXPECTED_IRQ_COUNT_RANGE[irq_s0ix_deep_sleep_key] = [0, 2]
 
@@ -154,7 +163,6 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.faft_client.system.run_shell_command(
                 'echo %d > %s/suspend_to_idle' %
                 (value, self.TMP_POWER_MANAGER_PATH), True)
-
 
     def log_sleep_debug_information(self):
         """Log some information used for debugging sleep issues"""
@@ -413,7 +421,6 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def enter_state(self, state):
         """Get the command to enter the power state"""
-        block = True
         if state == 'S0':
             self.trigger_s0()
             # Suppress host command output, so it doesn't look like an interrupt
@@ -424,11 +431,9 @@ class firmware_Cr50DeviceState(Cr50Test):
             self.ec.send_command('chan 0x%x' % self.CHAN_RESTRICTED)
         else:
             if state == 'S0ix':
-                self.set_suspend_to_idle(True)
-                self.suspend()
+                self.enter_suspend(state)
             elif state == 'S3':
-                self.set_suspend_to_idle(False)
-                self.suspend()
+                self.enter_suspend(state)
             elif state == 'G3':
                 self.faft_client.system.run_shell_command('poweroff', True)
 
@@ -437,6 +442,28 @@ class firmware_Cr50DeviceState(Cr50Test):
         if not self.wait_power_state(state, self.SHORT_WAIT):
             raise error.TestFail('Platform failed to reach %s state.' % state)
 
+    def enter_suspend(self, state):
+        """Enter S0ix or S3"""
+        # Different devices require different methods to enter S0ix or S3. The
+        # ones that deep_sleep_in_s0i3 must use power_manager, but other devices
+        # need to bypass power_manager. b/233898484
+        if self.deep_sleep_in_s0i3:
+            self.set_suspend_to_idle(state == 'S0ix')
+            self.suspend()
+        else:
+            cmds = []
+            if self.host.path_exists(self.MEM_SLEEP_PATH):
+                if state == 'S0ix':
+                    cmds.append(self.MEM_SLEEP_S0IX)
+                else:
+                    cmds.append(self.MEM_SLEEP_S3)
+            if state == 'S0ix':
+                cmds.append(self.POWER_STATE_S0IX)
+            else:
+                cmds.append(self.POWER_STATE_S3)
+            cmds = '; '.join(cmds)
+            logging.info('enter_suspend %s', cmds)
+            self.faft_client.system.run_shell_command(cmds, False)
 
     def stage_irq_add(self, irq_dict, name=''):
         """Add the current irq counts to the stored dictionary of irq info"""

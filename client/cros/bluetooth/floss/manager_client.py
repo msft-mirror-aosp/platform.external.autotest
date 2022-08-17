@@ -46,7 +46,7 @@ class FlossManagerClient(ManagerCallbacks):
     MGR_OBJECT = '/org/chromium/bluetooth/Manager'
 
     # Exported callback interface and objects
-    CB_EXPORTED_INTF = 'org.chromium.bluetooth.ManagerCallbacks'
+    CB_EXPORTED_INTF = 'org.chromium.bluetooth.ManagerCallback'
     CB_EXPORTED_OBJ = '/org/chromium/bluetooth/test_manager_client{}'
 
     class AdaptersNotParseable(Exception):
@@ -56,7 +56,7 @@ class FlossManagerClient(ManagerCallbacks):
     class ExportedManagerCallbacks(ObserverBase):
         """
         <node>
-            <interface name="org.chromium.bluetooth.ManagerCallbacks">
+            <interface name="org.chromium.bluetooth.ManagerCallback">
                 <method name="OnHciDeviceChanged">
                     <arg type="i" name="hci" direction="in" />
                     <arg type="b" name="present" direction="in" />

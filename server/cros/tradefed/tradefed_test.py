@@ -23,6 +23,7 @@ import hashlib
 import logging
 import os
 import pipes
+import pwd
 import re
 import shutil
 import stat
@@ -116,11 +117,7 @@ class TradefedTest(test.test):
 
         self._max_retry = self._get_max_retry(max_retry)
         self._warn_on_test_retry = warn_on_test_retry
-        # Tests in the lab run within individual lxc container instances.
-        if utils.is_in_container():
-            cache_root = constants.TRADEFED_CACHE_CONTAINER
-        else:
-            cache_root = constants.TRADEFED_CACHE_LOCAL
+        cache_root = self._get_cache_root()
 
         # The content of the cache survives across jobs.
         self._safe_makedirs(cache_root)
@@ -920,6 +917,22 @@ class TradefedTest(test.test):
         dest = os.path.join(destination, 'logs', 'tmp')
         self._safe_makedirs(dest)
         shutil.copy(os.path.join('/tmp', name), os.path.join(dest, name))
+
+    def _get_cache_root(self):
+        """Returns the cache_root for current runtime environment."""
+        # Tests in the lab run within individual lxc container instances.
+        current_uid = os.getuid()
+        current_user = pwd.getpwuid(current_uid)
+        logging.info('Current user is: %d, %s',
+                     current_uid, current_user.pw_name)
+        if utils.is_in_container() and current_uid == 0:
+            cache_root = constants.TRADEFED_CACHE_CONTAINER
+        elif utils.is_in_container():
+            cache_root = constants.TRADEFED_CACHE_CFT
+        else:
+            cache_root = constants.TRADEFED_CACHE_LOCAL
+        logging.info('Using cache_root = %s', cache_root)
+        return cache_root
 
     def _get_expected_failures(self, directory, bundle_abi):
         """Return a list of expected failures or no test module.

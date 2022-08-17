@@ -34,7 +34,8 @@ TRADEFED_CACHE_LOCAL = '/tmp/autotest-tradefed-cache'
 # lock. Writes happen rougly monthly while reads are many times a day. If this
 # becomes a bottleneck we could examine allowing concurrent reads.
 TRADEFED_CACHE_CONTAINER = '/usr/local/autotest/results/shared/cache'
-TRADEFED_CACHE_CONTAINER_LOCK = '/usr/local/autotest/results/shared/lock'
+# On CFT, tests run as non-root, and cannot write to TRADEFED_CACHE_CONTAINER.
+TRADEFED_CACHE_CFT = '/usr/local/autotest/results/shared/cache_cft'
 # The maximum size of the shared global cache. It needs to be able to hold
 # P, R, x86, arm, official, dev CTS bundles, as well as GTS bundles, and
 # media assets. (See b/126165348#comment40 for the calculation.)

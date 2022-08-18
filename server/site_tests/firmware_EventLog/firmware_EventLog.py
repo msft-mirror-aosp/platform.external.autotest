@@ -31,7 +31,7 @@ class firmware_EventLog(FirmwareTest):
 
     def _has_event(self, pattern):
         # list since bool() casts empty filter objs to True in py3
-        return bool(list(filter(re.compile(pattern).search, self._events)))
+        return bool(list(filter(re.compile(pattern, re.IGNORECASE).search, self._events)))
 
     def _gather_events(self):
         entries = self.faft_client.system.run_shell_command_get_output(

@@ -324,7 +324,7 @@ class BluetoothDevice(object):
 
         """
         properties = self.get_adapter_properties()
-        return properties.get('UUIDs')
+        return properties.get('Uuids' if self.floss else 'UUIDs')
 
 
     @proxy_thread_safe

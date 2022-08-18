@@ -10,6 +10,7 @@ from __future__ import print_function
 
 from enum import IntEnum
 from gi.repository import GLib
+from uuid import UUID
 import logging
 import math
 import random
@@ -392,7 +393,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 'Name': (self.proxy().GetName, self.proxy().SetName),
                 'Class': (self.proxy().GetBluetoothClass,
                           self.proxy().SetBluetoothClass),
-                'Uuids': (self.proxy().GetUuids, None),
+                'Uuids': (self._get_uuids, None),
                 'Discoverable':
                 (self.proxy().GetDiscoverable, self.proxy().SetDiscoverable),
         })
@@ -404,6 +405,32 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 'Class': (self.proxy().GetRemoteClass, None),
                 'RSSI': (self.get_mock_remote_rssi, None),
         })
+
+    def _get_uuids(self):
+        """Gets the UUIDs from the D-Bus.
+
+        If D-Bus returns UUID as list of integers, converts the value to UUID
+        string.
+
+        @return: List of UUIDs in string representation.
+        """
+
+        uuids = self.proxy().GetUuids()
+
+        # Type check: uuids should be subscriptable.
+        try:
+            first_uuid = uuids[0]
+        except TypeError:
+            return []
+
+        if type(first_uuid) == str:
+            return uuids
+
+        uuid_list = []
+        for uuid in uuids:
+            uuid_hex = ''.join('{:02x}'.format(m) for m in uuid)
+            uuid_list.append(str(UUID(uuid_hex)))
+        return uuid_list
 
     @glib_call(False)
     def register_callbacks(self):

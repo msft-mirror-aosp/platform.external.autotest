@@ -347,6 +347,46 @@
       "tool": "tast",
       "test_expr": "ui.CRXPRT2",
       "attributes": ["benchmark", "basic"]
+    },
+    {
+      "name": "gaming-proxy-basic",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.basic_h264_1080p_60fps",
+      "attributes": ["gaming", "basic"]
+    },
+    {
+      "name": "gaming-proxy-basic-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.basic_lacros_h264_1080p_60fps",
+      "attributes": ["gaming", "basic", "lacros"]
+    },
+    {
+      "name": "gaming-proxy-plus-h264",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.plus_h264_4k_60fps",
+      "attributes": ["gaming", "plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "gaming-proxy-plus-h264-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.plus_lacros_h264_4k_60fps",
+      "attributes": ["gaming", "plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "gaming-proxy-plus-av1",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.plus_av1_4k_60fps",
+      "attributes": ["gaming", "plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "gaming-proxy-plus-av1-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.plus_lacros_av1_4k_60fps",
+      "attributes": ["gaming", "plus", "lacros"],
+      "deps": ["plus"]
     }
   ],
   "suites": [
@@ -461,6 +501,24 @@
         {"test": "geekbench-public-android", "repeats": 2},
         {"test": "lmbench", "repeats": 2},
         {"test": "crxprt2", "repeats": 2}
+      ]
+    },
+    {
+      "name": "performance_cuj_gaming",
+      "args_file": "perf_cuj.config",
+      "tests": [
+        {"test": "gaming-proxy-basic", "repeats": 2},
+        {"test": "gaming-proxy-plus-h264", "repeats": 2},
+        {"test": "gaming-proxy-plus-av1", "repeats": 2}
+      ]
+    },
+    {
+      "name": "performance_cuj_gaming_lacros",
+      "args_file": "perf_cuj.config",
+      "tests": [
+        {"test": "gaming-proxy-basic-lacros", "repeats": 2},
+        {"test": "gaming-proxy-plus-h264-lacros", "repeats": 2},
+        {"test": "gaming-proxy-plus-av1-lacros", "repeats": 2}
       ]
     }
   ]

@@ -1,0 +1,62 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
+NAME = 'tast.assistant-audiobox'
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:assistant-audiobox'
+JOB_RETRIES = 2
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run Assistant audio tests in Audiobox.
+'''
+
+from autotest_lib.client.common_lib import utils
+from autotest_lib.server import utils as server_utils
+
+
+def run(machine):
+    # Get host objects for each device.
+    host = hosts.create_host(machine)
+
+    # Extract Chameleon args from command line arguments
+    args_dict = utils.args_to_dict(args)
+    varslist = []
+
+    # In Skylab, Chameleon follows the naming convention '{DUT}-chameleon'.
+    # The series of tests are executed as Tast client tests, during which
+    # DUT would issues xmlrpc commands directly against Chameleon.
+    # The DUT and the corresponding Chameleon board in an audiobox can
+    # access each other only through IP. The drone server can help
+    # look up the IP for '{DUT}-chameleon' and pass that to DUT.
+    if 'chameleon_host' in args_dict:
+        chameleon_host = args_dict['chameleon_host']
+    else:
+        chameleon_host = '%s-chameleon' % host.hostname
+
+    chameleon_ip = server_utils.get_ip_address(chameleon_host)
+    logging.info('chameleon_host: %s resolves to chameleon_ip: %s', chameleon_host, chameleon_ip)
+    varslist.append ('assistant.chameleon_host=%s' % chameleon_ip)
+
+    if 'chameleon_port' in args_dict:
+        varslist.append ('assistant.chameleon_port=%s' % args_dict['chameleon_port'])
+
+    if 'chameleon_ssh_port' in args_dict:
+        varslist.append ('assistant.chameleon_ssh_port=%s' % args_dict['chameleon_ssh_port'])
+
+    logging.info('Calling Tast tests under group:assistant_audiobox with args: %s and varslist: %s', args, varslist)
+
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=['("group:assistant_audiobox")'],
+                 command_args=args,
+                 varslist=varslist)
+
+parallel_simple(run, machines)

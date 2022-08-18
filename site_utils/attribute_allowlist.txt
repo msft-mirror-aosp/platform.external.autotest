@@ -23,6 +23,7 @@ suite:arc-gts-qual
 suite:arc-sts-full
 suite:arc-sts-incremental
 suite:arc-video
+suite:assistant-audiobox
 suite:au-m2n
 suite:au-oobe
 suite:au-p2p

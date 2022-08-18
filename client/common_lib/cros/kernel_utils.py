@@ -16,6 +16,7 @@ _MINIOS_B = 'B'
 
 # Time to wait for new kernel to be marked successful after auto update.
 _KERNEL_UPDATE_TIMEOUT = 120
+_UI_STABILIZE_TIMEOUT = 360
 
 _BOOT_ERR_MSG = 'The active image slot did not change after the update.'
 
@@ -159,7 +160,18 @@ def verify_boot_expectations(expected_kernel, error_message=_BOOT_ERR_MSG,
         _run('crossystem --all', host)
         raise Exception(error_message)
 
-    # Make sure chromeos-setgoodkernel runs.
+    # Wait until UI stabilizes - this can happen due to boot FW updates
+    # delaying the process of update-engine (autoupdater) marking the newly
+    # booted kernel as "sticky".
+    try:
+      utils.poll_for_condition(
+          lambda: (_run(['status', 'ui'], host).stdout.startswith(
+                   'ui start/running')),
+          timeout=_UI_STABILIZE_TIMEOUT, sleep_interval=5)
+    except Exception:
+      raise Exception('UI failed to stabilize.')
+
+    # Make sure chromeos-setgoodkernel runs marking the new kernel "sticky".
     try:
         utils.poll_for_condition(
             lambda: (get_kernel_tries(active_kernel, host) == 0

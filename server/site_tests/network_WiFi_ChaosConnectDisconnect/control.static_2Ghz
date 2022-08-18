@@ -6,8 +6,7 @@ AUTHOR = 'harpreet'
 NAME = 'network_WiFi_ChaosConnectDisconnect.static_2Ghz'
 TIME = 'LONG'
 TEST_TYPE = 'server'
-# Disabled due to 0% pass rate over 30 days. See b/241833202
-# ATTRIBUTES = 'suite:wifi_interop'
+ATTRIBUTES = 'suite:wifi_interop'
 DEPENDENCIES = 'chaos_dut'
 MAX_RESULT_SIZE_KB = 512000
 PY_VERSION = 3

@@ -35,7 +35,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Multiple LE advertising test',
                   skip_chipsets=[
                           'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
-                          'Realtek-RTL8852A-USB'
+                          'Realtek-RTL8852A-USB',
+                          'Realtek-RTL8852C-USB'
                   ],
                   skip_common_errors=True)
     def adv_multiple_advertising_test(self):

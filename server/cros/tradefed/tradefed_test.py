@@ -145,8 +145,10 @@ class TradefedTest(test.test):
         self._install_files(constants.SDK_TOOLS_DIR,
                             constants.SDK_TOOLS_FILES, permission)
 
-        # Always use JDK9 in the lab.
-        if utils.is_in_container() and not client_utils.is_moblab():
+        # Always use JDK9 in the skylab SSP runs. CFT run will use container
+        # provided JDK.
+        if utils.is_in_container(
+        ) and not client_utils.is_moblab() and os.getuid() == 0:
             logging.info('Lab: switching to JDK9')
             try:
                 os.environ['JAVA_HOME'] = '/usr/lib/jvm/jdk-9.0.4'

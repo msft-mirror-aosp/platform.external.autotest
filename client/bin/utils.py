@@ -562,7 +562,7 @@ def get_memory_frequency():
     if ret.exit_status != 0:
         return 0
     res = ret.stdout.strip().split('MT')[0]
-    if res:
+    if res and res.isdigit():
       return int(res)
     return 0
 

@@ -17,6 +17,10 @@ This is the PVS sequence to validate thermal stability in a thermal load
 (state: discharging)
 '''
 
+METADATA = {
+    'requirements': ['pwr-therm-0002-v01']
+}
+
 import datetime
 
 from autotest_lib.server import utils

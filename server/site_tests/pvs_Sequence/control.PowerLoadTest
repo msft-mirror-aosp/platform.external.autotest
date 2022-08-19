@@ -18,6 +18,10 @@ PVS Sequence for qualification for power.
 - power_LoadTest (from full battery to 5%)
 '''
 
+METADATA = {
+    'requirements': ['pwr-batLife-0009-v01']
+}
+
 from autotest_lib.server import utils
 import datetime
 

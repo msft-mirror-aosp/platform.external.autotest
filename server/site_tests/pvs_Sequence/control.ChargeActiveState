@@ -16,6 +16,10 @@ PVS Sequence for qualification for charging while system is running
 - power_BatteryCharge (charging to full battery)
 '''
 
+METADATA = {
+    'requirements': ['pwr-chg-0003-v01']
+}
+
 from autotest_lib.server import utils
 import datetime
 

@@ -17,6 +17,10 @@ This is the PVS sequence to validate thermal stability in a video call
 (state: charging)
 '''
 
+METADATA = {
+    'requirements': ['pwr-therm-0001-v01']
+}
+
 import datetime
 
 from autotest_lib.server import utils

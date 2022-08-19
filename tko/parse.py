@@ -23,8 +23,11 @@ from autotest_lib.client.common_lib import control_data
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import mail, pidfile
 from autotest_lib.client.common_lib import utils
-from autotest_lib.frontend import setup_django_environment
-from autotest_lib.frontend.tko import models as tko_models
+try:
+    from autotest_lib.frontend import setup_django_environment
+    from autotest_lib.frontend.tko import models as tko_models
+except ImportError:
+    tko_models = None
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.dynamic_suite import constants
 from autotest_lib.tko import db as tko_db, utils as tko_utils
@@ -448,7 +451,11 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
         # Handle retry job.
         orig_afe_job_id = job_keyval.get(constants.RETRY_ORIGINAL_JOB_ID,
                                             None)
-        if orig_afe_job_id:
+
+        # Retries are no longer used in mainlab (though possibly in others?)
+        # Because of this, cft cros-publish does not carry the env required for
+        # the tko_models import will not be used.
+        if orig_afe_job_id and tko_models:
             orig_job_idx = tko_models.Job.objects.get(
                     afe_job_id=orig_afe_job_id).job_idx
             _invalidate_original_tests(orig_job_idx, job.job_idx)

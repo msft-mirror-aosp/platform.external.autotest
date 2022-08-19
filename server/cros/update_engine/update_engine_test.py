@@ -806,7 +806,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         cmd = [
                 'curl', '--silent', '--show-error', '--max-time', '600',
                 stateful_url, '|', '/bin/tar', '--ignore-command-error',
-                '--overwrite', '--directory', destination, '-xz'
+                '--overwrite', '--directory', destination, '--selinux', '-xz'
         ]
         if keep_symlinks:
             cmd += ['--keep-directory-symlink']

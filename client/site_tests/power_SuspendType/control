@@ -14,4 +14,8 @@ DOC = """
 This test verify that either mem or freeze suspend mode is supported
 """
 
+METADATA = {
+    'requirements': ['boot-perf-0003-v01']
+}
+
 job.run_test('power_SuspendType')

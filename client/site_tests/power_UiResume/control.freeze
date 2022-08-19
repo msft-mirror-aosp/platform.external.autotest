@@ -18,6 +18,10 @@ In order to match existing requirements, this test will execute three suspend
 iterations, and provide keyvalues for all three.
 '''
 
+METADATA = {
+    'requirements': ['boot-perf-0008-v01', 'boot-perf-0009-v01']
+}
+
 job.add_sysinfo_command('cbmem -c', logfile='bios_log', on_every_test=True)
 job.add_sysinfo_command('cbmem -t', logfile='bios_times', on_every_test=True)
 job.run_test('power_UiResume', tag=NAME.split('.')[1], suspend_state='freeze', suspend_iterations=3)

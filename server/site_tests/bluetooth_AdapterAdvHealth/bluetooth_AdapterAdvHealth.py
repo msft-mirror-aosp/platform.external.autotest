@@ -143,6 +143,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
         self.adv_suspend_resume_advertising_test()
         self.adv_reboot_advertising_test()
         self.adv_nearby_test()
+        self.adv_broadcast_test()
+        self.adv_suspend_peer_test()
 
 
     def run_once(self,

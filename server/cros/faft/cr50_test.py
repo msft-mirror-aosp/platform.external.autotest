@@ -167,7 +167,11 @@ class Cr50Test(FirmwareTest):
         if not qual_ver_str:
             gsurl = os.path.join(self.cr50.GS_PRIVATE,
                                  self.cr50.QUAL_VERSION_FILE)
-            dut_path = self.download_cr50_gs_file(gsurl, False)[1]
+            file_info = self.download_cr50_gs_file(gsurl, False, True)
+            if not file_info:
+                logging.info('Unable to get qual info. Skipping provision')
+                return
+            dut_path = file_info[1]
             qual_ver_str = self.host.run('cat ' + dut_path).stdout.strip()
 
         # Download the qualification image based on the version.
@@ -791,16 +795,20 @@ class Cr50Test(FirmwareTest):
                 return os.path.join(remote_dir, line)
         raise error.TestFail('%s was not extracted from %s' % (fn, archive))
 
-    def download_cr50_gs_file(self, gsurl, extract_fn):
+    def download_cr50_gs_file(self, gsurl, extract_fn, ignore_error=False):
         """Download and extract the file at gsurl.
 
         @param gsurl: The gs url for the cr50 image
         @param extract_fn: The name of the file to extract from the cr50 image
                         tarball. Don't extract anything if extract_fn is None.
+        @param ignore_error: return None if the gsurl doesn't exist
         @return: a tuple (local path, host path)
         """
         file_info = self.find_cr50_gs_image(gsurl)
         if not file_info:
+            if ignore_error:
+                logging.info('%s does not exist', gsurl)
+                return None
             raise error.TestFail('Could not find %s' % gsurl)
         bucket, fn = file_info
 

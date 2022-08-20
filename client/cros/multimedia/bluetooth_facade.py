@@ -4890,3 +4890,11 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     def get_supported_capabilities(self):
         """" Get supported capabilities of the adapter."""
         return (json.dumps({}), 'Not yet implemented')
+
+    def get_adapter_properties(self):
+        """Reads the adapter properties from the Bluetooth Daemon.
+
+        @return A JSON-encoded dictionary of the adapter properties on success,
+             otherwise, an empty JSON-encoded dictionary.
+        """
+        return json.dumps(self.adapter_client.get_properties())

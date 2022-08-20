@@ -396,6 +396,12 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 'Uuids': (self._get_uuids, None),
                 'Discoverable':
                 (self.proxy().GetDiscoverable, self.proxy().SetDiscoverable),
+                'DiscoverableTimeout':
+                (self.proxy().GetDiscoverableTimeout, None),
+                'IsMultiAdvertisementSupported':
+                (self.proxy().IsMultiAdvertisementSupported, None),
+                'IsLeExtendedAdvertisingSupported':
+                (self.proxy().IsLeExtendedAdvertisingSupported, None)
         })
 
         self.remote_properties = PropertySet({
@@ -529,6 +535,15 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
     def get_property(self, prop_name):
         """Gets property by name."""
         return self.properties.get(prop_name)
+
+    @glib_call(None)
+    def get_properties(self):
+        """Gets all adapter properties.
+
+        @return A dict of adapter's property names and properties.
+        """
+        return {p: self.get_property(p) for p in
+                self.properties.get_property_names()}
 
     @glib_call(None)
     def get_remote_property(self, address, prop_name):

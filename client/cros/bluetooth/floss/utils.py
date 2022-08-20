@@ -177,6 +177,11 @@ class PropertySet:
         """
         self.pset = property_set
 
+    def get_property_names(self):
+        """Gets all registered properties names."""
+
+        return self.pset.keys()
+
     def get(self, prop_name, *args):
         """Calls the getter function for a property if it exists.
 

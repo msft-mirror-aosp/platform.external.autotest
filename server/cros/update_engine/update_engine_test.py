@@ -87,8 +87,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     # against lab DUTs. Tests running in the lab will instead use the
     # job_repo_url from the provisioning attributes, which contains a cache
     # server URL assigned by the lab.
-    _PINNED_CACHE_SERVER_IPS = ['100.115.220.100', '10.128.176.201']
+    _PINNED_CACHE_SERVER_IPS = ['100.115.220.100', '10.128.176.201',
+                                '100.115.21.232']
     _CACHE_SERVER_URL_PATTERN = 'http://%s:8082'
+    _CACHE_SERVER_HEALTH_CHECK_PATTERN = f'{_CACHE_SERVER_URL_PATTERN}/check_health'
 
     def initialize(self, host=None):
         """
@@ -994,12 +996,16 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         for ip in self._PINNED_CACHE_SERVER_IPS:
             try:
-                self._host.run(['ping', '-c', '3', ip])
+                health_check = self._CACHE_SERVER_HEALTH_CHECK_PATTERN % ip
+                # Attempt to connect to cache server with 5 second connection
+                # timeout to find valid pinned cache server.
+                self._host.run(['curl',  '-m', '5', '--head', health_check])
             except error.AutoservRunError as e:
-                logging.error('Failed to ping cache server at %s', ip)
+                logging.error('Failed to connect to cache server at %s', ip)
                 continue
             return self._CACHE_SERVER_URL_PATTERN % ip
 
+        logging.error('No cache server found.')
         return None
 
     def get_payload_for_nebraska(self,

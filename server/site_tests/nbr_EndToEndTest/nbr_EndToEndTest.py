@@ -14,25 +14,18 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
 
     def run_once(self,
                  build=None,
-                 n2m=True,
-                 corrupt_partitions=False,
-                 network_name='Ethernet',
-                 network_password=None,
-                 running_at_desk=False):
+                 n2m=True):
         """
         Validates the network based recovery flow.
 
         @param build: An optional parameter to specify the target build for the
             update when running locally. job_repo_url will override this value.
         @param n2m: Perform recovery from ToT to current stable version.
-        @param corrupt_partitions: Corrupt the kernel and rootfs partition before
-            attempting recovery.
-        @param network_name: The name of the network to connect to for recovery.
-        @param network_password: Optional password for the network.
-        @param running_at_desk: indicates test is run locally from a workstation.
 
         """
-        self._use_public_bucket = running_at_desk
+        # Configure and get the network credentials to use for recovery.
+        network_name, network_password = self._configure_network_for_test()
+
         if n2m:
             build = self._get_latest_serving_stable_build(
                     release_archive_path=False)
@@ -41,7 +34,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
         payload_url = self.get_payload_for_nebraska(
                 build=build,
                 full_payload=True,
-                public_bucket=running_at_desk)
+                public_bucket=self._use_public_bucket)
 
         logging.info('Performing recovery with payload url: %s', payload_url)
 
@@ -50,7 +43,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
 
         # Install testing dependencies into MiniOS.
         logging.info("Successfully booted into MiniOS.")
-        self._install_test_dependencies(public_bucket=running_at_desk)
+        self._install_test_dependencies(public_bucket=self._use_public_bucket)
 
         old_boot_id = self._host.get_boot_id()
         self._start_nebraska(payload_url=payload_url)

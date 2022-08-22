@@ -14,8 +14,9 @@ import re
 import time
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros import provisioner
+from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.server.cros.minios import minios_util
+from autotest_lib.server.cros.network import wifi_test_context_manager
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -78,22 +79,32 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
     _GET_STATE_EXTRACTOR = re.compile(r'State is (\w+)')
 
-    def initialize(self, host):
+    def initialize(self, host, wifi_configs=None, running_at_desk=None,
+                   skip_provisioning=None):
         """
         Sets default variables for the test.
 
         @param host: The DUT we will be running on.
+        @param wifi_configs: List containing access point configuration dict and
+            wifi client configuration dict.
+        @param running_at_desk: indicates test is run locally from a
+            workstation.
+        @param skip_provisioning: indicates test is run locally and provisioning
+            of inactive partition should be skipped.
 
         """
         super(MiniOsTest, self).initialize(host)
         self._nebraska = None
-        self._use_public_bucket = False
+        self._use_public_bucket = minios_util.to_bool(running_at_desk)
+        self._skip_provisioning = minios_util.to_bool(skip_provisioning)
         self._servo = host.servo
         self._servo.initialize_dut()
         self._minios_resultsdir = os.path.join(self.resultsdir, 'minios')
         os.mkdir(self._minios_resultsdir)
+        self._wifi_configs = wifi_configs
+        self._wifi_context = None
 
-    def warmup(self, running_at_desk=False, skip_provisioning=False):
+    def warmup(self, host, **kwargs):
         """
         Setup up minios autotests.
 
@@ -102,44 +113,31 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         tests in a test suite, we provision and run the current installed
         version on the inactive partition to ensure the next test runs
         with the correct version of ChromeOS.
+        Additionally, if wifi_configs is provided, we setup and validate the
+        wifi context.
 
-        @param running_at_desk: indicates test is run locally from a
-            workstation.
-        @param skip_provisioning: indicates test is run locally and provisioning
-            of inactive partition should be skipped.
+        @param host: The DUT we will be running on.
+        @param **kwargs: Dict of key, value settings from command line to passed
+            on to the wifi context manager.
+            See `cros.network.WiFiTestContextManager` for relevant arguments.
 
         """
-
-        if skip_provisioning:
-            logging.warning('Provisioning skipped.')
-            return super(MiniOsTest, self).warmup()
-
-        build_name = self._get_release_builder_path()
-
-        # Install the matching build with quick provision.
-        if running_at_desk:
-            self._copy_quick_provision_to_dut()
-            # Copy from gs://chromeos-image-archive instead of
-            # gs://chromeos-release because of the format of build_name.
-            # Ex: octopus-release/R102-14650.0.0
-            update_url = self._get_provision_url_on_public_bucket(
-                    build_name, is_release_bucket=False)
-        else:
-            cache_server_url = self._get_cache_server_url()
-            update_url = os.path.join(cache_server_url, 'update', build_name)
-
-        logging.info('Provisioning inactive partition with update url: %s',
-                     update_url)
-        provisioner.ChromiumOSProvisioner(
-                update_url,
-                host=self._host,
-                is_release_bucket=True,
-                public_bucket=running_at_desk,
-                cache_server_url=cache_server_url).run_provision()
+        if not self._skip_provisioning:
+            self.provision_dut(build_name=self._get_release_builder_path(),
+                               public_bucket=self._use_public_bucket)
+        if self._wifi_configs:
+            self._setup_wifi_context(host, kwargs)
         super(MiniOsTest, self).warmup()
 
     def cleanup(self):
         """Clean up minios autotests."""
+        # Our wifi context is configured to only run the client and the
+        # router. Since, we booted into MiniOS and lost the client
+        # (xmlrpc server) running on the DUT. We therefore cannot use the
+        # teardown method on the wifi_context. We therefore only close the
+        # router.
+        if self._wifi_context:
+            self._wifi_context.router.close()
         if self._nebraska:
             self._nebraska.stop()
         if self._is_running_minios():
@@ -149,6 +147,11 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         # Restore the stateful partition.
         self._restore_stateful(public_bucket=self._use_public_bucket)
         super(MiniOsTest, self).cleanup()
+
+    @property
+    def wifi_context(self):
+        """@return the WiFi context for this test."""
+        return self._wifi_context
 
     def _minios_cleanup(self):
         """
@@ -421,3 +424,65 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
                 raise error.TestFail('MiniOS did not achieve state: %s before'
                                      'timeout. Current state: %s.' %
                                      (state_to_wait_for, state))
+
+    def _setup_wifi_context(self, host, cmdline_args):
+        """
+        Setup Wifi context with a router but no packet capture or attenuator.
+
+        @param host: The DUT that will be using the wifi context.
+        @param cmdline_args: Dict of key, value settings from command line to
+            be passed on to the wifi context manager.
+            See `cros.network.WiFiTestContextManager` for relevant arguments.
+
+
+        """
+        logging.debug('Running MiniOS wifi test with arguments: %r.',
+                      cmdline_args)
+        self._wifi_context = wifi_test_context_manager.WiFiTestContextManager(
+            self.__class__.__name__,
+            host,
+            cmdline_args,
+            self.debugdir)
+
+        self._wifi_context.setup(include_pcap=False, include_attenuator=False)
+
+        msg = '======= MiniOS wifi setup complete. Starting test... ======='
+        self._wifi_context.client.shill_debug_log(msg)
+
+    def _configure_network_for_test(self):
+        """
+        Configures the appropriate network for the test.
+
+        For tests that do not use Wifi, this is a no-op.
+        For tests that use Wifi, we setup the AP and verify that we can connect
+        to it.
+
+        @return a tuple containing the network name and network password if any.
+
+        """
+        # Not a wifi test, thus no-op.
+        if not self._wifi_configs:
+            return (MiniOsTest._ETHERNET_LABEL, None)
+        for ap_config, client_conf in self._wifi_configs:
+            client_conf.ssid = self._configure_and_connect_to_ap(ap_config)
+            return (client_conf.ssid, client_conf.security_config.psk)
+
+    def _configure_and_connect_to_ap(self, ap_config):
+        """
+        Configure the router as an AP with the given config and connect
+        the DUT to it.
+
+        @param ap_config HostapConfig object.
+
+        @return ssid of the configured AP.
+
+        """
+        if not self._wifi_context:
+            raise error.TestError(
+                'Cannot configure access point - no wifi context provided.')
+        self._wifi_context.configure(ap_config)
+        ap_ssid = self._wifi_context.router.get_ssid()
+        assoc_params = xmlrpc_datatypes.AssociationParameters(
+                ssid=ap_ssid, security_config=ap_config.security_config)
+        self._wifi_context.assert_connect_wifi(assoc_params)
+        return ap_ssid

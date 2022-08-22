@@ -18,12 +18,24 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
     _EXCLUSION_PREFS_DIR = "exclusion"
     _MINIOS_PREFS_DIR = "minios"
 
-    def initialize(self, host=None):
+    def initialize(self, host=None, wifi_configs=None, running_at_desk=None,
+                   skip_provisioning=None):
         """
         Clear test related prefs on the DUT before starting the test.
 
+        @param host: The DUT we will be running on.
+        @param wifi_configs: List containing access point configuration dict and
+            wifi client configuration dict.
+        @param running_at_desk: indicates test is run locally from a
+            workstation.
+        @param skip_provisioning: indicates test is run locally and provisioning
+            of inactive partition should be skipped.
+
         """
-        super(autoupdate_MiniOS, self).initialize(host=host)
+        super(autoupdate_MiniOS, self).initialize(
+            host=host, wifi_configs=wifi_configs,
+            running_at_desk=running_at_desk,
+            skip_provisioning=skip_provisioning)
         self._remove_minios_update_prefs()
 
     def cleanup(self):

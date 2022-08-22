@@ -210,15 +210,21 @@ def _restart_adb_and_wait_for_ready(timeout):
 
         # First, collect some information and log it.
         arc_alive = is_android_container_alive()
-        arc_booted = _android_shell('getprop ro.arc.boot_completed',
-                                    ignore_status=True)
+        # TODO(b/237255015): Clean this up after we complete renaming the prop
+        #                    in all ARC branches.
+        arc_old_boot_prop = _android_shell('getprop ro.arc.boot_completed',
+                                           ignore_status=True)
+        arc_new_boot_prop = _android_shell('getprop ro.vendor.arc.boot_completed',
+                                           ignore_status=True)
+        arc_booted = (arc_old_boot_prop.strip() == '1'
+                      or arc_new_boot_prop.strip() == '1')
         arc_system_events = _android_shell(
             'logcat -d -b events *:S arc_system_event', ignore_status=True)
         adbd_pid = _android_shell('pidof -s adbd', ignore_status=True)
         adbd_port_reachable = _is_tcp_port_reachable(_ADBD_ADDRESS)
         adb_state = utils.system_output('adb get-state', ignore_status=True)
         logging.debug('ARC alive: %s', arc_alive)
-        logging.debug('ARC booted: %s', arc_booted)
+        logging.debug('ARC booted: %s', '1' if arc_booted else '0')
         logging.debug('ARC system events: %s', arc_system_events)
         logging.debug('adbd process: %s', adbd_pid)
         logging.debug('adbd port reachable: %s', adbd_port_reachable)
@@ -228,7 +234,7 @@ def _restart_adb_and_wait_for_ready(timeout):
         # actual failure clearer.
         if not arc_alive:
             raise error.TestFail('ARC is not alive.')
-        if arc_booted != '1':
+        if not arc_booted:
             raise error.TestFail('ARC did not finish booting.')
         return False
 

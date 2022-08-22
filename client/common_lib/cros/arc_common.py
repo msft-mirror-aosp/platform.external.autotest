@@ -84,10 +84,15 @@ def wait_for_android_boot(timeout=None):
         return utils.system('android-sh -c true', ignore_status=True) == 0
 
     def _is_android_booted():
-        output = utils.system_output(
+        # TODO(b/237255015): Clean this up after we complete renaming the prop
+        #                    in all ARC branches.
+        old_boot_prop = utils.system_output(
                 'android-sh -c "getprop ro.arc.boot_completed"',
                 ignore_status=True)
-        return output.strip() == '1'
+        new_boot_prop = utils.system_output(
+                'android-sh -c "getprop ro.vendor.arc.boot_completed"',
+                ignore_status=True)
+        return old_boot_prop.strip() == '1' or new_boot_prop.strip() == '1'
 
     logging.info('Waiting for Android to boot completely.')
 

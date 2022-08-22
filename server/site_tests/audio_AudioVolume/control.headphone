@@ -30,6 +30,8 @@ def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
     job.run_test("audio_AudioVolume", host=host, tag="headphone",
                  source_id=chameleon_audio_ids.CrosIds.HEADPHONE,
+                 skipped_board_with_bugs={'trogdor':'b/243326941',
+                 'cherry':'b/238855629'},
                 )
 
 parallel_simple(run, machines)

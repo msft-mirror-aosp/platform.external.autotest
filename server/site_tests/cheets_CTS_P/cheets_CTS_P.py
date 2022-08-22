@@ -31,7 +31,7 @@ _PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
 _INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/P/'
 _PARTNER_CTS = 'gs://chromeos-partner-gts/P/'
 _OFFICIAL_ZIP_NAME = 'android-cts-9.0_r20-linux_x86-%s.zip'
-_PREVIEW_ZIP_NAME = 'android-cts-8480133-linux_x86-%s.zip'
+_PREVIEW_ZIP_NAME = 'android-cts-8973215-linux_x86-%s.zip'
 _BUNDLE_MAP = {
         (None, 'arm'): _PUBLIC_CTS + _OFFICIAL_ZIP_NAME % 'arm',
         (None, 'x86'): _PUBLIC_CTS + _OFFICIAL_ZIP_NAME % 'x86',

@@ -206,13 +206,6 @@ max_throughput_expectation_for_boards = {
         "trogdor": {
                 perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 250
         },
-        # veyron_fievel throughput results tracked in b:199946512.
-        "veyron_fievel": {
-                perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: 130,
-                perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: 70,
-                perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: 130,
-                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 130
-        },
         # kevin throughput results tracked in b:237404049.
         "kevin": {
                 perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: 80

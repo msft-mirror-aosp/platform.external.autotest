@@ -89,8 +89,10 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     # The A2DP long test is a stress test. Exclude it from the AVL.
-    @test_wrapper('A2DP sinewave long test', devices={'BLUETOOTH_AUDIO':1},
-                  flags=['Quick Health'])
+    @test_wrapper('A2DP sinewave long test',
+                  devices={'BLUETOOTH_AUDIO':1},
+                  flags=['Quick Health'],
+                  supports_floss=True)
     def au_a2dp_long_test(self, duration=600):
         """A2DP long test with sinewaves on the two channels.
 
@@ -124,7 +126,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('A2DP playback and disconnect test',
-                  devices={'BLUETOOTH_AUDIO': 1})
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_a2dp_playback_and_disconnect_test(self):
         """Check the playback stream is still alive after BT disconnected."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -135,7 +138,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('A2DP playback back2back test',
-                  devices={'BLUETOOTH_AUDIO': 1})
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_a2dp_playback_back2back_test(self):
         """A2DP playback stream back to back test."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -144,7 +148,9 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_run_test_sequence(device, test_sequence, test_profile)
 
 
-    @test_wrapper('A2DP pinned playback test', devices={'BLUETOOTH_AUDIO': 1})
+    @test_wrapper('A2DP pinned playback test',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_a2dp_pinned_playback_test(self):
         """Pinned playback stream test."""
         device = self.devices['BLUETOOTH_AUDIO'][0]

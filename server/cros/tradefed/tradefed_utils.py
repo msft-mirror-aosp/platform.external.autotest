@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 import contextlib
+import html
 import logging
 import os
 import random
@@ -279,6 +280,9 @@ def get_perf_metrics_from_test_result_xml(result_path, resultsdir):
                 for test in testcase.iter('Test'):
                     test_name = test.get('name')
                     for metric in test.iter('Metric'):
+                        if metric.get('key') == 'COMPATIBILITY_TEST_RESULT':
+                            result = ElementTree.fromstring(html.unescape(metric.text))
+                            metric = result[0]
                         score_type = metric.get('score_type')
                         if score_type == None:
                             continue

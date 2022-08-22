@@ -156,6 +156,13 @@ class TradefedTestTest(unittest.TestCase):
                              'test_result.xml'))
         self.assertEquals(0, len(waived))
 
+    def test_parse_tradefed_testresults_xml_no_failure_R(self):
+        waived = tradefed_utils.parse_tradefed_testresults_xml(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                             'tradefed_utils_unittest_data',
+                             'test_result_R.xml'))
+        self.assertEquals(0, len(waived))
+
     def test_parse_tradefed_testresult_xml_waivers(self):
         waived = tradefed_utils.parse_tradefed_testresults_xml(
                 os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -406,7 +413,406 @@ class TradefedTestTest(unittest.TestCase):
                          'not_exist'),
             os.path.join('/', 'resultsdir'))
 
-
+    def test_get_perf_metrics_from_test_result_xml_R(self):
+        perf_result = tradefed_utils.get_perf_metrics_from_test_result_xml(
+            os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                         'tradefed_utils_unittest_data', 'test_result_R.xml'),
+            os.path.join('/', 'resultsdir'))
+        expected_result = [
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcGoog0Perf0320x0240",
+                "value": "425.9024873707386",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcGoog0Perf0720x0480",
+                "value": "195.4383682600072",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcGoog0Perf1280x0720",
+                "value": "69.20977482750216",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcGoog0Perf1920x1080",
+                "value": "30.958506313987364",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcOther0Perf0320x0240",
+                "value": "732.6894607825965",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcOther0Perf0720x0480",
+                "value": "703.3580092266964",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcOther0Perf1280x0720",
+                "value": "646.0737746134075",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcOther0Perf1920x1080",
+                "value": "500.47545167909516",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testH263Goog0Perf0176x0144",
+                "value": "866.3879535015095",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testH263Goog0Perf0352x0288",
+                "value": "701.2566519202411",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testMpeg4Goog0Perf0176x0144",
+                "value": "634.7102407594098",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Goog0Perf0320x0180",
+                "value": "243.09459418396185",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Goog0Perf0640x0360",
+                "value": "306.8324031113812",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Goog0Perf1280x0720",
+                "value": "81.58652553204992",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Goog0Perf1920x1080",
+                "value": "45.01702462022001",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Other0Perf0320x0180",
+                "value": "788.6545833041424",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Other0Perf0640x0360",
+                "value": "778.0597173350103",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Other0Perf1280x0720",
+                "value": "585.2903039907794",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Other0Perf1920x1080",
+                "value": "489.2917301676426",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Goog0Perf0320x0180",
+                "value": "429.4805887788435",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Goog0Perf0640x0360",
+                "value": "295.2932473589899",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Goog0Perf1280x0720",
+                "value": "129.55228137550378",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Goog0Perf1920x1080",
+                "value": "81.9227263883342",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf0320x0180",
+                "value": "759.5628360615216",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf0640x0360",
+                "value": "728.6718354322686",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf1280x0720",
+                "value": "590.7816040621742",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf1920x1080",
+                "value": "540.6159009278734",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf3840x2160",
+                "value": "199.65106211355229",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcGoog0Perf0320x0240",
+                "value": "427.8822932887614",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcGoog0Perf0720x0480",
+                "value": "192.8731843665681",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcGoog0Perf1280x0720",
+                "value": "65.61155091353832",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcGoog0Perf1920x1080",
+                "value": "29.35891270785351",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcOther0Perf0320x0240",
+                "value": "666.5203328792977",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcOther0Perf0720x0480",
+                "value": "666.2911692409583",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcOther0Perf1280x0720",
+                "value": "603.2106437620304",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testAvcOther0Perf1920x1080",
+                "value": "476.8903935199129",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testH263Goog0Perf0176x0144",
+                "value": "883.5886924690593",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testH263Goog0Perf0352x0288",
+                "value": "464.87116856989996",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testMpeg4Goog0Perf0176x0144",
+                "value": "970.5570997752711",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Goog0Perf0320x0180",
+                "value": "637.9051874610072",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Goog0Perf0640x0360",
+                "value": "334.0251231028025",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Goog0Perf1280x0720",
+                "value": "103.80291555179312",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Goog0Perf1920x1080",
+                "value": "44.59363040799118",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Other0Perf0320x0180",
+                "value": "792.2834992688155",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Other0Perf0640x0360",
+                "value": "757.2995259865929",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Other0Perf1280x0720",
+                "value": "601.25953332624",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp8Other0Perf1920x1080",
+                "value": "525.906136272798",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Goog0Perf0320x0180",
+                "value": "542.4610919281389",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Goog0Perf0640x0360",
+                "value": "297.242175049532",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Goog0Perf1280x0720",
+                "value": "126.7377006131063",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Goog0Perf1920x1080",
+                "value": "81.32502869248668",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf0320x0180",
+                "value": "765.775066604389",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf0640x0360",
+                "value": "703.1828275351592",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf1280x0720",
+                "value": "529.7877944503476",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf1920x1080",
+                "value": "529.8971158170783",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            },
+            {
+                "description": "android.media.cts.VideoDecoderPerfTest#testVp9Other0Perf3840x2160",
+                "value": "201.03995239697207",
+                "units": "fps",
+                "higher_is_better": True,
+                "resultsdir": "/resultsdir/tests/CTS.CtsMediaTestCases"
+            }
+        ]
+        self.assertListEqual(list(perf_result), expected_result)
 
 if __name__ == '__main__':
     unittest.main()

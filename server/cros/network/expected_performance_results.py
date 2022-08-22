@@ -181,7 +181,7 @@ annotated with a bug which includes the history on why the specific expectations
 for that board.
 """
 max_throughput_expectation_for_boards = {
-        # caroline throughput results tracked in b:200743117.
+        # caroline throughput results tracked in b:188454947.
         "caroline": {
                 perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 200
         },
@@ -190,17 +190,17 @@ max_throughput_expectation_for_boards = {
                 perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: 200,
                 perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 300
         },
-        # eve throughput results tracked in b:200743117.
+        # eve throughput results tracked in b:188454947.
         "eve": {
-                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 275
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 200
         },
         # kukui throughput results tracked in b:201807413.
         "kukui": {
                 perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 300
         },
-        # nami throughput results tracked in b:200743117.
+        # nami throughput results tracked in b:188454947.
         "nami": {
-                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 140
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 200
         },
         # trogdor throughput results tracked in b:201807655.
         "trogdor": {

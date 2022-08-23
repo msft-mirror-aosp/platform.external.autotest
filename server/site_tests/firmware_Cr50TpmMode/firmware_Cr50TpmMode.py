@@ -103,7 +103,9 @@ class firmware_Cr50TpmMode(Cr50Test):
             else:
                 logging.info('TPM did not respond')
 
-            if not self.cr50.keyladder_is_disabled():
+            # Only Cr50 revokes the key ladder.
+            if (self.cr50.NAME == 'cr50'
+                and not self.cr50.key_ladder_is_disabled()):
                 raise error.TestFail('Failed to revoke H1 Key Ladder')
         else:
             if not 'enabled (1)' in output_log.lower():
@@ -115,14 +117,17 @@ class firmware_Cr50TpmMode(Cr50Test):
             else:
                 raise error.TestFail('Failed to check TPM response')
 
-            # Subsequent set-TPM-mode vendor command should fail.
-            try:
-                output_log = self.set_tpm_mode(not disable_tpm, long_opt)
-            except error.AutoservRunError:
-                logging.info('Expectedly failed to disable TPM mode');
-            else:
-                raise error.TestFail('Unexpected result in disabling TPM mode:'
-                        ' %s' % output_log)
+            # On Cr50, disable should fail after enable. Ti50 allows disable
+            # after enable.
+            if self.cr50.NAME == 'cr50':
+                try:
+                    output_log = self.set_tpm_mode(not disable_tpm, long_opt)
+                except error.AutoservRunError:
+                    logging.info('Expectedly failed to disable TPM mode');
+                else:
+                    raise error.TestFail(
+                        'Unexpected result in disabling TPM mode: %s'
+                        % output_log)
 
     def run_once(self):
         """Test Disabling TPM and Enabling TPM"""

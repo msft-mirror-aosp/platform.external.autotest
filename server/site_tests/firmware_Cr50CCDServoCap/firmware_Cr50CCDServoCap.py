@@ -7,7 +7,6 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
-from autotest_lib.server.cros.servo import chrome_ti50
 
 
 class firmware_Cr50CCDServoCap(Cr50Test):
@@ -191,13 +190,19 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         """
         flags = ccdstate['State flags']
         ap_uart_enabled = 'UARTAP' in flags
-        ec_uart_enabled = 'UARTEC' in flags
         ap_uart_tx_enabled = 'UARTAP+TX' in flags
+        ec_uart_enabled = 'UARTEC' in flags
         ec_uart_tx_enabled = 'UARTEC+TX' in flags
-        ec_usb_tx_enabled = 'USBEC+TX' in flags
 
-        ccd_ec_uart_enabled = ec_uart_tx_enabled and ec_usb_tx_enabled
-        ccd_enabled = ap_uart_enabled or ec_usb_tx_enabled
+        if self.cr50.NAME == 'cr50':
+            ec_usb_tx_enabled = 'USBEC+TX' in flags
+            ccd_ec_uart_enabled = ec_uart_tx_enabled and ec_usb_tx_enabled
+            ccd_enabled = ap_uart_enabled or ec_usb_tx_enabled
+        else:
+            # Ti50 uses UARTEC for CCD state and does not use USBEC.
+            ccd_ec_uart_enabled = ec_uart_enabled
+            ccd_enabled = ap_uart_enabled or ec_uart_enabled
+
         output_enabled = ap_uart_tx_enabled
         if not self.ec_efs_support:
             output_enabled |= ec_uart_tx_enabled
@@ -211,7 +216,10 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         if ccd_mode_is_asserted:
             if output_enabled and self.state_is_on(ccdstate, 'Servo'):
                 mismatch.append('CCD output is enabled with servo attached')
-            if not isinstance(self.cr50, chrome_ti50.ChromeTi50):
+            # Ti50 does not report 'AP UART' or 'EC' in ccdstate output because
+            # AP UART follows AP on/off and EC UART does not depend on EC on/off
+            # state.
+            if self.cr50.NAME == 'cr50':
                 if ap_uart_enabled != self.state_is_on(ccdstate, 'AP UART'):
                     mismatch.append('AP UART enabled without AP UART on')
                 if ec_uart_enabled != self.state_is_on(ccdstate, 'EC'):

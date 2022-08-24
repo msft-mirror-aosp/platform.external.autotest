@@ -5,6 +5,7 @@
 """A Batch of Bluetooth Quality Report tests"""
 
 import collections
+import logging
 import time
 
 from autotest_lib.client.common_lib import error
@@ -218,6 +219,151 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
                              test_method,
                              test_profile)
 
+    def run_check_states_seq(self, test_name, test_method, expected_states):
+        """Framework to run a test for BQR state check.
+
+        It first restarts btmon to clear the BQR toggle history. Then it runs
+        the specified test_method. After a short pause, it checks if the BQR
+        toggle history is expected.
+
+        @param test_name: the test name
+        @param test_method: the test method to run
+        @param expected_states: the list of expected BQR toggle history
+        """
+        logging.info('')
+        logging.info('%s %s %s', 6 * '.', test_name, 6 * '.')
+        self.dut_btmon_log_path = self.start_new_btmon()
+        test_method()
+        # the D-Bus method may take near 1 second to arrive the
+        # lower layers in the kernel. Wait a while for safety.
+        time.sleep(2)
+        self.send_btsnoop_log()
+        self.test_check_qr_states(expected_states=expected_states)
+
+    # This test does not need a btpeer device.
+    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @test_wrapper('Quality Report state test',
+                  flags=['Quick Health'],
+                  skip_chipsets=QR_UNSUPPORTED_CHIPSETS)
+    def qr_check_states_test(self):
+        """Quality Report check states test
+
+        This test checks whether the bluetooth software stack, including the
+        user space daemon and the kernel, enables or disables the Bluetooth
+        Quality Report feature correctly under combinations of the following
+        conditions:
+        - DUT reboots
+        - bluetoothd stops and starts
+        - the adapter powers off and on
+        - the system suspends and resumes
+
+        Note that this test purely verifies the bluetooth software stack
+        instead of the controller functionality. Hence, btpeer devices are not
+        employed so that the test can verify various scenarios at a reasonable
+        speed.
+        """
+        self.init_check_qr_states()
+
+        # Assume that BQR is disabled initially.
+        # When BQR is enabled by default, we will need to modify the ordering of
+        # the following tests.
+        # - placing the self.test_disable_quality_report test as the first test,
+        # - placing the self.test_enable_quality_report test as the last test.
+
+        # At this time, the kernel HCI_QUALITY_REPORT flag is initially false.
+        # --------------------------------------------------------------------
+
+        # The expected_states below indicates enable (True) or disable (Flase)
+        # actions that are expected to observe in the captured btsnoop logs.
+        #
+        # Note that expected_states can be [], i.e., empty, because
+        # - The kernel won't enable the BQR feature if it is already enabled.
+        # - The kernel won't disable the BQR feature if it is already disabled.
+        #
+        # expected_states=[False] indicates the disabled action is expected.
+        # expected_states=[True] indicates the enabled action is expected.
+        # expected_states=[False, True] indicates the disabled action followed
+        #   by the enabled action is expected, etc.
+
+        # Reboot the DUT so that both the kernel and the user space are in
+        # clean states. Do not check the expected_states for two reasons:
+        # - There is a race condition regarding whether the btmon log could
+        #   capture the BQR disablement command in powering down the machine.
+        # - Whether the BQR is enabled on the bluetooth daemon startup is
+        #   determined by the options in start_bluetoothd.sh which change
+        #   over time.
+        self.reboot()
+
+        # Disable BQR so that there is a consistent BQR disabled state.
+        # Whether a BQR disablement command can be captured in the btmon log
+        # depends on whether BQR is enabled on the bluetooth daemon startup.
+        self.test_disable_quality_report()
+
+        # Stop bluetoothd and BQR should remain disabled.
+        # expected_states=[] as kernel won't disable the already disabled BQR.
+        self.run_check_states_seq('stop bluetoothd when BQR is disabled',
+                                  self.test_stop_bluetoothd,
+                                  expected_states=[])
+
+        # Start bluetoothd and BQR should remain disabled.
+        # expected_states=[] as kernel won't disable the already disabled BQR.
+        self.run_check_states_seq('start bluetoothd when BQR is disabled',
+                                  self.test_start_bluetoothd,
+                                  expected_states=[])
+
+        # Power off the adapter and BQR should remain disabled.
+        # expected_states=[] as kernel won't disable the already disabled BQR.
+        self.run_check_states_seq('power off the adapter when BQR is disabled',
+                                  self.test_power_off_adapter,
+                                  expected_states=[])
+
+        # Power on the adapter and BQR should remain disabled.
+        # expected_states=[] as kernel won't disable the already disabled BQR.
+        self.run_check_states_seq('power on the adapter when BQR is disabled',
+                                  self.test_power_on_adapter,
+                                  expected_states=[])
+
+        # Do system suspend and resume. BQR should remain disabled.
+        # expected_states=[] as kernel won't disable the already disabled BQR.
+        self.run_check_states_seq('system suspend and resume when BQR is disabled',
+                                  self.suspend_resume,
+                                  expected_states=[])
+
+        # Enable BQR and BQR should be enabled.
+        self.run_check_states_seq('enable BQR',
+                                  self.test_enable_quality_report,
+                                  expected_states=[True])
+
+        # Stop bluetoothd and BQR should be disabled.
+        self.run_check_states_seq('stop bluetoothd when BQR is enabled',
+                                  self.test_stop_bluetoothd,
+                                  expected_states=[False])
+
+        # Start bluetoothd and BQR should be enabled.
+        self.run_check_states_seq('start bluetoothd when BQR is enabled',
+                                  self.test_start_bluetoothd,
+                                  expected_states=[True])
+
+        # Power off the adapter and BQR should be disabled.
+        self.run_check_states_seq('power off the adapter when BQR is enabled',
+                                  self.test_power_off_adapter,
+                                  expected_states=[False])
+
+        # Power on the adapter and BQR should be enabled.
+        self.run_check_states_seq('power on the adapter when BQR is enabled',
+                                  self.test_power_on_adapter,
+                                  expected_states=[True])
+
+        # Do system suspend and resume. BQR should be disabled and then re-enabled.
+        self.run_check_states_seq('system suspend and resume when BQR is enabled',
+                                  self.suspend_resume,
+                                  expected_states=[False, True])
+
+        # Disable BQR and BQR should be disabled.
+        self.run_check_states_seq('Disable BQR',
+                                  self.test_disable_quality_report,
+                                  expected_states=[False])
+
     @batch_wrapper('Bluetooth BQR Batch Health Tests')
     def qr_health_batch_run(self, num_iterations=1, test_name=None):
         """Run the bluetooth audio health test batch or a specific given test.
@@ -249,8 +395,10 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
         """
         self.host = host
 
+        # The btpeers are not needed in the qr_check_states_test.
+        use_btpeer_flag = (test_name != 'qr_check_states_test')
         self.quick_test_init(host,
-                             use_btpeer=True,
+                             use_btpeer=use_btpeer_flag,
                              flag=flag,
                              args_dict=args_dict)
         self.qr_health_batch_run(num_iterations, test_name)

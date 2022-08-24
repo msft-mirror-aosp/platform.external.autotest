@@ -11,6 +11,7 @@ from __future__ import print_function
 import collections
 import logging
 import os
+import re
 from threading import Thread
 import time
 
@@ -299,6 +300,22 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
     BTSNOOP_LOG_FILENAME = 'btsnoop.log'
     BTSNOOP_LOG_FILE = os.path.join(BTSNOOP_LOG_DIR, BTSNOOP_LOG_FILENAME)
 
+    BQR_CMD_OCF_AOSP = '0x015e'
+    BQR_CMD_OCF_INTEL = '0x00a1'
+    BQR_VENDOR_COMMAND_FORMAT = 'HCI Command: Vendor.*0x3f.*%s'
+    BQR_VENDOR_COMMAND_AOSP = BQR_VENDOR_COMMAND_FORMAT % BQR_CMD_OCF_AOSP
+    BQR_VENDOR_COMMAND_INTEL = BQR_VENDOR_COMMAND_FORMAT % BQR_CMD_OCF_INTEL
+
+    PARAMETERS_TO_ACTION_TABLE_AOSP = {
+        '00 0f 00 00 00 88 13': True,   # AOSP enable parameters
+        '02 00 00 00 00 00 00': False,  # AOSP disable parameters
+    }
+
+    PARAMETERS_TO_ACTION_TABLE_INTEL = {
+        '02': True,                     # Intel enable parameters
+        '00': False,                    # Intel disable parameters
+    }
+
     def collect_qr_event_from_log(self):
         """Collect the quality event from btsnoop log"""
         return collect_qr_event_from_log(self.BTSNOOP_LOG_FILE)
@@ -389,8 +406,7 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
                 return False
         return True
 
-    @test_retry_and_log(False)
-    def test_send_log(self):
+    def send_btsnoop_log(self):
         """Sending the btsnoop log from the DUT back to the autoserv.
 
         This test can be used only when the self.dut_btmon_log_path
@@ -411,12 +427,93 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         return True
 
     @test_retry_and_log(False)
+    def test_send_log(self):
+        """Sending the btsnoop log from the DUT back to the autoserv.
+
+        This test can be used only when the self.dut_btmon_log_path
+        was set and this variable is set in the quick_test_init() by default.
+
+        @returns: True if success, False otherwise.
+        """
+        return self.send_btsnoop_log()
+
+    @test_retry_and_log(False)
     def test_no_receive_qr_event_log(self):
         """Checking if not reveice the qr event log"""
         all_reports = self.collect_qr_event_from_log()
         no_receiving = len(all_reports) == 0
         self.results = {'no receiving qr debug log': no_receiving}
         return no_receiving
+
+    def init_check_qr_states(self):
+        """Initialization for conducting qr_check_states_test."""
+        if self.is_intel_chipset():
+          self.vnd_cmd = re.compile(self.BQR_VENDOR_COMMAND_INTEL)
+          self.parameters_to_action_table = self.PARAMETERS_TO_ACTION_TABLE_INTEL
+        else:
+          self.vnd_cmd = re.compile(self.BQR_VENDOR_COMMAND_AOSP)
+          self.parameters_to_action_table = self.PARAMETERS_TO_ACTION_TABLE_AOSP
+
+    def get_qr_state_history(self):
+        """Gets the history of the BQR vendor event enablement.
+
+        Gets the BQR enablement history from btsnoop log file.
+
+        The AOSP BQR command to enable the feature looks like
+        < HCI Command: Vendor (0x3f|0x015e) plen 7   #1 [hci0] 02:28:16.323873
+                00 0f 00 00 00 88 13                             .......
+
+        The AOSP BQR command to enable the feature looks like
+        < HCI Command: Vendor (0x3f|0x015e) plen 7   #3 [hci0] 02:28:29.665397
+                02 00 00 00 00 00 00                             .......
+
+        The Intel telemetry command to enable the feature looks like
+        < HCI Command: Vendor (0x3f|0x00a1) plen 1   #7 [hci0] 01:02:21.315387
+                02                                               .
+
+        The Intel telemetry command to disable the feature looks like
+        < HCI Command: Vendor (0x3f|0x00a1) plen 1   #11 [hci0] 01:02:34.047338
+                00                                               .
+
+        @returns: A list of BQR enablement history in chronographic order.
+        """
+        found = False
+        cmd_parameters = []
+
+        # Sometimes the btsnoop will contain some words that cannot
+        # decode by the UTF-8 but it seems not very harmful (only few words)
+        # so just ignore the decode errors here.
+        with open(self.BTSNOOP_LOG_FILE, 'r', errors='ignore') as f:
+            for line in f:
+                if found:
+                    # Find the parameters of the vendor command, which is in
+                    # the line after the matched line of the vnd_cmd pattern.
+                    # The parameters are represented as hex bytes with dots at
+                    # the end of line. Extract the hex bytes only.
+                    cmd_parameters.append(line.split('.')[0].strip())
+                    found = False
+                elif self.vnd_cmd.search(line):
+                    found = True
+
+        logging.debug('cmd_parameters: %s', cmd_parameters)
+        return [self.parameters_to_action_table.get(p) for p in cmd_parameters]
+
+    @test_retry_and_log(False)
+    def test_check_qr_states(self, expected_states):
+        """Checks if the quality report's enablement history is expected.
+
+        @param expected_states: a list of expected BQR toggle history.
+
+        @returns: True if success, False otherwise.
+        """
+        actual_states = self.get_qr_state_history()
+        logging.debug('actual_states %s, expected_states %s',
+                      actual_states, expected_states)
+        self.results = {
+                'BQR expected state': expected_states,
+                'BQR actual state': actual_states,
+        }
+        return expected_states == actual_states
 
     # ---------------------------------------------------------------
     # Definitions of all bluetooth audio test sequences

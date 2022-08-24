@@ -1535,12 +1535,24 @@ class BluetoothAdapterTests(test.test):
         self.bluetooth_facade.set_quality_debug_log(bool(enable))
 
 
-    def enable_disable_quality_report(self, action):
+    def enable_disable_quality_report(self, enable):
         """Enable or disable the Bluetooth quality debug
-        @param action: 1 to enable the quality report
-                       0 to disable the quality report.
+        @param enable: True to enable the quality report
+                       False to disable the quality report.
         """
-        self.bluetooth_facade.set_quality_report(action)
+        self.bluetooth_facade.set_quality_report(enable)
+
+    @test_retry_and_log
+    def test_enable_quality_report(self):
+        """Test that enables the bluetooth quality report."""
+        self.enable_disable_quality_report(enable=True)
+        return True
+
+    @test_retry_and_log
+    def test_disable_quality_report(self):
+        """Test that disables the bluetooth quality report."""
+        self.enable_disable_quality_report(enable=False)
+        return True
 
     def start_new_btmon(self):
         """ Start a new btmon process and save the log """
@@ -1799,6 +1811,19 @@ class BluetoothAdapterTests(test.test):
         }
         return all(
                 [self.results[x] for x in ['eventually_ok', 'daemon_started']])
+
+
+    def is_intel_chipset(self):
+        """Is the controller made of Intel?
+
+        All Intel controllers start with 'Intel'.
+        Refer to BluetoothBaseFacadeLocal.CHIPSET_TO_VIDPID in
+        .../files/client/cros/multimedia/bluetooth_facade.py
+
+        @returns: True if it is an Intel controller.
+        """
+        chipset = self.bluetooth_facade.get_chipset_name()
+        return chipset.startswith('Intel')
 
 
     @test_retry_and_log(False)

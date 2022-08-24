@@ -96,7 +96,8 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
         self.action_plug_jack(plugged_before_resume)
         try:
             self.host.test_wait_for_resume(boot_id, self.RESUME_TIMEOUT_SECS)
-        except error.TestFail as ex:
+            self.host.verify_connectivity()
+        except Exception as ex:
             self.errors.append("%s - %s" % (test_case, str(ex)))
             raise error.TestError("DUT failed to resume after suspend")
 

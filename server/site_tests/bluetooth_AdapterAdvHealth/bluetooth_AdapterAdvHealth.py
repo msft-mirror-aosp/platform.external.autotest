@@ -56,7 +56,6 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                                      num_iterations=1)
 
 
-    # Remove ['Quick Health'] flag when adding into AVL suite.
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     # TODO(b/182172118) - Winky has suspend test issues
     # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
@@ -64,8 +63,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                   skip_models=SUSPEND_POWER_DOWN_MODELS + ['winky'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
-                  skip_common_errors=True,
-                  flags=['Quick Health'])
+                  skip_common_errors=True)
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for advertisements involving suspend resume."""
         self.run_le_advertising_test(self.host,
@@ -74,8 +72,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                                      num_iterations=1)
 
 
-    # Remove ['Quick Health'] flag when adding into AVL suite.
-    @test_wrapper('Reboot LE advertising test', flags=['QuickHealth'])
+    @test_wrapper('Reboot LE advertising test')
     def adv_reboot_advertising_test(self):
         """Run all test cases for advertisements involving reboot."""
         self.run_le_advertising_test(self.host,

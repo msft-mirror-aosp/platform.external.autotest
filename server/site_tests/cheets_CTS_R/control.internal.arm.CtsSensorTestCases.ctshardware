@@ -41,7 +41,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
-        use_jdk9=True,
         hard_reboot_on_failure=True,
         timeout=7200)
 

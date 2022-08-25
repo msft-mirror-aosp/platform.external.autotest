@@ -275,6 +275,7 @@ def get_perf_metrics_from_test_result_xml(result_path, resultsdir):
         root = ElementTree.parse(result_path)
         for module in root.iter('Module'):
             module_name = module.get('name')
+            abi = module.get('abi')
             for testcase in module.iter('TestCase'):
                 testcase_name = testcase.get('name')
                 for test in testcase.iter('Test'):
@@ -299,7 +300,7 @@ def get_perf_metrics_from_test_result_xml(result_path, resultsdir):
                             units=units,
                             higher_is_better=higher_is_better,
                             resultsdir=os.path.join(resultsdir, 'tests',
-                                PERF_MODULE_NAME_PREFIX + module_name)
+                                PERF_MODULE_NAME_PREFIX + module_name + '.' + abi)
                         )
     except Exception as e:
         logging.warning(

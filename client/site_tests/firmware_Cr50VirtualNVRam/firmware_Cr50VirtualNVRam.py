@@ -7,9 +7,20 @@ from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros import cryptohome
+from autotest_lib.client.cros.tpm import *
 
 tpm_owner_password = ''
 tpm_pw_hex = ''
+
+def get_gsc_version():
+    """Detect Cr50 vs Ti50 using Spec Revision in tpm_version."""
+    rev = get_tpm_spec_revision()
+    if rev == 116:
+        return 'cr50'
+    elif rev >= 162:
+        return 'ti50'
+    else:
+        raise error.TestError('Unexpected Spec Revision: %d' % rev)
 
 def run_tpmc_cmd(subcommand):
     """Make this test more readable by simplifying commonly used tpmc command.
@@ -67,8 +78,10 @@ class firmware_Cr50VirtualNVRam(test.test):
                    ' '.join(bid.split()[:6]))  # Matches previous read
 
         # Check that size constraints are respected.
-        expect_tpmc_error('read 0x3fffff 0xd',
-                          '0x146')  # TPM_RC_NV_RANGE
+        exp_err = '0x146' # TPM_RC_NV_RANGE
+        if self.gsc_version == 'ti50':
+            exp_err = '0x18b'  # TPM_RC_HANDLE
+        expect_tpmc_error('read 0x3fffff 0xd', exp_err)
 
         # Check zero-length can be read.
         check_tpmc('read 0x3fff00 0x0', '')
@@ -107,25 +120,27 @@ class firmware_Cr50VirtualNVRam(test.test):
     def __write_tests(self):
         # Check an implemented index cannot be written to:
 
+        exp_err = '0x148' # TPM_RC_NV_LOCKED
+        if self.gsc_version == 'ti50':
+            exp_err = '0x12f'  # TPM_RC_AUTH_UNAVAILABLE
+
         # Zero-length write.
-        expect_tpmc_error(self.__get_write_cmd('01 3f ff 00', 0, 0),
-                          '0x148')  # TPM_RC_NV_LOCKED
+        expect_tpmc_error(self.__get_write_cmd('01 3f ff 00', 0, 0), exp_err)
 
         # Single byte.
-        expect_tpmc_error(self.__get_write_cmd('01 3f ff 00', 0, 1),
-                          '0x148')  # TPM_RC_NV_LOCKED
+        expect_tpmc_error(self.__get_write_cmd('01 3f ff 00', 0, 1), exp_err)
 
         # Single byte, offset.
-        expect_tpmc_error(self.__get_write_cmd('01 3f ff 00', 4, 1),
-                          '0x148')  # TPM_RC_NV_LOCKED
+        expect_tpmc_error(self.__get_write_cmd('01 3f ff 00', 4, 1), exp_err)
 
         # Write full length of index.
-        expect_tpmc_error(self.__get_write_cmd('01 3f ff 00', 0, 12),
-                          '0x148')  # TPM_RC_NV_LOCKED
+        expect_tpmc_error(self.__get_write_cmd('01 3f ff 00', 0, 12), exp_err)
+
+        if self.gsc_version == 'ti50':
+            exp_err = '0x18b'  # TPM_RC_HANDLE
 
         # Check an unimplemented index cannot be written to.
-        expect_tpmc_error(self.__get_write_cmd('01 3f ff ff', 0, 1),
-                          '0x148')  # TPM_RC_NV_LOCKED
+        expect_tpmc_error(self.__get_write_cmd('01 3f ff ff', 0, 1), exp_err)
 
     def __get_define_cmd(self, index, size):
         assert (len(tpm_owner_password) + 45) < 256
@@ -191,18 +206,31 @@ class firmware_Cr50VirtualNVRam(test.test):
         expect_tpmc_error(self.__get_define_cmd('01 3f ff 00', 12),
                           '0x149')  # TPM_RC_NV_AUTHORIZATION
 
-        # Check an unimplemented space in the virtual range cannot be defined.
-        expect_tpmc_error(self.__get_define_cmd('01 3f ff df', 12),
-                          '0x149')  # TPM_RC_NV_AUTHORIZATION
+        if self.gsc_version == 'cr50':
+            # Check an unimplemented space in the virtual range cannot be defined.
+            expect_tpmc_error(self.__get_define_cmd('01 3f ff df', 12),
+                            '0x149')  # TPM_RC_NV_AUTHORIZATION
+        else:
+            check_tpmc(self.__get_define_cmd('01 3f ff df', 12),
+                    '(0x[0-9]{2} ){6}'
+                    '(0x00 ){4}'        # TPM_RC_SUCCESS
+                    '(0x[0-9]{2} ?){9}')
+
 
     def __undefinespace_tests(self):
         # Check an implemented space in the virtual range cannot be defined.
         expect_tpmc_error(self.__get_undefine_cmd('01 3f ff 00'),
                           '0x149')  # TPM_RC_NV_AUTHORIZATION
 
-        # Check an unimplemented space in the virtual range cannot be defined.
-        expect_tpmc_error(self.__get_undefine_cmd('01 3f ff df'),
-                          '0x149')  # TPM_RC_NV_AUTHORIZATION
+        if self.gsc_version == 'cr50':
+            # Check an unimplemented space in the virtual range cannot be defined.
+            expect_tpmc_error(self.__get_undefine_cmd('01 3f ff df'),
+                            '0x149')  # TPM_RC_NV_AUTHORIZATION
+        else:
+            check_tpmc(self.__get_undefine_cmd('01 3f ff df'),
+                    '(0x[0-9]{2} ){6}'
+                    '(0x00 ){4}'        # TPM_RC_SUCCESS
+                    '(0x[0-9]{2} ?){9}')
 
     def __readpublic_test(self):
         public = check_tpmc(('raw '
@@ -277,6 +305,7 @@ class firmware_Cr50VirtualNVRam(test.test):
 
     def initialize(self):
         """Initialize the test."""
+        self.gsc_version = get_gsc_version()
         self.__take_tpm_ownership()
         # Stop services that access to the TPM, to be able to use tpmc.
         # Note: for TPM2 the order of re-starting services (they are started

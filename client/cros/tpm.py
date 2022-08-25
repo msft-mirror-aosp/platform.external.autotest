@@ -4,7 +4,6 @@
 
 """Utilities to interact with the TPM on a CrOS device."""
 
-import logging
 import re
 
 import common
@@ -74,6 +73,14 @@ def get_tpm_da_info():
         status[items[0].strip()] = value
     return status
 
+
+def get_tpm_spec_revision():
+    """Get Spec Revision from tpm_version."""
+    out = run_cmd('tpm_version')
+    m = re.search('Spec Revision: +(\d+)', out)
+    if m is None:
+        raise error.TestError('Unexpected tpm_version output: %s' % out)
+    return int(m.group(1))
 
 
 def run_cmd(cmd):

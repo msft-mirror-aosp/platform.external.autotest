@@ -12,11 +12,13 @@ from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 class firmware_Cr50RejectUpdate(Cr50Test):
     """Verify cr50 rejects certain updates."""
     version = 1
-    OLD_IMAGE_VER = '0.0.18'
+    # Old version that exists for Cr50 and Ti50
+    OLD_IMAGE_VER = '0.0.16'
     # We dont care that it actually matches the device devid. It will be
     # rejected before the update. This is just one that I picked from google
     # storage
-    IMAGE_DEVID = '0x1000d059 0x04657208'
+    CR50_IMAGE_DEVID = '0x1000d059 0x04657208'
+    TI50_IMAGE_DEVID = '0x0280a04a 0x4d9ace78'
     # No boards use the bid TEST. Use this image to verify cr50 rejects images
     # with the wrong board id.
     BID = 'TEST:0000ffff:0000ff00'
@@ -38,8 +40,11 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         if cr50_utils.GetChipBoardId(host) == cr50_utils.ERASED_CHIP_BID:
             raise error.TestNAError('Set Cr50 board id to run test')
 
-        self.bid_path = self.download_cr50_debug_image(self.IMAGE_DEVID,
-                self.BID)[0]
+        if self.cr50.NAME == 'cr50':
+            image_devid = self.CR50_IMAGE_DEVID
+        else:
+            image_devid = self.TI50_IMAGE_DEVID
+        self.bid_path = self.download_cr50_debug_image(image_devid, self.BID)[0]
         self.old_path = self.download_cr50_release_image(self.OLD_IMAGE_VER)[0]
         self.original_path = self.get_saved_cr50_original_path()
         self.host = host

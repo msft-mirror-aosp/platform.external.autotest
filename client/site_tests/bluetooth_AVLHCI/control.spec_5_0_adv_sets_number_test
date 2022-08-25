@@ -7,7 +7,7 @@ AUTHOR = (
     'Rajaa Abdallah <rajaa.abdallah@exalt.ps>, '
     'Mohammad Sabri <mohammad.kh.sabri@exalt.ps>')
 NAME = 'bluetooth_AVLHCI.spec_5_0_adv_sets_number_test'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_standalone'
 PURPOSE = (
     'Tests the Bluetooth v5.0 advertisement sets number of Bluetooth AVL'
     ' requirements')

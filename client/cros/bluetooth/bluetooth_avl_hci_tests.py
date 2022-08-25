@@ -117,8 +117,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     #                    requirement fix or the firmware fix is landed.
     @test_wrapper('spec_legacy_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY +
-                  ['QCA-WCN6856', 'WCN3991', 'Mediatek-MTK7921-SDIO'],
-                  flags=['Quick Health'])
+                  ['QCA-WCN6856', 'WCN3991', 'Mediatek-MTK7921-SDIO'])
     def spec_legacy_test(self):
         """Checks Bluetooth legacy specification."""
         self.test_flushable_data_packets()
@@ -138,31 +137,27 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
         """Checks Bluetooth legacy optional specification."""
         self.test_acl_min_buffer_number_optional()
 
-    @test_wrapper('spec_4_0_test', flags=['Quick Health'])
+    @test_wrapper('spec_4_0_test')
     def spec_4_0_test(self):
         """Checks Bluetooth version 4.0 specification."""
         self.test_low_energy_feature()
         self.test_accept_list_size()
 
-    @test_wrapper('spec_4_1_basic_test',
-                  skip_chipsets=CHIPSETS_UNSUPPORT_4_1,
-                  flags=['Quick Health'])
+    @test_wrapper('spec_4_1_basic_test', skip_chipsets=CHIPSETS_UNSUPPORT_4_1)
     def spec_4_1_basic_test(self):
         """Checks Bluetooth version 4.1 basic specification."""
         self.test_le_dual_mode_topology_feature()
 
     @test_wrapper('spec_4_1_llt_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_1 +
-                  CHIPSETS_UNSUPPORT_LLT_QUIRK,
-                  flags=['Quick Health'])
+                  CHIPSETS_UNSUPPORT_LLT_QUIRK)
     def spec_4_1_llt_test(self):
         """Checks Bluetooth version 4.1 llt feature."""
         self.test_link_layer_topology_feature()
 
     @test_wrapper('spec_4_1_br_edr_secure_conn_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_1 +
-                  CHIPSETS_UNSUPPORT_BR_EDR_SECURE_CONNECTION,
-                  flags=['Quick Health'])
+                  CHIPSETS_UNSUPPORT_BR_EDR_SECURE_CONNECTION)
     def spec_4_1_br_edr_secure_conn_test(self):
         """Checks Bluetooth version 4.1 BR/EDR secure connection feature."""
         self.test_br_edr_controller_secure_connection_feature()
@@ -170,8 +165,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     # TODO(b/235453469): Un-skip the RTK chipset after the firmware fix landed.
     @test_wrapper('spec_4_2_basic_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_2 +
-                  ['Realtek-RTL8822C-UART'],
-                  flags=['Quick Health'])
+                  ['Realtek-RTL8822C-UART'])
     def spec_4_2_basic_test(self):
         """Checks Bluetooth version 4.2 basic specification."""
         self.test_le_data_packet_length_extension_feature()
@@ -180,8 +174,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     @test_wrapper('spec_4_2_packet_data_len_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_2 +
                   CHIPSETS_UNSUPPORT_PACKET_DATA_LENGTH +
-                  ['Realtek-RTL8822C-UART'],
-                  flags=['Quick Health'])
+                  ['Realtek-RTL8822C-UART'])
     def spec_4_2_packet_data_len_test(self):
         """Checks Bluetooth version 4.2 packet data length feature."""
         self.test_packet_data_length()
@@ -190,16 +183,13 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     @test_wrapper('spec_4_2_ll_privacy_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_4_2 +
                   CHIPSETS_UNSUPPORT_LL_PRIVACY +
-                  ['Realtek-RTL8822C-UART', 'Realtek-RTL8852A-USB'],
-                  flags=['Quick Health'])
+                  ['Realtek-RTL8822C-UART', 'Realtek-RTL8852A-USB'])
     def spec_4_2_ll_privacy_test(self):
         """Checks Bluetooth version 4.2 LL privacy features."""
         self.test_le_link_layer_privacy_feature()
         self.test_resolving_list_size()
 
-    @test_wrapper('spec_5_0_basic_test',
-                  skip_chipsets=CHIPSETS_UNSUPPORT_5_0,
-                  flags=['Quick Health'])
+    @test_wrapper('spec_5_0_basic_test', skip_chipsets=CHIPSETS_UNSUPPORT_5_0)
     def spec_5_0_basic_test(self):
         """Check Bluetooth version 5.0 basic specification."""
         self.test_le_extended_advertising_feature()
@@ -207,33 +197,29 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
 
     @test_wrapper('spec_5_0_adv_sets_number_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_5_0 +
-                  CHIPSETS_UNSUPPORT_ADV_SETS_NUMBER,
-                  flags=['Quick Health'])
+                  CHIPSETS_UNSUPPORT_ADV_SETS_NUMBER)
     def spec_5_0_adv_sets_number_test(self):
         """Check Bluetooth version 5.0 advertisement sets number."""
         self.test_advertisement_sets_number()
 
-    @test_wrapper('spec_5_2_test',
-                  skip_chipsets=CHIPSETS_UNSUPPORT_5_2,
-                  flags=['Quick Health'])
+    @test_wrapper('spec_5_2_test', skip_chipsets=CHIPSETS_UNSUPPORT_5_2)
     def spec_5_2_test(self):
         """Checks Bluetooth version 5.0 specification."""
         self.test_le_isochronous_channels_feature()
         self.test_le_power_control_feature()
 
-    @test_wrapper('hci_ext_msft_test', flags=['Quick Health'])
+    @test_wrapper('hci_ext_msft_test')
     def hci_ext_msft_test(self):
         """Checks Microsoft Bluetooth HCI command execution."""
         self.test_hci_vs_msft_read_supported_features()
 
-    @test_wrapper('hci_ext_aosp_bqr_test', flags=['Quick Health'])
+    @test_wrapper('hci_ext_aosp_bqr_test')
     def hci_ext_aosp_bqr_test(self):
         """Checks Android Bluetooth HCI extension BQR feature."""
         self.test_aosp_quality_report()
 
     @test_wrapper('hci_ext_aosp_non_bqr_test',
-                  skip_chipsets=CHIPSETS_SUPPORT_BQR_ONLY,
-                  flags=['Quick Health'])
+                  skip_chipsets=CHIPSETS_SUPPORT_BQR_ONLY)
     def hci_ext_aosp_non_bqr_test(self):
         """Checks Android Bluetooth HCI extension non-BQR feature."""
         self.test_le_apcf()
@@ -242,7 +228,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
         self.test_le_get_controller_activity_energy_info()
         self.test_get_controller_debug_info_sub_event()
 
-    @test_wrapper('Voice Path test', flags=['Quick Health'])
+    @test_wrapper('Voice Path test')
     def voice_path_test(self):
         """Checks HFP related features."""
         self.test_au_nbs_cvsd()

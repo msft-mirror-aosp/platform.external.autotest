@@ -7,7 +7,7 @@ AUTHOR = (
     'Mohammad Sabri <mohammad.kh.sabri@exalt.ps>, '
     'Rajaa Abdallah <rajaa.abdallah@exalt.ps>')
 NAME = 'bluetooth_AVLHCI.spec_4_1_br_edr_secure_conn_test'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_standalone'
 PURPOSE = (
 'Tests the Bluetooth v4.1 BR/EDR secure connection feature'
 'of Bluetooth AVL requirements'

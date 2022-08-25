@@ -341,7 +341,8 @@ class ServoHost(base_servohost.BaseServoHost):
             # xmlrpc/httplib is not thread-safe, so each thread must have its
             # own separate proxy connection.
             if not hasattr(self._local, "_per_thread_proxy"):
-                if self.is_containerized_servod():
+                if self.is_containerized_servod(
+                ) and self.hostname != '127.0.0.1':
                     ip_addr = docker_utils.get_container_ip(self.hostname)
                     remote = 'http://%s:%s' % (ip_addr, self.servo_port)
                 else:

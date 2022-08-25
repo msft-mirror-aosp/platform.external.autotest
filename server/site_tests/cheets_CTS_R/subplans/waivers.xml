@@ -8,4 +8,13 @@
   -->
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testVerifyMandatoryOutputCombinationTables[1]"/>
   <Entry include="CtsCameraTestCases[instant] android.hardware.camera2.cts.RobustnessTest#testVerifyMandatoryOutputCombinationTables[1]"/>
+  <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimithigh.imglimithigh.noiub.comp.noia#0" />
+  <Entry include="dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimithigh.imglimithigh.noiub.vert.noia#0" />
+  <Entry include="dEQP-VK.binding_model.descriptorset_random.sets32.constant.ubolimitlow.sbolimithigh.imglimithigh.noiub.uab.frag.noia#0" />
+  <Entry include="dEQP-VK.binding_model.descriptorset_random.sets32.constant.ubolimitlow.sbolimithigh.imglimithigh.noiub.uab.frag.ialimitlow#0" />
+  <Entry include="dEQP-VK.binding_model.descriptorset_random.sets32.constant.ubolimitlow.sbolimithigh.imglimithigh.noiub.uab.frag.ialimithigh#0" />
+  <Entry include="dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimitlow.imglimithigh.noiub.uab.comp.noia#0" />
+  <Entry include="dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimitlow.imglimithigh.noiub.uab.vert.noia#0" />
+  <Entry include="dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimithigh.imglimithigh.noiub.uab.comp.noia#0" />
+  <Entry include="dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimithigh.imglimithigh.noiub.uab.vert.noia#0" />
 </SubPlan>

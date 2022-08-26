@@ -373,6 +373,25 @@ CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
         },
 }
 
+ARC_PERF_SUITE = ['suite:arc-cts-perf']
+CONFIG['PERF_MODULES'] = {
+    'CtsCameraTestCases': {
+        'CtsCameraTestCases.arc_perf': ARC_PERF_SUITE,
+    },
+    'CtsMediaTestCases': {
+       'CtsMediaTestCases.arc_perf' : ARC_PERF_SUITE,
+    },
+    'CtsVideoTestCases': {
+        'CtsVideoTestCases.arc_perf' : ARC_PERF_SUITE,
+    },
+    'CtsFileSystemTestCases': {
+        'CtsFileSystemTestCases.arc_perf' : ARC_PERF_SUITE,
+    },
+    'CtsSimpleCpuTestCases': {
+        'CtsSimpleCpuTestCases.arc_perf' : ARC_PERF_SUITE,
+    },
+}
+
 # Moblab optionally can reshard modules, this was originally used
 # for deqp but it is no longer required for that module.  Retaining
 # feature in case future slower module needs to be sharded.
@@ -901,6 +920,38 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsWindowManagerDeviceTestCases android.server.wm.lifecycle.ActivityStarterTests',
                 '--include-filter',
                 'CtsWindowManagerDeviceTestCases android.server.wm.lifecycle.ActivityTests',
+        ],
+        'CtsVideoTestCases.arc_perf': [
+                '--include-filter',
+                'CtsVideoTestCases android.video.cts.VideoEncoderDecoderTest',
+        ],
+        'CtsMediaTestCases.arc_perf': [
+                '--include-filter',
+                'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest',
+                '--include-filter',
+                'CtsMediaTestCases android.media.cts.AudioRecordTest',
+                '--include-filter',
+                'CtsMediaTestCases android.media.cts.AudioTrackTest'
+                '--include-filter',
+                'CtsMediaTestCases android.media.cts.AudioTrack_ListenerTest',
+                '--include-filter',
+                'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest',
+        ],
+        'CtsCameraTestCases.arc_perf': [
+                '--include-filter',
+                'CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest',
+        ],
+        'CtsFileSystemTestCases.arc_perf': [
+                '--include-filter',
+                'CtsFileSystemTestCases android.filesystem.cts.AlmostFullTest',
+                '--include-filter',
+                'CtsFileSystemTestCases android.filesystem.cts.RandomRWTest',
+                '--include-filter',
+                'CtsFileSystemTestCases android.filesystem.cts.SequentialRWTest',
+        ],
+        'CtsSimpleCpuTestCases.arc_perf': [
+                '--include-filter',
+                'CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest',
         ],
 }
 

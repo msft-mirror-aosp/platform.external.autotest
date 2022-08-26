@@ -1330,6 +1330,15 @@ def write_qualification_controlfiles(modules, abi, revision, build, uri,
                               revision, build, uri,
                               CONFIG.get('QUAL_SUITE_NAMES'), source_type)
 
+def write_perf_qualification_controlfiles(_modules, abi, revision, build, uri,
+                                     source_type):
+    """Write control files to run performance qualification tests.
+    """
+    for module, config in CONFIG['PERF_MODULES'].items():
+        for submodule, suites in config.items():
+            write_controlfile(submodule, set([submodule]), abi, revision,
+                              build, uri, suites, source_type)
+
 
 def write_qualification_and_regression_controlfile(modules, abi, revision,
                                                    build, uri, source_type):
@@ -1502,6 +1511,8 @@ def run(uris, source_type, cache_dir):
                 if source_type == SourceType.DEV:
                     write_regression_controlfiles(modules, abi, revision,
                                                   build, uri, source_type)
+                    write_perf_qualification_controlfiles(None, abi, revision,
+                                                          build, uri, source_type)
                 if source_type == SourceType.LATEST:
                     write_qualification_controlfiles(modules, abi, revision,
                                                      build, uri, source_type)

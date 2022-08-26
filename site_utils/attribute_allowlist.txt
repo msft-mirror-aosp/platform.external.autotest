@@ -11,6 +11,7 @@ suite:arc-cts
 suite:arc-cts-camera
 suite:arc-cts-deqp
 suite:arc-cts-hardware
+suite:arc-cts-perf
 suite:arc-cts-qual
 suite:arc-cts-r
 suite:arc-cts-t

@@ -65,7 +65,9 @@ class firmware_ECChargingState(FirmwareTest):
 
     def check_ac_state(self, want_charging):
         """Check if AC is plugged."""
-        for retry in range(25):
+        # Metaknight takes a worst case of ~65s to notice the charger, so retry
+        # 100 times with a 1 second delay.
+        for retry in range(100):
             ac_state = int(
                 self.ec.send_command_get_output("chgstate",
                                                 ["ac\\s*=\\s*(0|1)\\s*"])[0][1])

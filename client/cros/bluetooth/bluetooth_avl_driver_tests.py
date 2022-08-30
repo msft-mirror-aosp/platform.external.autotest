@@ -3,7 +3,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
 import os
 
 from autotest_lib.client.common_lib import error
@@ -30,8 +29,8 @@ class BluetoothAVLDriverTests(BluetoothQuickTests):
         elif transport == 'UART':
             self.test_use_serial_driver()
         else:
-            logging.info('No need to test the used driver, transport is %s',
-                         transport)
+            raise error.TestNAError('Transport is neither USB nor UART: %s',
+                                    transport)
 
     def driver_path(self):
         """Returns the path of the first Bluetooth adapter."""

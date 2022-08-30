@@ -31,7 +31,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='x86',
         uri='DEV',
-        use_jdk9=True,
         retry_manual_tests=True,
         timeout=5400)
 

@@ -41,7 +41,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='x86',
         uri='DEV',
-        use_jdk9=True,
         hard_reboot_on_failure=True,
         timeout=12600)
 

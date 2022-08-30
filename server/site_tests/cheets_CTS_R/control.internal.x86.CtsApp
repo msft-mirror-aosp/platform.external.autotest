@@ -43,7 +43,6 @@ def run_TS(machine):
         bundle='x86',
         uri='DEV',
         login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
-        use_jdk9=True,
         hard_reboot_on_failure=True,
         timeout=61200)
 

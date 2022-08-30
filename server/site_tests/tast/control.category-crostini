@@ -9,7 +9,7 @@ NAME = 'tast.category-crostini'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-crostini, suite:bvt-tast-cq-cft-crostini'
+ATTRIBUTES = 'suite:bvt-tast-cq-crostini'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

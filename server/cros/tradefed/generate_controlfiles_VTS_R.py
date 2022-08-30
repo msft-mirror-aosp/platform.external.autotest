@@ -145,7 +145,5 @@ CONFIG['EXTRA_ATTRIBUTES'] = {
 CONFIG['EXTRA_ARTIFACTS'] = {}
 CONFIG['PREREQUISITES'] = {}
 
-CONFIG['USE_JDK9'] = True
-
 if __name__ == '__main__':
     main(CONFIG)

@@ -33,7 +33,7 @@ class power_Idle(power_test.power_Test):
     first_test_warmup_secs = 60
 
     def initialize(self, pdash_note='', seconds_period=10.,
-                   force_discharge=False, run_arc=True):
+                   force_discharge='optional', run_arc=True):
         super(power_Idle, self).initialize(seconds_period=seconds_period,
                                            pdash_note=pdash_note,
                                            force_discharge=force_discharge,

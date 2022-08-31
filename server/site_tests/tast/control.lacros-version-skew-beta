@@ -42,7 +42,7 @@ def run(machine):
     try:
         expr = chrome_sideloader.get_tast_expr(args_dict)
     except:
-        expr = '"group:mainline" && "dep:lacros" && !informational'
+        expr = '("group:mainline" && "dep:lacros" && !informational)'
     logging.info('Tast expr: %s', expr)
 
     varslist.append('lacros.DeployedBinary=%s' % LACROS_DIR)

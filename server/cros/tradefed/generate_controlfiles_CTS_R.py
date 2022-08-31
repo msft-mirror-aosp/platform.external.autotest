@@ -154,6 +154,7 @@ CONFIG['VM_MODULES'] = [
         'CtsFileSystemTestCases',
         'CtsJniTestCases',
         'CtsPdfTestCases',
+        'CtsWindowManagerDeviceTestCases',
         # Intentionally add a HW test.
         'CtsCameraTestCases',
 ]

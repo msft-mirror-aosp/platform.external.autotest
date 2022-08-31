@@ -34,7 +34,8 @@ def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
     job.run_test("audio_InternalCardNodes", host=host, plug=True,
                  blocked_boards=['lars',    # Pending fix for b/147647051
-                                 'lars-kernelnext']
-                 )
+                                 'lars-kernelnext',    # Also b/147647051
+                                 'strongbad',    # Device with no audiojack port
+                                ])
 
 parallel_simple(run, machines)

@@ -32,6 +32,8 @@ chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
-    job.run_test("audio_InternalCardNodes", host=host, plug=False)
+    job.run_test("audio_InternalCardNodes", host=host, plug=False,
+                 blocked_boards=['strongbad',    # device with no audiojack port
+                                ])
 
 parallel_simple(run, machines)

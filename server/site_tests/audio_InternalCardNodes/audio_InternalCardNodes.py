@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 """This is a server side test to check nodes created for internal card."""
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.server.cros.audio import audio_test
 

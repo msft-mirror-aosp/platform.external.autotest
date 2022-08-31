@@ -65,3 +65,5 @@ class audio_InternalCardNodes(audio_test.AudioTest):
 
         audio_test_utils.check_plugged_nodes(self.facade,
                                              self.get_expected_nodes(plug))
+
+        jack_plugger.reset();

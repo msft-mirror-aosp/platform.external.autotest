@@ -244,6 +244,10 @@ class AudioJackPlugger(object):
         self._chameleond_proxy.AudioBoardAudioJackUnplug()
         logging.info('Unplugged 3.5mm audio cable from Cros device.')
 
+    def reset(self):
+        """Resets the audio plugger into default state. """
+        self._chameleond_proxy.AudioBoardAudioJackReset()
+        logging.info('Reset 3.5mm audio cable from Cros device.')
 
 class BluetoothController(object):
     """An abstraction of bluetooth module on audio board.

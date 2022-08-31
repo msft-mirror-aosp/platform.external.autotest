@@ -268,7 +268,8 @@ class server_job(base_job.base_job):
                  companion_hosts=None,
                  dut_servers=None,
                  is_cft=False,
-                 force_full_log_collection=False):
+                 force_full_log_collection=False,
+                 libs_server=None):
         """
         Create a server side job object.
 
@@ -316,6 +317,8 @@ class server_job(base_job.base_job):
                 provided to test.
         @param force_full_log_collection: bool; force full log collection even
                 when test passes.
+        @param lib_servers: a str of host to be used as testlibs server
+                provided to test.
         """
         super(server_job, self).__init__(resultdir=resultdir)
         self.control = control
@@ -350,6 +353,8 @@ class server_job(base_job.base_job):
         self._use_client_trampoline = use_client_trampoline
         self._companion_hosts = companion_hosts
         self._dut_servers = dut_servers
+        self._libs_server = libs_server
+
         self._is_cft = is_cft
         self.force_full_log_collection = force_full_log_collection
 
@@ -887,6 +892,8 @@ class server_job(base_job.base_job):
                     namespace['companion_hosts'] = self._companion_hosts
                 if self._dut_servers:
                     namespace['dut_servers'] = self._dut_servers
+                if self._libs_server:
+                    namespace['libs_server'] = self._libs_server
                 namespace['use_packaging'] = use_packaging
                 namespace['synchronous_offload_dir'] = sync_dir
                 namespace['extended_timeout'] = self.extended_timeout

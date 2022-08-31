@@ -267,6 +267,7 @@ def run_job(job,
             autoserv_verbose=False,
             companion_hosts=None,
             dut_servers=None,
+            libs_server=None,
             is_cft=False,
             ch_info=None):
     """
@@ -292,6 +293,7 @@ def run_job(job,
     @param autoserv_verbose: If true, pass the --verbose flag to autoserv.
     @param companion_hosts: Companion hosts for the test.
     @param dut_servers: DUT servers for the test.
+    @param libs_servers: test libs server for the test.
     @param ch_info: hostinfo for companion hosts.
 
     @returns: a tuple, return code of the job and absolute path of directory
@@ -337,6 +339,7 @@ def run_job(job,
                 host_info_subdir=_HOST_INFO_SUBDIR,
                 companion_hosts=companion_hosts,
                 dut_servers=dut_servers,
+                libs_server=libs_server,
                 is_cft=is_cft)
 
         code = _run_autoserv(command, pretend)
@@ -504,6 +507,7 @@ def perform_local_run(autotest_path,
                       companion_hosts=None,
                       minus=[],
                       dut_servers=None,
+                      libs_server=None,
                       is_cft=False,
                       host_labels=None,
                       label=None):
@@ -537,6 +541,7 @@ def perform_local_run(autotest_path,
     @param job_retry: If False, tests will not be retried at all.
     @param companion_hosts: companion hosts for the test.
     @param dut_servers: dut servers for the test.
+    @param libs_server: test libs server for the test.
     @param label: Optional label to use for the jobname. Will be appended to
         the keyval file via server_job.
 
@@ -630,6 +635,7 @@ def perform_local_run(autotest_path,
                                 autoserv_verbose=autoserv_verbose,
                                 companion_hosts=companion_hosts,
                                 dut_servers=dut_servers,
+                                libs_server=libs_server,
                                 is_cft=is_cft,
                                 ch_info=ch_info)
         codes.append(code)
@@ -791,6 +797,7 @@ def perform_run_from_autotest_root(autotest_path,
                                    companion_hosts=None,
                                    minus=[],
                                    dut_servers=None,
+                                   libs_server=None,
                                    is_cft=False,
                                    host_labels=None,
                                    label=None):
@@ -831,7 +838,7 @@ def perform_run_from_autotest_root(autotest_path,
     @param dut_servers: dut servers for the test.
     @param label: Optional label to use for the jobname. Will be appended to
         the keyval file via server_job.
-
+    @param libs_server: test libs server for the test.
     @return: A return code that test_that should exit with.
     """
     if results_directory is None or not os.path.exists(results_directory):
@@ -871,6 +878,7 @@ def perform_run_from_autotest_root(autotest_path,
                               companion_hosts=companion_hosts,
                               minus=minus,
                               dut_servers=dut_servers,
+                              libs_server=libs_server,
                               is_cft=is_cft,
                               host_labels=host_labels,
                               label=label)

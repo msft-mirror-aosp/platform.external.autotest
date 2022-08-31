@@ -270,6 +270,7 @@ class TestRunnerUnittests(unittest.TestCase):
                                         autoserv_verbose=False,
                                         companion_hosts=None,
                                         dut_servers=None,
+                                        libs_server=None,
                                         is_cft=False,
                                         ch_info={})
 
@@ -371,6 +372,7 @@ class TestRunnerUnittests(unittest.TestCase):
                          autoserv_verbose=False,
                          companion_hosts=None,
                          dut_servers=None,
+                         libs_server=None,
                          is_cft=True,
                          ch_info={}))
 

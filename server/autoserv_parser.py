@@ -269,7 +269,11 @@ class autoserv_parser(object):
                                  dest='force_full_log_collection',
                                  default=False,
                                  help='Force full log collection on tests.')
-
+        self.parser.add_argument('--libs_server',
+                                 action='store',
+                                 type=str,
+                                 dest='libs_server',
+                                 help='Test Libs Server for the test.')
         #
         # Warning! Please read before adding any new arguments!
         #

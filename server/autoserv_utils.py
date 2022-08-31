@@ -36,6 +36,7 @@ def autoserv_run_job_command(autoserv_directory,
                              host_info_subdir='',
                              companion_hosts=None,
                              dut_servers=None,
+                             libs_server=None,
                              is_cft=False):
     """
     Construct an autoserv command from a job or host queue entry.
@@ -81,7 +82,9 @@ def autoserv_run_job_command(autoserv_directory,
                             different than  machines, where each host is a host
                             that the test would be run on.
     @param dut_servers: a str or list of hosts to be used as DUT server
-                            provided to test.
+                        provided to test.
+    @param libs_server: str for the host to be used for the libs server,
+                        provided to the test.
 
     @returns The autoserv command line as a list of executable + parameters.
 
@@ -119,6 +122,9 @@ def autoserv_run_job_command(autoserv_directory,
         if not isinstance(dut_servers, list):
             dut_servers = [dut_servers]
         command += ['--dut_servers', ",".join(dut_servers)]
+
+    if libs_server:
+        command += ['--libs_server', libs_server]
 
     if ssh_verbosity:
         command += ['--ssh_verbosity', str(ssh_verbosity)]

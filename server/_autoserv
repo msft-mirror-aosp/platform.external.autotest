@@ -66,6 +66,7 @@ _CONTROL_FILE_FROM_CONTROL_NAME = 'control.from_control_name'
 
 _LXC_JOB_FOLDER = 'lxc_job_folder'
 
+
 def log_alarm(signum, frame):
     logging.error("Received SIGALARM. Ignoring and continuing on.")
     sys.exit(1)
@@ -114,6 +115,21 @@ def _get_dutservers(parser):
         dut_servers = list(set(dut_servers))
         dut_servers.sort()
     return dut_servers
+
+
+def _get_libs_server(parser):
+    """Get the libs server addresses from command line arg --libs_server.
+
+    @param parser: Parser for the command line arguments.
+
+    @return: The libs server addresses from command line arg
+             --libs_server.
+    """
+    libs_server = None
+
+    if parser.options.libs_server:
+        libs_server = parser.options.libs_server.strip()
+    return libs_server
 
 
 def _get_machines(parser):
@@ -506,6 +522,7 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
     in_lab = bool(parser.options.lab)
     companion_hosts = _get_companions(parser)
     dut_servers = _get_dutservers(parser)
+    libs_server = _get_libs_server(parser)
     is_cft = parser.options.cft
     force_full_log_collection = parser.options.force_full_log_collection
 
@@ -598,7 +615,8 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
                     host_attributes=parser.options.host_attributes),
             'dut_servers': dut_servers,
             'is_cft': is_cft,
-            'force_full_log_collection': force_full_log_collection
+            'force_full_log_collection': force_full_log_collection,
+            'libs_server': libs_server
     }
     if parser.options.parent_job_id:
         job_kwargs['parent_job_id'] = int(parser.options.parent_job_id)

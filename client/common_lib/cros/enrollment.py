@@ -68,15 +68,6 @@ def EnterpriseFakeEnrollment(browser, user_id, password, gaia_id,
         utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=45)
 
 
-def OnlineDemoMode(browser):
-  """Switch to online demo mode.
-
-    @param browser: telemetry browser object.
-  """
-  _ExecuteOobeCmd(browser, 'Oobe.setUpOnlineDemoModeForTesting();')
-  utils.poll_for_condition(lambda: not browser.oobe_exists, timeout=90)
-
-
 def KioskEnrollment(browser, user_id, password, gaia_id):
     """Kiosk Enrollment.
 

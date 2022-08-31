@@ -158,15 +158,19 @@ class DUTFixture:
                 'Camera3StillCaptureTest/'
                 'Camera3DumpSimpleStillCaptureTest.DumpCaptureResult/0')
         with self._stop_camera_service():
-            self.host.run(
+            result = self.host.run(
                     'sudo',
                     args=('--user=arc-camera', 'cros_camera_test',
                           '--gtest_filter=' + gtest_filter,
                           '--camera_facing=' + self.facing,
                           '--dump_still_capture_path=' +
-                          self.CAMERA_SCENE_LOG))
+                          self.CAMERA_SCENE_LOG),
+                    ignore_status=True)
 
-        self.host.get_file(self.CAMERA_SCENE_LOG, '.')
+        if result.exit_status == 0:
+          self.host.get_file(self.CAMERA_SCENE_LOG, '.')
+        else:
+          logging.info("log camera scene fai (This does not affect CTS testing)")
 
     def cleanup(self):
         """Cleanup camera filter."""

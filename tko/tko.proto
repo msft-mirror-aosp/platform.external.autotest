@@ -55,4 +55,6 @@ message Job {
     optional string build_version = 18;
     optional string suite = 19;
     optional string board = 20;
+    optional string dlm_sku_id = 21;
+    optional string hwid = 22;
 }

@@ -242,7 +242,8 @@ def setup(base_path, root_module_name):
         if os.path.exists(os.path.join(os.path.dirname(base_path), 'server')):
             autotest_base_path = os.path.dirname(base_path)
         else:
-            autotest_lib_name = f'autotest_lib_{os.getpid()}'
+            # TODO(b/228100799): revert crrev.com/c/3869349 once au_e2e is SSP.
+            autotest_lib_name = 'autotest_lib_%s' % os.getpid()
             autotest_base_path = base_path
 
         _setup_client_symlink(base_path, autotest_lib_name)

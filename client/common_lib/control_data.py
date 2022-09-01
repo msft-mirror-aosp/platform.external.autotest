@@ -337,7 +337,11 @@ class ControlData(object):
 
 
 def _extract_const(expr):
-    assert (expr.__class__ in (ast.Str, ast.Constant))
+    # TODO(b/228100799): revert crrev.com/c/3869349 once au_e2e is SSP.
+    if six.PY2:
+        assert (expr.__class__ == ast.Str)
+    else:
+        assert (expr.__class__ in (ast.Str, ast.Constant))
     if six.PY2:
         assert (expr.s.__class__ in (str, int, float, unicode))
     else:

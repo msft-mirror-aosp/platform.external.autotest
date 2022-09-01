@@ -72,11 +72,11 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
             # Run UI test, which clicks through the pairing UI flow.
             self.run_ui_test()
             # Verify device is paired.
-            return self.bluetooth_facade.device_is_paired(device.address)
+            if not self.bluetooth_facade.device_is_paired(device.address):
+                raise error.TestFail('FastPair device not paired')
         except Exception as e:
-            logging.error('exception in fast_pair_initial_pairing_test %s',
-                          str(e))
-            return False
+            raise error.TestFail('exception in fast_pair_initial_pairing_test %s' %
+                                 str(e))
 
     @test_wrapper('Fast Pair Subsequent Pairing',
                   devices={'BLE_FAST_PAIR': 1},
@@ -98,11 +98,11 @@ class bluetooth_FastPair(BluetoothAdapterQuickTests):
             self.run_ui_test()
 
             # Verify device is paired.
-            return self.bluetooth_facade.device_is_paired(device.address)
+            if not self.bluetooth_facade.device_is_paired(device.address):
+                raise error.TestFail('FastPair device not paired')
         except Exception as e:
-            logging.error('exception in fast_pair_subsequent_pairing_test %s',
-                          str(e))
-            return False
+            raise error.TestFail('exception in fast_pair_subsequent_pairing_test %s' %
+                                 str(e))
 
     def set_key_pem(self, args_dict):
         if imported_password_util:

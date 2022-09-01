@@ -90,6 +90,11 @@ HOST_FIXED_ATTENUATIONS = {
                 1: {2437: 56, 5220: 57, 5765: 57},
                 2: {2437: 52, 5220: 58, 5765: 58},
                 3: {2437: 56, 5220: 56, 5765: 56}},
+        'chromeos15-row3-rack7-host7-btattenuator': {
+                0: {2450: 38},
+                1: {2450: 38},
+                2: {2450: 38},
+                3: {2450: 38}},
         # Row 3 rack 8 is conductive grover setups
         'chromeos15-row3-rack8-host1-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 58},

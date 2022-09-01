@@ -1,0 +1,77 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import logging
+
+from autotest_lib.server.cros import chrome_sideloader
+from autotest_lib.server import utils
+
+AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
+NAME = 'tast.chrome-from-tls'
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+# This mount point controls the version of chrome to use
+CHROME_MOUNT_POINT = '/opt/google/chrome'
+# Location to put the sideloaded chrome artifacts
+CHROME_DIR = '/usr/local/chrome'
+
+DOC = '''
+Runs Tast tests with custom Ash Chrome binaries.
+
+This control file is a generic wrapper for running Tast tests
+from Chromium builders using the Chromium Skylab recipe.
+Chromium builders create Ash Chrome binaries and artifacts and upload to GCS.
+Ash Chrome binaries are in turn provisioned to the DUT through TLS and are
+used in Tast tests.
+
+This control file expects tast_expr or tast_expr_b64 argument to determine
+the set of tast tests to be executed.
+
+Example for tast_expr: test_that --args="tast_expr=nearbyshare.SmokeMultiDUTUI"
+
+Example for tast_expr_b64:
+  In Python:
+    tast_expr = '("group:mainline" && !informational)'
+    tast_expr_b64 = base64.b64encode(tast_expr.encode('utf-8')).decode('ascii')
+    # Yields 'KCJncm91cDptYWlubGluZSIgJiYgIWluZm9ybWF0aW9uYWwp'
+  Then in Autotest CLI:'
+    test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgIWluZm9ybWF0aW9uYWwp"
+
+More details at go/lacros-on-skylab.
+
+'''
+
+
+def run(machine):
+    host = hosts.create_host(machine)
+
+    tast_expr = chrome_sideloader.get_tast_expr(utils.args_to_dict(args))
+
+    # Setup DUT to use the chrome binary from TLS
+    chrome_sideloader.setup_host(host, CHROME_DIR, CHROME_MOUNT_POINT)
+
+    logging.info("Running %s on host: %s with Tast expression:%s",
+                 NAME, host, tast_expr)
+
+    # Register a clean up callback to reset the chrome mount.
+    def cleanup():
+        chrome_sideloader.cleanup_host(host, CHROME_DIR, CHROME_MOUNT_POINT)
+    job.add_post_run_hook(cleanup)
+
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=[tast_expr],
+                 download_data_lazily=False,
+                 ignore_test_failures=False,
+                 max_run_sec=3600,
+                 command_args=args
+                 )
+
+parallel_simple(run, machines)

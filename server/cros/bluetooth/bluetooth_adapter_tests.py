@@ -111,10 +111,11 @@ SUSPEND_POWER_DOWN_MODELS = ['dru', 'druwl', 'dumo']
 
 # Chipsets which do not support Bluetooth Hardware Filtering.
 UNSUPPORTED_BT_HW_FILTERING_CHIPSETS = [
-        'MVL-8897', 'MVL-8997', 'QCA-6174A-5-USB', 'QCA-6174A-3-UART',
-        'QCA-WCN6856', 'Intel-AC7260', 'Intel-AC7265', 'Realtek-RTL8822C-USB',
-        'Realtek-RTL8822C-UART', 'Realtek-RTL8852A-USB',
-        'Mediatek-MTK7921-USB', 'Mediatek-MTK7921-SDIO'
+        'MVL-8897', 'MVL-8997',
+        'QCA-6174A-3-UART', 'QCA-6174A-5-USB',
+        'Intel-AC7265',
+        'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
+        'Realtek-RTL8852A-USB', 'Realtek-RTL8852C-USB'
 ]
 
 KERNEL_LOG_LEVEL = {

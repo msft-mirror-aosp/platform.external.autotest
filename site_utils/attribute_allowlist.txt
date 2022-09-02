@@ -380,6 +380,7 @@ suite:faft_setup
 suite:faft_smoke
 suite:faft_stress
 suite:faft_trial
+suite:faft_ti50_qual
 suite:faft_unstable
 suite:faft_wilco
 suite:files

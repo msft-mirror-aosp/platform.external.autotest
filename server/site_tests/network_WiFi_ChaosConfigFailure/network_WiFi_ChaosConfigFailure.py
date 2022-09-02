@@ -31,23 +31,23 @@ class network_WiFi_ChaosConfigFailure(test.test):
         ap.debug_full_state(self.outputdir)
 
         if ap_constants.AP_PDU_DOWN in error_string:
-            raise error.TestError('The AP was not configured because the PDU '
+            raise error.TestNAError('The AP was not configured because the PDU '
                                   'is down. See the ERROR log for more details.'
                                   '\n%s', ap.name)
 
         if ap_constants.AP_CONFIG_FAIL in error_string:
-            raise error.TestError('The AP was not configured correctly. Please '
+            raise error.TestNAError('The AP was not configured correctly. Please '
                                   'see the ERROR log for more details.\n%s',
                                   ap.name)
         elif ap_constants.AP_SECURITY_MISMATCH in error_string:
-            raise error.TestError('The AP was not configured with correct '
+            raise error.TestNAError('The AP was not configured with correct '
                                   'security. Please check screenshots to '
                                   'debug.\n%s', ap.name)
         elif ap_constants.WORK_CLI_CONNECT_FAIL in error_string:
-            raise error.TestError('Work client was not able to connect to '
+            raise error.TestNAError('Work client was not able to connect to '
                                   'the AP. Please check screenshots to '
                                   'debug.\n%s', ap.name)
         else:
-            raise error.TestError('The SSID %s was not found in the scan. '
+            raise error.TestNAError('The SSID %s was not found in the scan. '
                                   'Check the screenshots to debug.\n%s',
                                   ap.ssid, ap.name)

@@ -1366,7 +1366,7 @@ class TradefedTest(test.test):
         Override this method in the subclass to specify other fields
         e.g. password.
         """
-        return self.BundleSpecification(self._get_bundle_url(uri, bundle), password='')
+        return BundleSpecification(self._get_bundle_url(uri, bundle), password='')
 
     # _get_bundle_url is deprecated in favor of _get_bundle_specification().
     # Override it instead.

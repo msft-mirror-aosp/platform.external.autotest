@@ -9,8 +9,7 @@ CRITERIA = """
 This test will fail if, after playback of two fingers for back/forward
 long swipes, the active tab does not navigate as expected.
 """
-# Disabled due to 0% pass rate over 30 days. See b/241833034
-# ATTRIBUTES = "suite:touch_replay"
+ATTRIBUTES = "suite:touch_replay"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "touch"

@@ -44,7 +44,8 @@ class touch_GestureNav(touch_playback_test_base.touch_playback_test_base):
         self.tab.WaitForDocumentReadyStateToBeComplete()
         fail_msg = 'Incorrect tab navigating %s to %s' % (direction, to_url)
         utils.poll_for_condition(
-                lambda: self.tab.url.encode('utf8').rstrip('/') == to_url,
+                lambda: self.tab.url.encode('utf8')
+                    .decode().rstrip('/') == to_url,
                 exception=error.TestFail(fail_msg),
                 timeout=self._WAIT_FOR_COMPLETE_NAV)
 

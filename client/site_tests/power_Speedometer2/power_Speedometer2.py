@@ -47,8 +47,10 @@ class power_Speedometer2(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
-            # Stop services again as Chrome might have restarted them.
+            # Stop services and disable multicast again as Chrome might have
+            # restarted them.
             self._services.stop_services()
+            self._multicast_disabler.disable_network_multicast()
 
             logging.info('Navigating to url: %s', url)
             tab.Navigate(url)
@@ -78,3 +80,7 @@ class power_Speedometer2(power_test.power_Test):
 
             self._keyvallogger.add_item(RESULT, result, 'point', 'perf')
             self._keyvallogger.set_end(end_time)
+
+            # Re-enable multicast here instead of in the cleanup because Chrome
+            # might re-enable it and we can't verify that multicast is off.
+            self._multicast_disabler.enable_network_multicast()

@@ -81,7 +81,10 @@ class power_VideoCall(power_test.power_Test):
                            extra_browser_args=extra_browser_args,
                            autotest_ext=True) as cr:
 
+            # Stop services and disable multicast again as Chrome might have
+            # restarted them.
             self._services.stop_services()
+            self._multicast_disabler.disable_network_multicast()
 
             # Move existing window to left half and open video page
             tab_left = cr.browser.tabs[0]
@@ -183,6 +186,10 @@ class power_VideoCall(power_test.power_Test):
 
             if multitask:
                 self.collect_keypress_latency(cr)
+
+            # Re-enable multicast here instead of in the cleanup because Chrome
+            # might re-enable it and we can't verify that multicast is off.
+            self._multicast_disabler.enable_network_multicast()
 
     def _get_camera_preset(self):
         """Return camera preset appropriate to hw spec.

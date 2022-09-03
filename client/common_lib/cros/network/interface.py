@@ -309,7 +309,6 @@ class Interface:
         return bool(self.addresses)
 
 
-
     def get_ip_flags(self):
         """@return List of flags from 'ip addr show'."""
         # "ip addr show %s 2> /dev/null" returns something that looks like:
@@ -335,6 +334,22 @@ class Interface:
         flags_str = status_line[status_line.find('<')+1:status_line.find('>')]
         return flags_str.split(',')
 
+
+    @property
+    def is_multicast_enabled(self):
+        """@return True if MULTICAST or ALLMULTI is in the flags."""
+        flags = self.get_ip_flags()
+        return 'MULTICAST' in flags or 'ALLMULTI' in flags
+
+    def disable_multicast(self):
+        """Disable MULTICAST and ALLMULTI."""
+        cmd = 'ifconfig %s -multicast -allmulti' % self._name
+        self._run(cmd, ignore_status=True)
+
+    def enable_multicast(self):
+        """Enable MULTICAST and ALLMULTI."""
+        cmd = 'ifconfig %s multicast allmulti' % self._name
+        self._run(cmd, ignore_status=True)
 
     @property
     def is_up(self):

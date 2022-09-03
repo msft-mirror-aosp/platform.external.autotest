@@ -127,8 +127,10 @@ class power_VideoTest(power_test.power_Test):
             tab = self.cr.browser.tabs[0]
             tab.Activate()
 
-            # Stop services again as Chrome might have restarted them.
+            # Stop services and disable multicast again as Chrome might have
+            # restarted them.
             self._services.stop_services()
+            self._multicast_disabler.disable_network_multicast()
 
             # Just measure power in full-screen.
             fullscreen = tab.EvaluateJavaScript('document.webkitIsFullScreen')
@@ -155,6 +157,10 @@ class power_VideoTest(power_test.power_Test):
                 self.keyvals[name + '_dropped_frame_percent'] = \
                         self._calculate_dropped_frame_percent(tab)
                 self._teardown_video(self.cr, url)
+
+            # Re-enable multicast here instead of in the cleanup because Chrome
+            # might re-enable it and we can't verify that multicast is off.
+            self._multicast_disabler.enable_network_multicast()
 
     def cleanup(self):
         """Unmount ram disk."""

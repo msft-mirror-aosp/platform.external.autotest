@@ -57,8 +57,10 @@ class power_Display(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
-            # Stop services again as Chrome might have restarted them.
+            # Stop services and disable multicast again as Chrome might have
+            # restarted them.
             self._services.stop_services()
+            self._multicast_disabler.disable_network_multicast()
 
             if brightness not in ['', 'all', 'max']:
                 raise error.TestFail(
@@ -97,5 +99,9 @@ class power_Display(power_test.power_Test):
                     self.loop_sleep(loop, secs_per_page)
                     self.checkpoint_measurements(tagname, loop_start)
                     loop += 1
+
+            # Re-enable multicast here instead of in the cleanup because Chrome
+            # might re-enable it and we can't verify that multicast is off.
+            self._multicast_disabler.enable_network_multicast()
 
         shutil.rmtree(dest_path)

@@ -75,8 +75,10 @@ class power_Idle(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
-            # Stop services again as Chrome might have restarted them.
+            # Stop services and disable multicast again as Chrome might have
+            # restarted them.
             self._services.stop_services()
+            self._multicast_disabler.disable_network_multicast()
 
             if default_only:
                 self.start_measurements()
@@ -104,6 +106,10 @@ class power_Idle(power_test.power_Test):
             # test4 : display off, BT on
             power_utils.set_display_power(power_utils.DISPLAY_POWER_ALL_OFF)
             measure_it(warmup_secs, idle_secs, 'display-off_bluetooth-on')
+
+            # Re-enable multicast here instead of in the cleanup because Chrome
+            # might re-enable it and we can't verify that multicast is off.
+            self._multicast_disabler.enable_network_multicast()
 
     def cleanup(self):
         """Reset to previous state."""

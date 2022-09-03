@@ -63,8 +63,10 @@ class power_VideoEncode(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
-            # Stop services again as Chrome might have restarted them.
+            # Stop services and disable multicast again as Chrome might have
+            # restarted them.
             self._services.stop_services()
+            self._multicast_disabler.disable_network_multicast()
 
             url = self.video_url
             tab.Navigate(url)
@@ -88,3 +90,7 @@ class power_VideoEncode(power_test.power_Test):
                 self.loop_sleep(loop, seconds_per_test)
                 self.checkpoint_measurements(tagname, loop_start)
                 loop += 1
+
+            # Re-enable multicast here instead of in the cleanup because Chrome
+            # might re-enable it and we can't verify that multicast is off.
+            self._multicast_disabler.enable_network_multicast()

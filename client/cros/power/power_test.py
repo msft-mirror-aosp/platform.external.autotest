@@ -12,6 +12,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import arc_common
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros.network import interface
+from autotest_lib.client.common_lib.cros.network import multicast_disabler
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.camera import camera_utils
 from autotest_lib.client.cros.power import force_discharge_utils
@@ -93,6 +94,8 @@ class power_Test(test.test):
         self._services = service_stopper.ServiceStopper(
                 service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
         self._services.stop_services()
+        self._multicast_disabler = multicast_disabler.MulticastDisabler()
+        self._multicast_disabler.disable_network_multicast()
         self._stats = power_status.StatoMatic()
 
         self._meas_logs = power_status.create_measurement_loggers(
@@ -370,5 +373,6 @@ class power_Test(test.test):
         force_discharge_utils.restore(self._force_discharge_success)
         if self.backlight:
             self.backlight.restore()
+        self._multicast_disabler.enable_network_multicast()
         self._services.restore_services()
         super(power_Test, self).cleanup()

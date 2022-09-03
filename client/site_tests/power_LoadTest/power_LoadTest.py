@@ -19,6 +19,7 @@ from autotest_lib.client.common_lib.cros import arc_common
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib.cros import power_load_util
 from autotest_lib.client.common_lib.cros.network import interface
+from autotest_lib.client.common_lib.cros.network import multicast_disabler
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
 from autotest_lib.client.cros import backchannel
@@ -252,6 +253,8 @@ class power_LoadTest(arc.ArcTest):
 
         self._services = service_stopper.ServiceStopper(
             service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
+        self._multicast_disabler = multicast_disabler.MulticastDisabler()
+        self._multicast_disabler.disable_network_multicast()
 
         self._detachable_handler = power_utils.BaseActivitySimulator()
 
@@ -361,9 +364,10 @@ class power_LoadTest(arc.ArcTest):
                 extension.ExecuteJavaScript('var %s = %s;' %
                                             (k, getattr(self, params_dict[k])))
 
-        # Stop the services after the browser is setup. This ensures that
-        # restart ui does not restart services e.g. powerd underneath us
+        # Stop services and disable multicast again as Chrome might have
+        # restarted them.
         self._services.stop_services()
+        self._multicast_disabler.disable_network_multicast()
 
         # This opens a trap start page to capture tabs opened for first login.
         # It will be closed when startTest is run.
@@ -456,6 +460,7 @@ class power_LoadTest(arc.ArcTest):
         self._start_time = t0
         self._end_time = t1
 
+        self._multicast_disabler.enable_network_multicast()
 
     def postprocess_iteration(self):
         """Postprocess: write keyvals / log and send data to power dashboard."""

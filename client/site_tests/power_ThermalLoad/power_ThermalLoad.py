@@ -68,8 +68,10 @@ class power_ThermalLoad(power_test.power_Test):
                 with keyboard.Keyboard() as keys:
                     keys.press_key('f4')
 
-            # Stop services again as Chrome might have restarted them.
+            # Stop services and disable multicast again as Chrome might have
+            # restarted them.
             self._services.stop_services()
+            self._multicast_disabler.disable_network_multicast()
 
             self.backlight.set_percent(100)
 
@@ -95,6 +97,10 @@ class power_ThermalLoad(power_test.power_Test):
                         'Low battery, stop test early after %.0f minutes',
                         (time.time() - self._start_time) / 60)
                     return
+
+            # Re-enable multicast here instead of in the cleanup because Chrome
+            # might re-enable it and we can't verify that multicast is off.
+            self._multicast_disabler.enable_network_multicast()
 
 
 class FishTankFpsLogger(power_status.MeasurementLogger):

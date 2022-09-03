@@ -317,6 +317,7 @@ suite:chameleon_igt_daily
 suite:check_setup_cts_N
 suite:check_setup_storage_qual
 suite:chrome-informational
+suite:commercial-limited
 suite:cros-av-analysis
 suite:crosbolt_arc_perf_qual
 suite:crosbolt_perf_nightly

@@ -7,6 +7,7 @@ suite:appcompat_default
 suite:appcompat_release
 suite:appcompat_smoke
 suite:appcompat_top_apps
+suite:arc_playstore
 suite:arc-cts
 suite:arc-cts-camera
 suite:arc-cts-deqp

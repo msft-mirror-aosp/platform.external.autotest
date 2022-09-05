@@ -41,7 +41,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         """A no-op test to validate Floss"""
         logging.info("sa_noop ran")
 
-    @test_wrapper('Stand Alone basic test')
+    @test_wrapper('Stand Alone basic test', supports_floss=True)
     def sa_basic_test(self):
         """Set of basic stand alone test"""
 
@@ -105,7 +105,9 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
 
 
     # TODO(b/182172118) - Winky has suspend test issues
-    @test_wrapper('Adapter suspend resume test', skip_models=['winky'])
+    @test_wrapper('Adapter suspend resume test',
+                  skip_models=['winky'],
+                  supports_floss=True)
     def sa_adapter_suspend_resume_test(self):
         """Test dapter power states is perserved through suspend resume."""
         def adapter_on_SR_test():
@@ -141,7 +143,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         # the kernel and bluetooth daemon see the adapter.
         self.test_has_adapter()
 
-    @test_wrapper('Adapter reboot test')
+    @test_wrapper('Adapter reboot test', supports_floss=True)
     def sa_adapter_reboot_test(self):
         """Verify that adapter power setting persist over reboot
 

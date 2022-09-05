@@ -1,0 +1,51 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+AUTHOR = 'Leena BaniOdeh <leena.baniodeh@exalt.ps>'
+NAME = 'bluetooth_AdapterSAHealth.sa_basic_test.floss'
+PURPOSE = 'Runs a set of basic stand alone tests'
+CRITERIA = 'Pass all health test'
+ATTRIBUTES = 'suite:bluetooth_floss'
+TIME = 'MEDIUM'
+TEST_CATEGORY = 'Functional'
+TEST_CLASS = 'bluetooth'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth_state:NORMAL'
+PY_VERSION = 3
+
+DOC = """
+The test runs a set of basic stand alone tests, including:
+- test_bluetoothd_running
+- test_power_on_adapter
+- test_power_off_adapter
+- test_power_on_adapter
+- test_adapter_work_state
+- test_stop_bluetoothd
+- test_start_bluetoothd
+- test_adapter_work_state
+- test_reset_off_adapter
+- test_reset_on_adapter
+- test_adapter_work_state
+- test_UUIDs
+- test_start_discovery
+- test_stop_discovery
+- test_start_discovery
+- test_discoverable
+- test_nondiscoverable
+- test_discoverable
+- test_pairable
+- test_nonpairable
+- test_pairable
+"""
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterSAHealth', host=host,
+                  num_iterations=1, test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

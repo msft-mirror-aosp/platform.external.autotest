@@ -1,0 +1,39 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+AUTHOR = 'Leena BaniOdeh <leena.baniodeh@exalt.ps>'
+NAME = 'bluetooth_AdapterSAHealth.sa_adapter_suspend_resume_test.floss'
+PURPOSE = 'Verify the adapter power state is preserved after suspend and resume'
+
+CRITERIA = 'Pass all health test'
+ATTRIBUTES = 'suite:bluetooth_floss'
+TIME = 'MEDIUM'
+TEST_CATEGORY = 'Functional'
+TEST_CLASS = 'bluetooth'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth'
+PY_VERSION = 3
+
+DOC = """
+The test verifies that the power state is preserved after suspend and resume.
+
+Steps:
+1. Power on the adapter.
+2. Suspend and DUT and wait for resume.
+3. Verify the power state.
+4. Power off the adapter.
+5. Suspend and DUT and wait for resume.
+6. Verify the power state.
+"""
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterSAHealth', host=host,
+                  num_iterations=1, test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

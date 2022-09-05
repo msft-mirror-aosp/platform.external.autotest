@@ -26,7 +26,7 @@ from jsonschema import validate
 import yaml
 
 SCHEMA_FILE = 'config_schema.yaml'
-TEST_TEMPLATE_FILE = 'template.control.performance_cuj'
+DEFAULT_TEST_TEMPLATE_FILE = 'template.control.performance_cuj'
 
 # The priority of the first test. Decremented by 1 for each subsequent test.
 INITIAL_PRIORITY = 5000
@@ -35,6 +35,7 @@ INITIAL_PRIORITY = 5000
 HOUR_IN_SECS = 60 * 60
 DEFAULT_TEST_DURATION = 1 * HOUR_IN_SECS
 
+DEFAULT_RETRIES = 1
 
 def _get_absolute_path(local_file):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -109,18 +110,41 @@ def _parse_suites(json_config, tests, constants):
         new_suite['name'] = _substitute_constants(new_suite['name'], constants)
         if 'args_file' in new_suite:
             new_suite['args_file'] = _substitute_constants(
-                    new_suite['args_file'], constants)
+                new_suite['args_file'], constants)
         if 'args' in new_suite:
             new_args = []
             for arg in new_suite['args']:
                 new_args.append(_substitute_constants(arg, constants))
             new_suite['args'] = new_args
-        for test in new_suite['tests']:
-            if not _find_test(test['test'], tests):
-                raise Exception(
+        if 'template' in new_suite:
+            new_suite['template'] = _substitute_constants(
+                new_suite['template'], constants)
+        repeats = 1
+        if 'repeats' in new_suite:
+            repeats = new_suite['repeats']
+        if not 'retries' in new_suite:
+            new_suite['retries'] = DEFAULT_RETRIES
+        if not ('tests' in new_suite or 'test_list' in new_suite):
+            raise Exception('Suite config for suite: %s has to contain either '
+                            '"tests" or "test_list" attributes '
+                            % new_suite['name'])
+        if 'tests' in new_suite:
+            for test in new_suite['tests']:
+                if not _find_test(test['test'], tests):
+                    raise Exception(
                         'Test %s (requested by suite %s) is not defined.' %
                         (test['test'], new_suite['name']))
-            test['test'] = _substitute_constants(test['test'], constants)
+                test['test'] = _substitute_constants(test['test'], constants)
+        elif 'test_list' in new_suite:
+            new_suite['tests'] = []
+            for test_name in new_suite['test_list']:
+                if not _find_test(test_name, tests):
+                    raise Exception(
+                        'Test %s (requested by suite %s) is not defined.' %
+                        (test_name, new_suite['name']))
+                new_suite['tests'].append({'test': _substitute_constants(
+                    test_name, constants), 'repeats': repeats})
+
         suites.append(new_suite)
     return suites
 
@@ -150,11 +174,15 @@ def _calculate_suffix(current_index, repeats):
 
 
 def _generate_test_files(version, suites, tests, suite_name=None):
-    template = _read_file(_get_absolute_path(TEST_TEMPLATE_FILE))
     for suite in suites:
         priority = INITIAL_PRIORITY
         if suite_name and suite['name'] != suite_name:
             continue
+        if suite['template']:
+            template = _read_file(_get_absolute_path(suite['template']))
+        else:
+            template = _read_file(
+                _get_absolute_path(DEFAULT_TEST_TEMPLATE_FILE))
         for test in suite['tests']:
             test_data = _find_test(test['test'], tests)
             repeats = test['repeats']
@@ -163,21 +191,24 @@ def _generate_test_files(version, suites, tests, suite_name=None):
                 deps = test_data['deps']
             for i in range(repeats):
                 test_name = _normalize_test_name(
-                        test_data['test_expr'] +
-                        _calculate_suffix(i + 1, repeats))
+                    test_data['test_expr'] +
+                    _calculate_suffix(i + 1, repeats))
                 control_file = template.format(
-                        name=test_name,
-                        priority=priority,
-                        duration=DEFAULT_TEST_DURATION,
-                        test_exprs=test_data['test_expr'],
-                        length='long',
-                        version=version,
-                        attributes='suite:' + suite['name'],
-                        dependencies=', '.join(deps),
-                        iteration=i + 1,
+                    name=test_name,
+                    priority=priority,
+                    duration=DEFAULT_TEST_DURATION,
+                    test_exprs=test_data['test_expr'],
+                    length='long',
+                    version=version,
+                    attributes='suite:' + suite['name'],
+                    dependencies=', '.join(deps),
+                    iteration=i + 1,
+                    args_file=suite['args_file'],
+                    retries=suite['retries'],
+                    total_tests=len(suite['tests']) * repeats
                 )
                 control_file_name = 'control.' + '_'.join(
-                        [suite['name'], test_name])
+                    [suite['name'], test_name])
                 _write_file(control_file_name, control_file)
                 priority = priority - 1
 
@@ -186,7 +217,7 @@ def main(argv):
     """Main program that parses JSON configuration and generates test wrappers."""
     if not argv or len(argv) < 2 or len(argv) > 3:
         raise Exception(
-                'Invalid command-line arguments. Usage: python generate_tests.py <config_file.json> [suite]'
+            'Invalid command-line arguments. Usage: python generate_tests.py <config_file.json> [suite]'
         )
 
     suite_name = None

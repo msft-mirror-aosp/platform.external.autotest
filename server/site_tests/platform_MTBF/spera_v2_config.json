@@ -1,0 +1,489 @@
+{
+  "version": 2,
+  "const": [
+    {"name": "TEMPLATE_V2", "value": "template.control.performance_cuj_v2"},
+    {"name": "CONFIG_FILE", "value": "config/perf_cuj/perf_cuj.config"}
+  ],
+  "tests": [
+    {
+      "name": "meet-basic-2",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.basic_two",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "meet-basic-2-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.basic_lacros_two",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "meet-basic-small",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.basic_small",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "meet-basic-small-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.basic_lacros_small",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "meet-basic-large",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.basic_large",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "meet-basic-large-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.basic_lacros_large",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "meet-basic-class",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.basic_class",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "meet-basic-class-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.basic_lacros_class",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "meet-plus-large",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.plus_large",
+      "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "meet-plus-large-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.plus_lacros_large",
+      "attributes": ["plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "meet-plus-class",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.plus_class",
+      "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "meet-plus-class-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.plus_lacros_class",
+      "attributes": ["plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "meet-premium-large",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.premium_large",
+      "attributes": ["premium"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "meet-premium-large-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleMeetCUJ.premium_lacros_large",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "tabswitch-basic-noproxy",
+      "tool": "tast",
+      "test_expr": "spera.TabSwitchCUJ2.basic_noproxy",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "tabswitch-basic-noproxy-lacros",
+      "tool": "tast",
+      "test_expr": "spera.TabSwitchCUJ2.basic_lacros_noproxy",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "tabswitch-plus-noproxy",
+      "tool": "tast",
+      "test_expr": "spera.TabSwitchCUJ2.plus_noproxy",
+      "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "tabswitch-plus-noproxy-lacros",
+      "tool": "tast",
+      "test_expr": "spera.TabSwitchCUJ2.plus_lacros_noproxy",
+      "attributes": ["plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "tabswitch-premium-noproxy",
+      "tool": "tast",
+      "test_expr": "spera.TabSwitchCUJ2.premium_noproxy",
+      "attributes": ["premium"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "tabswitch-premium-noproxy-lacros",
+      "tool": "tast",
+      "test_expr": "spera.TabSwitchCUJ2.premium_lacros_noproxy",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "quick-check-unlock",
+      "tool": "tast",
+      "test_expr": "spera.QuickCheckCUJ2.basic_unlock",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "quick-check-unlock-lacros",
+      "tool": "tast",
+      "test_expr": "spera.QuickCheckCUJ2.basic_lacros_unlock",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "quick-check-wakeup",
+      "tool": "tast",
+      "test_expr": "spera.QuickCheckCUJ2.basic_wakeup",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "quick-check-wakeup-lacros",
+      "tool": "tast",
+      "test_expr": "spera.QuickCheckCUJ2.basic_lacros_wakeup",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "video-basic-youtube-web",
+      "tool": "tast",
+      "test_expr": "spera.VideoCUJ2.basic_youtube_web",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "video-basic-youtube-web-lacros",
+      "tool": "tast",
+      "test_expr": "spera.VideoCUJ2.basic_lacros_youtube_web",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "video-premium-youtube-web",
+      "tool": "tast",
+      "test_expr": "spera.VideoCUJ2.premium_youtube_web",
+      "attributes": ["premium"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "video-premium-youtube-web-lacros",
+      "tool": "tast",
+      "test_expr": "spera.VideoCUJ2.premium_lacros_youtube_web",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "video-basic-youtube-app",
+      "tool": "tast",
+      "test_expr": "spera.VideoCUJ2.basic_youtube_app",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "video-basic-youtube-app-lacros",
+      "tool": "tast",
+      "test_expr": "spera.VideoCUJ2.basic_lacros_youtube_app",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "video-premium-youtube-app",
+      "tool": "tast",
+      "test_expr": "spera.VideoCUJ2.premium_youtube_app",
+      "attributes": ["premium"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "video-premium-youtube-app-lacros",
+      "tool": "tast",
+      "test_expr": "spera.VideoCUJ2.premium_lacros_youtube_app",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "everyday-basic-ytmusic",
+      "tool": "tast",
+      "test_expr": "spera.EverydayMultiTaskingCUJ.basic_ytmusic",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "everyday-basic-ytmusic-lacros",
+      "tool": "tast",
+      "test_expr": "spera.EverydayMultiTaskingCUJ.basic_lacros_ytmusic",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "everyday-plus-ytmusic",
+      "tool": "tast",
+      "test_expr": "spera.EverydayMultiTaskingCUJ.plus_ytmusic",
+      "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "everyday-plus-ytmusic-lacros",
+      "tool": "tast",
+      "test_expr": "spera.EverydayMultiTaskingCUJ.plus_lacros_ytmusic",
+      "attributes": ["plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "extended-display-meet",
+      "tool": "tast",
+      "test_expr": "spera.ExtendedDisplayCUJ.premium_meet_large",
+      "attributes": ["premium"],
+      "deps": ["external_display", "premium"]
+    },
+    {
+      "name": "extended-display-meet-lacros",
+      "tool": "tast",
+      "test_expr": "spera.ExtendedDisplayCUJ.premium_lacros_meet_large",
+      "attributes": ["premium", "lacros"],
+      "deps": ["external_display", "premium"]
+    },
+    {
+      "name": "extended-display-video",
+      "tool": "tast",
+      "test_expr": "spera.ExtendedDisplayCUJ.plus_video_youtube_web",
+      "attributes": ["plus"],
+      "deps": ["external_display", "plus"]
+    },
+    {
+      "name": "extended-display-video-lacros",
+      "tool": "tast",
+      "test_expr": "spera.ExtendedDisplayCUJ.plus_lacros_video_youtube_web",
+      "attributes": ["plus", "lacros"],
+      "deps": ["external_display", "plus"]
+    },
+    {
+      "name": "gdocs-basic",
+      "tool": "tast",
+      "test_expr": "spera.GoogleDocsWebCUJ.basic",
+      "attributes": ["basic"]
+    },
+    {
+      "name": "gdocs-basic-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleDocsWebCUJ.basic_lacros",
+      "attributes": ["basic", "lacros"]
+    },
+    {
+      "name": "gdocs-premium",
+      "tool": "tast",
+      "test_expr": "spera.GoogleDocsWebCUJ.premium",
+      "attributes": ["premium"]
+    },
+    {
+      "name": "gdocs-premium-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GoogleDocsWebCUJ.premium_lacros",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "msoffice-plus",
+      "tool": "tast",
+      "test_expr": "spera.MicrosoftOfficeWebCUJ.plus",
+      "attributes": ["plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "msoffice-plus-lacros",
+      "tool": "tast",
+      "test_expr": "spera.MicrosoftOfficeWebCUJ.plus_lacros",
+      "attributes": ["plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "msoffice-premium",
+      "tool": "tast",
+      "test_expr": "spera.MicrosoftOfficeWebCUJ.premium",
+      "attributes": ["premium"]
+    },
+    {
+      "name": "msoffice-premium-lacros",
+      "tool": "tast",
+      "test_expr": "spera.MicrosoftOfficeWebCUJ.premium_lacros",
+      "attributes": ["premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "gaming-proxy-basic",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.basic_h264_1080p_60fps",
+      "attributes": ["gaming", "basic"]
+    },
+    {
+      "name": "gaming-proxy-basic-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.basic_lacros_h264_1080p_60fps",
+      "attributes": ["gaming", "basic", "lacros"]
+    },
+    {
+      "name": "gaming-proxy-plus-h264",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.plus_h264_4k_60fps",
+      "attributes": ["gaming", "plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "gaming-proxy-plus-h264-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.plus_lacros_h264_4k_60fps",
+      "attributes": ["gaming", "plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "gaming-proxy-plus-av1",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.plus_av1_4k_60fps",
+      "attributes": ["gaming", "plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "gaming-proxy-plus-av1-lacros",
+      "tool": "tast",
+      "test_expr": "spera.GamingProxyCUJ.plus_lacros_av1_4k_60fps",
+      "attributes": ["gaming", "plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "edu-3dmodeling-plus-tinkercad",
+      "tool": "tast",
+      "test_expr": "spera.EDU3DModelingCUJ.plus_tinkercad",
+      "attributes": ["edu", "plus"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "edu-3dmodeling-plus-tinkercad-lacros",
+      "tool": "tast",
+      "test_expr": "spera.EDU3DModelingCUJ.plus_lacros_tinkercad",
+      "attributes": ["edu", "plus", "lacros"],
+      "deps": ["plus"]
+    },
+    {
+      "name": "edu-basic-google-photos",
+      "tool": "tast",
+      "test_expr": "spera.EDUImageEditingCUJ.basic_google_photos",
+      "attributes": ["edu", "basic"]
+    },
+    {
+      "name": "edu-basic-google-photos-lacros",
+      "tool": "tast",
+      "test_expr": "spera.EDUImageEditingCUJ.basic_lacros_google_photos",
+      "attributes": ["edu", "basic", "lacros"]
+    },
+    {
+      "name": "edu-video-premium-wevideo",
+      "tool": "tast",
+      "test_expr": "spera.EDUVideoEditingCUJ.premium_wevideo",
+      "attributes": ["edu", "premium"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "edu-video-premium-wevideo-lacros",
+      "tool": "tast",
+      "test_expr": "spera.EDUVideoEditingCUJ.premium_lacros_wevideo",
+      "attributes": ["edu", "premium", "lacros"],
+      "deps": ["premium"]
+    },
+    {
+      "name": "edu-cast2class-plus",
+      "tool": "tast",
+      "test_expr": "spera.EDUCastToClass.plus_cast",
+      "attributes": ["edu", "plus"],
+      "deps": ["plus", "adt3"]
+    },
+    {
+      "name": "edu-cast2class-plus-lacros",
+      "tool": "tast",
+      "test_expr": "spera.EDUCastToClass.plus_lacros_cast",
+      "attributes": ["edu", "plus", "lacros"],
+      "deps": ["plus", "adt3"]
+    },
+    {
+      "name": "frontline-worker-basic-browsing",
+      "tool": "tast",
+      "test_expr": "spera.FrontlineWorkerCUJ.basic_browsing",
+      "attributes": ["frontline", "basic"]
+    },
+    {
+      "name": "frontline-worker-basic-collab",
+      "tool": "tast",
+      "test_expr": "spera.FrontlineWorkerCUJ.basic_collaborating",
+      "attributes": ["frontline", "basic"]
+    }
+  ],
+  "suites": [
+    {
+      "name": "performance_cuj_v2",
+      "template": "$TEMPLATE_V2$",
+      "args_file": "$CONFIG_FILE$",
+      "repeats": 10,
+      "retries": 4,
+      "test_list": ["meet-basic-2", "meet-basic-small", "meet-basic-large",
+        "meet-basic-class", "meet-plus-large", "meet-plus-class",
+        "meet-premium-large", "tabswitch-basic-noproxy",
+        "tabswitch-plus-noproxy", "tabswitch-premium-noproxy",
+        "quick-check-unlock", "quick-check-wakeup", "video-basic-youtube-web",
+        "video-premium-youtube-web", "video-basic-youtube-app",
+        "video-premium-youtube-app", "everyday-basic-ytmusic",
+        "everyday-plus-ytmusic", "extended-display-meet",
+        "extended-display-video", "gdocs-basic", "gdocs-premium",
+        "msoffice-plus", "msoffice-premium", "gaming-proxy-basic",
+        "gaming-proxy-plus-h264", "gaming-proxy-plus-av1",
+        "edu-3dmodeling-plus-tinkercad", "edu-basic-google-photos",
+        "edu-video-premium-wevideo", "edu-cast2class-plus",
+        "frontline-worker-basic-browsing", "frontline-worker-basic-collab"
+      ]
+    },
+    {
+      "name": "performance_cuj_quick_v2",
+      "template": "$TEMPLATE_V2$",
+      "args_file": "$CONFIG_FILE$",
+      "repeats": 1,
+      "retries": 2,
+      "test_list": ["meet-basic-2", "meet-basic-small",
+        "meet-plus-large", "meet-premium-large", "tabswitch-basic-noproxy",
+        "quick-check-unlock", "quick-check-wakeup", "video-basic-youtube-web",
+        "video-basic-youtube-app", "everyday-basic-ytmusic",
+        "extended-display-meet", "extended-display-video",
+        "edu-3dmodeling-plus-tinkercad", "edu-basic-google-photos",
+        "edu-video-premium-wevideo", "frontline-worker-basic-browsing"
+      ]
+    },
+    {
+      "name": "performance_cuj_lacros",
+      "template": "$TEMPLATE_V2$",
+      "args_file": "$CONFIG_FILE$",
+      "repeats": 10,
+      "retries": 2,
+      "test_list": ["meet-basic-2-lacros", "meet-basic-small-lacros",
+        "meet-basic-large-lacros", "meet-basic-class-lacros",
+        "meet-plus-large-lacros", "meet-plus-class-lacros",
+        "meet-premium-large-lacros", "tabswitch-basic-noproxy-lacros",
+        "tabswitch-plus-noproxy-lacros", "tabswitch-premium-noproxy-lacros",
+        "quick-check-unlock-lacros", "quick-check-wakeup-lacros",
+        "video-basic-youtube-web-lacros", "video-premium-youtube-web-lacros",
+        "video-basic-youtube-app-lacros", "video-premium-youtube-app-lacros",
+        "everyday-basic-ytmusic-lacros", "everyday-plus-ytmusic-lacros",
+        "extended-display-meet-lacros", "extended-display-video-lacros",
+        "gdocs-basic-lacros", "gdocs-premium-lacros", "msoffice-plus-lacros",
+        "msoffice-premium-lacros", "gaming-proxy-basic-lacros",
+        "gaming-proxy-plus-h264-lacros", "gaming-proxy-plus-av1-lacros",
+        "edu-3dmodeling-plus-tinkercad-lacros", "edu-basic-google-photos-lacros",
+        "edu-video-premium-wevideo-lacros", "edu-cast2class-plus-lacros"
+      ]
+    }
+  ]
+}

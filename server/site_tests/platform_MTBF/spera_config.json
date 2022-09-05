@@ -316,19 +316,22 @@
       "name": "gdocs-premium",
       "tool": "tast",
       "test_expr": "ui.GoogleDocsWebCUJ.premium",
-      "attributes": ["premium"]
+      "attributes": ["premium"],
+      "deps": ["premium"]
     },
     {
       "name": "msoffice-plus",
       "tool": "tast",
       "test_expr": "ui.MicrosoftOfficeWebCUJ.plus",
-      "attributes": ["plus"]
+      "attributes": ["plus"],
+      "deps": ["plus"]
     },
     {
       "name": "msoffice-premium",
       "tool": "tast",
       "test_expr": "ui.MicrosoftOfficeWebCUJ.premium",
-      "attributes": ["premium"]
+      "attributes": ["premium"],
+      "deps": ["premium"]
     },
     {
       "name": "geekbench-public-android",

@@ -53,12 +53,18 @@ properties:
       properties:
         name:
           type: string
+        template:
+          type: string
         args_file:
           type: string
         args:
           type: array
           items:
             type: string
+        repeats:
+          type: integer
+        retries:
+          type: integer
         tests:
           type: array
           items:
@@ -71,9 +77,12 @@ properties:
             required:
             - test
             - repeats
+        test_list:
+          type: array
+          items:
+            type: string
       required:
       - name
-      - tests
     minItems: 1
     uniqueItems: true
 required:

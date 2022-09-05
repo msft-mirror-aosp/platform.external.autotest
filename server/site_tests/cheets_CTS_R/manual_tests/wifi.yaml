@@ -18,6 +18,7 @@ android.jobscheduler.cts.ConnectivityConstraintTest#testMeteredConstraintFails_w
 android.jobscheduler.cts.ConnectivityConstraintTest#testMeteredConstraintFails_withWiFi: [all]
 android.jobscheduler.cts.ConnectivityConstraintTest#testUnmeteredConstraintExecutes_withWifi: [all]
 android.jobscheduler.cts.JobThrottlingTest#testBackgroundConnectivityJobsThrottled: [all]
+android.jobscheduler.cts.JobThrottlingTest#testJobsInRestrictedBucket_WithRequiredNetwork: [all]
 android.net.cts.api23test.ConnectivityManagerApi23Test#testConnectivityChanged_manifestRequestOnlyPreN_shouldReceiveIntent: [all]
 android.net.cts.api23test.ConnectivityManagerApi23Test#testConnectivityChanged_manifestRequestOnly_shouldNotReceiveIntent: [all]
 android.net.cts.api23test.ConnectivityManagerApi23Test#testConnectivityChanged_whenRegistered_shouldReceiveIntent: [all]

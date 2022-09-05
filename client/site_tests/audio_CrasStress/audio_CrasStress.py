@@ -34,7 +34,7 @@ class audio_CrasStress(test.test):
     of input device should stay between 0 and 1024. Buffer level of output
     device should between 1024 to 2048. Sometimes it will be a little more.
     Therefore, we set input buffer criteria to 3 * 1024 and output buffer
-    criteria to 3 * 1024.
+    criteria to 5 * 1024.
     """
     _RATES = ['48000', '44100']
     _BLOCK_SIZES = ['512', '1024']

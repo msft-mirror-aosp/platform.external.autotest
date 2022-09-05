@@ -151,6 +151,7 @@ CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
 
 CONFIG['VM_MODULES'] = [
         'CtsAccessibilityServiceTestCases',
+        'CtsAutoFillServiceTestCases',
         'CtsFileSystemTestCases',
         'CtsJniTestCases',
         'CtsPdfTestCases',

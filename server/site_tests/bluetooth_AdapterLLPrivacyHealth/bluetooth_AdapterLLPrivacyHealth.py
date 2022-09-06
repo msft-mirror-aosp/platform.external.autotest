@@ -376,6 +376,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                  host,
                  num_iterations=1,
                  args_dict=None,
+                 peer_required=True,
                  test_name=None,
                  flag='Quick Health'):
         """Run the package of Bluetooth LL privacy health tests. Currently,
@@ -396,7 +397,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
         # Init the quick test and start the package
         self.quick_test_init(host,
-                             use_btpeer=True,
+                             use_btpeer=peer_required,
                              flag=flag,
                              args_dict=args_dict,
                              llprivacy=True)

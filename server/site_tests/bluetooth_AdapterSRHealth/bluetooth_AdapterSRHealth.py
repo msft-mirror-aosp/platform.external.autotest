@@ -506,7 +506,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         start_time = self.bluetooth_facade.get_device_utc_time()
 
         # Enable BQR
-        self.enable_disable_quality_report(action=1)
+        self.enable_disable_quality_report(enable=True)
         self.enable_disable_quality_debug_log(enable=True)
         self.dut_btmon_log_path = self.start_new_btmon()
 
@@ -554,7 +554,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
             self.test_send_log()
             self.check_qr_event_log(num_devices=len(devices))
             self.enable_disable_quality_debug_log(enable=False)
-            self.enable_disable_quality_report(action=0)
+            self.enable_disable_quality_report(enable=False)
         finally:
             for device in devices:
                 if device.device_type == 'BLUETOOTH_AUDIO':
@@ -571,7 +571,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
         # Enable BQR
         if enable_BQR:
-            self.enable_disable_quality_report(action=1)
+            self.enable_disable_quality_report(enable=True)
             self.enable_disable_quality_debug_log(enable=True)
 
         try:
@@ -609,7 +609,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
             # Disable BQR
             if enable_BQR:
                 self.enable_disable_quality_debug_log(enable=False)
-                self.enable_disable_quality_report(action=0)
+                self.enable_disable_quality_report(enable=False)
 
             for device in devices:
                 if device.device_type == 'BLUETOOTH_AUDIO':

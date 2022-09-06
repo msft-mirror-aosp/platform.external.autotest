@@ -575,11 +575,11 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         @param device: the bluetooth peer device.
         @param test_profile: the test profile to used.
         """
-        self.enable_disable_quality_report(action=1)
+        self.enable_disable_quality_report(enable=True)
         self.enable_disable_quality_debug_log(enable=True)
         time.sleep(3)
         self.enable_disable_quality_debug_log(enable=False)
-        self.enable_disable_quality_report(action=0)
+        self.enable_disable_quality_report(enable=False)
         time.sleep(3)
 
         self.dut_btmon_log_path = self.start_new_btmon()

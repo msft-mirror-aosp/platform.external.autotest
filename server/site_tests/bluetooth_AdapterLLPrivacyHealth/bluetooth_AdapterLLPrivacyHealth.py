@@ -327,6 +327,63 @@ class bluetooth_AdapterLLPrivacyHealth(
                                      kbd_test_func,
                                      secondary_info=hid_test_device)
 
+    @test_wrapper('Use Resolving List for RPA Test', devices={"BLE_MOUSE": 1})
+    def le_address_resolution_power_cycle(self):
+        """Test RPA is used when pairing and address resolution is enabled with
+        LL privacy enabled.
+        """
+        device = self.devices['BLE_MOUSE'][0]
+        self.test_set_device_privacy(device, True)
+
+        # start advertising and set RPA
+        self.test_start_device_advertise_with_rpa(device)
+        self.test_discover_device(device.rpa)
+
+        self.test_pairing_with_rpa(device)
+
+        self.test_power_cycle_with_address_resolution()
+
+        self.test_remove_pairing(device.rpa, identity_address=device.address)
+        self.test_stop_device_advertise_with_rpa(device)
+        self.test_set_device_privacy(device, False)
+
+    @test_wrapper('Pair Remove Use RPA with Privacy Mode Test',
+                  devices={"BLE_MOUSE": 1})
+    def le_pair_remove_privacy(self):
+        """Performs discovery test with mouse peripheral and pairing with
+        RPA.
+        """
+        device = self.devices['BLE_MOUSE'][0]
+        self.test_set_device_privacy(device, True)
+
+        # start advertising and set RPA
+        self.test_start_device_advertise_with_rpa(device)
+        self.test_discover_device(device.rpa)
+
+        self.test_pairing_with_rpa(device)
+        self.run_mouse_tests(device=device)
+        self.test_remove_pairing(device.rpa, identity_address=device.address)
+        # Restore privacy setting
+        self.test_stop_device_advertise_with_rpa(device)
+        self.test_set_device_privacy(device, False)
+
+    @test_wrapper('Pair Remove Use IRK with Privacy Mode Test',
+                  devices={"BLE_MOUSE": 1})
+    def le_pair_remove_with_irk(self):
+        """Performs discovery test with mouse peripheral which is in privacy
+        mode, but not using LE advertising.
+        """
+        device = self.devices['BLE_MOUSE'][0]
+        self.test_set_device_privacy(device, True)
+
+        self.test_discover_device(device.address)
+
+        self.test_pairing(device.address, device.pin, trusted=True)
+        self.run_mouse_tests(device=device)
+        self.test_remove_pairing(device.address)
+        # Restore privacy setting
+        self.test_set_device_privacy(device, False)
+
     @batch_wrapper("LL Privacy Health")
     def ll_privacy_batch_run(self, num_iterations=1, test_name=None):
         """A batch of tests with LL privacy enabled."""
@@ -350,6 +407,11 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.le_role_receiver()
         self.le_role_sender()
         self.le_role_sender_during_hid()
+        # LE privacy mode test
+        self.le_address_resolution_power_cycle()
+        self.le_pair_remove_privacy()
+        self.le_pair_remove_with_irk()
+
 
     def run_once(self,
                  host,
@@ -357,7 +419,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                  args_dict=None,
                  peer_required=True,
                  test_name=None,
-                 flag='Quick Health'):
+                 flag='Quick Health',
+                 llprivacy=True):
         """Run the package of Bluetooth LL privacy health tests. Currently,
         the tests are directly copied from other test packages, but with
         the LL privacy enabled.
@@ -379,7 +442,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                              use_btpeer=peer_required,
                              flag=flag,
                              args_dict=args_dict,
-                             llprivacy=True)
+                             llprivacy=llprivacy)
         self.ll_privacy_batch_run(num_iterations, test_name)
         # End and cleanup test package
         self.quick_test_cleanup()

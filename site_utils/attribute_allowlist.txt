@@ -414,6 +414,7 @@ suite:kiosk_longevity
 suite:labqual
 suite:labstation_verification
 suite:lacros-version-skew-beta
+suite:lacros-version-skew-canary
 suite:lacros-version-skew-dev
 suite:lacros-version-skew-stable
 suite:link_perf

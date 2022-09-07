@@ -1,0 +1,29 @@
+# Copyright 2023 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterLLPrivacyHealth.le_auto_reconnect_with_privacy.no_llp'
+METADATA = {
+    "contacts": ['chromeos-bt-team@google.com', 'jiangzp@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    "bug_component": "b:167317",
+    "criteria": "Test auto-reconnect after power cycle with peer in privacy mode. DUT with LL privacy turned off.",
+    'hw_agnostic': False,
+    'requirements': ['bt-gen-0001-v01', 'bt-spec-0019-v01'],
+}
+ATTRIBUTES = 'suite:bluetooth_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterLLPrivacyHealth', host=host,
+                 num_iterations=1, args_dict=args_dict,
+                 test_name=NAME.split('.')[1], llprivacy=False)
+
+parallel_simple(run, machines)

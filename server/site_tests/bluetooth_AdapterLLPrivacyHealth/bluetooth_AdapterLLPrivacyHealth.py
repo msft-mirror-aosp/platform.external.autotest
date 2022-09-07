@@ -418,6 +418,23 @@ class bluetooth_AdapterLLPrivacyHealth(
             # restore old value
             self.test_update_rpa_timeout(device, old_timeout)
 
+    @test_wrapper('Reconnect Test', devices={"BLE_MOUSE": 1})
+    def le_auto_reconnect_with_privacy(self):
+        """Test auto reconnect after adapter reboot."""
+        device = self.devices['BLE_MOUSE'][0]
+        self.auto_reconnect_loop_with_device_privacy(
+                device, 3, check_connected_method=self.test_mouse_left_click)
+
+    @test_wrapper('Reconnect Test', devices={"BLE_MOUSE": 1})
+    def le_auto_reconnect_with_privacy_by_device(self):
+        """Test auto reconnect after device disconnect."""
+        device = self.devices['BLE_MOUSE'][0]
+        self.auto_reconnect_loop_with_device_privacy(
+                device,
+                3,
+                check_connected_method=self.test_mouse_left_click,
+                disconnect_by_device=True)
+
     @batch_wrapper("LL Privacy Health")
     def ll_privacy_batch_run(self, num_iterations=1, test_name=None):
         """A batch of tests with LL privacy enabled."""
@@ -446,7 +463,8 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.le_pair_remove_privacy()
         self.le_pair_remove_with_irk()
         self.privacy_rpa_timeout()
-
+        self.le_auto_reconnect_with_privacy_by_device()
+        self.le_auto_reconnect_with_privacy()
 
     def run_once(self,
                  host,

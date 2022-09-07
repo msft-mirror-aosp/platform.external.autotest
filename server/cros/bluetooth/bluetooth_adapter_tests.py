@@ -420,6 +420,24 @@ def _flag_common_failures(instance):
     return had_failure
 
 
+def _update_device_address_helper(device):
+    """Check if the identity address is different from the init paired address.
+
+    device.init_paired_addr is updated when pairing using a RPA. This function
+    will return (pairing address, identity address) when it is defined, otherwise
+    return (identity address, None).
+    """
+    device_address = device.address
+    identity_address = None
+    if isinstance(device.init_paired_addr, str):
+        device_address = device.init_paired_addr
+        identity_address = device.address
+        logging.debug(
+                "Init paired addr (%s) is different from identity addr (%s)",
+                device_address, identity_address)
+    return device_address, identity_address
+
+
 def fix_serial_device(btpeer, device, operation='reset'):
     """Fix the serial device.
 
@@ -2889,13 +2907,16 @@ class BluetoothAdapterTests(test.test):
             logging.error('%s (device): unexpected error', method_name)
 
         disconnection_seen_by_adapter = False
-        device_address = device.address
+        device_address, identity_address = _update_device_address_helper(
+                device)
         device_is_connected = self.bluetooth_facade.device_is_connected
         try:
             utils.poll_for_condition(
-                    condition=lambda: not device_is_connected(device_address),
+                    condition=lambda: not device_is_connected(
+                            device_address, identity_address),
                     timeout=self.ADAPTER_DISCONNECTION_TIMEOUT_SECS,
-                    desc=('Waiting for disconnection from %s' % device_address))
+                    desc=('Waiting for disconnection from %s' %
+                          device_address))
             disconnection_seen_by_adapter = True
         except utils.TimeoutError as e:
             logging.error('%s (adapter): %s', method_name, e)
@@ -4399,7 +4420,7 @@ class BluetoothAdapterTests(test.test):
 
         @param device: the meta device containing a bluetooth HID device
         @param delta_y: the units to scroll down in y axis;
-                        should be a postive value
+                        should be a positive value
 
         @returns: True if the report received by the host matches the
                   expected one. False otherwise.
@@ -4418,7 +4439,7 @@ class BluetoothAdapterTests(test.test):
 
         @param device: the meta device containing a bluetooth HID device
         @param delta_y: the units to scroll up in y axis;
-                        should be a postive value
+                        should be a positive value
 
         @returns: True if the report received by the host matches the
                   expected one. False otherwise.

@@ -24,10 +24,11 @@ logging.basicConfig(
 sys.path.append('/usr/local/autotest/bin')
 import common
 from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros.multimedia import display_facade as display_facade_lib
 from autotest_lib.client.cros.multimedia import facade_resource
-from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.cros.power import power_utils
 
 DEFAULT_DISPLAY_LEVEL = 96.0
 
@@ -96,10 +97,29 @@ def control_brightness():
             'backlight_tool --get_brightness_percent')
     logging.info('Save original display brightness %r', original_display_level)
 
-    utils.system('stop powerd', ignore_status=True)
+    # Killing powerd to prevent screen dimming is not reliable, as it could be
+    # restarted when we're restarting the UI. Override the default powerd
+    # settings instead for the duration of the script.
+    dim_ms = 0  # 0 means no limit
+    prefs = { 'disable_idle_suspend'   : 1,
+              'ignore_external_policy' : 1,
+              'plugged_dim_ms'         : dim_ms,
+              'plugged_off_ms'         : dim_ms,
+              'plugged_suspend_ms'     : dim_ms,
+              'unplugged_dim_ms'       : dim_ms,
+              'unplugged_off_ms'       : dim_ms,
+              'unplugged_suspend_ms'   : dim_ms }
+    try:
+        pref_change = power_utils.PowerPrefChanger(prefs)
+    except FileExistsError:
+        # Normally rebooting will remove this override if previous script
+        # invocation was improperly terminated, but Camerabox chart tablets
+        # aren't normally being rebooted.
+        power_utils.PowerPrefChanger.finalize()
+        pref_change = power_utils.PowerPrefChanger(prefs)
+
     yield set_brightness
-    logging.info('Restore display brightness %r', original_display_level)
-    utils.system('start powerd', ignore_status=True)
+
     set_brightness(original_display_level)
 
 

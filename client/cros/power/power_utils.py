@@ -639,11 +639,12 @@ class PowerPrefChanger(object):
         utils.system('mount --bind %s %s' % (self._TEMPDIR, self._PREFDIR))
         upstart.restart_job('powerd')
 
-    def finalize(self):
+    @classmethod
+    def finalize(cls):
         """finalize"""
-        if os.path.exists(self._TEMPDIR):
-            utils.system('umount %s' % self._PREFDIR, ignore_status=True)
-            shutil.rmtree(self._TEMPDIR)
+        if os.path.exists(cls._TEMPDIR):
+            utils.system('umount %s' % cls._PREFDIR, ignore_status=True)
+            shutil.rmtree(cls._TEMPDIR)
             upstart.restart_job('powerd')
 
     def __del__(self):

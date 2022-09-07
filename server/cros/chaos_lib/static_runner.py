@@ -58,7 +58,7 @@ class StaticRunner(object):
         @param disabled_sysinfo: a bool, disable collection of logs from DUT.
 
 
-        @raises TestError: Packet capture DUT may be down or another test may be
+        @raises TestNAError: Packet capture DUT may be down or another test may be
                            running in the chamber.
         """
 
@@ -87,14 +87,14 @@ class StaticRunner(object):
                 if networks is None:
                     if (time.time() - start_time ==
                             ap_constants.MAX_SCAN_TIMEOUT):
-                        raise error.TestError(
+                        raise error.TestNAError(
                             'Packet capturer is not responding to scans. Check'
                             'device and re-run test')
                     continue
                 elif len(networks) < ap_constants.MAX_SSID_COUNT:
                     break
                 elif len(networks) >= ap_constants.MAX_SSID_COUNT:
-                    raise error.TestError(
+                    raise error.TestNAError(
                         'Probably someone is already running a '
                         'chaos test?!')
 

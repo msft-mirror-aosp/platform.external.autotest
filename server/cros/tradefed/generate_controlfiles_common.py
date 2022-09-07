@@ -45,6 +45,8 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- endif %}
     {%- if wifi_info_needed %}
     from autotest_lib.client.common_lib import utils, global_config
+    {%- endif %}
+    {%- if has_precondition_escape %}
     import pipes
     {%- endif %}
 
@@ -528,6 +530,21 @@ def get_max_result_size_kb(modules, is_public):
     return CONFIG['NORMAL_MAX_RESULT_SIZE']
 
 
+def has_precondition_escape(modules, is_public):
+    """Determines if escape by pipes module is used in preconditions.
+
+    @param modules: List of CTS modules to be tested by the control file.
+    """
+    commands = []
+    for module in modules:
+        if is_public:
+            commands.extend(CONFIG['PUBLIC_PRECONDITION'].get(module, []))
+        else:
+            commands.extend(CONFIG['PRECONDITION'].get(module, []))
+            commands.extend(CONFIG['LOGIN_PRECONDITION'].get(module, []))
+    return any('pipes.' in cmd for cmd in commands)
+
+
 def get_extra_args(modules, is_public):
     """Generate a list of extra arguments to pass to the test.
 
@@ -966,6 +983,7 @@ def get_controlfile_content(combined,
             DOC=get_doc(modules, abi, is_public),
             servo_support_needed=servo_support_needed(modules, is_public),
             wifi_info_needed=wifi_info_needed(modules, is_public),
+            has_precondition_escape=has_precondition_escape(modules, is_public),
             max_retries=get_max_retries(modules, abi, suites, is_public),
             timeout=calculate_timeout(modules, suites),
             run_template=get_run_template(modules,

@@ -246,19 +246,13 @@ CONFIG['LOGIN_PRECONDITION'] = {
     'CtsProviderTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
 }
 
-_WIFI_CONNECT_COMMANDS = [
-    # These needs to be in order.
-    "'/usr/local/autotest/cros/scripts/wifi connect %s %s\' % (ssid, wifipass)",
-    "'/usr/local/autotest/cros/scripts/reorder-services-moblab.sh wifi'"
-]
-
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
         'CtsSecurityHostTestCases':
         [_SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND],
-        'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
-        'CtsNetTestCases': _WIFI_CONNECT_COMMANDS + [_START_MDNS_COMMAND],
-        'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS_V2,
+        'CtsNetTestCases': _WIFI_CONNECT_COMMANDS_V2 + [_START_MDNS_COMMAND],
+        'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS_V2,
 }
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {

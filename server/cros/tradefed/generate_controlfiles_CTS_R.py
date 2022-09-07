@@ -201,12 +201,6 @@ CONFIG['ENABLE_DEFAULT_APPS'] = [
 _EJECT_REMOVABLE_DISK_COMMAND = (
         "\'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject\'")
 
-_WIFI_CONNECT_COMMANDS = [
-        # These needs to be in order.
-        "'/usr/local/autotest/cros/scripts/wifi connect %s %s\' % (ssid, wifipass)",
-        "'android-sh -c \\'dumpsys wifi transports -eth\\''"
-]
-
 _WIFI_CONNECT_COMMANDS_V2 = [
         # These needs to be in order.
         "'adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass))",
@@ -235,14 +229,14 @@ CONFIG['LOGIN_PRECONDITION'] = {
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
         'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
-        'CtsHostsideNetworkTests': _WIFI_CONNECT_COMMANDS,
-        'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS,
-        'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS,
-        'CtsNetTestCases': _WIFI_CONNECT_COMMANDS,
-        'CtsJobSchedulerTestCases': _WIFI_CONNECT_COMMANDS,
-        'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS,
-        'CtsStatsdHostTestCases': _WIFI_CONNECT_COMMANDS,
-        'CtsWifiTestCases': _WIFI_CONNECT_COMMANDS,
+        'CtsHostsideNetworkTests': _WIFI_CONNECT_COMMANDS_V2,
+        'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS_V2,
+        'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS_V2,
+        'CtsNetTestCases': _WIFI_CONNECT_COMMANDS_V2,
+        'CtsJobSchedulerTestCases': _WIFI_CONNECT_COMMANDS_V2,
+        'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS_V2,
+        'CtsStatsdHostTestCases': _WIFI_CONNECT_COMMANDS_V2,
+        'CtsWifiTestCases': _WIFI_CONNECT_COMMANDS_V2,
 }
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {

@@ -384,6 +384,38 @@ class bluetooth_AdapterLLPrivacyHealth(
         # Restore privacy setting
         self.test_set_device_privacy(device, False)
 
+    @test_wrapper('RPA Timeout Test', devices={"BLE_MOUSE": 1})
+    def privacy_rpa_timeout(self):
+        """Change RPA timeout"""
+        device = self.devices['BLE_MOUSE'][0]
+        test_timeout = 40  # timeout should be at least 30s
+        old_timeout = device.GetRPATimeout()
+        if test_timeout == old_timeout:
+            test_timeout = 41
+        try:
+            logging.info('set timeout to {}'.format(test_timeout))
+            self.test_update_rpa_timeout(device, test_timeout)
+            wait_time = test_timeout + 2
+
+            self.test_set_device_privacy(device, True)
+            self.test_start_device_advertise_with_rpa(device)
+
+            timeout_half = test_timeout / 2
+            logging.info('wait {} seconds'.format(timeout_half))
+            time.sleep(timeout_half)
+
+            self.test_random_address_updated(device, False)
+
+            logging.info('wait {} seconds'.format(wait_time - timeout_half))
+            time.sleep(wait_time - timeout_half)
+            self.test_random_address_updated(device, True)
+
+            self.test_stop_device_advertise_with_rpa(device)
+            self.test_set_device_privacy(device, False)
+        finally:
+            # restore old value
+            self.test_update_rpa_timeout(device, old_timeout)
+
     @batch_wrapper("LL Privacy Health")
     def ll_privacy_batch_run(self, num_iterations=1, test_name=None):
         """A batch of tests with LL privacy enabled."""
@@ -411,6 +443,7 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.le_address_resolution_power_cycle()
         self.le_pair_remove_privacy()
         self.le_pair_remove_with_irk()
+        self.privacy_rpa_timeout()
 
 
     def run_once(self,

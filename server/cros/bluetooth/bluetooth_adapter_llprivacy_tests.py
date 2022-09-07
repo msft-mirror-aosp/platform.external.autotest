@@ -109,3 +109,34 @@ class BluetoothAdapterLLPrivacyTests(
                 device.rpa + ' (Resolvable)')
 
         return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_random_address_updated(self, device, should_update=True):
+        """Check if RPA has changed for the device and update rpa in device."""
+        if not hasattr(device, 'rpa'):
+            logging.error("RPA has not been set by start advertising.")
+            return False
+        old_random_address = device.rpa
+        self.test_stop_device_advertise_with_rpa(device)
+        self.test_start_device_advertise_with_rpa(device)
+        self.results = {
+                'old_rpa': old_random_address,
+                'new_rpa': device.rpa,
+        }
+        updated = old_random_address != device.rpa
+        return should_update == updated
+
+    @test_retry_and_log(False)
+    def test_update_rpa_timeout(self, device, test_timeout):
+        """Test RPA timeout has been changed to test value."""
+        if test_timeout < 30 or test_timeout > 3600:
+            logging.error('RPA timeout must be in range [30, 3600]')
+            return False
+
+        self.results = {'test_timeout': test_timeout}
+        old_timeout = device.GetRPATimeout()
+        device.SetRPATimeout(test_timeout)
+        new_timeout = device.GetRPATimeout()
+        self.results['old_timeout'] = old_timeout
+        self.results['new_timeout'] = new_timeout
+        return new_timeout == test_timeout

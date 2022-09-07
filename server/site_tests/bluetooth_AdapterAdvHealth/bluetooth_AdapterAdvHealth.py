@@ -6,8 +6,7 @@
 """A Batch of Bluetooth advertising tests"""
 
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
-        SUSPEND_POWER_DOWN_MODELS)
+        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS)
 from autotest_lib.server.cros.bluetooth import advertisements_data
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import \
      BluetoothAdapterQuickTests
@@ -62,8 +61,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
     @test_wrapper('Suspend resume LE advertising test',
                   skip_models=SUSPEND_POWER_DOWN_MODELS + ['winky'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   skip_common_errors=True,
                   flags=['Quick Health'])
     def adv_suspend_resume_advertising_test(self):
@@ -115,8 +113,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Advertising suspend peer test',
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   skip_common_errors=True)
     def adv_suspend_peer_test(self):
         """Verify advertising around suspend from a peer"""

@@ -16,8 +16,7 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
      import (BluetoothAdapterAdvMonitorTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_RESET_IF_NO_PEER_CHIPSETS,
-        SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
+        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
      import (LL_PRIVACY_UNSUPPORTED_CHIPSETS,
      BluetoothAdapterLLPrivacyTests)
@@ -155,7 +154,6 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  SUSPEND_RESET_IF_NO_PEER_CHIPSETS +
                   LL_PRIVACY_UNSUPPORTED_CHIPSETS)
     def advmon_interleaved_scan_tests(self):
         """Tests interleave scan."""

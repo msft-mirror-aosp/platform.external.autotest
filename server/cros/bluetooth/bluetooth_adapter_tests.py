@@ -106,11 +106,6 @@ RECONNECT_PLATFORM_TYPES = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
 #                            to check for suspend stability.
 SUSPEND_POWER_DOWN_CHIPSETS = ['Realtek-RTL8822C-USB', 'MVL-8897', 'MVL-8997']
 
-# All realtek chipsets on USB will drop its firmware and reload on
-# suspend-resume unless it is connected to a peer device. This doesn't
-# include RTL8822, which would reset regardless of the peer.
-SUSPEND_RESET_IF_NO_PEER_CHIPSETS = ['Realtek-RTL8852A-USB']
-
 # Models to skip since they power down on suspend.
 SUSPEND_POWER_DOWN_MODELS = ['dru', 'druwl', 'dumo']
 

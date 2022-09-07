@@ -623,28 +623,32 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def has_device(self, address):
+    def has_device(self, address, identity_address=None):
         """Checks if the device with a given address exists.
 
         @param address: Address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True if there is a device with that address.
                   False otherwise.
 
         """
-        return self._proxy.has_device(address)
+        return self._proxy.has_device(address, identity_address)
 
 
     @proxy_thread_safe
-    def device_is_paired(self, address):
+    def device_is_paired(self, address, identity_address=None):
         """Checks if a device is paired.
 
         @param address: address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True if device is paired. False otherwise.
 
         """
-        return self._proxy.device_is_paired(address)
+        return self._proxy.device_is_paired(address, identity_address)
 
 
     @proxy_thread_safe
@@ -673,7 +677,12 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def pair_legacy_device(self, address, pin, trusted, timeout):
+    def pair_legacy_device(self,
+                           address,
+                           pin,
+                           trusted,
+                           timeout,
+                           identity_address=None):
         """Pairs a device with a given pin code.
 
         Registers an agent who handles pin code request and
@@ -683,52 +692,61 @@ class BluetoothDevice(object):
         @param pin: The pin code of the device to pair.
         @param trusted: indicating whether to set the device trusted.
         @param timeout: The timeout in seconds for pairing.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True on success. False otherwise.
 
         """
-        return self._proxy.pair_legacy_device(address, pin, trusted, timeout)
+        return self._proxy.pair_legacy_device(address, pin, trusted, timeout,
+                                              identity_address)
 
 
     @proxy_thread_safe
-    def remove_device_object(self, address):
+    def remove_device_object(self, address, identity_address=None):
         """Removes a device object and the pairing information.
 
         Calls RemoveDevice method to remove remote device
         object and the pairing information.
 
         @param address: address of the device to unpair.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True on success. False otherwise.
 
         """
-        return self._proxy.remove_device_object(address)
+        return self._proxy.remove_device_object(address, identity_address)
 
 
     @proxy_thread_safe
-    def connect_device(self, address):
+    def connect_device(self, address, identity_address=None):
         """Connects a device.
 
         Connects a device if it is not connected.
 
         @param address: Address of the device to connect.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True on success. False otherwise.
 
         """
-        return self._proxy.connect_device(address)
+        return self._proxy.connect_device(address, identity_address)
 
 
     @proxy_thread_safe
-    def device_is_connected(self, address):
+    def device_is_connected(self, address, identity_address=None):
         """Checks if a device is connected.
 
         @param address: Address of the device to check if it is connected.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True if device is connected. False otherwise.
 
         """
-        return self._proxy.device_is_connected(address)
+        return self._proxy.device_is_connected(address, identity_address)
 
 
     @proxy_thread_safe
@@ -1601,17 +1619,19 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def get_connection_info(self, address):
+    def get_connection_info(self, address, identity_address=None):
         """Get device connection info.
 
         @param address: The MAC address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: On success, a tuple of:
                       ( RSSI, transmit_power, max_transmit_power )
                   None otherwise.
 
         """
-        return self._proxy.get_connection_info(address)
+        return self._proxy.get_connection_info(address, identity_address)
 
 
     @proxy_thread_safe

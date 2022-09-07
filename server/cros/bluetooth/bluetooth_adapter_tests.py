@@ -2310,7 +2310,8 @@ class BluetoothAdapterTests(test.test):
     def test_discover_device(self,
                              device_address,
                              start_discovery=True,
-                             stop_discovery=True):
+                             stop_discovery=True,
+                             identity_address=None):
         """Test that the adapter could discover the specified device address.
 
         @param device_address: Address of the device.
@@ -2319,6 +2320,8 @@ class BluetoothAdapterTests(test.test):
         @param stop_discovery: Whether to stop discovery at the end. If this is
                                set to False, make sure to call
                                test_stop_discovery afterwards.
+        @param identity_address: When using RPA, the device_address is not the
+                                 identity address.
 
         @returns: True if the device is found. False otherwise.
 
@@ -2331,7 +2334,7 @@ class BluetoothAdapterTests(test.test):
         has_device = self.bluetooth_facade.has_device
 
         if start_discovery:
-            if has_device(device_address):
+            if has_device(device_address, identity_address):
                 # Before starting a new discovery, remove the found device since
                 # it is likely to be a temporary device, and we don't know when
                 # it will be removed by bluez. Therefore, remove it and re-find
@@ -2339,7 +2342,8 @@ class BluetoothAdapterTests(test.test):
                 # following test, e.g. test_pairing.
                 logging.debug('Removing device %s to restart temporary timer',
                               device_address)
-                self.bluetooth_facade.remove_device_object(device_address)
+                self.bluetooth_facade.remove_device_object(
+                        device_address, identity_address)
 
             discovery_started, _ = self.bluetooth_facade.start_discovery()
 
@@ -2448,7 +2452,11 @@ class BluetoothAdapterTests(test.test):
         return True
 
     @test_retry_and_log
-    def test_pairing(self, device_address, pin, trusted=True):
+    def test_pairing(self,
+                     device_address,
+                     pin,
+                     trusted=True,
+                     identity_address=None):
         """Test that the adapter could pair with the device successfully.
 
         @param device_address: Address of the device.
@@ -2468,13 +2476,13 @@ class BluetoothAdapterTests(test.test):
             """
             self.results['paired'] = self.bluetooth_facade.pair_legacy_device(
                     device_address, pin, trusted,
-                    self.ADAPTER_PAIRING_TIMEOUT_SECS)
+                    self.ADAPTER_PAIRING_TIMEOUT_SECS, identity_address)
             self.results[
                     'connected'] = self.bluetooth_facade.device_is_connected(
-                            device_address)
+                            device_address, identity_address)
             self.results[
                     'connection_info_retrievable'] = self.bluetooth_facade.has_connection_info(
-                            device_address)
+                            device_address, identity_address)
 
             return self.results['paired'] and self.results[
                     'connected'] and self.results['connection_info_retrievable']
@@ -2498,13 +2506,13 @@ class BluetoothAdapterTests(test.test):
                         desc='Waiting for pairing %s' % device_address)
             except utils.TimeoutError as e:
                 logging.error('test_pairing: %s', e)
-            except:
-                logging.error('test_pairing: unexpected error')
+            except Exception as e:
+                logging.error('test_pairing: unexpected error %s', e)
 
         return all(self.results.values())
 
     @test_retry_and_log
-    def test_remove_pairing(self, device_address):
+    def test_remove_pairing(self, device_address, identity_address=None):
         """Test that the adapter could remove the paired device.
 
         @param device_address: Address of the device.
@@ -2513,15 +2521,15 @@ class BluetoothAdapterTests(test.test):
 
         """
         device_is_paired_initially = self.bluetooth_facade.device_is_paired(
-                device_address)
+                device_address, identity_address)
         remove_pairing = False
         pairing_removed = False
 
         if device_is_paired_initially:
             remove_pairing = self.bluetooth_facade.remove_device_object(
-                    device_address)
+                    device_address, identity_address)
             pairing_removed = not self.bluetooth_facade.device_is_paired(
-                    device_address)
+                    device_address, identity_address)
 
         self.results = {
                 'device_is_paired_initially': device_is_paired_initially,
@@ -2555,7 +2563,8 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log
-    def test_connection_by_adapter(self, device_address):
+    def test_connection_by_adapter(self, device_address,
+                                   identity_address=None):
         """Test that the adapter of dut could connect to the device successfully
 
         It is the caller's responsibility to pair to the device before
@@ -2573,12 +2582,13 @@ class BluetoothAdapterTests(test.test):
             @returns: True if it could connect to the device. False otherwise.
 
             """
-            return self.bluetooth_facade.connect_device(device_address)
+            return self.bluetooth_facade.connect_device(
+                    device_address, identity_address)
 
 
         has_device = False
         connected = False
-        if self.bluetooth_facade.has_device(device_address):
+        if self.bluetooth_facade.has_device(device_address, identity_address):
             has_device = True
             try:
                 utils.poll_for_condition(
@@ -2589,8 +2599,9 @@ class BluetoothAdapterTests(test.test):
                 connected = True
             except utils.TimeoutError as e:
                 logging.error('test_connection_by_adapter: %s', e)
-            except:
-                logging.error('test_connection_by_adapter: unexpected error')
+            except Exception as e:
+                logging.error(
+                        'test_connection_by_adapter: unexpected error %s', e)
 
         self.results = {'has_device': has_device, 'connected': connected}
         return all(self.results.values())
@@ -2764,7 +2775,8 @@ class BluetoothAdapterTests(test.test):
             self,
             device_address,
             timeout=ADAPTER_CONNECTION_TIMEOUT_SECS,
-            sleep_interval=ADAPTER_PAIRING_POLLING_SLEEP_SECS):
+            sleep_interval=ADAPTER_PAIRING_POLLING_SLEEP_SECS,
+            identity_address=None):
         """Test that device address given is currently connected.
 
         @param device_address: Address of the device.
@@ -2781,12 +2793,13 @@ class BluetoothAdapterTests(test.test):
             @returns: True if device is connected. False otherwise.
 
             """
-            return self.bluetooth_facade.device_is_connected(device_address)
+            return self.bluetooth_facade.device_is_connected(
+                    device_address, identity_address)
 
         method_name = 'test_device_is_connected'
         has_device = False
         connected = False
-        if self.bluetooth_facade.has_device(device_address):
+        if self.bluetooth_facade.has_device(device_address, identity_address):
             has_device = True
             try:
                 utils.poll_for_condition(

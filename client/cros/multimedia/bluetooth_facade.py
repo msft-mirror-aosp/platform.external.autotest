@@ -2789,10 +2789,12 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         profile_manager.RegisterProfile(path, uuid, converted_options)
         return True
 
-    def has_device(self, address):
+    def has_device(self, address, identity_address=None):
         """Checks if the device with a given address exists.
 
         @param address: Address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True if there is an interface object with that address.
                   False if the device is not found.
@@ -2800,7 +2802,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @raises: Exception if a D-Bus error is encountered.
 
         """
-        result = self._find_device(address)
+        result = self._find_device(address, identity_address)
         logging.debug('has_device result: %s', str(result))
 
         # The result being False indicates that there is a D-Bus error.
@@ -2812,18 +2814,20 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return bool(result)
 
     @dbus_safe(False)
-    def _find_device(self, address):
+    def _find_device(self, address, identity_address=None):
         """Finds the device with a given address.
 
         Find the device with a given address and returns the
         device interface.
 
         @param address: Address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: An 'org.bluez.Device1' interface to the device.
                   None if device can not be found.
         """
-        path = self._get_device_path(address)
+        path = self._get_device_path(address, identity_address)
         if path:
             return self.bus.get(self.BLUEZ_SERVICE_NAME, path)
         logging.info('Device not found')
@@ -2853,13 +2857,15 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return None
 
     @dbus_safe(False)
-    def _get_device_path(self, address):
+    def _get_device_path(self, address, identity_address=None):
         """Gets the path for a device with a given address.
 
         Find the device with a given address and returns the
         the path for the device.
 
         @param address: Address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: The path to the address of the device, or None if device is
             not found in the object tree.
@@ -2877,8 +2883,12 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
             found_addr = device[self.DBUS_PROP_IFACE].Get(
                     self.BLUEZ_DEVICE_IFACE, 'Address')
 
-            if found_addr == address:
-                logging.info('Device found at {}'.format(device_path))
+            # If RPA is used, found_addr will be RPA before pairing and
+            # change to the identity address after pairing. In both case
+            # the device path is correct, so return True.
+            if found_addr == address or found_addr == identity_address:
+                logging.info('Device {} found at {}'.format(
+                        found_addr, device_path))
                 return device_path
 
         except KeyError as ke:
@@ -2941,15 +2951,17 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return bool(paired)
 
     @dbus_safe(False)
-    def device_is_paired(self, address):
+    def device_is_paired(self, address, identity_address=None):
         """Checks if a device is paired.
 
         @param address: address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True if device is paired. False otherwise.
 
         """
-        device = self._find_device(address)
+        device = self._find_device(address, identity_address)
         if not device:
             logging.error('Device not found')
             return False
@@ -3029,7 +3041,12 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return False
 
     @dbus_safe(False)
-    def pair_legacy_device(self, address, pin, trusted, timeout=60):
+    def pair_legacy_device(self,
+                           address,
+                           pin,
+                           trusted,
+                           timeout=60,
+                           identity_address=None):
         """Pairs a device with a given pin code.
 
         Registers a agent who handles pin code request and
@@ -3041,6 +3058,8 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @param pin: The pin code of the device to pair.
         @param trusted: indicating whether to set the device trusted.
         @param timeout: The timeout in seconds for pairing.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True on success. False otherwise.
 
@@ -3085,12 +3104,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
             else:
                 logging.error('Pairing device failed: %s', error)
 
-        device = self._find_device(address)
+        device = self._find_device(address, identity_address)
         if not device:
             logging.error('Device not found')
             return False
-
-        device_path = self._get_device_path(address)
+        device_path = self._get_device_path(address, identity_address)
         logging.info('Device %s is found.', device_path)
 
         self._setup_pairing_agent(pin)
@@ -3115,38 +3133,43 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return self._is_paired(device) and self._is_connected(device)
 
     @dbus_safe(False)
-    def remove_device_object(self, address):
+    def remove_device_object(self, address, identity_address=None):
         """Removes a device object and the pairing information.
 
         Calls RemoveDevice method to remove remote device
         object and the pairing information.
 
         @param address: Address of the device to unpair.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True on success. False otherwise.
 
         """
         if not self._adapter_proxy:
             return False
-        device = self._find_device(address)
+        device = self._find_device(address, identity_address)
         if not device:
             logging.error('Device not found')
             return False
-        self._adapter_proxy.RemoveDevice(self._get_device_path(address))
+        self._adapter_proxy.RemoveDevice(
+                self._get_device_path(address, identity_address))
         return True
 
     @dbus_safe(False)
-    def connect_device(self, address):
+    def connect_device(self, address, identity_address=None):
         """Connects a device.
 
         Connects a device if it is not connected.
 
         @param address: Address of the device to connect.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True on success. False otherwise.
 
         """
-        device = self._find_device(address)
+        device = self._find_device(address, identity_address)
         if not device:
             logging.error('Device not found')
             return False
@@ -3157,15 +3180,17 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return self._is_connected(device)
 
     @dbus_safe(False)
-    def device_is_connected(self, address):
+    def device_is_connected(self, address, identity_address=None):
         """Checks if a device is connected.
 
         @param address: Address of the device to connect.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True if device is connected. False otherwise.
 
         """
-        device = self._find_device(address)
+        device = self._find_device(address, identity_address)
         if not device:
             logging.error('Device not found')
             return False
@@ -4097,17 +4122,20 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return bool(self.get_characteristic_map(address).get(uuid))
 
     @dbus_safe(False)
-    def get_connection_info(self, address):
+    def get_connection_info(self, address, identity_address=None):
         """Get device connection info.
 
         @param address: The MAC address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: On success, a JSON-encoded tuple of:
                       ( RSSI, transmit_power, max_transmit_power )
                   None otherwise.
 
         """
-        plugin_device = self._get_plugin_device_interface(address)
+        plugin_device = self._get_plugin_device_interface(
+                address, identity_address)
         if plugin_device is None:
             return None
 
@@ -4120,13 +4148,16 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
             logging.error('get_connection_info: unexpected error')
         return None
 
-    def has_connection_info(self, address):
+    def has_connection_info(self, address, identity_address=None):
         """Checks whether the address has connection info.
 
         @param address: The MAC address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
+
         @returns True if connection info can be found.
         """
-        return self.get_connection_info(address) is not None
+        return self.get_connection_info(address, identity_address) is not None
 
     @dbus_safe(False)
     def set_le_connection_parameters(self, address, parameters):
@@ -4154,19 +4185,21 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
                 parameters)
 
     @dbus_safe(False)
-    def _get_plugin_device_interface(self, address):
+    def _get_plugin_device_interface(self, address, identity_address=None):
         """Get the BlueZ Chromium device plugin interface.
 
         This interface can be used to issue dbus requests such as
         GetConnInfo and SetLEConnectionParameters.
 
         @param address: The MAC address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @return: On success, the BlueZ Chromium device plugin interface
                  None otherwise.
 
         """
-        path = self._get_device_path(address)
+        path = self._get_device_path(address, identity_address)
         if path is None:
             return None
 
@@ -4743,16 +4776,31 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Gets the default adapter address."""
         return self.adapter_client.get_address()
 
-    def has_device(self, address):
-        """Checks if adapter knows the device."""
+    def has_device(self, address, identity_address=None):
+        """Checks if adapter knows the device.
+
+        @param address: Address of the device
+        @param identity_address: If device uses RPA, address is different from
+            the identity address. Here to match BlueZ interface.
+        """
         return self.adapter_client.has_device(address)
 
-    def remove_device_object(self, address):
-        """Removes a known device object."""
+    def remove_device_object(self, address, identity_address=None):
+        """Removes a known device object.
+
+        @param address: Address of the device
+        @param identity_address: If device uses RPA, address is different from
+            the identity address. Here to match BlueZ interface.
+        """
         return self.adapter_client.forget_device(address)
 
-    def connect_device(self, address):
-        """Connect a specific address."""
+    def connect_device(self, address, identity_address=None):
+        """Connect a specific address.
+
+        @param address: Address of the device
+        @param identity_address: If device uses RPA, address is different from
+            the identity address. Here to match BlueZ interface.
+        """
         return self.adapter_client.connect_all_enabled_profiles(address)
 
     def disconnect_device(self, address):
@@ -4794,13 +4842,20 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.mock_properties['Pairable'] = pairable
         return True
 
-    def pair_legacy_device(self, address, pin, trusted, timeout=60):
+    def pair_legacy_device(self,
+                           address,
+                           pin,
+                           trusted,
+                           timeout=60,
+                           identity_address=None):
         """Pairs a peer device.
 
         @param address: BT address of the peer device.
         @param pin: What pin to use for pairing.
         @param trusted: Unused by Floss.
         @param timeout: How long to wait for pairing to complete.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address. Here to match BlueZ interface.
         """
 
         class PairingObserver(BluetoothCallbacks,
@@ -4945,15 +5000,17 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
             return is_paired and is_connected
 
-    def device_is_connected(self, address):
+    def device_is_connected(self, address, identity_address=None):
         """Checks whether a device is connected.
 
         @param address: BT address of peer device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address. Here to match BlueZ interface.
         @return True if connected.
         """
         return self.adapter_client.is_connected(address)
 
-    def has_connection_info(self, address):
+    def has_connection_info(self, address, identity_address=None):
         """Same as |device_is_connected| on Floss.
 
         Bluez has a separate ConnectionInfo tuple that is read from the kernel
@@ -4961,6 +5018,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         compatibility.
 
         @param address: BT address of peer device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address. Here to match BlueZ interface.
+
         @return True if connected.
         """
         return self.device_is_connected(address)
@@ -4973,10 +5033,13 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """
         return self.adapter_client.get_connected_devices_count()
 
-    def device_is_paired(self, address):
+    def device_is_paired(self, address, identity_address=None):
         """Checks if a device is paired.
 
         @param address: address of the device.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address. Here to match BlueZ interface.
+
         @returns: True if device is paired. False otherwise.
         """
         return self.adapter_client.is_bonded(address)

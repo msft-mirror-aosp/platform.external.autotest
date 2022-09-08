@@ -1,0 +1,26 @@
+# Copyright 2022 The ChromiumOS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+import common
+AUTHOR = "cros-flashrom-team@google.com"
+NAME = "flashrom"
+PURPOSE = "Run the flashrom AVL tool and other flashrom tests."
+
+TIME = "LENGTHY"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite runs the flashrom AVL tool (flashrom_tester). This verifies flashrom
+read write erase and write protect operations.
+"""
+
+args_dict['name'] = NAME
+args_dict['max_runtime_mins'] = 120  # time of each sub job
+args_dict['timeout_mins'] = 1440  # runtime + pending time (1 day)
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

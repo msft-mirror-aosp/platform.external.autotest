@@ -105,7 +105,7 @@ class firmware_Cr50TpmMode(Cr50Test):
 
             # Only Cr50 revokes the key ladder.
             if (self.cr50.NAME == 'cr50'
-                and not self.cr50.key_ladder_is_disabled()):
+                and not self.cr50.keyladder_is_disabled()):
                 raise error.TestFail('Failed to revoke H1 Key Ladder')
         else:
             if not 'enabled (1)' in output_log.lower():

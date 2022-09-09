@@ -9,6 +9,7 @@ import logging
 import sys
 import time
 import traceback
+import os
 
 import common
 from autotest_lib.client.bin import local_host
@@ -174,6 +175,19 @@ class CellularTestEnvironment(object):
             self.__exit__(*sys.exc_info())
             raise
 
+    def _remove_anomaly_detector_files(self):
+        crash_directory = '/var/spool/crash/'
+        if not os.path.exists(crash_directory):
+            return
+        anomaly_files = list()
+        for filename in os.scandir(crash_directory):
+            if filename.is_file() and 'meta' in filename.path:
+                with open(filename.path) as f:
+                    if 'upload_var_collector=generic_failure' in f.read():
+                        anomaly_files.append(filename.path)
+        for f in anomaly_files:
+            os.remove(f)
+
     def __exit__(self, exception, value, traceback):
         exception_on_restore_state = None
         try:
@@ -188,6 +202,7 @@ class CellularTestEnvironment(object):
 
         # If a test fails and a crash is detected, the crash error takes
         # priority over the previous failure.
+        self._remove_anomaly_detector_files()
         crash_files = self.detect_crash.get_new_crash_files()
         critical_crash = any(cf for cf in crash_files if any(
             pr in cf for pr in ['ModemManager', 'shill', 'qmi', 'mbim',

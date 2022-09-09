@@ -1352,7 +1352,7 @@ def write_perf_qualification_controlfiles(_modules, abi, revision, build, uri,
                                      source_type):
     """Write control files to run performance qualification tests.
     """
-    for module, config in CONFIG['PERF_MODULES'].items():
+    for module, config in CONFIG.get('PERF_MODULES', dict()).items():
         for submodule, suites in config.items():
             write_controlfile(submodule, set([submodule]), abi, revision,
                               build, uri, suites, source_type)

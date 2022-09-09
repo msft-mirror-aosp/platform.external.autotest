@@ -213,9 +213,13 @@ class CellularTestEnvironment(object):
             logging.info(
                     'A crash was encountered. '
                     'Overriding the previous error: %s', value)
-            raise error.TestError(
-                    'One or more daemon crashes were detected. '
-                    'See crash dumps: {}'.format(crash_files))
+            if value is not None:
+                raise error.TestFail(
+                        '{} . '
+                        'See crash dumps: {}'.format(value, crash_files))
+            raise error.TestFail(
+                    'Crashes detected: '
+                    ' {}'.format(crash_files))
 
         if exception_on_restore_state is not None:
             raise exception_on_restore_state

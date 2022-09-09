@@ -307,6 +307,8 @@ suite:cellular_modem_repair
 suite:cellular_ota
 suite:cellular_ota_avl
 suite:cellular_ota_flaky
+suite:cellular_ota_perf
+suite:cellular_ota_perf_flaky
 suite:cellular_power
 suite:cellular_pseudomodem
 suite:cellular_qual

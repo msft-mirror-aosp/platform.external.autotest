@@ -530,6 +530,7 @@ suite:suite:cellular_ota_sprint
 suite:syzcorpus
 suite:syzkaller
 suite:tablet_mode
+suite:telemetry-extension-hw
 suite:telemetry_unit
 suite:telemetry_unit_server
 suite:thermal_qual_fast

@@ -23,7 +23,7 @@ def run_TS(machine):
         iterations=1,
         tag='internal.arm.CtsMediaTestCases.arc_perf',
         test_name='cheets_CTS_R.internal.arm.CtsMediaTestCases.arc_perf',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest', '--include-filter', 'CtsMediaTestCases android.media.cts.AudioRecordTest', '--include-filter', 'CtsMediaTestCases android.media.cts.AudioTrackTest--include-filter', 'CtsMediaTestCases android.media.cts.AudioTrack_ListenerTest', '--include-filter', 'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest', '--include-filter', 'CtsMediaTestCases android.media.cts.AudioRecordTest', '--include-filter', 'CtsMediaTestCases android.media.cts.AudioTrackTest', '--include-filter', 'CtsMediaTestCases android.media.cts.AudioTrack_ListenerTest', '--include-filter', 'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsMediaTestCases.arc_perf',
         target_plan=None,

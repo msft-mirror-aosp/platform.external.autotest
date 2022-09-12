@@ -926,7 +926,7 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 '--include-filter',
                 'CtsMediaTestCases android.media.cts.AudioRecordTest',
                 '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioTrackTest'
+                'CtsMediaTestCases android.media.cts.AudioTrackTest',
                 '--include-filter',
                 'CtsMediaTestCases android.media.cts.AudioTrack_ListenerTest',
                 '--include-filter',

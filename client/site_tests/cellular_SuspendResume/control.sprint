@@ -11,7 +11,8 @@ CRITERIA = """
     Verify that if autoconnect is turned on that the modem autoconnects
     after resuming.
 """
-ATTRIBUTES = "suite:cellular_ota_flaky"
+# Disable due to 0% pass rate over 30 days. See b/241832834
+# ATTRIBUTES = "suite:cellular_ota_flaky"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"

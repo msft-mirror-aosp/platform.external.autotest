@@ -26,6 +26,7 @@ suite:arc-gts-qual
 suite:arc-sts-full
 suite:arc-sts-incremental
 suite:arc-video
+suite:arc-vts-t
 suite:assistant-audiobox
 suite:au-m2n
 suite:au-oobe

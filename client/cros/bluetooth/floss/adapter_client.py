@@ -536,7 +536,6 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         """Gets property by name."""
         return self.properties.get(prop_name)
 
-    @glib_call(None)
     def get_properties(self):
         """Gets all adapter properties.
 

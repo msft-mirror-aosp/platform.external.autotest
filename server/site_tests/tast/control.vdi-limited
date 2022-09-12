@@ -1,0 +1,28 @@
+# Copyright 2022 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+
+AUTHOR = 'cros-engprod-muc'
+NAME = 'tast.vdi-limited'
+TIME = 'LONG'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:vdi-limited'
+MAX_RESULT_SIZE_KB = 512 * 1024
+PY_VERSION = 3
+JOB_RETRIES = 0
+
+DOC = '''
+This suite runs the vdi_limited tests in Tast.
+'''
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['("group:vdi_limited")'],
+                 ignore_test_failures=True,
+                 max_run_sec=10800,
+                 command_args=args)
+
+parallel_simple(run, machines)

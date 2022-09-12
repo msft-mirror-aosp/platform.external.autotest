@@ -568,6 +568,7 @@ suite:touch_replay
 suite:typec_lab
 suite:usb_detect
 suite:usb_detect_stress
+suite:vdi-limited
 suite:video
 suite:vmtest-informational1
 suite:vmtest-informational2

@@ -34,7 +34,8 @@ class firmware_Cr50WPG3(Cr50Test):
                 self.set_sw_wp(self.WP_DISABLE_CMD)
                 self.cr50.set_wp_state('follow_batt_pres atboot')
                 self.servo.set_nocheck('fw_wp_state', self._start_fw_wp_state)
-                self.servo.set_nocheck('fw_wp_vref', self._start_fw_wp_vref)
+                if self._start_fw_wp_vref:
+                    self.servo.set_nocheck('fw_wp_vref', self._start_fw_wp_vref)
             self.cr50.send_command('rddkeepalive disable')
             self.cr50.send_command('ccdblock IGNORE_SERVO disable')
             self.servo.enable_main_servo_device()
@@ -87,10 +88,12 @@ class firmware_Cr50WPG3(Cr50Test):
 
         if self.servo.main_device_is_flex():
             self._start_fw_wp_state = self.servo.get('fw_wp_state')
-            self._start_fw_wp_vref = self.servo.get('fw_wp_vref')
+            self._start_fw_wp_vref = (self.servo.get('fw_wp_vref') if
+                    self.servo.has_control('fw_wp_vref') else None)
             # Stop forcing wp using servo, so we can set it with ccd.
             self.servo.set_nocheck('fw_wp_state', 'reset')
-            self.servo.set_nocheck('fw_wp_vref', 'off')
+            if self._start_fw_wp_vref:
+                self.servo.set_nocheck('fw_wp_vref', 'off')
 
         # Disable HW WP.
         self.cr50.set_wp_state('disable atboot')

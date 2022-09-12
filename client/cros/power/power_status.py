@@ -40,6 +40,10 @@ BatteryDataReportType = autotest_enum.AutotestEnum('CHARGE', 'ENERGY')
 BATTERY_DATA_SCALE = 1e6
 # number of times to retry reading the battery in the case of bad data
 BATTERY_RETRY_COUNT = 3
+# number of times to retry refreshing the measurements in the case of bad data
+REFRESH_RETRY_COUNT = 3
+# seconds between retrying refreshing the measurements in the case of bad data
+REFRESH_RETRY_DELAY = 0.2
 # default filename when saving CheckpointLogger data to file
 CHECKPOINT_LOG_DEFAULT_FNAME = 'checkpoint_log.json'
 
@@ -1924,7 +1928,13 @@ class MeasurementLogger(threading.Thread):
         Returns:
             list of sampled data for every measurements.
         """
-        return [meas.refresh() for meas in self._measurements]
+        for _ in range(REFRESH_RETRY_COUNT):
+            try:
+                return [meas.refresh() for meas in self._measurements]
+            except error.TestError as e:
+                logging.warning('Error refreshing measurements: %s', str(e))
+                time.sleep(REFRESH_RETRY_DELAY)
+        raise error.TestError('Failed to refresh measurements')
 
     def run(self):
         """Threads run method."""
@@ -1935,12 +1945,34 @@ class MeasurementLogger(threading.Thread):
             # TODO (dbasehore): We probably need proper locking in this file
             # since there have been race conditions with modifying and accessing
             # data.
-            self.readings.append(self.refresh())
+            try:
+                self.readings.append(self.refresh())
+            except error.TestError:
+                if len(self.readings) > 0 and self.readings[-1] is not None:
+                    logging.warning('Failed to refresh measurements. '
+                                    'Use the last known good value instead.')
+                    self.readings.append(self.readings[-1])
+                else:
+                    logging.warning('Failed to refresh measurements. '
+                                    'Use the next good value instead.')
+                    self.readings.append(None)
             current_time = time.time()
             self.times.append(current_time)
             loop += 1
             next_measurement_time = start_time + loop * self.seconds_period
             time.sleep(next_measurement_time - current_time)
+        first_good_index, first_good_reading = \
+                next(((index, reading)
+                      for index, reading in enumerate(self.readings)
+                      if reading is not None), (-1, None))
+        if first_good_reading is None:
+            logging.error('Failed to read any measurements.')
+            self.readings = []
+            self.times = []
+        elif first_good_index > 0:
+            self.readings[:first_good_index] = \
+                            [first_good_reading] * first_good_index
+
 
     @contextlib.contextmanager
     def checkblock(self, tname=''):

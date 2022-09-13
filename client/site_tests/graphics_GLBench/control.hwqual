@@ -20,7 +20,7 @@ Note: it should nearly never be required to remove old versions of good/bad
 images from these directories.
 """
 ATTRIBUTES = "suite:hwqual"
-TIME='FAST'
+TIME='SHORT'
 TEST_CATEGORY = 'Performance'
 TEST_CLASS = "gl"
 TEST_TYPE = 'client'

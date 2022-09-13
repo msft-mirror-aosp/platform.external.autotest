@@ -4,7 +4,7 @@
 
 AUTHOR = 'bmahadev, harpreet, krisr'
 NAME = 'network_RoamWifiEndToEnd'
-TIME = 'FAST'
+TIME = 'SHORT'
 TEST_TYPE = 'client'
 PY_VERSION = 3
 

@@ -4,7 +4,7 @@
 
 AUTHOR = 'harpreet, krisr, wiley'
 NAME = 'network_ChromeWifiEndToEnd'
-TIME = 'FAST'
+TIME = 'SHORT'
 TEST_TYPE = 'client'
 PY_VERSION = 3
 

@@ -102,7 +102,7 @@ Example of control file with single quotes:
 AUTHOR = '<author>@google.com'
 NAME = 'my_ExampleTest'
 PURPOSE = 'Verifies some feature works'
-TIME = 'FAST'
+TIME = 'SHORT'
 TEST_TYPE = 'client'
 
 DOC = '''
@@ -123,7 +123,7 @@ other purposes.
 | DOC          | Yes      | Long description of the test, pass/fail criteria                                                                                                                                                                                                                                                                                         |
 | NAME         | Yes      | Display name of the test. Generally this is the directory where your test lives e.g. hardware_TPMCheck. If you are using multiple run_test calls in the same control file or multiple control files with one test wrapper in the same suite, problems arise with the displaying of your test name. crosbug.com/35795. When in doubt ask. |
 | SYNC\_COUNT  | No       | Integer >= 1.  Number of simultaneous devices needed for a test run.                                                                                                                                                                                                                                                                     |
-| TIME         | Yes      | Test duration: 'FAST' (<1m), 'MEDIUM' (<10m), 'LONG' (<20m), 'LENGTHY' (>30m)                                                                                                                                                                                                                                                            |
+| TIME         | Yes      | Test duration: 'SHORT' (<1m), 'MEDIUM' (<10m), 'LONG' (<20m), 'LENGTHY' (>30m)                                                                                                                                                                                                                                                            |
 | TEST\_TYPE   | Yes      | Client or Server                                                                                                                                                                                                                                                                                                                         |
 | ATTRIBUTES   | No       | Comma separated list of attribute tags to apply to this control file, used in composing suites. For instance, 'suite:foo, suite:bar'.                                                                                                                                                                                                    |
 

@@ -9,7 +9,7 @@ PURPOSE = 'Verify libdrm is working correctly by running libdrm test apps.'
 CRITERIA = """
 If one or more of the libdrm test apps fails, this autotest will fail.
 """
-TIME = "FAST"
+TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "graphics"
 TEST_TYPE = "client"

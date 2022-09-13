@@ -3,7 +3,7 @@ NAME = "power_VideoEncode.FDO_fast"
 PURPOSE = "Make sure video encode works fine with optional force discharge."
 
 CRITERIA = "This test is a benchmark."
-TIME = "FAST"
+TIME = "SHORT"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"

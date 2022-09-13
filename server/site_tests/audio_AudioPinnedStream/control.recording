@@ -10,7 +10,7 @@ PURPOSE = 'Verify audio pinned stream recording works correctly'
 CRITERIA = """
 This test will fail if pinned stream recording doesn't work as expected.
 """
-TIME='FAST'
+TIME='SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = "audio"
 TEST_TYPE = 'server'

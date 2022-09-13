@@ -22,7 +22,7 @@ images from these directories.
 """
 # TODO(b/227756677) Add suite:infra_qual back to attributes
 ATTRIBUTES = "suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system"
-TIME='FAST'
+TIME='SHORT'
 TEST_CATEGORY = 'Performance'
 TEST_CLASS = "gl"
 TEST_TYPE = 'client'

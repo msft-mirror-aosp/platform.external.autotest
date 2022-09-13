@@ -10,7 +10,7 @@ PURPOSE = 'Verify audio pinned stream playback works correctly'
 CRITERIA = """
 This test will fail if pinned stream playback doesn't work as expected.
 """
-TIME='FAST'
+TIME='SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = "audio"
 TEST_TYPE = 'server'

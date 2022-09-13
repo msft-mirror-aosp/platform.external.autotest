@@ -5,7 +5,7 @@
 PY_VERSION = 3
 AUTHOR = "chromeos-gfx"
 NAME = "graphics_HwOverlays.SkiaRenderer.video"
-TIME = "FAST"
+TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "graphics"
 TEST_TYPE = "client"

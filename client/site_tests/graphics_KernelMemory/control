@@ -12,7 +12,7 @@ Test fails if any of the following happen:
 - Unable to read gem objects sysfs field.
 - Read invalid values (e.g. 0 memory).
 """
-TIME = "FAST"
+TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "graphics"
 TEST_TYPE = "client"

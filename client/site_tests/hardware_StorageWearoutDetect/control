@@ -5,7 +5,7 @@
 NAME = 'hardware_StorageWearoutDetect'
 AUTHOR = 'puthik'
 PURPOSE = 'Detect wear out status of storage device'
-TIME = 'FAST'
+TIME = 'SHORT'
 TEST_CLASS = 'hardware'
 TEST_TYPE = 'client'
 PY_VERSION = 3

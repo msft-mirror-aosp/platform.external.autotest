@@ -14,7 +14,7 @@ CRITERIA = "All suite tests must not crash/hang."
 DEPENDENCIES = "cleanup-reboot"
 # FAST tests tend to run towards the end of a suite, where memory_pressure can do less damage
 # to tests that follow.
-TIME = "FAST"
+TIME = "SHORT"
 TEST_CATEGORY = "Performance"
 TEST_CLASS = "graphics"
 TEST_TYPE = "client"

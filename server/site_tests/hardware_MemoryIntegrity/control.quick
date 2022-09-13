@@ -5,7 +5,7 @@
 NAME = 'hardware_MemoryIntegrity.quick'
 AUTHOR = 'puthik'
 PURPOSE = 'Check memory integrity after long suspend'
-TIME = 'FAST'
+TIME = 'SHORT'
 TEST_CLASS = 'hardware'
 TEST_TYPE = 'server'
 ATTRIBUTES = "suite:experimental"

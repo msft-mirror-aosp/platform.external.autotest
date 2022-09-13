@@ -3,7 +3,7 @@ NAME = "power_VideoEncode.fast"
 PURPOSE = "Measure video encode power usage."
 
 CRITERIA = "This test is a benchmark."
-TIME = "FAST"
+TIME = "SHORT"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"

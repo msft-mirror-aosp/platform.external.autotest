@@ -1198,10 +1198,10 @@ class TradefedTest(test.test):
 
     def _should_set_cpu_governor(self, target_module, board):
         """Returns whether we should set performance governor."""
-        # TODO(kinaba): The current restore logic only applies to Kukui
-        # and Trogdor. Please update the logic when expanding the scope.
+        # TODO(kinaba): The current restore logic only applies to Kukui and
+        # Trogdor/Herobrine. Please update the logic when expanding the scope.
         return (target_module and "CtsDeqp" in target_module) and (board in [
-                'kukui-arc-r', 'trogdor-arc-r'
+                'kukui-arc-r', 'trogdor-arc-r', 'herobrine',
         ])
 
     def _set_cpu_governor(self, governor):

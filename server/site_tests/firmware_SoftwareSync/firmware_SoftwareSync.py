@@ -136,7 +136,14 @@ class firmware_SoftwareSync(FirmwareTest):
         self.cr50.send_command(ec_corrupt_cmd)
 
         try:
-            # Reboot EC but keep AP off, so that it can earn a time to check
+            # Gracefully shutdown the AP. This allows the corrupted ec_comm
+            # hash time to fully commit in ti50. This simulates a more normal
+            # flow since the AP would commit the NVMEM before rebooting the
+            # EC.
+            self.faft_client.system.run_shell_command('poweroff')
+            time.sleep(15)
+
+            # Then reboot EC but keep AP off, and give it time to check the hash
             # if boot_mode is NO_BOOT and EC is in RO.
             logging.info('Reset EC with AP off.')
             self.ec.reboot('ap-off')

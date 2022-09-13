@@ -99,7 +99,10 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
 
         self._host.reboot()
 
-        # Check that update engine is ready after reboot.
+        # Check that update-engine is ready after reboot. Wait for the UI to
+        # come up first, in case there are any FW updates that delay
+        # update-engine from starting.
+        self._host.wait_for_service('ui')
         utils.poll_for_condition(self._get_update_engine_status,
                                  desc='update engine to start')
         # Do a final update check with no_update=True to get post reboot event.

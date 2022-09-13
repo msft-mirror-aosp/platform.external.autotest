@@ -497,6 +497,13 @@ class ChromiumOSProvisioner(object):
                           '( touch "$FILE" ; start autoreboot )')
         self._run(autoreboot_cmd % LAB_MACHINE_FILE)
         try:
+            # Wait until UI stabilizes - this can happen due to boot FW updates
+            # delaying the process of update-engine (autoupdater) marking the
+            # newly booted kernel as "sticky".
+            # kernel_utils.verify_boot_expectations does this on the client,
+            # but only for versions >=M104. Check it once here from the server
+            # in case the DUT is on an earlier milestone.
+            self.host.wait_for_service('ui')
             kernel_utils.verify_boot_expectations(
                     expected_kernel, NewBuildUpdateError.ROLLBACK_FAILURE,
                     self.host)

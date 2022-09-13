@@ -2438,6 +2438,14 @@ class FirmwareTest(test.test):
             logging.warning('No power button', exc_info=True)
             enable_testlab = False
 
+        restore_cold_reset_select = None
+        if 'c2d2' in self.servo.get_servo_version():
+            restore_cold_reset_select = self.servo.get('cold_reset_select')
+            # c2d2 uses ecrst for cold_reset, but that won't be accessible if
+            # gsc is locked. Use cr50_reset_odl to open ccd since that will be
+            # available.
+            self.servo.set('cold_reset_select', 'cr50_reset_odl')
+
         # Try to use testlab open first, so we don't have to wait for the
         # physical presence check.
         self.cr50.send_command('ccd testlab open')
@@ -2472,3 +2480,5 @@ class FirmwareTest(test.test):
         # normal mode. However, some tests might want the device in 'dev' mode.
         self.enter_mode_after_checking_cr50_state('dev' if dev_mode else
                                                  'normal')
+        if restore_cold_reset_select:
+            self.servo.set('cold_reset_select', restore_cold_reset_select)

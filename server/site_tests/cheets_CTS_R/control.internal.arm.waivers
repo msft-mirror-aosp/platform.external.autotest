@@ -36,7 +36,6 @@ def run_TS(machine):
         load_waivers=False,
         bundle='arm',
         uri='DEV_WAIVER',
-        use_jdk9=True,
         timeout=7200)
 
 parallel_simple(run_TS, machines)

@@ -40,6 +40,9 @@ def run(machine):
                  bind_to=chameleon_audio_ids.ChameleonIds.LINEIN,
                  audio_nodes=([audio_test_utils.get_headphone_node(host)],
                               None),
-                 plug_status=plug_status, tag = "headphone")
+                 plug_status=plug_status, tag = "headphone",
+                 blocked_boards=[
+                   'trogdor' # b/246696517
+                 ])
 
 parallel_simple(run, machines)

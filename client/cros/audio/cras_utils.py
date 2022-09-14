@@ -956,7 +956,9 @@ class CrasTestClient(object):
             return False
 
         select_input_cmd = (self._select_input_cmd + audio_input_node).split()
-        if subprocess.call(select_input_cmd):
+        try:
+            subprocess.call(select_input_cmd)
+        except Exception as e:
             logging.error('Failed to call: %s (%s)', select_input_cmd, e)
             return False
 

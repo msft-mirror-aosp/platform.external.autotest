@@ -197,17 +197,17 @@ class BluetoothQuickTestsBase(object):
                 except error.TestError as e:
                     fail_msg = '[--- error {} ({})]'.format(
                             test_method.__name__, str(e))
-                    logging.error(fail_msg)
+                    logging.exception(fail_msg)
                     self.fails.append(fail_msg)
                 except error.TestFail as e:
                     fail_msg = '[--- failed {} ({})]'.format(
                             test_method.__name__, str(e))
-                    logging.error(fail_msg)
+                    logging.exception(fail_msg)
                     self.fails.append(fail_msg)
                 except error.TestNAError as e:
                     fail_msg = '[--- SKIPPED {} ({})]'.format(
                             test_method.__name__, str(e))
-                    logging.error(fail_msg)
+                    logging.exception(fail_msg)
                     self.fails.append(fail_msg)
                 except Exception as e:
                     fail_msg = '[--- unknown error {} ({})]'.format(

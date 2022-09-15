@@ -13,6 +13,8 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_test
+from autotest_lib.client.cros.power import power_utils
+
 
 class power_VideoCall(power_test.power_Test):
     """class for power_VideoCall test."""
@@ -91,10 +93,9 @@ class power_VideoCall(power_test.power_Test):
             tab_left.Activate()
             if multitask:
                 keys.press_key('alt+[')
-            elif not tab_left.EvaluateJavaScript(
-                    'document.webkitIsFullScreen'):
+            else:
                 # Run in fullscreen when not multitask.
-                keys.press_key('f4')
+                power_utils.set_fullscreen(cr)
 
             logging.info('Navigating left window to %s', video_url)
             tab_left.Navigate(video_url)

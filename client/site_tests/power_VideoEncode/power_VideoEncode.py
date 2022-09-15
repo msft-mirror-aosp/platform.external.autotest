@@ -6,9 +6,9 @@ import logging
 import time
 
 from autotest_lib.client.common_lib.cros import chrome
-from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_test
+from autotest_lib.client.cros.power import power_utils
 
 
 class power_VideoEncode(power_test.power_Test):
@@ -51,17 +51,13 @@ class power_VideoEncode(power_test.power_Test):
         extra_browser_args = self.get_extra_browser_args_for_camera_test()
         # b/228256145 to avoid powerd restart
         extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
-        with chrome.Chrome(init_network_controller=True,
-                           extra_browser_args=extra_browser_args) as cr:
-
+        with chrome.Chrome(autotest_ext=True,
+                           extra_browser_args=extra_browser_args,
+                           init_network_controller=True) as cr:
+            # Just measure power in full-screen.
             tab = cr.browser.tabs[0]
             tab.Activate()
-
-            # Just measure power in full-screen.
-            fullscreen = tab.EvaluateJavaScript('document.webkitIsFullScreen')
-            if not fullscreen:
-                with keyboard.Keyboard() as keys:
-                    keys.press_key('f4')
+            power_utils.set_fullscreen(cr)
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.

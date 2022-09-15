@@ -9,7 +9,6 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.bluetooth import bluetooth_device_xmlrpc_server
-from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_test
 from autotest_lib.client.cros.power import power_utils
 
@@ -70,10 +69,7 @@ class power_Idle(power_test.power_Test):
             # Measure power in full-screen blank tab
             tab = self.cr.browser.tabs.New()
             tab.Activate()
-            fullscreen = tab.EvaluateJavaScript('document.webkitIsFullScreen')
-            if not fullscreen:
-                with keyboard.Keyboard() as keys:
-                    keys.press_key('f4')
+            power_utils.set_fullscreen(self.cr)
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.

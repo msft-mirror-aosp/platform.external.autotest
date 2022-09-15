@@ -29,6 +29,22 @@ DISPLAY_POWER_MAX = 4
 ECTOOL_CHARGECONTROL_RETRY_TIMES = 3
 
 
+def set_fullscreen(chrome):
+    """Make the current focused window fullscreen.
+
+    Arguments:
+    @param chrome: chrome instance.
+    """
+    # Use JS API, instead of key replay, so that we can avoid UI reactions
+    # such as omnibox hover because of the internal cursor location.
+    chrome.autotest_ext.EvaluateJavaScript("""
+      new Promise((resolve) => chrome.windows.update(
+          chrome.windows.WINDOW_ID_CURRENT,
+          {state: 'fullscreen'},
+          resolve));
+    """, promise=True)
+
+
 def get_x86_cpu_arch():
     """Identify CPU architectural type.
 
@@ -715,9 +731,9 @@ class Registers(object):
 
         good = eval("%d %s %d" % (value, operator, expr))
         if not good:
-            logging.error('FAILED: %s bits: %s value: %s mask: %s expr: %s ' +
-                          'operator: %s', reg_name, bits, hex(value), mask,
-                          expr, operator)
+            logging.error(
+                'FAILED: %s bits: %s value: %s mask: %s expr: %s operator: %s',
+                reg_name, bits, hex(value), mask, expr, operator)
         return good
 
     def _verify_registers(self, reg_name, read_fn, match_list):

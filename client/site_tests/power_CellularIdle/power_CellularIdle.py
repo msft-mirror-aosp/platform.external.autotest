@@ -7,7 +7,6 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
-from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.networking.chrome_testing \
         import chrome_networking_test_api as cnta
 from autotest_lib.client.cros.networking.chrome_testing \
@@ -55,13 +54,11 @@ class power_CellularIdle(power_test.power_Test):
 
         extra_browser_args = ['--disable-sync']
         with cntc.ChromeNetworkingTestContext() as testing_context, \
-             chrome.Chrome(extra_browser_args=extra_browser_args) as self.cr:
+             chrome.Chrome(autotest_ext=True,
+                           extra_browser_args=extra_browser_args) as self.cr:
             tab = self.cr.browser.tabs.New()
             tab.Activate()
-            fullscreen = tab.EvaluateJavaScript('document.webkitIsFullScreen')
-            if not fullscreen:
-                with keyboard.Keyboard() as keys:
-                    keys.press_key('f4')
+            power_utils.set_fullscreen(self.cr)
 
             self.start_measurements()
             start_time = time.time()

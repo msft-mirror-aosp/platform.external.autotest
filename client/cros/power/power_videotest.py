@@ -9,8 +9,8 @@ import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.audio import audio_helper
-from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_test
+from autotest_lib.client.cros.power import power_utils
 
 
 class power_VideoTest(power_test.power_Test):
@@ -126,17 +126,12 @@ class power_VideoTest(power_test.power_Test):
             # Chrome always starts with an empty tab, so we just use that one.
             tab = self.cr.browser.tabs[0]
             tab.Activate()
+            power_utils.set_fullscreen(self.cr)
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
             self._services.stop_services()
             self._multicast_disabler.disable_network_multicast()
-
-            # Just measure power in full-screen.
-            fullscreen = tab.EvaluateJavaScript('document.webkitIsFullScreen')
-            if not fullscreen:
-                with keyboard.Keyboard() as keys:
-                    keys.press_key('f4')
 
             self.start_measurements()
             idle_start = time.time()

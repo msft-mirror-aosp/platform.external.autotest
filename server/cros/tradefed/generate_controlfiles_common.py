@@ -147,6 +147,9 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- if camera_facing %}
             retry_manual_tests=True,
     {%- endif %}
+    {%- if executable_test_count %}
+            executable_test_count={{executable_test_count}},
+    {%- endif %}
             timeout={{timeout}})
 
     {% if sync_count and sync_count > 1 -%}
@@ -960,6 +963,9 @@ def get_controlfile_content(combined,
     subplan = None
     if _CTSHARDWARE_COLLECT in modules or _PUBLIC_CTSHARDWARE_COLLECT in modules:
         subplan = 'cts-hardware'
+    executable_test_count = None
+    if _COLLECT in modules or _PUBLIC_COLLECT in modules:
+        executable_test_count = CONFIG.get('COLLECT_TESTS_COUNT')
     return _CONTROLFILE_TEMPLATE.render(
             year=CONFIG['COPYRIGHT_YEAR'],
             name=name,
@@ -1001,7 +1007,8 @@ def get_controlfile_content(combined,
             extra_args=get_extra_args(modules, is_public),
             authkey=get_authkey(is_public),
             sync_count=get_sync_count(modules, abi, is_public),
-            camera_facing=camera_facing)
+            camera_facing=camera_facing,
+            executable_test_count=executable_test_count)
 
 
 def get_tradefed_data(path, is_public, abi):

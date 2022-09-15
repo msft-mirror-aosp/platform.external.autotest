@@ -387,6 +387,9 @@ class BluetoothBaseFacadeLocal(object):
         except Exception as e:
             logging.error('timeout: error starting manager daemon: %s', e)
 
+        # Initialize self.adapters with currently available adapters.
+        self.manager_client.get_available_adapters()
+
         # We need to observe callbacks for proper operation.
         if not self.manager_client.register_callbacks():
             logging.error('manager_client: Failed to register callbacks')
@@ -4294,6 +4297,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     # How long we wait for the adapter to come up after we start it
     ADAPTER_DAEMON_TIMEOUT_SEC = 20
 
+    # Time to sleep between polls
+    ADAPTER_CLIENT_POLL_INTERVAL = 0.1
+
     # Floss stops discovery after ~12s after starting. To improve discovery
     # chances in tests, we need to keep restarting discovery. This timeout
     # tracks how long an overall discovery session should be.
@@ -4543,14 +4549,48 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Sets the default adapter's enabled state."""
         default_adapter = self.manager_client.get_default_adapter()
 
+        def _is_adapter_down(client):
+            return lambda: not client.has_proxy()
+
+        def _is_adapter_ready(client):
+            return lambda: client.has_proxy() and client.get_address()
+
         if powered and not self.manager_client.has_default_adapter():
             logging.warning('set_powered: Default adapter not available.')
             return False
 
         if powered:
             self.manager_client.start(default_adapter)
+            self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
+
+            try:
+                utils.poll_for_condition(
+                        condition=_is_adapter_ready(self.adapter_client),
+                        desc='Wait for adapter start',
+                        sleep_interval=self.ADAPTER_CLIENT_POLL_INTERVAL,
+                        timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
+            except Exception as e:
+                logging.error('timeout: error starting adapter daemon: %s', e)
+                logging.error(traceback.format_exc())
+                return False
+
+            # We need to observe callbacks for proper operation.
+            if not self.adapter_client.register_callbacks():
+                logging.error('adapter_client: Failed to register callbacks')
+                return False
+
         else:
             self.manager_client.stop(default_adapter)
+            try:
+                utils.poll_for_condition(
+                        condition=_is_adapter_down(self.adapter_client),
+                        desc='Wait for adapter stop',
+                        sleep_interval=self.ADAPTER_CLIENT_POLL_INTERVAL,
+                        timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
+            except Exception as e:
+                logging.error('timeout: error stopping adapter daemon: %s', e)
+                logging.error(traceback.format_exc())
+                return False
 
         return True
 
@@ -4568,48 +4608,14 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         if not self.configure_floss(enabled=True):
             return False
 
-        default_adapter = self.manager_client.get_default_adapter()
-
-        def _is_adapter_down(client):
-            return lambda: not client.has_proxy()
-
-        def _is_adapter_ready(client):
-            return lambda: client.has_proxy() and client.get_address()
-
-        self.manager_client.stop(default_adapter)
-        try:
-            condition = _is_adapter_down(self.adapter_client)
-            utils.poll_for_condition(condition=condition,
-                                     desc='Wait for adapter stop',
-                                     sleep_interval=0.5,
-                                     timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
-        except Exception as e:
-            logging.error('timeout: error stopping adapter daemon: %s', e)
-            logging.error(traceback.format_exc())
+        if not self.set_powered(False):
             return False
 
         if not power_on:
             logging.debug('do_reset: Completed with power_on=False')
             return True
 
-        # Start the client again
-        self.manager_client.start(default_adapter)
-        self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
-
-        try:
-            condition = _is_adapter_ready(self.adapter_client)
-            utils.poll_for_condition(condition=condition,
-                                     desc='Wait for adapter start',
-                                     sleep_interval=0.5,
-                                     timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
-        except Exception as e:
-            logging.error('timeout: error starting adapter daemon: %s', e)
-            logging.error(traceback.format_exc())
-            return False
-
-        # We need to observe callbacks for proper operation.
-        if not self.adapter_client.register_callbacks():
-            logging.error('adapter_client: Failed to register callbacks')
+        if not self.set_powered(True):
             return False
 
         logging.debug('do_reset: Completed with power_on=True')

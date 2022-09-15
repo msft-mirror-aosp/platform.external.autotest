@@ -488,9 +488,9 @@ class tast(test.test):
             extvars['var:' + key] = val
 
         # Load tests_to_run
-        extvars['tests:'] = '\n'.join(self._tests_to_run)
+        extvars['tests:'] = '\n'.join([test['name'] for test in self._tests_to_run])
         for test_to_run in self._tests_to_run:
-            extvars['test:' + test_to_run] = ''
+            extvars['test:' + test_to_run['name']] = ''
 
         # Load command_args
         extvars['args:'] = '\n'.join(self._command_args)

@@ -795,7 +795,7 @@ class TastTest(unittest.TestCase):
                     varsfiles=[temp_file.name],
                     varslist=['var3=val3', 'var4=val4'],
                     command_args=['arg1', 'arg2=arg2val', 'arg3:arg3val'])
-            self._test._tests_to_run = ['test1', 'test2']
+            self._test._tests_to_run = [{'name': 'test1'}, {'name': 'test2'}]
 
             self.maxDiff = None
             self.assertDictEqual(

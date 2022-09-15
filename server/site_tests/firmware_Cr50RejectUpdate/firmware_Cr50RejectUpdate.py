@@ -14,14 +14,10 @@ class firmware_Cr50RejectUpdate(Cr50Test):
     version = 1
     # Old version that exists for Cr50 and Ti50
     OLD_IMAGE_VER = '0.0.16'
-    # We dont care that it actually matches the device devid. It will be
-    # rejected before the update. This is just one that I picked from google
-    # storage
-    CR50_IMAGE_DEVID = '0x1000d059 0x04657208'
-    TI50_IMAGE_DEVID = '0x0280a04a 0x4d9ace78'
     # No boards use the bid TEST. Use this image to verify cr50 rejects images
     # with the wrong board id.
-    BID = 'TEST:0000ffff:0000ff00'
+    TEST_BID_TYPE = 'TEST:ffffffff:0'
+    TEST_BID_FLAGS = 'TEST:0:000fffff'
     TEST_PATH = '/tmp/test_image.bin'
 
 
@@ -40,11 +36,12 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         if cr50_utils.GetChipBoardId(host) == cr50_utils.ERASED_CHIP_BID:
             raise error.TestNAError('Set Cr50 board id to run test')
 
-        if self.cr50.NAME == 'cr50':
-            image_devid = self.CR50_IMAGE_DEVID
-        else:
-            image_devid = self.TI50_IMAGE_DEVID
-        self.bid_path = self.download_cr50_debug_image(image_devid, self.BID)[0]
+        # These images are unsigned. They should get rejected for their board
+        # id.
+        self.bid_type_path = self.download_cr50_debug_image('no_devid',
+                self.TEST_BID_TYPE)[0]
+        self.bid_flags_path = self.download_cr50_debug_image('no_devid',
+                self.TEST_BID_FLAGS)[0]
         self.old_path = self.download_cr50_release_image(self.OLD_IMAGE_VER)[0]
         self.original_path = self.get_saved_cr50_original_path()
         self.host = host
@@ -89,9 +86,14 @@ class firmware_Cr50RejectUpdate(Cr50Test):
 
     def run_once(self):
         """Verify cr50 rejects certain updates"""
-        # Cr50 rejects a mismatched board id no matter what
-        self.try_update('-u', self.bid_path, err=12)
-        self.try_update('', self.bid_path, err=12)
+        # GSC rejects a mismatched board id no matter what
+        # Verify the bid type check.
+        self.try_update('-u', self.bid_type_path, err=12)
+        self.try_update('', self.bid_type_path, err=12)
+        bid_flag_err = 12 if self.cr50.NAME == 'cr50' else 13
+        # Verify the bid flags check.
+        self.try_update('-u', self.bid_flags_path, err=bid_flag_err)
+        self.try_update('', self.bid_flags_path, err=bid_flag_err)
 
         # With the '-u' option cr50 rejects any images with old/same header
         # with 'nothing to do'

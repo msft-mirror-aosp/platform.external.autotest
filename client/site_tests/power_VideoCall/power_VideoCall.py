@@ -28,13 +28,15 @@ class power_VideoCall(power_test.power_Test):
                    seconds_period=20.,
                    pdash_note='',
                    force_discharge=False,
-                   check_network=False):
+                   check_network=False,
+                   disable_hdrnet=False):
         """initialize method."""
         super(power_VideoCall,
               self).initialize(seconds_period=seconds_period,
                                pdash_note=pdash_note,
                                force_discharge=force_discharge,
-                               check_network=check_network)
+                               check_network=check_network,
+                               disable_hdrnet=disable_hdrnet)
 
 
     def run_once(self,

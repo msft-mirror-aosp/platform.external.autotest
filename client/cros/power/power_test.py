@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 import logging
+import os
 import re
 import time
 
@@ -35,13 +36,16 @@ class power_Test(test.test):
     keypress_histogram = 'EventLatency.KeyPressed.TotalLatency'
     histogram_re = 'Histogram: %s recorded (\d+) samples, mean = (\d+\.\d+)'
     hist_percentile_re = '^(\d+).+\{(\d+)\.\d+\%\}'
+    hdrnet_path = '/etc/camera/feature_profile.json'
+    hdrnet_disabled_path = '/etc/camera/feature_profile.json_disabled'
 
     def initialize(self,
                    seconds_period=20.,
                    pdash_note='',
                    force_discharge='false',
                    check_network=False,
-                   run_arc=True):
+                   run_arc=True,
+                   disable_hdrnet=False):
         """Perform necessary initialization prior to power test run.
 
         @param seconds_period: float of probing interval in seconds.
@@ -111,6 +115,12 @@ class power_Test(test.test):
         if run_arc and utils.is_arc_available():
             self._arc_mode = arc_common.ARC_MODE_ENABLED
         self.keyvals['arc_mode'] = self._arc_mode
+
+        self._disable_hdrnet = False
+        if disable_hdrnet and os.path.exists(self.hdrnet_path):
+            os.rename(self.hdrnet_path, self.hdrnet_disabled_path)
+            self._disable_hdrnet = True
+        self.keyvals['disable_hdrnet'] = self._disable_hdrnet
 
     def get_extra_browser_args_for_camera_test(self):
         """Return Chrome args for camera power test."""
@@ -194,7 +204,7 @@ class power_Test(test.test):
         if matches:
             count = int(matches.group(1))
             mean_latency = float(matches.group(2))
-            logging.info(prefix + 'latency count %d mean %f', count,
+            logging.info('%slatency count %d mean %f', prefix, count,
                          mean_latency)
             self.keyvals[prefix + 'keypress_cnt'] = count
             self.keyvals[prefix + 'keypress_latency_us_avg'] = mean_latency
@@ -370,6 +380,8 @@ class power_Test(test.test):
 
     def cleanup(self):
         """Reverse setting change in initialization."""
+        if self._disable_hdrnet:
+            os.rename(self.hdrnet_disabled_path, self.hdrnet_path)
         force_discharge_utils.restore(self._force_discharge_success)
         if self.backlight:
             self.backlight.restore()

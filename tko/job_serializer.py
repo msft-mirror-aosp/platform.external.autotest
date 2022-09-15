@@ -52,7 +52,9 @@ class JobSerializer(object):
                               'afe_parent_job_id':str,
                               'build_version':str,
                               'suite':str,
-                              'board':str}
+                              'board':str,
+                              'dlm_sku_id':str,
+                              'hwid':str}
 
         self.test_type_dict = {'subdir':str, 'testname':str,
                                'status':str, 'reason':str,
@@ -173,7 +175,9 @@ class JobSerializer(object):
                             fields_dict['afe_parent_job_id'],
                             fields_dict['build_version'],
                             fields_dict['suite'],
-                            fields_dict['board'])
+                            fields_dict['board'],
+                            fields_dict['dlm_sku_id'],
+                            fields_dict['hwid'])
 
         newjob.tests.extend(fields_dict['tests'])
 

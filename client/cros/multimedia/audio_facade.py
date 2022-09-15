@@ -186,13 +186,26 @@ class AudioFacadeLocal(object):
 
 
     def check_audio_stream_at_selected_device(self):
-        """Checks the audio output is at expected node"""
+        """Checks the audio output is at expected node
+
+        Note: cras_utils.get_selected_output_device_name() and
+        cras_utils.get_selected_output_device_type() can be wrong if alsa
+        UCM config set the DependentPCM. Both the device and the dependent
+        device will return the same device name and type.
+
+        We can catch the exception and print the log instead.
+        """
         output_device_name = cras_utils.get_selected_output_device_name()
         output_device_type = cras_utils.get_selected_output_device_type()
         logging.info("Output device name is %s", output_device_name)
         logging.info("Output device type is %s", output_device_type)
-        alsa_utils.check_audio_stream_at_selected_device(output_device_name,
-                                                         output_device_type)
+        try:
+            alsa_utils.check_audio_stream_at_selected_device(output_device_name,
+                                                             output_device_type)
+        except Exception as e:
+            msg = str(e) + ' Please check if the device has DependentPCM' \
+                + 'in UCM config.'
+            logging.error(msg)
 
 
     def cleanup(self):

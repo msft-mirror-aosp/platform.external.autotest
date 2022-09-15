@@ -6,7 +6,9 @@
 import logging
 import time
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import arc_common
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.bluetooth import bluetooth_device_xmlrpc_server
 from autotest_lib.client.cros.power import power_test
@@ -30,6 +32,7 @@ class power_Idle(power_test.power_Test):
     """
     version = 1
     first_test_warmup_secs = 60
+    first_test_arcvm_warmup_secs = 150
 
     def initialize(self, pdash_note='', seconds_period=10.,
                    force_discharge='optional', run_arc=True):
@@ -45,6 +48,9 @@ class power_Idle(power_test.power_Test):
             """Helper function to wrap testing loop for each sub test."""
             if self.is_first_test:
                 warmup_secs += self.first_test_warmup_secs
+                if (self._arc_mode != arc_common.ARC_MODE_DISABLED and
+                    utils.is_arcvm()):
+                    warmup_secs += self.first_test_arcvm_warmup_secs
                 self.is_first_test = False
             if warmup_secs > 0:
                 tstart = time.time()

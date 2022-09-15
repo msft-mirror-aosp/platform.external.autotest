@@ -29,7 +29,7 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
         self._clear_custom_lsb_release()
 
 
-    def _navigate_to_oobe_update_screen(self):
+    def _navigate_to_oobe_update_screen(self, critical_update):
         """Navigates to the OOBE update check screen."""
         timeout = 30
         self._oobe.WaitForJavaScriptCondition(
@@ -56,15 +56,14 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
             self._oobe.ExecuteJavaScript(
                     "OobeAPI.screens.EulaScreen.clickNext()")
 
-        # TODO(yunkez): remove this check after M92 is in stable
-        if self._oobe.EvaluateJavaScript(
-                "typeof OobeAPI.screens.UpdateScreen == 'object'"):
+        if critical_update:
             self._oobe.WaitForJavaScriptCondition(
                     "OobeAPI.screens.UpdateScreen.isVisible()",
                     timeout=timeout)
         else:
-            self._oobe.WaitForJavaScriptCondition("!$('oobe-update').hidden",
-                                                  timeout=timeout)
+            self._oobe.WaitForJavaScriptCondition(
+                    "OobeAPI.screens.UserCreationScreen.isVisible()",
+                    timeout=timeout)
 
     def _start_oobe_update(self, update_url, critical_update):
         """
@@ -82,7 +81,7 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
         self._chrome = chrome.Chrome(auto_login=False,
                                      extra_browser_args=extra_browser_args)
         self._oobe = self._chrome.browser.oobe
-        self._navigate_to_oobe_update_screen()
+        self._navigate_to_oobe_update_screen(critical_update)
 
         timeout = 180
         err_str = 'Update did not start within %d seconds.' % timeout

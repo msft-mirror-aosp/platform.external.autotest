@@ -172,6 +172,7 @@ CONFIG['MEDIA_MODULES'] = [
 
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
         'CtsMediaStressTestCases.camera',
+        'CtsMediaTestCases.arc_perf',
         'CtsMediaTestCases.audio',
         'CtsMediaTestCases.perf',
         'CtsMediaTestCases.video',

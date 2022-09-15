@@ -21,6 +21,7 @@ def run_TS(machine):
         'cheets_CTS_R',
         hosts=host_list,
         iterations=1,
+        needs_push_media=True,
         tag='internal.x86.CtsMediaTestCases.arc_perf',
         test_name='cheets_CTS_R.internal.x86.CtsMediaTestCases.arc_perf',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest', '--include-filter', 'CtsMediaTestCases android.media.cts.AudioRecordTest', '--include-filter', 'CtsMediaTestCases android.media.cts.AudioTrackTest', '--include-filter', 'CtsMediaTestCases android.media.cts.AudioTrack_ListenerTest', '--include-filter', 'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest', '--logcat-on-failure'],

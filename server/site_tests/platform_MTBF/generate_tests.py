@@ -178,7 +178,7 @@ def _generate_test_files(version, suites, tests, suite_name=None):
         priority = INITIAL_PRIORITY
         if suite_name and suite['name'] != suite_name:
             continue
-        if suite['template']:
+        if 'template' in suite:
             template = _read_file(_get_absolute_path(suite['template']))
         else:
             template = _read_file(

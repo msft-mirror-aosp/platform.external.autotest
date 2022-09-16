@@ -7,8 +7,7 @@ from autotest_lib.server import utils
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_PDPowerSwap.dts"
 PURPOSE = "Servo based PD power role swap test"
-# Disabled due to 0% pass rate over 30 days. See b/241832849
-# ATTRIBUTES = "suite:faft_pd"
+ATTRIBUTES = "suite:faft_pd"
 CRITERIA = "This test will fail if a power swap gives unexpected results"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"

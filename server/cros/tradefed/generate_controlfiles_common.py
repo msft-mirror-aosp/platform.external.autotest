@@ -369,6 +369,8 @@ def get_suites(modules, abi, is_public, camera_facing=None,
 
     suites = set(CONFIG['INTERNAL_SUITE_NAMES'])
 
+    vm_modules = []
+    nonvm_modules = []
     for module in modules:
         if module in get_collect_modules(is_public, hardware_suite):
             # We collect all tests both in arc-gts and arc-gts-qual as both have
@@ -383,11 +385,14 @@ def get_suites(modules, abi, is_public, camera_facing=None,
         if module in CONFIG['HARDWARE_DEPENDENT_MODULES']:
             # CTS modules to be run on all unibuild models.
             suites.add('suite:arc-cts-unibuild-hw')
-        if module in get_vm_modules() and 'VM_SUITE_NAME' in CONFIG:
+        if is_vm_modules(module) and 'VM_SUITE_NAME' in CONFIG:
             # This logic put the whole control group (if combined) into
             # VM_SUITE_NAME if any module is listed in get_vm_modules(). We
             # should not do it once in production.
             suites.add(CONFIG['VM_SUITE_NAME'])
+            vm_modules.append(module)
+        else:
+            nonvm_modules.append(module)
         if abi == 'x86':
             # Handle a special builder for running all of CTS in a betty VM.
             # TODO(ihf): figure out if this builder is still alive/needed.
@@ -413,6 +418,11 @@ def get_suites(modules, abi, is_public, camera_facing=None,
 
     if camera_facing != None:
         suites.add('suite:arc-cts-camera')
+
+    if vm_modules and nonvm_modules:
+        logging.warning(
+                '%s is also added to vm suites because of %s, please check your config',
+                nonvm_modules, vm_modules)
 
     return sorted(list(suites))
 
@@ -825,9 +835,13 @@ def get_extra_hardware_modules_dict(is_public, abi):
 
 
 # TODO(fqj): come up a better way for vm modules generation.
-def get_vm_modules():
+def is_vm_modules(module):
     """Gets a list of modules for arc-cts-vm."""
-    return CONFIG.get('VM_MODULES', [])
+    for vm_module_pattern in CONFIG.get('VM_MODULES', []):
+        if re.match(vm_module_pattern, module):
+            return True
+    return False
+
 
 def get_extra_artifacts(modules):
     artifacts = []

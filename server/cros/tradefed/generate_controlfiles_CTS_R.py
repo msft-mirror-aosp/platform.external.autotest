@@ -150,12 +150,12 @@ CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
 ]
 
 CONFIG['VM_MODULES'] = [
-        'CtsAccessibilityServiceTestCases',
-        'CtsAutoFillServiceTestCases',
-        'CtsFileSystemTestCases',
-        'CtsJniTestCases',
-        'CtsPdfTestCases',
-        'CtsWindowManagerDeviceTestCases',
+        'CtsAccessibility.*',
+        'CtsAutoFillServiceTestCases.*',
+        'CtsFileSystemTestCases.*',
+        'CtsJniTestCases.*',
+        'CtsPdfTestCases.*',
+        'CtsWindowManager.*',
         # Intentionally add a HW test.
         'CtsCameraTestCases',
 ]

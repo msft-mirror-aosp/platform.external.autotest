@@ -253,6 +253,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @raises: TestNAError if the dut does not support wbs.
         """
         capabilities, err = self.bluetooth_facade.get_supported_capabilities()
+        logging.debug("get_supported_capabilities %s", capabilities)
         return err is None and bool(capabilities.get('wide band speech'))
 
 

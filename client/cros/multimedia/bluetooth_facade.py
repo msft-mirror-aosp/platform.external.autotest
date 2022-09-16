@@ -4879,7 +4879,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
     def get_supported_capabilities(self):
         """" Get supported capabilities of the adapter."""
-        return (json.dumps({}), 'Not yet implemented')
+        # A temporary solution for floss to check if WBS is supported.
+        # A longer-term solution would be to provide a complete list of
+        # supported capabilities which requires floss to implement a
+        # sustainable interface with the kernel.
+        value = {'wide band speech': self.adapter_client.is_wbs_supported()}
+        return (json.dumps(value), None)
 
     def get_adapter_properties(self):
         """Reads the adapter properties from the Bluetooth Daemon.

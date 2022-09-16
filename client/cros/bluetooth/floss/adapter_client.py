@@ -580,6 +580,11 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         return bool(self.proxy().CancelDiscovery())
 
     @glib_call(False)
+    def is_wbs_supported(self):
+        """Is WBS supported?"""
+        return bool(self.proxy().IsWbsSupported())
+
+    @glib_call(False)
     def is_discovering(self):
         """Is adapter discovering?"""
         return bool(self.discovering)

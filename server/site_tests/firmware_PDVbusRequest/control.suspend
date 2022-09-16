@@ -7,8 +7,7 @@ from autotest_lib.server import utils
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_PDVbusRequest.suspend"
 PURPOSE = "Servo based PD VBUS voltage level test"
-# Disabled due to 0% pass rate over 30 days. See b/241834399
-# ATTRIBUTES = "suite:faft_pd"
+ATTRIBUTES = "suite:faft_pd"
 CRITERIA = "This test will fail if actual voltage does not meet expected"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"

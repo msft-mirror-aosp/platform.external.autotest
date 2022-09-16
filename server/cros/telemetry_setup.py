@@ -60,7 +60,6 @@ class TelemetrySetup(object):
     # Names of the telemetry dependency tarballs.
     _DEPENDENCIES = [
             'dep-telemetry_dep.tar.bz2',
-            'dep-page_cycler_dep.tar.bz2',
             'dep-chrome_test.tar.bz2',
             'dep-perf_data_dep.tar.bz2',
     ]

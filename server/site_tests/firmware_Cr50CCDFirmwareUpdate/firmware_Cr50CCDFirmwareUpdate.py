@@ -124,9 +124,18 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         # have its own release directory, but its parent, gru does.
         parent = getattr(self.faft_config, 'parent', None)
 
+        # Allow faft_config.fw_update_build to override
+        # get_latest_release_version().
+        config_fw_build = getattr(self.faft_config, 'fw_update_build', None)
+
         if not self.fw_path:
-            self.b_ver = host.get_latest_release_version(
-                    self.faft_config.platform, parent)
+            if config_fw_build:
+                logging.info('Using faft_config.fw_update_build %s',
+                        config_fw_build)
+                self.b_ver = config_fw_build
+            else:
+                self.b_ver = host.get_latest_release_version(
+                        self.faft_config.platform, parent)
             if not self.b_ver:
                 raise error.TestError(
                         'Cannot locate the latest release for %s' %

@@ -37,10 +37,6 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
         # Save update_engine logs for the update, rollback, and post-reboot.
         self._save_extra_update_engine_logs(number_of_logs=3)
 
-        # Restore the stateful partition so tests can still use this DUT.
-        if self._powerwash_attempted:
-            self._restore_stateful()
-
         # Delete rollback-version and rollback-happened pref which are
         # generated during Rollback and Enterprise Rollback.
         # rollback-version is written when update_engine Rollback D-Bus API is
@@ -56,6 +52,7 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
             ignore_status=True)
         # Restart update-engine to pick up new prefs.
         self._restart_update_engine(ignore_status=True)
+        super(autoupdate_Rollback, self).cleanup()
 
 
     def run_once(self,
@@ -75,7 +72,6 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
                error.TestFail if any part of the test has failed.
 
         """
-        self._powerwash_attempted = False
         payload_url = self.get_payload_for_nebraska(
                 build=build, public_bucket=running_at_desk)
         active, inactive = kernel_utils.get_kernel_state(self._host)
@@ -94,7 +90,9 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
         kernel_utils.verify_boot_expectations(inactive, error_msg, self._host)
 
         if powerwash_before_rollback:
-            self._powerwash_attempted = True
+            # Restore the stateful partition after the test to ensure the DUT
+            # can be used by subsequent tests.
+            self._should_restore_stateful = True
             self._powerwash()
 
         logging.info('Update verified, initiating rollback.')

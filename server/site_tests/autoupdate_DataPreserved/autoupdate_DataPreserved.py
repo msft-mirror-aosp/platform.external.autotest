@@ -16,7 +16,6 @@ class autoupdate_DataPreserved(update_engine_test.UpdateEngineTest):
     def cleanup(self):
         self._save_extra_update_engine_logs(number_of_logs=2)
         super(autoupdate_DataPreserved, self).cleanup()
-        self._restore_stateful()
 
 
     def run_once(self, full_payload=True, running_at_desk=False, build=None):

@@ -34,8 +34,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             logging.debug('Canceling the in-progress update.')
             self._restart_update_engine()
         super(autoupdate_ForcedOOBEUpdate, self).cleanup()
-        if self._m2n:
-            self._restore_stateful()
 
     def _wait_for_reboot_after_update(self, timeout_minutes=15):
         """

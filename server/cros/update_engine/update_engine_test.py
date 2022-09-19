@@ -110,20 +110,23 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._dlc_util = dlc_util.DLCUtil(self._run)
 
         # The target build for the update. Uses the release builder path
-        # format, ex: octopus-release/R102-14650.0.0
-        self._build = None
+        # format, ex: octopus-release/R102-14650.0.0.
+        self._build = self._get_release_builder_path()
 
         # Flag to indicate that the test has progressed far enough that
         # stateful should be restored on failure.
         self._should_restore_stateful = False
 
         # Cache server URL to use for the test, if running on a lab DUT.
-        self._cache_server_url = None
+        self._cache_server_url = self._get_cache_server_url()
 
     def cleanup(self):
         """Clean up update_engine autotests."""
         if self._host:
             self._host.get_file(self._UPDATE_ENGINE_LOG, self.resultsdir)
+        if self._should_restore_stateful:
+            public_bucket = not self._cache_server_url
+            self._restore_stateful(public_bucket=public_bucket)
 
 
     def _get_release_builder_path(self):
@@ -747,9 +750,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param public_bucket: True to restore from a public bucket.
 
         """
-        # Test failed before any update preparations began. No need to fix stateful.
-        if not self._should_restore_stateful:
-            return
 
         # Fallback to lab provisioning if this function fails to restore.
         self._run(['touch', self._CORRUPT_STATEFUL_PATH])
@@ -785,6 +785,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             raise error.TestFail(err_str)
 
         logging.info('Stateful restored successfully.')
+        # Reset the stateful restore flag since we no longer need to do it
+        # during cleanup.
+        self._should_restore_stateful = False
 
 
     def _download_and_extract_stateful(self,
@@ -884,8 +887,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                              _PAYLOAD_TYPE enum.
 
         """
-        self._should_restore_stateful = True
-
         payload_url = self._get_payload_url(full_payload=full_payload,
                                             payload_type=payload_type)
         url = self._copy_payload_to_public_bucket(payload_url)
@@ -1054,13 +1055,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         logging.info("Getting payload for nebraska for build %s", self._build)
 
-        # TODO(kimjae): Restoring stateful logic should be more strict.
-        # Always restore stateful at this point, otherwise subsequent tasks
-        # might run with mismatching stateful partition.
-        self._should_restore_stateful = True
-
-        self._cache_server_url = self._get_cache_server_url()
-
         if public_bucket or not self._cache_server_url:
             logging.info(
                     "Getting payload for nebraska for build %s on the public bucket",
@@ -1212,6 +1206,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         else:
             cache_server_url = self._get_cache_server_url()
             update_url = os.path.join(cache_server_url, 'update', build_name)
+
+        # Provision will be attempted, so ensure stateful will be restored
+        # after the update.
+        self._should_restore_stateful = True
 
         logging.info('Installing source image with update url: %s', update_url)
         provisioner.ChromiumOSProvisioner(

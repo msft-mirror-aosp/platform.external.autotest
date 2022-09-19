@@ -452,8 +452,13 @@ class tast(test.test):
         test_args = config_vars.TransformConfig(test_args, extvars)
 
         with tempfile.NamedTemporaryFile(suffix='.yaml',
+                                         mode='w+',
+                                         encoding='utf-8',
                                          delete=False) as temp_file:
-            yaml.dump(test_args, stream=temp_file, default_flow_style=False)
+            yaml.safe_dump(test_args,
+                          stream=temp_file,
+                          default_flow_style=False,
+                          allow_unicode=True)
             self._varsfiles.append(temp_file.name)
 
     def _fill_config_extvars(self):

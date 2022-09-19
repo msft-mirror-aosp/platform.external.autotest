@@ -5,7 +5,7 @@
 
 AUTHOR = 'chharry@google.com'
 NAME = 'bluetooth_AVLDriver.driver_support_test'
-ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_standalone'
+ATTRIBUTES = 'suite:bluetooth_sa'
 PURPOSE = (
     'Tests the driver suppport of bluetooth AVL requirements'
 )

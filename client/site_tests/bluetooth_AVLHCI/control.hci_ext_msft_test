@@ -5,7 +5,7 @@
 
 AUTHOR = 'Rajaa Abdallah <rajaa.abdallah@exalt.ps>'
 NAME = 'bluetooth_AVLHCI.hci_ext_msft_test'
-ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_standalone'
+ATTRIBUTES = 'suite:bluetooth_sa'
 PURPOSE = (
 'Tests the Microsoft HCI extension part in the Bluetooth AVL requirements'
 )

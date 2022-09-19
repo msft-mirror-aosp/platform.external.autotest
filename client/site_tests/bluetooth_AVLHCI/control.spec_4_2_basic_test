@@ -5,7 +5,7 @@
 
 AUTHOR = 'Rajaa Abdallah <rajaa.abdallah@exalt.ps>'
 NAME = 'bluetooth_AVLHCI.spec_4_2_basic_test'
-ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_standalone'
+ATTRIBUTES = 'suite:bluetooth_sa'
 PURPOSE = 'Tests the Bluetooth v4.2 specification of Bluetooth AVL requirements'
 CRITERIA = 'all subtests passed'
 TIME = 'SHORT'

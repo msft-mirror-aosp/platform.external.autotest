@@ -55,6 +55,7 @@ suite:bluetooth_floss
 suite:bluetooth_floss_cq
 suite:bluetooth_fw
 suite:bluetooth_mtbf
+suite:bluetooth_sa
 suite:bluetooth_standalone
 suite:bluetooth_standalone_cq
 suite:bluetooth_stress

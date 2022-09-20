@@ -20,7 +20,7 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  max_run_sec=10800,
-                 test_exprs=['("group:telemetry_extension_hw && telemetry_extension_biweekly")'],
+                 test_exprs=['("group:telemetry_extension_hw")'],
                  command_args=args)
 
 parallel_simple(run, machines)

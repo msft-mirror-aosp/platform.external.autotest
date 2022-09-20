@@ -3,6 +3,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import re
+
 from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.client.common_lib import error
 
@@ -124,3 +126,19 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         else:
             raise error.TestError('parameter, mode_exp is not valid: %s' %
                                   mode_exp)
+
+    def gettime(self):
+        """Get the current Ti50 system time"""
+        rv = self.send_safe_command_get_output(
+                'gettime', ['gettime(.*)>'])[0][1]
+        # Newer Ti50 images report time since reset in addition to RTC value.
+        # Use this if available.
+        # TODO: Remove the fallback to RTC value once we no longer care about
+        # results from older Ti50 images.
+        m = re.search('Since reset: .* = (.*) s', rv)
+        if m is not None:
+            return float(m.group(1))
+        m = re.search('Time: .* = (.*) s', rv)
+        if m is not None:
+            return float(m.group(1))
+        raise error.TestError('Unexpected gettime output: %s' % rv)

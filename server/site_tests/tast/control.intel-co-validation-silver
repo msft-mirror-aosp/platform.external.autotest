@@ -1,0 +1,49 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+
+AUTHOR = 'Ambalavanan M M <ambalavanan.m.m@intel.com>'
+NAME = 'tast.intel-co-validation-silver'
+TIME = 'LENGTHY'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:intel-co-validation-silver'
+DEPENDENCIES = 'servo_state:WORKING'
+MAX_RESULT_SIZE_KB = 256 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run the Intel OEM/ODM Co-Validation Tast tests.
+
+Tast is an integration-testing framework analagous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+
+This test runs Intel OEM/ODM Co-validation Tast tests that are required to pass
+against a remote DUT. It fails if any individual Tast tests fail.
+
+See http://go/tast-failures for information about investigating failures.
+'''
+
+args_dict = utils.args_to_dict(args)
+assert 'servo_state:WORKING' in DEPENDENCIES
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine, servo_args=servo_args),
+                 test_exprs=['camera.CCAUICaptureOperation.user_facing_image_silver',
+                             'camera.CCAUICaptureOperation.user_facing_video_silver',
+                             'audio.StressAudioPlaybackOnboardSpeaker.silver',
+                             'ui.YoutubeAudioStress.silver',
+                             'power.SystemPeripheralsFunctionalityCheck.coldboot_silver',
+                             'power.SystemPeripheralsFunctionalityCheck.suspend_silver'],
+                 ignore_test_failures=False, max_run_sec=72900,
+                 clear_tpm=False,
+                 command_args=args)
+
+parallel_simple(run, machines)

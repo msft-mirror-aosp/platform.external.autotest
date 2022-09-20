@@ -421,6 +421,10 @@ suite:infra_qual
 suite:infra_qual_cellular
 suite:infra_qual_wifi
 suite:input-tools-upstream
+suite:intel-co-validation-bronze
+suite:intel-co-validation-gold
+suite:intel-co-validation-quick
+suite:intel-co-validation-silver
 suite:jailed_build
 suite:kernel_daily_benchmarks
 suite:kernel_daily_regression

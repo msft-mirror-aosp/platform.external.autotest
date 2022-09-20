@@ -1997,7 +1997,7 @@ def has_screen():
     """Return True if the device has a screen. False otherwise."""
     command = 'for f in /sys/class/drm/*/*/modes; do head -1 $f; done'
     ret = utils.run(command, ignore_status=True)
-    if ret.exit_status != 0:
+    if ret.exit_status != 0 or ret.stdout.strip() == "":
         return False
     return True
 

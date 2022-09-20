@@ -15,6 +15,390 @@ import random
 from six.moves import range
 
 
+_ADV_TEMPLATE0_FLOSS = {
+        'advertise_name': 'template_data_floss_0',
+        'parameters': {
+                'connectable': False,
+                'scannable': False,
+                'is_legacy': False,
+                'is_anonymous': False,
+                'include_tx_power': True,
+                'primary_phy': 1,
+                'secondary_phy': 1,
+                'interval': 160,
+                'tx_power_level': -21,
+                'own_address_type': 0,
+        },
+        'advertise_data': {
+                'service_uuids': ['00008888-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '8888': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'scan_response': {
+                'service_uuids': ['00008888-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '8888': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'periodic_parameters': None,
+        'periodic_data': None,
+        'duration': 0,
+        'max_ext_adv_events': 0,
+        'MinInterval': 100,
+        'MaxInterval': 100
+}
+
+_ADV_TEMPLATE1_FLOSS = {
+        'advertise_name': 'template_data_floss_1',
+        'parameters': {
+                'connectable': False,
+                'scannable': False,
+                'is_legacy': True,
+                'is_anonymous': False,
+                'include_tx_power': True,
+                'primary_phy': 1,
+                'secondary_phy': 1,
+                'interval': 160,
+                'tx_power_level': -21,
+                'own_address_type': 0,
+        },
+        'advertise_data': {
+                'service_uuids': ['00009999-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '9999': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'scan_response': {
+                'service_uuids': ['00009999-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '9999': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'periodic_parameters': None,
+        'periodic_data': None,
+        'duration': 0,
+        'max_ext_adv_events': 0,
+        'MinInterval': 100,
+        'MaxInterval': 100
+}
+
+_ADV_TEMPLATE2_FLOSS = {
+        'advertise_name': 'template_data_floss_2',
+        'parameters': {
+                'connectable': False,
+                'scannable': False,
+                'is_legacy': True,
+                'is_anonymous': False,
+                'include_tx_power': True,
+                'primary_phy': 1,
+                'secondary_phy': 1,
+                'interval': 160,
+                'tx_power_level': -21,
+                'own_address_type': 0,
+        },
+        'advertise_data': {
+                'service_uuids': ['00008888-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '8888': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'scan_response': {
+                'service_uuids': ['00008888-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '8888': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'periodic_parameters': None,
+        'periodic_data': None,
+        'duration': 0,
+        'max_ext_adv_events': 0,
+        'MinInterval': 100,
+        'MaxInterval': 100
+}
+
+_ADV_TEMPLATE3_FLOSS = {
+        'advertise_name': 'template_data_floss_3',
+        'parameters': {
+                'connectable': False,
+                'scannable': False,
+                'is_legacy': False,
+                'is_anonymous': False,
+                'include_tx_power': True,
+                'primary_phy': 1,
+                'secondary_phy': 1,
+                'interval': 160,
+                'tx_power_level': -21,
+                'own_address_type': 0,
+        },
+        'advertise_data': {
+                'service_uuids': ['00005555-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '5555': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'scan_response': {
+                'service_uuids': ['00005555-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '5555': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'periodic_parameters': None,
+        'periodic_data': None,
+        'duration': 0,
+        'max_ext_adv_events': 0,
+        'MinInterval': 100,
+        'MaxInterval': 100
+}
+
+_ADV_TEMPLATE4_FLOSS = {
+        'advertise_name': 'template_data_floss_4',
+        'parameters': {
+                'connectable': False,
+                'scannable': False,
+                'is_legacy': True,
+                'is_anonymous': False,
+                'include_tx_power': True,
+                'primary_phy': 1,
+                'secondary_phy': 1,
+                'interval': 160,
+                'tx_power_level': -21,
+                'own_address_type': 0,
+        },
+        'advertise_data': {
+                'service_uuids': ['00007777-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '7777': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'scan_response': {
+                'service_uuids': ['00007777-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '7777': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'periodic_parameters': None,
+        'periodic_data': None,
+        'duration': 0,
+        'max_ext_adv_events': 0,
+        'MinInterval': 100,
+        'MaxInterval': 100
+}
+
+_ADV_TEMPLATE5_FLOSS = {
+        'advertise_name': 'template_data_floss_5',
+        'parameters': {
+                'connectable': False,
+                'scannable': False,
+                'is_legacy': False,
+                'is_anonymous': False,
+                'include_tx_power': True,
+                'primary_phy': 1,
+                'secondary_phy': 1,
+                'interval': 160,
+                'tx_power_level': -21,
+                'own_address_type': 0,
+        },
+        'advertise_data': {
+                'service_uuids': ['00006666-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '6666': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'scan_response': {
+                'service_uuids': ['00006666-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '6666': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'periodic_parameters': None,
+        'periodic_data': None,
+        'duration': 0,
+        'max_ext_adv_events': 0,
+        'MinInterval': 100,
+        'MaxInterval': 100
+}
+
+_NEARBY_BROADCAST_ADV_TEMPLATE_FLOSS = {
+        'advertise_name': 'template_data_broadcast_floss',
+        'parameters': {
+                'connectable': False,
+                'scannable': False,
+                'is_legacy': True,
+                'is_anonymous': False,
+                'include_tx_power': True,
+                'primary_phy': 1,
+                'secondary_phy': 1,
+                'interval': 160,
+                'tx_power_level': -21,
+                'own_address_type': 0,
+        },
+        'advertise_data': {
+                'service_uuids': ['00009999-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '9999': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'scan_response': {
+                'service_uuids': ['00009999-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '9999': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'periodic_parameters': None,
+        'periodic_data': None,
+        'duration': 0,
+        'max_ext_adv_events': 0,
+        'MinInterval': 100,
+        'MaxInterval': 100
+}
+
+_NEARBY_MEDIUMS_FAST_ADV_TEMPLATE_FLOSS = {
+        'advertise_name': 'template_data_nearby_floss',
+        'parameters': {
+                'connectable': False,
+                'scannable': False,
+                'is_legacy': True,
+                'is_anonymous': False,
+                'include_tx_power': True,
+                'primary_phy': 1,
+                'secondary_phy': 1,
+                'interval': 160,
+                'tx_power_level': -21,
+                'own_address_type': 0,
+        },
+        'advertise_data': {
+                'service_uuids': ['00006666-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '6666': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'scan_response': {
+                'service_uuids': ['00006666-0000-1000-8000-00805f9b34fb'],
+                'solicit_uuids': [],
+                'transport_discovery_data': [],
+                'manufacturer_data': {
+                        '50': None  # To be filled by _gen_from_template_floss
+                },
+                'service_data': {
+                        '6666': None  # To be filled by _gen_from_template_floss
+                },
+                'include_tx_power_level': True,
+                'include_device_name': True,
+        },
+        'periodic_parameters': None,
+        'periodic_data': None,
+        'duration': 0,
+        'max_ext_adv_events': 0,
+        'MinInterval': 100,
+        'MaxInterval': 100
+}
+
 _ADV_TEMPLATE0 = {
         'Path': '/org/bluez/test/advertisement1',
         'Type': 'peripheral',
@@ -176,7 +560,20 @@ def _gen_from_template(template):
     return adv
 
 
-def gen_advertisements(arg1=None, arg2=None):
+def _gen_from_template_floss(template):
+    adv = copy.deepcopy(template)
+    for i in ['advertise_data', 'scan_response']:
+        if i in adv:
+            for f in ['manufacturer_data', 'service_data']:
+                if f in adv[i]:
+                    for x in adv[i][f]:
+                        adv[i][f][x] = [
+                            random.randint(0x00, 0xff) for _ in range(5)
+                        ]
+    return adv
+
+
+def gen_advertisements(arg1=None, arg2=None, floss=False):
     """Returns normal advertisements.
 
     There are 6 different advertisement templates. Callers can specify a range
@@ -204,30 +601,50 @@ def gen_advertisements(arg1=None, arg2=None):
             _ADV_TEMPLATE0, _ADV_TEMPLATE1, _ADV_TEMPLATE2, _ADV_TEMPLATE3,
             _ADV_TEMPLATE4, _ADV_TEMPLATE5
     ]
+    gen_func = _gen_from_template
+    if floss:
+        adv_templates = [
+                _ADV_TEMPLATE0_FLOSS, _ADV_TEMPLATE1_FLOSS,
+                _ADV_TEMPLATE2_FLOSS, _ADV_TEMPLATE3_FLOSS,
+                _ADV_TEMPLATE4_FLOSS, _ADV_TEMPLATE5_FLOSS
+        ]
+        gen_func = _gen_from_template_floss
 
     if arg1 is None and arg2 is not None:
         raise ValueError('unexpected non-None arg2')
 
     if arg1 is not None and arg2 is None:  # case 2
-        return _gen_from_template(adv_templates[arg1])
+        return gen_func(adv_templates[arg1])
 
     # cases 1 and 3
-    return [_gen_from_template(t) for t in adv_templates[arg1:arg2]]
+    return [gen_func(t) for t in adv_templates[arg1:arg2]]
 
 
-def gen_nearby_broadcast_adv():
+def gen_nearby_broadcast_adv(floss=False):
     """Returns the advertisement for nearby broadcast test use.
 
     Note that the data of ManufacturerData, ServiceData, and ScanResponseData
     are assigned randomly when this function is called.
     """
-    return _gen_from_template(_NEARBY_BROADCAST_ADV_TEMPLATE)
+    broadcast_data_template = _NEARBY_BROADCAST_ADV_TEMPLATE
+    gen_func = _gen_from_template
+    if floss:
+        broadcast_data_template = _NEARBY_BROADCAST_ADV_TEMPLATE_FLOSS
+        gen_func = _gen_from_template_floss
+
+    return gen_func(broadcast_data_template)
 
 
-def gen_nearby_mediums_fast_adv():
+def gen_nearby_mediums_fast_adv(floss=False):
     """Returns the advertisement for nearby mediums fast test use.
 
     Note that the data of ManufacturerData, ServiceData, and ScanResponseData
     are assigned randomly when this function is called.
     """
-    return _gen_from_template(_NEARBY_MEDIUMS_FAST_ADV_TEMPLATE)
+    nearby_data_template = _NEARBY_MEDIUMS_FAST_ADV_TEMPLATE
+    gen_func = _gen_from_template
+    if floss:
+        nearby_data_template = _NEARBY_MEDIUMS_FAST_ADV_TEMPLATE_FLOSS
+        gen_func = _gen_from_template_floss
+
+    return gen_func(nearby_data_template)

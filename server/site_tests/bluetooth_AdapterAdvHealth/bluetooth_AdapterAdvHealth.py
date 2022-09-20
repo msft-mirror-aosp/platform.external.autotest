@@ -40,19 +40,21 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                   skip_common_errors=True)
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
-        self.run_le_advertising_test(self.host,
-                                     advertisements_data.gen_advertisements(),
-                                     'multi_advertising',
-                                     num_iterations=1)
+        self.run_le_advertising_test(
+                self.host,
+                advertisements_data.gen_advertisements(floss=self.floss),
+                'multi_advertising',
+                num_iterations=1)
 
 
     @test_wrapper('Single LE advertising test')
     def adv_single_advertising_test(self):
         """Run all test cases for single advertisements."""
-        self.run_le_advertising_test(self.host,
-                                     advertisements_data.gen_advertisements(),
-                                     'single_advertising',
-                                     num_iterations=1)
+        self.run_le_advertising_test(
+                self.host,
+                advertisements_data.gen_advertisements(floss=self.floss),
+                'single_advertising',
+                num_iterations=1)
 
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
@@ -64,19 +66,21 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                   skip_common_errors=True)
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for advertisements involving suspend resume."""
-        self.run_le_advertising_test(self.host,
-                                     advertisements_data.gen_advertisements(),
-                                     'suspend_resume',
-                                     num_iterations=1)
+        self.run_le_advertising_test(
+                self.host,
+                advertisements_data.gen_advertisements(floss=self.floss),
+                'suspend_resume',
+                num_iterations=1)
 
 
     @test_wrapper('Reboot LE advertising test')
     def adv_reboot_advertising_test(self):
         """Run all test cases for advertisements involving reboot."""
-        self.run_le_advertising_test(self.host,
-                                     advertisements_data.gen_advertisements(),
-                                     'reboot',
-                                     num_iterations=1)
+        self.run_le_advertising_test(
+                self.host,
+                advertisements_data.gen_advertisements(floss=self.floss),
+                'reboot',
+                num_iterations=1)
 
 
     @test_wrapper('Advertising peer test', devices={'BLE_MOUSE':1})
@@ -91,19 +95,21 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     def adv_nearby_test(self):
         """Verify minimal Nearby advertising requirements"""
 
-        self.run_le_advertising_test(self.host,
-                                     advertisements_data.gen_advertisements(),
-                                     'nearby',
-                                     num_iterations=1)
+        self.run_le_advertising_test(
+                self.host,
+                advertisements_data.gen_advertisements(floss=self.floss),
+                'nearby',
+                num_iterations=1)
 
     @test_wrapper('Broadcast advertising test')
     def adv_broadcast_test(self):
         """Verify broadcast advertising capability"""
 
-        self.run_le_advertising_test(self.host,
-                                     advertisements_data.gen_advertisements(),
-                                     'broadcast',
-                                     num_iterations=1)
+        self.run_le_advertising_test(
+                self.host,
+                advertisements_data.gen_advertisements(floss=self.floss),
+                'broadcast',
+                num_iterations=1)
 
     # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend

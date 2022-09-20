@@ -5,7 +5,7 @@
 
 AUTHOR = 'Rajaa Abdallah <rajaa.abdallah@exalt.ps>'
 NAME = 'bluetooth_AVLHCI.hci_ext_aosp_non_bqr_test'
-ATTRIBUTES = 'suite:bluetooth_sa'
+ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_fw'
 PURPOSE = (
 'Tests the Android HCI extension non-BQR features'
 'in the Bluetooth AVL requirements'

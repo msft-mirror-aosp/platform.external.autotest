@@ -37,7 +37,7 @@ def run(machine):
 
     # Deploy latest version of lacros from canary channel
     gs_path = args_dict.get('lacros_gcs_path', '')
-    chrome_sideloader.deploy_lacros (host, channel='canary', gs_path=gs_path)
+    chrome_sideloader.deploy_lacros (host, channel='canary', gs_path=gs_path, lacros_dir=LACROS_DIR)
 
     try:
         expr = chrome_sideloader.get_tast_expr(args_dict)
@@ -52,6 +52,7 @@ def run(machine):
 
     def cleanup():
         chrome_sideloader.cleanup_host(host, LACROS_DIR, None)
+        host.run('restart ui', ignore_status=True)
 
     job.add_post_run_hook(cleanup)
 

@@ -7,12 +7,12 @@ import json
 import logging
 import os
 import random
+import re
 import requests
 import stat
 import string
-import subprocess
-import tempfile
-import zipfile
+
+from autotest_lib.client.common_lib.cros import dev_server
 
 
 # Shell command to force unmount a mount point if it is mounted
@@ -47,19 +47,7 @@ def extract_from_image(host, image_name, dest_dir):
     if not host.path_exists('/var/lib/imageloader/%s' % image_name):
         raise Exception('Image %s not found on host %s' % (image_name, host))
 
-    def gen_random_str(length):
-        """
-        Generate random string
-
-        @param length: Length of the string
-
-        @return random string of specified length
-
-        """
-        return ''.join(
-            [random.choice(string.hexdigits) for _ in range(length)])
-
-    image_mount_point = '/tmp/image_%s' % gen_random_str(8)
+    image_mount_point = '/tmp/image_%s' % _gen_random_str(8)
 
     # Create directories from scratch
     host.run(['rm', '-rf', dest_dir])
@@ -85,6 +73,19 @@ def extract_from_image(host, image_name, dest_dir):
             '--mount_point=%s' % image_mount_point
         ])
         host.run(['rm', '-rf', image_mount_point])
+
+
+def _gen_random_str(length):
+    """
+    Generate random string
+
+    @param length: Length of the string
+
+    @return random string of specified length
+
+    """
+    return ''.join(
+        [random.choice(string.hexdigits) for _ in range(length)])
 
 
 def _stop_chrome_if_necessary(host):
@@ -326,7 +327,7 @@ def _lookup_lacros_path(host, channel):
                  channel, version)
 
     gs_path = _LACROS_PATH_MASK.format(version=version, variant=variant)
-    return gs_path
+    return gs_path, version, variant
 
 
 def _lookup_lacros_latest_version(channel):
@@ -356,7 +357,10 @@ def _lookup_lacros_latest_version(channel):
     return version[0]
 
 
-def deploy_lacros(host, channel=None, gs_path=None):
+def deploy_lacros(host,
+                  channel=None,
+                  gs_path=None,
+                  lacros_dir='/usr/local/lacros-chrome'):
     """
     Deploys Lacros to DUT.
 
@@ -364,60 +368,63 @@ def deploy_lacros(host, channel=None, gs_path=None):
 
     @param channel: The Lacros channel. e.g. 'stable','beta','dev'
     @param gs_path: The GCS path of the Lacros artifacts.
+    @param lacros_dir: The directory for Lacros artifacts.
     """
-    logging.info('deploy_lacros to host: %s channel: %s gs_path: %s',
-                 host, channel, gs_path)
+    if not lacros_dir:
+        raise Exception('Failed to specify Lacros directory.')
 
-    # lookup lacros artifact path based on channel
-    if channel:
-        gs_path = _lookup_lacros_path(host, channel)
+    logging.info('deploy_lacros to host: %s channel: %s gs_path: %s onto %s',
+                 host, channel, gs_path, lacros_dir)
 
-    if not gs_path:
-        raise Exception(
-            'Failed to find lacros path. Please specify either channel or gs_path.')
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        logging.info('Created temporary directory: %s', tmp_dir)
-
-        # download zip to machine
+    if gs_path:
+        # expects gs path format to be gs://{bucket}/{path}/{zipfile}
+        matches = re.match("(gs://(.*?)/(.*))/(.*)", gs_path)
+        if len(matches.groups()) != 4:
+            raise Exception(
+                'Failed to extract required parts from gs_path: %s' % gs_path)
+        archive_url, bucket, image, zip_name = matches.groups()
+        logging.info("DEBUG %s %s %s %s", archive_url, bucket, image, zip_name)
+    elif channel:
+        # lookup lacros artifact path based on channel
+        gs_path, version, variant = _lookup_lacros_path(host, channel)
+        bucket = 'chrome-unsigned'
+        image = 'desktop-5c0tCh/{version}/{variant}'.format(
+            version=version, variant=variant)
+        archive_url = 'gs://{bucket}/{image}'.format(
+            bucket=bucket, image=image)
         zip_name = os.path.basename(gs_path)
-        temp_zip_path = os.path.join(tmp_dir, zip_name)
-        logging.info('Downloading lacros artifact from %s to %s',
-                     gs_path, temp_zip_path)
-        cmd = ['gsutil', 'cp', gs_path, temp_zip_path]
+    else:
+        raise Exception(
+            'Please specify either channel or gs_path to locate Lacros artifacts.')
 
-        returncode, stdout_data, stderr_data = _subprocess(cmd)
-        if returncode != 0:
-            raise Exception('Failed to copy data from %s. stdout: %s stderr: %s' % (
-                gs_path, stdout_data, stderr_data))
+    # Stage Lacros artifact onto Cache Server
+    try:
+        ds = dev_server.ImageServer.resolve(image, host.hostname)
+        ds.stage_artifacts(image=image,
+                           archive_url=archive_url,
+                           files=[zip_name])
+        download_url = ds.get_staged_file_url(
+            zip_name, image) + '?gs_bucket={bucket}'.format(bucket=bucket)
+    except Exception as e:
+        raise Exception('Failed to stage image on Cache Server: %s' % e)
 
-        # unzip the content
-        unzip_dir = os.path.join(tmp_dir, 'out')
-        logging.info('Unzipping contents to %s', unzip_dir)
-        with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
-            zip_ref.extractall(unzip_dir)
+    tmp_dir = '/tmp/lacros_%s' % _gen_random_str(8)
 
-        # use chromite to deploy Lacros to DUT
-        cmd = ['deploy_chrome', '--build-dir=%s' % unzip_dir, '--device=%s' % host.host_port,
-               '--lacros', '--force', '--nostrip']
-        returncode, stdout_data, stderr_data = _subprocess(cmd)
-        if returncode != 0:
-            raise Exception('Failed to deploy lacros onto DUT. stdout: %s stderr: %s' % (
-                stdout_data, stderr_data))
+    # Create directories from scratch
+    host.run(['rm', '-rf', lacros_dir])
+    host.run(['mkdir', '-p', '--mode', '0755', lacros_dir, tmp_dir])
 
+    try:
+        # Download Lacros zip archive from Cache Server.
+        zip_path = os.path.join(tmp_dir, zip_name)
+        host.run(['curl', download_url, '--output', zip_path])
 
-def _subprocess(cmd):
-    """
-    Calls a local process.
+        # unzip file to Lacros directory
+        host.run(['unzip', zip_path, '-d', lacros_dir])
 
-    @param cmd: process command and arguments as a list of strings.
-
-    @return: tuple of (process return code, stdout, stderr)
-    """
-    logging.info('Running cmd: %s', cmd)
-    process = subprocess.Popen(cmd,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    stdout_data, stderr_data = process.communicate()
-
-    return process.returncode, stdout_data, stderr_data
+    except Exception as e:
+        raise Exception(
+            'Error extracting content from %s to ' %
+            (download_url, lacros_dir), e)
+    finally:
+        host.run(['rm', '-rf', tmp_dir])

@@ -89,7 +89,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('HID Report Reboot',
                   devices={'BLE_MOUSE': 1},
-                  flags=['Quick Health'])
+                  flags=['Quick Health'],
+                  supports_floss=True)
     def le_hid_reports_reboot(self):
         """Performs HID report test over reboot with BLE mouse peripheral"""
 

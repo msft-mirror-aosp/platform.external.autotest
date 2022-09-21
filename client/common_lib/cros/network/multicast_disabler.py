@@ -7,7 +7,6 @@ import logging
 import re
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import interface
 
 
@@ -58,8 +57,7 @@ class MulticastDisabler(object):
 
         for iface in ifaces:
             if iface.is_multicast_enabled:
-                raise error.TestError('Multicast is not disabled on %s' %
-                                      iface.name)
+                logging.warning('Multicast is not disabled on %s', iface.name)
             iface.enable_multicast()
 
         self._multicast_disabled_ifaces.clear()

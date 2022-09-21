@@ -591,7 +591,7 @@ class SysStat(object):
         some devices cycle between charge & discharge above a certain
         SoC.  If AC is charging and SoC > 90% we can safely assume that.
         """
-        return self.battery_charging() and (self.percent_current_charge() > 90)
+        return self.on_ac() and (self.percent_current_charge() > 90)
 
 
     def percent_current_charge(self):

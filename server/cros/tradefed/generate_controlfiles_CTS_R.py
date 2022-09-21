@@ -149,15 +149,43 @@ CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
         'CtsBluetoothTestCases',
 ]
 
-CONFIG['VM_MODULES'] = [
-        'CtsAccessibility.*',
-        'CtsAutoFillServiceTestCases.*',
-        'CtsFileSystemTestCases.*',
-        'CtsJniTestCases.*',
-        'CtsPdfTestCases.*',
-        'CtsWindowManager.*',
+# Syntax:
+# - First character is either '+' (include) or '-' (exclude).
+# - Remaining is a regex that matches the CTS module name.
+# Rules are evaluated in list order, and the first match is returned.
+CONFIG['VM_MODULES_RULES'] = [
         # Intentionally add a HW test.
-        'CtsCameraTestCases',
+        # Note this generates a warning as CtsCameraApi25TestCases gets included
+        # as well.
+        '+CtsCameraTestCases',
+
+        # Exception to CtsUi.* below.
+        '+CtsUidIsolation.*',
+
+        # HW-dependent tests to exclude.
+        '-CtsBluetooth.*',
+        '-CtsCamera.*',
+        '-CtsDeqp.*',
+        '-CtsFileSystem.*',
+        '-CtsGpu.*',
+        '-CtsGraphics.*',
+        '-CtsHardware.*',
+        '-CtsMedia.*',
+        '-CtsNNAPI.*',
+        '-CtsNative.*',
+        '-CtsOpenG.*',
+        '-CtsSample.*',
+        '-CtsSecurity.*',
+        '-CtsSensor.*',
+        '-CtsSimpleCpu.*',
+        '-CtsSkQP.*',
+        '-CtsUi.*',
+        '-CtsVideo.*',
+        '-CtsView.*',
+        '-CtsWifi.*',
+
+        # Add everything else.
+        '+.*',
 ]
 
 # The suite is divided based on the run-time hint in the *.config file.

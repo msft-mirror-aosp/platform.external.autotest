@@ -837,9 +837,11 @@ def get_extra_hardware_modules_dict(is_public, abi):
 # TODO(fqj): come up a better way for vm modules generation.
 def is_vm_modules(module):
     """Gets a list of modules for arc-cts-vm."""
-    for vm_module_pattern in CONFIG.get('VM_MODULES', []):
-        if re.match(vm_module_pattern, module):
-            return True
+    for vm_module_pattern in CONFIG.get('VM_MODULES_RULES', []):
+        assert vm_module_pattern[0] in '+-'
+        if re.match(vm_module_pattern[1:], module):
+            return True if vm_module_pattern[0] == '+' else False
+
     return False
 
 

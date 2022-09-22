@@ -6,6 +6,7 @@ AUTHOR = 'chromeos-kernel-wifi@google.com'
 NAME = 'tast.wificell-func-openwrt'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:wifi_matfunc_openwrt'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 
@@ -13,6 +14,9 @@ DOC = '''
 Run the stable Tast tests for basic WiFi functions on suite:wifi_matfunc_openwrt which is a functional clone of wifi_matfunc.
 
 "group:wificell" indicates that the test runs on a wificell fixture.
+sub-attributes:
+  * "wificell_func": the test is used to verify basic WiFi functionality.
+  * "wificell_unstable": the test is unstable or yet to be verified as stable.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for

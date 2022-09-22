@@ -93,6 +93,8 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsVideoTestCases': 1.5,
         'CtsViewTestCases': 2.5,
         'CtsWidgetTestCases': 2.0,
+        'CtsMediaTestCases.arc_perf': 1.5,
+        'CtsVideoTestCases.arc_perf': 2.0,
         _COLLECT: 2.5,
         _PUBLIC_COLLECT: 2.5,
 }

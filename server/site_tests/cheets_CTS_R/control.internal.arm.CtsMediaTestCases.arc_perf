@@ -30,6 +30,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='DEV',
-        timeout=3600)
+        timeout=5400)
 
 parallel_simple(run_TS, machines)

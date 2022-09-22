@@ -89,7 +89,7 @@ class firmware_UpdateFirmwareVersion(FirmwareTest):
         self.faft_client.updater.run_autoupdate('test')
         self.switcher.mode_aware_reboot()
 
-        logging.info("Copy firmware form B to A.")
+        logging.info("Copy firmware from B to A.")
         self.faft_client.updater.run_bootok('test')
         self.check_state((self.checkers.fw_tries_checker, 'B'))
         self.switcher.mode_aware_reboot()

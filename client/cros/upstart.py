@@ -4,6 +4,7 @@
 
 """Provides utility methods for interacting with upstart"""
 
+import logging
 import os
 import re
 
@@ -58,7 +59,7 @@ def get_pid(service_name):
     return int(match.group(1))
 
 
-def restart_job(service_name):
+def restart_job(service_name, timeout=None):
     """
     Restarts an upstart job if it's running.
     If it's not running, start it.
@@ -67,12 +68,13 @@ def restart_job(service_name):
     """
 
     if is_running(service_name):
-        utils.system_output('restart %s' % service_name)
+        logging.debug('%s is already running: restart instead.', service_name)
+        utils.system_output('restart %s' % service_name, timeout=timeout)
     else:
-        utils.system_output('start %s' % service_name)
+        utils.system_output('start %s' % service_name, timeout=timeout)
 
 
-def stop_job(service_name):
+def stop_job(service_name, timeout=None):
     """
     Stops an upstart job.
     Fails if the stop command fails.
@@ -80,4 +82,4 @@ def stop_job(service_name):
     @param service_name: name of service
     """
 
-    utils.system('stop %s' % service_name)
+    utils.system('stop %s' % service_name, timeout=timeout)

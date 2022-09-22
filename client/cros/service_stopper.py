@@ -24,6 +24,7 @@ import logging
 import os
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import upstart
 
 
@@ -76,15 +77,23 @@ class ServiceStopper(object):
                 continue
             if not upstart.is_running(service):
                 continue
-            upstart.stop_job(service)
+            try:
+                upstart.stop_job(service, timeout=30)
+            except error.CmdTimeoutError:
+                continue
             self._services_stopped.append(service)
 
 
     def restore_services(self):
         """Restore services that were stopped."""
+        fail_restored = []
         for service in reversed(self._services_stopped):
-            upstart.restart_job(service)
-        self._services_stopped = []
+            try:
+                upstart.restart_job(service, timeout=30)
+            except error.CmdTimeoutError:
+                fail_restored.append(service)
+                continue
+        self._services_stopped = fail_restored
 
 
     def __enter__(self):

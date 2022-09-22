@@ -21,5 +21,17 @@
   <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.constant.ubolimitlow.sbolimithigh.imglimithigh.noiub.frag.noia#0" />
   <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimitlow.imglimithigh.noiub.comp.noia#0" />
   <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.constant.ubolimitlow.sbolimithigh.imglimithigh.noiub.frag.ialimitlow#0" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.compute_tests#compute_stage" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.compute_tests#compute_stage_delayed_destroy" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.compute_tests#compute_stage_no_cache" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_fragment_stage" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_fragment_stage_delayed_destroy" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_fragment_stage_no_cache" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_geometry_stage_delayed_destroy_fragment_stage_delayed_destroy" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_geometry_stage_fragment_stage" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_geometry_stage_no_cache_fragment_stage_no_cache" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_tessellation_control_stage_delayed_destroy_tessellation_evaluation_stage_delayed_destroy_fragment_stage_delayed_destroy" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_tessellation_control_stage_no_cache_tessellation_evaluation_stage_no_cache_fragment_stage_no_cache" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_tessellation_control_stage_tessellation_evaluation_stage_fragment_stage" />
   <Entry include="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testAppLaunchCount" />
 </SubPlan>

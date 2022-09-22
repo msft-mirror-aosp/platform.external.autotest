@@ -174,7 +174,6 @@ CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
         'CtsMediaStressTestCases.camera',
         'CtsMediaTestCases.arc_perf',
         'CtsMediaTestCases.audio',
-        'CtsMediaTestCases.perf',
         'CtsMediaTestCases.video',
 ]
 
@@ -328,7 +327,6 @@ CONFIG['EXTRA_MODULES'] = {
     },
     'CtsMediaTestCases': {
         'CtsMediaTestCases.audio': R_REGRESSION_AND_QUAL_SUITES,
-        'CtsMediaTestCases.perf': R_REGRESSION_AND_QUAL_SUITES,
         'CtsMediaTestCases.video': R_REGRESSION_AND_QUAL_SUITES,
     },
     'CtsWindowManagerDeviceTestCases': {
@@ -680,10 +678,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsMediaTestCases android.media.cts.SoundPoolOggTest',
                 '--include-filter',
                 'CtsMediaTestCases android.media.cts.VolumeShaperTest',
-        ],
-        'CtsMediaTestCases.perf': [
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest',
         ],
         'CtsMediaTestCases.video': [
                 '--include-filter',

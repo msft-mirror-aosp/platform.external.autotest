@@ -432,13 +432,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 host_info=self.host_info_store.get(),
                 result_dir=self.get_result_dir())
 
-        # TODO(otabek@): remove when b/171414073 closed
-        if self.use_icmp:
-            pingable_before_servo = self.is_up_fast(count=1)
-            if pingable_before_servo:
-                logging.info('DUT is pingable before init Servo.')
-        else:
-            logging.info('Skipping ping to DUT before init Servo.')
         _servo_host, servo_state = servo_host.create_servo_host(
                 dut=self,
                 servo_args=servo_args,

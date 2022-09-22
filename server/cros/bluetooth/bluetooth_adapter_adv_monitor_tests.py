@@ -16,9 +16,8 @@ from autotest_lib.client.common_lib import error
 
 # List of the controllers that does not support Adv Monitor HW offloading.
 ADVMON_UNSUPPORTED_CHIPSETS = [
-        'BCM-43540', 'BCM-43560',
-        'Intel-AC7260', 'Intel-AC7265',
-        'MVL-8797', 'MVL-8887', 'MVL-8897', 'MVL-8997',
+        'Intel-AC7265',
+        'MVL-8897', 'MVL-8997',
         'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
         'Realtek-RTL8852C-USB', 'Realtek-RTL8852A-USB',
         'QCA-6174A-3-UART', 'QCA-6174A-5-USB',

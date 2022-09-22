@@ -322,10 +322,7 @@ class BluetoothBaseFacadeLocal(object):
                     (('0x8086', '0x31dc'), 'USB'),  # JfP2
                     (('0x8086', '0x9df0'), 'USB')
             ],
-            'Intel-AC7260': [
-                    (('0x8086', '0x08b1'), 'USB'),  # WP2
-                    (('0x8086', '0x08b2'), 'USB')
-            ],
+
             'Intel-AC7265': [
                     (('0x8086', '0x095a'), 'USB'),  # StP2
                     (('0x8086', '0x095b'), 'USB')
@@ -339,6 +336,7 @@ class BluetoothBaseFacadeLocal(object):
 
             # The following doesn't expose vid:pid
             # 'WCN3991-UART'
+            # 'WCN6750--UART'
     }
 
     def __init__(self):

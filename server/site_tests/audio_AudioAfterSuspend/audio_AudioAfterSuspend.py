@@ -81,6 +81,7 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
         """
 
         # Suspend
+        start_time = time.time()
         boot_id = self.host.get_boot_id()
         thread = threading.Thread(target=self.action_suspend)
         thread.start()
@@ -101,6 +102,8 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
             self.errors.append("%s - %s" % (test_case, str(ex)))
             raise error.TestError("DUT failed to resume after suspend")
 
+        if time.time() - start_time < self.SUSPEND_SECONDS:
+            raise error.TestError("DUT failed to suspend for expected duration")
 
     def check_correct_audio_node_selected(self):
         """Checks the node selected by Cras is correct."""

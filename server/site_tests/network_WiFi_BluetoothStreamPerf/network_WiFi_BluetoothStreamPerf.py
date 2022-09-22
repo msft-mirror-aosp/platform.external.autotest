@@ -169,25 +169,29 @@ class network_WiFi_BluetoothStreamPerf(
             session.MEASUREMENT_MAX_SAMPLES = 6.
 
             self.base_through = 0
-            self.test_one(manager, session, config, ap_config_tag,
-                            'BT_disconnected')
+            self.test_one(
+                    manager, session, config, ap_config_tag,
+                    BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED)
 
             self.test_connection_by_device(device)
-            self.test_one(manager, session, config, ap_config_tag,
-                            'BT_connected_but_not_streaming')
+            self.test_one(
+                    manager, session, config, ap_config_tag,
+                    BluetoothAdapterAudioTests.CONNECTION_STATE_CONNECTED)
 
             # Start playing audio in background
             audio_thread = threading.Thread(target=self.do_audio_test,
                                             args=(device, ))
             audio_thread.start()
-            self.test_one(manager, session, config, ap_config_tag,
-                            'BT_streaming_audiofile')
+            self.test_one(
+                    manager, session, config, ap_config_tag,
+                    BluetoothAdapterAudioTests.CONNECTION_STATE_STREAMING)
 
             # Wait for audio thread to complete
             audio_thread.join()
             self.test_disconnection_by_adapter(device.address)
-            self.test_one(manager, session, config, ap_config_tag,
-                            'BT_disconnected_again')
+            self.test_one(
+                    manager, session, config, ap_config_tag,
+                    BluetoothAdapterAudioTests.CONNECTION_STATE_DISCONNECTED_AGAIN)
 
         if governor:
             self.restore_scaling_governors()

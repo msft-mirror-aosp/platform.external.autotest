@@ -12,7 +12,8 @@ from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server.cros.network import perf_test_manager as perf_manager
 from autotest_lib.server.cros.network import wifi_cell_perf_test_base
 from autotest_lib.server.cros.bluetooth import bluetooth_device
-
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import \
+        BluetoothAdapterAudioTests
 
 class network_WiFi_BluetoothScanPerf(
         wifi_cell_perf_test_base.WiFiCellPerfTestBase):
@@ -119,18 +120,21 @@ class network_WiFi_BluetoothScanPerf(
                 session = manager.get_session(test_type, self.context.client,
                                               self.context.router)
 
-                self.test_one(manager, session, config, ap_config_tag,
-                              'BT_quiet')
+                self.test_one(
+                        manager, session, config, ap_config_tag,
+                        BluetoothAdapterAudioTests.CONNECTION_STATE_QUIET)
                 if not bt_device.start_discovery()[0]:
                     raise error.TestFail('Could not start discovery on DUT')
                 try:
-                    self.test_one(manager, session, config, ap_config_tag,
-                                  'BT_scanning')
+                    self.test_one(
+                            manager, session, config, ap_config_tag,
+                            BluetoothAdapterAudioTests.CONNECTION_STATE_SCANNING)
                 finally:
                     if not bt_device.stop_discovery()[0]:
                         logging.warning('Failed to stop discovery on DUT')
-                self.test_one(manager, session, config, ap_config_tag,
-                              'BT_quiet_again')
+                self.test_one(
+                        manager, session, config, ap_config_tag,
+                        BluetoothAdapterAudioTests.CONNECTION_STATE_QUIET_AGAIN)
 
             # Clean up router and client state for the next run.
             self.context.client.shill.disconnect(self.context.router.get_ssid())

@@ -50,6 +50,15 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     CRAS_HFP_BLUETOOTH_INPUT_NODE_TYPE = {HFP_WBS: 'BLUETOOTH',
                                           HFP_NBS: 'BLUETOOTH_NB_MIC'}
 
+    # Human readable strings describing the current connection state
+    CONNECTION_STATE_DISCONNECTED = 'BT_disconnected'
+    CONNECTION_STATE_CONNECTED = 'BT_connected_but_not_streaming'
+    CONNECTION_STATE_STREAMING =  'BT_streaming_audiofile'
+    CONNECTION_STATE_DISCONNECTED_AGAIN = 'BT_disconnected_again'
+    CONNECTION_STATE_QUIET = 'BT_quiet'
+    CONNECTION_STATE_SCANNING = 'BT_scanning'
+    CONNECTION_STATE_QUIET_AGAIN = 'BT_quiet_again'
+
     # The real IP replacent when used in ssh tunneling environment
     real_ip = None
 

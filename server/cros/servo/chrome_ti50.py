@@ -142,3 +142,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         if m is not None:
             return float(m.group(1))
         raise error.TestError('Unexpected gettime output: %s' % rv)
+
+    def get_serial(self):
+        """Ti50's serial is lowercase."""
+        return super(ChromeTi50, self).get_serial().lower()

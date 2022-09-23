@@ -100,9 +100,11 @@ class IperfResult(object):
         if len(samples) == 0:
             return None
         duration_samples = [float(sample.duration) for sample in samples]
+        duration_samples = IperfResult._remove_outliers(duration_samples)
         duration_mean = numpy.mean(duration_samples)
 
         throughput_samples = [float(sample.throughput) for sample in samples]
+        throughput_samples = IperfResult._remove_outliers(throughput_samples)
         throughput_mean = numpy.mean(throughput_samples)
         throughput_dev = numpy.std(throughput_samples)
 
@@ -116,12 +118,34 @@ class IperfResult(object):
             percent_loss_samples = [
                     float(sample.percent_loss) for sample in samples
             ]
+            percent_loss_samples = IperfResult._remove_outliers(
+                percent_loss_samples)
             percent_loss_mean = numpy.mean(percent_loss_samples)
 
         return IperfResult(duration_mean,
                            throughput_mean,
                            percent_loss_mean,
                            throughput_dev=throughput_dev)
+
+    @staticmethod
+    def _remove_outliers(values):
+        """Remove outliers from the list.
+
+        This method takes the first and the third quartile and calculates the
+        interquartile range (IQR). All values outside <Q1,Q3> range extended by
+        IQR are not inclued in the returned list.
+
+        @param values list of values for analysis.
+        @return list of values without outliers.
+        """
+        array = numpy.array(values)
+        Q1, Q3 = numpy.percentile(array, [25 ,75])
+
+        IQR = Q3 - Q1
+        qset = (Q1 - IQR, Q3 + IQR)
+
+        result = array[numpy.where((array >= qset[0]) & (array <= qset[1]))]
+        return result.tolist()
 
     def throughput_cv_less_than_maximum(self, max_cv):
         """Check that the throughput from this result is "accurate" enough.

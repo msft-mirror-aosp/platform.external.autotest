@@ -5,8 +5,8 @@
 
 import collections
 import logging
-import math
 import numbers
+import numpy
 import re
 import time
 import os.path
@@ -121,14 +121,31 @@ class NetperfResult(object):
             return (None, None)
 
         values = [getattr(x, field_name) for x in samples]
-        N = len(samples)
-        mean = math.fsum(values) / N
-        deviation = None
-        if N > 1:
-            differences = [math.pow(mean - x, 2) for x in values]
-            deviation = math.sqrt(math.fsum(differences) / (N - 1))
+
+        values = NetperfResult._remove_outliers(values)
+        mean = numpy.mean(values)
+        deviation = numpy.std(values)
         return mean, deviation
 
+    @staticmethod
+    def _remove_outliers(values):
+        """Remove outliers from the list.
+
+        This method takes the first and the third quartile and calculates the
+        interquartile range (IQR). All values outside <Q1,Q3> range extended by
+        IQR are not inclued in the returned list.
+
+        @param values list of values for analysis.
+        @return list of values without outliers.
+        """
+        array = numpy.array(values)
+        Q1, Q3 = numpy.percentile(array, [25 ,75])
+
+        IQR = Q3 - Q1
+        qset = (Q1 - IQR, Q3 + IQR)
+
+        result = array[numpy.where((array >= qset[0]) & (array <= qset[1]))]
+        return result.tolist()
 
     @staticmethod
     def from_samples(samples):

@@ -4875,6 +4875,10 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         return self.adapter_client.set_property('Discoverable', discoverable,
                                                 duration)
 
+    def get_discoverable_timeout(self):
+        """Gets discoverable_timeout of the adapter."""
+        return self.adapter_client.get_discoverable_timeout()
+
     def get_supported_capabilities(self):
         """" Get supported capabilities of the adapter."""
         # A temporary solution for floss to check if WBS is supported.

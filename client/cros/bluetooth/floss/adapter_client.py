@@ -544,6 +544,10 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         return {p: self.get_property(p) for p in
                 self.properties.get_property_names()}
 
+    def get_discoverable_timeout(self):
+        """Gets the adapter's discoverable timeout."""
+        return self.proxy().GetDiscoverableTimeout()
+
     @glib_call(None)
     def get_remote_property(self, address, prop_name):
         """Gets remote device property by name."""

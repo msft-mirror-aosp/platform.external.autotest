@@ -1945,10 +1945,86 @@ class BluetoothAdapterTests(test.test):
         self.results = {'is_discoverable': is_discoverable}
         return all(self.results.values())
 
+    def _test_poll_for_timeout_property(self, timeout, property_name,
+                                        check_property, wait_time_secs,
+                                        min_delta_secs):
+        """Verifies the property is reset after timeout.
 
-    def _test_timeout_property(self, set_property, check_property, set_timeout,
-                              get_timeout, property_name,
-                              timeout_values = [0, 60, 180]):
+        The function checks the property value periodically every
+        wait_time_secs. The value should keep true before timeout
+        and become false afterwards.
+
+        @param timeout: number of seconds to wait before property set to False.
+        @param property_name: the property name such as Discoverable or
+                              Pairable.
+        @param check_property: a function that returns the property value.
+        @param wait_time_secs: the period of running property check.
+        @param min_delta_secs: delta time to avoid spurious failures.
+
+        @returns: True if the condition is met, False otherwise.
+        """
+        start_time = time.time()
+
+        while True:
+            time.sleep(wait_time_secs)
+            cur_time = time.time()
+            property_set = check_property()
+            time_elapsed = cur_time - start_time
+
+            # Ignore check_property results made near the timeout
+            # to avoid spurious failures.
+            if abs(int(timeout - time_elapsed)) < min_delta_secs:
+                continue
+
+            # Timeout of zero seconds mean that the adapter never times out
+            # Check for 30 seconds and then exit the test.
+            if timeout == 0:
+                if not property_set:
+                    logging.error(
+                            'Adapter is not %s after %.2f '
+                            'secs with a timeout of zero ', property_name,
+                            time_elapsed)
+                    return False
+                elif time_elapsed > 30:
+                    logging.debug(
+                            'Adapter %s after %.2f seconds '
+                            'with timeout of zero as expected', property_name,
+                            time_elapsed)
+                    return True
+                continue
+
+            #
+            # Check if property is true till timeout ends and
+            # false afterwards
+            #
+            if time_elapsed < timeout:
+                if not property_set:
+                    logging.error(
+                            'Adapter is not %s after %.2f '
+                            'secs before timeout of %.2f', property_name,
+                            time_elapsed, timeout)
+                    return False
+            else:
+                if property_set:
+                    logging.error(
+                            'Adapter is still %s after '
+                            '%.2f secs with timeout of %.2f', property_name,
+                            time_elapsed, timeout)
+                    return False
+                else:
+                    logging.debug(
+                            'Adapter not %s after %.2f '
+                            'secs with timeout of %.2f as expected',
+                            property_name, time_elapsed, timeout)
+                    return True
+
+    def _test_timeout_property(self,
+                               set_property,
+                               check_property,
+                               set_timeout,
+                               get_timeout,
+                               property_name,
+                               timeout_values=[0, 60, 180]):
         """Common method to test (Discoverable/Pairable)Timeout .
 
         This is used to test
@@ -1967,18 +2043,8 @@ class BluetoothAdapterTests(test.test):
            Note : Value of 0 mean it never timeouts, so the test will
                  end after 30 seconds.
         """
-        def check_timeout(timeout):
-            """Check for timeout value in loop while recording failures."""
-            actual_timeout = get_timeout()
-            if timeout != actual_timeout:
-                logging.debug('%s timeout value read %s does not '
-                              'match value set %s, yet', property_name,
-                              actual_timeout, timeout)
-                return False
-            else:
-                return True
 
-        def _test_timeout_property(timeout):
+        def do_test(timeout):
             # minium time after timeout before checking property
             MIN_DELTA_SECS = 3
             # Time between checking  property
@@ -1986,93 +2052,44 @@ class BluetoothAdapterTests(test.test):
 
             # Set and read back the timeout value
             if not set_timeout(timeout):
-                logging.error('Setting the %s timeout failed',property_name)
+                logging.error('Setting the %s timeout failed', property_name)
                 return False
 
-
-            if not self._wait_for_condition(lambda : check_timeout(timeout),
-                                            'check_'+property_name):
+            if not self._wait_for_condition(lambda: get_timeout() == timeout,
+                                            'check_' + property_name):
                 logging.error('checking %s_timeout value timed out',
                               property_name)
                 return False
-
-            #
-            # Check that the timeout works
-            # Check property is true until timeout
-            # and then it is not
 
             property_set = set_property(True)
             property_is_true = self._wait_for_condition(check_property,
                                                         method_name())
 
-            self.results = { 'set_%s' % property_name : property_set,
-                             'is_%s' % property_name: property_is_true}
-            logging.debug(self.results)
+            self.results['set_%s_%.2fs' %
+                         (property_name, timeout)] = property_set
+            self.results['is_%s_%.2fs' %
+                         (property_name, timeout)] = property_is_true
 
             if not all(self.results.values()):
-                logging.error('Setting %s failed',property_name)
+                logging.error('Setting %s failed', property_name)
                 return False
 
-            start_time = time.time()
-            while True:
-                time.sleep(WAIT_TIME_SECS)
-                cur_time = time.time()
-                property_set = check_property()
-                time_elapsed = cur_time - start_time
-
-                # Ignore check_property results made near the timeout
-                # to avoid spurious failures.
-                if abs(int(timeout - time_elapsed)) < MIN_DELTA_SECS:
-                    continue
-
-                # Timeout of zero seconds mean that the adapter never times out
-                # Check for 30 seconds and then exit the test.
-                if timeout == 0:
-                    if not property_set:
-                        logging.error('Adapter is not %s after %.2f '
-                                      'secs with a timeout of zero ',
-                                      property_name, time_elapsed)
-                        return False
-                    elif time_elapsed > 30:
-                        logging.debug('Adapter %s after %.2f seconds '
-                                      'with timeout of zero as expected' ,
-                                      property_name, time_elapsed)
-                        return True
-                    continue
-
-                #
-                # Check if property is true till timeout ends and
-                # false afterwards
-                #
-                if time_elapsed < timeout:
-                    if not property_set:
-                        logging.error('Adapter is not %s after %.2f '
-                                      'secs before timeout of %.2f',
-                                      property_name, time_elapsed, timeout)
-                        return False
-                else:
-                    if property_set:
-                        logging.error('Adapter is still %s after '
-                                      ' %.2f secs with timeout of %.2f',
-                                      property_name, time_elapsed, timeout)
-                        return False
-                    else:
-                        logging.debug('Adapter not %s after %.2f '
-                                      'secs with timeout of %.2f as expected ',
-                                      property_name, time_elapsed, timeout)
-                        return True
+            return self._test_poll_for_timeout_property(
+                    timeout, property_name, check_property, WAIT_TIME_SECS,
+                    MIN_DELTA_SECS)
 
         default_value = check_property()
         default_timeout = get_timeout()
 
+        self.results = {}
         result = []
         try:
             for timeout in timeout_values:
-                result.append(_test_timeout_property(timeout))
+                result.append(do_test(timeout))
             logging.debug("Test returning %s", all(result))
             return all(result)
         except:
-            logging.error("exception in test_%s_timeout",property_name)
+            logging.error("exception in test_%s_timeout", property_name)
             raise
         finally:
             # Set the property back to default value permanently before
@@ -2082,17 +2099,91 @@ class BluetoothAdapterTests(test.test):
             # Set the timeout back to default value before exiting the test
             set_timeout(default_timeout)
 
+    def _test_discoverable_timeout(self, timeout_values=[0, 60, 180]):
+        """Verifies the timeout mechanism of Discoverable property in Floss.
+
+        The test performs the following
+        - Set Discoverable and DiscoverableTimeout
+        - Read DiscoverableTimeout and make sure values match
+        - In a loop check if Discoverable is active
+        - Test fails Discoverable is false before timeout
+        - Test fails Discoverable is True after timeout
+
+        Repeat the test for different values for timeout
+
+        Note: Value of 0 means it never timeouts, so the test will end after 30
+              seconds.
+        """
+
+        def do_test(timeout):
+            # minium time after timeout before checking property
+            MIN_DELTA_SECS = 3
+            # Time between checking  property
+            WAIT_TIME_SECS = 2
+
+            # Set and read back the timeout value
+            property_set = self.bluetooth_facade.set_discoverable(
+                    True, timeout)
+
+            if not property_set:
+                logging.error('Setting discoverable timeout failed')
+                return False
+
+            get_timeout = self.bluetooth_facade.get_discoverable_timeout
+            if not self._wait_for_condition(lambda: get_timeout() == timeout,
+                                            'check_discoverable'):
+                logging.error('checking discoverable_timeout value timed out')
+                return False
+
+            property_is_true = self._wait_for_condition(
+                    self.bluetooth_facade.is_discoverable, method_name())
+
+            self.results['set_discoverable_%.2fs' % timeout] = property_set
+            self.results['is_discoverable_%.2fs' % timeout] = property_is_true
+
+            if not all(self.results.values()):
+                logging.error('Setting discoverable failed')
+                return False
+
+            return self._test_poll_for_timeout_property(
+                    timeout, 'discoverable',
+                    self.bluetooth_facade.is_discoverable, WAIT_TIME_SECS,
+                    MIN_DELTA_SECS)
+
+        default_value = self.bluetooth_facade.is_discoverable()
+        default_timeout = self.bluetooth_facade.get_discoverable_timeout()
+
+        self.results = {}
+        result = []
+        try:
+            for timeout in timeout_values:
+                result.append(do_test(timeout))
+
+            logging.debug("Test returning %s", all(result))
+            return all(result)
+        except:
+            logging.error("exception in test_discoverable_timeout")
+            raise
+        finally:
+            # Set the property and timeout back to default value before
+            # exiting the test
+            self.bluetooth_facade.set_discoverable(default_value,
+                                                   default_timeout)
 
     @test_retry_and_log
-    def test_discoverable_timeout(self, timeout_values = [0, 60, 180]):
+    def test_discoverable_timeout(self, timeout_values=[0, 60, 180]):
         """Test adapter dbus property DiscoverableTimeout."""
+        if self.bluetooth_facade.floss:
+            return self._test_discoverable_timeout(
+                    timeout_values=timeout_values)
+
         return self._test_timeout_property(
-            set_property = self.bluetooth_facade.set_discoverable,
-            check_property = self.bluetooth_facade.is_discoverable,
-            set_timeout = self.bluetooth_facade.set_discoverable_timeout,
-            get_timeout = self.bluetooth_facade.get_discoverable_timeout,
-            property_name = 'discoverable',
-            timeout_values = timeout_values)
+                set_property=self.bluetooth_facade.set_discoverable,
+                check_property=self.bluetooth_facade.is_discoverable,
+                set_timeout=self.bluetooth_facade.set_discoverable_timeout,
+                get_timeout=self.bluetooth_facade.get_discoverable_timeout,
+                property_name='discoverable',
+                timeout_values=timeout_values)
 
     @test_retry_and_log
     def test_pairable_timeout(self, timeout_values = [0, 60, 180]):
@@ -2104,7 +2195,6 @@ class BluetoothAdapterTests(test.test):
             get_timeout = self.bluetooth_facade.get_pairable_timeout,
             property_name = 'pairable',
             timeout_values = timeout_values)
-
 
     @test_retry_and_log
     def test_nondiscoverable(self):

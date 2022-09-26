@@ -428,6 +428,7 @@ suite:intel-co-validation-bronze
 suite:intel-co-validation-gold
 suite:intel-co-validation-quick
 suite:intel-co-validation-silver
+suite:intel-gating
 suite:jailed_build
 suite:kernel_daily_benchmarks
 suite:kernel_daily_regression

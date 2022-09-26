@@ -1,0 +1,65 @@
+# Copyright 2022 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server.site_tests.tast import tast
+import autotest_lib.server.cros.bluetooth.bluetooth_control_file_utils as bt_control_utils
+
+AUTHOR = 'ChromiumOS team'
+NAME = 'tast.bluetooth.longrun'
+TIME = 'LONG'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:bluetooth_longrun'
+CRITERIA = 'Bluetooth peer should be present'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+DOC = '''
+Run the stable Tast tests part of the the bluetooth_longrun suite.
+
+Tast tests for this suite are identified by the 'bluetooth_longrun' attribute.
+
+This suite consists of Bluetooth tests which runs large amount of time
+(>5 minutes). This suite does not contain stress tests, performance tests or
+MTBF tests.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+
+Tast is an integration-testing framework analogous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+
+See http://go/tast-failures for information about investigating failures.
+
+This runs all non-flaky bluetooth tast tests that do not require btpeers as well
+as tests that require btpeers up to the amount that this testbed provides. Tests
+that require more btpeers than this testbed provides are not run.
+
+If running autotest locally, you must provide the locally tunneled btpeer hosts
+to tast with its "btpeers" fixture variable. You can pass this variable to tast
+using the "--args" test_that parameter along with the "working_bluetooth_btpeer"
+label swarming usually populates like so:
+test_that --host_labels "working_bluetooth_btpeer:4" --args "tast.btpeers=<btpeer1_host>,<btpeer2_host>,<btpeer3_host>,<btpeer4_host>" <dut_host> <test_name>
+'''
+
+command_args, varslist = tast.split_arguments(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    working_bluetooth_btpeers = bt_control_utils.get_working_bluetooth_btpeer(host)
+    btpeer_count_attribute_expression = bt_control_utils.build_tast_btpeer_count_attribute_test_expression(working_bluetooth_btpeers)
+    tast_test_expr = '("group:bluetooth" && !bluetooth_flaky && bluetooth_longrun && %s)' % btpeer_count_attribute_expression
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=[tast_test_expr],
+                 ignore_test_failures=False,
+                 max_run_sec=10800,
+                 command_args=command_args,
+                 varslist=varslist)
+
+parallel_simple(run, machines)

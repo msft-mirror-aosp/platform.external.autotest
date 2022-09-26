@@ -49,6 +49,7 @@ suite:bluestreak-pre-cq
 suite:bluetooth
 suite:bluetooth_avl
 suite:bluetooth_core
+suite:bluetooth_core_cq
 suite:bluetooth_cuj
 suite:bluetooth_dep_feature
 suite:bluetooth_e2e

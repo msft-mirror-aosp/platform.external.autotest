@@ -1,0 +1,58 @@
+# Copyright 2022 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server.site_tests.tast import tast
+import autotest_lib.server.cros.bluetooth.bluetooth_control_file_utils as bt_control_utils
+
+AUTHOR = 'ChromiumOS team'
+NAME = 'tast.bluetooth.sa'
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:bluetooth_sa'
+DEPENDENCIES = 'bluetooth'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+DOC = '''
+Run the stable Tast tests part of the the bluetooth_sa suite, also known as
+the bluetooth_standalone suite. This suite does not require btpeers.
+
+Tast tests for this suite are identified by the 'bluetooth_sa' attribute.
+
+This suite runs the complete set of all stable Bluetooth functional tests for
+hardware and software which doesn't require a peer device.
+
+All stable bluetooth tests will be added to bluetooth/bluetooth_sa suites.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+
+Tast is an integration-testing framework analogous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+
+See http://go/tast-failures for information about investigating failures.
+
+This runs all non-flaky bluetooth tast tests that do not require a btpeer. Tests
+that require one or more btpeers are not run.
+'''
+
+command_args, varslist = tast.split_arguments(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    btpeer_count_attribute_expression = bt_control_utils.build_tast_btpeer_count_attribute_test_expression(0)
+    tast_test_expr = '("group:bluetooth" && !bluetooth_flaky && bluetooth_sa && %s)' % btpeer_count_attribute_expression
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=[tast_test_expr],
+                 ignore_test_failures=False,
+                 max_run_sec=10800,
+                 command_args=command_args,
+                 varslist=varslist)
+
+parallel_simple(run, machines)

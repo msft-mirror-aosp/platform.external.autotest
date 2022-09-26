@@ -19,7 +19,7 @@ state (work in progress, feel free to add some more).
 """
 
 METADATA = {
-    'requirements': ['pwr-stressSusp-0001-v01']
+    'requirements': ['pwr-susp-0001-v01']
 }
 
 job.run_test('power_SuspendStress', duration=None, suspend_iterations=2500,

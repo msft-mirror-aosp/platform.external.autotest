@@ -18,7 +18,7 @@ This is the PVS sequence to validate thermal stability under thermal load
 '''
 
 METADATA = {
-    'requirements': ['pwr-therm-0002-v01']
+    'requirements': ['pwr-therm-0003-v01']
 }
 
 import datetime

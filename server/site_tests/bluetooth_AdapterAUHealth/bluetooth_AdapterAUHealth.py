@@ -111,7 +111,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self._au_a2dp_test(A2DP_RATE_44100)
 
     @test_wrapper('A2DP playback and connect test',
-                  devices={'BLUETOOTH_AUDIO': 1})
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_a2dp_playback_and_connect_test(self):
         """Connect then disconnect an A2DP device while playing stream."""
         if not has_internal_speaker(self.host):
@@ -272,7 +273,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                HFP_WBS)
 
     @test_wrapper('HFP NBS VISQOL test with dut as sink',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def au_hfp_nbs_dut_as_sink_visqol_test(self):
         """HFP NBS VISQOL test with audio streaming from peer to dut"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -281,7 +283,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('HFP NBS VISQOL test with dut as source',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def au_hfp_nbs_dut_as_source_visqol_test(self):
         """HFP NBS VISQOL test with audio streaming from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -290,7 +293,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('HFP NBS back2back test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1})
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_hfp_nbs_dut_as_source_back2back_test(self):
         """HFP NBS back2back test from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -309,7 +313,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Switch A2DP to HFP NBS test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1})
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_a2dp_to_hfp_nbs_dut_as_source_test(self):
         """Switch A2DP to HFP NBS test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -328,7 +333,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Switch HFP NBS to A2DP test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1})
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_hfp_nbs_to_a2dp_dut_as_source_test(self):
         """Switch HFP NBS to A2DP test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]

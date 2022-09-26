@@ -10,7 +10,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, wificell"
-ATTRIBUTES = "suite:nbr"
+ATTRIBUTES = "suite:nbr-wifi"
 PY_VERSION = 3
 
 DOC = """

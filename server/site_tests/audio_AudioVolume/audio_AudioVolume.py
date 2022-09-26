@@ -28,15 +28,15 @@ class audio_AudioVolume(audio_test.AudioTest):
     DELAY_AFTER_BINDING = 0.5
     DELAY_BEFORE_PLAYBACK = 0.5
 
-    def run_once(self, source_id, skipped_board_with_bugs={}):
+    def run_once(self, source_id, skipped_model_with_bugs={}):
         """Running audio volume test.
 
         @param source_id: An ID defined in chameleon_audio_ids for source.
         """
-        board = self.host.get_board().split(':')[1]
-        if board in skipped_board_with_bugs:
+        model = self.host.get_model_from_cros_config()
+        if model in skipped_model_with_bugs:
             raise error.TestNAError(
-                    'Board pending fix for %s!',skipped_board_with_bugs[board])
+                    'model pending fix for %s!' % skipped_model_with_bugs[model])
 
         def get_recorder_id(source_id):
             """ Get corresponding recorder_id for the source_id."""

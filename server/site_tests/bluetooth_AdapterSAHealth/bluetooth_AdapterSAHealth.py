@@ -179,7 +179,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
 
     # TODO(b/145302986): Silencing known firmware issue with AC7260 (WP2)
     @test_wrapper('Adapter DiscoverableTimeout test',
-                  skip_chipsets=['Intel-AC7260'])
+                  skip_chipsets=['Intel-AC7260'], supports_floss=True)
     def sa_adapter_discoverable_timeout_test(self):
         """Verify that DiscoverableTimout Property works."""
         result = self.test_discoverable_timeout(timeout_values=[0, 7, 15])
@@ -192,7 +192,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         logging.info("Result is %s", result)
 
 
-    @test_wrapper('Default state test')
+    @test_wrapper('Default state test', supports_floss=True)
     def sa_default_state_test(self):
         """Verify that the Bluetooth adapter has correct state."""
         self.default_state_test()

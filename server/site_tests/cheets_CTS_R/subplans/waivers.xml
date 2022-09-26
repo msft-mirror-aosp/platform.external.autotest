@@ -8,6 +8,7 @@
   -->
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testVerifyMandatoryOutputCombinationTables[1]"/>
   <Entry include="CtsCameraTestCases[instant] android.hardware.camera2.cts.RobustnessTest#testVerifyMandatoryOutputCombinationTables[1]"/>
+  <Entry include="CtsDeqpTestCases dEQP-VK.api.driver_properties#driver_id_match" />
   <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimithigh.imglimithigh.noiub.comp.noia#0" />
   <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimithigh.imglimithigh.noiub.vert.noia#0" />
   <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.constant.ubolimitlow.sbolimithigh.imglimithigh.noiub.uab.frag.noia#0" />

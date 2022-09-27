@@ -186,18 +186,20 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         is_power_on = self._wait_till_power_on()
         is_not_discovering = self._wait_till_discovery_stops()
 
-        start_discovery, error =  self.bluetooth_facade.start_discovery()
+        start_discovery, error = self.bluetooth_facade.start_discovery()
 
-        is_discovering = self._wait_till_discovery_starts(start_discovery=False)
-        inquiry_state = self._wait_till_hci_state_inquiry()
+        is_discovering = self._wait_till_discovery_starts(
+            start_discovery=False)
 
-        self.results = {'reset' : reset,
-                        'is_power_on' : is_power_on,
+        self.results = {'reset': reset,
+                        'is_power_on': is_power_on,
                         'is_not_discovering': is_not_discovering,
-                        'start_discovery' : start_discovery,
-                        'is_discovering': is_discovering,
-                        'inquiry_state' : inquiry_state
+                        'start_discovery': start_discovery,
+                        'is_discovering': is_discovering
                         }
+
+        if not self.floss:
+            self.results['inquiry_state'] = self._wait_till_hci_state_inquiry()
         return all(self.results.values())
 
     @_test_retry_and_log(False)
@@ -210,13 +212,12 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         reset = self._reset_state()
         is_discovering = self._wait_till_discovery_starts()
 
-        start_discovery, error =  self.bluetooth_facade.start_discovery()
+        start_discovery, error = self.bluetooth_facade.start_discovery()
 
-
-        self.results = {'reset' : reset,
-                        'is_discovering' : is_discovering,
-                        'start_discovery_failed' : not start_discovery,
-                        'error_matches' : self._compare_error(error,
+        self.results = {'reset': reset,
+                        'is_discovering': is_discovering,
+                        'start_discovery_failed': not start_discovery,
+                        'error_matches': self._compare_error(error,
                                                     DBUS_ERRORS['InProgress'])
         }
         return all(self.results.values())
@@ -231,15 +232,17 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         reset = self._reset_state()
         is_power_off = self._wait_till_power_off()
 
-        start_discovery, error =  self.bluetooth_facade.start_discovery()
+        start_discovery, error = self.bluetooth_facade.start_discovery()
 
         is_power_on = self._wait_till_power_on()
-        self.results = {'reset' : reset,
-                        'power_off' : is_power_off,
-                        'start_discovery_failed' : not start_discovery,
-                        'error_matches' : self._compare_error(error,
-                                                    DBUS_ERRORS['NotReady']),
-                        'power_on' : is_power_on}
+        self.results = {'reset': reset,
+                        'power_off': is_power_off,
+                        'start_discovery_failed': not start_discovery,
+                        'power_on': is_power_on}
+
+        if not self.floss:
+            self.results['error_matches'] = self._compare_error(
+                error, DBUS_ERRORS['NotReady'])
         return all(self.results.values())
 
 
@@ -281,11 +284,11 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         is_not_discovering = self._wait_till_discovery_stops(
             stop_discovery=False)
         self._wait_till_hci_state_no_inquiry_holds()
-        self.results = {'reset' : reset,
-                        'is_power_on' : is_power_on,
+        self.results = {'reset': reset,
+                        'is_power_on': is_power_on,
                         'is_discovering': is_discovering,
-                        'stop_discovery' : stop_discovery,
-                        'is_not_discovering' : is_not_discovering}
+                        'stop_discovery': stop_discovery,
+                        'is_not_discovering': is_not_discovering}
         return all(self.results.values())
 
     @_test_retry_and_log(False)
@@ -298,18 +301,21 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         reset = self._reset_state()
         is_not_discovering = self._wait_till_discovery_stops()
 
-        stop_discovery, error =  self.bluetooth_facade.stop_discovery()
+        stop_discovery, error = self.bluetooth_facade.stop_discovery()
 
         still_not_discovering = self._wait_till_discovery_stops(
             stop_discovery=False)
 
         self.results = {
-            'reset' : reset,
-            'is_not_discovering' : is_not_discovering,
-            'stop_discovery_failed' : not stop_discovery,
-            'error_matches' : self._compare_error(error,
-                                DBUS_ERRORS['Failed']['discovery_start']),
-            'still_not_discovering': still_not_discovering}
+                'reset': reset,
+                'is_not_discovering': is_not_discovering,
+                'stop_discovery_failed': not stop_discovery,
+                'still_not_discovering': still_not_discovering
+        }
+
+        if not self.floss:
+            self.results['error_matches'] = self._compare_error(
+                    error, DBUS_ERRORS['Failed']['discovery_start'])
         return all(self.results.values())
 
     @_test_retry_and_log(False)
@@ -322,15 +328,17 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         reset = self._reset_state()
         is_power_off = self._wait_till_power_off()
 
-        stop_discovery, error =  self.bluetooth_facade.stop_discovery()
+        stop_discovery, error = self.bluetooth_facade.stop_discovery()
 
         is_power_on = self._wait_till_power_on()
-        self.results = {'reset' : reset,
-                        'is_power_off' : is_power_off,
-                        'stop_discovery_failed' : not stop_discovery,
-                        'error_matches' : self._compare_error(error,
-                                                    DBUS_ERRORS['NotReady']),
-                        'is_power_on' : is_power_on}
+        self.results = {'reset':  reset,
+                        'is_power_off': is_power_off,
+                        'stop_discovery_failed': not stop_discovery,
+                        'is_power_on': is_power_on}
+
+        if not self.floss:
+            self.results['error_matches'] = self._compare_error(
+                error, DBUS_ERRORS['NotReady'])
         return all(self.results.values())
 
 
@@ -364,8 +372,8 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         capabilities, error = self.bluetooth_facade.get_supported_capabilities()
         logging.debug('supported capabilities is %s', capabilities)
 
-        self.results = {'reset' : reset,
-                        'is_power_on' : is_power_on,
+        self.results = {'reset': reset,
+                        'is_power_on': is_power_on,
                         'get_supported_capabilities': error is None
                         }
         return all(self.results.values())
@@ -383,8 +391,8 @@ class BluetoothDBusAPITests(bluetooth_adapter_tests.BluetoothAdapterTests):
         capabilities, error = self.bluetooth_facade.get_supported_capabilities()
         logging.debug('supported capabilities is %s', capabilities)
 
-        self.results = {'reset' : reset,
-                        'is_power_off' : is_power_off,
+        self.results = {'reset': reset,
+                        'is_power_off': is_power_off,
                         'get_supported_capabilities': error is None,
                         }
         return all(self.results.values())

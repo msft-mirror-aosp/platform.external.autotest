@@ -191,7 +191,6 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         result = self.test_pairable_timeout(timeout_values=[0, 7, 15])
         logging.info("Result is %s", result)
 
-
     @test_wrapper('Default state test', supports_floss=True)
     def sa_default_state_test(self):
         """Verify that the Bluetooth adapter has correct state."""
@@ -215,18 +214,16 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         """Verify that the adapter has a correctly-formatted alias"""
         self.test_check_valid_alias()
 
-
     @test_wrapper('DBUS API tests')
     def sa_dbus_api_tests(self):
         """ Verify that the Bluetooth DBus API calls work."""
         self.test_dbus_start_discovery_success()
-        self.test_dbus_start_discovery_fail_discovery_in_progress()
+        if not self.floss:
+            self.test_dbus_start_discovery_fail_discovery_in_progress()
         self.test_dbus_start_discovery_fail_power_off()
-
         self.test_dbus_stop_discovery_success()
         self.test_dbus_stop_discovery_fail_discovery_not_in_progress()
         self.test_dbus_stop_discovery_fail_power_off()
-
         self.test_dbus_get_supported_capabilities_success()
         self.test_dbus_get_supported_capabilities_success_power_off()
 

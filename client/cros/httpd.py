@@ -163,6 +163,12 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
         six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler.do_HEAD(self)
 
 
+    @_handle_http_errors
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.end_headers()
+
+
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     def __init__(self, server_address, HandlerClass):
         HTTPServer.__init__(self, server_address, HandlerClass)

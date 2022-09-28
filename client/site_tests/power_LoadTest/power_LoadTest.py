@@ -420,12 +420,12 @@ class power_LoadTest(arc.ArcTest):
             self._testServer.add_url(url='/scroll')
 
             self._testServer.add_url_handler(url='/pagenav',
-                handler_func=(lambda handler, args, plt=self:
-                              plt._detachable_handler.wake_base(10000)))
+                handler_func=(lambda handler, args, plt=self:\
+                    _extension_wake_base_handler(handler, args, plt, 10000)))
 
             self._testServer.add_url_handler(url='/scroll',
-                handler_func=(lambda handler, args, plt=self:
-                              plt._detachable_handler.wake_base(1000)))
+                handler_func=(lambda handler, args, plt=self:\
+                    _extension_wake_base_handler(handler, args, plt, 1000)))
             # reset backlight level since powerd might've modified it
             # based on ambient light
             self._set_backlight_level(i)
@@ -932,7 +932,7 @@ class power_LoadTest(arc.ArcTest):
                 # httpd adds them automatically so we remove them again
                 if idx in handler.server._form_entries:
                     del handler.server._form_entries[idx]
-        handler.send_response(200)
+        handler.send_simple_response(200)
 
 
     def _generate_task_monitor_html(self):
@@ -1024,6 +1024,18 @@ def alphanum_key(s):
     return chunks
 
 
+def _extension_wake_base_handler(handler, args, plt, wake_time_ms):
+    """
+    We use the httpd library to listen to PLT simulated user activities.
+
+    This method will wake up the base for a specific time when there are
+    user activities such as page navigation or scrolling.
+    """
+
+    plt._detachable_handler.wake_base(wake_time_ms)
+    handler.send_simple_response(200)
+
+
 def _extension_log_handler(handler, form, loop_number):
     """
     We use the httpd library to allow us to log whatever we
@@ -1044,6 +1056,7 @@ def _extension_log_handler(handler, form, loop_number):
             # httpd adds them automatically so we remove them again
             if field in handler.server._form_entries:
                 del handler.server._form_entries[field]
+    handler.send_simple_response(200)
 
 
 def _extension_page_time_info_handler(handler, form, loop_number,
@@ -1058,6 +1071,7 @@ def _extension_page_time_info_handler(handler, form, loop_number,
 
     if not form:
         logging.debug("no page time information returned")
+        handler.send_simple_response(200)
         return
 
     for field in sorted(form.keys(), key=alphanum_key):
@@ -1126,12 +1140,14 @@ def _extension_page_time_info_handler(handler, form, loop_number,
         message += "\t%s w/ %d ms" % (url, msecs)
 
     logging.debug("%s\n", message)
+    handler.send_simple_response(200)
 
 
 def _extension_key_values_handler(handler, form, loop_number,
                                       test_instance):
     if not form:
         logging.debug("no key value information returned")
+        handler.send_simple_response(200)
         return
 
     for field in sorted(form.keys(), key=alphanum_key):
@@ -1148,6 +1164,7 @@ def _extension_key_values_handler(handler, form, loop_number,
         # httpd adds them automatically so we remove them again
         if field in handler.server._form_entries:
             del handler.server._form_entries[field]
+    handler.send_simple_response(200)
 
 
 def _loop_prefix(loop):

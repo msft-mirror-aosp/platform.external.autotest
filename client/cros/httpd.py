@@ -55,6 +55,14 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
                      (self.address_string(), self.log_date_time_string(),
                       format%args))
 
+    def send_simple_response(self, status_code):
+        """
+        Helper function to send a simple empty HTTP response
+        """
+        self.send_response(status_code)
+        self.end_headers()
+
+
     @_handle_http_errors
     def do_POST(self):
         form = cgi.FieldStorage(
@@ -165,8 +173,7 @@ class FormHandler(six.moves.SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     @_handle_http_errors
     def do_OPTIONS(self):
-        self.send_response(204)
-        self.end_headers()
+        self.send_simple_response(204)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):

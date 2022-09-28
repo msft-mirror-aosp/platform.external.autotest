@@ -30,7 +30,10 @@ from autotest_lib.tko.parse import parse_one, export_tko_job_to_file
 from autotest_lib.tko.job_serializer import JobSerializer
 
 # Appends the moblab source paths for the pubsub wrapper
-sys.path.append('/mnt/host/source/src/platform/moblab/src')
+if "MOBLAB_REPO_ROOT" in os.environ:
+    sys.path.append(os.path.join(os.environ["MOBLAB_REPO_ROOT"], "src"))
+else:
+    sys.path.append('/mnt/host/source/src/platform/moblab/src')
 from moblab_common import pubsub_client
 
 STATUS_FILE = "status"
@@ -43,14 +46,22 @@ FAKE_MOBLAB_ID_FILE = "fake_moblab_id_do_not_delete.txt"
 GIT_HASH_FILE = "git_hash.txt"
 GIT_COMMAND = ("git log --pretty=format:'%h -%d %s (%ci) <%an>'"
                " --abbrev-commit -20")
+
 AUTOTEST_DIR = "/mnt/host/source/src/third_party/autotest/files/"
+if "AUTOTEST_REPO_ROOT" in os.environ:
+    AUTOTEST_DIR = os.environ["AUTOTEST_REPO_ROOT"]
+
 DEFAULT_SUITE_NAME = "default_suite"
 SUITE_NAME_REGEX = "Fetching suite for suite named (.+?)\.\.\."
 DEBUG_FILE_PATH = "debug/test_that.DEBUG"
-CONFIG_DIR = os.path.dirname(os.path.abspath(__file__)) + "/config/"
-DEFAULT_BOTO_CONFIG = CONFIG_DIR + ".boto_upload_utils"
-UPLOAD_CONFIG = CONFIG_DIR + "upload_config.json"
-SERVICE_ACCOUNT_CONFIG = CONFIG_DIR + ".service_account.json"
+
+CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
+if "UPLOAD_CONFIG_DIR" in os.environ:
+    CONFIG_DIR = os.environ["UPLOAD_CONFIG_DIR"]
+
+DEFAULT_BOTO_CONFIG = os.path.join(CONFIG_DIR, ".boto_upload_utils")
+UPLOAD_CONFIG = os.path.join(CONFIG_DIR, "upload_config.json")
+SERVICE_ACCOUNT_CONFIG = os.path.join(CONFIG_DIR, ".service_account.json")
 LABEL_REGEX = r"(.*)results-\d*-(.*)"
 
 logging = log.getLogger(__name__)
@@ -194,7 +205,7 @@ def _configure_environment(parsed_args):
     os.mknod(DEFAULT_BOTO_CONFIG)
     os.environ["BOTO_CONFIG"] = DEFAULT_BOTO_CONFIG
     os.environ[
-            "GOOGLE_APPLICATION_CREDENTIALS"] = CONFIG_DIR + ".service_account.json"
+            "GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(CONFIG_DIR, ".service_account.json")
     with subprocess.Popen(["gsutil", "config"],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE,
@@ -218,9 +229,9 @@ def _configure_environment(parsed_args):
     ])
 
     sa_filename = ""
-    if os.path.exists(CONFIG_DIR + "/.service_account.json"):
+    if os.path.exists(os.path.join(CONFIG_DIR, ".service_account.json")):
         sa_filename = ".service_account.json"
-    elif os.path.exists(CONFIG_DIR + "/pubsub-key-do-not-delete.json"):
+    elif os.path.exists(os.path.join(CONFIG_DIR, "pubsub-key-do-not-delete.json")):
         sa_filename = "pubsub-key-do-not-delete.json"
     else:
         logging.error("No pubsub key found in bucket, failed config!")
@@ -230,7 +241,7 @@ def _configure_environment(parsed_args):
     with open(UPLOAD_CONFIG, "w") as cf:
         settings = {}
         settings["bucket"] = parsed_args.bucket
-        settings["service_account"] = CONFIG_DIR + sa_filename
+        settings["service_account"] = os.path.join(CONFIG_DIR, sa_filename)
         settings["boto_key"] = DEFAULT_BOTO_CONFIG
 
         cf.write(json.dumps(settings))

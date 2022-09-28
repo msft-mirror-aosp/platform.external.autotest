@@ -88,6 +88,10 @@ class firmware_Cr50WPG3(Cr50Test):
 
         if self.servo.main_device_is_flex():
             self._start_fw_wp_state = self.servo.get('fw_wp_state')
+            # If nothing is forcing write protect, then the initial state is
+            # "reset".
+            if "force" not in self._start_fw_wp_state:
+                self._start_fw_wp_state = "reset"
             self._start_fw_wp_vref = (self.servo.get('fw_wp_vref') if
                     self.servo.has_control('fw_wp_vref') else None)
             # Stop forcing wp using servo, so we can set it with ccd.

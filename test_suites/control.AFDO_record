@@ -1,4 +1,4 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2013 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -41,11 +41,11 @@ from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 # the bug filer will fallback to it's defaults.
 _BUG_TEMPLATE = {
     'labels': ['Build-Toolchain'],
-    'owner': 'llozano@chromium.org',
+    'owner': 'denik@chromium.org',
     'status': None,
     'summary': None,
     'title': None,
-    'cc': ['tcwang@chromium.org',
+    'cc': ['ajkelly@google.com',
     	   'chromeos-toolchain-oncall1@google.com']
 }
 

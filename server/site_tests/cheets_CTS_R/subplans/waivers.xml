@@ -8,6 +8,9 @@
   -->
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testVerifyMandatoryOutputCombinationTables[1]"/>
   <Entry include="CtsCameraTestCases[instant] android.hardware.camera2.cts.RobustnessTest#testVerifyMandatoryOutputCombinationTables[1]"/>
+  <Entry include="CtsDeqpTestCases dEQP-GLES31.functional.debug.negative_coverage.log.framebuffer_fetch#last_frag_data_readonly" />
+  <Entry include="CtsDeqpTestCases dEQP-GLES31.functional.debug.negative_coverage.get_error.framebuffer_fetch#last_frag_data_readonly" />
+  <Entry include="CtsDeqpTestCases dEQP-GLES31.functional.debug.negative_coverage.callbacks.framebuffer_fetch#last_frag_data_readonly" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.driver_properties#driver_id_match" />
   <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimithigh.imglimithigh.noiub.comp.noia#0" />
   <Entry include="CtsDeqpTestCases dEQP-VK.binding_model.descriptorset_random.sets32.unifindexed.ubolimitlow.sbolimithigh.imglimithigh.noiub.vert.noia#0" />
@@ -34,6 +37,7 @@
   <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_tessellation_control_stage_delayed_destroy_tessellation_evaluation_stage_delayed_destroy_fragment_stage_delayed_destroy" />
   <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_tessellation_control_stage_no_cache_tessellation_evaluation_stage_no_cache_fragment_stage_no_cache" />
   <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_tessellation_control_stage_tessellation_evaluation_stage_fragment_stage" />
+  <Entry include="CtsSecurityHostTestCases android.security.cts.KernelConfigTest#testConfigHardwareMitigations" />
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_imageblurclampmode" />
   <Entry include="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testAppLaunchCount" />
 </SubPlan>

@@ -10,36 +10,38 @@ import unittest
 
 from autotest_lib.contrib.upload_results import *
 
+RESULTS_DIR=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'results-1-stub_PassServer')
+
 class UploadResultsTestCase(unittest.TestCase):
 
     # test mandatory fields are filled on load
     def test_generate_job_serialize(self):
         rp = ResultsParser
-        job1 = rp.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'results-1-test_UploadResults'), False)
-        job2 = rp.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'results-1-test_UploadResults'), False)
+        job1 = rp.parse(RESULTS_DIR, False)
+        job2 = rp.parse(RESULTS_DIR, False)
 
         # test mandatory fields are populated
-        assert job1.machine_group == 'test_model'
-        assert job1.board == 'test_board'
-        assert job1.suite == 'default_suite'
-        assert job1.label == 'chroot/test_UploadResults'
+        self.assertEqual(job1.machine_group, 'madoo') # device model
+        self.assertEqual(job1.board, 'dedede')
+        self.assertEqual(job1.suite, 'default_suite')
+        self.assertEqual(job1.label, 'chroot/stub_PassServer')
 
         # test uniqueness
-        assert job1.afe_job_id != job2.afe_job_id
+        self.assertNotEqual(job1.afe_job_id, job2.afe_job_id)
 
     # test mandatory fields are filled after save and reload
     def test_persist_and_reload_job(self):
         rp = ResultsParser
-        job1 = rp.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'results-1-test_UploadResults'), False)
-        job2 = rp.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'results-1-test_UploadResults'), True)
+        job1 = rp.parse(RESULTS_DIR, False)
+        job2 = rp.parse(RESULTS_DIR, True)
 
-        assert job1.machine_group == job2.machine_group
-        assert job1.board == job2.board
-        assert job1.suite == job2.suite
-        assert job1.label == job2.label
+        self.assertEqual(job1.machine_group, job2.machine_group)
+        self.assertEqual(job1.board, job2.board)
+        self.assertEqual(job1.suite, job2.suite)
+        self.assertEqual(job1.label, job2.label)
 
         # even with a reload, we should *still* have a unique job
-        assert job1.afe_job_id != job2.afe_job_id
+        self.assertNotEqual(job1.afe_job_id, job2.afe_job_id)
 
 if __name__ == '__main__':
     unittest.main()

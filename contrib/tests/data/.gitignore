@@ -1,0 +1,6 @@
+!results-1-stub_PassServer
+
+# These files get generated during a test run and we want to ignore them
+results*/job.serialize
+results*/result_summary.html
+results*/git_hash.txt

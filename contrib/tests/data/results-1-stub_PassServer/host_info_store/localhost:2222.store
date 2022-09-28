@@ -1,0 +1,10 @@
+{
+    "attributes": {},
+    "labels": [
+        "cros-version:ad_hoc_build",
+        "board:dedede",
+        "model:madoo"
+    ],
+    "serializer_version": 1,
+    "stable_versions": {}
+}

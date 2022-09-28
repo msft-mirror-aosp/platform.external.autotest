@@ -10,7 +10,8 @@ This test fails if the kernel IPv6 code cannot successfully negotiate a
 globally scoped address and obtain IPv6 DNS server addresses through
 RDNSS via an IPv6 router.
 """
-ATTRIBUTES = "suite:network_nightly"
+# Test migrated to tast. Removing from nightly suite. Details @ b/244486741.
+#ATTRIBUTES = "suite:network_nightly"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"

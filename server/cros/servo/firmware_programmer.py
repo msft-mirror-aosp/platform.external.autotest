@@ -296,6 +296,62 @@ class FlashECProgrammer(_BaseProgrammer):
         self._program_cmd += ' --verbose'
 
 
+class FlashGSCCCDProgrammer(_BaseProgrammer):
+    """Class for programming GSC."""
+
+    IMAGE_UPDATED = 1
+
+    def __init__(self, servo, ccd_serialname):
+        """Configure required servo state.
+
+        @param servo: a servo object controlling the servo device
+        @param ccd_serialname: ccd serial name
+        """
+        self._gsctool = servo._servo_host.run_output('sudo which gsctool')
+        super(FlashGSCCCDProgrammer, self).__init__(servo, [self._gsctool])
+        self._servo_prog_state_delay = 3
+        self._ccd_serialname = ccd_serialname
+        self._check_ccd_cmd = 'lsusb -v | grep ' + self._ccd_serialname
+        # gsctool will return 0 if nothing was done or 1 if the image was
+        # updated.
+        self._ok_exit_status = [0, self.IMAGE_UPDATED]
+
+    def is_connected(self):
+        """Returns True if the ccd device is connected."""
+        result = self._servo_host.run_output(self._check_ccd_cmd,
+                                                   ignore_status=True)
+        logging.debug("found CCD serial %r", result)
+        return not not result
+
+    def prepare_programmer(self, image):
+        """Prepare programmer for programming.
+
+        @param image: string with the location of the image file
+        @returns a tuple of the servo_host path and image rw version.
+        """
+        # We don't need scp if test runs locally.
+        if not self._servo.is_localhost():
+            image = self._servo._scp_image(image)
+        self._program_cmd = ('%s -n %s %s' %
+            (self._gsctool, self._ccd_serialname, image))
+        get_rw_ver_cmd = '%s -Mb %s | grep RW_FW_VER' % (self._gsctool, image)
+        rw_ver = self._servo_host.run_output(get_rw_ver_cmd).split('=')[-1]
+        logging.info('Installed %s image at %s', rw_ver, image)
+        return image, rw_ver
+
+    def program(self):
+        """Program the firmware. Handle gsctool errors."""
+        self._set_servo_state()
+        try:
+            logging.debug('Programmer command: %s', self._program_cmd)
+            result = self._servo_host.run(self._program_cmd, ignore_status=True)
+            if result.exit_status in self._ok_exit_status:
+                return result
+            raise ProgrammerError('Unable to update GSC: %r' % result)
+        finally:
+            self._restore_servo_state()
+
+
 class ProgrammerV2(object):
     """Main programmer class which provides programmer for BIOS and EC with
     servo V2."""

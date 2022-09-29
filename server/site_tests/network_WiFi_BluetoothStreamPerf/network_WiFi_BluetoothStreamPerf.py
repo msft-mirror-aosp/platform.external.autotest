@@ -62,8 +62,8 @@ class network_WiFi_BluetoothStreamPerf(
         self._ap_configs, self._use_iperf = additional_params
 
     def verify_result(self, result_drop, should_expected_drop,
-                      must_expected_drop, test_type, failed_test_types,
-                      ap_config_tag, bt_tag):
+                      must_expected_drop, board_expected_drop, test_type,
+                      failed_test_types, ap_config_tag, bt_tag):
         """Verfiy that performance test result passes the must and should
         throughput requirements.
 
@@ -79,6 +79,12 @@ class network_WiFi_BluetoothStreamPerf(
         """
         must_drop_failed = False
         should_drop_failed = False
+
+        # If the must requirement is smaller than our maximum expectation for a
+        # board, use the board specific maximum expectation instead of the must
+        # requirement.
+        if board_expected_drop and board_expected_drop > must_expected_drop:
+            must_expected_drop = board_expected_drop
 
         if result_drop > must_expected_drop:
             logging.error(
@@ -178,6 +184,10 @@ class network_WiFi_BluetoothStreamPerf(
         elif self.base_through > 0:
             expected_drop = expected_performance_results.get_expected_wifibt_coex_throughput_drop(
                     test_type, ap_config, bt_tag)
+
+            board_expected_drop = expected_performance_results.get_board_max_wifibt_coex_throughput_drop_expectation(
+                test_type, self.context.client.board, ap_config, bt_tag)
+
             drop = int( (self.base_through - result.throughput) * 100 /
                         self.base_through)
             self.output_perf_value(test_type + '_' + bt_tag + '_drop',
@@ -186,7 +196,7 @@ class network_WiFi_BluetoothStreamPerf(
                                    higher_is_better=False,
                                    graph=ap_config_tag + '_drop')
             self.verify_result(drop, expected_drop[0],
-                               expected_drop[1], test_type,
+                               expected_drop[1], board_expected_drop, test_type,
                                failed_test_types, ap_config_tag, bt_tag)
             self.write_perf_keyval(
                     {'_'.join([config.test_type, test_str, 'drop']): drop})

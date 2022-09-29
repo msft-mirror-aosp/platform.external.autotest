@@ -155,8 +155,7 @@ class TradefedTest(test.test):
                    load_waivers=True,
                    retry_manual_tests=False,
                    warn_on_test_retry=True,
-                   hard_reboot_on_failure=False,
-                   use_jdk9=False):
+                   hard_reboot_on_failure=False):
         """Sets up the tools and binary bundles for the test."""
         if utils.is_in_container() and not client_utils.is_moblab():
             self._job_deadline = time.time() + self._MAX_LAB_JOB_LENGTH_IN_SEC

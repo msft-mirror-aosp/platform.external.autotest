@@ -16,6 +16,7 @@ from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.common_lib.cros import cr50_utils, tpm_utils
 from autotest_lib.server.cros import filesystem_util, gsutil_wrapper
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.server.cros.servo import firmware_programmer
 
 
 class Cr50Test(FirmwareTest):
@@ -75,9 +76,6 @@ class Cr50Test(FirmwareTest):
         # it doesn't take half an hour for commands to timeout when the DUT is
         # down.
         self.host.set_default_run_timeout(180)
-        tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
-        # Clear the FWMP, so it can't disable CCD.
-        self.clear_fwmp()
 
         # TODO(b/218492933) : find better way to disable rddkeepalive
         # Disable rddkeepalive, so the test can disable ccd.
@@ -110,7 +108,11 @@ class Cr50Test(FirmwareTest):
             self._save_eraseflashinfo_image(
                     full_args.get('cr50_eraseflashinfo_image_path', ''))
             if self.cr50.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT'):
-                raise error.TestError('Board cannot boot EFI image')
+                logging.info('Board cannot boot EFI image.')
+                logging.info('Can only restore images with ccd only')
+                if not self.ccd_programmer_connected_to_servo_host():
+                    raise error.TestError('Board cannot boot EFI image. '
+                            'Connect ccd so test can restore image')
             self._saved_state |= self.ERASEFLASHINFO_IMAGE
         except Exception as e:
             logging.warning('Error saving eraseflashinfo image: %s', str(e))
@@ -128,6 +130,11 @@ class Cr50Test(FirmwareTest):
             release_path_arg = full_args.get('release_path', '')
             self.ensure_qual_image_is_running(release_ver_arg,
                                               release_path_arg)
+        logging.info('Clear TPM owner and fwmp')
+        tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
+        # Clear the FWMP, so it can't disable CCD.
+        self.clear_fwmp()
+
 
     def running_cr50_release_suite(self):
         """Return True if the DUT is in a release pool."""
@@ -395,7 +402,7 @@ class Cr50Test(FirmwareTest):
         """Returns the 4 character device brand."""
         return self._original_image_state['cros_config / brand-code']
 
-    def _retry_cr50_update(self, image, retries, rollback):
+    def _retry_gsc_update(self, image, retries, rollback, use_ccd=False):
         """Try to update to the given image retries amount of times.
 
         @param image: The image path.
@@ -405,7 +412,8 @@ class Cr50Test(FirmwareTest):
         """
         for i in range(retries):
             try:
-                return self.cr50_update(image, rollback=rollback)
+                return self.cr50_update(image, rollback=rollback,
+                        use_ccd=use_ccd)
             except Exception as e:
                 logging.warning('Failed to update to %s attempt %d: %s',
                                 os.path.basename(image), i, str(e))
@@ -414,14 +422,53 @@ class Cr50Test(FirmwareTest):
         raise error.TestError(
                 'Failed to update to %s' % os.path.basename(image))
 
+    def _retry_gsc_update_from_ap(self, image, retries, rollback):
+        """Try to update to the given image retries amount of times with ccd.
+
+        @param image: The image path.
+        @param retries: The number of times to try to update.
+        @param rollback: Run rollback after the update.
+        @raises TestFail if the update failed.
+        """
+        return self._retry_gsc_update(image, retries, rollback, False)
+
+    def _retry_gsc_update_with_ccd(self, image, retries, rollback):
+        """Try to update to the given image retries amount of times with ccd.
+
+        @param image: The image path.
+        @param retries: The number of times to try to update.
+        @param rollback: Run rollback after the update.
+        @raises TestFail if the update failed.
+        """
+        if not self.ccd_programmer_connected_to_servo_host():
+            raise error.TestError('CCD not connected to servo_host')
+        return self._retry_gsc_update(image, retries, rollback, True)
+
+    def _retry_gsc_update_with_ccd_and_ap(self, image, retries, rollback):
+        """Try to update to the given with ccd then try the ap.
+
+        @param image: The image path.
+        @param retries: The number of times to try to update.
+        @param rollback: Run rollback after the update.
+        @raises TestFail if the update failed.
+        """
+        try:
+            return self._retry_gsc_update_with_ccd(image, retries, rollback)
+        except error.TestError as e:
+            logging.info('Failed to update with ccd. Trying AP.')
+        # Make sure the DUT is up for a AP update.
+        self._try_to_bring_dut_up()
+        self._retry_gsc_update_from_ap(image, retries, rollback)
+
     def run_update_to_eraseflashinfo(self):
         """Erase flashinfo using the eraseflashinfo image.
 
         Update to the DBG image, rollback to the eraseflashinfo, and run
         eraseflashinfo.
         """
-        self._retry_cr50_update(self._dbg_image_path, 3, False)
-        self._retry_cr50_update(self._eraseflashinfo_image_path, 3, True)
+        self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
+        self._retry_gsc_update_with_ccd_and_ap(self._eraseflashinfo_image_path,
+                3, True)
         if not self.cr50.eraseflashinfo():
             raise error.TestError('Unable to erase the board id')
 
@@ -433,7 +480,7 @@ class Cr50Test(FirmwareTest):
         """
         image = image if image else self.get_saved_cr50_original_path()
         self.run_update_to_eraseflashinfo()
-        self.cr50_update(image)
+        self._retry_gsc_update_with_ccd_and_ap(image)
 
     def update_cr50_image_and_board_id(self, image_path, bid):
         """Set the chip board id and updating the cr50 image.
@@ -465,14 +512,14 @@ class Cr50Test(FirmwareTest):
         if eraseflashinfo:
             self.run_update_to_eraseflashinfo()
 
-        self._retry_cr50_update(self._dbg_image_path, 3, False)
+        self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
 
         chip_bid = bid[0]
         chip_flags = bid[2]
         if set_bid:
             self.cr50.set_board_id(chip_bid, chip_flags)
 
-        self._retry_cr50_update(image_path, 3, True)
+        self._retry_gsc_update_with_ccd_and_ap(image_path, 3, True)
 
     def _discharging_factory_mode_cleanup(self):
         """Try to get the dut back into charging mode.
@@ -951,7 +998,27 @@ class Cr50Test(FirmwareTest):
         logging.info('RUNNING %s after %s', expected_rw,
                      'rollback' if expect_rollback else 'update')
 
-    def _cr50_run_update(self, path):
+    def ccd_programmer_connected_to_servo_host(self):
+        """Returns True if the ccd programmer is connected to the labstation"""
+        if not hasattr(self, '_ccd_programmer'):
+            self._ccd_programmer = firmware_programmer.FlashGSCCCDProgrammer(
+                self.servo, self.cr50.get_serial())
+        self.cr50.ccd_enable()
+        return self._ccd_programmer.is_connected()
+
+    def _update_gsc_with_ccd(self, path):
+        """Program gsc with ccd.
+
+        @param path: the location of the image to update to
+        @return: the rw version of the image
+        """
+        if not self.ccd_programmer_connected_to_servo_host():
+            raise error.TestNAError('CCD not connected to servo_host')
+        path, image_ver = self._ccd_programmer.prepare_programmer(path)
+        self._ccd_programmer.program()
+        return image_ver
+
+    def _update_gsc_from_ap(self, path):
         """Install the image at path onto cr50.
 
         @param path: the location of the image to update to
@@ -969,7 +1036,8 @@ class Cr50Test(FirmwareTest):
         self.host.reboot(wait=False)
         return image_ver[1]
 
-    def cr50_update(self, path, rollback=False, expect_rollback=False):
+    def cr50_update(self, path, rollback=False, expect_rollback=False,
+                    use_ccd=False):
         """Attempt to update to the given image.
 
         If rollback is True, we assume that cr50 is already running an image
@@ -979,6 +1047,7 @@ class Cr50Test(FirmwareTest):
         @param rollback: True if we need to force cr50 to rollback to update to
                          the given image
         @param expect_rollback: True if cr50 should rollback on its own
+        @param use_ccd: True if the test should update with ccd.
         @raise TestFail: if the update failed
         """
         original_rw = self.cr50.get_version()
@@ -987,7 +1056,10 @@ class Cr50Test(FirmwareTest):
         # 60 seconds. Wait until that passes before trying to run the update.
         self.cr50.wait_until_update_is_allowed()
 
-        image_rw = self._cr50_run_update(path)
+        if use_ccd:
+            image_rw = self._update_gsc_with_ccd(path)
+        else:
+            image_rw = self._update_gsc_from_ap(path)
 
         # Running the update may cause cr50 to reboot. Wait for that before
         # sending more commands. The reboot should happen quickly.

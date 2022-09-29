@@ -51,7 +51,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         """Clear the Hash."""
         # Make sure the AP is up before trying to update.
         self.recover_dut()
-        self._retry_cr50_update(self._dbg_image_path, 3, False)
+        self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
         self.cr50.send_command('ap_ro_info erase')
         time.sleep(3)
         ap_ro_info = self.cr50.get_ap_ro_info()
@@ -79,9 +79,8 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
 
     def rollback_to_release_image(self):
         """Update to the release image."""
-        self._retry_cr50_update(self.get_saved_cr50_original_path(),
-                                3,
-                                rollback=True)
+        self._retry_gsc_update_with_ccd_and_ap(
+                self.get_saved_cr50_original_path(), 3, rollback=True)
         logging.info(self.cr50.get_ap_ro_info())
 
     def cleanup(self):

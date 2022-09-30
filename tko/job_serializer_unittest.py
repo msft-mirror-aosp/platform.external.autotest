@@ -228,7 +228,7 @@ class JobSerializerUnittest(unittest.TestCase):
         """
         t = mktime(dTime.timetuple()) + 1e-6 * dTime.microsecond
         if six.PY2:
-            self.assertEqual(long(t), stime/1000)
+            self.assertEqual(long(t), stime/1000) # pylint: disable=undefined-variable
         else:
             self.assertEqual(int(t), stime/1000)
 
@@ -377,14 +377,14 @@ class ReadBackGetterTest(JobSerializerUnittest):
         t = mktime(dTime.timetuple()) + 1e-6 * dTime.microsecond
         if isinstance(sTime, six.integer_types):
             if six.PY2:
-                self.assertEqual(long(t*1000), sTime)
+                self.assertEqual(long(t*1000), sTime) # pylint: disable=undefined-variable
             else:
                 self.assertEqual(int(t*1000), sTime)
 
         else:
             t1 = mktime(sTime.timetuple()) + 1e-6 * sTime.microsecond
             if six.PY2:
-                self.assertEqual(long(t*1000), long(t1*1000))
+                self.assertEqual(long(t*1000), long(t1*1000)) # pylint: disable=undefined-variable
             else:
                 self.assertEqual(int(t*1000), int(t1*1000))
 

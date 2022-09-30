@@ -227,10 +227,11 @@ class JobSerializerUnittest(unittest.TestCase):
         @param stime: The original time.
         """
         t = mktime(dTime.timetuple()) + 1e-6 * dTime.microsecond
+        stime_us=int(stime/1000)
         if six.PY2:
-            self.assertEqual(long(t), stime/1000) # pylint: disable=undefined-variable
+            self.assertEqual(long(t), stime_us) # pylint: disable=undefined-variable
         else:
-            self.assertEqual(int(t), stime/1000)
+            self.assertEqual(int(t), stime_us)
 
 
     def check_iteration(self, tko_iterations, pb_iterations):

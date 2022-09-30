@@ -378,6 +378,12 @@ def parse_one(db, pid_file_manager, jobname, path, parse_options):
     if 'suite' in job.keyval_dict:
         job.suite = job.keyval_dict['suite']
 
+    # Inherit HWID at the job level from the tests
+    for test in job.tests:
+        if job.hwid:
+            break
+        job.hwid = test.attributes.get('hwid')
+
     result_utils_lib.LOG =  tko_utils.dprint
 
     # Do not throttle results for now (b/207409280)
@@ -649,7 +655,6 @@ def parse_path(db, pid_file_manager, path, level, parse_options):
                                   parse_options)
         processed_jobs.add(new_job)
     return processed_jobs
-
 
 def _detach_from_parent_process():
     """Allow reparenting the parse process away from caller.

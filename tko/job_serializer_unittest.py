@@ -39,7 +39,7 @@ class JobSerializerUnittest(unittest.TestCase):
         tko_job = models.job('/tmp/', 'autotest', 'test', 'My Computer',
                              tko_time, tko_time, tko_time, 'root',
                              'www', 'No one', tko_time, {'1+1':2})
-        tko_job.afe_parent_job_id = 111
+        tko_job.afe_parent_job_id = '111'
         tko_job.build_version = 'R1-1.0.0'
         tko_job.suite = 'bvt'
         tko_job.board = 'alex'

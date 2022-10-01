@@ -58,6 +58,8 @@ from autotest_lib.client.cros.bluetooth import logger_helper
 from autotest_lib.client.cros.bluetooth.floss.adapter_client import (
         FlossAdapterClient, BluetoothCallbacks, BluetoothConnectionCallbacks,
         BondState, SspVariant, Transport)
+from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
+        FlossAdvertisingClient)
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import GLIB_THREAD_NAME
 from autotest_lib.client.cros.power import power_suspend_delay
@@ -4394,6 +4396,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.manager_client = FlossManagerClient(self.bus)
         self.adapter_client = FlossAdapterClient(self.bus,
                                                  self.DEFAULT_ADAPTER)
+        self.advertising_client = FlossAdvertisingClient(
+                self.bus, self.DEFAULT_ADAPTER)
 
         self.is_clean = False
 
@@ -4404,6 +4408,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         # Cache some mock properties for testing. These may be properties that
         # are required in bluez but don't carry over well into Floss.
         self.mock_properties = {}
+
+        # Stores the advertisement sets that are registered.
+        self.adv_names_to_ids = {}
 
     def __del__(self):
         if not self.is_clean:
@@ -4572,6 +4579,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         if powered:
             self.manager_client.start(default_adapter)
             self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
+            self.advertising_client = FlossAdvertisingClient(
+                    self.bus, default_adapter)
 
             try:
                 utils.poll_for_condition(
@@ -4587,6 +4596,10 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             # We need to observe callbacks for proper operation.
             if not self.adapter_client.register_callbacks():
                 logging.error('adapter_client: Failed to register callbacks')
+                return False
+            if not self.advertising_client.register_advertiser_callback():
+                logging.error('advertising_client: Failed to register '
+                              'advertiser callbacks')
                 return False
 
         else:
@@ -4924,3 +4937,99 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
              otherwise, an empty JSON-encoded dictionary.
         """
         return json.dumps(self.adapter_client.get_properties())
+
+    def register_advertisement(self, advertisement_data):
+        """Registers advertisement set with advertising data.
+
+        @param advertisement_data: A dict of the advertisement to register.
+
+        @return: Empty string '' on success, error_msg otherwise.
+        """
+        advertise_parameter = advertisement_data['parameters']
+        advertise_data = advertisement_data['advertise_data']
+        scan_response = advertisement_data['scan_response']
+        advertise_name = advertisement_data['advertise_name']
+
+        if not advertise_name:
+            raise error.TestError('Advertise_name is %s, you should create an '
+                                  'adv template with a name', advertise_name)
+        if advertise_name in self.adv_names_to_ids:
+            raise error.TestError('The set of advertising name: %s is already '
+                                  'registered', advertise_name)
+
+        parameters = (
+                self.advertising_client.make_dbus_advertising_set_parameters(
+                        advertise_parameter['connectable'],
+                        advertise_parameter['scannable'],
+                        advertise_parameter['is_legacy'],
+                        advertise_parameter['is_anonymous'],
+                        advertise_parameter['include_tx_power'],
+                        advertise_parameter['primary_phy'],
+                        advertise_parameter['secondary_phy'],
+                        advertise_parameter['interval'],
+                        advertise_parameter['tx_power_level'],
+                        advertise_parameter['own_address_type']))
+
+        advertise_data = self.advertising_client.make_dbus_advertise_data(
+                advertise_data['service_uuids'],
+                advertise_data['solicit_uuids'],
+                advertise_data['transport_discovery_data'],
+                self.advertising_client.convert_manufacturer_data_to_bytearray(
+                        advertise_data['manufacturer_data']),
+                self.advertising_client.convert_service_data_to_bytearray(
+                        advertise_data['service_data']),
+                advertise_data['include_tx_power_level'],
+                advertise_data['include_device_name'])
+
+        scan_response = self.advertising_client.make_dbus_advertise_data(
+                scan_response['service_uuids'], scan_response['solicit_uuids'],
+                scan_response['transport_discovery_data'],
+                self.advertising_client.convert_manufacturer_data_to_bytearray(
+                        scan_response['manufacturer_data']),
+                self.advertising_client.convert_service_data_to_bytearray(
+                        scan_response['service_data']),
+                scan_response['include_tx_power_level'],
+                scan_response['include_device_name'])
+
+        advertiser_id = self.advertising_client.start_advertising_set_sync(
+                parameters, advertise_data, scan_response,
+                advertisement_data['periodic_parameters'],
+                advertisement_data['periodic_data'],
+                advertisement_data['duration'],
+                advertisement_data['max_ext_adv_events'])
+
+        if advertiser_id is None:
+            return 'Failed to register advertisement %s' % advertise_name
+
+        self.adv_names_to_ids[advertise_name] = advertiser_id
+        return ''
+
+    def unregister_advertisement(self, advertisement_data):
+        """Unregisters an advertisement.
+
+        @param advertisement_data: A dict of the advertisements to unregister.
+
+        @return: Empty string '' on success, error_msg otherwise.
+        """
+        advertise_name = advertisement_data['advertise_name']
+        if advertise_name not in self.adv_names_to_ids:
+            return ('Advertisement %s not found in the registered advertisement'
+                    ' set: %s' % (advertise_name, self.adv_names_to_ids.keys()))
+        id = self.adv_names_to_ids.pop(advertise_name)
+        if not self.advertising_client.stop_advertising_set_sync(id):
+            return ('Failed to unregister advertisement %s set: %s' %
+                    (advertise_name, self.adv_names_to_ids.keys()))
+        return ''
+
+    def reset_advertising(self):
+        """Resets advertising sets.
+
+        This includes un-registering all advertisements, and disable
+        advertising.
+
+        @return: Empty string '' on success, error_msg otherwise.
+        """
+        self.adv_names_to_ids.clear()
+        if not self.advertising_client.stop_all_advertising_sets():
+            return 'Failed to reset advertisement sets'
+        return ''

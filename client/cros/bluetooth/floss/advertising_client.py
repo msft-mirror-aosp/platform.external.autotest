@@ -10,6 +10,7 @@ import logging
 import math
 import random
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
                                                             glib_callback)
@@ -165,6 +166,8 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
     ADVERTISING_CB_INTF = 'org.chromium.bluetooth.AdvertisingSetCallback'
     ADVERTISING_CB_OBJ_PATTERN = '/org/chromium/bluetooth/hci{}/test_advertising_client{}'
 
+    FLOSS_RESPONSE_LATENCY_SECS = 3
+
     class ExportedAdvertisingCallbacks(ObserverBase):
         """
         <node>
@@ -295,6 +298,8 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         # We don't register callbacks by default.
         self.callbacks = None
         self.callback_id = None
+        self.active_adv_ids = set()
+        self.start_adv_results = {}
 
     def __del__(self):
         """Destructor"""
@@ -308,6 +313,16 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                 'on_advertising_set_started: reg_id: %s, advertiser_id: %s, '
                 'tx_power: %s, status: %s', reg_id, advertiser_id, tx_power,
                 status)
+        self.start_adv_results[reg_id] = (advertiser_id, status)
+        if GattStatus(status) != GattStatus.SUCCESS:
+            return
+
+        if advertiser_id in self.active_adv_ids:
+            logging.warn(
+                    'The set of advertiser_id: %s, is already registered.',
+                    advertiser_id)
+        else:
+            self.active_adv_ids.add(advertiser_id)
 
     @glib_callback()
     def on_own_address_read(self, advertiser_id, address_type, address):
@@ -321,6 +336,11 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         """Handle advertising set stopped callback."""
         logging.debug('on_advertising_set_stopped: advertiser_id: %s',
                       advertiser_id)
+        if advertiser_id in self.active_adv_ids:
+            self.active_adv_ids.remove(advertiser_id)
+        else:
+            logging.warn('The set of advertiser_id: %s, not registered yet.',
+                         advertiser_id)
 
     @glib_callback()
     def on_advertising_enabled(self, advertiser_id, enable, status):
@@ -466,7 +486,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
     @glib_call(None)
     def start_advertising_set(self, parameters, advertise_data, scan_response,
                               periodic_parameters, periodic_data, duration,
-                              max_ext_adv_events, callback_id):
+                              max_ext_adv_events):
         """Starts advertising set.
 
         @param parameters: AdvertisingSetParameters structure.
@@ -477,14 +497,13 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param periodic_data: AdvertiseData structure(optional).
         @param duration: Time to start advertising set.
         @param max_ext_adv_events: Maximum of extended advertising events.
-        @param callback_id: Callback id from register advertiser callback.
 
         @return: Returns the reg_id for the advertising set on success,
                  None otherwise.
         """
         return self.proxy().StartAdvertisingSet(
                 parameters, advertise_data, scan_response, periodic_parameters,
-                periodic_data, duration, max_ext_adv_events, callback_id)
+                periodic_data, duration, max_ext_adv_events, self.callback_id)
 
     @glib_call(False)
     def stop_advertising_set(self, advertiser_id):
@@ -594,4 +613,133 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @return: True on success, False otherwise.
         """
         self.proxy().GetOwnAddress(advertiser_id)
+        return True
+
+    @staticmethod
+    def convert_service_data_to_bytearray(service_data):
+        """Converts values in service data dict to bytearray.
+
+        @param service_data: A dict of UUID as key and service data for
+                             specific UUID as value.
+
+        @return: Dictionary of the data converted.
+        """
+        return {k: bytearray(v) for k, v in service_data.items()}
+
+    @staticmethod
+    def convert_manufacturer_data_to_bytearray(manufacturer_data):
+        """Converts values in manufacturer data dict to bytearray.
+
+        It also converts the hex keys to integers.
+
+        @param manufacturer_data: A dict of manufacturer id as key and
+                                  manufacturer data for specific id as value.
+
+        @return: Dictionary of the data converted.
+        """
+        return {int(k, 16): bytearray(v) for k, v in manufacturer_data.items()}
+
+    def wait_for_adv_started(self, reg_id):
+        """Waits for advertising started.
+
+        @param reg_id: The reg_id for advertising set.
+
+        @return: Advertiser_id, status for specific reg_id on success,
+                (None, None) otherwise.
+        """
+        try:
+            utils.poll_for_condition(
+                    condition=(lambda: reg_id in self.start_adv_results),
+                    timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
+
+        except TimeoutError:
+            logging.error('on_advertising_set_started not called')
+            return (None, None)
+
+        advertise_id, status = self.start_adv_results[reg_id]
+
+        # Consume the result here because we have no straightforward timing
+        # to drop the info. We can't drop it in wait_for_adv_stopped because
+        # if the advertising failed to start then it makes no sense for the
+        # user to call wait_for_adv_stopped.
+        del self.start_adv_results[reg_id]
+
+        return advertise_id, status
+
+    def wait_for_adv_stopped(self, advertiser_id):
+        """Waits for advertising stopped.
+
+        @param advertiser_id: The advertiser_id for advertising set.
+
+        @return: True on success, False otherwise.
+        """
+        try:
+            utils.poll_for_condition(
+                    condition=(
+                            lambda: advertiser_id not in self.active_adv_ids),
+                    timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
+
+            return True
+        except TimeoutError:
+            logging.error('on_advertising_set_stopped not called')
+            return False
+
+    def start_advertising_set_sync(self, parameters, advertise_data,
+                                   scan_response, periodic_parameters,
+                                   periodic_data, duration,
+                                   max_ext_adv_events):
+        """Starts advertising set sync.
+
+        @param parameters: AdvertisingSetParameters structure.
+        @param advertise_data: AdvertiseData structure.
+        @param scan_response: Scan response data(optional).
+        @param periodic_parameters: PeriodicAdvertisingParameters structure
+                                    (optional).
+        @param periodic_data: AdvertiseData structure(optional).
+        @param duration: Time to start advertising set.
+        @param max_ext_adv_events: Maximum of extended advertising events.
+
+        @return: Advertiser_id for specific reg_id on success, None otherwise.
+        """
+
+        reg_id = self.start_advertising_set(parameters, advertise_data,
+                                            scan_response, periodic_parameters,
+                                            periodic_data, duration,
+                                            max_ext_adv_events)
+        if reg_id is None:
+            logging.error('Failed to start advertisement set')
+            return None
+
+        advertise_id, status = self.wait_for_adv_started(reg_id)
+        if GattStatus(status) != GattStatus.SUCCESS:
+            logging.error('Failed to start advertisement with id: %s, '
+                          'status = %s' % (advertise_id, status))
+            return None
+        return advertise_id
+
+    def stop_advertising_set_sync(self, advertiser_id):
+        """Stops advertising set sync.
+
+        @param advertiser_id: Advertiser_id for set of advertising.
+
+        @return: True on success, False otherwise.
+        """
+        if not self.stop_advertising_set(advertiser_id):
+            return False
+        return self.wait_for_adv_stopped(advertiser_id)
+
+    def stop_all_advertising_sets(self):
+        """Stops all advertising sets.
+
+        @return: True on success, False otherwise.
+        """
+        failed_adv_ids = []
+        for i in self.active_adv_ids.copy():
+            if not self.stop_advertising_set_sync(i):
+                failed_adv_ids.append(i)
+
+        if len(failed_adv_ids) > 0:
+            logging.error('Failed to reset advertisement sets with ids: %s' %
+                          ','.join(failed_adv_ids))
+            return False
         return True

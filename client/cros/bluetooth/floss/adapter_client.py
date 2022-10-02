@@ -573,6 +573,11 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         remote_device = self._make_dbus_device(address, name)
         return self.properties.set(prop_name, remote_device, *args)
 
+    @glib_call(None)
+    def is_le_extended_advertising_supported(self):
+        """Is LE extended advertising supported?"""
+        return bool(self.proxy().IsLeExtendedAdvertisingSupported())
+
     @glib_call(False)
     def start_discovery(self):
         """Starts discovery session."""

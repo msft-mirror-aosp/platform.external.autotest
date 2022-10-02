@@ -4888,6 +4888,23 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         value = {'wide band speech': self.adapter_client.is_wbs_supported()}
         return (json.dumps(value), None)
 
+    def get_advertising_manager_property(self, prop_name):
+        """Grabs property of the floss advertising manager.
+
+        @param prop_name: String name of the property required.
+
+        @returns: The value of the property on success, None otherwise.
+
+        @raises: error.TestError if the property is not supported.
+        """
+        if prop_name == 'SupportedFeatures':
+            sup = self.adapter_client.is_le_extended_advertising_supported()
+            if sup is None:
+                return None
+            return ['HardwareOffload'] if sup else []
+        raise error.TestError('Property %s is not supported in Floss',
+                              prop_name)
+
     def get_adapter_properties(self):
         """Reads the adapter properties from the Bluetooth Daemon.
 

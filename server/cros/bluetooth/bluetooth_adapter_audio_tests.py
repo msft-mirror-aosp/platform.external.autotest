@@ -1193,8 +1193,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param device: the Bluetooth peer device.
         @param test_profile: to select which A2DP test profile is used.
         """
-        self.audio_facade.set_system_volume(1)
-
         test_data = audio_test_data[test_profile]
 
         # TODO(b/207046142): Remove the old version fallback after the new
@@ -1211,6 +1209,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         test_data['duration'] = 60
         test_data['chunk_checking_duration'] = 5
         test_data['chunk_in_secs'] = 1
+
+        self.audio_facade.set_selected_output_volume(1)
 
         # Start playing audio on the Dut.
         self.test_dut_to_start_playing_audio_subprocess(test_data)
@@ -1237,12 +1237,14 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         self.test_select_audio_output_node_internal_speaker()
 
+        self.audio_facade.set_selected_output_volume(1)
+
         # Check if the device disconnects successfully.
         self.expect_test(False, self.test_device_a2dp_connected, device)
 
         self.test_dut_to_stop_playing_audio_subprocess()
 
-        self.audio_facade.set_system_volume(100)
+        self.audio_facade.set_selected_output_volume(100)
 
 
     def playback_and_disconnect(self, device, test_profile):

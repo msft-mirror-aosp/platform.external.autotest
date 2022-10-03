@@ -7,6 +7,7 @@ from __future__ import print_function
 import logging
 import time
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
@@ -15,6 +16,8 @@ from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 class firmware_Cr50Open(Cr50Test):
     """Verify cr50 open."""
     version = 1
+
+    DEEP_SLEEP_DELAY = 20
 
     def initialize(self, host, cmdline_args, ccd_open_restricted, full_args):
         """Initialize the test"""
@@ -101,3 +104,20 @@ class firmware_Cr50Open(Cr50Test):
         self.cr50.send_command('ccd testlab open')
         self.cr50.set_batt_pres_state('disconnected', True)
         self.check_cr50_open(False, False)
+
+        self.cr50.send_command('ccd testlab open')
+        self.cr50.ccd_disable()
+        # Verify ccd open survives deep sleep.
+        start_ds_count = self.cr50.get_deep_sleep_count()
+        self.faft_client.system.run_shell_command('poweroff', True)
+        utils.wait_for_value(self.cr50.ap_is_on, False)
+        time.sleep(self.DEEP_SLEEP_DELAY)
+        if start_ds_count == self.cr50.get_deep_sleep_count():
+            raise error.TestNAError('Unable to enter deep sleep')
+        if self.cr50.OPEN != self.cr50.get_ccd_level():
+            raise error.TestFail('Open cleared after deep sleep')
+
+        # Verify ccd open is cleared after a hard reset.
+        self.cr50.reboot()
+        if self.cr50.OPEN == self.cr50.get_ccd_level():
+            raise error.TestFail('Open survived hard reset')

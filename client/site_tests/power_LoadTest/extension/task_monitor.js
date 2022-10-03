@@ -2,13 +2,25 @@
 const chromeTabs = {
   get: function(tabId) {
     return new Promise(function(resolve) {
-      chrome.tabs.get(tabId, resolve);
+      chrome.tabs.get(tabId, (res) => {
+        // If the target tab is about to close, the tab might not be exist
+        // here and the browser will generate an error.
+        // Checking the error prevents from the error being raised.
+        const lastError = chrome.runtime.lastError;
+        resolve(res);
+      });
     });
   },
 
   sendMessage: function(tabId, message, options) {
     return new Promise(function(resolve) {
-      chrome.tabs.sendMessage(tabId, message, options, resolve);
+      chrome.tabs.sendMessage(tabId, message, options, (res) => {
+        // If the target tab hasn't successfully loaded and registered the
+        // event listener, the response would be undefined and an error would
+        // be set. Checking the error prevents from the error being raised.
+        const lastError = chrome.runtime.lastError;
+        resolve(res);
+      });
     });
   },
 };
@@ -83,10 +95,12 @@ class TaskMonitor {
     for (const tabInfo of data.tabInfo) {
       promises.push(
           chromeTabs.get(tabInfo.tabId).then((tab) => {
-            tabInfo.title = tab.title;
-            tabInfo.url = tab.url;
-            tabInfo.audio_played = !!tab.audible;
-            tabInfo.muted = tab.mutedInfo.muted;
+            if (typeof tab !== 'undefined') {
+              tabInfo.title = tab.title;
+              tabInfo.url = tab.url;
+              tabInfo.audio_played = !!tab.audible;
+              tabInfo.muted = tab.mutedInfo.muted;
+            }
           })
       );
 

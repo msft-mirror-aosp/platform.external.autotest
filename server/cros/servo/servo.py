@@ -410,8 +410,9 @@ class _PowerStateController(object):
 
 class _Uart(object):
     """Class to capture UART streams of CPU, EC, Cr50, etc."""
-    _UartToCapture = ('cpu', 'cr50', 'ec', 'servo_micro', 'servo_v4', 'usbpd',
-                      'ccd_cr50.ec', 'ccd_cr50.cpu', 'ccd_cr50.cr50'
+    _UartToCapture = ('cpu', 'cr50', 'ec', 'servo_micro',
+                      'servo_v4', 'usbpd', 'servo_v4p1',
+                      'ccd_cr50.ec', 'ccd_cr50.cpu', 'ccd_cr50.cr50',
                       'ccd_gsc.ec', 'ccd_gsc.cpu', 'ccd_gsc.cr50')
 
 
@@ -459,6 +460,9 @@ class _Uart(object):
             else:
                 logging.debug('Failed to set %s to %s. Got %s.', uart_cmd,
                               target_level, level)
+        else:
+            logging.debug('Can not start capturing, %s UART not available.',
+                            uart)
         return level == target_level
 
     def start_capture(self):

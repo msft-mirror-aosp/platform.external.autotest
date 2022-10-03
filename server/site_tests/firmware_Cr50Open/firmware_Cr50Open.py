@@ -32,6 +32,14 @@ class firmware_Cr50Open(Cr50Test):
         self.cr50.ccd_reset()
         self.cr50.set_ccd_level('lock')
 
+    def wait_ap_reboot(self, boot_id):
+        """Wait for AP reboot after ccd open."""
+        time.sleep(15)
+        # Reading boot id also checks SSH to DUT works after reboot. CCD open
+        # should cause an AP reboot, so boot_id should change.
+        reboot_id = self.host.get_boot_id()
+        if reboot_id == boot_id:
+            raise error.TestFail('Failed to reboot after open')
 
     def check_cr50_open(self, dev_mode, batt_pres):
         """Verify you can't open ccd unless dev mode is enabled.
@@ -51,8 +59,11 @@ class firmware_Cr50Open(Cr50Test):
         self.cr50.get_ccd_info()
 
         #Make sure open doesn't work from the console.
+        logging.info('ccd open from console')
         try:
+            boot_id = self.host.get_boot_id()
             self.cr50.set_ccd_level('open')
+            self.wait_ap_reboot(boot_id)
         except error.TestFail as e:
             self.cr50.check_for_console_errors('ccd open from console')
             if not batt_pres:
@@ -72,17 +83,21 @@ class firmware_Cr50Open(Cr50Test):
         self.cr50.set_ccd_level('lock')
 
         if not batt_pres:
+            logging.info('ccd open from AP (batt disconnected)')
+            boot_id = self.host.get_boot_id()
             cr50_utils.GSCTool(self.host, ['-a', '-o'],
                                expect_reboot=not batt_pres)
-            # Wait long enough for cr50 to open ccd and wipe the tpm.
-            time.sleep(10)
+            self.wait_ap_reboot(boot_id)
             if self.cr50.OPEN != self.cr50.get_ccd_level():
                 raise error.TestFail('Unable to open cr50 from AP with batt '
                                      'disconnected')
             return
         #Make sure open only works from the AP when the device is in dev mode.
+        logging.info('ccd open from AP')
         try:
+            boot_id = self.host.get_boot_id()
             self.ccd_open_from_ap()
+            self.wait_ap_reboot(boot_id)
         except error.TestFail as e:
             logging.info(e)
             self.cr50.check_for_console_errors('ccd open from ap')
@@ -97,17 +112,21 @@ class firmware_Cr50Open(Cr50Test):
         self.cr50.send_command('ccd testlab open')
         self.cr50.set_batt_pres_state('connected', True)
         self.switcher.reboot_to_mode(to_mode='dev')
+        logging.info('check open in dev mode, battery connected')
         self.check_cr50_open(True, True)
         self.switcher.reboot_to_mode(to_mode='normal')
+        logging.info('check open in normal mode, battery connected')
         self.check_cr50_open(False, True)
 
         self.cr50.send_command('ccd testlab open')
         self.cr50.set_batt_pres_state('disconnected', True)
+        logging.info('check open in normal mode, battery disconnected')
         self.check_cr50_open(False, False)
 
         self.cr50.send_command('ccd testlab open')
         self.cr50.ccd_disable()
         # Verify ccd open survives deep sleep.
+        logging.info('check deep sleep')
         start_ds_count = self.cr50.get_deep_sleep_count()
         self.faft_client.system.run_shell_command('poweroff', True)
         utils.wait_for_value(self.cr50.ap_is_on, False)
@@ -118,6 +137,7 @@ class firmware_Cr50Open(Cr50Test):
             raise error.TestFail('Open cleared after deep sleep')
 
         # Verify ccd open is cleared after a hard reset.
+        logging.info('check reboot')
         self.cr50.reboot()
         if self.cr50.OPEN == self.cr50.get_ccd_level():
             raise error.TestFail('Open survived hard reset')

@@ -9,6 +9,7 @@ from gi.repository import GLib
 import logging
 import math
 import random
+import uuid
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
@@ -642,6 +643,16 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @return: Dictionary of the data converted.
         """
         return {int(k, 16): bytearray(v) for k, v in manufacturer_data.items()}
+
+    @staticmethod
+    def convert_service_uuids_to_bytearray(service_uuids):
+        """Converts values in service uuids list to bytearray.
+
+        @param service_uuids: A list of service UUID128bit.
+
+        @return: List of the data converted.
+        """
+        return [uuid.UUID(i).bytes for i in service_uuids]
 
     def wait_for_adv_started(self, reg_id):
         """Waits for advertising started.

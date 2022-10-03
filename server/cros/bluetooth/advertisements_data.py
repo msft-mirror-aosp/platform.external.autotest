@@ -19,8 +19,8 @@ _ADV_TEMPLATE0_FLOSS = {
         'advertise_name': 'template_data_floss_0',
         'parameters': {
                 'connectable': False,
-                'scannable': False,
-                'is_legacy': False,
+                'scannable': True,
+                'is_legacy': True,
                 'is_anonymous': False,
                 'include_tx_power': True,
                 'primary_phy': 1,
@@ -34,10 +34,12 @@ _ADV_TEMPLATE0_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff01':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '8888': None  # To be filled by _gen_from_template_floss
+                        '00008888-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -47,10 +49,12 @@ _ADV_TEMPLATE0_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff01':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '8888': None  # To be filled by _gen_from_template_floss
+                        '00008888-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -67,7 +71,7 @@ _ADV_TEMPLATE1_FLOSS = {
         'advertise_name': 'template_data_floss_1',
         'parameters': {
                 'connectable': False,
-                'scannable': False,
+                'scannable': True,
                 'is_legacy': True,
                 'is_anonymous': False,
                 'include_tx_power': True,
@@ -82,10 +86,12 @@ _ADV_TEMPLATE1_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff02':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '9999': None  # To be filled by _gen_from_template_floss
+                        '00009999-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -95,10 +101,12 @@ _ADV_TEMPLATE1_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff02':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '9999': None  # To be filled by _gen_from_template_floss
+                        '00009999-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -115,7 +123,7 @@ _ADV_TEMPLATE2_FLOSS = {
         'advertise_name': 'template_data_floss_2',
         'parameters': {
                 'connectable': False,
-                'scannable': False,
+                'scannable': True,
                 'is_legacy': True,
                 'is_anonymous': False,
                 'include_tx_power': True,
@@ -126,27 +134,31 @@ _ADV_TEMPLATE2_FLOSS = {
                 'own_address_type': 0,
         },
         'advertise_data': {
-                'service_uuids': ['00008888-0000-1000-8000-00805f9b34fb'],
+                'service_uuids': ['00009984-0000-1000-8000-00805f9b34fb'],
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff03':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '8888': None  # To be filled by _gen_from_template_floss
+                        '00009984-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
         },
         'scan_response': {
-                'service_uuids': ['00008888-0000-1000-8000-00805f9b34fb'],
+                'service_uuids': ['00009984-0000-1000-8000-00805f9b34fb'],
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff03':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '8888': None  # To be filled by _gen_from_template_floss
+                        '00009984-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -163,8 +175,8 @@ _ADV_TEMPLATE3_FLOSS = {
         'advertise_name': 'template_data_floss_3',
         'parameters': {
                 'connectable': False,
-                'scannable': False,
-                'is_legacy': False,
+                'scannable': True,
+                'is_legacy': True,
                 'is_anonymous': False,
                 'include_tx_power': True,
                 'primary_phy': 1,
@@ -178,10 +190,12 @@ _ADV_TEMPLATE3_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff04':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '5555': None  # To be filled by _gen_from_template_floss
+                        '00005555-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -191,10 +205,12 @@ _ADV_TEMPLATE3_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff04':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '5555': None  # To be filled by _gen_from_template_floss
+                        '00005555-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -211,7 +227,7 @@ _ADV_TEMPLATE4_FLOSS = {
         'advertise_name': 'template_data_floss_4',
         'parameters': {
                 'connectable': False,
-                'scannable': False,
+                'scannable': True,
                 'is_legacy': True,
                 'is_anonymous': False,
                 'include_tx_power': True,
@@ -226,10 +242,12 @@ _ADV_TEMPLATE4_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff05':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '7777': None  # To be filled by _gen_from_template_floss
+                        '00007777-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -239,10 +257,12 @@ _ADV_TEMPLATE4_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff05':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '7777': None  # To be filled by _gen_from_template_floss
+                        '00007777-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -259,8 +279,8 @@ _ADV_TEMPLATE5_FLOSS = {
         'advertise_name': 'template_data_floss_5',
         'parameters': {
                 'connectable': False,
-                'scannable': False,
-                'is_legacy': False,
+                'scannable': True,
+                'is_legacy': True,
                 'is_anonymous': False,
                 'include_tx_power': True,
                 'primary_phy': 1,
@@ -274,10 +294,12 @@ _ADV_TEMPLATE5_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff06':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '6666': None  # To be filled by _gen_from_template_floss
+                        '00006666-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -287,10 +309,12 @@ _ADV_TEMPLATE5_FLOSS = {
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff06':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '6666': None  # To be filled by _gen_from_template_floss
+                        '00006666-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -307,7 +331,7 @@ _NEARBY_BROADCAST_ADV_TEMPLATE_FLOSS = {
         'advertise_name': 'template_data_broadcast_floss',
         'parameters': {
                 'connectable': False,
-                'scannable': False,
+                'scannable': True,
                 'is_legacy': True,
                 'is_anonymous': False,
                 'include_tx_power': True,
@@ -318,27 +342,31 @@ _NEARBY_BROADCAST_ADV_TEMPLATE_FLOSS = {
                 'own_address_type': 0,
         },
         'advertise_data': {
-                'service_uuids': ['00009999-0000-1000-8000-00805f9b34fb'],
+                'service_uuids': ['0000fef3-0000-1000-8000-00805f9b34fb'],
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xfe2c':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '9999': None  # To be filled by _gen_from_template_floss
+                        '0000fef3-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
         },
         'scan_response': {
-                'service_uuids': ['00009999-0000-1000-8000-00805f9b34fb'],
+                'service_uuids': ['0000fef3-0000-1000-8000-00805f9b34fb'],
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xfe2c':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '9999': None  # To be filled by _gen_from_template_floss
+                        '0000fef3-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
@@ -355,7 +383,7 @@ _NEARBY_MEDIUMS_FAST_ADV_TEMPLATE_FLOSS = {
         'advertise_name': 'template_data_nearby_floss',
         'parameters': {
                 'connectable': False,
-                'scannable': False,
+                'scannable': True,
                 'is_legacy': True,
                 'is_anonymous': False,
                 'include_tx_power': True,
@@ -366,27 +394,31 @@ _NEARBY_MEDIUMS_FAST_ADV_TEMPLATE_FLOSS = {
                 'own_address_type': 0,
         },
         'advertise_data': {
-                'service_uuids': ['00006666-0000-1000-8000-00805f9b34fb'],
+                'service_uuids': ['00009956-0000-1000-8000-00805f9b34fb'],
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff07':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '6666': None  # To be filled by _gen_from_template_floss
+                        '00009956-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,
         },
         'scan_response': {
-                'service_uuids': ['00006666-0000-1000-8000-00805f9b34fb'],
+                'service_uuids': ['00009956-0000-1000-8000-00805f9b34fb'],
                 'solicit_uuids': [],
                 'transport_discovery_data': [],
                 'manufacturer_data': {
-                        '50': None  # To be filled by _gen_from_template_floss
+                        '0xff07':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'service_data': {
-                        '6666': None  # To be filled by _gen_from_template_floss
+                        '00009956-0000-1000-8000-00805f9b34fb':
+                        None  # To be filled by _gen_from_template_floss
                 },
                 'include_tx_power_level': True,
                 'include_device_name': True,

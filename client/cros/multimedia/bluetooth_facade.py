@@ -4985,7 +4985,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                         advertise_parameter['own_address_type']))
 
         advertise_data = self.advertising_client.make_dbus_advertise_data(
-                advertise_data['service_uuids'],
+                self.advertising_client.convert_service_uuids_to_bytearray(
+                    advertise_data['service_uuids']),
                 advertise_data['solicit_uuids'],
                 advertise_data['transport_discovery_data'],
                 self.advertising_client.convert_manufacturer_data_to_bytearray(
@@ -4996,7 +4997,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 advertise_data['include_device_name'])
 
         scan_response = self.advertising_client.make_dbus_advertise_data(
-                scan_response['service_uuids'], scan_response['solicit_uuids'],
+                self.advertising_client.convert_service_uuids_to_bytearray(
+                    scan_response['service_uuids']),
+                scan_response['solicit_uuids'],
                 scan_response['transport_discovery_data'],
                 self.advertising_client.convert_manufacturer_data_to_bytearray(
                         scan_response['manufacturer_data']),

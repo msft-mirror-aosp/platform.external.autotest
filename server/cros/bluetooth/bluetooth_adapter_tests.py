@@ -3189,27 +3189,46 @@ class BluetoothAdapterTests(test.test):
                 btmon trace, False otherwise
         """
 
-        scan_rsp = adv_data.get('ScanResponseData')
+        if self.floss:
+            scan_rsp = adv_data.get('scan_response', {}).get('service_data')
+        else:
+            scan_rsp = adv_data.get('ScanResponseData')
+
         if not scan_rsp:
             return True
 
-        for tag, data in scan_rsp.items():
-            # Validate 16 bit Service Data tag
-            if int(tag, 16) == 0x16:
+        for key, val in scan_rsp.items():
+            # BlueZ only supports 16 bit Service Data tag.
+            if not self.floss and int(key, 16) != 0x16:
+                continue
+
+            if self.floss:
+                uuid128, data = key, val
+                # A UUID in service data is represented as UUID128bit and
+                # we want to convert it to UUID16bit to find it in btmon.
+                uuid = uuid128[4:8]
+
+                # A service data looks like
+                #   Service Data (UUID 0x9999): 0001020304
+                # while uuid is '9999' and data is [0x00, 0x01, 0x02, 0x03,
+                # 0x04].
+                data_str = ''.join(['%02x' % n for n in data])
+            else:
+                tag, data = key, val
                 # First two bytes of data are endian-corrected UUID, followed
-                # by service data
+                # by service data.
                 uuid = '%x%x' % (data[1], data[0])
                 data_str = ''.join(
-                        ['%02x' % data[i] for i in range(2, len(data))])
+                    ['%02x' % data[i] for i in range(2, len(data))])
 
-                # Service data has the following format in btmon trace:
-                # Service Data (UUID 0xfef3): 01020304
-                search_str = 'Service Data (UUID 0x{}): {}'.format(
-                        uuid, data_str)
+            # Service data has the following format in btmon trace:
+            # Service Data (UUID 0xfef3): 01020304.
+            search_str = 'Service Data (UUID 0x{}): {}'.format(
+                    uuid, data_str)
 
-                # Fail if data can't be located in btmon trace
-                if not self.bluetooth_facade.btmon_find(search_str):
-                    return False
+            # Fail if data can't be located in btmon trace.
+            if not self.bluetooth_facade.btmon_find(search_str):
+                return False
 
         return True
 
@@ -3352,13 +3371,32 @@ class BluetoothAdapterTests(test.test):
         # value was an empty string
         registration_succeeded = (self.advertising_msg == '')
 
+        if self.floss:
+            adv_broadcast = not advertisement_data['parameters']['connectable']
+            add_adv_data_str = 'LE Set Extended Advertising Data'
+            instance_str = 'Handle: 0x%02X' % (instance_id - 1)
+            add_adv_param_str = 'LE Set Extended Advertising Parameters'
+            manufacturer_data = advertisement_data.get(
+                'advertise_data', {}).get('manufacturer_data')
+            service_uuids = advertisement_data.get('advertise_data',
+                                                   {}).get('service_uuids')
+            service_data = advertisement_data.get(
+                'advertise_data', {}).get('service_data').items()
+        else:
+            adv_broadcast = advertisement_data.get('Type') == 'broadcast'
+            add_adv_data_str = 'Advertising Added'
+            instance_str = 'Instance: %d' % instance_id
+            add_adv_param_str = 'Add Extended Advertising Parameters'
+            manufacturer_data = advertisement_data.get('ManufacturerData', '')
+            service_uuids = advertisement_data.get('ServiceUUIDs', [])
+            service_data = advertisement_data.get('ServiceData', {}).items()
+
         # Verify that a new advertisement is added.
         advertisement_added = (
-                self.bluetooth_facade.btmon_find('Advertising Added') and
-                self.bluetooth_facade.btmon_find('Instance: %d' % instance_id))
+                self.bluetooth_facade.btmon_find(add_adv_data_str)
+                and self.bluetooth_facade.btmon_find(instance_str))
 
         # Verify that the manufacturer data could be found.
-        manufacturer_data = advertisement_data.get('ManufacturerData', '')
         manufacturer_data_found = True
         for manufacturer_id in manufacturer_data:
             # The 'not assigned' text below means the manufacturer id
@@ -3370,32 +3408,34 @@ class BluetoothAdapterTests(test.test):
 
         # Verify that all service UUIDs could be found.
         service_uuids_found = True
-        for uuid in advertisement_data.get('ServiceUUIDs', []):
+        for uuid in service_uuids:
             # Service UUIDs looks like ['0x180D', '0x180F']
             #   Heart Rate (0x180D)
             #   Battery Service (0x180F)
             # For actual 16-bit service UUIDs, refer to
             #   https://www.bluetooth.com/specifications/gatt/services
-            if not self.bluetooth_facade.btmon_find('0x%s' % uuid):
+            if not self.bluetooth_facade.btmon_find(
+                    '0x%s' % uuid[4:8] if self.floss else uuid):
                 service_uuids_found = False
                 break
 
         # Verify service data.
         service_data_found = True
-        for uuid, data in advertisement_data.get('ServiceData', {}).items():
+        for uuid, data in service_data:
             # A service data looks like
             #   Service Data (UUID 0x9999): 0001020304
             # while uuid is '9999' and data is [0x00, 0x01, 0x02, 0x03, 0x04]
             data_str = ''.join(['%02x' % n for n in data])
             if not self.bluetooth_facade.btmon_find(
-                    'Service Data (UUID 0x%s): %s' % (uuid, data_str)):
+                    'Service Data (UUID 0x%s): %s' %
+                    (uuid[4:8] if self.floss else uuid, data_str)):
                 service_data_found = False
                 break
 
         # Broadcast advertisements are overwritten in some kernel versions to
         # be more aggressive. Verify that the advertising intervals are correct
         # if this mode is not used
-        if advertisement_data.get('Type') != 'broadcast':
+        if not adv_broadcast:
             min_adv_interval_ms_found, max_adv_interval_ms_found = (
                     self._verify_advertising_intervals(min_adv_interval_ms,
                                                        max_adv_interval_ms))
@@ -3410,9 +3450,14 @@ class BluetoothAdapterTests(test.test):
         advertising_enabled = self.bluetooth_facade.btmon_find(
                 'Advertising: Enabled (0x01)')
 
-        # Verify new APIs were used
-        new_apis_used = self.bluetooth_facade.btmon_find(
-                'Add Extended Advertising Parameters')
+        # If BlueZ is in use, check the new API, MGMT command Add Extended
+        # Advertising Parameters, is used no matter if Ext Adv is supported by
+        # the controller or not.
+        # If Floss is in use, check the HCI command LE Set Extended Advertising
+        # Parameters is used.
+        # TODO(chromeos-bt-team): Revise this after software rotation is
+        #                         supported in Floss.
+        new_apis_used = self.bluetooth_facade.btmon_find(add_adv_param_str)
 
         tx_power_correct = self._verify_adv_tx_power(advertisement_data)
 
@@ -3430,7 +3475,6 @@ class BluetoothAdapterTests(test.test):
                 'tx_power_correct': tx_power_correct,
         }
         return all(self.results.values())
-
 
     @test_retry_and_log(False)
     def test_fail_to_register_advertisement(self, advertisement_data,

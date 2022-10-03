@@ -136,3 +136,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     def get_serial(self):
         """Ti50's serial is lowercase."""
         return super(ChromeTi50, self).get_serial().lower()
+
+    def send_safe_command_get_output(self, command, regexp_list,
+            channel_mask=0x1):
+        """Ti50 console does not support chan command"""
+        return self.send_command_get_output(command, regexp_list)

@@ -105,14 +105,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CAP_ALWAYS = 'Always'
     # Regex to match the valid capability settings.
     CAP_STATES = '(%s|Default|%s|UnlessLocked|Never)' % (CAP_ALWAYS, CAP_IF_OPENED)
-    # List of all cr50 ccd capabilities. Same order of 'ccd' output
-    CAP_NAMES = [
-            'UartGscRxAPTx', 'UartGscTxAPRx', 'UartGscRxECTx', 'UartGscTxECRx',
-            'FlashAP', 'FlashEC', 'OverrideWP', 'RebootECAP', 'GscFullConsole',
-            'UnlockNoReboot', 'UnlockNoShortPP', 'OpenNoTPMWipe',
-            'OpenNoLongPP', 'BatteryBypassPP', '(UpdateNoTPMWipe|Unused)',
-            'I2C', 'FlashRead', 'OpenNoDevMode', 'OpenFromUSB', 'OverrideBatt'
-    ]
     # There are two capability formats. Match both.
     #  UartGscRxECTx   Y 3=IfOpened
     #  or
@@ -120,21 +112,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # Make sure the last word is at the end of the line. The next line will
     # start with some whitespace, so account for that too.
     CAP_FORMAT = r'\s+(Y|-) \d\=(%s[\S ]*)[\r\n]+\s*' % CAP_STATES
-    # Be as specific as possible with the 'ccd' output, so the test will notice
-    # missing characters and retry getting the output. Name each group, so the
-    # test can extract the field information into a dictionary.
-    # CCD_FIELDS is used to order the regex when searching for multiple fields
-    CCD_FIELDS = ['State', 'Password', 'Flags', 'Capabilities', 'TPM']
-    # CCD_FORMAT has the field names as keys and the expected output as the
-    # value.
-    CCD_FORMAT = {
-        'State' : '(State: (?P<State>Opened|Locked|Unlocked))',
-        'Password' : '(Password: (?P<Password>set|none))',
-        'Flags' : '(Flags: (?P<Flags>\S*))',
-        'Capabilities' : '(Capabilities:.*(?P<Capabilities>%s))' %
-                         (CAP_FORMAT.join(CAP_NAMES) + CAP_FORMAT),
-        'TPM' : '(TPM:(?P<TPM>[ \S]*)\r)',
-    }
 
     # CR50 Board Properties as defined in platform/ec/board/cr50/scratch-reg1.h
     BOARD_PROP = {
@@ -414,43 +391,30 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         @return: the field value or a dictionary with the ccd field name as the
                  key and the setting as the value.
         """
-
-        if field:
-            match_value = self.CCD_FORMAT[field]
-        else:
-            values = [ self.CCD_FORMAT[field] for field in self.CCD_FIELDS ]
-            match_value = '.*'.join(values)
-        logging.debug('Search %r', match_value)
-        matched_output = None
         original_timeout = float(self._servo.get('cr50_uart_timeout'))
         # Change the console timeout to 10s, it may take longer than 3s to read
         # ccd info
         self._servo.set_nocheck('cr50_uart_timeout', self.CONSERVATIVE_CCD_WAIT)
-        for i in range(self.GET_CAP_TRIES):
-            try:
-                # If some ccd output is dropped and the output doesn't match the
-                # expected ccd output format, send_command_get_output will wait the
-                # full CONSERVATIVE_CCD_WAIT even though ccd is done printing. Use
-                # re to search the command output instead of
-                # send_safe_command_get_output, so we don't have to wait the full
-                # timeout if output is dropped.
-                rv = self.send_command_retry_get_output('ccd', ['ccd.*>'],
-                                                        safe=True)[0]
-                matched_output = re.search(match_value, rv, re.DOTALL)
-                if matched_output:
-                    break
-                logging.info('try %d: could not match ccd output %s', i, rv)
-            except Exception as e:
-                logging.info('try %d got error %s', i, str(e))
-
-        self._servo.set_nocheck('cr50_uart_timeout', original_timeout)
-        if not matched_output:
-            raise error.TestFail('Could not get ccd output')
-        matched_dict = matched_output.groupdict()
-        logging.info('Current CCD settings:\n%s', pprint.pformat(matched_dict))
+        try:
+            rv = self.send_command_retry_get_output('ccd', ['ccd.*>'],
+                                                    safe=True)[0]
+        finally:
+            self._servo.set_nocheck('cr50_uart_timeout', original_timeout)
+        ccd_output = {}
+        k = None
+        for line in rv.splitlines():
+            if ':' in line:
+                k, v = line.split(':')
+                ccd_output[k] = [v.strip()]
+            elif k == 'Capabilities':
+                # The Capablitiy key has multiple lines.
+                ccd_output[k].append(line)
+        for k, v in six.iteritems(ccd_output):
+            ccd_output[k] = '\n'.join(v)
+        logging.info('Current CCD settings:\n%s', pprint.pformat(ccd_output))
         if field:
-            return matched_dict.get(field)
-        return matched_dict
+            return ccd_output.get(field)
+        return ccd_output
 
 
     def get_cap(self, cap):

@@ -13,7 +13,7 @@ TIME = 'SHORT'    # This test takes about 1 minutes while running locally
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+DEPENDENCIES = 'wificell'
 PY_VERSION = 3
 
 DOC = """

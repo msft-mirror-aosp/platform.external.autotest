@@ -327,9 +327,9 @@ def GetRunningVersion(client):
 
 
 def GetActiveCr50ImagePath(client):
-    """Get the path the device uses to update cr50
+    """Get the path the device uses to update gsc
 
-    Extract the active cr50 path from the cr50-update messages. This path is
+    Extract the active gsc path from the cr50-update messages. This path is
     determined by cr50-get-name based on the board id flag value.
 
     Args:
@@ -342,14 +342,13 @@ def GetActiveCr50ImagePath(client):
     """
     ClearUpdateStateAndReboot(client)
     messages = client.run(GET_GSC_MESSAGES).stdout.strip()
-    paths = set(re.findall('/opt/google/*50/firmware/*50.bin[\S]+', messages))
+    paths = set(re.findall('/opt/google/[\S]*/firmware/[\S]*', messages))
     if not paths:
-        raise error.TestFail('Could not determine cr50-update path')
-    path = paths.pop()
-    if len(paths) > 1 or (not path.endswith(PREPVT_EXT) and
-                          not path.endswith(PROD_EXT)):
-        raise error.TestFail('cannot determine gsc path')
-    return path
+        raise error.TestFail('No paths found in cr50-update messages')
+    for path in paths:
+        if path.endswith(PREPVT_EXT) or path.endswith(PROD_EXT):
+            return path
+    raise error.TestFail('Invalid gsc paths: %r' % paths)
 
 
 def CheckForFailures(client, last_message):

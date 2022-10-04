@@ -456,6 +456,13 @@ class AudioFacadeLocal(object):
         """
         return cras_utils.get_plugged_node_types()
 
+    def get_audio_thread_summary(self):
+        """Gets the summary of audio thread.
+
+        @returns: A list of summary strings.
+        """
+        return cras_utils.get_audio_thread_summary()
+
 
     def dump_diagnostics(self, file_path):
         """Dumps audio diagnostics results to a file.

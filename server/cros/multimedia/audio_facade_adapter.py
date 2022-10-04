@@ -219,6 +219,14 @@ class AudioFacadeRemoteAdapter(object):
         return self._audio_proxy.get_plugged_node_types()
 
 
+    def get_audio_thread_summary(self):
+        """Gets the summary of audio thread.
+
+        @returns: A list of strings prefixed by `Summary:`
+        """
+        return self._audio_proxy.get_audio_thread_summary()
+
+
     def dump_diagnostics(self, file_path):
         """Dumps audio diagnostics results to a file.
 

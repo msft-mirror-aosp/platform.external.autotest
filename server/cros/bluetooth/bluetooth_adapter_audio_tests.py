@@ -803,6 +803,27 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
     @test_retry_and_log(False)
+    def test_check_input_device_sample_rate(self, rate):
+        """Checks the input device sample rate.
+
+        This method checks if there is exactly one input device whose sample
+        rate is the given `rate`.
+
+        @param rate: the expected sample rate of the input device.
+
+        @returns: True on success. False otherwise.
+        """
+        summaries = self.audio_facade.get_audio_thread_summary()
+        # Example summaries when capturing:
+        # Summary: Input device [RASPI_AUDIO] 14400 24000 1
+        # Summary: Input stream 0x130000 CRAS_CLIENT_TYPE_TEST CRAS_STREAM_TYPE_DEFAULT 160 80
+        #     0x0000 16000 1 0
+        pattern = re.compile(r'Summary: Input device \[.*?\] (\d+) (?P<rate>\d+) (\d+) ')
+        filtered = map(lambda x: pattern.match(x), summaries)
+        filtered = filter(lambda x: x and int(x.group('rate')) == rate, filtered)
+        return len(list(filtered)) == 1
+
+    @test_retry_and_log(False)
     def test_dut_to_start_capturing_audio_subprocess(self, audio_data,
                                                      recording_device):
         """Start capturing audio in a subprocess.
@@ -1568,11 +1589,16 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_dut_to_stop_capturing_audio_subprocess()
 
 
-    def hfp_dut_as_sink(self, device, test_profile):
+    def hfp_dut_as_sink(self, device, test_profile, *,
+                        check_input_device_sample_rate=None):
         """Test Case: HFP sinewave streaming from peer device to the DUT.
 
         @param device: the Bluetooth peer device.
         @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
+        @param check_input_device_sample_rate: if it's not None, it must be an
+                integer specifying the expected sample rate of the input device
+                and, during capturing, a test will be run that checks if the
+                sample rate is as expected.
         """
         hfp_test_data = audio_test_data[test_profile]
 
@@ -1588,6 +1614,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                 test_profile)
 
         self.test_select_audio_input_device(device.name)
+
+        if check_input_device_sample_rate is not None:
+            self.test_check_input_device_sample_rate(check_input_device_sample_rate)
 
         self.test_device_to_start_playing_audio_subprocess(
                 device, test_profile, hfp_test_data)
@@ -1609,7 +1638,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_start_custom_chrome({
             'extra_browser_args':
             ['--enable-features=CrOSLateBootAudioHFPMicSR']})
-        self.hfp_dut_as_sink(device, test_profile)
+        self.hfp_dut_as_sink(
+                device,
+                test_profile,
+                check_input_device_sample_rate=24000)
         self.test_stop_ui()
 
 

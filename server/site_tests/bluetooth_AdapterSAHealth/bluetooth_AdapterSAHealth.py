@@ -214,7 +214,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         """Verify that the adapter has a correctly-formatted alias"""
         self.test_check_valid_alias()
 
-    @test_wrapper('DBUS API tests')
+    @test_wrapper('DBUS API tests', supports_floss=True)
     def sa_dbus_api_tests(self):
         """ Verify that the Bluetooth DBus API calls work."""
         self.test_dbus_start_discovery_success()

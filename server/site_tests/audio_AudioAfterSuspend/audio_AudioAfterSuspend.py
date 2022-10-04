@@ -233,10 +233,11 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
                 source_id=source,
                 recorder_id=recorder)
 
-        self.ignore_frequencies = None
+        # ignore frequencies that might be background noise in the lab
+        self.ignore_frequencies = [17, 29, 42]
         if (source == chameleon_audio_ids.CrosIds.SPEAKER
                     or bind_to == chameleon_audio_ids.CrosIds.EXTERNAL_MIC):
-            self.ignore_frequencies = [50, 60]
+            self.ignore_frequencies += [50, 60]
 
         self.errors = []
         self.golden_file, self.low_pass_freq = golden_data

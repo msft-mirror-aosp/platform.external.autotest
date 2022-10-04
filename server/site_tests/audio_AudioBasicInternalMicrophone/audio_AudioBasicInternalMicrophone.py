@@ -105,6 +105,9 @@ class audio_AudioBasicInternalMicrophone(audio_test.AudioTest):
         # identical.
         recorder.channel_map = [0]
 
+        # ignore frequencies that might be background noise in the lab
+        ignore_frequencies = [17, 29, 42]
+
         # Compares data by frequency. Audio signal from Chameleon Line-Out to
         # speaker and finally recorded on Cros device using internal microphone
         # has gone through analog processing and through the air.
@@ -113,4 +116,5 @@ class audio_AudioBasicInternalMicrophone(audio_test.AudioTest):
         # correlation, which is suitable for fully-digital audio path like USB
         # and HDMI.
         audio_test_utils.check_recorded_frequency(
-                golden_file, recorder, second_peak_ratio=0.2)
+                golden_file, recorder, second_peak_ratio=0.2,
+                ignore_frequencies=ignore_frequencies)

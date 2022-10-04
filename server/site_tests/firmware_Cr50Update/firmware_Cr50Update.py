@@ -25,6 +25,7 @@ class firmware_Cr50Update(Cr50Test):
     version = 1
     UPDATE_TIMEOUT = 20
     POST_INSTALL = "post_install"
+    CCD = "ccd"
 
     DEV_NAME = "dev_image"
     OLD_RELEASE_NAME = "old_release_image"
@@ -41,6 +42,9 @@ class firmware_Cr50Update(Cr50Test):
                                                     full_args,
                                                     restore_cr50_image=True)
         self.test_post_install = test.lower() == self.POST_INSTALL
+        self.test_ccd = test.lower() == self.CCD
+        if self.test_ccd and not self.ccd_programmer_connected_to_servo_host():
+            raise error.TestNAError('Connect ccd to run ccd update test')
 
         if not release_ver and not os.path.isfile(release_path):
             release_path = self.get_saved_cr50_original_path()
@@ -69,13 +73,17 @@ class firmware_Cr50Update(Cr50Test):
         self.verify_update_order()
         logging.info("Update %s", self.update_order)
 
-        self.device_update_path = cr50_utils.GetActiveCr50ImagePath(self.host)
+        if self.test_ccd:
+            self.device_update_path = '/tmp/cr50.bin'
+        else:
+            self.device_update_path = cr50_utils.GetActiveCr50ImagePath(
+                self.host)
         # Update to the dev image
         self.run_update(self.DEV_NAME)
 
 
-    def run_update(self, image_name, use_usb_update=False):
-        """Copy the image to the DUT and upate to it.
+    def run_update(self, image_name):
+        """Copy the image to the DUT and update to it.
 
         Normal updates will use the cr50-update script to update. If a rollback
         is True, use usb_update to flash the image and then use the 'rw'
@@ -83,10 +91,7 @@ class firmware_Cr50Update(Cr50Test):
 
         @param image_name: the key in the images dict that can be used to
                            retrieve the image info.
-        @param use_usb_update: True if usb_updater should be used directly
-                               instead of running the update script.
         """
-        self.cr50.ccd_disable()
         # Get the current update information
         image_ver, image_ver_str, image_path = self.images[image_name]
 
@@ -106,18 +111,22 @@ class firmware_Cr50Update(Cr50Test):
                      "rollback" if rollback else "update", running_ver_str,
                      image_ver_str)
 
-        # If a rollback is needed, flash the image into the inactive partition,
-        # on or use usb_update to update to the new image if it is requested.
-        if use_usb_update or rollback:
-            self.cr50_update(image_path, rollback=rollback)
-            self.check_state((self.checkers.crossystem_checker,
-                              {'mainfw_type': 'normal'}))
-
         # Cr50 is going to reject an update if it hasn't been up for more than
         # 60 seconds. Wait until that passes before trying to run the update.
         self.cr50.wait_until_update_is_allowed()
 
-        # Running the usb update or rollback will enable ccd. Disable it again.
+        # If a rollback is needed, flash the image into the inactive partition,
+        # on or update over ccd.
+        if rollback or self.test_ccd:
+            self.cr50_update(image_path, rollback=rollback,
+                             use_ccd=self.test_ccd)
+            self.check_state((self.checkers.crossystem_checker,
+                              {'mainfw_type': 'normal'}))
+            logging.info('Successfully updated from %s to %s %s%s',
+                         running_ver_str, image_name, image_ver_str,
+                         ' over ccd' if self.test_ccd else '')
+            return
+
         self.cr50.ccd_disable()
 
         # Get the last cr50 update related message from /var/log/messages

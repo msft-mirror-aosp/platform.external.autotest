@@ -1,0 +1,29 @@
+# Copyright 2022 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "josephsussman@google.com, cros-flex-team@google.com"
+NAME = "flex-perbuild"
+PURPOSE = "Run the Tast mainline tests without clearing the TPM."
+
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite verifies ChromeOS's basic functionality for the ChromeOS Commit
+Queue by running all Tast integration tests that must always pass against a
+DUT, without clearing the TPM. See http://go/tast for more information about
+Tast.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['max_runtime_mins'] = 240
+args_dict['timeout_mins'] = 1440
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

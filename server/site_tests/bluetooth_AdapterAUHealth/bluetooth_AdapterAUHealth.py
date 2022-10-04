@@ -5,6 +5,7 @@
 
 """A Batch of Bluetooth AUdio Health tests"""
 
+import functools
 import time
 import logging
 
@@ -216,7 +217,11 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_wbs_dut_as_sink_test(self):
         """HFP WBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_sink, HFP_WBS)
+        self.au_hfp_run_method(
+                device,
+                functools.partial(self.hfp_dut_as_sink,
+                    check_input_device_sample_rate=16000),
+                HFP_WBS)
 
 
     @test_wrapper('HFP WBS sinewave test with dut as sink with super resolution',
@@ -244,7 +249,11 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_nbs_dut_as_sink_test(self):
         """HFP NBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_sink, HFP_NBS)
+        self.au_hfp_run_method(
+                device,
+                functools.partial(self.hfp_dut_as_sink,
+                    check_input_device_sample_rate=8000),
+                HFP_NBS)
 
 
     @test_wrapper('HFP NBS sinewave test with dut as sink with super resolution',

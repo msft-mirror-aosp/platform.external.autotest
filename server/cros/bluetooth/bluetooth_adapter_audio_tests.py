@@ -1268,6 +1268,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         test_data['chunk_checking_duration'] = 5
         test_data['chunk_in_secs'] = 1
 
+        # Set audio output to the internal speaker and set the minimum volume
+        # to avoid making noise while testing.
+        self.test_select_audio_output_node_internal_speaker()
         self.audio_facade.set_selected_output_volume(1)
 
         # Start playing audio on the Dut.
@@ -1281,6 +1284,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_device_a2dp_connected(device)
 
         # Select Bluetooth as output node.
+        # Do not set the volume of Bluetooth audio device.
         self.test_select_audio_output_node_bluetooth()
 
         self.test_device_to_start_recording_audio_subprocess(
@@ -1293,8 +1297,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         self.test_device_to_stop_recording_audio_subprocess(device)
 
+        # Set audio output to the internal speaker and set the minimum volume
+        # to avoid making noise while testing.
         self.test_select_audio_output_node_internal_speaker()
-
         self.audio_facade.set_selected_output_volume(1)
 
         # Check if the device disconnects successfully.

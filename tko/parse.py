@@ -125,6 +125,10 @@ def parse_args():
                       help=("Do not upload perf results to chrome perf."),
                       dest="disable_perf_upload", action="store_true",
                       default=False)
+    parser.add_option("--effective_job_name",
+                      help="The name to use for the job.",
+                      dest="effective_job_name",
+                      action="store")
     options, args = parser.parse_args()
 
     # we need a results directory
@@ -603,7 +607,8 @@ def _get_job_subdirs(path):
     return None
 
 
-def parse_leaf_path(db, pid_file_manager, path, level, parse_options):
+def parse_leaf_path(db, pid_file_manager, path, level, parse_options,
+                    effective_job_name=None):
     """Parse a leaf path.
 
     @param db: database handle.
@@ -611,17 +616,22 @@ def parse_leaf_path(db, pid_file_manager, path, level, parse_options):
     @param path: The path to the results to be parsed.
     @param level: Integer, level of subdirectories to include in the job name.
     @param parse_options: _ParseOptions instance.
+    @param effective_job_name: Unique name to be used instead of parsing path.
 
     @returns: The job name of the parsed job, e.g. '123-chromeos-test/host1'
     """
-    job_elements = path.split("/")[-level:]
-    jobname = "/".join(job_elements)
+    if effective_job_name:
+        jobname = effective_job_name
+    else:
+        job_elements = path.split("/")[-level:]
+        jobname = "/".join(job_elements)
     db.run_with_retry(parse_one, db, pid_file_manager, jobname, path,
                       parse_options)
     return jobname
 
 
-def parse_path(db, pid_file_manager, path, level, parse_options):
+def parse_path(db, pid_file_manager, path, level, parse_options,
+               effective_job_name):
     """Parse a path
 
     @param db: database handle.
@@ -629,6 +639,7 @@ def parse_path(db, pid_file_manager, path, level, parse_options):
     @param path: The path to the results to be parsed.
     @param level: Integer, level of subdirectories to include in the job name.
     @param parse_options: _ParseOptions instance.
+    @param effective_job_name: Unique name to be used instead of parsing path.
 
     @returns: A set of job names of the parsed jobs.
               set(['123-chromeos-test/host1', '123-chromeos-test/host2'])
@@ -641,18 +652,18 @@ def parse_path(db, pid_file_manager, path, level, parse_options):
         # this check, we do not parse these results.
         if os.path.exists(os.path.join(path, 'status.log')):
             new_job = parse_leaf_path(db, pid_file_manager, path, level,
-                                      parse_options)
+                                      parse_options, effective_job_name)
             processed_jobs.add(new_job)
         # multi-machine job
         for subdir in job_subdirs:
             jobpath = os.path.join(path, subdir)
             new_jobs = parse_path(db, pid_file_manager, jobpath, level + 1,
-                                  parse_options)
+                                  parse_options, effective_job_name)
             processed_jobs.update(new_jobs)
     else:
         # single machine job
         new_job = parse_leaf_path(db, pid_file_manager, path, level,
-                                  parse_options)
+                                  parse_options, effective_job_name)
         processed_jobs.add(new_job)
     return processed_jobs
 
@@ -739,7 +750,8 @@ def _main_with_options(options, args):
                     raise # something unexpected happened
             try:
                 new_jobs = parse_path(db, pid_file_manager, path, options.level,
-                                      parse_options)
+                                      parse_options,
+                                      options.effective_job_name)
                 processed_jobs.update(new_jobs)
 
             finally:

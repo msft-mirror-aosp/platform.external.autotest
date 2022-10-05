@@ -110,19 +110,22 @@ class Interface:
 
 
     @staticmethod
-    def get_connected_ethernet_interface(ignore_failures=False):
+    def get_connected_ethernet_interface(ignore_failures=False, host=None,
+                                         netns=None):
         """Get an interface object representing a connected ethernet device.
 
         Raises an exception if no such interface exists.
 
         @param ignore_failures bool function will return None instead of raising
                 an exception on failures.
+        @param host a host object
+        @param netns a network namespace for the interface
         @return an Interface object except under the conditions described above.
 
         """
         # Assume that ethernet devices are called ethX until proven otherwise.
         for device_name in ['eth%d' % i for i in range(5)]:
-            ethernet_if = Interface(device_name)
+            ethernet_if = Interface(device_name, host, netns)
             if ethernet_if.exists and ethernet_if.ipv4_address:
                 return ethernet_if
 

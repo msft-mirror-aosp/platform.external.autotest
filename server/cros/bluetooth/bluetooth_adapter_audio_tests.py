@@ -233,9 +233,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                     self.real_ip = self.local_host_ip
                     logging.info('Using local host ip = %s', self.real_ip)
                 else:
-                   dut_if = interface.Interface('eth0', self.host)
-                   self.real_ip = dut_if.ipv4_address
-                   logging.info('Using DUT ip = %s', self.real_ip)
+                    dut_if = interface.Interface.get_connected_ethernet_interface(
+                        host=self.host)
+                    self.real_ip = dut_if.ipv4_address
+                    logging.info('Using DUT ip = %s', self.real_ip)
             else:
                 self.real_ip = self.host.ip
 

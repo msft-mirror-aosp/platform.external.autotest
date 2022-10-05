@@ -1,4 +1,4 @@
-# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,11 +6,11 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.firmware-cr50_ccd'
+NAME = 'tast.firmware-gsc_ccd'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_cr50'
-ATTRIBUTES = 'suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt'
+DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_gsc'
+ATTRIBUTES = 'suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt, suite:faft_ti50_qual'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 JOB_RETRIES = 0
@@ -19,7 +19,7 @@ JOB_RETRIES = 0
 REQUIRE_SSP = True
 
 DOC = '''
-Run the Tast tests for Google Security Chip firmware (Cr50).
+Run the Tast tests for Google Security Chip firmware.
 
 The tests are part of 'group:firmware', and the 'firmware_cr50' sub-attribute
 limits it to those that cover the Google Security Chip. Additionally the

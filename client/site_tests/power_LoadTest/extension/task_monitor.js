@@ -103,7 +103,9 @@ class TaskMonitor {
       );
     }
 
-    Promise.all(promises).finally(() => {
+    // send collected information to the server after all promises are done
+    // use Promise.allSettled to skip failure ones without early bail out
+    Promise.allSettled(promises).finally(() => {
       this._records.push(data);
 
       if (this._records.length >= 1) {

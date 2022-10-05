@@ -78,10 +78,6 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         """
         super(ChromeTi50, self).__init__(servo, 'cr50_uart')
         self.faft_config = faft_config
-        # Update CCD_FORMAT to use ti50 version of CAP_NAMES.
-        self.CCD_FORMAT['Capabilities'] = \
-            '(Capabilities:.*(?P<Capabilities>%s))' % \
-            (self.CAP_FORMAT.join(self.CAP_NAMES) + self.CAP_FORMAT)
 
     def set_ccd_level(self, level, password=''):
         if level == 'unlock':

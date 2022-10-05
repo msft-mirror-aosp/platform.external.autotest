@@ -72,11 +72,12 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
             cmd.append('--log-level-display=DEBUG')
         return cmd
 
-    def _get_bundle_url(self, uri, bundle):
+    def _get_bundle_specification(self, uri, bundle):
+        """Get the bundle information.
+        """
         if uri and (uri.startswith('http') or uri.startswith('gs')):
-            return uri
-        else:
-            return _BUNDLE_MAP[(uri, bundle)]
+            return tradefed_test.BundleSpecification(uri, password='')
+        return tradefed_test.BundleSpecification(_BUNDLE_MAP[(uri, bundle)], password='')
 
     def _get_tradefed_base_dir(self):
         return 'android-cts'

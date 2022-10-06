@@ -161,6 +161,16 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                     result.get_keyval(
                             prefix='_'.join([ap_config_tag, test_type])))
 
+            # Log the standard deviation
+            throughput_dev = result.throughput_dev
+            self.output_perf_value(test_type + '_dev',
+                                   throughput_dev,
+                                   units='Mbps',
+                                   higher_is_better=False,
+                                   graph=ap_config_tag + '_dev')
+            self.write_perf_keyval(
+                {'_'.join([ap_config_tag, test_type, 'dev']): throughput_dev})
+
         if governor:
             self.restore_scaling_governors()
 

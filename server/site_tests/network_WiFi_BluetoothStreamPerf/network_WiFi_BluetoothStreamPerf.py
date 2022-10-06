@@ -157,6 +157,16 @@ class network_WiFi_BluetoothStreamPerf(
                 result.get_keyval(
                         prefix='_'.join([config.test_type, test_str])))
 
+        # Log the standard deviation
+        throughput_dev = result.throughput_dev
+        self.output_perf_value(config.test_type + '_' + bt_tag + '_dev',
+                               throughput_dev,
+                               units='Mbps',
+                               higher_is_better=False,
+                               graph=ap_config_tag + '_dev')
+        self.write_perf_keyval(
+            {'_'.join([config.test_type, test_str, 'dev']): throughput_dev})
+
         # Log the drop in throughput compared with the 'BT_disconnected'
         # baseline. Only positive values are valid. Report the drop as a
         # whole integer percentage of (base_through-through)/base_through.

@@ -1538,16 +1538,28 @@ class BluetoothAdapterTests(test.test):
         """
         self.bluetooth_facade.set_quality_report(enable)
 
+        # The bluetoothd assumes that an experimental feature can only be
+        # considered valid when the bluetoothd starts with the feature
+        # enabled. Otherwise, the experimental feature will be considered
+        # invalid. To work around this limitation, let the bluetoothd
+        # restart after the quality report is enabled so that quality
+        # report becomes a valid experimental feature of the adapter.
+        if enable:
+            time.sleep(1)
+            self.test_stop_bluetoothd()
+            self.test_start_bluetoothd()
+            time.sleep(1)
+
     @test_retry_and_log
     def test_enable_quality_report(self):
         """Test that enables the bluetooth quality report."""
-        self.enable_disable_quality_report(enable=True)
+        self.bluetooth_facade.set_quality_report(True)
         return True
 
     @test_retry_and_log
     def test_disable_quality_report(self):
         """Test that disables the bluetooth quality report."""
-        self.enable_disable_quality_report(enable=False)
+        self.bluetooth_facade.set_quality_report(False)
         return True
 
     def start_new_btmon(self):

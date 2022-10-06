@@ -57,7 +57,13 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
 
         time.sleep(3)
 
-        self.test_reset_on_adapter()
+        if logging_and_check:
+            # The enable_disable_quality_report() method will restart
+            # bluetoothd. Hence, this has to be executed before pairing.
+            # Refer to enable_disable_quality_report() about details.
+            self.enable_disable_quality_report(enable=True)
+            self.enable_disable_quality_debug_log(enable=True)
+
         self.test_bluetoothd_running()
 
         for device in devices:
@@ -72,8 +78,6 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
 
         if logging_and_check:
             self.dut_btmon_log_path = self.start_new_btmon()
-            self.enable_disable_quality_report(enable=True)
-            self.enable_disable_quality_debug_log(enable=True)
 
         test_method()
 

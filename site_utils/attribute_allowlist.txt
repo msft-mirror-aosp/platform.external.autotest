@@ -332,6 +332,7 @@ suite:check_setup_storage_qual
 suite:chrome-informational
 suite:commercial-limited
 suite:cros-av-analysis
+suite:cros-hwsec_nightly
 suite:cros-hwsec_per-week
 suite:crosbolt_arc_perf_qual
 suite:crosbolt_perf_nightly

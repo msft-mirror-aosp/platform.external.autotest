@@ -40,7 +40,8 @@ class network_WiFi_BluetoothStreamPerf(
             perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX,
             perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL,
             perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX,
-            perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX,
+            # TODO(b:251380100): investigate unstable results for UDP_RX
+            # perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX,
             perf_manager.PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL,
     ]
 

@@ -28,7 +28,7 @@ class audio_AudioVolume(audio_test.AudioTest):
     DELAY_AFTER_BINDING = 0.5
     DELAY_BEFORE_PLAYBACK = 0.5
 
-    def run_once(self, source_id, skipped_model_with_bugs={}):
+    def run_once(self, source_id, skipped_model_with_bugs={}, ignore_frequencies=[]):
         """Running audio volume test.
 
         @param source_id: An ID defined in chameleon_audio_ids for source.
@@ -101,7 +101,7 @@ class audio_AudioVolume(audio_test.AudioTest):
             binder = self.widget_factory.create_binder(source, recorder)
 
         low_volume, high_volume, highest_ratio = get_volume_spec(source_id)
-        ignore_frequencies = [50, 60]
+        ignore_frequencies += [50, 60]
 
         second_peak_ratio = audio_test_utils.get_second_peak_ratio(
                 source_id=source_id, recorder_id=recorder_id, is_hsp=False)

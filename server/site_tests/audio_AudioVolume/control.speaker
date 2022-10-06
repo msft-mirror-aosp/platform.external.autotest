@@ -30,6 +30,7 @@ def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
     job.run_test("audio_AudioVolume", host=host, tag="speaker",
                  source_id=chameleon_audio_ids.CrosIds.SPEAKER,
+                 ignore_frequencies=[17, 29, 42],
                  skipped_model_with_bugs={'tomato':'b/238855629',
                  'helios': 'b/249016133'},
                 )

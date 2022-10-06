@@ -640,6 +640,10 @@ class Cr50Test(FirmwareTest):
 
     def _reset_ccd_settings(self):
         """Reset the ccd lock and capability states."""
+        # Testlab has to be enabled if servo relies on ccd.
+        if self.servo.main_device_uses_gsc_drv():
+            self.fast_ccd_open(True)
+
         if not self.cr50.ccd_is_reset():
             # Try to open cr50 and enable testlab mode if it isn't enabled.
             try:

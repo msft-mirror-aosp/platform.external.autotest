@@ -458,11 +458,12 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
     def unregister_advertiser_callback(self):
         """Unregisters advertising callbacks for this client.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().UnregisterAdvertiserCallback(self.callback_id)
+        self.proxy().UnregisterAdvertiserCallback(self.callback_id)
+        return True
 
-    @glib_call(False)
+    @glib_call(None)
     def start_advertising_set(self, parameters, advertise_data, scan_response,
                               periodic_parameters, periodic_data, duration,
                               max_ext_adv_events, callback_id):
@@ -478,7 +479,8 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param max_ext_adv_events: Maximum of extended advertising events.
         @param callback_id: Callback id from register advertiser callback.
 
-        @return: Returns the reg_id for the advertising set.
+        @return: Returns the reg_id for the advertising set on success,
+                 None otherwise.
         """
         return self.proxy().StartAdvertisingSet(
                 parameters, advertise_data, scan_response, periodic_parameters,
@@ -490,9 +492,10 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
 
         @param advertiser_id: Advertiser id of set advertising.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().StopAdvertisingSet(advertiser_id)
+        self.proxy().StopAdvertisingSet(advertiser_id)
+        return True
 
     @glib_call(False)
     def enable_advertising_set(self, advertiser_id, enable, duration,
@@ -504,10 +507,11 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param duration: Time to send the advertising set.
         @param max_ext_adv_events: Number of max extend adv events.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().EnableAdvertisingSet(advertiser_id, enable,
-                                                 duration, max_ext_adv_events)
+        self.proxy().EnableAdvertisingSet(advertiser_id, enable, duration,
+                                          max_ext_adv_events)
+        return True
 
     @glib_call(False)
     def set_advertising_data(self, advertiser_id, data):
@@ -516,9 +520,10 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param advertiser_id: Advertiser id of set advertising.
         @param data: AdvertiseData structure.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().SetAdvertisingData(advertiser_id, data)
+        self.proxy().SetAdvertisingData(advertiser_id, data)
+        return True
 
     @glib_call(False)
     def set_scan_response_data(self, advertiser_id, data):
@@ -527,9 +532,10 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param advertiser_id: Advertiser id of set advertising.
         @param data: AdvertiseData structure.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().SetScanResponseData(advertiser_id, data)
+        self.proxy().SetScanResponseData(advertiser_id, data)
+        return True
 
     @glib_call(False)
     def set_advertising_parameters(self, advertiser_id, parameters):
@@ -538,9 +544,10 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param advertiser_id: Advertiser id of set advertising.
         @param parameters: AdvertisingSetParameters structure.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().SetAdvertisingParameters(advertiser_id, parameters)
+        self.proxy().SetAdvertisingParameters(advertiser_id, parameters)
+        return True
 
     @glib_call(False)
     def set_periodic_advertising_parameters(self, advertiser_id, parameters):
@@ -549,10 +556,10 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param advertiser_id: Advertiser id of set advertising.
         @param parameters: AdvertisingSetParameters structure.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().SetPeriodicAdvertisingParameters(
-                advertiser_id, parameters)
+        self.proxy().SetPeriodicAdvertisingParameters(advertiser_id, parameters)
+        return True
 
     @glib_call(False)
     def set_periodic_advertising_data(self, advertiser_id, data):
@@ -561,9 +568,10 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param advertiser_id: Advertiser id of set advertising.
         @param data: AdvertiseData structure.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().SetPeriodicAdvertisingData(advertiser_id, data)
+        self.proxy().SetPeriodicAdvertisingData(advertiser_id, data)
+        return True
 
     @glib_call(False)
     def set_periodic_advertising_enable(self, advertiser_id, enable):
@@ -572,9 +580,10 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @param advertiser_id: Advertiser id of set advertising.
         @param enable: Enable advertising set flag.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().SetPeriodicAdvertisingEnable(advertiser_id, enable)
+        self.proxy().SetPeriodicAdvertisingEnable(advertiser_id, enable)
+        return True
 
     @glib_call(False)
     def get_own_address(self, advertiser_id):
@@ -582,6 +591,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
 
         @param advertiser_id: Advertiser id of set advertising.
 
-        @return: False if the D-Bus method was not called, otherwise nothing.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().GetOwnAddress(advertiser_id)
+        self.proxy().GetOwnAddress(advertiser_id)
+        return True

@@ -223,103 +223,111 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         self.callback_id = self.proxy().RegisterCallback(objpath)
         return True
 
-    @glib_call(False)
+    @glib_call(None)
     def listen_using_l2cap_channel(self):
         """Listens using L2CAP channel.
 
-        @return: SocketResult as {status:BtStatus, id:int}.
+        @return: SocketResult as {status:BtStatus, id:int} on success,
+                 None otherwise.
         """
         return self.proxy().ListenUsingL2capChannel(self.callback_id)
 
-    @glib_call(False)
+    @glib_call(None)
     def listen_using_insecure_l2cap_channel(self):
         """Listens using insecure L2CAP channel.
 
-        @return: SocketResult as {status:BtStatus, id:int}.
+        @return: SocketResult as {status:BtStatus, id:int} on success,
+                 None otherwise.
         """
 
         return self.proxy().ListenUsingInsecureL2capChannel(self.callback_id)
 
-    @glib_call(False)
+    @glib_call(None)
     def listen_using_insecure_rfcomm_with_service_record(self, name, uuid):
         """Listens using insecure RFCOMM channel with service record.
 
         @param name: Service name.
         @param uuid: 128-bit service UUID.
 
-        @return: SocketResult as {status:BtStatus, id:int}.
+        @return: SocketResult as {status:BtStatus, id:int} on success,
+                 None otherwise.
         """
         return self.proxy().ListenUsingInsecureRfcommWithServiceRecord(
                 self.callback_id, name, uuid)
 
-    @glib_call(False)
+    @glib_call(None)
     def listen_using_rfcomm_with_service_record(self, name, uuid):
         """Listens using RFCOMM channel with service record.
 
         @param name: Service name.
         @param uuid: 128-bit service UUID.
 
-        @return: SocketResult as {status:BtStatus, id:int}.
+        @return: SocketResult as {status:BtStatus, id:int} on success,
+                 None otherwise.
         """
         return self.proxy().ListenUsingRfcommWithServiceRecord(
                 self.callback_id, name, uuid)
 
-    @glib_call(False)
+    @glib_call(None)
     def create_insecure_l2cap_channel(self, device, psm):
         """Creates insecure L2CAP channel.
 
         @param device: D-bus device.
         @param psm: Protocol Service Multiplexor.
 
-        @return: SocketResult as {status:BtStatus, id:int}.
+        @return: SocketResult as {status:BtStatus, id:int} on success,
+                 None otherwise.
         """
         return self.proxy().CreateInsecureL2capChannel(self.callback_id,
                                                        device, psm)
 
-    @glib_call(False)
+    @glib_call(None)
     def create_l2cap_channel(self, device, psm):
         """Creates L2CAP channel.
 
         @param device: D-bus device.
         @param psm: Protocol Service Multiplexor.
 
-        @return: SocketResult as {status:BtStatus, id:int}.
+        @return: SocketResult as {status:BtStatus, id:int} on success,
+                 None otherwise.
         """
 
         return self.proxy().CreateL2capChannel(self.callback_id, device, psm)
 
-    @glib_call(False)
+    @glib_call(None)
     def create_insecure_rfcomm_socket_to_service_record(self, device, uuid):
         """Creates insecure RFCOMM socket to service record.
 
         @param device: New D-bus device.
         @param uuid: 128-bit service UUID.
 
-        @return: SocketResult as {status:BtStatus, id:int}.
+        @return: SocketResult as {status:BtStatus, id:int} on success,
+                 None otherwise.
         """
         return self.proxy().CreateInsecureRfcommSocketToServiceRecord(
                 self.callback_id, device, uuid)
 
-    @glib_call(False)
+    @glib_call(None)
     def create_rfcomm_socket_to_service_record(self, device, uuid):
         """Creates RFCOMM socket to service record.
 
         @param device: D-bus device.
         @param uuid: 128-bit service UUID.
 
-        @return: SocketResult as {status:BtStatus, id:int}.
+        @return: SocketResult as {status:BtStatus, id:int} on success,
+                 None otherwise.
         """
         return self.proxy().CreateRfcommSocketToServiceRecord(
                 self.callback_id, device, uuid)
 
-    @glib_call(False)
+    @glib_call(None)
     def accept(self, socket_id, timeout_ms=None):
         """Accepts socket connection.
 
         @param socket_id: New address of the adapter.
         @param timeout_ms: Timeout in ms.
 
-        @return: BtStatus as int.
+        @return: BtStatus as int on success, None otherwise.
         """
         timeout_ms = self._make_dbus_timeout(timeout_ms)
         return self.proxy().Accept(self.callback_id, socket_id, timeout_ms)

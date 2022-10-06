@@ -17,7 +17,7 @@ TEST_TYPE = 'Server'
 # The following ATTRIBUTES variable is not appliable this test
 # because this test is intented to run in the developer environment only.
 # This test should not be run in any CQ.
-# ATTRIBUTES = 'suite:bvt-tast-cq'
+# ATTRIBUTES = 'suite:bvt-tast-cq, suite:cft-nightly'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

@@ -9,7 +9,7 @@ NAME = 'tast.tast-timeout'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 # Uncomment the following line for CQ testing
-#ATTRIBUTES = 'suite:bvt-tast-cq'
+#ATTRIBUTES = 'suite:bvt-tast-cq, suite:cft-nightly'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

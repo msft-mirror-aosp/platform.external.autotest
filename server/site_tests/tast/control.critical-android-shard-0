@@ -11,7 +11,7 @@ TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
 # Android tests can also be broken by Chrome and OS changes, so these tests need
 # to run in both PFQs and the CQ.
-ATTRIBUTES = 'suite:bvt-tast-cq, suite:bvt-tast-android-pfq, suite:bvt-tast-arc, suite:bvt-tast-chrome-pfq, suite:cft-beta'
+ATTRIBUTES = 'suite:bvt-tast-cq, suite:cft-nightly, suite:bvt-tast-android-pfq, suite:bvt-tast-arc, suite:bvt-tast-chrome-pfq'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

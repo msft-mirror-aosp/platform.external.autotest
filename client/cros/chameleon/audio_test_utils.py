@@ -546,7 +546,41 @@ def check_recorded_frequency(
         logging.debug('Checking channel %s spectral %s against frequency %s',
                       test_channel, spectral, golden_frequency)
 
-        dominant_frequency = spectral[0][0]
+        def should_be_ignored(frequency, ignore_frequencies):
+            """Checks if frequency is close to any frequency in ignore list.
+
+            The ignore list is harmonics of frequency to be ignored
+            (like power noise), plus harmonics of dominant frequencies,
+            plus DC.
+
+            @param frequency: The frequency to be tested.
+            @param ignore_frequencies: The frequency that needs to be ignored.
+
+            @returns: True if the frequency should be ignored. False otherwise.
+
+            """
+            for ignore_frequency in ignore_frequencies:
+                if (abs(frequency - ignore_frequency) <
+                            frequency_diff_threshold):
+                    logging.debug('Ignore frequency: %s', frequency)
+                    return True
+
+        # Filter out the frequencies to be ignored.
+        spectral_post_ignore = [
+                x for x in spectral
+                if not should_be_ignored(x[0],
+                        ignore_frequencies_harmonics + [0.0])
+        ]
+
+        if not spectral_post_ignore:
+            errors.append(
+                    'Channel %d: No frequency left after removing unwanted '
+                    'frequencies. Spectral: %s; After removing unwanted '
+                    'frequencies: %s' % (test_channel, spectral,
+                                         spectral_post_ignore))
+            continue
+
+        dominant_frequency = spectral_post_ignore[0][0]
 
         if (abs(dominant_frequency - golden_frequency) >
                     frequency_diff_threshold):
@@ -654,38 +688,19 @@ def check_recorded_frequency(
                             'expected changing events are %s' %
                             (test_channel, volume_changing, volume_changes))
 
-        # Filter out the harmonics resulted from imperfect sin wave.
-        # This list is different for different channels.
-        harmonics = [dominant_frequency * n for n in range(2, 10)]
-
-        def should_be_ignored(frequency):
-            """Checks if frequency is close to any frequency in ignore list.
-
-            The ignore list is harmonics of frequency to be ignored
-            (like power noise), plus harmonics of dominant frequencies,
-            plus DC.
-
-            @param frequency: The frequency to be tested.
-
-            @returns: True if the frequency should be ignored. False otherwise.
-
-            """
-            for ignore_frequency in (
-                    ignore_frequencies_harmonics + harmonics + [0.0]):
-                if (abs(frequency - ignore_frequency) <
-                            frequency_diff_threshold):
-                    logging.debug('Ignore frequency: %s', frequency)
-                    return True
-
         # Checks DC is small enough.
-        for freq, coeff in spectral:
+        for freq, coeff in spectral_post_ignore:
             if freq < _DC_FREQ_THRESHOLD and coeff > _DC_COEFF_THRESHOLD:
                 errors.append('Channel %d: Found large DC coefficient: '
                               '(%f Hz, %f)' % (test_channel, freq, coeff))
 
-        # Filter out the frequencies to be ignored.
+        # Filter out the harmonics resulted from imperfect sin wave.
+        # This list is different for different channels.
+        harmonics = [dominant_frequency * n for n in range(2, 10)]
+
         spectral_post_ignore = [
-                x for x in spectral if not should_be_ignored(x[0])
+                x for x in spectral_post_ignore
+                if not should_be_ignored(x[0], harmonics)
         ]
 
         if len(spectral_post_ignore) > 1:

@@ -1272,6 +1272,7 @@ def write_controlfile(name,
                                         abi,
                                         revision,
                                         is_public,
+                                        hardware_suite=hardware_suite,
                                         abi_bits=abi_bits)
         content = get_controlfile_content(name,
                                           modules,
@@ -1455,21 +1456,8 @@ def write_hardwaresuite_controlfiles(abi, revision, build, uri, source_type):
     is_public = (source_type == SourceType.MOBLAB)
     cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES', []))
     for module in cts_hardware_modules:
-        name = get_controlfile_name(module, abi, revision, is_public,
-                                    hardware_suite=True)
-
-        content = get_controlfile_content(module,
-                                          set([module]),
-                                          abi,
-                                          revision,
-                                          build,
-                                          uri,
-                                          None,
-                                          source_type,
-                                          hardware_suite=True)
-
-        with open(name, 'w') as f:
-            f.write(content)
+        write_controlfile(module, set([module]), abi, revision, build, uri, None,
+                          source_type=source_type, hardware_suite=True)
 
     for module, config in get_extra_hardware_modules_dict(is_public, abi).items():
         for submodule, suites in config.items():

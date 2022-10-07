@@ -11,7 +11,6 @@ import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 
-CRYPTOHOME_CMD = '/usr/sbin/cryptohome'
 UNAVAILABLE_ACTION = 'Unknown action or no action given.'
 TPM_MANAGER_CMD = '/usr/bin/tpm_manager_client'
 
@@ -81,6 +80,38 @@ def get_tpm_spec_revision():
     if m is None:
         raise error.TestError('Unexpected tpm_version output: %s' % out)
     return int(m.group(1))
+
+
+def take_ownership():
+    """Take TPM ownership.
+
+    Args:
+        wait_for_ownership: block until TPM is owned if true
+    """
+    run_cmd(TPM_MANAGER_CMD + ' take_ownership')
+
+
+def get_tpm_password():
+    """Get the TPM password.
+
+    Returns:
+        A TPM password
+    """
+    out = run_cmd(TPM_MANAGER_CMD + ' status')
+    match = re.search('owner_password: (\w*)', out)
+    password = ''
+    if match:
+        hex_pass = match.group(1)
+        password = ''.join(
+                chr(int(hex_pass[i:i + 2], 16))
+                for i in range(0, len(hex_pass), 2))
+    return password
+
+
+def is_tpm_lockout_in_effect():
+    """Returns true if the TPM lockout is in effect; false otherwise."""
+    status = get_tpm_da_info()
+    return status.get('dictionary_attack_lockout_in_effect', None)
 
 
 def run_cmd(cmd):

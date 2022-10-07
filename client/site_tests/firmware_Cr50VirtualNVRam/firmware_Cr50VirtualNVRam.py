@@ -6,7 +6,6 @@ import re
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import service_stopper
-from autotest_lib.client.cros import cryptohome
 from autotest_lib.client.cros.tpm import *
 
 tpm_owner_password = ''
@@ -59,9 +58,9 @@ class firmware_Cr50VirtualNVRam(test.test):
     def __take_tpm_ownership(self):
         global tpm_owner_password
         global tpm_pw_hex
-        cryptohome.take_tpm_ownership(wait_for_ownership=True)
+        take_ownership()
 
-        tpm_owner_password = cryptohome.get_tpm_password()
+        tpm_owner_password = get_tpm_password()
         if not tpm_owner_password:
             raise error.TestError('TPM owner password is empty after '
                                   'taking ownership.')

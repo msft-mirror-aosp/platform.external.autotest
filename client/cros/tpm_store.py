@@ -6,7 +6,8 @@ import tempfile
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros import cryptohome
+from autotest_lib.client.cros import tpm
+
 
 class TPMStore(object):
     """Context enclosing the use of the TPM."""
@@ -44,7 +45,7 @@ class TPMStore(object):
         @param output_type the object type to use in inserting into the TPM.
 
         """
-        if cryptohome.is_tpm_lockout_in_effect():
+        if tpm.is_tpm_lockout_in_effect():
             raise error.TestError('The TPM is in dictonary defend mode. '
                                   'The TPMStore may behave in unexpected '
                                   'ways, exiting.')
@@ -73,7 +74,7 @@ class TPMStore(object):
     def reset(self):
         """Reset the crypto store and take ownership of the device."""
         utils.system('initctl restart chapsd')
-        cryptohome.take_tpm_ownership(wait_for_ownership=True)
+        tpm.take_ownership()
 
 
     def install_certificate(self, certificate, identifier):

@@ -8,6 +8,7 @@ import time
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import cryptohome
+from autotest_lib.client.cros import tpm
 
 
 class firmware_SetFWMP(test.test):
@@ -16,9 +17,9 @@ class firmware_SetFWMP(test.test):
 
     def own_tpm(self):
         """Own the TPM"""
-        cryptohome.take_tpm_ownership()
+        tpm.take_ownership()
         for i in range(4):
-            status = cryptohome.get_tpm_status()
+            status = tpm.get_tpm_status()
             if status['Owned']:
                 return status
             time.sleep(2)
@@ -28,7 +29,7 @@ class firmware_SetFWMP(test.test):
         """Own the TPM and set the FWMP."""
         # make sure the FMWP is in the expected state
         cryptohome.get_fwmp(fwmp_cleared)
-        status = cryptohome.get_tpm_status()
+        status = tpm.get_tpm_status()
         # Own the TPM
         if not status['Owned']:
             status = self.own_tpm()

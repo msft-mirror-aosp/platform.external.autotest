@@ -19,7 +19,6 @@ from autotest_lib.client.cros.tpm import *
 
 ATTESTATION_CMD = '/usr/bin/attestation_client'
 CRYPTOHOME_CMD = '/usr/sbin/cryptohome'
-TPM_MANAGER_CMD = '/usr/bin/tpm_manager_client'
 GUEST_USER_NAME = '$guest'
 UNAVAILABLE_ACTION = 'Unknown action or no action given.'
 MOUNT_RETRY_COUNT = 20
@@ -74,23 +73,6 @@ def ensure_clean_cryptohome_for(user, password=None):
     unmount_vault(user)
     remove_vault(user)
     mount_vault(user, password, create=True)
-
-
-def get_tpm_password():
-    """Get the TPM password.
-
-    Returns:
-        A TPM password
-    """
-    out = run_cmd(TPM_MANAGER_CMD + ' status')
-    match = re.search('owner_password: (\w*)', out)
-    password = ''
-    if match:
-        hex_pass = match.group(1)
-        password = ''.join(
-                chr(int(hex_pass[i:i + 2], 16))
-                for i in range(0, len(hex_pass), 2))
-    return password
 
 
 def get_fwmp(cleared_fwmp=False):
@@ -155,12 +137,6 @@ def set_fwmp(flags, developer_key_hash=None):
         raise ChromiumOSError('failed to set FWMP: %s' % out)
 
 
-def is_tpm_lockout_in_effect():
-    """Returns true if the TPM lockout is in effect; false otherwise."""
-    status = get_tpm_da_info()
-    return status.get('dictionary_attack_lockout_in_effect', None)
-
-
 def get_login_status():
     """Query the login status
 
@@ -199,7 +175,7 @@ def lock_install_attributes(attrs):
     @param attrs: dict of install attributes.
     """
 
-    take_tpm_ownership()
+    take_ownership()
     wait_for_install_attributes_ready()
     for name, value in attrs.items():
         args = [
@@ -237,32 +213,6 @@ def get_tpm_attestation_status():
             raise ChromiumOSError('Invalid attestation status: "%s".' % out)
         status[field] = match.group(1) == 'true'
     return status
-
-
-def take_tpm_ownership(wait_for_ownership=True):
-    """Take TPM ownership.
-
-    Args:
-        wait_for_ownership: block until TPM is owned if true
-    """
-    run_cmd(CRYPTOHOME_CMD + ' --action=tpm_take_ownership')
-    if wait_for_ownership:
-        # Note that waiting for the 'Ready' flag is more correct than waiting
-        # for the 'Owned' flag, as the latter is set by cryptohomed before some
-        # of the ownership tasks are completed.
-        utils.poll_for_condition(
-                lambda: get_tpm_status()['Ready'],
-                timeout=300,
-                exception=error.TestError('Timeout waiting for TPM ownership'))
-
-
-def verify_ek():
-    """Verify the TPM endorsement key.
-
-    Returns true if EK is valid.
-    """
-    cmd = CRYPTOHOME_CMD + ' --action=tpm_verify_ek'
-    return (utils.system(cmd, ignore_status=True) == 0)
 
 
 def remove_vault(user):

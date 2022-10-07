@@ -992,7 +992,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         ap_is_on = self.ap_is_on()
         try:
-            cmd = 'ccd %s%s\n\n' % (level, (' ' + password) if password else '')
+            cmd = 'ccd %s%s' % (level, (' ' + password) if password else '')
             # ccd command outputs on the rbox, ccd, and console channels,
             # respectively. Cr50 uses these channels to print relevant ccd
             # information.

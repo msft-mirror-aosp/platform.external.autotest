@@ -522,6 +522,7 @@ suite:satlab-qual-faft_bios
 suite:satlab-qual-fat_smoke
 suite:sb65-presubmit
 suite:security
+suite:sensors-tast
 suite:servo_lab
 suite:servo_verification
 suite:shimlessrma_nodelocked_perbuild

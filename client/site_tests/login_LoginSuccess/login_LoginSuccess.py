@@ -11,8 +11,10 @@ except ImportError:
     import gobject as GObject
 
 from autotest_lib.client.bin import test
+from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import chrome, session_manager
 from autotest_lib.client.cros import asan
+from autotest_lib.client.cros import cryptohome
 
 
 class login_LoginSuccess(test.test):
@@ -58,6 +60,11 @@ class login_LoginSuccess(test.test):
         if stress_run:
             self._SESSION_STOP_TIMEOUT *= 2
         self._listener.listen_for_session_state_change('started')
+        # TPM ownership is not automatically taken by test logins until M103.
+        # Take ownership here to prevent auth errors in AU tests with earlier
+        # source versions.
+        if int(lsbrelease_utils.get_chromeos_release_milestone()) < 103:
+            cryptohome.take_tpm_ownership()
         with chrome.Chrome(arc_mode=arc_mode,
                            username=username,
                            password=password,

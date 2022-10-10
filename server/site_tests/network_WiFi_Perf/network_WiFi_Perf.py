@@ -170,7 +170,6 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
     def run_once(self):
         """Test body."""
         start_time = time.time()
-        logging.info(self.context.client.board)
 
         low_throughput_tests = self.configure_and_run_tests()
 

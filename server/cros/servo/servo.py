@@ -1452,13 +1452,11 @@ class Servo(object):
 
     def main_device_is_ccd(self):
         """Whether the main servo device (no prefixes) is a ccd device."""
-        servo = self.get_servo_type()
-        return 'ccd' in servo and not self.main_device_is_flex()
+        return 'ccd' in self.get_main_servo_device()
 
     def main_device_is_flex(self):
         """Whether the main servo device (no prefixes) is a legacy device."""
-        servo = self.get_servo_type()
-        return any([flex in servo for flex in self.FLEX_SERVOS])
+        return self.get_main_servo_device() in self.FLEX_SERVOS
 
     def main_device_uses_gsc_drv(self):
         """Whether the main servo device uses gsc drivers.

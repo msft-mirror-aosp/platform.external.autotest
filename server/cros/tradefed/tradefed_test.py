@@ -1372,20 +1372,9 @@ class TradefedTest(test.test):
         return lastmatch
 
     def _get_bundle_specification(self, uri, bundle):
-        # TODO: Replace with NotImplementedError once all subclasses are done
         """Get the bundle information.
-
-        Override this method in the subclass to specify other fields
-        e.g. password.
         """
-        return BundleSpecification(self._get_bundle_url(uri, bundle), password='')
-
-    # _get_bundle_url is deprecated in favor of _get_bundle_specification().
-    # Override it instead.
-    # TODO(b/243729773): Remove this function.
-    def _get_bundle_url(self, uri, bundle):
-        return self._get_latest_bundle_url(bundle) if uri == 'LATEST' else (
-                uri or self._get_default_bundle_url(bundle))
+        raise NotImplementedError()
 
     def _tradefed_retry_command(self, template, session_id):
         raise NotImplementedError('Subclass should override this function')

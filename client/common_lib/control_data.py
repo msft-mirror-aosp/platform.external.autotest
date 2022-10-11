@@ -17,7 +17,8 @@ from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import priorities
 
 
-REQUIRED_VARS = set(['author', 'doc', 'name', 'time', 'test_type'])
+REQUIRED_VARS = set(['name', 'time', 'test_type'])
+# TODO: move author and doc to obsolete_vars when metadata is required
 OBSOLETE_VARS = set(['experimental'])
 
 CONTROL_TYPE = autotest_enum.AutotestEnum('Server', 'Client', start_value=1)

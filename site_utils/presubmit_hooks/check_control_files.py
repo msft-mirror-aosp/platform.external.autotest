@@ -187,6 +187,27 @@ def CheckValidAttr(ctrl_data, attr_allowlist, bvt_allowlist, test_name):
                     (test_name, TAST_PSA_URL))
 
 
+# TODO: delete this check after metadata transition is complete.
+def CheckOnlyOneContactSource(ctrl_data, ctrl_file_path):
+    """
+    Ensure there is exactly one source of Ownership data.
+
+    @param ctrl_data: The control_data object for a test.
+    @param test_name: A string with the name of the test.
+    """
+    if hasattr(ctrl_data, 'author') and hasattr(ctrl_data, 'metadata'):
+        if 'Contacts' in ctrl_data.metadata:
+            raise ControlFileCheckerError(
+                'Conflicting sources of test ownership found. Cannot have '
+                'both Author and Metadata "Contacts" fields in %s' %
+                ctrl_file_path)
+    elif (not hasattr(ctrl_data, 'author') and
+          not (hasattr(ctrl_data, 'metadata') and 'Contacts' in ctrl_data.metadata)):
+        raise ControlFileCheckerError(
+                'Need "Contacts" field in Metadata attribute : %s.' % ctrl_file_path)
+
+
+
 def CheckSuiteLineRemoved(ctrl_file_path):
     """
     Check whether the SUITE line has been removed since it is obsolete.
@@ -288,6 +309,7 @@ def main():
             if not useflags:
                 useflags = GetUseFlags(args.overlay)
             CheckSuites(ctrl_data, test_name, useflags)
+            CheckOnlyOneContactSource(ctrl_data, ctrl_file_path)
             CheckValidAttr(ctrl_data, attr_allowlist, bvt_allowlist, test_name)
             CheckRetry(ctrl_data, test_name)
             CheckDependencies(ctrl_data, test_name)

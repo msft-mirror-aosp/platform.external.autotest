@@ -87,7 +87,7 @@ TEST_TYPE = 'client'
 DEPENDENCIES = 'fakedep3'
 METADATA = {
     'criteria': 'overriding purpose',
-    'contacts': ['overriding_contact@google.com']
+    'Contacts': ['overriding_contact@google.com']
 }
 DOC = '''
 a doc

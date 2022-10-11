@@ -72,8 +72,8 @@ def all_control_files(args):
 def serialize_contacts(data):
     """Return a serialized Contact obj list"""
     serialized_contacts = []
-    if hasattr(data, 'metadata') and 'contacts' in data.metadata:
-        serialized_contacts = [tc_metadata_pb.Contact(email=e) for e in data.metadata['contacts']]
+    if hasattr(data, 'metadata') and 'Contacts' in data.metadata:
+        serialized_contacts = [tc_metadata_pb.Contact(email=e) for e in data.metadata['Contacts']]
     else:
         serialized_contacts = [tc_metadata_pb.Contact(email=data.author)]
 

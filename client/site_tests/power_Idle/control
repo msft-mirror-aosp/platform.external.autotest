@@ -33,4 +33,5 @@ METADATA = {
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
-job.run_test('power_Idle', force_discharge='optional')
+job.run_test('power_Idle', force_discharge='optional',
+              tast_bundle_path=args_dict.get('tast_bundle_path'),)

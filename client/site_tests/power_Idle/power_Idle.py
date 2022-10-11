@@ -1,5 +1,5 @@
 # Lint as: python2, python3
-# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2012 The ChromiumOS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,10 +9,14 @@ import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import arc_common
-from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.bluetooth import bluetooth_device_xmlrpc_server
 from autotest_lib.client.cros.power import power_test
 from autotest_lib.client.cros.power import power_utils
+from autotest_lib.client.cros import tast
+from autotest_lib.client.cros.tast.ui import chrome_service_pb2
+from autotest_lib.client.cros.tast.ui import chrome_service_pb2_grpc
+from autotest_lib.client.cros.tast.ui import tconn_service_pb2
+from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
 
 
 class power_Idle(power_test.power_Test):
@@ -41,7 +45,8 @@ class power_Idle(power_test.power_Test):
                                            force_discharge=force_discharge,
                                            run_arc=run_arc)
 
-    def run_once(self, warmup_secs=20, idle_secs=120, default_only=False):
+    def run_once(self, warmup_secs=20, idle_secs=120, default_only=False,
+                 tast_bundle_path=None):
         """Collect power stats for idle tests."""
 
         def measure_it(warmup_secs, idle_secs, tagname):
@@ -63,25 +68,47 @@ class power_Idle(power_test.power_Test):
         bt_device = bluetooth_device_xmlrpc_server \
             .BluetoothDeviceXmlRpcDelegate()
 
-        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
-        # so that each test run does not remember info from last test run.
-        extra_browser_args = ['--disable-sync']
-        # b/228256145 to avoid powerd restart
-        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
-        with chrome.Chrome(autotest_ext=True,
-                           extra_browser_args=extra_browser_args,
-                           arc_mode=self._arc_mode) as self.cr:
-            self.is_first_test = True
+        logging.info('Starting gRPC Tast')
+        with tast.GRPC(tast_bundle_path) as tast_grpc:
+            channel = tast_grpc.channel
+            chrome_service = chrome_service_pb2_grpc.ChromeServiceStub(channel)
+            tconn_service = tconn_service_pb2_grpc.TconnServiceStub(channel)
 
-            # Measure power in full-screen blank tab
-            tab = self.cr.browser.tabs.New()
-            tab.Activate()
-            power_utils.set_fullscreen(self.cr)
+            chrome_service.New(chrome_service_pb2.NewRequest(
+                # b/228256145 to avoid powerd restart
+                disable_features = ['FirmwareUpdaterApp'],
+                # --disable-sync disables test account info sync, eg. Wi-Fi
+                # credentials, so that each test run does not remember info from
+                # last test run.
+                extra_args = ['--disable-sync'],
+                arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
+                            if self._arc_mode == arc_common.ARC_MODE_ENABLED
+                            else chrome_service_pb2.ARC_MODE_DISABLED),
+            ))
+
+            # Measure power in full-screen blank tab.
+            # In order to hide address bar, we call chrome.windows API twice.
+            # TODO(b/253003075): Get rid of explicit promise by switching Tast
+            # test extension to MV3.
+            tconn_service.Eval(tconn_service_pb2.EvalRequest(
+                expr='''(async () => {
+                    let window_id = await new Promise(
+                        (resolve) => chrome.windows.create(
+                            { url: ["about:blank"], focused: true },
+                            (window) => resolve(window.id)));
+                    await new Promise(
+                        (resolve) => chrome.windows.update(
+                            window_id, { state: 'fullscreen' },
+                            resolve));
+                })()'''
+            ))
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
             self._services.stop_services()
             self._multicast_disabler.disable_network_multicast()
+
+            self.is_first_test = True
 
             if default_only:
                 self.start_measurements()

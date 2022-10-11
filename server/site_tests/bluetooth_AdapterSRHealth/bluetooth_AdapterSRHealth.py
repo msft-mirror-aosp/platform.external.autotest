@@ -167,6 +167,19 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self.run_reconnect_device([(device_type, device,
                                     self._test_mouse)])
 
+    @test_wrapper('Reboot and Reconnect Classic HID',
+                  devices={'MOUSE': 1},
+                  supports_floss=True)
+    def sr_reboot_and_reconnect_classic_hid(self):
+        """ Reboot and reconnects a classic HID device after suspend/resume. """
+        device_type = 'MOUSE'
+        device = self.devices[device_type][0]
+        # Reboot the DUT so that it starts with a clean state.
+        logging.info('Rebooting the DUT')
+        self.reboot()
+        self.run_reconnect_device([(device_type, device,
+                                    self._test_mouse)])
+
     @test_wrapper('Reconnect LE HID',
                   devices={'BLE_MOUSE': 1},
                   supports_floss=True)

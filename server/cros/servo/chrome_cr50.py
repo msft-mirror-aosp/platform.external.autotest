@@ -177,16 +177,19 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # AP_RO strings
     # Cr50 only supports v2
     AP_RO_VERSIONS = [1]
-    AP_RO_HASH_RE = r'sha256 (hash) ([0-9a-f]{64})'
-    AP_RO_UNSUPPORTED_UNPROGRAMMED = 'RO verification not programmed'
-    AP_RO_UNSUPPORTED_BID_BLOCKED = 'BID blocked'
-    AP_RO_REASON_RE = r'(ap_ro_check_unsupported): (.*)\]'
-    AP_RO_RESULT_RE = r'(result)\s*: (\d)'
-    AP_RO_SUPPORTED_RE = r'(supported)\s*: (yes|no)'
-    AP_RO_UNSUPPORTED_OUTPUT = [
-            AP_RO_REASON_RE, AP_RO_RESULT_RE, AP_RO_SUPPORTED_RE
+    # supported is a substring of ap_ro_check_unsupported. Make sure to check
+    # for ap_ro_check_unsupported first.
+    AP_RO_KEYS = [
+        'ap_ro_check_unsupported',
+        'result',
+        'supported',
+        'sha256 hash'
     ]
-    AP_RO_SAVED_OUTPUT = [AP_RO_RESULT_RE, AP_RO_SUPPORTED_RE, AP_RO_HASH_RE]
+    # Rename some keys for read
+    AP_RO_KEY_MAP = {
+        'ap_ro_check_unsupported' : 'reason',
+        'sha256 hash' : 'hash'
+    }
 
     # ===============================================================
     # Cr50 Image Names
@@ -1452,6 +1455,27 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return self.send_command_retry_get_output(
                 'ap_ro_info', [self.AP_RO_SUPPORTED_RE])[0][2] == 'yes'
 
+    def parse_ap_ro_line(self, line):
+        """Returns the key and value from the AP RO info line."""
+        # Remove ':' from the line.
+        line = line.replace(':', '')
+        for k in self.AP_RO_KEYS:
+            if k in line:
+                sections = line.partition(k)
+                k = sections[-2]
+                k = self.AP_RO_KEY_MAP.get(k, k)
+
+                v = sections[-1].strip()
+                # Return an int instead of a string
+                if v.isdigit():
+                    v = int(v)
+                elif v == 'yes':
+                    v = True
+                elif v == 'no':
+                    v = False
+                return k, v
+        return None
+
     def get_ap_ro_info(self):
         """Returns a dictionary of the AP RO info.
 
@@ -1465,27 +1489,15 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 'supported': bool whether AP RO verification is supported.
                 'result': int of the AP RO verification result.
         """
-        # Cr50 prints different output based on whether ap ro verification is
-        # supported.
-        if self.ap_ro_supported():
-            output = self.AP_RO_SAVED_OUTPUT
-        else:
-            output = self.AP_RO_UNSUPPORTED_OUTPUT
         # The reason and hash output is optional. Make sure it's in the
         # dictionary even if it isn't in the output.
         info = {'hash': None, 'reason': None}
-        rv = self.send_command_retry_get_output('ap_ro_info',
-                                                output,
-                                                compare_output=True)
-        for _, k, v in rv:
-            # Make key more usable.
-            if k == 'ap_ro_check_unsupported':
-                k = 'reason'
-            # Convert digit strings to ints
-            if v.isdigit():
-                v = int(v)
-            # Convert yes or no to bool
-            if k == 'supported':
-                v = v == 'yes'
-            info[k] = v
+        rv = self.send_command_get_output('ap_ro_info', ['ap_ro_info.*>'])
+        for line in rv[0].strip().splitlines():
+            item = self.parse_ap_ro_line(line)
+            if not item:
+                logging.debug('Ignoring: %r', line)
+                continue
+            info[item[0]] = item[1]
+        logging.info('APRO info: %s', pprint.pformat(info))
         return info

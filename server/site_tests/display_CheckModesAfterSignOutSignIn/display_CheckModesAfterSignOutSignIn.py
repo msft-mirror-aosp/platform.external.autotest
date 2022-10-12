@@ -33,9 +33,9 @@ class display_CheckModesAfterSignOutSignIn(test.test):
 
     def is_logged_out(self):
         """Will check whether user logged out"""
-        logging.debug("checking /home/chronos/user/Downloads/ to know "
+        logging.debug("checking /home/chronos/user/MyFiles/Downloads/ to know "
                       "whether user logged out or not!")
-        return self.host.path_exists('/home/chronos/user/Downloads/') is False
+        return self.host.path_exists('/home/chronos/user/MyFiles/Downloads/') is False
 
     def check_mode(self, test_mirrored_mode=True):
         """Checks the display mode is as expected

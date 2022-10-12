@@ -13,7 +13,7 @@ TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
 PY_VERSION = 3
-DOC = 'Run module CtsWifiBroadcastsHostTestCases, CtsWifiBroadcastsHostTestCases[instant], CtsWifiBroadcastsHostTestCases[secondary_user], CtsWifiTestCases, CtsWifiTestCases[instant], CtsWifiTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
+DOC = 'Run module CtsWifiBroadcastsHostTestCases, CtsWifiBroadcastsHostTestCases[instant], CtsWifiBroadcastsHostTestCases[secondary_user], CtsWifiTestCases, CtsWifiTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
@@ -23,12 +23,12 @@ def run_TS(machine):
         iterations=1,
         tag='internal.x86.CtsWifi',
         test_name='cheets_CTS_R.internal.x86.CtsWifi',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsWifiBroadcastsHostTestCases', '--include-filter', 'CtsWifiBroadcastsHostTestCases[instant]', '--include-filter', 'CtsWifiBroadcastsHostTestCases[secondary_user]', '--include-filter', 'CtsWifiTestCases', '--include-filter', 'CtsWifiTestCases[instant]', '--include-filter', 'CtsWifiTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsWifiBroadcastsHostTestCases', '--include-filter', 'CtsWifiBroadcastsHostTestCases[instant]', '--include-filter', 'CtsWifiBroadcastsHostTestCases[secondary_user]', '--include-filter', 'CtsWifiTestCases', '--include-filter', 'CtsWifiTestCases[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsWifi',
         target_plan=None,
         bundle='x86',
         uri='DEV',
-        timeout=12600)
+        timeout=10800)
 
 parallel_simple(run_TS, machines)

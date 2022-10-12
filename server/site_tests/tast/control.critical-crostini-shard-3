@@ -1,11 +1,11 @@
-# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.critical-crostini-shard-1'
+NAME = 'tast.critical-crostini-shard-3'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
@@ -46,7 +46,7 @@ def run(machine):
                              ')'],
                  ignore_test_failures=False, max_run_sec=5400,
                  totalshards=6,
-                 shardindex=1,
+                 shardindex=3,
                  command_args=args,
                  clear_tpm=True,
                  retries=2)

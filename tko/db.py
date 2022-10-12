@@ -840,3 +840,26 @@ def db(*args, **dargs):
     @return: An db object.
     """
     return db_sql(*args, **dargs)
+
+class FakeTkoDb:
+    """Creates a fake tkodb which returns no jobs for any given tag.
+    """
+
+    def find_job(self, tag):
+        """find_job will always return "None" indicating that there are
+        no existing results with that tag
+
+        @param tag: the tag for the test to find
+
+        @return: always returns "None" to indicate no matching results
+        """
+        return None
+
+    def run_with_retry(self, fn, *args):
+        """run_with_retry will execute fn with *args
+
+        @param tag: the tag for the test to find
+
+        @return: always returns "None" to indicate no matching results
+        """
+        fn(*args)

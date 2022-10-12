@@ -98,6 +98,10 @@ def parse_args():
                       help="[DEPRECATED] Record timing to metadata db",
                       dest="record_duration", action="store_true",
                       default=False)
+    parser.add_option("--no-db",
+                      help="parse this target without accessing tko_db",
+                      dest="no_db", action="store_true",
+                      default=False)
     parser.add_option("--suite-report",
                       help=("Allows parsing job to attempt to create a suite "
                             "timeline report, if it detects that the job being "
@@ -729,7 +733,12 @@ def _main_with_options(options, args):
                          for subdir in os.listdir(results_dir)]
 
         # build up the database
-        db = tko_db.db(autocommit=False, host=options.db_host,
+        db = None
+        if options.no_db:
+            db = tko_db.FakeTkoDb()
+            parse_options = parse_options._replace(dry_run=True)
+        else:
+            db = tko_db.db(autocommit=False, host=options.db_host,
                        user=options.db_user, password=options.db_pass,
                        database=options.db_name)
 

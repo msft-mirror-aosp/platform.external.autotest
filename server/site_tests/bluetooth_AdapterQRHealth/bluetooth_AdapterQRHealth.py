@@ -57,12 +57,12 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
 
         time.sleep(3)
 
-        if logging_and_check:
-            # The enable_disable_quality_report() method will restart
-            # bluetoothd. Hence, this has to be executed before pairing.
-            # Refer to enable_disable_quality_report() about details.
-            self.enable_disable_quality_report(enable=True)
-            self.enable_disable_quality_debug_log(enable=True)
+        # The enable_disable_quality_report() method will restart
+        # bluetoothd. Hence, this has to be executed before pairing.
+        # Refer to enable_disable_quality_report() about details.
+        # This has to be done for all test_method().
+        self.enable_disable_quality_report(enable=True)
+        self.enable_disable_quality_debug_log(enable=True)
 
         self.test_bluetoothd_running()
 
@@ -73,19 +73,29 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
             self.test_discover_device(device.address)
             self.test_pairing(device.address, device.pin, trusted=True)
             self.test_connection_by_adapter(device.address)
-
             time.sleep(2)
 
         if logging_and_check:
             self.dut_btmon_log_path = self.start_new_btmon()
 
+        # The qr_disabled_a2dp() test_method calls
+        # self.enable_disable_quality_report(enable=False).
         test_method()
 
         if logging_and_check:
             self.test_send_log()
             self.check_qr_event_log(num_devices=num_devices)
-            self.enable_disable_quality_debug_log(enable=False)
-            self.enable_disable_quality_report(enable=False)
+
+        # Disable the quality report and the quality debug log unconditionally
+        # for all test_method().
+        # The qr_disabled_a2dp() test_method will try to disable the quality
+        # report twice in this way. This is done on purpose to make enabling
+        # and disabling BQR related functions clean and symmetric.
+        # Also note that the kernel will only disable the BQR feature while
+        # it is enabled. The kernel will not disable the BQR feature while
+        # it is already disabled.
+        self.enable_disable_quality_report(enable=False)
+        self.enable_disable_quality_debug_log(enable=False)
 
         for device in devices:
             self.test_disconnection_by_adapter(device.address)

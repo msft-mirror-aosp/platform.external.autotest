@@ -575,10 +575,11 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         @param device: the bluetooth peer device.
         @param test_profile: the test profile to used.
         """
-        self.enable_disable_quality_report(enable=True)
-        self.enable_disable_quality_debug_log(enable=True)
-        time.sleep(3)
-        self.enable_disable_quality_debug_log(enable=False)
+        # No need to enable the quality report and the quality debug log here
+        # since they have been already enabled in run_test_method() before
+        # pairing and connection.
+        # We need to disable the quality report and keep the quality debug log
+        # enabled here for the test to verify that no BQR events are received.
         self.enable_disable_quality_report(enable=False)
         time.sleep(3)
 

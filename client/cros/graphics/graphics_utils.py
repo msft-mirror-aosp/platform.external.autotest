@@ -1156,7 +1156,7 @@ class GraphicsStateChecker(object):
             if not self._run_on_sw_rasterizer and is_sw_rasterizer():
                 raise error.TestFail('Refusing to run on SW rasterizer.')
             logging.info('Initialize: Checking for old GPU hangs...')
-            with open(self._MESSAGES_FILE, 'r', encoding='utf-8') as messages:
+            with open(self._MESSAGES_FILE, 'r', encoding='utf-8', errors='replace') as messages:
                 for line in messages:
                     for hang in self._HANGCHECK:
                         if hang in line:

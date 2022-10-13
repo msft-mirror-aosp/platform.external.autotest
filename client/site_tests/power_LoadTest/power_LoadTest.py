@@ -572,7 +572,7 @@ class power_LoadTest(arc.ArcTest):
             if self._gaia_login:
                 self.output_perf_value(description='minutes_battery_life',
                                        value=keyvals['minutes_battery_life'],
-                                       units='minutes',
+                                       units='minute',
                                        higher_is_better=True)
 
         minutes_battery_life_tested = keyvals['minutes_battery_life_tested']
@@ -590,6 +590,13 @@ class power_LoadTest(arc.ArcTest):
                                        value=value,
                                        units='percent',
                                        higher_is_better=False)
+        for key, values in keyvals.items():
+            if key.endswith('system_pwr_avg'):
+                self.output_perf_value(description=key,
+                                       value=values,
+                                       units='W',
+                                       higher_is_better=False,
+                                       graph='power')
 
         logger = power_dashboard.KeyvalLogger(self._start_time, self._end_time)
         for key in [

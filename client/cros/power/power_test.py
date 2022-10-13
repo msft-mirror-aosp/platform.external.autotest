@@ -348,6 +348,13 @@ class power_Test(test.test):
                 self.output_perf_value(description=key, value=values,
                         units='fps', higher_is_better=True, graph='fps')
 
+        # publish battery minutes values
+        if 'minutes_battery_life' in self.keyvals:
+            self.output_perf_value(description='minutes_battery_life',
+                                   value=self.keyvals['minutes_battery_life'],
+                                   units='minute',
+                                   higher_is_better=True)
+
         # include KeyvalLogger in dashboard
         self._meas_logs.append(self._keyvallogger)
 

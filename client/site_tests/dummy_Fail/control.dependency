@@ -14,7 +14,6 @@ METADATA = {
 }
 ATTRIBUTES = "suite:push_to_prod"
 DEPENDENCIES = "no_such_dependency"
-TIME = "SHORT"
 TEST_TYPE = "client"
 
 

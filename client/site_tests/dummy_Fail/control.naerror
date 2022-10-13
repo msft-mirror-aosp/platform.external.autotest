@@ -11,7 +11,6 @@ METADATA = {
     "BugComponent": "b:1034523",
     "Doc": "Demonstrate TEST_NA error."
 }
-TIME = "SHORT"
 TEST_TYPE = "client"
 
 job.run_test('dummy_Fail', tag='NAError', to_throw='TestNAError')

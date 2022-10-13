@@ -15,7 +15,6 @@ ATTRIBUTES = (
         "suite:another_suite, suite:dummy, suite:push_to_prod,"
         " suite:skylab_staging_test, suite:dev_drone_image_test"
 )
-TIME = "SHORT"
 TEST_TYPE = "client"
 JOB_RETRIES = 1
 

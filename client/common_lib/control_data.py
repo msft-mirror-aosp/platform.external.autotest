@@ -17,7 +17,7 @@ from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import priorities
 
 
-REQUIRED_VARS = set(['name', 'time', 'test_type'])
+REQUIRED_VARS = set(['name', 'test_type'])
 # TODO: move author and doc to obsolete_vars when metadata is required
 OBSOLETE_VARS = set(['experimental'])
 
@@ -69,7 +69,7 @@ def _validate_control_file_fields(control_file_path, control_file_vars,
 class ControlData(object):
     # Available TIME settings in control file, the list must be in lower case
     # and in ascending order, test running faster comes first.
-    TEST_TIME_LIST = ['fast', 'short', 'medium', 'long', 'lengthy']
+    TEST_TIME_LIST = ['fast', 'short', 'default', 'medium', 'long', 'lengthy']
     TEST_TIME = autotest_enum.AutotestEnum(*TEST_TIME_LIST,
                                            string_values=False)
 
@@ -113,6 +113,7 @@ class ControlData(object):
         self.fast = True
         # This will only be honored via `test_that`, and not in lab (for now).
         self.py_version = None
+        self.time = 'default'
 
         _validate_control_file_fields(self.path, vars, raise_warnings)
 

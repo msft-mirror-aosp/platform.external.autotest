@@ -1,20 +1,22 @@
-# Copyright 2016 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'tienchang'
+AUTHOR = 'Chromium OS team'
 NAME = 'wifi_stress'
-PURPOSE = 'Stress test ChromeOS WiFi functionality and performance for 23 hours'
+PURPOSE = 'Stress test ChromeOS WiFi functionality'
+
 TIME = 'LONG'
+TEST_CATEGORY = "General"
 TEST_TYPE = 'Server'
+TEST_CLASS = "suite"
 
 DOC = """
-This suite contains tests that stress ChromeOS WiFi functionality and
-performance against routers with various network configurations for 23 hours.
+This suite contains tests that stress ChromeOS WiFi functionality.
 
 @param build: The name of the image to test.
-          Ex: x86-mario-release/R17-1412.33.0-a1-b29
-@param board: The board to test on. Ex: x86-mario
+          Ex: brya-release/R108-15182.0.0
+@param board: The board to test on. Ex: brya
 @param pool: The pool of machines to utilize for scheduling. If pool=None
              board is used.
 @param check_hosts: require appropriate live hosts to exist in the lab.

@@ -181,10 +181,20 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # for ap_ro_check_unsupported first.
     AP_RO_KEYS = [
         'ap_ro_check_unsupported',
+        'flags',
+        'gbbd',
         'result',
         'supported',
         'sha256 hash'
     ]
+    # This is a list of optional AP RO keys. Set them to None while getting the
+    # ap ro status to ensure they always exist.
+    AP_RO_OPTIONAL_KEY_DICT = {
+        'hash' : None,
+        'reason' : None,
+        'gbbd' : None,
+        'flags' : None
+    }
     # Rename some keys for read
     AP_RO_KEY_MAP = {
         'ap_ro_check_unsupported' : 'reason',
@@ -1488,10 +1498,14 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 'hash': 64 char hash or None if it isn't supported.
                 'supported': bool whether AP RO verification is supported.
                 'result': int of the AP RO verification result.
+                'gbbd': string "ok|na (status)".
+                'flags': a hex str of the saved flag value.
         """
-        # The reason and hash output is optional. Make sure it's in the
-        # dictionary even if it isn't in the output.
-        info = {'hash': None, 'reason': None}
+        info =  {}
+        # Some keys don't always appear in the output. Set their vaulues to
+        # None, so they're always in the dictionary even when they're not in
+        # the output.
+        info.update(self.AP_RO_OPTIONAL_KEY_DICT)
         rv = self.send_command_get_output('ap_ro_info', ['ap_ro_info.*>'])
         for line in rv[0].strip().splitlines():
             item = self.parse_ap_ro_line(line)

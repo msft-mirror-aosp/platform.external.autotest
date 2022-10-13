@@ -3458,11 +3458,15 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
 
         @param advertisement_data: a dict of the advertisement to register.
 
-        @returns: True on success. False otherwise.
-
+        @returns: An empty string '' on success; and an error string if
+                  the dbus method fails or exception occurs.
         """
         adv = advertisement.Advertisement(self.bus, advertisement_data)
         self.advertisements.append(adv)
+
+        if self._advertising is None:
+            return ('The adapter is invalid, so we cannot return a proxy object'
+                    ' to the advertising interface.')
         return self.dbus_method_with_handlers(
                 self._advertising.RegisterAdvertisement,
                 # reply handler
@@ -3486,18 +3490,20 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
 
         @param advertisement_data: a dict of the advertisements to unregister.
 
-        @returns: True on success. False otherwise.
-
+        @returns: An empty string '' on success; and an error string if the
+                  dbus method fails, exception occurs or if it fails to find
+                  the given advertisement in the registered advertisements.
         """
         path = advertisement_data.get('Path')
         for index, adv in enumerate(self.advertisements):
             if adv.get_path() == path:
                 break
         else:
-            logging.error('Fail to find the advertisement under the path: %s',
-                          path)
-            return False
+            return 'Fail to find the advertisement under the path: %s.' % path
 
+        if self._advertising is None:
+            return ('The adapter is invalid, so we cannot return a proxy object'
+                    ' to the advertising interface.')
         result = self.dbus_method_with_handlers(
                 self._advertising.UnregisterAdvertisement,
                 # reply handler
@@ -3521,9 +3527,12 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         @param min_adv_interval_ms: the min advertising interval in ms.
         @param max_adv_interval_ms: the max advertising interval in ms.
 
-        @returns: True on success. False otherwise.
-
+        @returns: An empty string '' on success; and an error string if
+                  the dbus method fails or exception occurs.
         """
+        if self._advertising is None:
+            return ('The adapter is invalid, so we cannot return a proxy object'
+                    ' to the advertising interface.')
         return self.dbus_method_with_handlers(
                 self._advertising.SetAdvertisingIntervals,
                 # reply handler
@@ -3580,8 +3589,8 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         This includes un-registering all advertisements, reset advertising
         intervals, and disable advertising.
 
-        @returns: True on success. False otherwise.
-
+        @returns: An empty string '' on success; and an error string if
+                  the dbus method fails or exception occurs.
         """
         # It is required to execute unregister() to unregister the
         # object-path handler of each advertisement. In this way, we could
@@ -3590,6 +3599,9 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
             adv.unregister()
         del self.advertisements[:]
 
+        if self._advertising is None:
+            return ('The adapter is invalid, so we cannot return a proxy object'
+                    ' to the advertising interface.')
         return self.dbus_method_with_handlers(
                 self._advertising.ResetAdvertising,
                 # reply handler

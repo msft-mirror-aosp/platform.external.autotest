@@ -11,6 +11,7 @@ from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.server.cros.network import expected_performance_results
 from autotest_lib.server.cros.network import perf_test_manager as perf_manager
 from autotest_lib.server.cros.network import wifi_cell_perf_test_base
+from autotest_lib.server.cros.network import perf_monitor_service
 
 
 class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
@@ -181,7 +182,12 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         """Test body."""
         start_time = time.time()
 
+        perf_monitor = perf_monitor_service.PerfMonitorService(self.context.client.host)
+        perf_monitor.start_monitoring_throughput()
+
         low_throughput_tests = self.configure_and_run_tests()
+
+        perf_monitor.stop_monitoring_throughput()
 
         end_time = time.time()
         logging.info('Running time %0.1f seconds.', end_time - start_time)

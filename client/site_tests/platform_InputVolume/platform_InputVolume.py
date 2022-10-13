@@ -3,9 +3,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
-import re
-import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
@@ -13,7 +10,6 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.input_playback import input_playback
 from autotest_lib.client.cros.audio import cras_utils
-from telemetry.core import exceptions
 
 
 class platform_InputVolume(test.test):
@@ -31,57 +27,63 @@ class platform_InputVolume(test.test):
         self._player.emulate(input_type='keyboard')
         self._player.find_connected_inputs()
 
-    def test_volume_down(self, volume):
+    def test_volume_down(self):
         """
         Use keyboard shortcut to test Volume Down (F9) key.
-
-        @param volume: expected volume.
 
         @raises: error.TestFail if system volume did not decrease or is muted.
 
         """
+        sys_volume_before = self.get_active_volume()
+        sys_is_muted_before = self.is_muted()
         self._player.blocking_playback_of_default_file(
             input_type='keyboard', filename='keyboard_f9')
-        # If expected volume is 0, we should be muted.
-        if volume == 0 and not self.is_muted():
+        sys_volume_after = self.get_active_volume()
+        sys_is_muted_after = self.is_muted()
+        # If expected sys_volume_before is 0, we should be muted.
+        if sys_volume_before == 0 and not sys_is_muted_after:
             raise error.TestFail("Volume should be muted.")
-        sys_volume = self.get_active_volume()
-        if sys_volume != volume:
-            raise error.TestFail("Volume did not decrease: %s" % sys_volume)
+        # if already mute, we should decrease volume to zero
+        if sys_is_muted_before and sys_volume_after != 0:
+            raise error.TestFail("Volume should be zero when system mute.")
+        if sys_volume_before <= sys_volume_after:
+            raise error.TestFail("Volume did not decrease: before[{}] after[{}]".format(sys_volume_before, sys_volume_after))
 
-    def test_volume_up(self, volume):
+    def test_volume_up(self):
         """
         Use keyboard shortcut to test Volume Up (F10) key.
-
-        @param volume: expected volume
 
         @raises: error.TestFail if system volume muted or did not increase.
 
         """
+        sys_volume_before = self.get_active_volume()
+        sys_is_muted_before = self.is_muted()
         self._player.blocking_playback_of_default_file(
             input_type='keyboard', filename='keyboard_f10')
-        if self.is_muted():
+        sys_volume_after = self.get_active_volume()
+        sys_is_muted_after = self.is_muted()
+        if sys_is_muted_after:
             raise error.TestFail("Volume is muted when it shouldn't be.")
-        sys_volume = self.get_active_volume()
-        if sys_volume != volume:
-            raise error.TestFail("Volume did not increase: %s" % sys_volume)
+        # if in mute state, volume up should only change mute state.
+        if sys_is_muted_before and sys_volume_before != sys_volume_after:
+            raise error.TestFail("Volume changed while volume up from mute: before[{}] after[{}]".format(sys_volume_before, sys_volume_after))
+        if (not sys_is_muted_before and not sys_is_muted_after) and sys_volume_before >= sys_volume_after:
+            raise error.TestFail("Volume did not increase: before[{}] after[{}]".format(sys_volume_before, sys_volume_after))
 
-    def test_mute(self, volume):
+    def test_mute(self):
         """Use keyboard shortcut to test Mute (F8) key.
-
-        @param volume: expected volume
 
         @raises: error.TestFail if system volume not muted.
 
         """
+        sys_volume_before = self.get_active_volume()
         self._player.blocking_playback_of_default_file(
             input_type='keyboard', filename='keyboard_f8')
-        sys_volume = self.get_active_volume()
+        sys_volume_after = self.get_active_volume()
         if not self.is_muted():
             raise error.TestFail("Volume not muted.")
-        if sys_volume != volume:
-            raise error.TestFail("Volume changed while mute: %s" % sys_volume)
-
+        if sys_volume_before != sys_volume_after:
+            raise error.TestFail("Volume changed while mute: before[{}] after[{}]".format(sys_volume_before, sys_volume_after))
     def get_active_volume(self):
         """
         Get current active node volume (0-100).
@@ -107,11 +109,12 @@ class platform_InputVolume(test.test):
 
         """
         with chrome.Chrome(disable_default_apps=False):
-            current_volume = self.get_active_volume()
-            self.test_volume_down(current_volume - 4)
-            self.test_volume_up(current_volume)
-            self.test_mute(current_volume)
-            self.test_volume_up(current_volume)
+            self.test_volume_down()
+            self.test_volume_up()
+            self.test_mute()
+            self.test_volume_up()
+            self.test_mute()
+            self.test_volume_down()
 
     def cleanup(self):
         """Test cleanup."""

@@ -302,7 +302,7 @@ def _lookup_lacros_variant(host):
 
     @return: Lacros variant. e.g. lacros-arm32, lacros64
     """
-    arch = host.get_arch_userspace()
+    arch = host.get_arch()
     if arch not in _ARCH_LACROS_VARIANT_DICT:
         raise Exception(
             'Failed to find Lacros variant due to unknown architecture: %s' % arch)

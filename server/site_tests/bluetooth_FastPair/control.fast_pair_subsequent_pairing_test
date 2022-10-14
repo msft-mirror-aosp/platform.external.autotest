@@ -11,7 +11,7 @@ CRITERIA = """
 This test will run through the Fast Pair pairing scenarios and confirm the
 device is paired by using the Fast Pair protocol
 """
-ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_flaky'
+ATTRIBUTES = ''
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

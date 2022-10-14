@@ -303,42 +303,41 @@ class BluetoothBaseFacadeLocal(object):
 
     # The VID:PID recorded here is the PCI vid:pid. lspci -nn command can be
     # used to find it.
+    # The chip names are grouped by vendor and ordered by the published time.
     CHIPSET_TO_VIDPID = {
-            'MVL-8897': [(('0x02df', '0x912d'), 'SDIO')],
-            'MVL-8997': [(('0x1b4b', '0x2b42'), 'USB')],
+            # Qualcomm chipsets
             'QCA-6174A-5-USB': [(('0x168c', '0x003e'), 'USB')],
             'QCA-6174A-3-UART': [(('0x0271', '0x050a'), 'UART')],
+            # 'QCA-WCN3991': Doesn't expose vid:pid
+            # 'QCA-WCN6750': Doesn't expose vid:pid
             'QCA-WCN6856': [(('0x17cb', '0x1103'), 'USB')],
-            'Intel-AX200': [(('0x8086', '0x2723'), 'USB')],  # CcP2
-            'Intel-AX201': [
-                    (('0x8086', '0x02f0'), 'USB'),
-                    (('0x8086', '0x4df0'), 'USB'),
-                    (('0x8086', '0xa0f0'), 'USB'),
-            ],  # HrP2
-            'Intel-AX211': [
-                    (('0x8086', '0x51f0'), 'USB'),
-                    (('0x8086', '0x54f0'), 'USB'),
-            ],  # GfP2
-            'Intel-AC9260': [(('0x8086', '0x2526'), 'USB')],  # ThP2
-            'Intel-AC9560': [
-                    (('0x8086', '0x31dc'), 'USB'),  # JfP2
-                    (('0x8086', '0x9df0'), 'USB')
-            ],
 
-            'Intel-AC7265': [
-                    (('0x8086', '0x095a'), 'USB'),  # StP2
-                    (('0x8086', '0x095b'), 'USB')
-            ],
+            # Intel chipsets
+            'Intel-AC7265': [(('0x8086', '0x095a'), 'USB'),
+                             (('0x8086', '0x095b'), 'USB')],  # StP2
+            'Intel-AC9260': [(('0x8086', '0x2526'), 'USB')],  # ThP2
+            'Intel-AC9560': [(('0x8086', '0x31dc'), 'USB'),
+                             (('0x8086', '0x9df0'), 'USB')],  # JfP2
+            'Intel-AX200': [(('0x8086', '0x2723'), 'USB')],  # CcP2
+            'Intel-AX201': [(('0x8086', '0x02f0'), 'USB'),
+                            (('0x8086', '0x4df0'), 'USB'),
+                            (('0x8086', '0xa0f0'), 'USB')],  # HrP2
+            'Intel-AX211': [(('0x8086', '0x51f0'), 'USB'),
+                            (('0x8086', '0x54f0'), 'USB')],  # GfP2
+
+            # Realtek chipsets
             'Realtek-RTL8822C-USB': [(('0x10ec', '0xc822'), 'USB')],
             'Realtek-RTL8822C-UART': [(('0x10ec', '0xc822'), 'UART')],
             'Realtek-RTL8852A-USB': [(('0x10ec', '0x8852'), 'USB')],
             'Realtek-RTL8852C-USB': [(('0x10ec', '0xc852'), 'USB')],
-            'Mediatek-MTK7921-USB': [(('0x14c3', '0x7961'), 'USB')],
-            'Mediatek-MTK7921-SDIO': [(('0x037a', '0x7901'), 'SDIO')]
 
-            # The following doesn't expose vid:pid
-            # 'WCN3991-UART'
-            # 'WCN6750--UART'
+            # MediaTek chipsets
+            'Mediatek-MTK7921-USB': [(('0x14c3', '0x7961'), 'USB')],
+            'Mediatek-MTK7921-SDIO': [(('0x037a', '0x7901'), 'SDIO')],
+
+            # Marvell chipsets
+            'MVL-8897': [(('0x02df', '0x912d'), 'SDIO')],
+            'MVL-8997': [(('0x1b4b', '0x2b42'), 'USB')],
     }
 
     def __init__(self):
@@ -1184,8 +1183,8 @@ class BluetoothBaseFacadeLocal(object):
         """
         # map the string read from device to chipset name
         chipset_string_dict = {
-                'qcom,wcn3991-bt\x00': 'WCN3991',
-                'qcom,wcn6750-bt\x00': 'WCN6750',
+                'qcom,wcn3991-bt\x00': 'QCA-WCN3991',
+                'qcom,wcn6750-bt\x00': 'QCA-WCN6750',
         }
 
         hci_device = '/sys/class/bluetooth/hci0'
@@ -1224,8 +1223,8 @@ class BluetoothBaseFacadeLocal(object):
         if vid is None or pid is None:
             # Controllers that aren't WLAN+BT combo chips does not expose
             # Vendor ID/Product ID. Use alternate method.
-            # This will return one of ['WCN3991', ''] or a string containing
-            # the name of chipset read from DUT
+            # This will return one of the known chipset names or a string
+            # containing the name of chipset read from DUT
             return self.get_bt_module_name()
         for name, l in self.CHIPSET_TO_VIDPID.items():
             if ((vid, pid), transport) in l:

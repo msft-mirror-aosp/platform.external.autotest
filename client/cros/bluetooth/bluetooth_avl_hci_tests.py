@@ -80,7 +80,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     ]
     CHIPSETS_UNSUPPORT_5_2 = [
             'MVL-8897', 'MVL-8997', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB',
-            'WCN3991', 'Intel-AC7265', 'Intel-AC9260', 'Intel-AC9560',
+            'QCA-WCN3991', 'Intel-AC7265', 'Intel-AC9260', 'Intel-AC9560',
             'Intel-AX200', 'Intel-AX201', 'Intel-AX211',
             'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
             'Realtek-RTL8852A-USB'
@@ -117,7 +117,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     #                    requirement fix or the firmware fix is landed.
     @test_wrapper('spec_legacy_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY +
-                  ['QCA-WCN6856', 'WCN3991', 'Mediatek-MTK7921-SDIO'])
+                  ['QCA-WCN6856', 'QCA-WCN3991', 'Mediatek-MTK7921-SDIO'])
     def spec_legacy_test(self):
         """Checks Bluetooth legacy specification."""
         self.test_flushable_data_packets()

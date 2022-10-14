@@ -8,6 +8,7 @@ import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.bin import utils as cat
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
@@ -456,7 +457,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
                                       "failed (rc=%s)" % result.exit_status)
 
     def run_once(self):
-        if not ('x86' in self.faft_config.ec_capability):
+        if ('None' in cat.get_intel_cpu_uarch()):
             raise error.TestNAError("The firmware_CsmeFwUpdate test is only " \
                                     "applicable to Intel platforms. Skipping " \
                                     "test.")

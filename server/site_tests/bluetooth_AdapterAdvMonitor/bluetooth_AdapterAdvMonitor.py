@@ -29,7 +29,8 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
 
-    @test_wrapper('Monitor Object Health Tests')
+    @test_wrapper('Monitor Object Health Tests',
+                  supports_floss=True)
     def advmon_monitor_health_tests(self):
         """Tests advertisement monitor object health."""
         self.advmon_test_monitor_creation()
@@ -37,42 +38,66 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Single Client Tests - Pattern Filter',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
+                  supports_floss=True)
     def advmon_pattern_filter_tests(self):
         """Tests pattern filter for single client."""
         self.advmon_test_pattern_filter()
 
 
     @test_wrapper('Single Client Tests - RSSI Filter Range',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
+                  supports_floss=True)
     def advmon_rssi_filter_range_tests(self):
         """Tests RSSI filter range for single client."""
         self.advmon_test_rssi_filter_range()
 
 
     @test_wrapper('Single Client Tests - RSSI Filter Multi Peers',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
+                  supports_floss=True)
     def advmon_rssi_filter_multi_peers_tests(self):
         """Tests RSSI filter with multiple peers for single client."""
         self.advmon_test_rssi_filter_multi_peers()
 
 
     @test_wrapper('Single Client Tests - RSSI Filter Reset',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
+                  supports_floss=True)
     def advmon_rssi_filter_reset_tests(self):
         """Tests RSSI filter reset for single client."""
         self.advmon_test_rssi_filter_reset()
 
 
     @test_wrapper('Multi Client Tests',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
+                  supports_floss=True)
     def advmon_multi_client_tests(self):
         """Tests monitor functionality for multiple clients."""
         self.advmon_test_multi_client()
 
 
     @test_wrapper('Foreground Background Combination Tests',
-                  devices={'BLE_KEYBOARD':1, 'BLE_MOUSE':1})
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1
+                  },
+                  supports_floss=True)
     def advmon_fg_bg_combination_tests(self):
         """Tests foreground and background scanning working together."""
         self.advmon_test_fg_bg_combination()
@@ -86,7 +111,8 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                           'BLE_MOUSE': 1
                   },
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
     def advmon_suspend_resume_tests(self):
         """Tests working of background scanning with suspend resume."""
         self.advmon_test_suspend_resume()
@@ -140,7 +166,8 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                  peer_required=True,
                  args_dict=None,
                  test_name=None,
-                 flag='Quick Health'):
+                 flag='Quick Health',
+                 floss=False):
         """Run the batch of Bluetooth Advertisement Monitor API tests.
 
         @param host: the DUT, usually a chromebook.
@@ -153,6 +180,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.quick_test_init(host,
                              use_btpeer=peer_required,
                              flag=flag,
-                             args_dict=args_dict)
+                             args_dict=args_dict,
+                             floss=floss)
         self.advmon_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

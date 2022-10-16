@@ -1,0 +1,31 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Tests advertisement monitor object health.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterAdvMonitor.advmon_monitor_health_tests.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Batch of Bluetooth Advertisement Monitor tests',
+    'hw_agnostic': True
+}
+ATTRIBUTES = ''
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth'
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterAdvMonitor',
+                 host=host,
+                 num_iterations=1,
+                 peer_required=False,
+                 test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

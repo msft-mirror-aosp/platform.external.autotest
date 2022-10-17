@@ -241,7 +241,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         # Cleanup
         self.test_stop_discovery()
 
-    @test_wrapper('SDP Service Browse Test', devices={"BLUETOOTH_TESTER":1})
+    @test_wrapper('SDP Service Browse Test',
+                  devices={"BLUETOOTH_TESTER": 1},
+                  supports_floss=True)
     def cl_sdp_service_browse_test(self):
         """Performs sdp browse with tester peripheral"""
         device = self.devices['BLUETOOTH_TESTER'][0]

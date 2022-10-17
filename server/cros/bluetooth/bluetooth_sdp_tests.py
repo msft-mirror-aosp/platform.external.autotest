@@ -573,27 +573,33 @@ class bluetooth_SDP_ServiceBrowse(bluetooth_SDP_Test,
         if not root_services:
             return False
 
-        # Find additional browse groups.
-        group_ids = self.test_attribute(self.BROWSE_GROUP_DESCRIPTOR,
-                                        self.GROUP_ID,
-                                        get_attribute)
-        if not group_ids:
-            return False
-
-        # Find services from all browse groups.
         all_services = []
-        for group_id in group_ids:
-            services = self.test_attribute(group_id,
-                                           self.SERVICE_CLASS_ID_LIST,
-                                           get_attribute)
-            if not services:
+        # The Rest of this function gets 'services' from 'group_ids' using
+        # 'BROWSE_GROUP_DESCRIPTOR' and check if they are equal to
+        # 'root_services'. Because 'BROWSE_GROUP_DESCRIPTOR' is not registered
+        # on floss, so we skip this check in floss.
+        if self.bluetooth_facade.floss:
+            all_services = root_services
+        else:
+            # Find additional browse groups.
+            group_ids = self.test_attribute(self.BROWSE_GROUP_DESCRIPTOR,
+                                            self.GROUP_ID, get_attribute)
+            if not group_ids:
                 return False
-            all_services.extend(services)
 
-        # Ensure that root services are among all services.
-        for service in root_services:
-            if service not in all_services:
-                return False
+            # Find services from all browse groups.
+            for group_id in group_ids:
+                services = self.test_attribute(group_id,
+                                               self.SERVICE_CLASS_ID_LIST,
+                                               get_attribute)
+                if not services:
+                    return False
+                all_services.extend(services)
+
+            # Ensure that root services are among all services.
+            for service in root_services:
+                if service not in all_services:
+                    return False
 
         # Sort all services and remove duplicates.
         all_services.sort()

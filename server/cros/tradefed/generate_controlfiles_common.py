@@ -22,6 +22,8 @@ import zipfile
 # Use 'sudo pip install jinja2' to install.
 from jinja2 import Template
 
+import bundle_utils
+
 # Type of source storage from where the generated control files should
 # retrieve the xTS bundle zip file.
 #  'MOBLAB' means the bucket for moblab used by 3PL.
@@ -1498,12 +1500,12 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, source_type):
             f.write(content)
 
 
-def run(uris, source_type, cache_dir):
+def run(source_contents, cache_dir):
     """Downloads each bundle in |uris| and generates control files for each
 
     module as reported to us by tradefed.
     """
-    for uri in uris:
+    for uri, source_type in source_contents:
         abi = get_bundle_abi(uri)
         is_public = (source_type == SourceType.MOBLAB)
         # Get tradefed data by downloading & unzipping the files
@@ -1597,12 +1599,6 @@ def main(config):
         description='Create control files for a CTS bundle on GS.',
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
-            'uris',
-            nargs='+',
-            help='List of Google Storage URIs to CTS bundles. Example:\n'
-            'gs://chromeos-arc-images/cts/bundle/P/'
-            'android-cts-9.0_r9-linux_x86-x86.zip')
-    parser.add_argument(
             '--is_public',
             dest='is_public',
             default=False,
@@ -1617,6 +1613,12 @@ def main(config):
             help='Generate the control files for CTS from the latest CTS bundle'
             ' stored in the internal storage')
     parser.add_argument(
+            '--is_all',
+            dest='is_all',
+            default=False,
+            action='store_true',
+            help='Generate the public, latest, and dev control files')
+    parser.add_argument(
             '--cache_dir',
             dest='cache_dir',
             default=None,
@@ -1625,10 +1627,21 @@ def main(config):
             'bundle file if exists, or caches a downloaded file to this '
             'directory if not.')
     args = parser.parse_args()
-    if args.is_public:
-        source_type = SourceType.MOBLAB
-    elif args.is_latest:
-        source_type = SourceType.LATEST
-    else:
-        source_type = SourceType.DEV
-    run(args.uris, source_type, args.cache_dir)
+
+    config_path = CONFIG['BUNDLE_CONFIG_PATH']
+    url_config = bundle_utils.load_config(config_path)
+
+    source_contents = []
+    if args.is_public or args.is_all:
+        urls = bundle_utils.make_urls_for_all_abis(url_config, None)
+        for url in urls:
+            source_contents.append((url, SourceType.MOBLAB))
+    if args.is_latest or args.is_all:
+        urls = bundle_utils.make_urls_for_all_abis(url_config, 'LATEST')
+        for url in urls:
+            source_contents.append((url, SourceType.LATEST))
+    if (not args.is_public and not args.is_latest) or args.is_all:
+        urls = bundle_utils.make_urls_for_all_abis(url_config, 'DEV')
+        for url in urls:
+            source_contents.append((url, SourceType.DEV))
+    run(source_contents, args.cache_dir)

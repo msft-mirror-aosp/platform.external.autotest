@@ -219,7 +219,8 @@ class ChromiumOSProvisioner(object):
                  is_release_bucket=None,
                  is_servohost=False,
                  public_bucket=False,
-                 cache_server_url=None):
+                 cache_server_url=None,
+                 with_minios=False):
         """Initializes the object.
 
         @param update_url: The URL we want the update to use.
@@ -235,6 +236,7 @@ class ChromiumOSProvisioner(object):
                                  will avoid needing to SSH or curl lab cache
                                  servers, allowing tests to provision lab DUTs
                                  when running from a workstation host.
+        @param with_minios: If True, also provision the inactive miniOS.
         """
         self.update_url = update_url
         self.host = host
@@ -244,6 +246,7 @@ class ChromiumOSProvisioner(object):
         self._is_servohost = is_servohost
         self._public_bucket = public_bucket
         self._cache_server_url = cache_server_url
+        self._with_minios = with_minios
 
     def _run(self, cmd, *args, **kwargs):
         """Abbreviated form of self.host.run(...)"""
@@ -375,8 +378,9 @@ class ChromiumOSProvisioner(object):
         # Check if GS_Cache server is enabled on the server.
         self._run('curl -s -o /dev/null %s' % gs_cache_url)
 
-        command = '%s --noreboot %s %s' % (provision_command, image_name,
-                                           gs_cache_url)
+        with_minios = " --minios" if self._with_minios else ""
+        command = '%s --noreboot%s %s %s' % (provision_command, with_minios,
+                                             image_name, gs_cache_url)
         self._run(command)
         metrics.Counter(
                 _metric_name('quick_provision')).increment(fields={
@@ -398,8 +402,9 @@ class ChromiumOSProvisioner(object):
                        image_name if self._is_release_bucket else None)
 
         static_url = 'http://%s/static' % devserver_name
-        command = '%s --noreboot %s %s' % (provision_command, image_name,
-                                           static_url)
+        with_minios = " --minios" if self._with_minios else ""
+        command = '%s --noreboot%s %s %s' % (provision_command, with_minios,
+                                             image_name, static_url)
         self._run(command)
         metrics.Counter(
                 _metric_name('quick_provision')).increment(fields={
@@ -417,8 +422,9 @@ class ChromiumOSProvisioner(object):
         logging.info('Try quick provision with public bucket.')
 
         bucket_url = self.update_url[:self.update_url.find(image_name) - 1]
-        command = '%s --noreboot %s %s' % (provision_command, image_name,
-                                           bucket_url)
+        with_minios = " --minios" if self._with_minios else ""
+        command = '%s --noreboot%s %s %s' % (provision_command, with_minios,
+                                             image_name, bucket_url)
         self._run(command)
 
     def _install_update(self):

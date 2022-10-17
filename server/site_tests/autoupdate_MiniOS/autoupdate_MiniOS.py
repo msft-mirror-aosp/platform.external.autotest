@@ -18,8 +18,7 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
     _EXCLUSION_PREFS_DIR = "exclusion"
     _MINIOS_PREFS_DIR = "minios"
 
-    def initialize(self, host=None, wifi_configs=None, running_at_desk=None,
-                   skip_provisioning=None):
+    def initialize(self, host=None, wifi_configs=None, running_at_desk=None):
         """
         Clear test related prefs on the DUT before starting the test.
 
@@ -28,20 +27,25 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
             wifi client configuration dict.
         @param running_at_desk: indicates test is run locally from a
             workstation.
-        @param skip_provisioning: indicates test is run locally and provisioning
-            of inactive partition should be skipped.
 
         """
         super(autoupdate_MiniOS, self).initialize(
             host=host, wifi_configs=wifi_configs,
             running_at_desk=running_at_desk,
-            skip_provisioning=skip_provisioning)
+            skip_provisioning='true')
         self._remove_minios_update_prefs()
 
     def cleanup(self):
         super(autoupdate_MiniOS, self).cleanup()
         self._save_extra_update_engine_logs(number_of_logs=2)
         self._remove_minios_update_prefs()
+        # Set active miniOS partition back to the original one.
+        try:
+            kernel_utils.set_minios_priority(host=self._host,
+                                             partition=self._active_minios)
+        except AttributeError:
+            logging.error("Skip restoring minios priority as the active minios "
+                          "partition is not set.")
 
     def _remove_minios_update_prefs(self):
         for pref in ((self._EXCLUSION_PREFS_DIR, True),
@@ -139,7 +143,8 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
                  with_dlc=False,
                  with_exclusion=False,
                  running_at_desk=False,
-                 build=None):
+                 build=None,
+                 m2n=False):
         """
         Tests that we can successfully update MiniOS along with the OS.
 
@@ -154,6 +159,8 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         @param build: An optional parameter to specify the target build for the
                       update when running locally. If no build is supplied, the
                       current version on the DUT will be used.
+        @m2n: M -> N update. This means we install the current stable version
+              of this board before updating to ToT.
 
         """
         self._full_payload = full_payload
@@ -164,19 +171,25 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
                          "automatically set with_os to True.")
             with_os = True
 
+        if m2n:
+            skip_board_suffixes = ['-kernelnext', '-manatee']
+            self.provision_dut(public_bucket=running_at_desk,
+                               skip_board_suffixes=skip_board_suffixes,
+                               with_minios=True)
+
         # Record DUT state before the update.
-        self._active_cros, self._inactive_cros \
-            = kernel_utils.get_kernel_state(self._host)
-        active_minios, inactive_minios \
-            = kernel_utils.get_minios_priority(self._host)
+        (self._active_cros,
+         self._inactive_cros) = kernel_utils.get_kernel_state(self._host)
+        (self._active_minios,
+         self._inactive_minios) = kernel_utils.get_minios_priority(self._host)
 
         minios_update = with_os and not with_exclusion
         # MiniOS update to be verified.
         self._verifications = [
                 lambda: kernel_utils.verify_minios_priority_after_update(
                         self._host,
-                        expected=inactive_minios
-                        if minios_update else active_minios)
+                        expected=self._inactive_minios if minios_update
+                                                       else self._active_minios)
         ]
 
         # Get payload URLs and setup tests.

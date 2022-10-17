@@ -199,6 +199,19 @@ def get_minios_priority(host=None):
     return (active, _MINIOS_B if active == _MINIOS_A else _MINIOS_A)
 
 
+def set_minios_priority(host=None, partition=None):
+    """
+    Set the active MiniOS partition.
+
+    @param host: The DUT to execute the command on. None to execute locally.
+    @param partition: The active partition name, should be either "A" or "B".
+
+    """
+    if partition != _MINIOS_A and partition != _MINIOS_B:
+        raise Exception('Encountered unknown MiniOS partition: %s' % partition)
+    _run(['crossystem', 'minios_priority=%s' % partition], host)
+
+
 def verify_minios_priority_after_update(host=None, expected=None):
     """
     Ensure the next MiniOS to boot is the expected one.

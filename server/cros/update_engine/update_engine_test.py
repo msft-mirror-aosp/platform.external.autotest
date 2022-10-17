@@ -80,6 +80,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     _STATEFUL_ARCHIVE_NAME = 'stateful.tgz'
     _KERNEL_ARCHIVE_NAME = 'full_dev_part_KERN.bin.gz'
+    _MINIOS_ARCHIVE_NAME = 'full_dev_part_MINIOS.bin.gz'
     _ROOTFS_ARCHIVE_NAME = 'full_dev_part_ROOT.bin.gz'
 
     _PAYLOAD_TYPE = autotest_enum.AutotestEnum('CROS', 'DLC', 'MINIOS')
@@ -935,7 +936,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     def _get_provision_url_on_public_bucket(self,
                                             release_path,
-                                            is_release_bucket=True):
+                                            is_release_bucket=True,
+                                            with_minios=False):
         """
         Copy the necessary artifacts for quick-provision to the public bucket
         and return the URL pointing to them.
@@ -952,6 +954,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             output of _get_release_builder_path matches this format.
         @param is_release_bucket: If True (default), use release bucket
             gs://chromeos-releases else use archive bucket gs://chromeos-image-archive.
+        @param with_minios: If True, also copy the miniOS archive.
 
         """
         # We have a flat directory structure in the public directory. Therefore
@@ -965,6 +968,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 self._STATEFUL_ARCHIVE_NAME, self._ROOTFS_ARCHIVE_NAME,
                 self._KERNEL_ARCHIVE_NAME
         ]
+        if with_minios:
+            provision_artifacts.append(self._MINIOS_ARCHIVE_NAME)
 
         for file in provision_artifacts:
             src_url = os.path.join(src_gs_dir, file)
@@ -1179,7 +1184,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                       build_name=None,
                       is_release_bucket=True,
                       public_bucket=False,
-                      skip_board_suffixes=[]):
+                      skip_board_suffixes=[],
+                      with_minios=False):
         """
         Provisions the DUT with the latest version from stable channel.
 
@@ -1200,6 +1206,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                     variants such as '-kernelnext', so a
                                     leading '-' will be prepended if not
                                     already included.
+        @param with_minios: If True, also provision the inactive miniOS.
 
         """
         for suffix in skip_board_suffixes:
@@ -1216,7 +1223,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if public_bucket:
             self._copy_quick_provision_to_dut()
             update_url = self._get_provision_url_on_public_bucket(
-                    build_name, is_release_bucket=is_release_bucket)
+                    build_name, is_release_bucket=is_release_bucket,
+                    with_minios=with_minios)
         else:
             cache_server_url = self._get_cache_server_url()
             update_url = os.path.join(cache_server_url, 'update', build_name)
@@ -1231,4 +1239,5 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 host=self._host,
                 is_release_bucket=True,
                 public_bucket=public_bucket,
-                cache_server_url=cache_server_url).run_provision()
+                cache_server_url=cache_server_url,
+                with_minios=with_minios).run_provision()

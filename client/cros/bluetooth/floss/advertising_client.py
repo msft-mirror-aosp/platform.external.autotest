@@ -406,19 +406,19 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         """Makes struct for advertising data D-Bus."""
         return {
                 'service_uuids':
-                GLib.Variant('as', service_uuids),
+                GLib.Variant('aay', service_uuids),
                 'solicit_uuids':
-                GLib.Variant('as', solicit_uuids),
+                GLib.Variant('aay', solicit_uuids),
                 'transport_discovery_data':
                 GLib.Variant('aay', transport_discovery_data),
                 'manufacturer_data':
-                GLib.Variant('a{iay}', manufacturer_data),
+                GLib.Variant('a{qay}', manufacturer_data),
                 'service_data':
                 GLib.Variant('a{say}', service_data),
                 'include_tx_power_level':
                 GLib.Variant('b', include_tx_power_level),
                 'include_device_name':
-                GLib.Variant('b', include_device_name),
+                GLib.Variant('b', include_device_name)
         }
 
     @glib_call(False)

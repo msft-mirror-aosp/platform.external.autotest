@@ -23,21 +23,7 @@ from autotest_lib.server.cros.tradefed import tradefed_test
 
 # Maximum default time allowed for each individual CTS module.
 _CTS_TIMEOUT_SECONDS = 3600
-
-_PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
-_INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/P/'
-_BUNDLE_MAP = {
-        (None, 'arm'):
-        _PUBLIC_CTS + 'android-cts_instant-9.0_r20-linux_x86-arm.zip',
-        (None, 'x86'):
-        _PUBLIC_CTS + 'android-cts_instant-9.0_r20-linux_x86-x86.zip',
-        ('LATEST', 'arm'):
-        _INTERNAL_CTS + 'android-cts_instant-9.0_r20-linux_x86-arm.zip',
-        ('LATEST', 'x86'):
-        _INTERNAL_CTS + 'android-cts_instant-9.0_r20-linux_x86-x86.zip',
-        # No 'DEV' job for CTS_Instant for now.
-}
-_CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
+_CTS_MEDIA_URI = 'https://dl.google.com/dl/android/cts/android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
 
 class cheets_CTS_Instant(tradefed_test.TradefedTest):
@@ -84,13 +70,6 @@ class cheets_CTS_Instant(tradefed_test.TradefedTest):
         # Suppress redundant output from tradefed.
         cmd.append('--quiet-output=true')
         return cmd
-
-    def _get_bundle_specification(self, uri, bundle):
-        """Get the bundle information.
-        """
-        if uri and (uri.startswith('http') or uri.startswith('gs')):
-            return tradefed_test.BundleSpecification(uri, password='')
-        return tradefed_test.BundleSpecification(_BUNDLE_MAP[(uri, bundle)], password='')
 
     def _get_tradefed_base_dir(self):
         return 'android-cts_instant'

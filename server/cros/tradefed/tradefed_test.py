@@ -28,6 +28,7 @@ import re
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import time
 import six.moves.urllib_parse as urlparse
@@ -37,6 +38,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server import test
 from autotest_lib.server import utils
 from autotest_lib.server.cros.tradefed import adb as adb_utils
+from autotest_lib.server.cros.tradefed import bundle_utils
 from autotest_lib.server.cros.tradefed import cts_expected_failure_parser
 from autotest_lib.server.cros.tradefed import tradefed_chromelogin as login
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
@@ -1374,7 +1376,16 @@ class TradefedTest(test.test):
     def _get_bundle_specification(self, uri, bundle):
         """Get the bundle information.
         """
-        raise NotImplementedError()
+        if uri and (uri.startswith('http') or uri.startswith('gs')):
+            return BundleSpecification(uri, password='')
+        else:
+            # Get the module file path of a derived class via inheritance.
+            cheets_path = sys.modules[self.__class__.__module__].__file__
+            config_file = 'bundle_url_config.json'
+            config_path = os.path.abspath(os.path.join(cheets_path, '..', config_file))
+            url_config = bundle_utils.load_config(config_path)
+
+            return BundleSpecification(bundle_utils.make_bundle_url(url_config, uri, bundle), password='')
 
     def _tradefed_retry_command(self, template, session_id):
         raise NotImplementedError('Subclass should override this function')

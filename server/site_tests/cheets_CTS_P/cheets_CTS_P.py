@@ -26,25 +26,7 @@ from autotest_lib.server.cros.tradefed import tradefed_test
 
 # Maximum default time allowed for each individual CTS module.
 _CTS_TIMEOUT_SECONDS = 3600
-
-_PUBLIC_CTS = 'https://dl.google.com/dl/android/cts/'
-_INTERNAL_CTS = 'gs://chromeos-arc-images/cts/bundle/P/'
-_PARTNER_CTS = 'gs://chromeos-partner-gts/P/'
-_OFFICIAL_ZIP_NAME = 'android-cts-9.0_r20-linux_x86-%s.zip'
-_PREVIEW_ZIP_NAME = 'android-cts-9158650-linux_x86-%s.zip'
-_BUNDLE_MAP = {
-        (None, 'arm'): _PUBLIC_CTS + _OFFICIAL_ZIP_NAME % 'arm',
-        (None, 'x86'): _PUBLIC_CTS + _OFFICIAL_ZIP_NAME % 'x86',
-        ('DEV_MOBLAB', 'arm'): _PARTNER_CTS + _PREVIEW_ZIP_NAME % 'arm',
-        ('DEV_MOBLAB', 'x86'): _PARTNER_CTS + _PREVIEW_ZIP_NAME % 'x86',
-        ('LATEST', 'arm'): _INTERNAL_CTS + _OFFICIAL_ZIP_NAME % 'arm',
-        ('LATEST', 'x86'): _INTERNAL_CTS + _OFFICIAL_ZIP_NAME % 'x86',
-        ('DEV', 'arm'): _INTERNAL_CTS + _PREVIEW_ZIP_NAME % 'arm',
-        ('DEV', 'x86'): _INTERNAL_CTS + _PREVIEW_ZIP_NAME % 'x86',
-        ('DEV_WAIVER', 'arm'): _INTERNAL_CTS + _PREVIEW_ZIP_NAME % 'arm',
-        ('DEV_WAIVER', 'x86'): _INTERNAL_CTS + _PREVIEW_ZIP_NAME % 'x86',
-}
-_CTS_MEDIA_URI = _PUBLIC_CTS + 'android-cts-media-1.5.zip'
+_CTS_MEDIA_URI = 'https://dl.google.com/dl/android/cts/android-cts-media-1.5.zip'
 _CTS_MEDIA_LOCALPATH = '/tmp/android-cts-media'
 
 
@@ -86,13 +68,6 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
         # Suppress redundant output from tradefed.
         cmd.append('--quiet-output=true')
         return cmd
-
-    def _get_bundle_specification(self, uri, bundle):
-        """Get the bundle information.
-        """
-        if uri and (uri.startswith('http') or uri.startswith('gs')):
-            return tradefed_test.BundleSpecification(uri, password='')
-        return tradefed_test.BundleSpecification(_BUNDLE_MAP[(uri, bundle)], password='')
 
     def _get_tradefed_base_dir(self):
         return 'android-cts'

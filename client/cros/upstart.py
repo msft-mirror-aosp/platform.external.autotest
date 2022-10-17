@@ -43,6 +43,11 @@ def is_running(service_name):
     @param service_name: name of service
     """
     cmd = 'status %s' % service_name
+    utils.poll_for_condition(
+        lambda: re.search(re.compile(r'start\/(pre-start|post-start)'),
+        utils.system_output(cmd)) == None,
+        timeout=10,
+        sleep_interval=1)
     return utils.system_output(cmd).find('start/running') != -1
 
 

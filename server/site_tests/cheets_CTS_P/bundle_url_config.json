@@ -1,0 +1,8 @@
+{
+    "public_base": "https://dl.google.com/dl/android/cts/",
+    "internal_base": "gs://chromeos-arc-images/cts/bundle/P/",
+    "partner_url_base": "gs://chromeos-partner-gts/P/",
+    "official_url_pattern": "android-cts-9.0_r20-linux_x86-%s.zip",
+    "preview_url_pattern": "android-cts-9158650-linux_x86-%s.zip",
+    "abi_list": ["arm", "x86"]
+}

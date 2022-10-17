@@ -1,0 +1,82 @@
+{
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "default": {},
+    "title": "Root Schema",
+    "required": [
+        "internal_base",
+        "preview_url_pattern"
+    ],
+    "properties": {
+        "public_base": {
+            "type": "string",
+            "default": "",
+            "title": "The base URL where the publicly available bundle files are located.",
+            "examples": [
+                "https://dl.google.com/dl/android/cts/"
+            ]
+        },
+        "internal_base": {
+            "type": "string",
+            "default": "",
+            "title": "The base URL where the internally available bundle files are located.",
+            "examples": [
+                "gs://chromeos-arc-images/cts/bundle/R/"
+            ]
+        },
+        "partner_base": {
+            "type": "string",
+            "default": "",
+            "title": "The base URL where bundle files published for partner are located.",
+            "examples": [
+                "gs://chromeos-partner-gts/R/"
+            ]
+        },
+        "official_url_pattern": {
+            "type": "string",
+            "default": "",
+            "title": "the URL which means the filename of the official xTS zip file",
+            "examples": [
+                "android-cts-11_r9-linux_x86-%s.zip"
+            ]
+        },
+        "preview_url_pattern": {
+            "type": "string",
+            "default": "",
+            "title": "the URL which means the filename of the preview xTS zip file",
+            "examples": [
+                "android-cts-9099362-linux_x86-%s.zip"
+            ]
+        },
+        "abi_list": {
+            "type": "array",
+            "default": [],
+            "title": "the list containing all possible abi",
+            "items": {
+                "type": "string",
+                "title": "the abi name",
+                "examples": [
+                    "arm",
+                    "x86"
+                ]
+            },
+            "examples": [
+                ["arm",
+                    "x86"
+                ]
+            ]
+        }
+    },
+    "examples": [{
+        "public_base": "https://dl.google.com/dl/android/cts/",
+        "internal_base": "gs://chromeos-arc-images/cts/bundle/R/",
+        "partner_base": "gs://chromeos-partner-gts/R/",
+        "official_url_pattern": "android-cts-11_r9-linux_x86-%s.zip",
+        "preview_url_pattern": "android-cts-9099362-linux_x86-%s.zip",
+        "abi_list": [
+            "arm",
+            "x86"
+        ]
+    }]
+}

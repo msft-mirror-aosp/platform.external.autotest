@@ -5,6 +5,7 @@
 # found in the LICENSE file.
 
 import collections
+import os
 
 from generate_controlfiles_common import main
 
@@ -14,6 +15,8 @@ _ALL = 'all'
 CONFIG = {}
 
 CONFIG['TEST_NAME'] = 'cheets_CTS_Instant'
+CONFIG['BUNDLE_CONFIG_PATH'] = os.path.abspath(os.path.join(os.path.dirname(__file__),
+        '..', '..', 'site_tests', CONFIG['TEST_NAME'], 'bundle_url_config.json'))
 CONFIG['DOC_TITLE'] = \
     'Android Compatibility Test Suite for Instant Apps (CTS Instant)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts_P, suite:cts'

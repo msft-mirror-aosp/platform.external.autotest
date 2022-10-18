@@ -189,15 +189,15 @@ class power_Test(test.test):
         self._psr.refresh()
 
     @retry.retry(Exception, timeout_min=1, delay_sec=2)
-    def collect_keypress_latency_for(self, cr, histogram, prefix):
+    def collect_keypress_latency_for(self, tab, histogram, prefix):
         """Collect keypress latency information from Histograms.
 
-        @param cr: object, the Chrome instance
+        @param tab: object, Chrome tab instance
         @param histogram: string name of the histogram
         @param prefix: string prefix for the output key names
         """
         keypress_histogram_end = histogram_verifier.get_histogram(
-                cr, histogram)
+                tab, histogram)
         matches = re.search((self.histogram_re % histogram),
                             keypress_histogram_end)
 
@@ -245,15 +245,16 @@ class power_Test(test.test):
                             'keypress')
                     break
 
-    def collect_keypress_latency(self, cr):
+    def collect_keypress_latency(self, tab):
         """Collect old and new keypress latency information from Histograms.
 
-        @param cr: object, the Chrome instance
+        @param tab: object, Chrome tab instance
         """
-        self.collect_keypress_latency_for(cr, self.keypress_histogram, '')
-        self.collect_keypress_latency_for(cr,
+        self.collect_keypress_latency_for(tab, self.keypress_histogram, '')
+        self.collect_keypress_latency_for(tab,
                                           self.deprecated_keypress_histogram,
                                           'deprecated_')
+
 
     def publish_keyvals(self):
         """Publish power result keyvals."""

@@ -8,12 +8,17 @@ import re
 import threading
 import time
 
+from google.protobuf import struct_pb2
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.input_playback import keyboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_test
-from autotest_lib.client.cros.power import power_utils
+from autotest_lib.client.cros import tast
+from autotest_lib.client.cros.tast.ui import chrome_service_pb2
+from autotest_lib.client.cros.tast.ui import tconn_service_pb2
+from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
+from autotest_lib.client.cros.tast.ui import conn_service_pb2
+from autotest_lib.client.cros.tast.ui import conn_tab
 
 
 class power_VideoCall(power_test.power_Test):
@@ -46,7 +51,8 @@ class power_VideoCall(power_test.power_Test):
                  num_video=5,
                  multitask=True,
                  min_run_time_percent=100,
-                 webrtc=False):
+                 webrtc=False,
+                 tast_bundle_path=None):
         """run_once method.
 
         @param duration: time in seconds to display url and measure power.
@@ -63,6 +69,7 @@ class power_VideoCall(power_test.power_Test):
                                      run time must be longer than
                                      min_run_time_percent / 100.0 * duration.
         @param webrtc: If true use WebRTC, otherwise use MediaEncoder.
+        @param tast_bundle_apth: Path to the tast local bundle to be used with the test.
         """
 
         if not preset and not video_url:
@@ -77,27 +84,48 @@ class power_VideoCall(power_test.power_Test):
         if preset:
             video_url = '%s?preset=%s' % (video_url, preset)
 
-        extra_browser_args = self.get_extra_browser_args_for_camera_test()
-        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
+        logging.info('Starting gRPC Tast')
         with keyboard.Keyboard() as keys,\
-             chrome.Chrome(init_network_controller=True,
-                           gaia_login=False,
-                           extra_browser_args=extra_browser_args,
-                           autotest_ext=True) as cr:
+            tast.GRPC(tast_bundle_path) as tast_grpc,\
+            tast.ConnService(tast_grpc.channel) as conn_service,\
+            tast.ChromeService(tast_grpc.channel) as chrome_service:
+            tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
+
+            chrome_service.New(chrome_service_pb2.NewRequest(
+                # b/228256145 to avoid powerd restart
+                disable_features = ['FirmwareUpdaterApp'],
+                extra_args = self.get_extra_browser_args_for_camera_test(),
+            ))
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
             self._services.stop_services()
             self._multicast_disabler.disable_network_multicast()
 
+            response = conn_service.NewConn(conn_service_pb2.NewConnRequest(
+                url = 'about:blank'
+            ))
+
+            tab_left = conn_tab.ConnTab(conn_service, response.id)
+
             # Move existing window to left half and open video page
-            tab_left = cr.browser.tabs[0]
-            tab_left.Activate()
+            tab_left.ActivateTarget()
+            tab_left.WaitForDocumentReadyStateToBeComplete()
             if multitask:
                 keys.press_key('alt+[')
             else:
                 # Run in fullscreen when not multitask.
-                power_utils.set_fullscreen(cr)
+                tconn_service.Eval(tconn_service_pb2.EvalRequest(
+                    expr='''(async () => {
+                        let window_id = await new Promise(
+                            (resolve) => chrome.windows.getCurrent({},
+                            (window) => resolve(window.id))
+                        )
+                        await new Promise(
+                            (resolve) => chrome.windows.update(
+                                window_id, { state: 'fullscreen' },
+                                resolve));
+                    })()'''))
 
             logging.info('Navigating left window to %s', video_url)
             tab_left.Navigate(video_url)
@@ -110,10 +138,22 @@ class power_VideoCall(power_test.power_Test):
             if multitask:
                 # Open Google Doc on right half
                 logging.info('Navigating right window to %s', self.doc_url)
-                cmd = 'chrome.windows.create({ url : "%s" });' % self.doc_url
-                cr.autotest_ext.EvaluateJavaScript(cmd)
-                tab_right = cr.browser.tabs[-1]
-                tab_right.Activate()
+                arg_value = struct_pb2.Value()
+                arg_value.string_value = self.doc_url
+                tconn_service.Call(tconn_service_pb2.CallRequest(
+                    fn='''async (url) => {
+                        await new Promise(
+                            (resolve) => chrome.windows.create(
+                                { url: url, focused: true },
+                                () => resolve()));
+                        }''',
+                    args=[arg_value]
+                    ))
+                response = conn_service.NewConnForTarget(conn_service_pb2.NewConnForTargetRequest(
+                    url = self.doc_url
+                ))
+                tab_right = conn_tab.ConnTab(conn_service, response.id)
+                tab_right.ActivateTarget()
                 keys.press_key('alt+]')
                 tab_right.WaitForDocumentReadyStateToBeComplete()
                 time.sleep(5)
@@ -188,7 +228,7 @@ class power_VideoCall(power_test.power_Test):
                 tab_left.EvaluateJavaScript('window.stopWebRTC()')
 
             if multitask:
-                self.collect_keypress_latency(cr)
+                self.collect_keypress_latency(conn_tab.new_tab(conn_service, 'about:blank'))
 
             # Re-enable multicast here instead of in the cleanup because Chrome
             # might re-enable it and we can't verify that multicast is off.

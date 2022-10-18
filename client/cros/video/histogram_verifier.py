@@ -116,16 +116,15 @@ def is_histogram_present(cr, histogram_name):
         return False
 
 
-def get_histogram(cr, histogram_name):
+def get_histogram(tab, histogram_name):
     """
      This returns contents of the given histogram.
 
-     @param cr: object, the Chrome instance
+     @param tab: object, Chrome tab instance
      @param histogram_name: string, name of the histogram
      @returns string: contents of the histogram
 
      """
-    tab = cr.browser.tabs.New()
     return get_histogram_text(tab, histogram_name)
 
 

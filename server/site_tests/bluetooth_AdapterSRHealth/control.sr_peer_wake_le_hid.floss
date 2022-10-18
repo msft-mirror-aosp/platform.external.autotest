@@ -1,0 +1,36 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+AUTHOR = 'Manal Lubbadeh <manal.lubbadeh@exalt.ps>'
+NAME = 'bluetooth_AdapterSRHealth.sr_peer_wake_le_hid.floss'
+PURPOSE = 'Verify that an LE HID peer device can wake the DUT up'
+CRITERIA = 'Pass test'
+ATTRIBUTES = 'suite:bluetooth_floss'
+TIME = 'SHORT'
+TEST_CATEGORY = 'Functional'
+TEST_CLASS = 'bluetooth'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+PY_VERSION = 3
+
+DOC = """
+The test verifies that an LE HID device should wake the DUT up.
+
+Steps:
+1. The DUT pairs and connects to an LE HID device.
+2. Suspend the DUT.
+3. Use the HID device to try waking up the DUT.
+4. Expect the DUT resumes in time.
+"""
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterSRHealth', host=host, num_iterations=1,
+                 args_dict=args_dict, test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

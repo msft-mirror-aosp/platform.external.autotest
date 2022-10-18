@@ -118,17 +118,6 @@ UNSUPPORTED_BT_HW_FILTERING_CHIPSETS = [
         'Realtek-RTL8852A-USB', 'Realtek-RTL8852C-USB'
 ]
 
-KERNEL_LOG_LEVEL = {
-        'EMERG': 0,
-        'ALERT': 1,
-        'CRIT': 2,
-        'ERR': 3,
-        'WARNING': 4,
-        'NOTICE': 5,
-        'INFO': 6,
-        'DEBUG': 7
-}
-
 # Possible inquiry results format and code in hciconfig
 INQUIRY_MODE = {'STANDARD': 0, 'RSSI': 1, 'EIR': 2, 'ERROR': -1}
 
@@ -5208,15 +5197,6 @@ class BluetoothAdapterTests(test.test):
         s = self.bluetooth_facade.get_bt_usb_disconnect_str()
         if s:
             COMMON_FAILURES[s] = 'USB disconnect detected'
-
-    def clean_bluetooth_kernel_log(self, level_name):
-        """Remove Bluetooth kernel logs in /var/log/messages with equal or lower
-        prioity than level_name
-
-        @param level_name: name of the log level, e.x. 'INFO', 'DEBUG'...
-        """
-        self.bluetooth_facade.clean_bluetooth_kernel_log(
-                KERNEL_LOG_LEVEL[level_name])
 
     def run_once(self, *args, **kwargs):
         """This method should be implemented by children classes.

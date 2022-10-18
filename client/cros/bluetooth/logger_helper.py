@@ -113,43 +113,12 @@ class LogManager(object):
 
         return False
 
-    def FilterOut(self, rm_reg_exp):
-        """Remove lines with specified pattern from the log file
-
-        @param rm_reg_exp: regular expression of the lines to be removed
-        """
-        # If log_path doesn't exist, there's nothing to do
-        if not os.path.isfile(self.log_path):
-            return
-
-        rm_line_cnt = 0
-        initial_size = self._GetSize()
-        rm_pattern = re.compile(rm_reg_exp.encode(self.DEFAULT_ENCODING))
-
-        with open(self.log_path, 'rb+') as mf:
-            lines = mf.readlines()
-            mf.seek(0)
-            for line in lines:
-                if rm_pattern.search(line):
-                    rm_line_cnt += 1
-                else:
-                    mf.write(line)
-            mf.truncate()
-
-        # Some tracebacks point out here causing /var/log/messages missing but
-        # we don't have many clues. Adding a check and logs here.
-        if not os.path.isfile(self.log_path):
-            msg = '{} does not exist after FilterOut'.format(self.log_path)
-            logging.warning(msg)
-            self._LogErrorToSyslog(msg)
-
-        new_size = self._GetSize()
-        rm_byte = initial_size - new_size
-        logging.info('Removed number of line: %d, Reduced log size: %d byte',
-                     rm_line_cnt, rm_byte)
-
-        # Note the new size of the log
-        self.ResetLogMarker(new_size)
+    def RotateSyslogs(self):
+        """Trigger system logs rotation."""
+        subprocess.call(['chromeos-cleanup-logs'])
+        subprocess.call(['logger',
+                         'rotation triggered by chromeos bluetooth autotests'])
+        self.ResetLogMarker()
 
 
 class InterleaveLogger(LogManager):

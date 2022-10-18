@@ -276,11 +276,6 @@ class BluetoothBaseFacadeLocal(object):
     # Both bluez and floss share the same lib dir for configuration and cache
     BLUETOOTH_LIBDIR = '/var/lib/bluetooth'
 
-    SYSLOG_LEVELS = [
-            'EMERG', 'ALERT', 'CRIT', 'ERR', 'WARNING', 'NOTICE', 'INFO',
-            'DEBUG'
-    ]
-
     # How long to wait for hid device
     HID_TIMEOUT = 15
     HID_CHECK_SECS = 2
@@ -349,6 +344,7 @@ class BluetoothBaseFacadeLocal(object):
 
         # Open the Bluetooth Raw socket to the kernel which provides us direct,
         # raw, access to the HCI controller.
+
         self._raw_socket = bluetooth_socket.BluetoothRawSocket()
 
         # Initialize a btmon object to record bluetoothd's activity.
@@ -492,18 +488,9 @@ class BluetoothBaseFacadeLocal(object):
         """
         return self.messages.LogContains(pattern_str)
 
-    def clean_bluetooth_kernel_log(self, log_level):
-        """Remove Bluetooth kernel logs in /var/log/messages with loglevel
-           equal to or greater than |log_level|
-
-        @param log_level: int in range [0..7]
-        """
-        reg_exp = '[^ ]+ ({LEVEL}) kernel: \[.*\] Bluetooth: .*'.format(
-                LEVEL='|'.join(self.SYSLOG_LEVELS[log_level:]))
-
-        logging.debug('Set kernel filter to level %d', log_level)
-
-        self.messages.FilterOut(reg_exp)
+    def cleanup_syslogs(self):
+        """Clean up system logs"""
+        self.messages.RotateSyslogs()
 
     def _encode_base64_json(self, data):
         """Base64 encode and json encode the data.

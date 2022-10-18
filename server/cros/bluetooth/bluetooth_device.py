@@ -1005,13 +1005,9 @@ class BluetoothDevice(object):
         return self._proxy.messages_find(pattern_str)
 
     @proxy_thread_safe
-    def clean_bluetooth_kernel_log(self, log_level=7):
-        """Remove Bluetooth kernel logs in /var/log/messages with loglevel
-           equal to or greater than |log_level|
-
-        @param log_level: int in range [0..7]
-        """
-        self._proxy.clean_bluetooth_kernel_log(log_level)
+    def cleanup_syslogs(self):
+        """Clean up system logs"""
+        self._proxy.cleanup_syslogs()
 
     @proxy_thread_safe
     def register_advertisement(self, advertisement_data):

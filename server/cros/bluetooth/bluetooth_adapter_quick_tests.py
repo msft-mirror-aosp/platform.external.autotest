@@ -162,7 +162,7 @@ class BluetoothAdapterQuickTests(
         if clean_log is not 'FALSE':
             # Clean Bluetooth kernel logs in the DUT to prevent
             # /var/log/messages occupying too much space
-            self.clean_bluetooth_kernel_log(clean_log)
+            self.bluetooth_facade.cleanup_syslogs()
 
         # Some test beds has a attenuator for Bluetooth. If Bluetooth
         # attenuator is present, set its attenuation to 0

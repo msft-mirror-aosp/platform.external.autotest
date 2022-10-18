@@ -31,9 +31,9 @@ class audio_AudioBasicInternalSpeaker(audio_test.AudioTest):
             return
 
         golden_file = audio_test_data.GenerateAudioTestData(
-                        path=os.path.join(self.bindir, 'fix_440_16_0.5.raw'),
+                        path=os.path.join(self.bindir, 'fix_2k_16_0.5.raw'),
                         duration_secs=10,
-                        frequencies=[440, 440],
+                        frequencies=[2000, 2000],
                         volume_scale=0.5)
 
         source = self.widget_factory.create_widget(

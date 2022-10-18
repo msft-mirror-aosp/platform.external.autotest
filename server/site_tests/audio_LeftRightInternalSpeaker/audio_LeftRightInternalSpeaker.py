@@ -40,10 +40,10 @@ class audio_LeftRightInternalSpeaker(audio_test.AudioTest):
     RECORD_SECONDS = 8
     RIGHT_WAV_FILE_URL = (
         'http://commondatastorage.googleapis.com/chromiumos-test-assets-'
-        'public/audio_test/chameleon/Speaker/right_440_half.wav')
+        'public/audio_test/chameleon/Speaker/right_2k_half.wav')
     LEFT_WAV_FILE_URL = (
         'http://commondatastorage.googleapis.com/chromiumos-test-assets-'
-        'public/audio_test/chameleon/Speaker/left_440_half.wav')
+        'public/audio_test/chameleon/Speaker/left_2k_half.wav')
 
     def run_once(self, host, player):
         """
@@ -74,6 +74,11 @@ class audio_LeftRightInternalSpeaker(audio_test.AudioTest):
             chameleon_audio_ids.CrosIds.SPEAKER)
         self.sound_recorder = widget_factory.create_widget(
             chameleon_audio_ids.ChameleonIds.MIC)
+
+        self.golden_file = audio_test_data.GenerateAudioTestData(
+            path=os.path.join(self.bindir, 'fix_2k_16.raw'),
+            frequencies=[2000, 2000],
+            duration_secs=10)
 
         self.play_and_record(
             host,
@@ -117,11 +122,11 @@ class audio_LeftRightInternalSpeaker(audio_test.AudioTest):
 
         if player == 'internal':
             if channel == 'left':
-                frequencies = [440, 0]
+                frequencies = [2000, 0]
             else:
-                frequencies = [0, 440]
+                frequencies = [0, 2000]
             sound_file = audio_test_data.GenerateAudioTestData(
-                    path=os.path.join(self.bindir, '440_half.raw'),
+                    path=os.path.join(self.bindir, '%s_2k_half.raw' % channel),
                     duration_secs=10,
                     frequencies=frequencies)
 
@@ -207,7 +212,7 @@ class audio_LeftRightInternalSpeaker(audio_test.AudioTest):
         # and HDMI.
         logging.info('Validating recorded output for channel %s', channel)
         audio_test_utils.check_recorded_frequency(
-            audio_test_data.SIMPLE_FREQUENCY_SPEAKER_TEST_FILE,
+            self.golden_file,
             self.sound_recorder,
             second_peak_ratio=0.1,
             ignore_frequencies=[50, 60])

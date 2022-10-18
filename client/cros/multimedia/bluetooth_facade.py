@@ -5050,3 +5050,21 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                          listen_using_rfcomm_with_service_record_sync(
                                  name, uuid_value))
         return socket_result is not None
+
+    def get_advertisement_property(self, adv_path, prop_name):
+        """Grabs property of an advertisement registered on the DUT.
+
+        @param adv_path: The path or name of the advertising set registered.
+        @param prop_name: Name of the property to retrieve.
+
+        @return: The value of the property if the property exists, else None.
+        """
+        # Currently only support the property "TxPower".
+        if prop_name != 'TxPower':
+            return None
+
+        adv_id = self.adv_names_to_ids.get(adv_path)
+        if adv_id is None:
+            return None
+
+        return self.advertising_client.get_tx_power(adv_id)

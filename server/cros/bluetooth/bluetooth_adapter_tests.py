@@ -3252,18 +3252,33 @@ class BluetoothAdapterTests(test.test):
 
         @returns: True if the above requirements are met, False otherwise
         """
+        adv_tx_power = None
+        adv_path = None
+        if self.floss:
+            adv_tx_power = advertising_data['parameters']['tx_power_level']
+            adv_path = advertising_data.get('advertise_name')
+        else:
+            adv_tx_power = advertising_data.get('TxPower')
+            adv_path = advertising_data.get('Path')
+
+        # In BlueZ the TX power is set via both HCI and MGHT commands.
+        # In Floss, however, is only set via HCI command.
+        adv_tx_power_appearance_count = 1 if self.floss else 2
 
         # If we aren't using TxPower in this advertisement, success
-        if not self.ext_adv_enabled() or 'TxPower' not in advertising_data:
+        if not self.ext_adv_enabled() or adv_tx_power is None:
             return True
 
-        # Make sure the correct Tx power was passed in both MGMT and HCI
-        # commands by searching for two instances of search string
-        search_str = 'TX power: {} dbm'.format(advertising_data['TxPower'])
+        # Make sure the correct number of Tx power setting is logged in btmon.
+        search_str = 'TX power: {} dbm'.format(adv_tx_power)
         contents = self.bluetooth_facade.btmon_get(search_str=search_str,
                                                    start_str='')
-        if len(contents) < 2:
-            logging.error('Could not locate correct Tx power in MGMT and HCI')
+        if len(contents) < adv_tx_power_appearance_count:
+            if self.floss:
+                logging.error('Could not locate correct Tx power in HCI')
+            else:
+                logging.error(
+                    'Could not locate correct Tx power in MGMT and HCI')
             return False
 
         # Locate tx power selected by controller
@@ -3283,7 +3298,7 @@ class BluetoothAdapterTests(test.test):
 
         # Validate that client's advertisement was updated correctly.
         new_tx_prop = self.bluetooth_facade.get_advertisement_property(
-                advertising_data['Path'], 'TxPower')
+            adv_path, 'TxPower')
 
         return new_tx_prop == selected_tx_power
 

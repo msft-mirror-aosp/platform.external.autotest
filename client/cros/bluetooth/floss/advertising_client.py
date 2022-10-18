@@ -298,7 +298,11 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         # We don't register callbacks by default.
         self.callbacks = None
         self.callback_id = None
-        self.active_adv_ids = set()
+
+        # A dict of advertiser_id as key and tx power as value.
+        self.active_advs = {}
+
+        # A dict of reg_id as key and tuple of (advertiser_id, status) as value.
         self.start_adv_results = {}
 
     def __del__(self):
@@ -317,12 +321,12 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         if GattStatus(status) != GattStatus.SUCCESS:
             return
 
-        if advertiser_id in self.active_adv_ids:
+        if advertiser_id in self.active_advs:
             logging.warn(
                     'The set of advertiser_id: %s, is already registered.',
                     advertiser_id)
         else:
-            self.active_adv_ids.add(advertiser_id)
+            self.active_advs[advertiser_id] = tx_power
 
     @glib_callback()
     def on_own_address_read(self, advertiser_id, address_type, address):
@@ -336,8 +340,8 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         """Handle advertising set stopped callback."""
         logging.debug('on_advertising_set_stopped: advertiser_id: %s',
                       advertiser_id)
-        if advertiser_id in self.active_adv_ids:
-            self.active_adv_ids.remove(advertiser_id)
+        if advertiser_id in self.active_advs:
+            self.active_advs.pop(advertiser_id)
         else:
             logging.warn('The set of advertiser_id: %s, not registered yet.',
                          advertiser_id)
@@ -676,7 +680,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         try:
             utils.poll_for_condition(
                     condition=(
-                            lambda: advertiser_id not in self.active_adv_ids),
+                            lambda: advertiser_id not in self.active_advs),
                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
 
             return True
@@ -734,7 +738,8 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         @return: True on success, False otherwise.
         """
         failed_adv_ids = []
-        for i in self.active_adv_ids.copy():
+        adv_ids = [i for i in self.active_advs]
+        for i in adv_ids:
             if not self.stop_advertising_set_sync(i):
                 failed_adv_ids.append(i)
 
@@ -743,3 +748,12 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                           ','.join(failed_adv_ids))
             return False
         return True
+
+    def get_tx_power(self, advertiser_id):
+        """Gets tx power value for specific advertiser id.
+
+        @param advertiser_id: Advertiser_id for set of advertising.
+
+        @return: Advertiser_id on success, None otherwise.
+        """
+        return self.active_advs.get(advertiser_id)

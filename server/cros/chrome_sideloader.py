@@ -12,6 +12,7 @@ import requests
 import stat
 import string
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros import dev_server
 
 
@@ -302,7 +303,7 @@ def _lookup_lacros_variant(host):
 
     @return: Lacros variant. e.g. lacros-arm32, lacros64
     """
-    arch = host.get_arch()
+    arch = utils.get_arch_userspace(host.run)
     if arch not in _ARCH_LACROS_VARIANT_DICT:
         raise Exception(
             'Failed to find Lacros variant due to unknown architecture: %s' % arch)
@@ -348,13 +349,23 @@ def _lookup_lacros_latest_version(channel):
     release_prefix = 'chrome/platforms/lacros/channels/' + channel
     json_object = json.loads(res.text)
 
-    version = [r['version'] for r in json_object['releases']
+    versions = [r['version'] for r in json_object['releases']
                if r['name'].startswith(release_prefix)]
-    if len(version) != 1:
+    if len(versions) < 1:
         raise Exception(
             'Failed to extract latest version for channel %s from json: %s' % (channel, res.text))
+    if len(versions) > 1:
+        logging.info("VersionHistory API returns more than 1 version: %s", versions)
 
-    return version[0]
+    # key function to turn version string into list of integers so that
+    # entries can be compared and sorted
+    # E.g. "104.0.5112.86" to [104,0,5112,86]
+    def key_func(version):
+        ret = list(map(int, version.split('.')))
+        return ret
+    sorted_versions = sorted(versions, key=key_func, reverse=True)
+
+    return sorted_versions[0]
 
 
 def deploy_lacros(host,

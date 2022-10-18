@@ -12,12 +12,14 @@ from __future__ import print_function
 import logging
 from contextlib import contextmanager
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.chameleon import audio_widget
 from autotest_lib.client.cros.chameleon import audio_widget_arc
 from autotest_lib.client.cros.chameleon import audio_widget_link
 from autotest_lib.server.cros.bluetooth import bluetooth_device
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids as ids
 import six
+import six.moves.xmlrpc_client
 from six.moves import range
 
 class AudioPort(object):
@@ -351,7 +353,10 @@ class AudioWidgetFactory(object):
 
         audio_port = AudioPort(port_id)
         if audio_port.host == 'Chameleon':
-            handler = _create_chameleon_handler(audio_port)
+            try:
+                handler = _create_chameleon_handler(audio_port)
+            except six.moves.xmlrpc_client.Fault as e:
+                raise error.TestError('Failed to create widget on chameleon (%s)' % str(e))
         elif audio_port.host == 'Cros':
             handler = _create_cros_handler(audio_port)
         elif audio_port.host == 'Peripheral':

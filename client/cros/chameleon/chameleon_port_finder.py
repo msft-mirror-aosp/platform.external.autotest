@@ -141,7 +141,6 @@ class ChameleonVideoInputFinder(ChameleonInputFinder):
         """
         super(ChameleonVideoInputFinder, self).__init__(chameleon_board)
         self.display_facade = display_facade
-        self._TIMEOUT_VIDEO_STABLE_PROBE = 10
 
 
     def _yield_all_ports(self, failed_ports=None, raise_error=False):
@@ -177,8 +176,7 @@ class ChameleonVideoInputFinder(ChameleonInputFinder):
             try:
                 # DUT takes some time to respond. Wait until the video signal
                 # to stabilize and wait for the connector change.
-                video_stable = video_port.wait_video_input_stable(
-                        self._TIMEOUT_VIDEO_STABLE_PROBE)
+                video_stable = video_port.wait_video_input_stable()
                 output = utils.wait_for_value_changed(
                         self.display_facade.get_external_connector_name,
                         old_value=False)
@@ -188,8 +186,7 @@ class ChameleonVideoInputFinder(ChameleonInputFinder):
                     video_port.unplug()
                     time.sleep(self.REPLUG_DELAY_SEC)
                     video_port.plug()
-                    video_stable = video_port.wait_video_input_stable(
-                            self._TIMEOUT_VIDEO_STABLE_PROBE)
+                    video_stable = video_port.wait_video_input_stable()
                     output = utils.wait_for_value_changed(
                             self.display_facade.get_external_connector_name,
                             old_value=False)

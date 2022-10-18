@@ -648,9 +648,9 @@ class ChameleonVideoInput(ChameleonPort):
     It contains some special methods to control a video input.
     """
 
-    _DUT_STABILIZE_TIME = 3
+    _DUT_STABILIZE_TIME = 10
     _DURATION_UNPLUG_FOR_EDID = 5
-    _TIMEOUT_VIDEO_STABLE_PROBE = 10
+    _TIMEOUT_VIDEO_STABLE_PROBE = 20
     _EDID_ID_DISABLE = -1
     _FRAME_RATE = 60
 
@@ -664,7 +664,7 @@ class ChameleonVideoInput(ChameleonPort):
         self._original_edid = None
 
 
-    def wait_video_input_stable(self, timeout=None):
+    def wait_video_input_stable(self, timeout=_TIMEOUT_VIDEO_STABLE_PROBE):
         """Waits the video input stable or timeout.
 
         @param timeout: The time period to wait for.

@@ -899,7 +899,7 @@ def get_disk_from_filename(filename):
         elif filename.startswith('/dev/loop'):
             cmd = 'losetup -O BACK-FILE "%s" | tail -1' % filename
         else:
-            cmd = 'df "%s" | tail -1 | cut -f 1 -d" "' % filename
+            cmd = 'rootdev -s -d "%s"' % filename
         filename = utils.system_output(cmd)
         m = _DISK_DEV_RE.match(filename)
     return m.group(0)

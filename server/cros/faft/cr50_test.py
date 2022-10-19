@@ -186,11 +186,14 @@ class Cr50Test(FirmwareTest):
             rw, bid = qual_ver_str.split('/')
             qual_path, qual_ver = self.download_cr50_release_image(rw, bid)
 
-        logging.info('Cr50 Qual Version: %s', qual_ver_str)
-        logging.info('Cr50 Qual Path: %s', qual_path)
+        logging.info('%s Qual Version: %s', self.gsc.NAME.capitalize(),
+                     qual_ver_str)
+        logging.info('%s Qual Path: %s', self.gsc.NAME.capitalize(),
+                     qual_path)
         qual_chip_bid = cr50_utils.GetChipBIDFromImageBID(
                 qual_ver[2], self.get_device_brand())
-        logging.info('Cr50 Qual Chip BID: %s', qual_chip_bid)
+        logging.info('%s Qual Chip BID: %s', self.gsc.NAME.capitalize(),
+                     qual_chip_bid)
 
         # Replace only the prod or prepvt image based on the major version.
         if int(qual_ver[1].split('.')[1]) % 2:
@@ -221,7 +224,7 @@ class Cr50Test(FirmwareTest):
         if not mismatch:
             logging.info('Running qual image. No update needed.')
             return
-        logging.info('Cr50 qual update required.')
+        logging.info('%s qual update required.', self.gsc.NAME)
         self.make_rootfs_writable()
         self._update_device_images_and_running_cr50_firmware(
                 qual_state, qual_path, prod_path, prepvt_path)
@@ -332,16 +335,16 @@ class Cr50Test(FirmwareTest):
         # prepvt board ids.
         running_bid = cr50_utils.GetBoardIdInfoString(running_bid)
         if running_rw == prod_rw and running_bid == prod_bid:
-            logging.info('Using device cr50 prod image %s %s', prod_rw,
-                         prod_bid)
+            logging.info('Using device %s prod image %s %s', self.gsc.NAME,
+                         prod_rw, prod_bid)
             self._original_cr50_image = self._device_prod_image
         elif running_rw == prepvt_rw and running_bid == prepvt_bid:
-            logging.info('Using device cr50 prepvt image %s %s', prepvt_rw,
-                         prepvt_bid)
+            logging.info('Using device %s prepvt image %s %s', self.gsc.NAME,
+                         prepvt_rw, prepvt_bid)
             self._original_cr50_image = self._device_prepvt_image
         else:
-            logging.info('Downloading cr50 image %s %s', running_rw,
-                         running_bid)
+            logging.info('Downloading %s image %s %s', self.gsc.NAME,
+                         running_rw, running_bid)
             self._original_cr50_image = self.download_cr50_release_image(
                     running_rw, running_bid)[0]
 
@@ -364,8 +367,8 @@ class Cr50Test(FirmwareTest):
             self._save_original_images(release_path)
             self._saved_state |= self.DEVICE_IMAGES
         except Exception as e:
-            logging.warning('Error saving ChromeOS image cr50 firmware: %s',
-                            str(e))
+            logging.warning('Error saving ChromeOS image %s firmware: %s',
+                            self.gsc.NAME, str(e))
 
     def get_saved_cr50_original_version(self):
         """Return (ro ver, rw ver, bid)."""
@@ -596,7 +599,8 @@ class Cr50Test(FirmwareTest):
         state['running_image_ver'] = cr50_utils.GetRunningVersion(self.host)
         state['running_image_bid'] = self.gsc.get_active_board_id_str()
 
-        logging.debug('Current Cr50 state:\n%s', pprint.pformat(state))
+        logging.debug('Current %s state:\n%s', self.gsc.NAME,
+                      pprint.pformat(state))
         return state
 
     def _check_running_image_and_board_id(self, expected_state):
@@ -651,7 +655,7 @@ class Cr50Test(FirmwareTest):
             except:
                 # Even if we can't open cr50, do our best to reset the rest of
                 # the system state. Log a warning here.
-                logging.warning('Unable to Open cr50', exc_info=True)
+                logging.warning('Unable to Open ccd', exc_info=True)
             self.gsc.ccd_reset(servo_en=False)
             if not self.gsc.ccd_is_reset():
                 raise error.TestFail('Could not reset ccd')
@@ -751,8 +755,10 @@ class Cr50Test(FirmwareTest):
         final_mismatch = self._check_running_image_and_board_id(state)
         if final_mismatch:
             raise error.TestError(
-                    'Could not update cr50 image state: %s' % final_mismatch)
-        logging.info('Successfully updated all device cr50 firmware state.')
+                    'Could not update %s image state: %s' %
+                    (self.gsc.NAME, final_mismatch))
+        logging.info('Successfully updated all device %s firmware state.',
+                     self.gsc.NAME)
 
     def _restore_device_images_and_running_cr50_firmware(self):
         """Restore the images on the device and the running cr50 image."""
@@ -812,7 +818,8 @@ class Cr50Test(FirmwareTest):
         try:
             self._restore_device_images_and_running_cr50_firmware()
         except Exception as e:
-            logging.warning('Issue restoring Cr50 image: %s', str(e))
+            logging.warning('Issue restoring %s image: %s', self.gsc.NAME,
+                            str(e))
             raise
         finally:
             self._restore_ccd_settings()
@@ -1121,7 +1128,7 @@ class Cr50Test(FirmwareTest):
             self.run_gsctool_cmd_with_password(password, 'gsctool -a -P',
                                                'set_password', expect_error)
         finally:
-            logging.info('Cr50 password is %s',
+            logging.info('%s password is %s', self.gsc.NAME,
                          'cleared' if self.gsc.password_is_reset() else 'set')
 
     def ccd_unlock_from_ap(self, password=None, expect_error=False):

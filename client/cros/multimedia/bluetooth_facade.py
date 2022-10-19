@@ -38,6 +38,7 @@ import functools
 import time
 import threading
 import traceback
+from uuid import UUID
 
 import common
 from autotest_lib.client.bin import utils
@@ -61,6 +62,7 @@ from autotest_lib.client.cros.bluetooth.floss.adapter_client import (
 from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
         FlossAdvertisingClient)
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
+from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import GLIB_THREAD_NAME
 from autotest_lib.client.cros.power import power_suspend_delay
 from autotest_lib.client.cros.power import sys_power
@@ -4385,6 +4387,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.advertising_client = FlossAdvertisingClient(
                 self.bus, self.DEFAULT_ADAPTER)
 
+        self.socket_client = FlossSocketManagerClient(self.bus,
+                                                      self.DEFAULT_ADAPTER)
         self.is_clean = False
 
         # Discovery needs to last longer than the default 12s. Keep an observer
@@ -4568,6 +4572,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.advertising_client = FlossAdvertisingClient(
                     self.bus, default_adapter)
 
+            self.socket_client = FlossSocketManagerClient(
+                    self.bus, default_adapter)
             try:
                 utils.poll_for_condition(
                         condition=_is_adapter_ready(self.adapter_client),
@@ -4588,6 +4594,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                               'advertiser callbacks')
                 return False
 
+            if not self.socket_client.register_callbacks():
+                logging.error('socket_client: Failed to register callbacks')
+                return False
         else:
             self.manager_client.stop(default_adapter)
             try:
@@ -5019,3 +5028,25 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         if not self.advertising_client.stop_all_advertising_sets():
             return 'Failed to reset advertisement sets'
         return ''
+
+    def register_profile(self, name, uuid, option):
+        """Registers Floss service with specific name and uuid.
+
+        This function registers the UUID to the Floss SDP server by listening
+        to an RFCOMM channel with the UUID as the service record.
+
+        @param name: Service name.
+        @param uuid: Service uuid as string.
+        @param option: Unused by Floss.
+
+        @return: True on success, False otherwise.
+        """
+        try:
+            uuid_value = UUID(uuid).bytes
+        except ValueError:
+            logging.exception('Unable to create uuid with value: %s', uuid)
+            return False
+        socket_result = (self.socket_client.
+                         listen_using_rfcomm_with_service_record_sync(
+                                 name, uuid_value))
+        return socket_result is not None

@@ -10,6 +10,7 @@ import logging
 import math
 import random
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
                                                             glib_callback)
@@ -95,6 +96,7 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
     ADAPTER_OBJECT_PATTERN = '/org/chromium/bluetooth/hci{}/adapter'
     SOCKET_CB_OBJ_PATTERN = '/org/chromium/bluetooth/hci{}/test_socket_client{}'
     CB_EXPORTED_INTF = 'org.chromium.bluetooth.SocketManagerCallback'
+    FLOSS_RESPONSE_LATENCY_SECS = 3
 
     class ExportedSocketManagerCallbacks(ObserverBase):
         """
@@ -152,6 +154,7 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         self.callbacks = None
         self.callback_id = None
         self.objpath = self.ADAPTER_OBJECT_PATTERN.format(hci)
+        self.ready_sockets = {}
 
     def __del__(self):
         """Destructor"""
@@ -162,6 +165,10 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         """Handle incoming socket ready callback."""
         logging.debug('on_incoming_socket_ready: socket: %s, status: %s',
                       socket, status)
+        if BtStatus(status) != BtStatus.SUCCESS:
+            return
+        socket_id = socket['id']
+        self.ready_sockets[socket_id] = (socket, status)
 
     @glib_callback()
     def on_incoming_socket_closed(self, listener_id, reason):
@@ -223,6 +230,25 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         self.callback_id = self.proxy().RegisterCallback(objpath)
         return True
 
+    def wait_for_incoming_socket_ready(self, socket_id):
+        """Waits for incoming socket ready.
+
+        @param socket_id: Socket id.
+
+        @return: Socket, status for specific socket_id on success,
+                (None, None) otherwise.
+        """
+        try:
+            utils.poll_for_condition(
+                    condition=(lambda: socket_id in self.ready_sockets),
+                    timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
+        except TimeoutError:
+            logging.error('on_incoming_socket_ready not called')
+            return None, None
+        socket, status = self.ready_sockets[socket_id]
+
+        return socket, status
+
     @glib_call(None)
     def listen_using_l2cap_channel(self):
         """Listens using L2CAP channel.
@@ -267,6 +293,31 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         """
         return self.proxy().ListenUsingRfcommWithServiceRecord(
                 self.callback_id, name, uuid)
+
+    def listen_using_rfcomm_with_service_record_sync(self, name, uuid):
+        """Listens using RFCOMM channel with service record sync.
+
+        @param name: Service name.
+        @param uuid: 128-bit service UUID.
+
+        @return: BluetoothServerSocket on success, None otherwise.
+        """
+        socket_result = self.listen_using_rfcomm_with_service_record(
+                name, uuid)
+        # Failed if we have issue in D-bus (None) or returned non success
+        # status.
+        if socket_result is None or socket_result['status'] != BtStatus.SUCCESS:
+            logging.error('Failed to listen using rfcomm socket with service '
+                          'record')
+            return None
+
+        socket_id = socket_result['id']
+        server_socket, status = self.wait_for_incoming_socket_ready(socket_id)
+        if BtStatus(status) != BtStatus.SUCCESS:
+            logging.error('Failed to start socket with id: %s, '
+                          'status = %s' % (socket_id, status))
+            return None
+        return socket_result
 
     @glib_call(None)
     def create_insecure_l2cap_channel(self, device, psm):

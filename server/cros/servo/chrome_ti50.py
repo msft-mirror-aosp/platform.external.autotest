@@ -8,6 +8,7 @@ import re
 from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.client.common_lib import error
 
+CHIP_NAME = 'ti50'
 
 class ChromeTi50(chrome_cr50.ChromeCr50):
     """Manages control of a Chrome Ti50.
@@ -19,7 +20,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
 
     WAKE_RESPONSE = ['(>|ti50_common)']
     START_STR = ['ti50_common']
-    NAME = 'ti50'
+    NAME = CHIP_NAME
 
     # Ti50 only supports v2
     AP_RO_VERSIONS = [2]
@@ -69,15 +70,6 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     # Ti50 has no periodic wake from regular sleep
     SLEEP_RATE = 0
     DS_RESETS_TIMER = False
-
-    def __init__(self, servo, faft_config):
-        """Initializes a ChromeCr50 object.
-
-        @param servo: A servo object.
-        @param faft_config: A faft config object.
-        """
-        super(ChromeTi50, self).__init__(servo, 'cr50_uart')
-        self.faft_config = faft_config
 
     def set_ccd_level(self, level, password=''):
         if level == 'unlock':

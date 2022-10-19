@@ -257,7 +257,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             raise error.TestError('%r not found in %r' % (self.NAME, version))
         logging.info('Setup %s console', self.NAME)
 
-    def wake_cr50(self):
+    def wake_console(self):
         """Wake up cr50 by sending some linebreaks and wait for the response"""
         for i in range(self.MAX_RETRY_COUNT):
             try:
@@ -281,7 +281,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         @param commands: the command string to send to cr50
         """
         if self._servo.main_device_is_flex():
-            self.wake_cr50()
+            self.wake_console()
         super(ChromeCr50, self).send_command(commands)
 
 
@@ -481,7 +481,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         @return: A list of matched output
         """
         if self._servo.main_device_is_flex():
-            self.wake_cr50()
+            self.wake_console()
 
         # We have started prepending '\n' to separate cr50 console junk from
         # the real command. If someone is just searching for .*>, then they will

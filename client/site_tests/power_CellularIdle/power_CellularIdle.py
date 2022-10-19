@@ -45,7 +45,7 @@ class power_CellularIdle(power_test.power_Test):
         logging.info('Not connected to network.')
         raise error.TestError('Not connected to network.')
 
-    def run_once(self, idle_time=900):
+    def run_once(self, idle_time=1800):
         """Collect power stats when cellular is on or off.
 
         Args:

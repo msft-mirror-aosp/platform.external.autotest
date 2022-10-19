@@ -67,11 +67,11 @@ class firmware_Cr50TpmMode(Cr50Test):
 
         # Check if TPM is enabled through console command.
         logging.info('Get TPM Mode')
-        if not self.cr50.tpm_is_enabled():
+        if not self.gsc.tpm_is_enabled():
             raise error.TestFail('TPM is not enabled after reset,')
 
         # Check if Key Ladder is enabled.
-        if self.cr50.keyladder_is_disabled():
+        if self.gsc.keyladder_is_disabled():
             raise error.TestFail('Failed to restore H1 Key Ladder')
 
         # Check if TPM is enabled through gsctool.
@@ -104,8 +104,8 @@ class firmware_Cr50TpmMode(Cr50Test):
                 logging.info('TPM did not respond')
 
             # Only Cr50 revokes the key ladder.
-            if (self.cr50.NAME == 'cr50'
-                and not self.cr50.keyladder_is_disabled()):
+            if (self.gsc.NAME == 'cr50'
+                and not self.gsc.keyladder_is_disabled()):
                 raise error.TestFail('Failed to revoke H1 Key Ladder')
         else:
             if not 'enabled (1)' in output_log.lower():
@@ -119,7 +119,7 @@ class firmware_Cr50TpmMode(Cr50Test):
 
             # On Cr50, disable should fail after enable. Ti50 allows disable
             # after enable.
-            if self.cr50.NAME == 'cr50':
+            if self.gsc.NAME == 'cr50':
                 try:
                     output_log = self.set_tpm_mode(not disable_tpm, long_opt)
                 except error.AutoservRunError:

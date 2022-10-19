@@ -38,12 +38,12 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     TOLERATED_ERROR = 0.05
 
     def initialize(self, host, cmdline_args, suspend_count, reset_type):
-        """Make sure the test is running with access to the Cr50 console"""
+        """Make sure the test is running with access to the GSC console"""
         self.host = host
         super(firmware_Cr50DeepSleepStress, self).initialize(host, cmdline_args)
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         if self.servo.main_device_is_ccd():
             raise error.TestNAError('deep sleep tests can only be run with a '
@@ -53,15 +53,15 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         self.host.reset_via_servo()
 
         # Save the original version, so we can make sure Cr50 doesn't rollback.
-        self.original_cr50_version = self.cr50.get_active_version_info()
+        self.original_cr50_version = self.gsc.get_active_version_info()
         self._suspend_diff = 0
 
         # TODO(b/218492933) : find better way to disable rddkeepalive
         # Disable rddkeepalive, so the test can disable ccd.
-        self.cr50.send_command('ccd testlab open')
-        self.cr50.send_command('rddkeepalive disable')
+        self.gsc.send_command('ccd testlab open')
+        self.gsc.send_command('rddkeepalive disable')
         # Lock cr50 so the console will be restricted
-        self.cr50.set_ccd_level('lock')
+        self.gsc.set_ccd_level('lock')
 
     def cleanup(self):
         """Clear the fwmp."""
@@ -96,7 +96,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
     def check_cr50_version(self, expected_ver):
         """Return an error message if the version changed running the test."""
-        version = self.cr50.get_active_version_info()
+        version = self.gsc.get_active_version_info()
         logging.info('running %s', version)
 
         if version != expected_ver:
@@ -108,10 +108,10 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
         @param suspend_count: the number of times to reboot the device.
         """
-        cr50_dev_mode = self.cr50.in_dev_mode()
+        cr50_dev_mode = self.gsc.in_dev_mode()
         # Disable CCD so Cr50 can enter deep sleep
-        self.cr50.ccd_disable()
-        self.cr50.clear_deep_sleep_count()
+        self.gsc.ccd_disable()
+        self.gsc.clear_deep_sleep_count()
         rv = self.check_cr50_deep_sleep(0)
         if rv:
             raise error.TestError('Issue setting up test %s' % rv)
@@ -135,7 +135,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             if rv:
                 errors.append(rv)
             # Make sure the device didn't boot into a different mode.
-            if self.cr50.in_dev_mode() != cr50_dev_mode:
+            if self.gsc.in_dev_mode() != cr50_dev_mode:
                 errors.append('Switched out of %s mode' %
                               ('dev' if cr50_dev_mode else 'normal'))
             if errors:
@@ -158,9 +158,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                      'DUT unresponsive after suspend/resume')
         logging.info('SSH state afters suspend resume %r', start_msg or 'ok')
         if enable:
-            self.cr50.ccd_enable()
+            self.gsc.ccd_enable()
         else:
-            self.cr50.ccd_disable()
+            self.gsc.ccd_disable()
         # power suspend stress needs to ssh into the DUT. If ethernet goes
         # down, raise a test error, so we can tell the difference between
         # dts ethernet issues and the dut going down during the suspend stress.
@@ -191,7 +191,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         rv = self.wait_for_client_after_changing_ccd(False)
         if rv:
             raise error.TestFail('Network connection issue %s' % rv)
-        self.cr50.clear_deep_sleep_count()
+        self.gsc.clear_deep_sleep_count()
         rv = self.check_cr50_deep_sleep(0)
         if rv:
             raise error.TestError('Issue setting up test %s' % rv)
@@ -224,7 +224,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         @returns a message describing errors found in the state
         """
         exp_count = suspend_count if self._enters_deep_sleep else 0
-        act_count = self.cr50.get_deep_sleep_count()
+        act_count = self.gsc.get_deep_sleep_count()
         logging.info('suspend %d: deep sleep count exp %d got %d',
                      suspend_count, exp_count, act_count)
 
@@ -239,9 +239,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                             suspend_count, self._suspend_diff, act_diff)
             self._suspend_diff = act_diff
 
-        self.cr50.get_sleepmask()
-        self.cr50.get_ccdstate()
-        hibernate = self.cr50.was_reset('RESET_FLAG_HIBERNATE')
+        self.gsc.get_sleepmask()
+        self.gsc.get_ccdstate()
+        hibernate = self.gsc.was_reset('RESET_FLAG_HIBERNATE')
 
         errors = []
         if exp_count and not hibernate:
@@ -368,7 +368,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         # always run immediately after the suspend/resume cycles.
         # Collect logs for debugging
         # Console information
-        self.cr50.dump_nvmem()
+        self.gsc.dump_nvmem()
         rv = self.check_cr50_deep_sleep(suspend_count)
         if rv:
             errors.append(rv)

@@ -39,7 +39,7 @@ class firmware_SoftwareSync(FirmwareTest):
         self.dev_mode = dev_mode
 
         if self.ec.check_feature('EC_FEATURE_EFS2'):
-            self.original_ccd_level = self.cr50.get_ccd_level()
+            self.original_ccd_level = self.gsc.get_ccd_level()
 
             # CCD needs to be open for 'ec_comm corrupt' run.
             self.fast_ccd_open(reset_ccd=False, dev_mode=dev_mode)
@@ -49,7 +49,7 @@ class firmware_SoftwareSync(FirmwareTest):
 
         # Check for cr50 support on a device and get the boot mode. It should
         # be NORMAL at this point, even if EFS2 is not supported.
-        if hasattr(self, 'cr50'):
+        if hasattr(self, 'gsc'):
             res = cr50_utils.GSCTool(host, ['-a', '-g']).stdout.strip()
             if 'NORMAL' in res:
                 pass
@@ -69,7 +69,7 @@ class firmware_SoftwareSync(FirmwareTest):
 
         try:
             if self.original_ccd_level:
-                self.cr50.set_ccd_level(self.original_ccd_level)
+                self.gsc.set_ccd_level(self.original_ccd_level)
         except Exception as e:
             logging.error("Failed to restore ccd to %r: %s",
                           self.original_ccd_level, str(e))
@@ -133,7 +133,7 @@ class firmware_SoftwareSync(FirmwareTest):
 
         logging.info('Corrupt ECRW hashcode in TPM kernel NV index.')
         ec_corrupt_cmd = 'ec_comm corrupt'
-        self.cr50.send_command(ec_corrupt_cmd)
+        self.gsc.send_command(ec_corrupt_cmd)
 
         try:
             # Gracefully shutdown the AP. This allows the corrupted ec_comm
@@ -151,7 +151,7 @@ class firmware_SoftwareSync(FirmwareTest):
 
             # The boot mode should be "NO_BOOT".
             logging.info('Check the boot mode is NO_BOOT mode.')
-            if not self.cr50.check_boot_mode('NO_BOOT'):
+            if not self.gsc.check_boot_mode('NO_BOOT'):
                 raise error.TestFail('Boot mode is not NO_BOOT.')
 
             # Check if the current EC image is RO.
@@ -169,7 +169,7 @@ class firmware_SoftwareSync(FirmwareTest):
 
         # The boot mode should be "NORMAL".
         logging.info('Check the boot mode is NORMAL mode.')
-        if not self.cr50.check_boot_mode('NORMAL'):
+        if not self.gsc.check_boot_mode('NORMAL'):
             logging.warning('You may want to run %r in cr50 console to uncorrupt'
                          ' EC hash.', ec_corrupt_cmd)
             raise error.TestFail('Boot mode is not NORMAL.')

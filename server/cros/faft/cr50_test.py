@@ -55,21 +55,21 @@ class Cr50Test(FirmwareTest):
         self.tot_test_run = full_args.get('tot_test_run', '').lower() == 'true'
         super(Cr50Test, self).initialize(host, cmdline_args)
 
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
         # TODO(b/149948314): remove when dual-v4 is sorted out.
         if 'ccd' in self.servo.get_servo_version():
             self.servo.disable_ccd_watchdog_for_test()
 
         logging.info('Test Args: %r', full_args)
 
-        self._devid = self.cr50.get_devid()
+        self._devid = self.gsc.get_devid()
         self.can_set_ccd_level = (not self.servo.main_device_is_ccd()
-                                  or self.cr50.testlab_is_on())
-        self.original_ccd_level = self.cr50.get_ccd_level()
-        self.original_ccd_settings = self.cr50.get_cap_dict(
-                info=self.cr50.CAP_SETTING)
+                                  or self.gsc.testlab_is_on())
+        self.original_ccd_level = self.gsc.get_ccd_level()
+        self.original_ccd_settings = self.gsc.get_cap_dict(
+                info=self.gsc.CAP_SETTING)
 
         self.host = host
         # SSH commands should complete within 3 minutes. Change the default, so
@@ -79,16 +79,16 @@ class Cr50Test(FirmwareTest):
 
         # TODO(b/218492933) : find better way to disable rddkeepalive
         # Disable rddkeepalive, so the test can disable ccd.
-        self.cr50.send_command('ccd testlab open')
-        self.cr50.send_command('rddkeepalive disable')
+        self.gsc.send_command('ccd testlab open')
+        self.gsc.send_command('rddkeepalive disable')
         # faft-cr50 locks and reopens ccd. This will restrict some capabilities
         # c2d2 uses to control the duts. Set the capabilities to Always, so
         # individiual tests don't need to care that much.
-        self.cr50.enable_servo_control_caps()
+        self.gsc.enable_servo_control_caps()
 
         if self.can_set_ccd_level:
             # Lock cr50 so the console will be restricted
-            self.cr50.set_ccd_level('lock')
+            self.gsc.set_ccd_level('lock')
         elif self.original_ccd_level != 'lock':
             raise error.TestNAError(
                     'Lock the console before running cr50 test')
@@ -107,7 +107,7 @@ class Cr50Test(FirmwareTest):
         try:
             self._save_eraseflashinfo_image(
                     full_args.get('cr50_eraseflashinfo_image_path', ''))
-            if self.cr50.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT'):
+            if self.gsc.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT'):
                 logging.info('Board cannot boot EFI image.')
                 logging.info('Can only restore images with ccd only')
                 if not self.ccd_programmer_connected_to_servo_host():
@@ -172,8 +172,8 @@ class Cr50Test(FirmwareTest):
 
         # Determine the qualification version from.
         if not qual_ver_str:
-            gsurl = os.path.join(self.cr50.GS_PRIVATE,
-                                 self.cr50.QUAL_VERSION_FILE)
+            gsurl = os.path.join(self.gsc.GS_PRIVATE,
+                                 self.gsc.QUAL_VERSION_FILE)
             file_info = self.download_cr50_gs_file(gsurl, False, True)
             if not file_info:
                 logging.info('Unable to get qual info. Skipping provision')
@@ -297,7 +297,7 @@ class Cr50Test(FirmwareTest):
         _, rw_ver, bid = version
         rw_filename = 'cr50.device.bin.%s.%s' % (ext, rw_ver)
         local_path = os.path.join(self.resultsdir, rw_filename)
-        dut_path = self.cr50.DUT_PROD if ext == 'prod' else self.cr50.DUT_PREPVT
+        dut_path = self.gsc.DUT_PROD if ext == 'prod' else self.gsc.DUT_PREPVT
         self.host.get_file(dut_path, local_path)
         bid = cr50_utils.GetBoardIdInfoString(bid)
         return local_path, rw_ver, bid
@@ -469,7 +469,7 @@ class Cr50Test(FirmwareTest):
         self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
         self._retry_gsc_update_with_ccd_and_ap(self._eraseflashinfo_image_path,
                 3, True)
-        if not self.cr50.eraseflashinfo():
+        if not self.gsc.eraseflashinfo():
             raise error.TestError('Unable to erase the board id')
 
     def eraseflashinfo_and_restore_image(self, image=''):
@@ -506,8 +506,8 @@ class Cr50Test(FirmwareTest):
         # rolling back and updating to images that my be older than the images
         # on the device.
         if filesystem_util.is_rootfs_writable(self.host):
-            self.host.run('rm %s' % self.cr50.DUT_PREPVT, ignore_status=True)
-            self.host.run('rm %s' % self.cr50.DUT_PROD, ignore_status=True)
+            self.host.run('rm %s' % self.gsc.DUT_PREPVT, ignore_status=True)
+            self.host.run('rm %s' % self.gsc.DUT_PROD, ignore_status=True)
 
         if eraseflashinfo:
             self.run_update_to_eraseflashinfo()
@@ -517,7 +517,7 @@ class Cr50Test(FirmwareTest):
         chip_bid = bid[0]
         chip_flags = bid[2]
         if set_bid:
-            self.cr50.set_board_id(chip_bid, chip_flags)
+            self.gsc.set_board_id(chip_bid, chip_flags)
 
         self._retry_gsc_update_with_ccd_and_ap(image_path, 3, True)
 
@@ -545,9 +545,9 @@ class Cr50Test(FirmwareTest):
         # Disconnect the charger and reset the dut to recover charging.
         logging.info('Recovering charging')
         self.faft_client.system.run_shell_command('poweroff')
-        time.sleep(self.cr50.SHORT_WAIT)
+        time.sleep(self.gsc.SHORT_WAIT)
         self.servo.set_nocheck('servo_v4_uart_cmd', 'fakedisconnect 100 20000')
-        time.sleep(self.cr50.SHORT_WAIT)
+        time.sleep(self.gsc.SHORT_WAIT)
         self._try_to_bring_dut_up()
         charge_state = self.host.get_power_supply_info()['Battery']['state']
         logging.info('Charge state: %r', charge_state)
@@ -573,7 +573,7 @@ class Cr50Test(FirmwareTest):
         @param ext: The extension string prod or prepvt
         @param returns: The image version or None if the image doesn't exist.
         """
-        dut_path = self.cr50.DUT_PROD if ext == 'prod' else self.cr50.DUT_PREPVT
+        dut_path = self.gsc.DUT_PROD if ext == 'prod' else self.gsc.DUT_PREPVT
         file_exists = self.host.path_exists(dut_path)
         if file_exists:
             return cr50_utils.GetBinVersion(self.host, dut_path)
@@ -594,7 +594,7 @@ class Cr50Test(FirmwareTest):
         state['chip_bid'] = cr50_utils.GetChipBoardId(self.host)
         state['chip_bid_str'] = '%08x:%08x:%08x' % state['chip_bid']
         state['running_image_ver'] = cr50_utils.GetRunningVersion(self.host)
-        state['running_image_bid'] = self.cr50.get_active_board_id_str()
+        state['running_image_bid'] = self.gsc.get_active_board_id_str()
 
         logging.debug('Current Cr50 state:\n%s', pprint.pformat(state))
         return state
@@ -644,7 +644,7 @@ class Cr50Test(FirmwareTest):
         if self.servo.main_device_uses_gsc_drv():
             self.fast_ccd_open(True)
 
-        if not self.cr50.ccd_is_reset():
+        if not self.gsc.ccd_is_reset():
             # Try to open cr50 and enable testlab mode if it isn't enabled.
             try:
                 self.fast_ccd_open(True)
@@ -652,23 +652,23 @@ class Cr50Test(FirmwareTest):
                 # Even if we can't open cr50, do our best to reset the rest of
                 # the system state. Log a warning here.
                 logging.warning('Unable to Open cr50', exc_info=True)
-            self.cr50.ccd_reset(servo_en=False)
-            if not self.cr50.ccd_is_reset():
+            self.gsc.ccd_reset(servo_en=False)
+            if not self.gsc.ccd_is_reset():
                 raise error.TestFail('Could not reset ccd')
 
-        current_settings = self.cr50.get_cap_dict(info=self.cr50.CAP_SETTING)
+        current_settings = self.gsc.get_cap_dict(info=self.gsc.CAP_SETTING)
         if self.original_ccd_settings != current_settings:
             if not self.can_set_ccd_level:
                 raise error.TestError("CCD state has changed, but we can't "
                                       "restore it")
             self.fast_ccd_open(True)
-            self.cr50.set_caps(self.original_ccd_settings)
+            self.gsc.set_caps(self.original_ccd_settings)
 
         # First try using testlab open to open the device
         if self.original_ccd_level == 'open':
             self.fast_ccd_open(True)
-        elif self.original_ccd_level != self.cr50.get_ccd_level():
-            self.cr50.set_ccd_level(self.original_ccd_level)
+        elif self.original_ccd_level != self.gsc.get_ccd_level():
+            self.gsc.set_ccd_level(self.original_ccd_level)
 
     def fast_ccd_open(self,
                       enable_testlab=False,
@@ -687,7 +687,7 @@ class Cr50Test(FirmwareTest):
                                                 dev_mode)
         except Exception as e:
             # Check for cr50 watchdog resets.
-            self.cr50.check_for_console_errors('Fast ccd open')
+            self.gsc.check_for_console_errors('Fast ccd open')
             raise
 
     def cleanup(self):
@@ -710,7 +710,7 @@ class Cr50Test(FirmwareTest):
             super(Cr50Test, self).cleanup()
 
         # Check the logs captured during firmware_test cleanup for cr50 errors.
-        self.cr50.check_for_console_errors('Test Cleanup')
+        self.gsc.check_for_console_errors('Test Cleanup')
         self.servo.allow_ccd_watchdog_for_test()
 
     def _update_device_images_and_running_cr50_firmware(
@@ -742,11 +742,11 @@ class Cr50Test(FirmwareTest):
             # Copy the .prod file onto the DUT.
             if prod_path and 'prod_version' in new_mismatch:
                 cr50_utils.InstallImage(self.host, prod_path,
-                                        self.cr50.DUT_PROD)
+                                        self.gsc.DUT_PROD)
             # Copy the .prepvt file onto the DUT.
             if prepvt_path and 'prepvt_version' in new_mismatch:
                 cr50_utils.InstallImage(self.host, prepvt_path,
-                                        self.cr50.DUT_PREPVT)
+                                        self.gsc.DUT_PREPVT)
 
         final_mismatch = self._check_running_image_and_board_id(state)
         if final_mismatch:
@@ -774,24 +774,24 @@ class Cr50Test(FirmwareTest):
         """Try to clear all ccd state."""
         # This is just a first pass at cleanup. Don't raise any errors.
         try:
-            self.cr50.ccd_enable()
+            self.gsc.ccd_enable()
         except Exception as e:
             logging.warning('Ignored exception enabling ccd %r', str(e))
-        self.cr50.send_command('ccd testlab open')
-        self.cr50.send_command('rddkeepalive disable')
-        self.cr50.ccd_reset()
-        self.cr50.send_command('wp follow_batt_pres atboot')
+        self.gsc.send_command('ccd testlab open')
+        self.gsc.send_command('rddkeepalive disable')
+        self.gsc.ccd_reset()
+        self.gsc.send_command('wp follow_batt_pres atboot')
 
     def _restore_ccd_settings(self):
         """Restore the original ccd state."""
         self._try_quick_ccd_cleanup()
 
         # Reboot cr50 if the console is accessible. This will reset most state.
-        if self.cr50.get_cap('GscFullConsole')[self.cr50.CAP_IS_ACCESSIBLE]:
-            self.cr50.reboot()
+        if self.gsc.get_cap('GscFullConsole')[self.gsc.CAP_IS_ACCESSIBLE]:
+            self.gsc.reboot()
 
         # Reenable servo v4 CCD
-        self.cr50.ccd_enable()
+        self.gsc.ccd_enable()
 
         # reboot to normal mode if the device is in dev mode.
         self.enter_mode_after_checking_cr50_state('normal')
@@ -911,8 +911,8 @@ class Cr50Test(FirmwareTest):
         @return: A tuple with the debug image local path and version
         """
         devid = self._devid.replace(' ', '-').replace('0x', '')
-        gsurl = os.path.join(self.cr50.GS_PRIVATE_DBG,
-                             self.cr50.ERASEFLASHINFO_FILE % devid)
+        gsurl = os.path.join(self.gsc.GS_PRIVATE_DBG,
+                             self.gsc.ERASEFLASHINFO_FILE % devid)
         return self.download_cr50_gs_image(gsurl, None, None)
 
     def download_cr50_debug_image(self, devid='', image_bid=''):
@@ -931,8 +931,8 @@ class Cr50Test(FirmwareTest):
             bid_ext = '.' + image_bid.replace(':', '_')
 
         devid = devid if devid else self._devid
-        dbg_file = self.cr50.DEBUG_FILE % (devid.replace(' ', '_'), bid_ext)
-        gsurl = os.path.join(self.cr50.GS_PRIVATE_DBG, dbg_file)
+        dbg_file = self.gsc.DEBUG_FILE % (devid.replace(' ', '_'), bid_ext)
+        gsurl = os.path.join(self.gsc.GS_PRIVATE_DBG, dbg_file)
         return self.download_cr50_gs_image(gsurl, None, image_bid)
 
     def download_cr50_tot_image(self):
@@ -945,7 +945,7 @@ class Cr50Test(FirmwareTest):
 
     def _find_release_image_gsurl(self, fn):
         """Find the gs url for the release image"""
-        for gsbucket in [self.cr50.GS_PUBLIC, self.cr50.GS_PRIVATE_PROD]:
+        for gsbucket in [self.gsc.GS_PUBLIC, self.gsc.GS_PRIVATE_PROD]:
             gsurl = os.path.join(gsbucket, fn)
             if self.find_cr50_gs_image(gsurl):
                 return gsurl
@@ -966,12 +966,12 @@ class Cr50Test(FirmwareTest):
             image_bid = cr50_utils.GetBoardIdInfoString(
                     image_bid, symbolic=True)
             bid_ext = '_' + image_bid.replace(':', '_')
-        release_fn = self.cr50.PROD_TAR % (image_rw, bid_ext)
+        release_fn = self.gsc.PROD_TAR % (image_rw, bid_ext)
         gsurl = self._find_release_image_gsurl(release_fn)
 
         # Release images can be found using the rw version
         # Download the image
-        dest, ver = self.download_cr50_gs_image(gsurl, self.cr50.PROD_FILE,
+        dest, ver = self.download_cr50_gs_image(gsurl, self.gsc.PROD_FILE,
                                                 image_bid)
 
         # Compare the rw version and board id info to make sure the right image
@@ -990,11 +990,11 @@ class Cr50Test(FirmwareTest):
         @raise TestFail: if there is any unexpected update state
         """
         errors = []
-        running_rw = self.cr50.get_version()
+        running_rw = self.gsc.get_version()
         if expected_rw != running_rw:
             errors.append('running %s not %s' % (running_rw, expected_rw))
 
-        if expect_rollback != self.cr50.rolledback():
+        if expect_rollback != self.gsc.rolledback():
             errors.append('%srollback detected' %
                           'no ' if expect_rollback else '')
         if len(errors):
@@ -1006,8 +1006,8 @@ class Cr50Test(FirmwareTest):
         """Returns True if the ccd programmer is connected to the labstation"""
         if not hasattr(self, '_ccd_programmer'):
             self._ccd_programmer = firmware_programmer.FlashGSCCCDProgrammer(
-                self.servo, self.cr50.get_serial())
-        self.cr50.ccd_enable()
+                self.servo, self.gsc.get_serial())
+        self.gsc.ccd_enable()
         return self._ccd_programmer.is_connected()
 
     def _update_gsc_with_ccd(self, path):
@@ -1054,11 +1054,11 @@ class Cr50Test(FirmwareTest):
         @param use_ccd: True if the test should update with ccd.
         @raise TestFail: if the update failed
         """
-        original_rw = self.cr50.get_version()
+        original_rw = self.gsc.get_version()
 
         # Cr50 is going to reject an update if it hasn't been up for more than
         # 60 seconds. Wait until that passes before trying to run the update.
-        self.cr50.wait_until_update_is_allowed()
+        self.gsc.wait_until_update_is_allowed()
 
         if use_ccd:
             image_rw = self._update_gsc_with_ccd(path)
@@ -1067,11 +1067,11 @@ class Cr50Test(FirmwareTest):
 
         # Running the update may cause cr50 to reboot. Wait for that before
         # sending more commands. The reboot should happen quickly.
-        self.cr50.wait_for_reboot(
+        self.gsc.wait_for_reboot(
                 timeout=self.faft_config.gsc_update_wait_for_reboot)
 
         if rollback:
-            self.cr50.rollback()
+            self.gsc.rollback()
 
         expected_rw = original_rw if expect_rollback else image_rw
         # If we expect a rollback, the version should remain unchanged
@@ -1088,7 +1088,7 @@ class Cr50Test(FirmwareTest):
         logging.info('Running: %s', cmd)
         logging.info('Password: %s', password)
         # Make sure the test waits long enough to avoid ccd rate limiting.
-        time.sleep(self.cr50.CCD_PASSWORD_RATE_LIMIT)
+        time.sleep(self.gsc.CCD_PASSWORD_RATE_LIMIT)
         full_cmd = "echo -e '%s\n%s\n' | %s" % (password, password, cmd)
         result = self.host.run(full_cmd, ignore_status=expect_error)
         if result.exit_status:
@@ -1114,7 +1114,7 @@ class Cr50Test(FirmwareTest):
         # If for some reason the test sets a password and is interrupted before
         # we can clear it, we want testlab mode to be enabled, so it's possible
         # to clear the password without knowing it.
-        if not self.cr50.testlab_is_on():
+        if not self.gsc.testlab_is_on():
             raise error.TestError('Will not set password unless testlab mode '
                                   'is enabled.')
         try:
@@ -1122,7 +1122,7 @@ class Cr50Test(FirmwareTest):
                                                'set_password', expect_error)
         finally:
             logging.info('Cr50 password is %s',
-                         'cleared' if self.cr50.password_is_reset() else 'set')
+                         'cleared' if self.gsc.password_is_reset() else 'set')
 
     def ccd_unlock_from_ap(self, password=None, expect_error=False):
         """Unlock cr50"""

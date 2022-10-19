@@ -13,7 +13,7 @@ class firmware_Cr50DevMode(Cr50Test):
 
     def check_dev_mode(self, dev_mode):
         """Verify the cr50 tpm info matches the devmode state."""
-        if self.cr50.in_dev_mode() != dev_mode:
+        if self.gsc.in_dev_mode() != dev_mode:
             raise error.TestFail('Cr50 should%s think dev mode is active' %
                     ('' if dev_mode else "n't"))
 

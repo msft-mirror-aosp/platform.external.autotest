@@ -36,7 +36,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
                                cmdline_args,
                                full_args,
                                restore_cr50_image=True)
-        if not self.cr50.ap_ro_version_is_supported(self.TEST_AP_RO_VER):
+        if not self.gsc.ap_ro_version_is_supported(self.TEST_AP_RO_VER):
             raise error.TestNAError('GSC does not support AP RO v%s' %
                                     self.TEST_AP_RO_VER)
 
@@ -52,9 +52,9 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         # Make sure the AP is up before trying to update.
         self.recover_dut()
         self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
-        self.cr50.send_command('ap_ro_info erase')
+        self.gsc.send_command('ap_ro_info erase')
         time.sleep(3)
-        ap_ro_info = self.cr50.get_ap_ro_info()
+        ap_ro_info = self.gsc.get_ap_ro_info()
         logging.info(ap_ro_info)
         if ap_ro_info['hash']:
             raise error.TestError('Could not erase hash')
@@ -72,7 +72,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         result = self.host.run('ap_ro_hash.py -v True GBB')
         logging.info(result)
         time.sleep(3)
-        ap_ro_info = self.cr50.get_ap_ro_info()
+        ap_ro_info = self.gsc.get_ap_ro_info()
         logging.info(ap_ro_info)
         if not ap_ro_info['hash']:
             raise error.TestError('Could not set hash %r' % result)
@@ -81,7 +81,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         """Update to the release image."""
         self._retry_gsc_update_with_ccd_and_ap(
                 self.get_saved_cr50_original_path(), 3, rollback=True)
-        logging.info(self.cr50.get_ap_ro_info())
+        logging.info(self.gsc.get_ap_ro_info())
 
     def cleanup(self):
         """Clear the AP RO hash."""
@@ -98,19 +98,19 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
     def recover_dut(self):
         """Reboot gsc to recover the dut."""
         logging.info('Recover DUT')
-        ap_ro_info = self.cr50.get_ap_ro_info()
+        ap_ro_info = self.gsc.get_ap_ro_info()
         logging.info(ap_ro_info)
         if ap_ro_info['result'] != self.VERIFICATION_FAILED:
             self._try_to_bring_dut_up()
             return
         time.sleep(3)
-        self.cr50.send_command('ccd testlab open')
+        self.gsc.send_command('ccd testlab open')
         time.sleep(3)
-        self.cr50.reboot()
+        self.gsc.reboot()
         time.sleep(self.faft_config.delay_reboot_to_ping)
-        logging.info(self.cr50.get_ap_ro_info())
+        logging.info(self.gsc.get_ap_ro_info())
         self._try_to_bring_dut_up()
-        self.cr50.send_command('ccd testlab open')
+        self.gsc.send_command('ccd testlab open')
 
     def trigger_verification(self):
         """Trigger verification."""
@@ -123,7 +123,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
             logging.info(result)
         finally:
             time.sleep(5)
-            ap_ro_info = self.cr50.get_ap_ro_info()
+            ap_ro_info = self.gsc.get_ap_ro_info()
             logging.info(ap_ro_info)
             self.hash_results.append(ap_ro_info['result'])
             self.servo.record_uart_capture()

@@ -93,7 +93,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
 
-        self.INT_NAME = self.cr50.IRQ_DICT.copy()
+        self.INT_NAME = self.gsc.IRQ_DICT.copy()
         self.INT_NAME.update({
             self.KEY_RESET  : 'Reset Count',
             self.KEY_DEEP_SLEEP  : 'Deep Sleep Count',
@@ -140,19 +140,19 @@ class firmware_Cr50DeviceState(Cr50Test):
     def log_sleep_debug_information(self):
         """Log some information used for debugging sleep issues"""
         logging.debug(
-            self.cr50.send_command_retry_get_output('sleepmask',
+            self.gsc.send_command_retry_get_output('sleepmask',
                                                     ['sleepmask.*>'],
                                                     safe=True)[0])
         logging.debug(
-            self.cr50.send_command_retry_get_output('sysinfo',
+            self.gsc.send_command_retry_get_output('sysinfo',
                                                     ['sysinfo.*>'],
                                                     safe=True)[0])
 
 
     def get_taskinfo_output(self):
         """Return a dict with the irq numbers as keys and counts as values"""
-        output = self.cr50.send_command_retry_get_output('taskinfo',
-            self.cr50.GET_TASKINFO, safe=True, retries=10)[0][1]
+        output = self.gsc.send_command_retry_get_output('taskinfo',
+            self.gsc.GET_TASKINFO, safe=True, retries=10)[0][1]
         logging.debug(output)
         return output
 
@@ -163,7 +163,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         # Running all of these commands may take a while. Track how much time
         # commands are running, so we can offset the cr50 time to set sleep
         # expectations
-        start_cmd_time = int(self.cr50.gettime())
+        start_cmd_time = int(self.gsc.gettime())
         irq_counts[self.KEY_TIME] = start_cmd_time
 
         output = self.get_taskinfo_output()
@@ -175,13 +175,13 @@ class firmware_Cr50DeviceState(Cr50Test):
             logging.debug(irq_info)
             num, count = irq_info.split()
             irq_counts[int(num)] = int(count)
-        irq_counts[self.KEY_RESET] = int(self.cr50.get_reset_count())
-        irq_counts[self.KEY_DEEP_SLEEP] = int(self.cr50.get_deep_sleep_count())
+        irq_counts[self.KEY_RESET] = int(self.gsc.get_reset_count())
+        irq_counts[self.KEY_DEEP_SLEEP] = int(self.gsc.get_deep_sleep_count())
         # Log some information, so we can debug issues with sleep.
         self.log_sleep_debug_information()
         # Track when the commands end, so the test can ignore the time spent
         # running these console commands.
-        end_cmd_time = int(self.cr50.gettime())
+        end_cmd_time = int(self.gsc.gettime())
         irq_counts[self.KEY_CMD_END_TIME] = end_cmd_time
         logging.info('Commands finished in %d seconds',
                      end_cmd_time - start_cmd_time)
@@ -213,7 +213,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             # transitions.
             if idle:
                 if cr50_time > self.SLEEP_DELAY:
-                    if self.cr50.SLEEP_RATE == 0:
+                    if self.gsc.SLEEP_RATE == 0:
                         min_count = 1
                     else:
                         min_count = cr50_time - self.SLEEP_DELAY
@@ -222,7 +222,7 @@ class firmware_Cr50DeviceState(Cr50Test):
                 # If deep sleep doesn't reset timer, then cr50_time can't be
                 # used to know if there was enough time to enter regular sleep
                 # after resume from deep sleep.
-                if (not self.cr50.DS_RESETS_TIMER) and ds_resume:
+                if (not self.gsc.DS_RESETS_TIMER) and ds_resume:
                     min_count = 0
             else:
                 min_count = 0
@@ -231,10 +231,10 @@ class firmware_Cr50DeviceState(Cr50Test):
             # on TPM activity it may occur more often. Add 2 to the multiplier
             # to allow for extra wakeups. This is mostly to catch issues that
             # cause cr50 to wake up 100 times a second
-            max_count = cr50_time * (self.cr50.SLEEP_RATE + 2)
+            max_count = cr50_time * (self.gsc.SLEEP_RATE + 2)
             return [min_count, max_count]
         # If ccd is disabled, ccd irq counts should not increase.
-        if not self.ccd_enabled and (irq_key in self.cr50.CCD_IRQS):
+        if not self.ccd_enabled and (irq_key in self.gsc.CCD_IRQS):
             return [0, 0]
         return self.EXPECTED_IRQ_COUNT_RANGE.get(irq_key, self.DEFAULT_COUNTS)
 
@@ -334,7 +334,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
                 # If time does not reset after deep sleep change the event to
                 # INCREASE.
-                if ((not self.cr50.DS_RESETS_TIMER) and
+                if ((not self.gsc.DS_RESETS_TIMER) and
                     irq_key == self.KEY_TIME and event == self.DS_RESUME):
                     event = self.INCREASE
 
@@ -396,8 +396,8 @@ class firmware_Cr50DeviceState(Cr50Test):
         """Returns True if the AP is on after pressing the power button"""
         self.servo.power_normal_press()
         # Give the AP some time to turn on
-        time.sleep(self.cr50.SHORT_WAIT)
-        return self.cr50.ap_is_on()
+        time.sleep(self.gsc.SHORT_WAIT)
+        return self.gsc.ap_is_on()
 
 
     def trigger_s0(self):
@@ -532,8 +532,8 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.ccd_str = 'ccd ' + ('enabled' if self.ccd_enabled else 'disabled')
         logging.info('Running through states with %s', self.ccd_str)
 
-        self.cr50.get_ccdstate()
-        if not self.cr50.get_sleepmask() and self.ccd_enabled:
+        self.gsc.get_ccdstate()
+        if not self.gsc.get_sleepmask() and self.ccd_enabled:
             logging.info('Sleepmask is not keeping cr50 up with ccd enabled')
             self.all_errors[self.ccd_str] = 'usb is not active with ccd enabled'
             return
@@ -563,12 +563,12 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.all_errors = {}
         self.host = host
         self.is_arm = self.is_arm_family()
-        supports_dts_control = self.cr50.servo_dts_mode_is_valid()
+        supports_dts_control = self.gsc.servo_dts_mode_is_valid()
 
         if supports_dts_control:
-            self.cr50.ccd_disable(raise_error=True)
+            self.gsc.ccd_disable(raise_error=True)
 
-        self.ccd_enabled = self.cr50.ccd_is_enabled()
+        self.ccd_enabled = self.gsc.ccd_is_enabled()
         # Check if the device supports S0ix.
         self.s0ix_supported = not self.host.run(
                 'check_powerd_config --suspend_to_idle',
@@ -582,8 +582,8 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         if supports_dts_control:
             ccd_was_enabled = self.ccd_enabled
-            self.cr50.ccd_enable(raise_error=supports_dts_control)
-            self.ccd_enabled = self.cr50.ccd_is_enabled()
+            self.gsc.ccd_enable(raise_error=supports_dts_control)
+            self.ccd_enabled = self.gsc.ccd_is_enabled()
             # If the first run had ccd disabled, and the test was able to enable
             # ccd, run through the states again to make sure there are no issues
             # come up when ccd is enabled.

@@ -107,30 +107,30 @@ class firmware_Cr50CCDServoCap(Cr50Test):
     def initialize(self, host, cmdline_args, full_args):
         super(firmware_Cr50CCDServoCap, self).initialize(host, cmdline_args,
                 full_args)
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         if ('servo_v4' not in self.servo.get_servo_type()
                     or not self.servo.main_device_is_flex()):
             raise error.TestNAError('Must use servo v4 with flex(c2d2 or '
                                     'servo_micro)')
 
-        if not self.cr50.servo_dts_mode_is_valid():
+        if not self.gsc.servo_dts_mode_is_valid():
             raise error.TestNAError('Need working servo v4 DTS control')
 
-        if not self.cr50.check_servo_monitor():
+        if not self.gsc.check_servo_monitor():
             raise error.TestNAError('Cannot run on device that does not '
                                     'support servo dectection with '
                                     'ec_uart_en:off/on')
         # Make sure cr50 is open with testlab enabled.
         self.fast_ccd_open(enable_testlab=True)
-        if not self.cr50.testlab_is_on():
+        if not self.gsc.testlab_is_on():
             raise error.TestNAError('Cr50 testlab mode needs to be enabled')
         logging.info('Cr50 is %s', self.servo.get('gsc_ccd_level'))
-        self.cr50.set_cap('UartGscTxECRx', 'Always')
+        self.gsc.set_cap('UartGscTxECRx', 'Always')
         self.ec_efs_support = (
-                self.cr50.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT'))
+                self.gsc.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT'))
         self._ccd_prefix = ('' if self.servo.main_device_is_ccd() else
                             self.servo.get_ccd_servo_device())
         # Check EC uart if servo has ccd controls and the board has an EC.
@@ -194,7 +194,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         ec_uart_enabled = 'UARTEC' in flags
         ec_uart_tx_enabled = 'UARTEC+TX' in flags
 
-        if self.cr50.NAME == 'cr50':
+        if self.gsc.NAME == 'cr50':
             ec_usb_tx_enabled = 'USBEC+TX' in flags
             ccd_ec_uart_enabled = ec_uart_tx_enabled and ec_usb_tx_enabled
             ccd_enabled = ap_uart_enabled or ec_usb_tx_enabled
@@ -219,7 +219,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
             # Ti50 does not report 'AP UART' or 'EC' in ccdstate output because
             # AP UART follows AP on/off and EC UART does not depend on EC on/off
             # state.
-            if self.cr50.NAME == 'cr50':
+            if self.gsc.NAME == 'cr50':
                 if ap_uart_enabled != self.state_is_on(ccdstate, 'AP UART'):
                     mismatch.append('AP UART enabled without AP UART on')
                 if ec_uart_enabled != self.state_is_on(ccdstate, 'EC'):
@@ -252,7 +252,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         # Wait a short time for the ccd state to settle
         time.sleep(self.SLEEP)
 
-        ccdstate = self.cr50.get_ccdstate()
+        ccdstate = self.gsc.get_ccdstate()
         # Check the state flags. Make sure they're in line with the rest of
         # ccdstate
         mismatch = self.check_state_flags(ccdstate)
@@ -277,8 +277,8 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         @param action: string 'reboot'
         """
         if action == 'reboot':
-            self.cr50.reboot()
-            self.cr50.send_command('ccd testlab open')
+            self.gsc.reboot()
+            self.gsc.send_command('ccd testlab open')
             time.sleep(self.SLEEP)
 
 

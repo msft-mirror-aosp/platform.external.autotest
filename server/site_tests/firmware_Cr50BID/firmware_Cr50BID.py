@@ -104,7 +104,7 @@ class firmware_Cr50BID(Cr50Test):
         if self.servo.main_device_is_ccd():
             raise error.TestNAError('Use a flex cable instead of CCD cable.')
 
-        if not self.cr50.has_command('bid'):
+        if not self.gsc.has_command('bid'):
             raise error.TestNAError('Cr50 image does not support board id')
 
         self.image_versions = {}
@@ -223,8 +223,8 @@ class firmware_Cr50BID(Cr50Test):
 
         logging.info('Running test with universal image %s', universal_ver)
 
-        self.replace_image_if_newer(universal_ver[1], self.cr50.DUT_PROD)
-        self.replace_image_if_newer(universal_ver[1], self.cr50.DUT_PREPVT)
+        self.replace_image_if_newer(universal_ver[1], self.gsc.DUT_PROD)
+        self.replace_image_if_newer(universal_ver[1], self.gsc.DUT_PREPVT)
 
         self.image_versions[self.UNIVERSAL] = universal_ver
 
@@ -298,8 +298,8 @@ class firmware_Cr50BID(Cr50Test):
             True if cr50 is running an image with the given rw version and
             board id.
         """
-        running_rw = self.cr50.get_version()
-        running_bid = self.cr50.get_active_board_id_str()
+        running_rw = self.gsc.get_version()
+        running_bid = self.gsc.get_active_board_id_str()
         # Convert the image board id to a non symbolic board id
         bid_str = cr50_utils.GetBoardIdInfoString(bid_str, symbolic=False)
         return running_rw == rw_ver and bid_str == running_bid

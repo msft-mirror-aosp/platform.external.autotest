@@ -47,7 +47,7 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
             if not self.should_restore_fw:
                 return
 
-            self.cr50.reboot()
+            self.gsc.reboot()
             self.switcher.mode_aware_reboot(reboot_type='cold')
 
             # Verify the EC is responsive before raising an error and going to
@@ -156,7 +156,7 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
 
         # If it is ITE EC, then ccd reset factory.
         if self.servo.get('ec_chip') == 'it83xx':
-            self.cr50.set_cap('I2C', 'Always')
+            self.gsc.set_cap('I2C', 'Always')
 
         self.should_restore_fw = True
         try:

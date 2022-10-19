@@ -39,9 +39,9 @@ class firmware_FWMPDisableCCD(Cr50Test):
         @param fwmp_disabled_ccd: True if 'ccd set $LEVEL' should fail
         """
         # Make sure the console is locked
-        self.cr50.set_ccd_level('lock')
+        self.gsc.set_ccd_level('lock')
         try:
-            self.cr50.set_ccd_level(level, self.CCD_PASSWORD)
+            self.gsc.set_ccd_level(level, self.CCD_PASSWORD)
             if fwmp_disabled_ccd:
                 raise error.TestFail('FWMP failed to prevent %r' % level)
         except error.TestFail as e:
@@ -65,10 +65,10 @@ class firmware_FWMPDisableCCD(Cr50Test):
         during open.
         """
         # Clear the password and relock the console
-        self.cr50.send_command('ccd testlab open')
-        self.cr50.ccd_reset()
+        self.gsc.send_command('ccd testlab open')
+        self.gsc.ccd_reset()
         # Set this so when we run the open test, it won't clear the FWMP
-        self.cr50.set_cap('OpenNoTPMWipe', 'Always')
+        self.gsc.set_cap('OpenNoTPMWipe', 'Always')
 
 
     def cr50_check_lock_control(self, flags):
@@ -84,7 +84,7 @@ class firmware_FWMPDisableCCD(Cr50Test):
         fwmp_disabled_ccd = not not (self.FWMP_DEV_DISABLE_CCD_UNLOCK &
                                int(flags, 16))
 
-        start_state = self.cr50.get_ccd_info('TPM')
+        start_state = self.gsc.get_ccd_info('TPM')
         if ('fwmp_lock' in start_state) != fwmp_disabled_ccd:
             raise error.TestFail('Unexpected fwmp state with flags %s' % flags)
 
@@ -104,12 +104,12 @@ class firmware_FWMPDisableCCD(Cr50Test):
         # run ccd commands with the password. ccd open and unlock should fail
         # when the FWMP has disabled ccd.
         self.try_set_ccd_level('open', fwmp_disabled_ccd)
-        if self.cr50.unlock_is_supported():
+        if self.gsc.unlock_is_supported():
             self.try_set_ccd_level('unlock', fwmp_disabled_ccd)
 
         # Clear the password.
         self.open_cr50_and_setup_ccd()
-        self.cr50.send_command('ccd lock')
+        self.gsc.send_command('ccd lock')
 
 
     def check_fwmp(self, flags, clear_fwmp, check_lock=True):

@@ -80,12 +80,12 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         self._ext = ''
 
         # Make sure the console is restricted
-        if self.cr50.get_cap('GscFullConsole')[self.cr50.CAP_REQ] == 'Always':
+        if self.gsc.get_cap('GscFullConsole')[self.gsc.CAP_REQ] == 'Always':
             logging.info('Restricting console')
             self.fast_ccd_open(enable_testlab=True)
-            self.cr50.set_cap('GscFullConsole', 'IfOpened')
+            self.gsc.set_cap('GscFullConsole', 'IfOpened')
             time.sleep(self.CCD_HOOK_WAIT)
-            self.cr50.set_ccd_level('lock')
+            self.gsc.set_ccd_level('lock')
         self.is_tot_run = (full_args.get('tot_test_run', '').lower() == 'true')
 
 
@@ -104,7 +104,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     def get_output(self, cmd, regexp, split_str, sort):
         """Return the cr50 console output"""
         old_output = []
-        output = self.cr50.send_command_retry_get_output(
+        output = self.gsc.send_command_retry_get_output(
                 cmd, [regexp], safe=True, compare_output=True,
                 retries=10)[0][1].strip()
 
@@ -192,13 +192,13 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         self.include = []
         self.exclude = []
         for prop, include, exclude in self.BOARD_PROPERTIES:
-            if self.cr50.uses_board_property(prop):
+            if self.gsc.uses_board_property(prop):
                 self.include.extend(include.split(','))
                 if exclude:
                     self.exclude.extend(exclude.split(','))
             else:
                 self.exclude.append(include)
-        version = self.cr50.get_full_version()
+        version = self.gsc.get_full_version()
         # Factory images end with 22. Expect guc attributes if the version
         # ends in 22.
         if self.GUC_BRANCH_STR in version:
@@ -224,7 +224,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
             self.exclude.append('tot')
         else:
             raise error.TestNAError('Unsupported branch %s', version)
-        brdprop = self.cr50.get_board_properties()
+        brdprop = self.gsc.get_board_properties()
         logging.info('brdprop: 0x%x', brdprop)
         logging.info('include: %s', ', '.join(self.include))
         logging.info('exclude: %s', ', '.join(self.exclude))

@@ -38,7 +38,7 @@ class firmware_Cr50WilcoEcrst(Cr50Test):
 
     def cr50_ecrst(self, state):
         """Set ecrst on Cr50."""
-        self.cr50.send_command('ecrst ' + state)
+        self.gsc.send_command('ecrst ' + state)
 
 
     def make_ec_reset_bring_up_ap(self):

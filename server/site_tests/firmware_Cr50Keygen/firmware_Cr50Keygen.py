@@ -36,13 +36,13 @@ class firmware_Cr50Keygen(FirmwareTest):
         @param enable: True to enable ccd. False to disable it.
         @raises TestError if the DUT isn't pingable after changing ccd.
         """
-        if not hasattr(self, 'cr50') or not self.cr50:
+        if not hasattr(self, 'gsc') or not self.gsc:
             return
 
         if enable:
-            self.cr50.ccd_enable()
+            self.gsc.ccd_enable()
         else:
-            self.cr50.ccd_disable()
+            self.gsc.ccd_disable()
 
         time.sleep(5)
 
@@ -58,7 +58,7 @@ class firmware_Cr50Keygen(FirmwareTest):
 
     def get_threshold(self, attr):
         """Get the threshold for the type of key the test is generating."""
-        if isinstance(self.cr50, chrome_ti50.ChromeTi50):
+        if isinstance(self.gsc, chrome_ti50.ChromeTi50):
             gsc_type = 'TI50'
         else:
             gsc_type = 'CR50'
@@ -79,10 +79,10 @@ class firmware_Cr50Keygen(FirmwareTest):
 
         # TODO(b/218492933) : find better way to disable rddkeepalive
         # Disable rddkeepalive, so the test can disable ccd.
-        self.cr50.send_command('ccd testlab open')
-        self.cr50.send_command('rddkeepalive disable')
+        self.gsc.send_command('ccd testlab open')
+        self.gsc.send_command('rddkeepalive disable')
         # Lock cr50 so the console will be restricted
-        self.cr50.set_ccd_level('lock')
+        self.gsc.set_ccd_level('lock')
 
         self.wait_for_client_after_changing_ccd(False)
 

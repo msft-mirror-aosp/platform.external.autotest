@@ -114,7 +114,7 @@ class servo_LabControlVerification(test.test):
         self.ctrls = self.load_ctrl_sequence()
 
     def run_once(self):
-        """Go through control sequence, and verify each of Cr50, EC, AP UART."""
+        """Go through control sequence, and verify each of GSC, EC, AP UART."""
         failed = False
         for ctrl in self.ctrls:
             # Depending on the number of elements in the control determine
@@ -136,13 +136,13 @@ class servo_LabControlVerification(test.test):
                 failed = True
                 logging.error('Error running %r. %s', ctrl['ctrl_name'], str(e))
         if self.servo_version != 'servo_v3':
-            # Servo V3 does not support Cr50 console. Skip this verification.
+            # Servo V3 does not support GSC console. Skip this verification.
             try:
-                self.servo_proxy.get('cr50_version')
-                logging.info('Success talking on the Cr50 UART.')
+                self.servo_proxy.get('gsc_version')
+                logging.info('Success talking on the GSC UART.')
             except error.TestFail as e:
                 failed = True
-                logging.error('Failed to get output on the Cr50 UART.')
+                logging.error('Failed to get output on the GSC UART.')
         try:
             self.servo_proxy.get('ec_board')
             logging.info('Success talking on the EC UART.')

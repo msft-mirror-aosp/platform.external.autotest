@@ -89,7 +89,7 @@ class firmware_Cr50ECReset(Cr50Test):
 
     def cr50_ecrst(self, state):
         """Set ecrst on cr50"""
-        self.cr50.send_command('ecrst ' + state)
+        self.gsc.send_command('ecrst ' + state)
 
 
     def wake_ec(self, wake_method):

@@ -26,11 +26,11 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         super(firmware_Cr50RejectUpdate, self).initialize(host, cmdline_args,
                 full_args, restore_cr50_image=True)
 
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
-        if 'DBG' in self.cr50.get_version():
+        if 'DBG' in self.gsc.get_version():
             raise error.TestNAError('Update rules are wonky on DBG images')
 
         if cr50_utils.GetChipBoardId(host) == cr50_utils.ERASED_CHIP_BID:
@@ -47,7 +47,7 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         self.host = host
         # Wait until cr50 can accept an update, so cr50 update rate limiting
         # won't interfere with the test.
-        self.cr50.wait_until_update_is_allowed()
+        self.gsc.wait_until_update_is_allowed()
 
 
     def try_update(self, arg, path, err=0, stdout='', wait=True):
@@ -70,7 +70,7 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         # Wait for cr50 to have been up for 60 seconds, so it won't
         # automatically reject the image.
         if wait:
-            self.cr50.wait_until_update_is_allowed()
+            self.gsc.wait_until_update_is_allowed()
 
         # Try to update
         result = self.host.run('gsctool -a %s %s' % (arg, self.TEST_PATH),
@@ -90,7 +90,7 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         # Verify the bid type check.
         self.try_update('-u', self.bid_type_path, err=12)
         self.try_update('', self.bid_type_path, err=12)
-        bid_flag_err = 12 if self.cr50.NAME == 'cr50' else 13
+        bid_flag_err = 12 if self.gsc.NAME == 'cr50' else 13
         # Verify the bid flags check.
         self.try_update('-u', self.bid_flags_path, err=bid_flag_err)
         self.try_update('', self.bid_flags_path, err=bid_flag_err)
@@ -119,7 +119,7 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         # 60 seconds. The whole point of this case is that cr50 will reject
         # images in the first 60 seconds of boot, so it won't work if cr50
         # has been up for a while.
-        if self.cr50.gettime() >= 60:
+        if self.gsc.gettime() >= 60:
             raise error.TestError('Cannot complete test. Took >60 seconds for '
                                   'DUT to come back online')
         # After any reboot, cr50 will reject images for 60 seconds

@@ -90,16 +90,16 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         """
         super(firmware_Cr50DeferredECReset, self).initialize(host, cmdline_args,
                 full_args)
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
-        if not self.cr50.servo_dts_mode_is_valid():
+                                    'access to the GSC console')
+        if not self.gsc.servo_dts_mode_is_valid():
             raise error.TestNAError('Need working servo v4 DTS control')
         self.dts_restore = self.servo.get_dts_mode()
 
         # Fast open cr50 and check if testlab is enabled.
         self.fast_ccd_open(enable_testlab=True)
-        if not self.cr50.testlab_is_on():
+        if not self.gsc.testlab_is_on():
             raise error.TestNAError('Cr50 testlab mode is not enabled')
 
         # Check 'rdd_leakage' is marked in cr50 capability.
@@ -143,7 +143,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         try:
             #  Third, check if the rdd status is disconnected.
             #         If not, terminate the test.
-            ccdstate = self.cr50.get_ccdstate()
+            ccdstate = self.gsc.get_ccdstate()
 
             if (ccdstate['Rdd'].lower() != 'disconnected') != self.rdd_leakage:
                 raise error.TestError('RDD leakage does not match capability'
@@ -171,13 +171,13 @@ class firmware_Cr50DeferredECReset(Cr50Test):
 
         # Reboot cr50 to ensure EC_RST_L is deasserted.
         self.fast_ccd_open(enable_testlab=True)
-        self.cr50.reboot()
+        self.gsc.reboot()
 
         time.sleep(self.WAIT_DUT_UP)
 
         # Press power button to wake up AP, and releases it soon
         # in any cases.
-        if not self.cr50.ap_is_on():
+        if not self.gsc.ap_is_on():
             self.servo.power_short_press()
         logging.info('Restoration done')
 
@@ -197,7 +197,7 @@ class firmware_Cr50DeferredECReset(Cr50Test):
         logging.info('Checking if ecrst is %s', expected_txt)
 
         try:
-            rv = self.cr50.send_command_retry_get_output(
+            rv = self.gsc.send_command_retry_get_output(
                     'ecrst', [r'EC_RST_L is ((de)?asserted)'], safe=True)
             logging.info(rv)
         except error.TestError as e:

@@ -35,7 +35,7 @@ class firmware_Cr50WilcoRmaFactoryMode(Cr50Test):
         # This test only makes sense with a Wilco EC.
         if self.check_ec_capability():
             raise error.TestNAError('Nothing needs to be tested on this device')
-        if not self.cr50.has_command('bpforce'):
+        if not self.gsc.has_command('bpforce'):
             raise error.TestNAError('Cannot run test without bpforce')
 
         # Keep track of whether Cr50 is in factory mode to minimize cleanup.
@@ -46,7 +46,7 @@ class firmware_Cr50WilcoRmaFactoryMode(Cr50Test):
 
     def cleanup(self):
         try:
-            self.cr50.set_batt_pres_state(state='follow_batt_pres',
+            self.gsc.set_batt_pres_state(state='follow_batt_pres',
                     atboot=False)
             self.set_factory_mode('disable')
         finally:
@@ -74,7 +74,7 @@ class firmware_Cr50WilcoRmaFactoryMode(Cr50Test):
                 ignore_status=True)
         success = result and result.exit_status == self.SUCCESS
         if success and enable:
-            self.cr50.wait_for_reboot()
+            self.gsc.wait_for_reboot()
             self.switcher.wait_for_client()
 
         self._in_factory_mode = enable == success
@@ -125,7 +125,7 @@ class firmware_Cr50WilcoRmaFactoryMode(Cr50Test):
 
         # Try to enter factory mode with battery disconnected; it should succeed
         # and set the H1 GPIOs appropriately.
-        self.cr50.set_batt_pres_state(state='disconnect', atboot=False)
+        self.gsc.set_batt_pres_state(state='disconnect', atboot=False)
         in_factory_mode = self.set_factory_mode('enable')
         if not in_factory_mode:
             raise error.TestFail(

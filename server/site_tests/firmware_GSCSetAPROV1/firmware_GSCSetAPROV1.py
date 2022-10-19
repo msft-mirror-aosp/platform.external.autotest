@@ -35,7 +35,7 @@ class firmware_GSCSetAPROV1(Cr50Test):
                                restore_cr50_image=True,
                                restore_cr50_board_id=True)
 
-        if not self.cr50.ap_ro_version_is_supported(self.TEST_AP_RO_VER):
+        if not self.gsc.ap_ro_version_is_supported(self.TEST_AP_RO_VER):
             raise error.TestNAError('GSC does not support AP RO v%s' %
                                     self.TEST_AP_RO_VER)
 
@@ -76,7 +76,7 @@ class firmware_GSCSetAPROV1(Cr50Test):
             raise error.TestNAError('Cannot run without brand')
 
         # Erase the board id if its set.
-        if not self.cr50.get_board_id()[1]:
+        if not self.gsc.get_board_id()[1]:
             logging.info('Erasing BID')
             self.eraseflashinfo_and_restore_image()
         bid = self.get_saved_cr50_original_version()[2]

@@ -56,14 +56,14 @@ class firmware_Cr50RMAOpen(Cr50Test):
                 full_args)
         self.host = host
 
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
-        if not self.cr50.has_command('rma_auth'):
+        if not self.gsc.has_command('rma_auth'):
             raise error.TestNAError('Cannot test on Cr50 without RMA support')
 
-        if not self.cr50._servo.dts_mode_is_valid():
+        if not self.gsc._servo.dts_mode_is_valid():
             raise error.TestNAError('This messes with ccd settings. Use flex '
                     'cable to run the test.')
 
@@ -73,8 +73,8 @@ class firmware_Cr50RMAOpen(Cr50Test):
         # Disable all capabilities at the start of the test. Go ahead and enable
         # testlab mode if it isn't enabled.
         self.fast_ccd_open(enable_testlab=True)
-        self.cr50.ccd_reset(servo_en=False)
-        self.cr50.set_ccd_level('lock')
+        self.gsc.ccd_reset(servo_en=False)
+        self.gsc.set_ccd_level('lock')
         # Make sure all capabilities are set to default.
         try:
             self.check_ccd_cap_settings(False)
@@ -87,11 +87,11 @@ class firmware_Cr50RMAOpen(Cr50Test):
     def get_prod_mp_status(self):
         """Returns True if Cr50 is running a prod signed mp flagged image"""
         # Determine if the running image is using premp flags
-        bid = self.cr50.get_active_board_id_str()
+        bid = self.gsc.get_active_board_id_str()
         premp_flags = int(bid.split(':')[2], 16) & 0x10 if bid else False
 
         # Check if the running image is signed with prod keys
-        prod_keys = self.cr50.using_prod_rw_keys()
+        prod_keys = self.gsc.using_prod_rw_keys()
         logging.info('%s keys with %s flags', 'prod' if prod_keys else 'dev',
                 'premp' if premp_flags else 'mp')
         return not premp_flags and prod_keys
@@ -139,7 +139,7 @@ class firmware_Cr50RMAOpen(Cr50Test):
         if expected_exit_status:
             resp = self.LIMIT_CLI if get_challenge else self.MISMATCH_CLI
 
-        result = self.cr50.send_command_get_output(cmd, [resp])
+        result = self.gsc.send_command_get_output(cmd, [resp])
         logging.info(result)
         return (self.parse_challenge(result[0][-1]) if get_challenge else
                 result[0])
@@ -194,9 +194,9 @@ class firmware_Cr50RMAOpen(Cr50Test):
 
     def fake_rma_open(self):
         """Use individual commands to enter the same state as factory mode"""
-        self.cr50.send_command('ccd testlab open')
-        self.cr50.ccd_reset_factory()
-        self.cr50.send_command('wp disable atboot')
+        self.gsc.send_command('ccd testlab open')
+        self.gsc.ccd_reset_factory()
+        self.gsc.send_command('wp disable atboot')
 
 
     def check_ccd_cap_settings(self, rma_opened):
@@ -210,8 +210,8 @@ class firmware_Cr50RMAOpen(Cr50Test):
             when it should be opened.
         """
         time.sleep(self.SHORT_WAIT)
-        caps = self.cr50.get_cap_dict()
-        in_factory_mode, reset = self.cr50.get_cap_overview(caps)
+        caps = self.gsc.get_cap_dict()
+        in_factory_mode, reset = self.gsc.get_cap_overview(caps)
 
         if rma_opened and not in_factory_mode:
             raise error.TestFail('Not all capablities were set to Always')
@@ -272,7 +272,7 @@ class firmware_Cr50RMAOpen(Cr50Test):
         if check_tpm and self.tpm_is_responsive():
             raise error.TestFail('TPM was not disabled after RMA open')
 
-        if self.cr50.get_wp_state() != self.WP_PERMANENTLY_DISABLED:
+        if self.gsc.get_wp_state() != self.WP_PERMANENTLY_DISABLED:
             raise error.TestFail('HW WP was not disabled after RMA open')
 
         # Make sure capabilities are all set to Always
@@ -289,7 +289,7 @@ class firmware_Cr50RMAOpen(Cr50Test):
 
         # Confirm write protect has been reset to follow battery presence. The
         # WP state may be enabled or disabled. The state just can't be forced.
-        if not self.cr50.wp_is_reset():
+        if not self.gsc.wp_is_reset():
             raise error.TestFail('Factory mode disable did not reset HW WP')
 
         # Make sure capabilities have been reset

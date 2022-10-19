@@ -232,7 +232,7 @@ class FirmwareTest(test.test):
             else:
                 logging.warning('Unsupported gsc %r', gsc_version)
             if gsc:
-                self.cr50 = gsc
+                self.gsc = gsc
         except servo.ControlUnavailableError:
             logging.warning('gsc console not supported.')
         except Exception as e:
@@ -436,8 +436,8 @@ class FirmwareTest(test.test):
         # Record the servo v4 and servo micro versions when possible
         system_info.update(self.servo.get_servo_fw_versions())
 
-        if hasattr(self, 'cr50'):
-            system_info['cr50_version'] = self.cr50.get_full_version()
+        if hasattr(self, 'gsc'):
+            system_info['cr50_version'] = self.gsc.get_full_version()
 
         logging.info('System info:\n%s', pprint.pformat(system_info))
         self.write_attr_keyval(system_info)
@@ -916,7 +916,7 @@ class FirmwareTest(test.test):
         @param suppress_warning: True to suppress any warning messages.
         @return: True if requirements are met. Otherwise, False.
         """
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             if not suppress_warning:
                 logging.warning('Requires Chrome Cr50 to run this test.')
             return False
@@ -2270,16 +2270,16 @@ class FirmwareTest(test.test):
 
     def _try_to_bring_dut_up(self):
         """Try to quickly get the dut in a pingable state"""
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
         logging.info('Bringing DUT up')
 
         self.servo.set_nocheck('cold_reset', 'off')
         self.servo.set_nocheck('warm_reset', 'off')
 
-        time.sleep(self.cr50.SHORT_WAIT)
-        if not self.cr50.ap_is_on():
+        time.sleep(self.gsc.SHORT_WAIT)
+        if not self.gsc.ap_is_on():
             logging.info('Pressing power button to turn on AP')
             self.servo.power_short_press()
 
@@ -2299,9 +2299,9 @@ class FirmwareTest(test.test):
         Returns:
             True if the process is still running.
         """
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         logging.info(self._get_ccd_open_output())
         self.servo.power_short_press()
@@ -2311,14 +2311,14 @@ class FirmwareTest(test.test):
         # middle of this reset process. Power button requests happen once a
         # minute, so waiting 10 seconds isn't a big deal.
         time.sleep(10)
-        return (self.cr50.OPEN == self.cr50.get_ccd_level() or
+        return (self.gsc.OPEN == self.gsc.get_ccd_level() or
                 self._ccd_open_job.sp.poll() is not None)
 
     def _get_ccd_open_output(self):
         """Read the new output."""
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         self._ccd_open_job.process_output()
         output = self._ccd_open_stdout.getvalue()
@@ -2328,9 +2328,9 @@ class FirmwareTest(test.test):
 
     def _close_ccd_open_job(self):
         """Terminate the process and check the results."""
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         exit_status = utils.nuke_subprocess(self._ccd_open_job.sp)
         stdout = self._ccd_open_stdout.getvalue().strip()
@@ -2342,16 +2342,16 @@ class FirmwareTest(test.test):
         if 'Error' in stdout:
             raise error.TestFail('ccd open Error %s' %
                                  stdout.split('Error')[-1])
-        if self.cr50.OPEN != self.cr50.get_ccd_level():
+        if self.gsc.OPEN != self.gsc.get_ccd_level():
             raise error.TestFail('unable to open cr50: %s' % stdout)
         else:
             logging.info('Opened Cr50')
 
     def ccd_open_from_ap(self):
         """Start the open process and press the power button."""
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         # Opening CCD requires power button presses. If those presses would
         # power off the AP and prevent CCD open from completing, ignore them.
@@ -2359,7 +2359,7 @@ class FirmwareTest(test.test):
             self.stop_powerd()
 
         # Make sure the test waits long enough to avoid ccd rate limiting.
-        time.sleep(self.cr50.CCD_PASSWORD_RATE_LIMIT)
+        time.sleep(self.gsc.CCD_PASSWORD_RATE_LIMIT)
 
         self._ccd_open_last_len = 0
 
@@ -2394,33 +2394,33 @@ class FirmwareTest(test.test):
             while time.time() < end_time:
                 self.servo.power_short_press()
                 logging.info('short int power button press')
-                time.sleep(self.cr50.PP_SHORT_INT)
+                time.sleep(self.gsc.PP_SHORT_INT)
             # Poll the output and press the power button for the longer presses.
             utils.wait_for_value(self._check_open_and_press_power_button,
                                  expected_value=True,
-                                 timeout_sec=self.cr50.PP_LONG)
+                                 timeout_sec=self.gsc.PP_LONG)
         except Exception as e:
             logging.info(e)
             raise
         finally:
             self._close_ccd_open_job()
             self._try_to_bring_dut_up()
-        logging.info(self.cr50.get_ccd_info())
+        logging.info(self.gsc.get_ccd_info())
 
     def enter_mode_after_checking_cr50_state(self, mode):
         """Reboot to mode if cr50 doesn't already match the state"""
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         # If the device is already in the correct mode, don't do anything
-        if (mode == 'dev') == self.cr50.in_dev_mode():
+        if (mode == 'dev') == self.gsc.in_dev_mode():
             logging.info('already in %r mode', mode)
             return
 
         self.switcher.reboot_to_mode(to_mode=mode)
 
-        if (mode == 'dev') != self.cr50.in_dev_mode():
+        if (mode == 'dev') != self.gsc.in_dev_mode():
             raise error.TestError('Unable to enter %r mode' % mode)
 
     def fast_ccd_open(self, enable_testlab=False, reset_ccd=True,
@@ -2433,11 +2433,11 @@ class FirmwareTest(test.test):
             dev_mode: True if the device should be in dev mode after ccd is
                       is opened.
         """
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
-        if self.servo.main_device_is_ccd() and not self.cr50.testlab_is_on():
+        if self.servo.main_device_is_ccd() and not self.gsc.testlab_is_on():
             error_txt = 'because the main servo device is CCD.'
             if enable_testlab:
                 raise error.TestNAError('Cannot enable testlab: %s' % error_txt)
@@ -2458,21 +2458,21 @@ class FirmwareTest(test.test):
 
         # Try to use testlab open first, so we don't have to wait for the
         # physical presence check.
-        self.cr50.send_command('ccd testlab open')
-        if self.cr50.OPEN != self.cr50.get_ccd_level():
+        self.gsc.send_command('ccd testlab open')
+        if self.gsc.OPEN != self.gsc.get_ccd_level():
             if self.servo.has_control('chassis_open'):
                 self.servo.set('chassis_open', 'yes')
-            pw = '' if self.cr50.password_is_reset() else self.CCD_PASSWORD
+            pw = '' if self.gsc.password_is_reset() else self.CCD_PASSWORD
             # Use the console to open cr50 without entering dev mode if
             # possible. Ittakes longer and relies on more systems to enter dev
             # mode and ssh into the AP. Skip the steps that aren't required.
-            if not (pw or self.cr50.get_cap(
-                            'OpenNoDevMode')[self.cr50.CAP_IS_ACCESSIBLE]):
+            if not (pw or self.gsc.get_cap(
+                            'OpenNoDevMode')[self.gsc.CAP_IS_ACCESSIBLE]):
                 self.enter_mode_after_checking_cr50_state('dev')
 
-            if pw or self.cr50.get_cap(
-                            'OpenFromUSB')[self.cr50.CAP_IS_ACCESSIBLE]:
-                self.cr50.set_ccd_level(self.cr50.OPEN, pw)
+            if pw or self.gsc.get_cap(
+                            'OpenFromUSB')[self.gsc.CAP_IS_ACCESSIBLE]:
+                self.gsc.set_ccd_level(self.gsc.OPEN, pw)
             else:
                 self.ccd_open_from_ap()
 
@@ -2480,10 +2480,10 @@ class FirmwareTest(test.test):
                 self.servo.set('chassis_open', 'no')
 
             if enable_testlab:
-                self.cr50.set_ccd_testlab('on')
+                self.gsc.set_ccd_testlab('on')
 
         if reset_ccd:
-            self.cr50.ccd_reset()
+            self.gsc.ccd_reset()
 
         # In default, the device should be in normal mode. After opening cr50,
         # the TPM should be cleared and the device should automatically reset to

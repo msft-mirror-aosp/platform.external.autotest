@@ -51,7 +51,7 @@ class firmware_Cr50Update(Cr50Test):
             logging.info('Using device image as release')
 
         # Make sure ccd is disabled so it won't interfere with the update
-        self.cr50.ccd_disable()
+        self.gsc.ccd_disable()
 
         self.make_rootfs_writable()
 
@@ -113,7 +113,7 @@ class firmware_Cr50Update(Cr50Test):
 
         # Cr50 is going to reject an update if it hasn't been up for more than
         # 60 seconds. Wait until that passes before trying to run the update.
-        self.cr50.wait_until_update_is_allowed()
+        self.gsc.wait_until_update_is_allowed()
 
         # If a rollback is needed, flash the image into the inactive partition,
         # on or update over ccd.
@@ -127,7 +127,7 @@ class firmware_Cr50Update(Cr50Test):
                          ' over ccd' if self.test_ccd else '')
             return
 
-        self.cr50.ccd_disable()
+        self.gsc.ccd_disable()
 
         # Get the last cr50 update related message from /var/log/messages
         last_message = cr50_utils.CheckForFailures(self.host, '')
@@ -140,7 +140,7 @@ class firmware_Cr50Update(Cr50Test):
         # The cr50 updates happen over /dev/tpm0. It takes a while. After
         # cr50-update has finished, cr50 should reboot. Wait until this happens
         # before sending anymore commands.
-        self.cr50.wait_for_reboot()
+        self.gsc.wait_for_reboot()
 
         # Verify the system boots normally after the update
         self.check_state((self.checkers.crossystem_checker,

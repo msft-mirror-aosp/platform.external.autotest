@@ -19,13 +19,13 @@ class firmware_Cr50TpmManufactured(FirmwareTest):
 
     def run_once(self):
         """Check if the TPM is manufactured."""
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         # Signing is different in dev signed images. This test doesn't really
         # apply.
-        if not self.cr50.using_prod_rw_keys():
+        if not self.gsc.using_prod_rw_keys():
             raise error.TestNAError('Running dev signed image')
 
         # Reset the AP a couple of times in case the console drops any

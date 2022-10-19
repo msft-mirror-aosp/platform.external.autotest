@@ -30,7 +30,7 @@ class firmware_Cr50RddG3(Cr50Test):
     def rdd_is_connected(self):
         """Return True if Cr50 detects Rdd."""
         time.sleep(2)
-        return self.cr50.get_ccdstate()['Rdd'] == 'connected'
+        return self.gsc.get_ccdstate()['Rdd'] == 'connected'
 
     def check_capabilities(self, capabilities):
         """Returns the matching capability or None."""

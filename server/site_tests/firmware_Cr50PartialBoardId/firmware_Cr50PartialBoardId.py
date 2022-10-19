@@ -63,7 +63,7 @@ class firmware_Cr50PartialBoardId(Cr50Test):
     def set_bid_with_dbg_image(self, bid):
         """Use the console command on the DBG image to set the board id."""
         self.eraseflashinfo_and_restore_image(self.get_saved_dbg_image_path())
-        self.cr50.set_board_id(int(bid[0], 16), bid[2])
+        self.gsc.set_board_id(int(bid[0], 16), bid[2])
         self.cr50_update(self.get_saved_cr50_original_path(), rollback=True)
 
 

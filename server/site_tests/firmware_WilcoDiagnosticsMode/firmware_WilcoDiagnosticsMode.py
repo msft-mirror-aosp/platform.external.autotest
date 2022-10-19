@@ -84,7 +84,7 @@ class firmware_WilcoDiagnosticsMode(FirmwareTest):
         self.servo.switch_usbkey('host')
         psc = self.servo.get_power_state_controller()
         logging.info('Powering off')
-        if self.cr50.ap_is_on():
+        if self.gsc.ap_is_on():
             self.servo.power_key(self.faft_config.hold_pwr_button_poweroff)
             logging.info('Waiting for power off')
             time.sleep(1)
@@ -95,7 +95,7 @@ class firmware_WilcoDiagnosticsMode(FirmwareTest):
         logging.info('Sleeping %s seconds (firmware_screen)',
                      self.faft_config.firmware_screen)
         time.sleep(self.faft_config.firmware_screen)
-        if not self.cr50.ap_is_on():
+        if not self.gsc.ap_is_on():
             raise error.TestFail('Expected AP on when booting to recovery')
         logging.info('Pressing <F12>')
         self._press_f12()
@@ -119,7 +119,7 @@ class firmware_WilcoDiagnosticsMode(FirmwareTest):
                 'Sleeping %s seconds (DIAGNOSTICS_FAIL_REBOOT_DELAY_SECONDS)',
                 self.DIAGNOSTICS_FAIL_REBOOT_DELAY_SECONDS)
         time.sleep(self.DIAGNOSTICS_FAIL_REBOOT_DELAY_SECONDS)
-        if not self.cr50.ap_is_on():
+        if not self.gsc.ap_is_on():
             raise error.TestFail(
                     'AP is off, expected diagnostics mode. Is diagnostic '
                     'corrupted? Run chromeos-firmwareupdate --mode=recovery')
@@ -147,7 +147,7 @@ class firmware_WilcoDiagnosticsMode(FirmwareTest):
                 self.DIAGNOSTICS_FAIL_REBOOT_DELAY_SECONDS)
         time.sleep(self.DIAGNOSTICS_FAIL_REBOOT_DELAY_SECONDS)
         # If the diagnostic mode fails, it might just power off
-        if not self.cr50.ap_is_on():
+        if not self.gsc.ap_is_on():
             logging.info('AP off, pressing <Power> to boot to normal mode')
             self.servo.power_short_press()
         self.switcher.wait_for_client()

@@ -29,8 +29,8 @@ class firmware_Cr50USB(FirmwareTest):
 
     def cleanup(self):
         """Reenable CCD before cleanup"""
-        if hasattr(self, "cr50"):
-            self.cr50.ccd_enable()
+        if hasattr(self, 'gsc'):
+            self.gsc.ccd_enable()
         super(firmware_Cr50USB, self).cleanup()
 
 
@@ -39,15 +39,15 @@ class firmware_Cr50USB(FirmwareTest):
         """Runs a single iteration of the test."""
         self.host = host
         # Disable CCD so it doesn't interfere with the Cr50 AP usb connection.
-        if hasattr(self, "cr50"):
+        if hasattr(self, 'gsc'):
             # TODO(b/218492933) : find better way to disable rddkeepalive
             # Disable rddkeepalive, so the test can disable ccd.
-            self.cr50.send_command('ccd testlab open')
-            self.cr50.send_command('rddkeepalive disable')
+            self.gsc.send_command('ccd testlab open')
+            self.gsc.send_command('rddkeepalive disable')
             # Lock cr50 so the console will be restricted
-            self.cr50.set_ccd_level('lock')
+            self.gsc.set_ccd_level('lock')
 
-            self.cr50.ccd_disable()
+            self.gsc.ccd_disable()
 
         # Make sure the device is logged in so TPM activity doesn't keep it
         # awake

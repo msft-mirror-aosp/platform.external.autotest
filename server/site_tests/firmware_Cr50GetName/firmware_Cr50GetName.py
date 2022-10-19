@@ -36,8 +36,8 @@ class firmware_Cr50GetName(Cr50Test):
         efi_path = self.get_saved_eraseflashinfo_image_path()
 
         self.make_rootfs_writable()
-        cr50_utils.InstallImage(self.host, efi_path, self.cr50.DUT_PROD)
-        cr50_utils.InstallImage(self.host, efi_path, self.cr50.DUT_PREPVT)
+        cr50_utils.InstallImage(self.host, efi_path, self.gsc.DUT_PROD)
+        cr50_utils.InstallImage(self.host, efi_path, self.gsc.DUT_PREPVT)
 
         # Update to the eraseflashinfo image so we can erase the board id after
         # we set it. This test is verifying cr50-get-name, so it is ok if cr50
@@ -153,7 +153,7 @@ class firmware_Cr50GetName(Cr50Test):
             flags: The flag int to test.
             clear_bid: True if the board id should be erased and not reset.
         """
-        if not self.cr50.eraseflashinfo():
+        if not self.gsc.eraseflashinfo():
             raise error.TestError('Unable to erase the board id')
 
         if not clear_bid:

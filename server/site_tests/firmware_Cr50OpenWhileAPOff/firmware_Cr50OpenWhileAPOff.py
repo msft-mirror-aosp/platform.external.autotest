@@ -31,9 +31,9 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         super(firmware_Cr50OpenWhileAPOff, self).initialize(host, cmdline_args,
                 full_args)
 
-        if not hasattr(self, 'cr50'):
+        if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
-                                    'access to the Cr50 console')
+                                    'access to the GSC console')
 
         # c2d2 uses cr50 for ec reset. The setting doesn't survive deep sleep.
         # This test needs ec reset to survive deep sleep to keep the AP off.
@@ -46,15 +46,15 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
                     or not self.servo.main_device_is_flex()):
             raise error.TestNAError('Must use servo v4 with servo_micro')
 
-        if not self.cr50.servo_dts_mode_is_valid():
+        if not self.gsc.servo_dts_mode_is_valid():
             raise error.TestNAError('Plug in servo v4 type c cable into ccd '
                     'port')
 
         self.fast_ccd_open(enable_testlab=True)
         # make sure password is cleared.
-        self.cr50.ccd_reset()
+        self.gsc.ccd_reset()
         # Set GscFullConsole to Always, so we can always use gpioset.
-        self.cr50.set_cap('GscFullConsole', 'Always')
+        self.gsc.set_cap('GscFullConsole', 'Always')
         # You can only open cr50 from the console if a password is set. Set
         # a password, so we can use it to open cr50 while the AP is off.
         self.set_ccd_password(self.CCD_PASSWORD)
@@ -65,7 +65,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         # open.
         # warm_reset doesn't interfere with rdd, so it's best to use that when
         # possible.
-        self.reset_ec = self.cr50.uses_board_property('BOARD_USE_PLT_RESET')
+        self.reset_ec = self.gsc.uses_board_property('BOARD_USE_PLT_RESET')
         self.changed_dut_state = True
         if self.reset_ec and not self.reset_device_get_deep_sleep_count(True):
             # Some devices can't tell the AP is off when the EC is off. Try
@@ -80,7 +80,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
             logging.info("deep sleep doesn't work with EC in reset. skipping "
                          "physical presence checks.")
             # set OpenNoLongPP so open won't require pressing the power button.
-            self.cr50.set_cap('OpenNoLongPP', 'Always')
+            self.gsc.set_cap('OpenNoLongPP', 'Always')
         else:
             logging.info('Physical presence can be used during open')
 
@@ -116,13 +116,13 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
 
         # Verify the cr50 console responds to commands.
         try:
-            logging.info(self.cr50.get_ccdstate())
+            logging.info(self.gsc.get_ccdstate())
         except servo.ResponsiveConsoleError as e:
             logging.info('Console is responsive. Unable to match output: %s',
                          str(e))
         except servo.UnresponsiveConsoleError as e:
-            raise error.TestFail('Could not restore Cr50 console')
-        logging.info('Cr50 console ok.')
+            raise error.TestFail('Could not restore GSC console')
+        logging.info('GSC console ok.')
 
 
     def turn_device(self, state):
@@ -145,7 +145,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         # turn on after deasserting the reset signal. ap_is_on will print the
         # ccdstate which is useful for debugging. Do that first, so it always
         # happens.
-        if not self.cr50.ap_is_on() and state == 'on':
+        if not self.gsc.ap_is_on() and state == 'on':
             self.servo.power_normal_press()
             time.sleep(self.SHORT_DELAY)
 
@@ -175,7 +175,7 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         # disconnect ccd.
         if state == 'off':
             time.sleep(self.SHORT_DELAY)
-            self.cr50.send_command('gpioset CCD_MODE_L 1')
+            self.gsc.send_command('gpioset CCD_MODE_L 1')
 
 
     def toggle_dts_mode(self):
@@ -194,24 +194,24 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         Returns:
             The number of times cr50 entered deep sleep
         """
-        start_count = self.cr50.get_deep_sleep_count()
+        start_count = self.gsc.get_deep_sleep_count()
         # CCD is what's keeping Cr50 awake. Toggle DTS mode to turn off ccd
         # so cr50 will enter deep sleep
         self.toggle_dts_mode()
         # Return the number of times cr50 entered deep sleep.
-        return self.cr50.get_deep_sleep_count() - start_count
+        return self.gsc.get_deep_sleep_count() - start_count
 
 
     def try_ccd_open(self, cr50_reset):
         """Try 'ccd open' and make sure the console doesn't hang"""
-        self.cr50.set_ccd_level('lock', self.CCD_PASSWORD)
+        self.gsc.set_ccd_level('lock', self.CCD_PASSWORD)
         try:
             self.turn_device('off')
             if cr50_reset:
                 if not self.deep_sleep_reset_get_count():
                     raise error.TestFail('Did not detect a cr50 reset')
             # Verify ccd open
-            self.cr50.set_ccd_level('open', self.CCD_PASSWORD)
+            self.gsc.set_ccd_level('open', self.CCD_PASSWORD)
         finally:
             self.restore_dut()
 

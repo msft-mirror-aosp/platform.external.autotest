@@ -19,6 +19,7 @@ from __future__ import print_function
 import collections
 import datetime
 import errno
+import functools
 import inspect
 import json
 import logging
@@ -3366,3 +3367,15 @@ def send_msg_to_terminal(job, msg):
         status.write(msg + '\n')
     finally:
         status.flush()
+
+
+def wrapped_partial(func, *args, **kwargs):
+    """Wrap the function with given args and kwargs and update its metadata.
+
+    @param func: The target function to be wrapped.
+    @param args: Non-keyword arguments to be passed to func
+    @param kwargs: Keyword arguments to be passed to func
+    """
+    partial_func = functools.partial(func, *args, **kwargs)
+    functools.update_wrapper(partial_func, func)
+    return partial_func

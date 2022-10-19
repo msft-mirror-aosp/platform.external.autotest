@@ -53,11 +53,13 @@ class _BaseMenuModeSwitcher:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def power_off(self):
+    def power_off(self, wait_for_screen=True):
         """
         Power off the device.
 
         This method should work in both developer and recovery screens.
+
+        @param wait_for_screen: True to waiting for firmware screen first.
         """
         raise NotImplementedError
 
@@ -154,13 +156,16 @@ class _TabletDetachableMenuModeSwitcher(_BaseMenuModeSwitcher):
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecing "Confirm Enabling OS Verification"...')
 
-    def power_off(self):
+    def power_off(self, wait_for_screen=True):
         """
         Power off the device.
 
         This method should work in both developer and recovery screens.
+
+        @param wait_for_screen: True to waiting for firmware screen first.
         """
-        self.test.wait_for('firmware_screen')
+        if wait_for_screen:
+            self.test.wait_for('firmware_screen')
         # Either in developer or recovery screen, the "Power Off" option is the
         # default one.
         self.menu.select('Selecting "Power Off"...')
@@ -292,13 +297,16 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         self.test.wait_for('keypress_delay')
         self.menu.select('Selecing "Confirm"...')
 
-    def power_off(self):
+    def power_off(self, wait_for_screen=True):
         """
         Power off the device.
 
         This method should work in both developer and recovery screens.
+
+        @param wait_for_screen: True to waiting for firmware screen first.
         """
-        self.test.wait_for('firmware_screen')
+        if wait_for_screen:
+            self.test.wait_for('firmware_screen')
         # Since there are at most 6 menu items in dev/rec screen, move the
         # cursor down 6 times to ensure we reach the last menu item.
         self.menu.move_to(0, 6)
@@ -387,25 +395,6 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         # Wait for quick memory test
         self.menu.select('Back to MiniDiag root screen...')
         self.test.wait_for('keypress_delay')
-
-    def reset_and_leave_minidiag(self):
-        """
-        Reset the DUT and normal boot to leave MiniDiag.
-
-        @raise TestError if MiniDiag is not enabled or no apreset support.
-        """
-
-        # Validity check; this only applicable for MiniDiag enabled devices.
-        if not self.minidiag_enabled:
-            raise error.TestError('MiniDiag is not enabled for this board')
-
-        # Since we want to keep the cbmem log, we need an AP reset and reboot to
-        # normal mode
-        if self.test.ec.has_command('apreset'):
-            logging.info('Trigger apreset')
-            self.test.ec.send_command('apreset')
-        else:
-            raise error.TestError('EC command apreset is not supported')
 
     def trigger_rec_to_minios(self, older_version=False):
         """

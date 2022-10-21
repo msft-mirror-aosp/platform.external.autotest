@@ -4226,6 +4226,18 @@ class BluetoothAdapterTests(test.test):
             return False
         return True
 
+    def _input_dev_uniq_addr(self, device):
+        """Return the unique address for input device.
+
+        The unique address for Bluez and Floss is different in the file:
+        /proc/bus/input/devices when a RPA is used for pairing. Bluez uses
+        the identity address and Floss uses the initial paired RPA.
+        device.init_paired_addr is only updated when pairing with the RPA.
+        """
+        device_address = device.address
+        if self.floss and isinstance(device.init_paired_addr, str):
+            device_address = device.init_paired_addr
+        return device_address
 
     def _record_input_events(self, device, gesture, address=None):
         """Record the input events.
@@ -4270,9 +4282,8 @@ class BluetoothAdapterTests(test.test):
         else:
             raise error.TestError('Button (%s) is not valid.' % button)
 
-        actual_events = self._record_input_events(device,
-                                                  gesture,
-                                                  address=device.address)
+        actual_events = self._record_input_events(
+                device, gesture, address=self._input_dev_uniq_addr(device))
 
         linux_input_button = {'LEFT': BTN_LEFT, 'RIGHT': BTN_RIGHT}
         expected_events = [
@@ -4316,7 +4327,6 @@ class BluetoothAdapterTests(test.test):
         """
         return self._test_mouse_click(device, 'RIGHT')
 
-
     def _test_mouse_move(self, device, delta_x=0, delta_y=0):
         """Test that the mouse move events could be received correctly.
 
@@ -4329,9 +4339,8 @@ class BluetoothAdapterTests(test.test):
 
         """
         gesture = lambda: device.Move(delta_x, delta_y)
-        actual_events = self._record_input_events(device,
-                                                  gesture,
-                                                  address=device.address)
+        actual_events = self._record_input_events(
+                device, gesture, address=self._input_dev_uniq_addr(device))
 
         events_x = [Event(EV_REL, REL_X, delta_x)] if delta_x else []
         events_y = [Event(EV_REL, REL_Y, delta_y)] if delta_y else []
@@ -4385,7 +4394,6 @@ class BluetoothAdapterTests(test.test):
         """
         return self._test_mouse_move(device, delta_x=delta_x, delta_y=delta_y)
 
-
     def _test_mouse_scroll(self, device, units):
         """Test that the mouse wheel events could be received correctly.
 
@@ -4397,9 +4405,8 @@ class BluetoothAdapterTests(test.test):
 
         """
         gesture = lambda: device.Scroll(units)
-        recorded_events = self._record_input_events(device,
-                                                    gesture,
-                                                    address=device.address)
+        recorded_events = self._record_input_events(
+                device, gesture, address=self._input_dev_uniq_addr(device))
 
         # Since high-speed scrolling events are inserted after they are passed
         # through bluetooth module, we ignore these events since they are
@@ -4466,9 +4473,8 @@ class BluetoothAdapterTests(test.test):
 
         """
         gesture = lambda: device.ClickAndDrag(delta_x, delta_y)
-        actual_events = self._record_input_events(device,
-                                                  gesture,
-                                                  address=device.address)
+        actual_events = self._record_input_events(
+                device, gesture, address=self._input_dev_uniq_addr(device))
 
         button = 'LEFT'
         expected_events = (

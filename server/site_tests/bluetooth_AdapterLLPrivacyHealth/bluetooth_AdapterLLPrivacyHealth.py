@@ -364,6 +364,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
         self.test_pairing_with_rpa(device)
         self.run_mouse_tests(device=device)
+
         self.test_remove_pairing(device.rpa, identity_address=device.address)
         # Restore privacy setting
         self.test_stop_device_advertise_with_rpa(device)
@@ -435,6 +436,12 @@ class bluetooth_AdapterLLPrivacyHealth(
                 check_connected_method=self.test_mouse_left_click,
                 disconnect_by_device=True)
 
+    @test_wrapper('HID Wakeup from Suspend Test', devices={"BLE_MOUSE": 1})
+    def sr_peer_wake_le_hid_with_rpa(self):
+        """Use LE HID to wake from suspend."""
+        device = self.devices['BLE_MOUSE'][0]
+        self.run_hid_wakeup_with_rpa(device, device_test=self._test_mouse)
+
     @batch_wrapper("LL Privacy Health")
     def ll_privacy_batch_run(self, num_iterations=1, test_name=None):
         """A batch of tests with LL privacy enabled."""
@@ -465,6 +472,7 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.privacy_rpa_timeout()
         self.le_auto_reconnect_with_privacy_by_device()
         self.le_auto_reconnect_with_privacy()
+        self.sr_peer_wake_le_hid_with_rpa()
 
     def run_once(self,
                  host,

@@ -8,6 +8,13 @@ from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 
 import logging
 import time
+import threading
+
+PROFILE_CONNECT_WAIT_SEC = 15
+EXPECT_PEER_WAKE_SUSPEND_SEC = 60
+PEER_WAKE_RESUME_TIMEOUT_SEC = 30
+DEVICE_CONNECT_TIMEOUT_SEC = 20
+SUSPEND_TIMEOUT_SEC = 15
 
 DEVICE_CONNECTED_TIMEOUT = 45
 
@@ -23,6 +30,101 @@ class BluetoothAdapterLLPrivacyTests(
     test_case_log = bluetooth_adapter_tests.test_case_log
     test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
 
+    def run_hid_wakeup_with_rpa(self, device, device_test=None, iterations=1):
+        """ Uses paired peer HID device which is in privacy mode to wake
+        from suspend.
+
+        @param device: the meta device with the paired device
+        @param device_test: What to test to run after waking and connecting the
+                            adapter/host
+        @param iterations: Number of suspend + peer wake loops to run
+        """
+        boot_id = self.host.get_boot_id()
+
+        sleep_time = EXPECT_PEER_WAKE_SUSPEND_SEC
+        resume_timeout = PEER_WAKE_RESUME_TIMEOUT_SEC
+        measure_resume = True
+
+        # Clear wake before testing
+        self.test_adapter_set_wake_disabled()
+
+        self.test_set_device_privacy(device, True)
+        self.test_start_device_advertise_with_rpa(device)
+        self.test_discover_device(device.rpa)
+
+        time.sleep(self.TEST_SLEEP_SECS)
+        self.test_pairing_with_rpa(device)
+        self.test_stop_device_advertise_with_rpa(device)
+
+        self.test_device_is_connected(device.init_paired_addr,
+                                      timeout=DEVICE_CONNECT_TIMEOUT_SEC,
+                                      identity_address=device.address)
+
+        # Profile connection may not have completed yet and this will
+        # race with a subsequent disconnection (due to suspend). Use the
+        # device test to force profile connect or wait if no test was
+        # given.
+        if device_test is not None:
+            self.assert_on_fail(device_test(device))
+        else:
+            time.sleep(PROFILE_CONNECT_WAIT_SEC)
+
+        try:
+            for it in range(iterations):
+                logging.info(
+                        'Running iteration {}/{} of suspend peer wake'.format(
+                                it + 1, iterations))
+
+                # Start a new suspend instance
+                suspend = self.suspend_async(suspend_time=sleep_time,
+                                             expect_bt_wake=True)
+                start_time = self.bluetooth_facade.get_device_utc_time()
+
+                # Also wait until powerd marks adapter as wake enabled
+                self.test_adapter_wake_enabled()
+
+                # Trigger suspend, asynchronously wake and wait for resume
+                self.test_suspend_and_wait_for_sleep(
+                        suspend, sleep_timeout=SUSPEND_TIMEOUT_SEC)
+
+                def _action_device_connect():
+                    time.sleep(5)
+                    device.SetDiscoverable(True)
+                    device.SetAdvertising(True)
+
+                peer_wake = threading.Thread(target=_action_device_connect)
+                peer_wake.start()
+
+                # Expect a quick resume. If a timeout occurs, test fails. Since
+                # we delay sending the wake signal, we should accommodate that
+                # in our expected timeout.
+                self.test_wait_for_resume(boot_id,
+                                          suspend,
+                                          resume_timeout=resume_timeout,
+                                          test_start_time=start_time,
+                                          resume_slack=0,
+                                          fail_on_timeout=True,
+                                          fail_early_wake=False,
+                                          collect_resume_time=measure_resume)
+
+                # Finish peer wake process
+                peer_wake.join()
+
+                # Make sure we're actually connected
+                self.test_device_is_connected(
+                        device.init_paired_addr,
+                        timeout=DEVICE_CONNECT_TIMEOUT_SEC,
+                        identity_address=device.address)
+                # Verify the profile is working
+                if device_test is not None:
+                    device_test(device)
+
+                self.test_stop_device_advertise_with_rpa(device)
+        finally:
+            self.test_remove_pairing(device.init_paired_addr,
+                                     identity_address=device.address)
+            # Restore privacy setting
+            self.test_set_device_privacy(device, False)
 
     @test_retry_and_log(False)
     def test_set_device_privacy(self, device, enable):

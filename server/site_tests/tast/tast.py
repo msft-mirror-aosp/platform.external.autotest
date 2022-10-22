@@ -123,7 +123,7 @@ class tast(test.test):
     _VERSION_TIMEOUT_SEC = 10
     _DOWNLOAD_TIMEOUT_SEC = 120
     _LIST_TIMEOUT_SEC = 30
-    _LIST_TRIES = 2
+    _LIST_TRIES = 3
 
     # Additional time to add to the run timeout (e.g. for collecting crashes and
     # logs).

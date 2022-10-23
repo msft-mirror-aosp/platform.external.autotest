@@ -1533,11 +1533,17 @@ class BluetoothAdapterTests(test.test):
         # invalid. To work around this limitation, let the bluetoothd
         # restart after the quality report is enabled so that quality
         # report becomes a valid experimental feature of the adapter.
+        #
+        # Note: self.restart_services() is used instead of
+        #       self.test_stop_bluetoothd() and self.test_start_bluetoothd()
+        #       because the latter will lead to a dbus error:
+        #
+        #       Exception: RuntimeError: To make asynchronous calls, receive
+        #       signals or export objects, D-Bus connections must be attached
+        #       to a main loop by passing mainloop=... to the constructor or
+        #       calling dbus.set_default_main_loop(...)
         if enable:
-            time.sleep(1)
-            self.test_stop_bluetoothd()
-            self.test_start_bluetoothd()
-            time.sleep(1)
+            self.restart_services(['bluetoothd',])
 
     @test_retry_and_log
     def test_enable_quality_report(self):

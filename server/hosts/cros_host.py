@@ -364,6 +364,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                        servo_constants.SERVO_PORT_ATTR,
                        servo_constants.SERVOD_DOCKER_ATTR,
                        servo_constants.SERVO_SERIAL_ATTR,
+                       servo_constants.SERVO_SETUP_ATTR,
                        servo_constants.SERVO_BOARD_ATTR,
                        servo_constants.SERVO_MODEL_ATTR)
         servo_args = {key: args_dict[key]

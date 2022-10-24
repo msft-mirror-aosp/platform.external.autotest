@@ -9,6 +9,7 @@ from __future__ import print_function
 from io import StringIO
 import json
 
+import datetime
 import logging
 import os
 import re
@@ -942,6 +943,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             raise error.TestError('Host %s does not have servo.' %
                                   self.hostname)
 
+        def _elapsed_time(start):
+            seconds = int(time.time() - start)
+            return str(datetime.timedelta(seconds=seconds))
+
         # Get the DUT board name from AFE.
         info = self.host_info_store.get()
         board = info.board
@@ -974,10 +979,11 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 local_tarball = os.path.join(dest, os.path.basename(fwurl))
                 logging.info('Downloading file from %s to %s.', fwurl,
                              local_tarball)
+                start = time.time()
                 ds.download_file(fwurl,
                                  local_tarball,
                                  timeout=self.DEVSERVER_DOWNLOAD_TIMEOUT)
-                logging.info('Done downloading')
+                logging.info('Downloaded in %s', _elapsed_time(start))
             except Exception as e:
                 raise error.TestError('Failed to download firmware package: %s'
                                       % str(e))
@@ -986,17 +992,19 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if install_ec:
             # Extract EC image from tarball
             logging.info('Extracting EC image.')
+            start = time.time()
             ec_image = self.servo.extract_ec_image(board, model, local_tarball,
                                                    corrupt_ec)
-            logging.info('Extracted: %s', ec_image)
+            logging.info('Extracted %s in %s', ec_image, _elapsed_time(start))
 
         bios_image = None
         if install_bios:
             # Extract BIOS image from tarball
             logging.info('Extracting BIOS image.')
+            start = time.time()
             bios_image = self.servo.extract_bios_image(board, model,
                                                        local_tarball)
-            logging.info('Extracted: %s', bios_image)
+            logging.info('Extracted %s in %s', bios_image, _elapsed_time(start))
 
         if not bios_image and not ec_image:
             raise error.TestError('No firmware installation was processed.')
@@ -1064,10 +1072,16 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 dest_bios_path = None
                 dest_ec_path = None
                 if ec_image:
+                    logging.info('Updating EC firmware via servo.')
+                    start = time.time()
                     dest_ec_path = self.servo.program_ec(ec_image, rw_only)
+                    logging.info('Updated in %s', _elapsed_time(start))
                 if bios_image:
+                    logging.info('Updating AP firmware via servo.')
+                    start = time.time()
                     dest_bios_path = self.servo.program_bios(
                             bios_image, rw_only)
+                    logging.info('Updated in %s', _elapsed_time(start))
                 if utils.host_is_in_lab_zone(self.hostname):
                     self._add_fw_version_label(build, rw_only)
                 image_bios_version, image_ec_version = self.get_version_from_image(

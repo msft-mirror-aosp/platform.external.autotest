@@ -616,8 +616,8 @@ class BaseServoHost(ssh_host.SSHHost):
             client = docker_utils.get_docker_client(timeout=timeout)
             container = client.containers.get(self.servod_container_name)
             try:
-                (exit_code,
-                 output) = container.exec_run("bash -c '%s'" % command)
+                (exit_code, output) = container.exec_run('bash -c "%s"' %
+                                            utils.sh_escape(command))
                 # b/217780680, Make this compatible with python3,
                 if isinstance(output, bytes):
                     output = output.decode(errors='replace')
@@ -625,12 +625,16 @@ class BaseServoHost(ssh_host.SSHHost):
                 logging.exception("Failed to run command %s", command)
                 for line in container.logs().split(b'\n'):
                     logging.error(line)
-                return utils.CmdResult(command=command,
-                                       stdout="",
-                                       exit_status=-1)
-            return utils.CmdResult(command=command,
-                                   stdout=output,
-                                   exit_status=exit_code)
+                exit_code = -1
+                output = ""
+            result = utils.CmdResult(command=command,
+                                     stdout=output,
+                                     exit_status=exit_code)
+            if not ignore_status and exit_code != 0:
+                raise error.AutoservRunError(
+                        "command execution error (%d): %r" %
+                        (exit_code, output), result)
+            return result
         elif self.is_localhost():
             if self._sudo_required:
                 run_args['command'] = 'sudo -n sh -c "%s"' % utils.sh_escape(

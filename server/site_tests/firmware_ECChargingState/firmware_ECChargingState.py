@@ -65,9 +65,9 @@ class firmware_ECChargingState(FirmwareTest):
 
     def check_ac_state(self, want_charging):
         """Check if AC is plugged."""
-        # Metaknight takes a worst case of ~65s to notice the charger, so retry
-        # 100 times with a 1 second delay.
-        for retry in range(100):
+        # Metaknight takes a worst case of ~120s to notice the charger, so retry
+        # for 200s instead.
+        for _ in range(50):
             ac_state = int(
                 self.ec.send_command_get_output("chgstate",
                                                 ["ac\\s*=\\s*(0|1)\\s*"])[0][1])
@@ -79,7 +79,7 @@ class firmware_ECChargingState(FirmwareTest):
                 "Expected ac state %s, got %s",
                 want_charging,
                 ac_state)
-            time.sleep(1)
+            time.sleep(4)
         raise error.TestFail("Failed to verify ac state.")
 
     def _retry_send_cmd(self, command, regex_list):

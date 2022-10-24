@@ -10,7 +10,8 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 from autotest_lib.server.cros.servo import servo
 
-MAX_TRIES=2
+MAX_EC_CLEANUP_TRIES=2
+MAX_EC_RESPONSE_TRIES=3
 
 
 class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
@@ -47,8 +48,8 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
             if not self.should_restore_fw:
                 return
 
+            self.servo.enable_main_servo_device()
             self.gsc.reboot()
-            self.switcher.mode_aware_reboot(reboot_type='cold')
 
             # Verify the EC is responsive before raising an error and going to
             # cleanup. Repair and cleanup don't recover corrupted EC firmware
@@ -65,7 +66,8 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
                 logging.info('chromeos-firmwareupdate --mode=recovery')
                 result = self._client.run('chromeos-firmwareupdate'
                                           ' --mode=recovery',
-                                          ignore_status=True)
+                                          ignore_status=True,
+                                          timeout=600)
                 if result.exit_status != 0:
                     logging.error('chromeos-firmwareupdate failed: %s',
                                   result.stdout.strip())
@@ -79,21 +81,14 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         """ Verify the EC is responsive."""
         # Try to reflash EC a couple of times to see if it's possible to recover
         # the device now.
-        count = MAX_TRIES
-        while True:
-            try:
-                if self.servo.get_ec_board():
-                    return
-            except servo.ConsoleError as e:
-                logging.error('EC console is unresponsive: %s', str(e))
-
-            if count == 0:
-                break
-
-            count -= 1
-            # In the last iteration, try with main servo device.
-            if count == 0:
-                self.servo.enable_main_servo_device()
+        for _ in range(MAX_EC_CLEANUP_TRIES):
+            # Try a few times to get response before resorting to reflash.
+            for _ in range(MAX_EC_RESPONSE_TRIES):
+                try:
+                    if self.servo.get_ec_board():
+                        return
+                except servo.ConsoleError as e:
+                    logging.error('EC console is unresponsive: %s', str(e))
 
             try:
                 self.cros_host.firmware_install(build=self.b_ver,

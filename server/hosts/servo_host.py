@@ -862,15 +862,18 @@ class ServoHost(base_servohost.BaseServoHost):
 
                 if not self.wait_for_init_servod_in_container(container):
                     logging.info(
-                            'Servod process is not up within the servod container after %s seconds.'
-                            % servo_constants.SERVOD_STARTUP_TIMEOUT)
+                            'Servod process is not up within the servod'
+                            ' container after %s seconds.',
+                            servo_constants.SERVOD_STARTUP_TIMEOUT)
                 else:
                     logging.info(
-                            'Servod process is up within the servod container after %s seconds.'
-                            % current_time)
+                            'Servod process is up within the servod container'
+                            ' after %s seconds.',
+                            current_time)
             else:
                 logging.info(
-                        "Servod container %s up and running without servod process.",
+                        'Servod container %s up and running without servod'
+                        ' process.',
                         self.servod_container_name)
 
         except docker.errors.ContainerError as e:
@@ -1329,29 +1332,13 @@ class ServoHost(base_servohost.BaseServoHost):
         res = self.run(cmd, stderr_tee=None, ignore_status=True)
         files = self._to_str(res.stdout.strip()).split()
         try:
-            if self.is_containerized_servod():
-                client = docker_utils.get_docker_client()
-                container = client.containers.get(self.servod_container_name)
-                for f in files:
-                    file_stream, stat = container.get_archive(f)
-                    tf = tempfile.NamedTemporaryFile(delete=False)
-                    for block in file_stream:
-                        tf.write(block)
-                    tf.close()
-                    pw_tar = tarfile.TarFile(tf.name)
-                    pw_tar.extractall(log_dir)
-                    os.remove(tf.name)
-            else:
-                self.get_file(files, log_dir, try_rsync=False)
+            self.get_file(files, log_dir, try_rsync=False)
 
             if not os.listdir(log_dir):
                 logging.info('No servod logs retrieved. Ignoring, and removing '
                              '%r again.', log_dir)
                 os.rmdir(log_dir)
                 return
-        except docker.errors.NotFound:
-            logging.info("Servod container %s not found no need to stop it.",
-                         self.hostname)
         except error.AutoservRunError as e:
             result = e.result_obj
             if result.exit_status != 0:
@@ -1406,6 +1393,46 @@ class ServoHost(base_servohost.BaseServoHost):
             local_files = list(set(local_files) - set(files) - set(compressed))
         # Lastly, extract MCU logs from the joint logs.
         self._extract_mcu_logs(log_dir)
+
+    def send_file(self, source, dest, delete_dest=False,
+                  preserve_symlinks=False, excludes=None):
+        if self.is_containerized_servod():
+            self.run(f'mkdir -p %s' % dest, ignore_status=True)
+            if isinstance(source, six.string_types):
+                source = [source]
+            client = docker_utils.get_docker_client()
+            container = client.containers.get(self.servod_container_name)
+            for f in source:
+                tf = tempfile.NamedTemporaryFile(delete=False)
+                with tarfile.open(tf.name, 'w') as tar:
+                    tar.add(f, arcname=os.path.basename(f))
+                container.put_archive(dest, open(tf.name, 'rb').read())
+                os.remove(tf.name)
+        else:
+            super(ServoHost, self).send_file(source, dest, delete_dest,
+                                             preserve_symlinks, excludes)
+
+    def get_file(self, source, dest, delete_dest=False, preserve_perm=True,
+                 preserve_symlinks=False, retry=True, safe_symlinks=False,
+                 try_rsync=True):
+        if self.is_containerized_servod():
+            if isinstance(source, six.string_types):
+                source = [source]
+            client = docker_utils.get_docker_client()
+            container = client.containers.get(self.servod_container_name)
+            for f in source:
+                file_stream, stat = container.get_archive(f)
+                tf = tempfile.NamedTemporaryFile(delete=False)
+                for block in file_stream:
+                    tf.write(block)
+                tf.close()
+                pw_tar = tarfile.TarFile(tf.name)
+                pw_tar.extractall(dest)
+                os.remove(tf.name)
+        else:
+            super(ServoHost, self).get_file(source, dest, delete_dest,
+                                            preserve_perm, preserve_symlinks,
+                                            retry, safe_symlinks, try_rsync)
 
     def _lock(self):
         """lock servohost by touching a file.

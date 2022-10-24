@@ -406,9 +406,6 @@ class BluetoothAdapterQuickTests(
             raise error.TestNAError('Test ' + test_name +
                                     ' does not support Floss')
 
-        if self.floss and self.llprivacy:
-            raise error.TestError('LL Privacy is not yet supported on Floss')
-
         # Every test_method should pass by default.
         self._expected_result = True
 
@@ -461,7 +458,10 @@ class BluetoothAdapterQuickTests(
 
         # Set ll privacy to false because default is false
         if self.llprivacy:
-            self.test_set_ll_privacy(False)
+            if not self.test_set_ll_privacy(False):
+                logging.error("Failed to reset ll privacy.")
+            else:
+                logging.info("Reset ll privacy to False.")
 
         self.bluetooth_facade.stop_discovery()
 

@@ -363,7 +363,9 @@ class bluetooth_AdapterLLPrivacyHealth(
         device = self.devices['BLE_MOUSE'][0]
         self.hid_reconnect_speed(device=device, device_type='BLE_MOUSE')
 
-    @test_wrapper('Auto Reconnect', devices={'BLE_MOUSE': 1})
+    @test_wrapper('Auto Reconnect',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def le_auto_reconnect(self):
         """LE reconnection loop by resetting HID and check reconnection"""
 
@@ -449,7 +451,8 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.test_set_device_privacy(device, False)
 
     @test_wrapper('Pair Remove Use RPA with Privacy Mode Test',
-                  devices={"BLE_MOUSE": 1})
+                  devices={"BLE_MOUSE": 1},
+                  supports_floss=True)
     def le_pair_remove_privacy(self):
         """Performs discovery test with mouse peripheral and pairing with
         RPA.
@@ -470,10 +473,12 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.test_set_device_privacy(device, False)
 
     @test_wrapper('Pair Remove Use IRK with Privacy Mode Test',
-                  devices={"BLE_MOUSE": 1})
+                  devices={"BLE_MOUSE": 1},
+                  supports_floss=False)
     def le_pair_remove_with_irk(self):
         """Performs discovery test with mouse peripheral which is in privacy
         mode, but not using LE advertising.
+        Floss is not supported because there is no event to indicate new irk.
         """
         device = self.devices['BLE_MOUSE'][0]
         self.test_set_device_privacy(device, True)
@@ -581,7 +586,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                  peer_required=True,
                  test_name=None,
                  flag='Quick Health',
-                 llprivacy=True):
+                 llprivacy=True,
+                 floss=False):
         """Run the package of Bluetooth LL privacy health tests. Currently,
         the tests are directly copied from other test packages, but with
         the LL privacy enabled.
@@ -603,7 +609,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                              use_btpeer=peer_required,
                              flag=flag,
                              args_dict=args_dict,
-                             llprivacy=llprivacy)
+                             llprivacy=llprivacy,
+                             floss=floss)
         self.ll_privacy_batch_run(num_iterations, test_name)
         # End and cleanup test package
         self.quick_test_cleanup()

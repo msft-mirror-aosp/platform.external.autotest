@@ -270,6 +270,7 @@ def charge_control_by_ectool(is_charge, ignore_status=True):
     for i in range(ECTOOL_CHARGECONTROL_RETRY_TIMES):
         if _charge_control_by_ectool(is_charge, ignore_status):
             return True
+        time.sleep(0.1)
 
     return False
 

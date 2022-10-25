@@ -27,6 +27,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.cros import constants
 from autotest_lib.client.cros.update_engine import dlc_util
 from autotest_lib.client.cros.update_engine import update_engine_event as uee
@@ -310,6 +311,19 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Add the payload properties file and stateful archive.
         filenames.append(filename + '.json')
         filenames.append(self._STATEFUL_ARCHIVE_NAME)
+
+        # Moblab still uses a devserver and requires staging payload artifacts.
+        # TODO(b/211055028): Remove once partner test environments match our
+        # lab.
+        if lsbrelease_utils.is_moblab():
+            logging.info('Staging artifacts on devserver for moblab')
+            ds_url, _ = tools.get_devserver_build_from_package_url(
+                    self._get_job_repo_url())
+            ds = dev_server.ImageServer(ds_url)
+            try:
+                ds.stage_artifacts(image=build_name, files=filenames, archive_url=archive_url)
+            except dev_server.DevServerException as e:
+                raise error.TestError('Failed to stage payload: %s' % e)
 
         url_pattern = '%s/static/%s'
         return ('/'.join([(url_pattern % (cache_server_url, build_name)), f])

@@ -32,17 +32,21 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     COMPARE_WORDS = None
     SORTED = True
     CMD_RETRY_COUNT = 5
-    TESTS = [
-        ['pinmux', 'pinmux(.*)>', COMPARE_LINES, not SORTED],
-        ['help', 'Known commands:(.*)HELP LIST.*>', COMPARE_WORDS, SORTED],
-        ['gpiocfg', 'gpiocfg(.*)>', COMPARE_LINES, not SORTED],
-    ]
+    COMMAND_INFO = {
+        'pinmux' : ['pinmux(.*)>', COMPARE_LINES, not SORTED],
+        'help' : ['Known commands:(.*)HELP LIST.*>', COMPARE_WORDS, SORTED],
+        'gpiocfg' : ['gpiocfg(.*)>', COMPARE_LINES, not SORTED],
+    }
+    SUPPORTED_COMMANDS = {
+        'cr50' : ['pinmux', 'help', 'gpiocfg'],
+        'ti50' : ['help']
+    }
     CCD_HOOK_WAIT = 2
     # Lists connecting the board property values to the labels.
     #   [ board property, match label, exclude label ]
     # exclude can be none if there is no label that shoud be excluded based on
     # the property.
-    BOARD_PROPERTIES = [
+    CR50_BOARD_PROPERTIES = [
             ['BOARD_PERIPH_CONFIG_SPI', 'sps', 'i2cs'],
             ['BOARD_PERIPH_CONFIG_I2C', 'i2cs', 'sps,sps_ds_resume'],
             ['BOARD_USE_PLT_RESET', 'plt_rst', 'sys_rst'],
@@ -64,10 +68,26 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
                     'rec_lid_a1,rec_lid_a9,sps'
             ],
     ]
-    GUC_BRANCH_STR = 'cr50_v1.9308_26_0.'
-    MP_BRANCH_STR = 'cr50_v2.94_mp'
-    PREPVT_BRANCH_STR = 'cr50_v3.94_pp'
-    TOT_STR = 'cr50_v2.0.'
+    BOARD_PROPERTIES = {
+        'cr50' : CR50_BOARD_PROPERTIES,
+        # Ti50 only supports the 'help' command which doesn't change based on
+        # board properties.
+        'ti50' : [],
+    }
+    CR50_GUC_BRANCH_STR = 'cr50_v1.9308_26_0.'
+    CR50_MP_BRANCH_STR = 'cr50_v2.94_mp'
+    CR50_PREPVT_BRANCH_STR = 'cr50_v3.94_pp'
+    CR50_TOT_STR = 'cr50_v2.0.'
+    TI50_COMMON = 'ti50_common'
+    VERSION_MAP = [
+        [CR50_GUC_BRANCH_STR , 'guc', 'tot,prepvt'],
+        [CR50_MP_BRANCH_STR, 'mp', 'tot,guc,prepvt'],
+        [CR50_PREPVT_BRANCH_STR, 'prepvt', 'tot,guc,mp'],
+        [CR50_TOT_STR, 'tot', ''],
+        # There's only one branch right now, so there aren't any differences to
+        # check for.
+        [TI50_COMMON, '', ''],
+    ]
     OPTIONAL_EXT = '_optional'
 
     def initialize(self, host, cmdline_args, full_args):
@@ -184,6 +204,13 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
             self.extra.append('%s-(%s)' % (cmd, ', '.join(extra)))
 
 
+    def update_expectations(self, include, exclude):
+        """Update exclude and include information"""
+        if include:
+            self.include.extend(include.split(','))
+        if exclude:
+            self.exclude.extend(exclude.split(','))
+
     def get_image_properties(self):
         """Save the board properties
 
@@ -192,39 +219,25 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         """
         self.include = []
         self.exclude = []
-        for prop, include, exclude in self.BOARD_PROPERTIES:
+        for prop, include, exclude in self.BOARD_PROPERTIES[self.gsc.NAME]:
             if self.gsc.uses_board_property(prop):
-                self.include.extend(include.split(','))
-                if exclude:
-                    self.exclude.extend(exclude.split(','))
+                self.update_expectations(include, exclude)
             else:
-                self.exclude.append(include)
+                self.update_expectations('', include)
         version = self.gsc.get_full_version()
+        for version_key, include, exclude in self.VERSION_MAP:
+            if version_key in version:
+                self.update_expectations(include, exclude)
+                break
+        else:
+            if self.is_tot_run:
+                self.update_expectations('tot', '')
+            else:
+                raise error.TestNAError('Unsupported branch %s', version)
         # Factory images end with 22. Expect guc attributes if the version
         # ends in 22.
-        if self.GUC_BRANCH_STR in version:
+        if self.CR50_GUC_BRANCH_STR in version:
             self._ext = '.guc'
-            self.include.append('guc')
-            self.exclude.append('tot')
-            self.exclude.append('prepvt')
-        elif self.is_tot_run or self.TOT_STR in version:
-            # TOT isn't that controlled. It may include prepvt, mp, or guc
-            # changes. Don't exclude any branches.
-            self.include.append('tot')
-        elif self.MP_BRANCH_STR in version:
-            self.include.append('mp')
-
-            self.exclude.append('prepvt')
-            self.exclude.append('guc')
-            self.exclude.append('tot')
-        elif self.PREPVT_BRANCH_STR in version:
-            self.include.append('prepvt')
-
-            self.exclude.append('mp')
-            self.exclude.append('guc')
-            self.exclude.append('tot')
-        else:
-            raise error.TestNAError('Unsupported branch %s', version)
         brdprop = self.gsc.get_board_properties()
         logging.info('brdprop: 0x%x', brdprop)
         logging.info('include: %s', ', '.join(self.include))
@@ -236,7 +249,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         err = []
         test_err = []
         self.get_image_properties()
-        for command, regexp, split_str, sort in self.TESTS:
+        for command in self.SUPPORTED_COMMANDS[self.gsc.NAME]:
+            regexp, split_str, sort = self.COMMAND_INFO[command]
             self.check_command(command, regexp, split_str, sort)
 
         if len(self.missing):

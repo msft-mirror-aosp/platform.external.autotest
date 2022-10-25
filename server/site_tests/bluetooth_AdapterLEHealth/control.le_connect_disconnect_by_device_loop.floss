@@ -14,7 +14,7 @@ TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'suite:bluetooth_floss, bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 PY_VERSION = 3
 
 DOC = """ Tests connection and disconnection by the device in a loop.

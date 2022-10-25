@@ -9,7 +9,7 @@ NAME = 'tast.fingerprint-cq'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:fingerprint-cq'
+ATTRIBUTES = 'suite:fingerprint-cq, suite:cft-nightly'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

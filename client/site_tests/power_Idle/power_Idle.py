@@ -68,7 +68,8 @@ class power_Idle(power_test.power_Test):
         extra_browser_args = ['--disable-sync']
         # b/228256145 to avoid powerd restart
         extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
-        with chrome.Chrome(extra_browser_args=extra_browser_args,
+        with chrome.Chrome(autotest_ext=True,
+                           extra_browser_args=extra_browser_args,
                            arc_mode=self._arc_mode) as self.cr:
             self.is_first_test = True
 

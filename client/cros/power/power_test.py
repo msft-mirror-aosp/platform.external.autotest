@@ -330,30 +330,35 @@ class power_Test(test.test):
 
         self.publish_keyvals()
 
-        # publish power values
-        for key, values in self.keyvals.items():
-            if key.endswith('pwr_avg'):
-                self.output_perf_value(description=key, value=values, units='W',
-                        higher_is_better=False, graph='power')
-
-        # publish temperature values
-        for key, values in self.keyvals.items():
-            if key.endswith('temp_avg'):
-                self.output_perf_value(description=key, value=values, units='C',
-                        higher_is_better=False, graph='temperature')
-
-        # publish fps values
-        for key, values in self.keyvals.items():
-            if key.endswith('fps_avg'):
-                self.output_perf_value(description=key, value=values,
-                        units='fps', higher_is_better=True, graph='fps')
-
         # publish battery minutes values
         if 'minutes_battery_life' in self.keyvals:
             self.output_perf_value(description='minutes_battery_life',
                                    value=self.keyvals['minutes_battery_life'],
                                    units='minute',
                                    higher_is_better=True)
+
+        # Avoid polluting the keyvals with non-core domains.
+        core_keyvals = power_utils.get_core_keyvals(self.keyvals)
+        for key, values in core_keyvals.items():
+
+            # publish power values
+            if key.endswith('pwr_avg'):
+                self.output_perf_value(description=key, value=values, units='W',
+                        higher_is_better=False, graph='power')
+            # publish temperature values
+            if key.endswith('temp_avg'):
+                self.output_perf_value(description=key, value=values, units='C',
+                        higher_is_better=False, graph='temperature')
+            # publish fps values
+            if key.endswith('fps_avg'):
+                self.output_perf_value(description=key, value=values,
+                        units='fps', higher_is_better=True, graph='fps')
+            # publish CPU activity values
+            if re.match(r'percent_[cg]pu(idle|pkg).*_R?C0(_C1)?_time', key):
+                self.output_perf_value(description=key,
+                                       value=values,
+                                       units='percent',
+                                       higher_is_better=False)
 
         # include KeyvalLogger in dashboard
         self._meas_logs.append(self._keyvallogger)

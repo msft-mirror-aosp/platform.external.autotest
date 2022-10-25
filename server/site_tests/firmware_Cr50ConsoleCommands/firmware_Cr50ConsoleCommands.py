@@ -125,7 +125,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     def get_expected_output(self, cmd, split_str):
         """Return the expected cr50 console output"""
         file_dir = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(file_dir, cmd + self._ext)
+        file_name = self.gsc.NAME + '.' + cmd + self._ext
+        path = os.path.join(file_dir, file_name)
         if not os.path.isfile(path):
             path = os.path.join(file_dir, cmd)
         if not os.path.isfile(path):

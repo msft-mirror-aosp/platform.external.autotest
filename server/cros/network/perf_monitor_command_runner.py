@@ -143,7 +143,7 @@ class PerfMonitorCommandRunner(object):
         IcmpMsg: InType0 InType3 InType8 OutType0 OutType3 OutType8
         IcmpMsg: 447 69 14 14 57 447
         Tcp: RtoAlgorithm RtoMin RtoMax MaxConn ActiveOpens PassiveOpens AttemptFails EstabResets CurrEstab InSegs OutSegs RetransSegs InErrs OutRsts InCsumErrors
-        autoserv| Tcp: 1 200 120000 -1 1097 1776 12 3 41 1613794 3636485 1 0 25 0
+        Tcp: 1 200 120000 -1 1097 1776 12 3 41 1613794 3636485 1 0 25 0
         Udp: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti
         Udp: 1507733 121 0 1681318 0 33 0 0
         UdpLite: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti

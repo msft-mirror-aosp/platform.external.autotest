@@ -19,7 +19,7 @@ class PerfMonitorGraph(object):
         """
         self._create_directory(r'graphs')
         graphdata = {}
-        if len(perf_data.items()) > 0:
+        if perf_data:
             for cpu in list(perf_data.values())[0].mpstat_data.keys():
                 graphdata['timestamp'] = []
                 graphdata[f'CPU {cpu}'] = []
@@ -49,8 +49,8 @@ class PerfMonitorGraph(object):
             graphdata[label] = []
 
         for timestamp, perf_object in perf_data.items():
-            for count, values in enumerate(perf_object.softnet_data.values()):
-                if count == 0:
+            for cpu_count, values in enumerate(perf_object.softnet_data.values()):
+                if cpu_count == 0:
                     graphdata['timestamp'].append(timestamp)
                     for label in labels:
                         graphdata[label].append(values[label])
@@ -59,12 +59,9 @@ class PerfMonitorGraph(object):
                     for label in labels:
                         graphdata[label][-1] += values[label]
 
-        for key in graphdata.keys():
-            if key == 'timestamp':
-                continue
-            self._create_graph_plot(f'{key} count', f'{key} count',
-                    f'graphs/{key}_graph.png',
-                    {k: graphdata[k] for k in ('timestamp', key)})
+
+        self._create_graph_plot('Softnet Metrics', 'count',
+            'graphs/softnet_graph.png', graphdata)
 
     def _graph_snmp_ip_data(self, perf_data):
         """
@@ -75,9 +72,9 @@ class PerfMonitorGraph(object):
         PerfMonitorData object.
         """
         graphdata = {}
-        labels = ['InReceives', 'InAddrErrors', 'InDiscards',
-                  'InDelivers', 'OutRequests', 'OutDiscards',
-                  'InUnknownProtos', 'OutNoRoutes']
+        labels = ['InAddrErrors', 'InDiscards',
+                  'OutDiscards', 'InUnknownProtos',
+                  'OutNoRoutes']
         graphdata['timestamp'] = []
         for label in labels:
             graphdata[label] = []
@@ -90,6 +87,67 @@ class PerfMonitorGraph(object):
         self._create_graph_plot('IP Metrics', 'count',
                 'graphs/snmp/ip_graph.png', graphdata)
 
+    def _graph_snmp_delivered_data(self, perf_data):
+        """
+        Graph the ratio of Delivered to Received packets by time over the
+        polling period and save to graphs/snmp.
+
+        @param perf_data the dictionary mapping from timestamp to
+        PerfMonitorData object.
+        """
+        graphdata = {}
+        graphdata['timestamp'] = []
+        graphdata['InDelivers/InReceives'] = []
+
+        for timestamp, perf_object in perf_data.items():
+            graphdata['timestamp'].append(timestamp)
+            if perf_object.snmp_data['Ip']['InReceives'] == 0:
+                segmentation_ratio = 1
+            else:
+                segmentation_ratio = perf_object.snmp_data['Ip']['InDelivers'] / perf_object.snmp_data['Ip']['InReceives']
+            graphdata['InDelivers/InReceives'].append(segmentation_ratio)
+
+        self._create_graph_plot('InDelivers to InReceives ratio', 'count',
+                'graphs/snmp/delivers_graph.png', graphdata)
+
+    def _graph_snmp_requests_data(self, perf_data):
+        """
+        Graph the counts of SNMP IP OutRequests data by time over the
+        polling period and save to graphs/snmp.
+
+        @param perf_data the dictionary mapping from timestamp to
+        PerfMonitorData object.
+        """
+        graphdata = {}
+        graphdata['timestamp'] = []
+        graphdata['OutRequests'] = []
+
+        for timestamp, perf_object in perf_data.items():
+            graphdata['timestamp'].append(timestamp)
+            graphdata['OutRequests'].append(perf_object.snmp_data['Ip']['OutRequests'])
+
+        self._create_graph_plot('Request Metrics', 'count',
+                'graphs/snmp/requests_graph.png', graphdata)
+
+    def _graph_snmp_datagrams_data(self, perf_data):
+        """
+        Graph the counts of SNMP Udp OutDatagrams data by time over the
+        polling period and save to graphs/snmp.
+
+        @param perf_data the dictionary mapping from timestamp to
+        PerfMonitorData object.
+        """
+        graphdata = {}
+        graphdata['timestamp'] = []
+        graphdata['OutDatagrams'] = []
+
+        for timestamp, perf_object in perf_data.items():
+            graphdata['timestamp'].append(timestamp)
+            graphdata['OutDatagrams'].append(perf_object.snmp_data['Udp']['OutDatagrams'])
+
+        self._create_graph_plot('Datagrams Metrics', 'count',
+                'graphs/snmp/datagrams_graph.png', graphdata)
+
     def _graph_snmp_udp_data(self, perf_data):
         """
         Graph the counts of SNMP UDP data by time over the polling period
@@ -99,7 +157,7 @@ class PerfMonitorGraph(object):
         PerfMonitorData object.
         """
         graphdata = {}
-        labels = ['InErrors', 'OutDatagrams', 'RcvbufErrors', 'SndbufErrors']
+        labels = ['InErrors', 'RcvbufErrors', 'SndbufErrors']
         graphdata['timestamp'] = []
         for label in labels:
             graphdata[label] = []
@@ -112,16 +170,16 @@ class PerfMonitorGraph(object):
         self._create_graph_plot('UDP Metrics', 'count',
                 'graphs/snmp/udp_graph.png', graphdata)
 
-    def _graph_snmp_tcp_data(self, perf_data):
+    def _graph_snmp_seg_data(self, perf_data):
         """
-        Graph the counts of SNMP TCP data by time over the polling period
-        and save to graphs/snmp.
+        Graph the counts of SNMP InSegs and OutSegs data by time over the
+        polling period and save to graphs/snmp.
 
         @param perf_data the dictionary mapping from timestamp to
         PerfMonitorData object.
         """
         graphdata = {}
-        labels = ['RtoMin', 'RtoMax', 'InSegs', 'OutSegs']
+        labels = ['InSegs', 'OutSegs']
         graphdata['timestamp'] = []
         for label in labels:
             graphdata[label] = []
@@ -131,8 +189,31 @@ class PerfMonitorGraph(object):
             for label in labels:
                 graphdata[label].append(perf_object.snmp_data['Tcp'][label])
 
-        self._create_graph_plot('TCP Metrics', 'count',
-                'graphs/snmp/tcp_graph.png', graphdata)
+        self._create_graph_plot('Segmentation Metrics', 'count',
+                'graphs/snmp/segmentation_graph.png', graphdata)
+
+    def _graph_snmp_rto_data(self, perf_data):
+        """
+        Graph the counts of SNMP RtoMin and RtoMax data by time over the
+        polling period and save to graphs/snmp.
+
+        @param perf_data the dictionary mapping from timestamp to
+        PerfMonitorData object.
+        """
+        graphdata = {}
+        labels = ['RtoMin', 'RtoMax']
+        graphdata['timestamp'] = []
+        for label in labels:
+            graphdata[label] = []
+
+        for timestamp, perf_object in perf_data.items():
+            graphdata['timestamp'].append(timestamp)
+            for label in labels:
+                graphdata[label].append(perf_object.snmp_data['Tcp'][label])
+
+        self._create_graph_plot('Rto Metrics', 'count',
+                'graphs/snmp/rto_graph.png', graphdata)
+
 
     def graph_snmp_data(self, perf_data):
         """
@@ -143,8 +224,12 @@ class PerfMonitorGraph(object):
         """
         self._create_directory(r'graphs/snmp')
         self._graph_snmp_ip_data(perf_data)
+        self._graph_snmp_delivered_data(perf_data)
+        self._graph_snmp_requests_data(perf_data)
         self._graph_snmp_udp_data(perf_data)
-        self._graph_snmp_tcp_data(perf_data)
+        self._graph_snmp_datagrams_data(perf_data)
+        self._graph_snmp_seg_data(perf_data)
+        self._graph_snmp_rto_data(perf_data)
 
     def _graph_rx_error_data(self, perf_data):
         """

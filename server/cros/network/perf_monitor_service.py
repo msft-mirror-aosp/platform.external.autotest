@@ -54,7 +54,9 @@ class PerfMonitorService(object):
         # Gather the initial values
         initial_softnet_data = command_runner.get_softnet_data(self.host)
         initial_snmp_data = command_runner.get_snmp_data(self.host)
+        previous_snmp_data = initial_snmp_data
         initial_wireless_interface_data = command_runner.get_wireless_interface_data(self.host)
+        ratio_labels = ['InReceives', 'InDelivers']
 
         while self.monitoring_throughput:
             #exactly SECONDS_BETWEEN_ITERATION seconds between each function call
@@ -66,8 +68,8 @@ class PerfMonitorService(object):
             self.perf_monitoring_data[timestamp_date].mpstat_data = (
                 command_runner.get_mpstat_data(self.host))
 
-            # Subtract the initial values from the new values the values begin
-            # at 0 and increase throughout the test.
+            # Subtract the initial values from the new values so the values
+            # begin at 0 and increase throughout the test.
             softnet_data = command_runner.get_softnet_data(self.host)
             for cpu in softnet_data.keys():
                 for key in softnet_data[cpu].keys():
@@ -77,8 +79,13 @@ class PerfMonitorService(object):
             snmp_data = command_runner.get_snmp_data(self.host)
             for data_id in snmp_data.keys():
                 for key in snmp_data[data_id].keys():
-                    snmp_data[data_id][key] = (snmp_data[data_id][key] -
-                                        initial_snmp_data[data_id].get(key, 0))
+                    if key in ratio_labels:
+                        previous_value = previous_snmp_data.get(key, 0)
+                        previous_snmp_data[key] = snmp_data[data_id][key]
+                        snmp_data[data_id][key] = (snmp_data[data_id][key] - previous_value)
+                    else:
+                        snmp_data[data_id][key] = (snmp_data[data_id][key] -
+                                            initial_snmp_data[data_id].get(key, 0))
             self.perf_monitoring_data[timestamp_date].snmp_data = snmp_data
             wireless_interface_data = command_runner.get_wireless_interface_data(self.host)
             for label in wireless_interface_data.keys():

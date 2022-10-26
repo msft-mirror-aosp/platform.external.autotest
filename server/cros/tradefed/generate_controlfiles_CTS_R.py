@@ -325,6 +325,8 @@ CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
 ]
 
+CONFIG['SHARD_COUNT'] = {'CtsDeqpTestCases': 10}
+
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [
         'CtsAppSecurityHostTestCases',
@@ -450,17 +452,17 @@ R_QUAL_AND_REGRESSION_SUITES = R_QUAL_SUITES + ['suite:arc-cts']
 DEQP_SUITES = ['suite:arc-cts-deqp', 'suite:graphics_per-week']
 
 CONFIG['EXTRA_MODULES'] = {
-    'CtsDeqpTestCases': {
-        'CtsDeqpTestCases.dEQP-EGL': R_QUAL_SUITES + DEQP_SUITES,
-        'CtsDeqpTestCases.dEQP-GLES2': R_QUAL_SUITES + DEQP_SUITES,
-        'CtsDeqpTestCases.dEQP-GLES3': R_QUAL_SUITES + DEQP_SUITES,
-        'CtsDeqpTestCases.dEQP-GLES31': R_QUAL_SUITES + DEQP_SUITES,
-        'CtsDeqpTestCases.dEQP-VK': R_QUAL_SUITES + DEQP_SUITES,
-    },
-    'CtsMediaTestCases': {
-        'CtsMediaTestCases.audio': R_QUAL_AND_REGRESSION_SUITES,
-        'CtsMediaTestCases.video': R_QUAL_AND_REGRESSION_SUITES,
-    },
+        'CtsDeqpTestCases': {
+                'CtsDeqpTestCases.dEQP-EGL': DEQP_SUITES,
+                'CtsDeqpTestCases.dEQP-GLES2': DEQP_SUITES,
+                'CtsDeqpTestCases.dEQP-GLES3': DEQP_SUITES,
+                'CtsDeqpTestCases.dEQP-GLES31': DEQP_SUITES,
+                'CtsDeqpTestCases.dEQP-VK': DEQP_SUITES,
+        },
+        'CtsMediaTestCases': {
+                'CtsMediaTestCases.audio': R_QUAL_AND_REGRESSION_SUITES,
+                'CtsMediaTestCases.video': R_QUAL_AND_REGRESSION_SUITES,
+        },
 }
 
 # In addition to EXTRA_MODULES, these modules do require separate control files

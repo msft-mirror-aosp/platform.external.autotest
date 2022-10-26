@@ -1669,7 +1669,9 @@ class TradefedTest(test.test):
                 # when the commandline pattern included '*', and retry run for
                 # them wrongly declares all tests passed. This is misleading.
                 # Rather, we give up the retry and report the result as FAIL.
-                if not all_done and '*' in ''.join(run_template):
+                # TODO(b/243725038) Ditto for sharding cases.
+                if not all_done and ('*' in ''.join(run_template)
+                                     or '--shard-count' in run_template):
                     break
 
         if session_id == None:

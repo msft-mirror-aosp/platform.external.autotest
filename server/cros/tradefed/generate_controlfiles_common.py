@@ -253,7 +253,8 @@ def get_extension(module,
                   led_provision=None,
                   camera_facing=None,
                   hardware_suite=False,
-                  abi_bits=None):
+                  abi_bits=None,
+                  shard=(0, 1)):
     """Defines a unique string.
 
     Notice we chose module revision first, then abi, as the module revision
@@ -268,6 +269,7 @@ def get_extension(module,
                           for specific camera facing or not.
     @param abi_bits: 32 or 64 or None indicate the bitwidth for the specific
                      abi to run.
+    @param shard: tuple of intergers representing the shard index.
     @return string: unique string for specific tests. If public=True then the
                     string is "<abi>.<module>", otherwise, the unique string is
                     "internal.<abi>.<module>" for internal. Note that if abi is empty,
@@ -291,6 +293,8 @@ def get_extension(module,
         ext_parts += ['ctshardware']
     if not CONFIG.get('SINGLE_CONTROL_FILE') and abi and abi_bits:
         ext_parts += [str(abi_bits)]
+    if shard != (0, 1):
+        ext_parts += ['shard_%d_%d' % shard]
     return '.'.join(ext_parts)
 
 
@@ -313,6 +317,7 @@ def get_controlfile_name(module,
                          led_provision=None,
                          camera_facing=None,
                          abi_bits=None,
+                         shard=(0, 1),
                          hardware_suite=False):
     """Defines the control file name.
 
@@ -326,14 +331,15 @@ def get_controlfile_name(module,
                           light or not.
     @param abi_bits: 32 or 64 or None indicate the bitwidth for the specific
                      abi to run.
+    @param shard: tuple of integers representing the shard index.
     @return string: control file for specific tests. If public=True or
                     module=all, then the name will be "control.<abi>.<module>",
                     otherwise, the name will be
                     "control.<revision>.<abi>.<module>".
     """
     return 'control.%s' % get_extension(module, abi, revision, is_public,
-                                        led_provision, camera_facing, hardware_suite,
-                                        abi_bits)
+                                        led_provision, camera_facing,
+                                        hardware_suite, abi_bits, shard)
 
 
 def get_sync_count(_modules, _abi, _is_public):
@@ -690,6 +696,7 @@ def _get_special_command_line(modules, _is_public):
 
 def _format_modules_cmd(is_public,
                         abi_to_run,
+                        shard=(0, 1),
                         modules=None,
                         retry=False,
                         whole_module_set=None,
@@ -758,6 +765,13 @@ def _format_modules_cmd(is_public,
                 for module in sorted(whole_module_set - set(modules)):
                     cmd += ['--exclude-filter', module]
 
+        if shard != (0, 1):
+            cmd += [
+                    '--shard-index',
+                    str(shard[0]), '--shard-count',
+                    str(shard[1])
+            ]
+
         # For runs create a logcat file for each individual failure.
         # Not needed on moblab, nobody is going to look at them.
         if (not modules.intersection(CONFIG['DISABLE_LOGCAT_ON_FAILURE']) and
@@ -789,6 +803,7 @@ def get_run_template(modules,
                      is_public,
                      retry=False,
                      abi_to_run=None,
+                     shard=(0, 1),
                      whole_module_set=None,
                      is_hardware=False):
     """Command to run the modules specified by a control file."""
@@ -801,6 +816,7 @@ def get_run_template(modules,
     if no_intersection or (all_present and not collect_present):
         return _format_modules_cmd(is_public,
                                    abi_to_run,
+                                   shard,
                                    modules,
                                    retry=retry,
                                    whole_module_set=whole_module_set,
@@ -847,8 +863,8 @@ def is_in_vm_rule(module, rule):
 
 # Camera modules are static
 def get_camera_modules():
-   """Gets a list of modules for arc-cts-camera-dut."""
-   return CONFIG.get('CAMERA_MODULES', [])
+    """Gets a list of modules for arc-cts-camera-dut."""
+    return CONFIG.get('CAMERA_MODULES', [])
 
 
 def is_vm_modules(module):
@@ -952,6 +968,7 @@ def get_controlfile_content(combined,
                             suites=None,
                             source_type=None,
                             abi_bits=None,
+                            shard=(0, 1),
                             led_provision=None,
                             camera_facing=None,
                             hardware_suite=False,
@@ -967,7 +984,8 @@ def get_controlfile_content(combined,
     # We tag results with full revision now to get result directories containing
     # the revision. This fits stainless/ better.
     tag = '%s' % get_extension(combined, abi, revision, is_public,
-                               led_provision, camera_facing, hardware_suite, abi_bits)
+                               led_provision, camera_facing, hardware_suite,
+                               abi_bits, shard)
     # For test_that the NAME should be the same as for the control file name.
     # We could try some trickery here to get shorter extensions for a default
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
@@ -1027,7 +1045,8 @@ def get_controlfile_content(combined,
             uri=uri,
             servo_support_needed=servo_support_needed(modules, is_public),
             wifi_info_needed=wifi_info_needed(modules, is_public),
-            has_precondition_escape=has_precondition_escape(modules, is_public),
+            has_precondition_escape=has_precondition_escape(
+                    modules, is_public),
             max_retries=get_max_retries(modules, abi, suites, is_public),
             timeout=calculate_timeout(modules, suites),
             run_template=get_run_template(modules,
@@ -1035,6 +1054,7 @@ def get_controlfile_content(combined,
                                           abi_to_run=CONFIG.get(
                                                   'REPRESENTATIVE_ABI',
                                                   {}).get(abi, abi_to_run),
+                                          shard=shard,
                                           whole_module_set=whole_module_set,
                                           is_hardware=hardware_suite),
             retry_template=get_retry_template(modules, is_public),
@@ -1296,26 +1316,34 @@ def write_controlfile(name,
     else:
         abi_bits_list.append((abi, None))
 
+    shard_count_map = CONFIG.get(
+            'PUBLIC_SHARD_COUNT' if is_public else 'SHARD_COUNT', dict())
+    shard_count = max(shard_count_map.get(m, 1) for m in modules)
+
     for abi, abi_bits in abi_bits_list:
-        filename = get_controlfile_name(name,
-                                        abi,
-                                        revision,
-                                        is_public,
-                                        hardware_suite=hardware_suite,
-                                        abi_bits=abi_bits)
-        content = get_controlfile_content(name,
-                                          modules,
-                                          abi,
-                                          revision,
-                                          build,
-                                          uri,
-                                          suites,
-                                          source_type,
-                                          hardware_suite=hardware_suite,
-                                          whole_module_set=whole_module_set,
-                                          abi_bits=abi_bits)
-        with open(filename, 'w') as f:
-            f.write(content)
+        for shard_index in range(shard_count):
+            filename = get_controlfile_name(name,
+                                            abi,
+                                            revision,
+                                            is_public,
+                                            hardware_suite=hardware_suite,
+                                            abi_bits=abi_bits,
+                                            shard=(shard_index, shard_count))
+            content = get_controlfile_content(
+                    name,
+                    modules,
+                    abi,
+                    revision,
+                    build,
+                    uri,
+                    suites,
+                    source_type,
+                    hardware_suite=hardware_suite,
+                    whole_module_set=whole_module_set,
+                    abi_bits=abi_bits,
+                    shard=(shard_index, shard_count))
+            with open(filename, 'w') as f:
+                f.write(content)
 
 
 def write_moblab_controlfiles(modules, abi, revision, build, uri):

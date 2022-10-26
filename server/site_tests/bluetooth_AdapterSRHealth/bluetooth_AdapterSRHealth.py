@@ -518,8 +518,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         start_time = self.bluetooth_facade.get_device_utc_time()
 
         # Enable BQR
-        self.enable_disable_quality_report(enable=True)
-        self.enable_disable_quality_debug_log(enable=True)
+        self.qr_enable_quality_report()
         self.dut_btmon_log_path = self.start_new_btmon()
 
         try:
@@ -565,13 +564,12 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
             time.sleep(QR_EVENT_PERIOD * 2)
             self.test_send_log()
             self.check_qr_event_log(num_devices=len(devices))
-            self.enable_disable_quality_debug_log(enable=False)
-            self.enable_disable_quality_report(enable=False)
         finally:
             for device in devices:
                 if device.device_type == 'BLUETOOTH_AUDIO':
                     self.cleanup_bluetooth_audio(device, test_profile)
                 self.test_remove_pairing(device.address)
+            self.qr_disable_quality_report()
 
     def _sr_suspend_delay(self, devices, enable_BQR):
         """Suspend with a delay to check the health.
@@ -583,8 +581,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
         # Enable BQR
         if enable_BQR:
-            self.enable_disable_quality_report(enable=True)
-            self.enable_disable_quality_debug_log(enable=True)
+            self.qr_enable_quality_report()
 
         try:
             # Connecting to all devices
@@ -618,10 +615,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                                       test_start_time=start_time)
 
         finally:
-            # Disable BQR
+            # Disable BQR if it is enabled.
             if enable_BQR:
-                self.enable_disable_quality_debug_log(enable=False)
-                self.enable_disable_quality_report(enable=False)
+                self.qr_disable_quality_report()
 
             for device in devices:
                 if device.device_type == 'BLUETOOTH_AUDIO':

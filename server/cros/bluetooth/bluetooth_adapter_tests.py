@@ -1520,12 +1520,10 @@ class BluetoothAdapterTests(test.test):
         self.bluetooth_facade.set_quality_debug_log(bool(enable))
 
 
-    def enable_disable_quality_report(self, enable):
-        """Enable or disable the Bluetooth quality debug
-        @param enable: True to enable the quality report
-                       False to disable the quality report.
-        """
-        self.bluetooth_facade.set_quality_report(enable)
+    @test_retry_and_log
+    def test_enable_quality_report_and_restart_bluetoothd(self):
+        """Test enables bluetooth quality report and restarts bluetoothd."""
+        self.bluetooth_facade.set_quality_report(True)
 
         # The bluetoothd assumes that an experimental feature can only be
         # considered valid when the bluetoothd starts with the feature
@@ -1542,12 +1540,15 @@ class BluetoothAdapterTests(test.test):
         #       signals or export objects, D-Bus connections must be attached
         #       to a main loop by passing mainloop=... to the constructor or
         #       calling dbus.set_default_main_loop(...)
-        if enable:
-            self.restart_services(['bluetoothd',])
+        self.restart_services(['bluetoothd',])
+        return True
 
     @test_retry_and_log
     def test_enable_quality_report(self):
-        """Test that enables the bluetooth quality report."""
+        """Test that enables the bluetooth quality report.
+
+        This test is used when there is no need to restart bluetoothd.
+        """
         self.bluetooth_facade.set_quality_report(True)
         return True
 

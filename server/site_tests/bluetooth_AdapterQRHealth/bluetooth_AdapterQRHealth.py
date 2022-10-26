@@ -57,51 +57,47 @@ class bluetooth_AdapterQRHealth(BluetoothAdapterQuickTests,
 
         time.sleep(3)
 
-        # The enable_disable_quality_report() method will restart
-        # bluetoothd. Hence, this has to be executed before pairing.
-        # Refer to enable_disable_quality_report() about details.
-        # This has to be done for all test_method().
-        self.enable_disable_quality_report(enable=True)
-        self.enable_disable_quality_debug_log(enable=True)
+        # The qr_enable_quality_report() will restart bluetoothd. Hence, this
+        # has to be executed before pairing.
+        self.qr_enable_quality_report()
 
-        self.test_bluetoothd_running()
+        try:
+            for device in devices:
+                if device.device_type == 'BLUETOOTH_AUDIO':
+                    self.initialize_bluetooth_audio(device, test_profile)
 
-        for device in devices:
-            if device.device_type == 'BLUETOOTH_AUDIO':
-                self.initialize_bluetooth_audio(device, test_profile)
+                self.test_discover_device(device.address)
+                self.test_pairing(device.address, device.pin, trusted=True)
+                self.test_connection_by_adapter(device.address)
+                time.sleep(2)
 
-            self.test_discover_device(device.address)
-            self.test_pairing(device.address, device.pin, trusted=True)
-            self.test_connection_by_adapter(device.address)
-            time.sleep(2)
+            if logging_and_check:
+                self.dut_btmon_log_path = self.start_new_btmon()
 
-        if logging_and_check:
-            self.dut_btmon_log_path = self.start_new_btmon()
+            # The qr_disabled_a2dp() test_method calls
+            # the self.test_disable_quality_report().
+            test_method()
 
-        # The qr_disabled_a2dp() test_method calls
-        # self.enable_disable_quality_report(enable=False).
-        test_method()
+            if logging_and_check:
+                self.test_send_log()
+                self.check_qr_event_log(num_devices=num_devices)
 
-        if logging_and_check:
-            self.test_send_log()
-            self.check_qr_event_log(num_devices=num_devices)
+        finally:
+            # Disable the quality report and the quality debug log
+            # unconditionally for all test_method().
+            # The qr_disabled_a2dp() test_method will try to disable the quality
+            # report twice in this way. This is done on purpose to make enabling
+            # and disabling BQR related functions clean and symmetric.
+            # Also note that the kernel will only disable the BQR feature while
+            # it is enabled. The kernel will not disable the BQR feature while
+            # it is already disabled.
+            self.qr_disable_quality_report()
 
-        # Disable the quality report and the quality debug log unconditionally
-        # for all test_method().
-        # The qr_disabled_a2dp() test_method will try to disable the quality
-        # report twice in this way. This is done on purpose to make enabling
-        # and disabling BQR related functions clean and symmetric.
-        # Also note that the kernel will only disable the BQR feature while
-        # it is enabled. The kernel will not disable the BQR feature while
-        # it is already disabled.
-        self.enable_disable_quality_report(enable=False)
-        self.enable_disable_quality_debug_log(enable=False)
+            for device in devices:
+                self.test_disconnection_by_adapter(device.address)
 
-        for device in devices:
-            self.test_disconnection_by_adapter(device.address)
-
-            if device.device_type == 'BLUETOOTH_AUDIO':
-                self.cleanup_bluetooth_audio(device, test_profile)
+                if device.device_type == 'BLUETOOTH_AUDIO':
+                    self.cleanup_bluetooth_audio(device, test_profile)
 
     # Remove flags=['Quick Health'] when this test is migrated to stable suite.
     @test_wrapper('Quality Report A2DP test',

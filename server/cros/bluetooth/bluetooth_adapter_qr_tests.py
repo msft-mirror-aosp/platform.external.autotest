@@ -580,13 +580,25 @@ class BluetoothAdapterQRTests(BluetoothAdapterHIDReportTests,
         # pairing and connection.
         # We need to disable the quality report and keep the quality debug log
         # enabled here for the test to verify that no BQR events are received.
-        self.enable_disable_quality_report(enable=False)
+        self.test_disable_quality_report()
         time.sleep(3)
 
         self.dut_btmon_log_path = self.start_new_btmon()
         self.test_a2dp_sinewaves(device, test_profile, duration=None)
         self.test_send_log()
         self.test_no_receive_qr_event_log()
+
+    def qr_enable_quality_report(self):
+        """A test sequence that enables the quality report."""
+        self.test_enable_quality_report_and_restart_bluetoothd()
+        # Make sure bluetoothd is running before setting quality debug log.
+        self.test_bluetoothd_running_by_polling()
+        self.enable_disable_quality_debug_log(enable=True)
+
+    def qr_disable_quality_report(self):
+        """A test sequence that disables the quality report."""
+        self.test_disable_quality_report()
+        self.enable_disable_quality_debug_log(enable=False)
 
     def qr_a2dp_cl_keyboard(self, audio_device, keyboard_device, test_profile):
         """Checking if quality event works fine with multiple devices.

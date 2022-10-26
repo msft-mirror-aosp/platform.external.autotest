@@ -8,7 +8,6 @@ import datetime
 import json
 import logging
 import os
-import shutil
 import socket
 import tempfile
 from collections import OrderedDict
@@ -350,8 +349,6 @@ class tast(test.test):
         self._log_version()
         if not self._f20_container:
             self._find_devservers()
-
-        self._ensure_bundles()
 
         # Shortcut if no test belongs to the specified test_exprs.
         list_test_exception = None
@@ -830,43 +827,6 @@ class tast(test.test):
         except error.CmdTimeoutError as e:
             raise error.TestFail('Got timeout while running tast: %s' % str(e))
 
-    def _ensure_bundles(self):
-        """Runs the tast command to ensure all test bundles are available.
-
-        If private test bundles are available, they are downloaded from cloud
-        storage and installed to the DUT. Otherwise it is no-nop.
-
-        Note that "tast list" also downloads private test bundles if they are
-        missing. Nevertheless we attempt to download them in advance because
-        "tast list" cannot emit detailed logs due to technical limitations and
-        often make it difficult to debug issues related to private test bundle
-        installation.
-        """
-        logging.info('Downloading private test bundles (if any)')
-        temp_dir = tempfile.mkdtemp()
-        try:
-            args = ['-resultsdir=' + temp_dir] + self._get_cloud_storage_info()
-            for role, dut in sorted(self._companion_duts.items()):
-                args.append('-companiondut=%s:%s' % (role, dut))
-
-            for var in self._varslist:
-                args.append('-var=%s' % var)
-
-            for file_name in self._test_filter_files:
-                args.append('-testfilterfile=%s' % file_name)
-
-            # Start "tast run" with an attribute expression matching no test
-            # to trigger a private test bundle download.
-            # Note that Tast CLI will exit abnormally when no test matches,
-            # so we set ignore_status=True to avoid throwing TestFail.
-            self._run_tast('run',
-                           args, ['("group:none")'],
-                           tast._DOWNLOAD_TIMEOUT_SEC,
-                           log_stdout=True,
-                           ignore_status=True)
-        finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
-
     def _get_tests_to_run(self):
         """Runs the tast command to update the list of tests that will be run.
 
@@ -876,6 +836,9 @@ class tast(test.test):
         """
         logging.info('Getting list of tests that will be run')
         args = ['-json=true'] + self._get_cloud_storage_info()
+        for var in self._varslist:
+            args.append('-var=%s' % var)
+
         result = self._run_tast('list', args, self._test_exprs,
                                 self._LIST_TIMEOUT_SEC)
         try:

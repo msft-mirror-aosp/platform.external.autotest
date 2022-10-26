@@ -108,6 +108,9 @@ def parse_args():
         subparser.add_argument('-downloaddata')
         subparser.add_argument('-totalshards')
         subparser.add_argument('-shardindex')
+        subparser.add_argument('-var', action='append', default=[])
+        subparser.add_argument('-defaultvarsdir')
+        subparser.add_argument('-varsfile', action='append', default=[])
         subparser.add_argument('target')
         subparser.add_argument('patterns', action='append', nargs='*')
 
@@ -122,9 +125,6 @@ def parse_args():
     run_parser.add_argument('-timeout')
     run_parser.add_argument('-continueafterfailure', type=to_bool,
                             default=False, nargs='?')
-    run_parser.add_argument('-var', action='append', default=[])
-    run_parser.add_argument('-defaultvarsdir')
-    run_parser.add_argument('-varsfile', action='append', default=[])
     run_parser.add_argument('-companiondut', action='append', default=[])
     run_parser.add_argument('-buildartifactsurl')
     run_parser.add_argument('-maybemissingvars')

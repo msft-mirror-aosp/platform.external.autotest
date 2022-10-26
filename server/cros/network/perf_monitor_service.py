@@ -10,6 +10,7 @@ import threading
 from server.cros.network.perf_monitor_data import PerfMonitorData
 from server.cros.network.perf_monitor_command_runner import PerfMonitorCommandRunner
 from server.cros.network.perf_monitor_graph import PerfMonitorGraph
+from server.cros.network.perf_monitor_throughput_analytics import PerfMonitorThroughputAnalytics
 
 class PerfMonitorService(object):
     """
@@ -99,13 +100,15 @@ class PerfMonitorService(object):
         """
         self.monitoring_throughput = False
         self.thread.join()
+        self._throughput_perf_analytics()
         self._graph_throughput_metrics()
 
     def _throughput_perf_analytics(self):
         """
         Calculate throughput metrics.
         """
-        # TODO (b/254326604) Implement the throughput analytics calculations
+        analyzer = PerfMonitorThroughputAnalytics()
+        analyzer.analyze_cpu_usage(self.perf_monitoring_data)
 
     def _graph_throughput_metrics(self):
         """

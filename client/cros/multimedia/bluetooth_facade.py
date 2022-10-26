@@ -2086,6 +2086,25 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         """
         return bool(self._get_dbus_proxy_for_bluetoothd())
 
+    def is_bluetoothd_running_by_polling(self):
+        """Poll to check if bluetoothd is running.
+
+        The bluetoothd may take some time to be ready.
+        Poll to check if it is ready. This is to be used
+        after the bluetoothd is restarted.
+
+        @returns: True if bluetoothd is running
+
+        """
+        try:
+            utils.poll_for_condition(condition=self.is_bluetoothd_running,
+                                     desc='bluetoothd is running',
+                                     timeout=self.ADAPTER_TIMEOUT)
+            return True
+        except Exception as e:
+            logging.error('timeout: bluetoothd is not running: %s', e)
+            return False
+
     def is_bluetoothd_proxy_valid(self):
         """Checks whether the proxy object for bluetoothd is ok.
 

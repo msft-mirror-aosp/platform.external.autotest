@@ -1651,6 +1651,10 @@ class BluetoothAdapterTests(test.test):
         """Test that bluetoothd is running."""
         return self.bluetooth_facade.is_bluetoothd_running()
 
+    @test_retry_and_log
+    def test_bluetoothd_running_by_polling(self):
+        """Test that bluetoothd is running by polling."""
+        return self.bluetooth_facade.is_bluetoothd_running_by_polling()
 
     @test_retry_and_log
     def test_start_bluetoothd(self):

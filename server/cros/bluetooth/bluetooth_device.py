@@ -259,6 +259,18 @@ class BluetoothDevice(object):
         """
         return self._proxy.is_bluetoothd_running()
 
+    @proxy_thread_safe
+    def is_bluetoothd_running_by_polling(self):
+        """Poll to check if bluetoothd is running.
+
+        The bluetoothd may take some time to be ready.
+        Poll to check if it is ready. This is to be used
+        after the bluetoothd is restarted.
+
+        @returns: True if bluetoothd is running
+
+        """
+        return self._proxy.is_bluetoothd_running_by_polling()
 
     @proxy_thread_safe
     def is_bluetoothd_valid(self):

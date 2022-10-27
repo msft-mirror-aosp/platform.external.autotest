@@ -22,21 +22,38 @@ class PerfMonitorThroughputAnalytics(object):
         CPU_CONSUMPTION_THRESHOLD = 90
         cpu_consumption = {}
         num_iterations = 0
+        instances_over_threshold = {}
         for cpu in list(perf_data.values())[0].mpstat_data.keys():
             cpu_consumption[cpu] = 0
+            instances_over_threshold[cpu] = 0
 
         for perf_object in perf_data.values():
             num_iterations += 1
             for cpu, values in perf_object.mpstat_data.items():
                 consumption = float(values['%soft'])
                 cpu_consumption[cpu] += consumption
-
+                if consumption > CPU_CONSUMPTION_THRESHOLD:
+                    instances_over_threshold[cpu] += 1
+        unused_cpus = []
         for cpu, consumption in cpu_consumption.items():
             consumption /= num_iterations
             cpu_consumption[cpu] = consumption
             if consumption > CPU_CONSUMPTION_THRESHOLD:
                 logging.info(f"Exceeded {CPU_CONSUMPTION_THRESHOLD}% CPU Softirq Consumption Average Threshold."
                              f" Measured CPU {cpu} Softirq Consumption Average: {consumption}")
+            elif consumption != 0:
+                logging.info(f" Measured CPU {cpu} Softirq Consumption Average: {consumption}")
+            else:
+                unused_cpus.append(cpu)
+        if unused_cpus and len(unused_cpus) != len(cpu_consumption):
+            if len(unused_cpus) == 1:
+                logging.info(f"CPU Softirq Consumption is not balanced. CPU {unused_cpus[0]} has zero Softirq usage")
+            else:
+                logging.info(f"CPU Softirq Consumption is not balanced. CPUs {unused_cpus} have zero Softirq usage")
+        for cpu, count in instances_over_threshold.items():
+            if count > 0:
+                logging.info((f"CPU {cpu} exceeded {CPU_CONSUMPTION_THRESHOLD}% CPU Softirq"
+                              f" Consumption Threshold {count} times in {num_iterations} iterations"))
 
     def analyze_time_squeeze(self, perf_data):
         """

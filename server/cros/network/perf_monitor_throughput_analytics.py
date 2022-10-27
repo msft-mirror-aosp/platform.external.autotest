@@ -70,3 +70,39 @@ class PerfMonitorThroughputAnalytics(object):
                                     f" Measured Time Squeezes over time interval: {curr_time_squeezes}")
                 prev_timestamp = timestamp
                 prev_time_squeezes = total_time_squeezes
+
+    def analyze_tx_errors(self, perf_data):
+        """
+        Calculate the average Tx Errors over the polling period.
+
+        @param perf_data the dictionary mapping from timestamp to
+        PerfMonitorData object.
+        """
+        if len(perf_data) < 2:
+            return
+        #TODO (b/257075290) find an appropriate threshold for the fleet based on baselines
+        TX_ERROR_THRESHOLD = 3
+        total_tx_errors = 0
+        labels = ['tx_carrier_errors',
+                  'tx_compressed', 'tx_dropped', 'tx_errors',
+                  'tx_fifo_errors', 'tx_heartbeat_errors', 'tx_window_errors']
+        prev_timestamp = list(perf_data.keys())[0]
+        final_timestamp = list(perf_data.keys())[-1]
+        prev_tx_errors = 0
+        for label in labels:
+            prev_tx_errors += perf_data[prev_timestamp].wireless_interface_data[label]
+
+        for timestamp, perf_object in perf_data.items():
+            if float((timestamp - prev_timestamp).total_seconds()) > 60 or timestamp == final_timestamp:
+                total_tx_errors = 0
+                for label in labels:
+                    total_tx_errors += perf_object.wireless_interface_data[label]
+
+                curr_tx_errors = total_tx_errors - prev_tx_errors
+                if(curr_tx_errors > TX_ERROR_THRESHOLD):
+                    logging.info(f"Exceeded {TX_ERROR_THRESHOLD} Tx Error Threshold"
+                                f" from time interval {prev_timestamp} to {timestamp}."
+                                f" Measured Tx Errors over time interval: {curr_tx_errors}")
+
+                prev_timestamp = timestamp
+                prev_tx_errors = total_tx_errors

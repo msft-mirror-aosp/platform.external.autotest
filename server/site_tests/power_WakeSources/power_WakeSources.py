@@ -36,6 +36,10 @@ DARK_RESUME_SOURCES = ['RTC', 'AC_CONNECTED', 'AC_DISCONNECTED']
 # Time in future after which RTC goes off when testing wake due to RTC alarm.
 RTC_WAKE_SECS = 20
 
+# Network may take up to 3 minutes to come back if the ethernet dongle is
+# resumed in storage mode.
+NET_UP_TIMEOUT = 180
+
 # Max time taken by the device to suspend. This includes the time powerd takes
 # trigger the suspend after receiving the suspend request from autotest script.
 SECS_FOR_SUSPENDING = 20
@@ -266,16 +270,19 @@ class power_WakeSources(test.test):
             return False
 
         count_before = self._dr_utils.count_dark_resumes()
-        self._dr_utils.suspend(SECS_FOR_SUSPENDING + RTC_WAKE_SECS)
+        rtc_wake = NET_UP_TIMEOUT
+        if wake_source == 'RTC':
+            rtc_wake = RTC_WAKE_SECS
+        self._dr_utils.suspend(SECS_FOR_SUSPENDING + rtc_wake)
         logging.info('DUT suspended! Waiting to resume...')
         # Wait at least |SECS_FOR_SUSPENDING| secs for the kernel to
         # fully suspend.
         time.sleep(SECS_FOR_SUSPENDING)
         self._trigger_wake(wake_source)
 
-        # Wait until it would be unclear if the RTC or wake_source triggered the
-        # wake.
-        if not self._host.wait_up(timeout=RTC_WAKE_SECS - 1):
+        # Give enough time to reconnect if the ethernet dongle accidentally
+        # comes up in storage mode.
+        if not self._host.wait_up(timeout=NET_UP_TIMEOUT):
             logging.error(
                     'Device did not resume from suspend for %s.'
                     ' Waking system with power button then RTC.', wake_source)

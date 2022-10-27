@@ -104,8 +104,8 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     # BQR feature. They just don't support the features except BQR.
     CHIPSETS_SUPPORT_BQR_ONLY = [
             'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
-            'Realtek-RTL8852A-USB', 'Mediatek-MTK7921-USB',
-            'Mediatek-MTK7921-SDIO'
+            'Realtek-RTL8852A-USB', 'Realtek-RTL8852C-USB',
+            'Mediatek-MTK7921-USB', 'Mediatek-MTK7921-SDIO'
     ]
 
     def initialize(self):

@@ -220,7 +220,7 @@ class FlossAdminClient(BluetoothAdminPolicyCallbacks):
         self.bus.register_object(objpath, self.callbacks, None)
 
         # Register published callbacks with admin daemon
-        self.callback_id = self.proxy().RegisterAdminPolicyCallbac(objpath)
+        self.callback_id = self.proxy().RegisterAdminPolicyCallback(objpath)
         return True
 
     @glib_call(False)

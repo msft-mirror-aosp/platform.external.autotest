@@ -106,7 +106,7 @@ class audio_AudioBasicInternalMicrophone(audio_test.AudioTest):
         recorder.channel_map = [0]
 
         # ignore frequencies that might be background noise in the lab
-        ignore_frequencies = [17, 29, 42]
+        ignore_frequencies = [17, 29, 42, 43, 50, 60]
 
         # Compares data by frequency. Audio signal from Chameleon Line-Out to
         # speaker and finally recorded on Cros device using internal microphone

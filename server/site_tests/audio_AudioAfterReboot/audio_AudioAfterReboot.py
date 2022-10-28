@@ -203,8 +203,9 @@ class audio_AudioAfterReboot(audio_test.AudioTest):
 
         self.ignore_frequencies = None
         if (source == chameleon_audio_ids.CrosIds.SPEAKER
-                    or bind_to == chameleon_audio_ids.CrosIds.EXTERNAL_MIC):
-            self.ignore_frequencies = [50, 60]
+                    or bind_to == chameleon_audio_ids.CrosIds.EXTERNAL_MIC
+                    or recorder == chameleon_audio_ids.CrosIds.INTERNAL_MIC):
+            self.ignore_frequencies = [17, 29, 42, 43, 50, 60]
 
         # Two widgets are binded in the factory if necessary
         binder_widget = None

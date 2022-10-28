@@ -99,4 +99,4 @@ class audio_AudioBasicInternalSpeaker(audio_test.AudioTest):
                 golden_file,
                 recorder,
                 second_peak_ratio=0.1,
-                ignore_frequencies=[50, 60])
+                ignore_frequencies=[17, 29, 42, 43, 50, 60])

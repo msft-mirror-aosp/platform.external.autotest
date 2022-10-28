@@ -350,12 +350,13 @@ def _lookup_lacros_latest_version(channel):
     json_object = json.loads(res.text)
 
     versions = [r['version'] for r in json_object['releases']
-               if r['name'].startswith(release_prefix)]
+                if r['name'].startswith(release_prefix)]
     if len(versions) < 1:
         raise Exception(
             'Failed to extract latest version for channel %s from json: %s' % (channel, res.text))
     if len(versions) > 1:
-        logging.info("VersionHistory API returns more than 1 version: %s", versions)
+        logging.info(
+            "VersionHistory API returns more than 1 version: %s", versions)
 
     # key function to turn version string into list of integers so that
     # entries can be compared and sorted
@@ -387,6 +388,7 @@ def deploy_lacros(host,
     logging.info('deploy_lacros to host: %s channel: %s gs_path: %s onto %s',
                  host, channel, gs_path, lacros_dir)
 
+    lacros_version = None
     if gs_path:
         # expects gs path format to be gs://{bucket}/{path}/{zipfile}
         matches = re.match("(gs://(.*?)/(.*))/(.*)", gs_path)
@@ -397,10 +399,10 @@ def deploy_lacros(host,
         logging.info("DEBUG %s %s %s %s", archive_url, bucket, image, zip_name)
     elif channel:
         # lookup lacros artifact path based on channel
-        gs_path, version, variant = _lookup_lacros_path(host, channel)
+        gs_path, lacros_version, variant = _lookup_lacros_path(host, channel)
         bucket = 'chrome-unsigned'
         image = 'desktop-5c0tCh/{version}/{variant}'.format(
-            version=version, variant=variant)
+            version=lacros_version, variant=variant)
         archive_url = 'gs://{bucket}/{image}'.format(
             bucket=bucket, image=image)
         zip_name = os.path.basename(gs_path)
@@ -433,9 +435,30 @@ def deploy_lacros(host,
         # unzip file to Lacros directory
         host.run(['unzip', zip_path, '-d', lacros_dir])
 
+        # if user specifies Lacros artifacts through lacros_gcs_path, lacros_version
+        # is retrieved directly from metadata.json
+        if not lacros_version:
+            result = host.run(
+                ['jq', '-r', "'.content.version'", os.path.join(lacros_dir, 'metadata.json')])
+            if result.exit_status != 0 or result.stderr:
+                raise Exception(
+                    'Error getting Lacros version from metadata.json: %s' % result.stderr)
+            lacros_version = result.stdout.rstrip()
+            if not re.match(r'^\d*\.\d*\.\d*\.\d*$', lacros_version):
+                raise Exception(
+                    'Incorrect Lacros version format: %s' % lacros_version)
+
     except Exception as e:
         raise Exception(
-            'Error extracting content from %s to ' %
-            (download_url, lacros_dir), e)
+            'Error extracting content from %s to %s' % (download_url, lacros_dir)) from e
     finally:
         host.run(['rm', '-rf', tmp_dir])
+
+    # Write ash_version and lacros_version into keyval to be included in RDB
+    keyvals = {}
+    ash_version, _ = host.get_chrome_version()
+    keyvals['ash_version'] = ash_version
+    keyvals['lacros_version'] = lacros_version
+    logging.info('deploy_lacros successful. ash_version: %s  lacros_version: %s',
+                 ash_version, lacros_version)
+    utils.write_keyval(host.job.resultdir, keyvals)

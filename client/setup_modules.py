@@ -10,7 +10,7 @@ sys.path.insert(0, common_dir)
 import check_version
 sys.path.pop(0)
 
-FILE_ERROR = FileExistsError if six.PY3 else OSError
+FILE_ERROR = (FileExistsError, FileNotFoundError) if six.PY3 else OSError
 
 
 def _get_pyversion_from_args():
@@ -145,13 +145,12 @@ def _setup_top_level_symlink(base_path, autotest_lib_name):
     # Save state of current working dir
     current_dir = os.getcwd()
 
-    os.chdir(base_path)
     try:
+        os.chdir(base_path)
         os.symlink('.', 'autotest_lib')
-    except FILE_ERROR as e:
-        if os.path.islink('autotest_lib'):
-            return
-        raise e
+    except FILE_ERROR:
+        if not (os.path.isdir(base_path) and os.path.islink('autotest_lib')):
+            raise
     finally:
         # Return state of current working dir
         os.chdir(current_dir)
@@ -175,35 +174,32 @@ def _setup_client_symlink(base_path, autotest_lib_name):
     autotest_lib_dir = os.path.join(base_path, autotest_lib_name)
     link_path = os.path.join(autotest_lib_dir, 'client')
 
-    # TODO: Use os.makedirs(..., exist_ok=True) after switching to Python 3
-    if not os.path.isdir(autotest_lib_dir):
-        try:
-            os.mkdir(autotest_lib_dir)
-        except FILE_ERROR as e:
-            if not os.path.isdir(autotest_lib_dir):
-                raise e
-
     if os.path.islink(link_path):
         return
+
+    # TODO: Use os.makedirs(..., exist_ok=True) after switching to Python 3
+    try:
+        os.mkdir(autotest_lib_dir)
+    except FILE_ERROR:
+        if not os.path.isdir(autotest_lib_dir):
+            raise
 
     # Save state of current working dir
     current_dir = os.getcwd()
 
-    os.chdir(autotest_lib_dir)
     try:
+        os.chdir(autotest_lib_dir)
         _create_client_symlink()
     # It's possible 2 autotest processes are running at once, and one
     # creates the symlink in the time between checking and creating.
     # Thus if the symlink DNE, and we cannot create it, check for its
     # existence and exit if it exists.
-    except FILE_ERROR as e:
-        if os.path.islink(link_path):
-            return
-        raise e
+    except FILE_ERROR:
+        if not (os.path.isdir(autotest_lib_dir) and os.path.islink(link_path)):
+            raise
     finally:
         # Return state of current working dir
         os.chdir(current_dir)
-
 
 def setup(base_path, root_module_name):
     """import autotest_lib modules and toplevel submodules.
@@ -234,8 +230,7 @@ def setup(base_path, root_module_name):
         # Setup the autotest_lib.* modules
         _preimport_top_level_packages(
                 base_path,
-                parent='autotest_lib',
-                autotest_lib_name=autotest_lib_name)
+                parent='autotest_lib')
     else:  # aka, in /client/
         # Takes you from /client/ to /files
         # this is because on DUT there is no files/client
@@ -253,13 +248,10 @@ def setup(base_path, root_module_name):
         # setup autotest_lib, autotest_lib.client.*
         _preimport_top_level_packages(os.path.join(autotest_base_path,
                                                    autotest_lib_name),
-                                      parent='autotest_lib',
-                                      autotest_lib_name=autotest_lib_name)
+                                      parent='autotest_lib')
         _preimport_top_level_packages(os.path.join(autotest_base_path,
                                                    autotest_lib_name, 'client'),
-                                      parent='autotest_lib.client',
-                                      autotest_lib_name=autotest_lib_name)
-
+                                      parent='autotest_lib.client')
     _monkeypatch_logging_handle_error()
 
 
@@ -272,8 +264,18 @@ def _setup_autotest_lib(autotest_lib_path, autotest_lib_name):
     # Add autotest_lib to our path
     sys.path.insert(0, autotest_lib_path)
 
-    # This is a symlink back to the root directory
-    importlib.import_module(autotest_lib_name)
+    try:
+    # This is a symlink back to the autotest directory
+        importlib.import_module(autotest_lib_name)
+    except ImportError:
+        sys.stderr.write('process pid: %s\n' % str(os.getpid()))
+        sys.stderr.write('autotest_lib_path: %s\n' % autotest_lib_path)
+        sys.stderr.write('autotest_lib_name: %s\n' % autotest_lib_name)
+        sys.stderr.write(f'Autotest - dirname(autotest_lib_path) directory listing {os.path.dirname(autotest_lib_path)}- BEGIN \n')
+        sys.stderr.write('\t')
+        sys.stderr.write('\n\t'.join(os.listdir(os.path.dirname(autotest_lib_path))))
+        sys.stderr.write(f'Autotest - dirname(autotest_lib_path) directory listing {os.path.dirname(autotest_lib_path)}- END \n')
+        raise
 
     # Setup toplevel 'autotest_lib' module name
     sys.modules['autotest_lib'] = sys.modules[autotest_lib_name]
@@ -282,7 +284,7 @@ def _setup_autotest_lib(autotest_lib_path, autotest_lib_name):
     sys.path.pop(0)
 
 
-def _preimport_top_level_packages(root, parent, autotest_lib_name):
+def _preimport_top_level_packages(root, parent):
     """Pre import the autotest_lib module top level packages.
 
     The existence of an __init__.py file in a directory is used to determine if
@@ -298,8 +300,6 @@ def _preimport_top_level_packages(root, parent, autotest_lib_name):
       parent:
         Module name those directories should be imported as sub modules of,
         autotest_lib or autotest_lib.client
-      autotest_lib_name:
-        Name of the autotest_lib we used when creating the directory structure
     """
     # The old code to setup the packages used to fetch the top-level packages
     # inside autotest_lib. We keep that behaviour in order to avoid having to

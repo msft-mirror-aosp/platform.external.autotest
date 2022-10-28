@@ -159,7 +159,7 @@ class audio_AudioVolume(audio_test.AudioTest):
 
                 recorder.remove_head(self.DELAY_BEFORE_PLAYBACK)
                 if node_type == "INTERNAL_SPEAKER":
-                    recorder.lowpass_filter(1000)
+                    recorder.lowpass_filter(3000)
                 recorded_file = os.path.join(self.resultsdir,
                                              "recorded_%s.raw" % tag)
                 logging.info('Saving recorded data to %s', recorded_file)

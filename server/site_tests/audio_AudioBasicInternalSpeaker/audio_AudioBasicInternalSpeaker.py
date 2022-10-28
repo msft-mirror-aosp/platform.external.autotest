@@ -84,7 +84,7 @@ class audio_AudioBasicInternalSpeaker(audio_test.AudioTest):
         recorder.remove_head(0.5)
 
         # Removes noise by a lowpass filter.
-        recorder.lowpass_filter(1000)
+        recorder.lowpass_filter(3000)
         recorded_file = os.path.join(self.resultsdir, "recorded_filtered.raw")
         logging.info('Saving filtered data to %s', recorded_file)
         recorder.save_file(recorded_file)

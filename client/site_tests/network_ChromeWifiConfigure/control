@@ -1,4 +1,4 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,7 +9,7 @@ CRITERIA = """
   The test will fail if the Chrome fails to configure the wifi network, or if
   the getProperties fails to retreive the correct properties once configured.
 """
-ATTRIBUTES = "suite:network_ui"
+ATTRIBUTES = "suite:network_endtoend"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"

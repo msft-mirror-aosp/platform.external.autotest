@@ -1,15 +1,15 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "network_ui"
+NAME = "network_endtoend"
 PURPOSE = "Software-only network UI tests for shill and Chrome integration."
 
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
+TEST_CATEGORY = "General"
 TEST_CLASS = "suite"
-TEST_TYPE = "server"
+TEST_TYPE = "Server"
 
 DOC = """
 Run automated tests backed up by a fake hardware simulator (e.g. pseudomodem)
@@ -17,8 +17,8 @@ to test the ChromeOS network UI and the chrome.networkingPrivate extension
 API layer.
 
 @param build: The name of the image to test.
-              Ex: x86-mario-release/R17-1412.33.0-a1-b29
-@param board: The board to test on.  Ex: x86-mario
+              Ex: octopus-release/R99-14469.12.0
+@param board: The board to test on.  Ex: octopus
 @param pool: The pool of machines to utilize for scheduling. If pool=None
              board is used.
 @param check_hosts: require appropriate live hosts to exist in the lab.
@@ -28,23 +28,9 @@ API layer.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-# Values specified in this bug template will override default values when
-# filing bugs on tests that are a part of this suite. If left unspecified
-# the bug filer will fallback to it's defaults.
-_BUG_TEMPLATE = {
-    'components': ['OS>Systems>Mobile'],
-    'owner': 'armansito@chromium.org',
-    'status': None,
-    'summary': None,
-    'title': None,
-    'cc': ['armansito@chromium.org', 'benchan@chromium.org',
-           'pneubeck@chromium.org', 'stevenjb@chromium.org']
-}
-
-args_dict['file_bugs'] = True
-args_dict['job'] = job
 args_dict['add_experimental'] = True
-args_dict['bug_template'] = _BUG_TEMPLATE
-args_dict['name'] = 'network_ui'
+args_dict['max_runtime_mins'] = 60
+args_dict['name'] = NAME
+args_dict['job'] = job
 
 dynamic_suite.reimage_and_run(**args_dict)

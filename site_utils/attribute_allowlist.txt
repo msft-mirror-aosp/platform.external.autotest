@@ -309,6 +309,7 @@ suite:cellular_au
 suite:cellular_au_nightly
 suite:cellular_callbox
 suite:cellular_endtoend
+suite:cellular_endtoend_flaky
 suite:cellular_mbim_compliance
 suite:cellular_modem_fw
 suite:cellular_modem_repair
@@ -459,8 +460,9 @@ suite:nearby-share-arc
 suite:nearby-share-dev
 suite:nearby-share-prod
 suite:nearby-share-remote
+suite:network_endtoend
+suite:network_endtoend_flaky
 suite:network_nightly
-suite:network_ui
 suite:offloads
 suite:omaha_per-week
 suite:partners
@@ -571,6 +573,7 @@ suite:wifi_atten_roam_perf
 suite:wifi_cross_device_p2p
 suite:wifi_cross_device_tdls
 suite:wifi_endtoend
+suite:wifi_endtoend_flaky
 suite:wifi_flaky
 suite:wifi_func_tast
 suite:wifi_interop

@@ -33,6 +33,13 @@ _ARCH_LACROS_VARIANT_DICT = {
     'i386': 'lacros64',
     'x86_64': 'lacros64'
 }
+# Architecture to Lacros platform dictionary
+_ARCH_LACROS_PLATFORM_DICT = {
+    'arm': 'lacros_arm32',
+    'arm64': 'lacros_arm64',
+    'i386': 'lacros',
+    'x86_64': 'lacros'
+}
 
 
 def extract_from_image(host, image_name, dest_dir):
@@ -295,20 +302,34 @@ def get_tast_expr(args_dict):
         '''  More details at go/lacros-on-skylab.''')
 
 
-def _lookup_lacros_variant(host):
+def _lookup_lacros_variant(arch):
     """
-    Looks up the Lacros variant for host
+    Looks up the Lacros variant for the hardware architecture.
 
-    @param host: The DUT to execute the command on
+    @param arch: Hardware architecture of the machine
 
-    @return: Lacros variant. e.g. lacros-arm32, lacros64
+    @return: Lacros variant. e.g. lacros-arm32, lacros-arm64, lacros64
     """
-    arch = utils.get_arch_userspace(host.run)
     if arch not in _ARCH_LACROS_VARIANT_DICT:
         raise Exception(
             'Failed to find Lacros variant due to unknown architecture: %s' % arch)
 
     return _ARCH_LACROS_VARIANT_DICT[arch]
+
+
+def _lookup_lacros_platform(arch):
+    """
+    Looks up the Lacros platform for the hardware architecture.
+
+    @param arch: Hardware architecture of the machine
+
+    @return: Lacros platform. e.g. 'lacros_arm32', 'lacros_arm64', 'lacros'
+    """
+    if arch not in _ARCH_LACROS_PLATFORM_DICT:
+        raise Exception(
+            'Failed to find Lacros platform due to unknown architecture: %s' % arch)
+
+    return _ARCH_LACROS_PLATFORM_DICT[arch]
 
 
 def _lookup_lacros_path(host, channel):
@@ -320,33 +341,37 @@ def _lookup_lacros_path(host, channel):
 
     @return: Lacros variant. e.g. 'lacros-arm32', 'lacros64'
     """
-    variant = _lookup_lacros_variant(host)
-    logging.info('Host uses Lacros variant: %s', variant)
+    arch = utils.get_arch_userspace(host.run)
+    variant = _lookup_lacros_variant(arch)
+    platform = _lookup_lacros_platform(arch)
+    logging.info('Host uses Lacros variant: %s platform: %s',
+                 variant, platform)
 
-    version = _lookup_lacros_latest_version(channel)
-    logging.info('Latest Lacros version for channel %s : %s',
-                 channel, version)
+    version = _lookup_lacros_latest_version(channel, platform)
+    logging.info('Latest Lacros version for channel %s platform %s : %s',
+                 channel, platform, version)
 
     gs_path = _LACROS_PATH_MASK.format(version=version, variant=variant)
     return gs_path, version, variant
 
 
-def _lookup_lacros_latest_version(channel):
+def _lookup_lacros_latest_version(channel, platform):
     """
     Looks up the latest Lacros version for a channel.
 
-    @param channel: The Lacros channel. e.g. 'stable','beta','dev'
+    @param channel: Lacros channel. e.g. 'stable','beta','dev'
+    @param platform: Lacros platform. e.g. 'lacros_arm32', 'lacros_arm64', 'lacros'
 
     @return: Latest Lacros version
     """
     # Retrieve latest version of all channels
-    api_url = 'https://versionhistory.googleapis.com/v1/chrome/platforms/lacros/channels/all/versions/all/releases?filter=endtime=none'
+    api_url = 'https://versionhistory.googleapis.com/v1/chrome/platforms/%s/channels/all/versions/all/releases?filter=endtime=none' % platform
     try:
         res = requests.get(api_url)
     except requests.exceptions.RequestException as e:
         raise Exception('Failed when call versionhistory api.') from e
 
-    release_prefix = 'chrome/platforms/lacros/channels/' + channel
+    release_prefix = 'chrome/platforms/%s/channels/%s/' % (platform, channel)
     json_object = json.loads(res.text)
 
     versions = [r['version'] for r in json_object['releases']

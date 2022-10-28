@@ -94,6 +94,9 @@ class firmware_ConsecutiveBoot(FirmwareTest):
                 self.wait_for_client_aux()
             except ConnectionError:
                 logging.error('wait_for_client exception %d.', i)
+                if self.check_ec_capability(['x86'], suppress_warning=True):
+                    match = self.ec.send_command_get_output("port80", ['.*new'], retries=3)
+                    logging.debug("port80: %r", match)
             else:
                 logging.info('wait_for_client online done %d.', i)
                 return

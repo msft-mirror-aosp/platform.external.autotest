@@ -19,7 +19,7 @@ class power_CellularIdle(power_test.power_Test):
   """Class for power_CellularIdle test."""
   version = 2
   _before_test_cool_down_sec = 30
-  _cellular_on_off_time_sec = 1800
+  _cellular_on_off_time_sec = 900
   _measurement_tag_cool_down = 'cool_down'
   _measurement_tag_cellular_on = 'cellular_on'
   _measurement_tag_cellular_off = 'cellular_off'
@@ -79,11 +79,11 @@ class power_CellularIdle(power_test.power_Test):
           units='W',
           higher_is_better=False)
       if modem_on_power > self._modem_on_power_high_threshold:
-        raise error.TestError('Modem on power is too high: %f > %f (W)',
+        raise error.TestWarn('Modem on power is too high: %f > %f (W)',
                               modem_on_power,
                               self._modem_on_power_high_threshold)
       elif modem_on_power < self._modem_on_power_low_threshold:
-        raise error.TestError('Modem on power is too low: %f < %f (W)',
+        raise error.TestWarn('Modem on power is too low: %f < %f (W)',
                               modem_on_power,
                               self._modem_on_power_low_threshold)
 

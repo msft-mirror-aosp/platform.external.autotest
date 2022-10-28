@@ -548,7 +548,7 @@ def perform_local_run(autotest_path,
     @returns: A list of return codes each job that has run. Or [1] if
               provision failed prior to running any jobs.
     """
-    args = _set_default_servo_args(args)
+    args = _set_default_servo_args(args, host_attributes)
 
     # version doesn't really matter for local runs...
     if not host_labels:
@@ -644,7 +644,7 @@ def perform_local_run(autotest_path,
     return codes
 
 
-def _set_default_servo_args(args):
+def _set_default_servo_args(args, attributes):
     """Add default servo arguments for backward compatibitlity.
 
     See crbug.com/881006 for context.  Some servo related defaults were baked
@@ -664,6 +664,8 @@ def _set_default_servo_args(args):
     # relevant keys are entirely missing.
     if args is None:
         args = ''
+    if 'servo_host' in attributes and 'servo_port' in attributes:
+        return None
     if 'servo_host' not in args:
         args += ' servo_host=localhost'
     if 'servo_port' not in args:

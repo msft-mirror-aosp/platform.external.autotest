@@ -67,18 +67,10 @@ class GetPlatformModelTests(unittest.TestCase):
                 MockCmd('cros_config / name', 0, 'coral'))
         self.assertEqual(host.get_platform(), 'coral')
 
-    def test_cros_config_resorts_to_fallback(self):
-        host = MockHost(
-                MockCmd('cat /etc/lsb-release', 0, UNI_LSB_RELEASE_OUTPUT),
-                MockCmd('cros_config / name', 1, ''),
-                MockCmd('mosys platform model', 0, 'coral'))
-        self.assertEqual(host.get_platform(), 'coral')
-
     def test_cros_config_fails(self):
         host = MockHost(
                 MockCmd('cat /etc/lsb-release', 0, UNI_LSB_RELEASE_OUTPUT),
                 MockCmd('cros_config / name', 1, ''),
-                MockCmd('mosys platform model', 1, ''),
                 MockCmd('crossystem', 0, CROSSYSTEM_RESULT))
         self.assertEqual(host.get_platform(), 'reef')
 

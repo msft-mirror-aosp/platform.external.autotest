@@ -88,6 +88,43 @@ class PerfMonitorThroughputAnalytics(object):
                 prev_timestamp = timestamp
                 prev_time_squeezes = total_time_squeezes
 
+    def analyze_rx_errors(self, perf_data):
+        """
+        Calculate the average Rx Errors over the polling period.
+
+        @param perf_data the dictionary mapping from timestamp to
+        PerfMonitorData object.
+        """
+        if len(perf_data) < 2:
+            return
+        #TODO (b/257075290) find an appropriate threshold for the fleet based on baselines
+        RX_ERROR_THRESHOLD = 3
+        total_rx_errors = 0
+        labels = ['rx_compressed', 'rx_crc_errors',
+                  'rx_dropped', 'rx_errors', 'rx_fifo_errors',
+                  'rx_frame_errors', 'rx_length_errors', 'rx_missed_errors',
+                  'rx_nohandler', 'rx_over_errors']
+        prev_timestamp = list(perf_data.keys())[0]
+        final_timestamp = list(perf_data.keys())[-1]
+        prev_rx_errors = 0
+        for label in labels:
+            prev_rx_errors += perf_data[prev_timestamp].wireless_interface_data[label]
+
+        for timestamp, perf_object in perf_data.items():
+            if float((timestamp - prev_timestamp).total_seconds()) > 60 or timestamp == final_timestamp:
+                total_rx_errors = 0
+                for label in labels:
+                    total_rx_errors += perf_object.wireless_interface_data[label]
+
+                curr_rx_errors = total_rx_errors - prev_rx_errors
+                if(curr_rx_errors > RX_ERROR_THRESHOLD):
+                    logging.info(f"Exceeded {RX_ERROR_THRESHOLD} Rx Error Threshold"
+                                f" from time interval {prev_timestamp} to {timestamp}."
+                                f" Measured Rx Errors over time interval: {curr_rx_errors}")
+
+                prev_timestamp = timestamp
+                prev_rx_errors = total_rx_errors
+
     def analyze_tx_errors(self, perf_data):
         """
         Calculate the average Tx Errors over the polling period.

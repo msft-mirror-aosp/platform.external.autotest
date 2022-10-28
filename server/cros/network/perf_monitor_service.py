@@ -110,6 +110,7 @@ class PerfMonitorService(object):
         analyzer = PerfMonitorThroughputAnalytics()
         analyzer.analyze_cpu_usage(self.perf_monitoring_data)
         analyzer.analyze_time_squeeze(self.perf_monitoring_data)
+        analyzer.analyze_rx_errors(self.perf_monitoring_data)
         analyzer.analyze_tx_errors(self.perf_monitoring_data)
 
     def _graph_throughput_metrics(self):

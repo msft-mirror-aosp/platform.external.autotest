@@ -153,7 +153,7 @@ def _save_android_dumpstate():
 
     try:
         logging.info('Saving Android dumpstate.')
-        with open(_DUMPSTATE_PATH, 'w') as out:
+        with open(_DUMPSTATE_PATH, 'w', encoding='utf-8') as out:
             log = utils.system_output('android-sh -c arc-bugreport')
             out.write(log)
         logging.info('Android dumpstate successfully saved.')

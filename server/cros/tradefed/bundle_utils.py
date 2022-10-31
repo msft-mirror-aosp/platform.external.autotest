@@ -81,11 +81,8 @@ def make_bundle_url(url_config: Dict[str, str], bundle_type: Optional[str], abi:
                 'invalid input: the abi "%s" is not in the %s' % (abi, url_config[_ABI_LIST])
             )
     else:
-        if abi is not None:
-            raise AbiNotFoundException(
-                'invalid input: the %s is not in the config but the abi "%s" is specified. '
-                'The url_config keys are "%s"' % (_ABI_LIST, abi, ', '.join(list(url_config)))
-            )
+        # b/256079546: In GTS, _ABI_LIST is not in url_config, but abi may be specified.
+        abi = None
 
     if bundle_type is None:
         base = url_config.get(_PUBLIC_BASE) or url_config.get(_PARTNER_BASE)

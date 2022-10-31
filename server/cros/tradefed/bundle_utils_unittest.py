@@ -108,12 +108,40 @@ class BundelUtilsTest(unittest.TestCase):
         )
 
     def test_make_bundle_url_gts_public(self):
-        """Test for cts make_bundle_url in the case of (public)."""
+        """Test for gts make_bundle_url in the case of (public)."""
 
         uri = bundle_utils.make_bundle_url(
             url_config=GTS_URL_CONFIG,
             bundle_type=None,
             abi=None
+        )
+        self.assertEquals(
+            'gs://chromeos-partner-gts/android-gts-9.1-R2-P-8632016.zip', uri
+        )
+
+    # b/256079546: In GTS, _ABI_LIST is not in url_config, but abi may be specified.
+    def test_make_bundle_url_gts_public_arm(self):
+        """Test for gts make_bundle_url in the case of (public, arm)."""
+        self.assertNotIn(bundle_utils._ABI_LIST, GTS_URL_CONFIG)
+
+        uri = bundle_utils.make_bundle_url(
+            url_config=GTS_URL_CONFIG,
+            bundle_type=None,
+            abi='arm'
+        )
+        self.assertEquals(
+            'gs://chromeos-partner-gts/android-gts-9.1-R2-P-8632016.zip', uri
+        )
+
+    # b/256079546: In GTS, _ABI_LIST is not in url_config, but abi may be specified.
+    def test_make_bundle_url_gts_public_x86(self):
+        """Test for gts make_bundle_url in the case of (public, x86)."""
+        self.assertNotIn(bundle_utils._ABI_LIST, GTS_URL_CONFIG)
+
+        uri = bundle_utils.make_bundle_url(
+            url_config=GTS_URL_CONFIG,
+            bundle_type=None,
+            abi='x86'
         )
         self.assertEquals(
             'gs://chromeos-partner-gts/android-gts-9.1-R2-P-8632016.zip', uri
@@ -131,6 +159,34 @@ class BundelUtilsTest(unittest.TestCase):
             'gs://chromeos-arc-images/cts/bundle/android-gts-9.1-R2-P-8632016.zip', uri
         )
 
+    # b/256079546: In GTS, _ABI_LIST is not in url_config, but abi may be specified.
+    def test_make_bundle_url_gts_latest_arm(self):
+        """Test for gts make_bundle_url in the case of (latest, arm)."""
+        self.assertNotIn(bundle_utils._ABI_LIST, GTS_URL_CONFIG)
+
+        uri = bundle_utils.make_bundle_url(
+            url_config=GTS_URL_CONFIG,
+            bundle_type='LATEST',
+            abi='arm'
+        )
+        self.assertEquals(
+            'gs://chromeos-arc-images/cts/bundle/android-gts-9.1-R2-P-8632016.zip', uri
+        )
+
+    # b/256079546: In GTS, _ABI_LIST is not in url_config, but abi may be specified.
+    def test_make_bundle_url_gts_latest_x86(self):
+        """Test for gts make_bundle_url in the case of (latest, x86)."""
+        self.assertNotIn(bundle_utils._ABI_LIST, GTS_URL_CONFIG)
+
+        uri = bundle_utils.make_bundle_url(
+            url_config=GTS_URL_CONFIG,
+            bundle_type='LATEST',
+            abi='x86'
+        )
+        self.assertEquals(
+            'gs://chromeos-arc-images/cts/bundle/android-gts-9.1-R2-P-8632016.zip', uri
+        )
+
     def test_make_bundle_url_gts_dev(self):
         """Test for gts make_bundle_url in the case of (dev)."""
 
@@ -138,6 +194,34 @@ class BundelUtilsTest(unittest.TestCase):
             url_config=GTS_URL_CONFIG,
             bundle_type='DEV',
             abi=None
+        )
+        self.assertEquals(
+            'gs://chromeos-arc-images/cts/bundle/android-gts-9.1-R2-P-Preview18-9049557.zip', uri
+        )
+
+    # b/256079546: In GTS, _ABI_LIST is not in url_config, but abi may be specified.
+    def test_make_bundle_url_gts_dev_arm(self):
+        """Test for gts make_bundle_url in the case of (dev, arm)."""
+        self.assertNotIn(bundle_utils._ABI_LIST, GTS_URL_CONFIG)
+
+        uri = bundle_utils.make_bundle_url(
+            url_config=GTS_URL_CONFIG,
+            bundle_type='DEV',
+            abi='arm'
+        )
+        self.assertEquals(
+            'gs://chromeos-arc-images/cts/bundle/android-gts-9.1-R2-P-Preview18-9049557.zip', uri
+        )
+
+    # b/256079546: In GTS, _ABI_LIST is not in url_config, but abi may be specified.
+    def test_make_bundle_url_gts_dev_x86(self):
+        """Test for gts make_bundle_url in the case of (dev, x86)."""
+        self.assertNotIn(bundle_utils._ABI_LIST, GTS_URL_CONFIG)
+
+        uri = bundle_utils.make_bundle_url(
+            url_config=GTS_URL_CONFIG,
+            bundle_type='DEV',
+            abi='x86'
         )
         self.assertEquals(
             'gs://chromeos-arc-images/cts/bundle/android-gts-9.1-R2-P-Preview18-9049557.zip', uri

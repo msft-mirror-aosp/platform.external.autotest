@@ -10,7 +10,7 @@ TIME = "LENGTHY"
 TEST_CATEGORY = "Stress"
 TEST_CLASS = "suite"
 TEST_TYPE = "server"
-EXTENDED_TIMEOUT = 58500  # 16 Hours + 900 second guard.
+EXTENDED_TIMEOUT = 87300  # 24 Hours + 900 second guard.
 PY_VERSION = 3
 
 DOC = """

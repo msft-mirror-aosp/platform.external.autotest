@@ -311,7 +311,7 @@ class TradefedTestTest(unittest.TestCase):
         self.tradefed._unzip('/path/to/archive.zip', 'extraction_password!!')
 
         mock_run.assert_called_with('unzip',
-                                    args=('-p', 'extraction_password!!', '-d',
+                                    args=('-P', 'extraction_password!!', '-d',
                                           '/a/temp/dir',
                                           '/path/to/archive.zip'))
 

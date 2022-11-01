@@ -573,7 +573,7 @@ class TradefedTest(test.test):
                 # It is ok to pass a password even if it is not actually
                 # password protected. So this shouldn't fail for unencrypted
                 # zips.
-                unzip_args = ('-p', password) + unzip_args
+                unzip_args = ('-P', password) + unzip_args
             utils.run('unzip', args=unzip_args)
         except:
             logging.error('Failed unzip, cleaning up.')
@@ -1384,8 +1384,11 @@ class TradefedTest(test.test):
             config_file = 'bundle_url_config.json'
             config_path = os.path.abspath(os.path.join(cheets_path, '..', config_file))
             url_config = bundle_utils.load_config(config_path)
+            bundle_password = bundle_utils.get_bundle_password(url_config)
 
-            return BundleSpecification(bundle_utils.make_bundle_url(url_config, uri, bundle), password='')
+            return BundleSpecification(
+                    bundle_utils.make_bundle_url(url_config, uri, bundle),
+                    bundle_password)
 
     def _tradefed_retry_command(self, template, session_id):
         raise NotImplementedError('Subclass should override this function')

@@ -8,6 +8,8 @@ _PARTNER_BASE = 'partner_base'
 _OFFICIAL_URL_PATTERN = 'official_url_pattern'
 _PREVIEW_URL_PATTERN = 'preview_url_pattern'
 _ABI_LIST = 'abi_list'
+_BUNDLE_PASSOWORD = 'bundle_password'
+
 
 class AbiNotFoundException(Exception):
     """Raised when it fails to find the abi."""
@@ -39,6 +41,17 @@ def load_config(config_path: str) -> Dict[str, str]:
         url_config = json.load(json_object)
 
     return url_config
+
+
+def get_bundle_password(url_config: Dict[str, str]) -> str:
+    """Returns the password for unzipping the bundle.
+
+    Returns:
+        A password required for unzipping the bundle. Returns an empty
+        string if no password is required.
+    """
+    return url_config.get(_BUNDLE_PASSOWORD, '')
+
 
 def make_urls_for_all_abis(url_config: Dict[str, str], bundle_type: Optional[str]) -> List[str]:
     """Function to make the list of all bundle urls for the given bundle_type.

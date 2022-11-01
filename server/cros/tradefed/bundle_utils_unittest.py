@@ -274,3 +274,15 @@ class BundelUtilsTest(unittest.TestCase):
         self.assertEquals(
             'gs://chromeos-arc-images/vts/bundle/T/android-vts-8890152-linux_x86.zip', uri
         )
+
+    def test_get_bundle_password(self):
+        self.assertEqual(
+                bundle_utils.get_bundle_password(
+                        {'bundle_password': 'mysecurepassword'}),
+                'mysecurepassword')
+
+    # Verify that if a password is not specified, it returns an empty string.
+    def test_get_bundle_password_not_specified(self):
+        self.assertEqual(
+                bundle_utils.get_bundle_password(
+                        {'non_password_entry': 'somethingsomething123'}), '')

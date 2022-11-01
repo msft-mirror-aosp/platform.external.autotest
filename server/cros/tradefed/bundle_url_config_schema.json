@@ -66,6 +66,15 @@
                     "x86"
                 ]
             ]
+        },
+        "bundle_password": {
+            "type": "string",
+            "default": "",
+            "title": "Password for unzipping the bundle, if any.",
+            "examples": [
+                "password",
+                "123"
+            ]
         }
     },
     "examples": [{

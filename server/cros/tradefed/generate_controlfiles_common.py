@@ -1119,12 +1119,19 @@ def pushd(d):
         os.chdir(current)
 
 
-def unzip(filename, destination):
-    """Unzips a zip file to the destination directory."""
+def unzip(filename, destination, password=''):
+    """Unzips a zip file to the destination directory.
+
+    Args:
+        filename is the file to be unzipped.
+        destination is where the zip file would be extracted.
+        password is an optional value for unzipping. If the zip file is not
+            encrypted, the value has no effect.
+    """
     with pushd(destination):
         # We are trusting Android to have a valid zip file for us.
         with zipfile.ZipFile(filename) as zf:
-            zf.extractall()
+            zf.extractall(pwd=password.encode())
 
 
 def get_collect_modules(is_public, is_hardware=False):
@@ -1500,7 +1507,7 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, source_type):
             f.write(content)
 
 
-def run(source_contents, cache_dir):
+def run(source_contents, cache_dir, bundle_password=''):
     """Downloads each bundle in |uris| and generates control files for each
 
     module as reported to us by tradefed.
@@ -1521,7 +1528,7 @@ def run(source_contents, cache_dir):
                 logging.info('Downloading to %s.', tmp)
                 download(uri, bundle)
             logging.info('Extracting %s.', bundle)
-            unzip(bundle, tmp)
+            unzip(bundle, tmp, bundle_password)
             modules, build, revision = get_tradefed_data(tmp, is_public, abi)
             if not revision:
                 raise Exception('Could not determine revision.')
@@ -1644,4 +1651,5 @@ def main(config):
         urls = bundle_utils.make_urls_for_all_abis(url_config, 'DEV')
         for url in urls:
             source_contents.append((url, SourceType.DEV))
-    run(source_contents, args.cache_dir)
+    run(source_contents, args.cache_dir,
+        bundle_utils.get_bundle_password(url_config))

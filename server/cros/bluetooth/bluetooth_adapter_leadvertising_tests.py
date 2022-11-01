@@ -1401,12 +1401,15 @@ class bluetooth_AdapterLEAdvertising(
     @test_case_log
     def test_case_nearby_mediums_fast(self):
         """Verify minimal test case for nearby sharing"""
-        orig_min_adv_interval_ms = self.DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
-        orig_max_adv_interval_ms = self.DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+        orig_min_adv_interval_ms, orig_max_adv_interval_ms = (
+                self.get_default_advertisement_interval_range())
 
         # We set a specific advertisement with fields required by Nearby
         # sharing service
-        advertisements = [advertisements_data.gen_nearby_mediums_fast_adv()]
+        advertisements = [
+                advertisements_data.gen_nearby_mediums_fast_adv(
+                        floss=self.floss)
+        ]
 
         self.test_reset_advertising()
 
@@ -1432,8 +1435,9 @@ class bluetooth_AdapterLEAdvertising(
         without knowing to pause the advertisements. This test case replicates
         this failure condition to validate the fix.
         """
-        orig_min_adv_interval_ms = self.DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
-        orig_max_adv_interval_ms = self.DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+        orig_min_adv_interval_ms, orig_max_adv_interval_ms = (
+                self.get_default_advertisement_interval_range())
+
         advertisements = self.three_advertisements
 
         self.test_reset_advertising()
@@ -1456,11 +1460,13 @@ class bluetooth_AdapterLEAdvertising(
     @test_case_log
     def test_case_broadcast(self):
         """Verify minimal test case for broadcasted advertising"""
-        orig_min_adv_interval_ms = self.DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
-        orig_max_adv_interval_ms = self.DEFAULT_MIN_ADVERTISEMENT_INTERVAL_MS
+        orig_min_adv_interval_ms, orig_max_adv_interval_ms = (
+                self.get_default_advertisement_interval_range())
 
         # We set a specific advertisement that uses the 'broadcast' mode
-        advertisements = [advertisements_data.gen_nearby_broadcast_adv()]
+        advertisements = [
+                advertisements_data.gen_nearby_broadcast_adv(floss=self.floss)
+        ]
 
         self.test_reset_advertising()
 

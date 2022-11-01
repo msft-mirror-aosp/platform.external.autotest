@@ -91,7 +91,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
 
         self.advertising_peer_test(device)
 
-    @test_wrapper('Advertising Nearby test')
+    @test_wrapper('Advertising Nearby test', supports_floss=True)
     def adv_nearby_test(self):
         """Verify minimal Nearby advertising requirements"""
 
@@ -101,7 +101,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                 'nearby',
                 num_iterations=1)
 
-    @test_wrapper('Broadcast advertising test')
+    @test_wrapper('Broadcast advertising test', supports_floss=True)
     def adv_broadcast_test(self):
         """Verify broadcast advertising capability"""
 
@@ -154,7 +154,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                  args_dict=None,
                  test_name=None,
                  flag='Quick Health',
-                 peer_required=True):
+                 peer_required=True,
+                 floss=False):
         """Run the batch of Bluetooth advertising health tests
 
         @param host: the DUT, usually a chromebook
@@ -164,6 +165,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
         self.quick_test_init(host,
                              use_btpeer=peer_required,
                              flag=flag,
-                             args_dict=args_dict)
+                             args_dict=args_dict,
+                             floss=floss)
         self.adv_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -63,7 +63,8 @@ from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
         FlossAdvertisingClient)
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketManagerClient
-from autotest_lib.client.cros.bluetooth.floss.utils import GLIB_THREAD_NAME
+from autotest_lib.client.cros.bluetooth.floss.utils import (
+        GLIB_THREAD_NAME, make_kv_optional_value)
 from autotest_lib.client.cros.power import power_suspend_delay
 from autotest_lib.client.cros.power import sys_power
 import six
@@ -4959,9 +4960,6 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         @return: Empty string '' on success, error_msg otherwise.
         """
-        advertise_parameter = advertisement_data['parameters']
-        advertise_data = advertisement_data['advertise_data']
-        scan_response = advertisement_data['scan_response']
         advertise_name = advertisement_data['advertise_name']
 
         if not advertise_name:
@@ -4973,46 +4971,27 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         parameters = (
                 self.advertising_client.make_dbus_advertising_set_parameters(
-                        advertise_parameter['connectable'],
-                        advertise_parameter['scannable'],
-                        advertise_parameter['is_legacy'],
-                        advertise_parameter['is_anonymous'],
-                        advertise_parameter['include_tx_power'],
-                        advertise_parameter['primary_phy'],
-                        advertise_parameter['secondary_phy'],
-                        advertise_parameter['interval'],
-                        advertise_parameter['tx_power_level'],
-                        advertise_parameter['own_address_type']))
+                        advertisement_data['parameters']))
 
         advertise_data = self.advertising_client.make_dbus_advertise_data(
-                self.advertising_client.convert_service_uuids_to_bytearray(
-                    advertise_data['service_uuids']),
-                advertise_data['solicit_uuids'],
-                advertise_data['transport_discovery_data'],
-                self.advertising_client.convert_manufacturer_data_to_bytearray(
-                        advertise_data['manufacturer_data']),
-                self.advertising_client.convert_service_data_to_bytearray(
-                        advertise_data['service_data']),
-                advertise_data['include_tx_power_level'],
-                advertise_data['include_device_name'])
+                advertisement_data['advertise_data'])
 
-        scan_response = self.advertising_client.make_dbus_advertise_data(
-                self.advertising_client.convert_service_uuids_to_bytearray(
-                    scan_response['service_uuids']),
-                scan_response['solicit_uuids'],
-                scan_response['transport_discovery_data'],
-                self.advertising_client.convert_manufacturer_data_to_bytearray(
-                        scan_response['manufacturer_data']),
-                self.advertising_client.convert_service_data_to_bytearray(
-                        scan_response['service_data']),
-                scan_response['include_tx_power_level'],
-                scan_response['include_device_name'])
+        scan_response = make_kv_optional_value(
+                self.advertising_client.make_dbus_advertise_data(
+                        advertisement_data['scan_response']))
+
+        periodic_parameters = make_kv_optional_value(
+                self.advertising_client.
+                make_dbus_periodic_advertising_parameters(
+                        advertisement_data['periodic_parameters']))
+
+        periodic_data = make_kv_optional_value(
+                self.advertising_client.make_dbus_advertise_data(
+                        advertisement_data['periodic_data']))
 
         advertiser_id = self.advertising_client.start_advertising_set_sync(
-                parameters, advertise_data, scan_response,
-                advertisement_data['periodic_parameters'],
-                advertisement_data['periodic_data'],
-                advertisement_data['duration'],
+                parameters, advertise_data, scan_response, periodic_parameters,
+                periodic_data, advertisement_data['duration'],
                 advertisement_data['max_ext_adv_events'])
 
         if advertiser_id is None:

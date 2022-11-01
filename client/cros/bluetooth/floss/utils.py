@@ -20,6 +20,31 @@ GLIB_METHOD_CALL_TIMEOUT = 2
 GLIB_THREAD_NAME = 'glib'
 
 
+def dbus_optional_value(value_format, value):
+    """Makes a struct for optional value D-Bus.
+
+    @param value_format: D-Bus format string (ex: a{sv}).
+    @param value: The value to convert.
+
+    @return: An empty dictionary if value is None, otherwise dictionary
+             of optional value.
+    """
+    if not value:
+        return {}
+    return {'optional_value': GLib.Variant(value_format, value)}
+
+
+def make_kv_optional_value(value):
+    """Makes a struct for optional value D-Bus with 'a{sv}' format.
+
+    @param value: The value to convert.
+
+    @return: An empty dictionary if value is None, otherwise dictionary
+             of optional value.
+    """
+    return dbus_optional_value('a{sv}', value)
+
+
 class GlibDeadlockException(Exception):
     """Detected a situation that will cause a deadlock in GLib.
 

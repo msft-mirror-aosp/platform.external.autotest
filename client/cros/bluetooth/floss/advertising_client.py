@@ -397,53 +397,132 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                 'on_periodic_advertising_enabled: advertiser_id: %s, enable: '
                 '%s, status: %s', advertiser_id, enable, status)
 
-    def make_dbus_periodic_advertising_parameters(self, include_tx_power,
-                                                  interval):
-        """Makes struct for periodic advertising parameters D-Bus."""
+    def make_dbus_periodic_advertising_parameters(self,
+                                                  adv_periodic_parameters):
+        """Makes a struct for periodic advertising parameters D-Bus.
+
+        @param adv_periodic_parameters: A dictionary of periodic advertising
+                                        parameters.
+
+        @return: An empty dictionary if adv_periodic_parameters is None or some
+                 periodic parameters are missing from it, else returns a
+                 dictionary with periodic advertising parameters.
+        """
+        if not adv_periodic_parameters:
+            return {}
+
+        missing_periodic_parameters = {'include_tx_power', 'interval'} - set(
+                adv_periodic_parameters.keys())
+
+        if missing_periodic_parameters:
+            logging.error(
+                    'Missing periodic advertisement parameters data with '
+                    'keys: %s' % ','.join(missing_periodic_parameters))
+            return {}
+
         return {
-                'include_tx_power': GLib.Variant('b', include_tx_power),
-                'interval': GLib.Variant('i', interval)
+                'include_tx_power':
+                GLib.Variant('b', adv_periodic_parameters['include_tx_power']),
+                'interval':
+                GLib.Variant('i', adv_periodic_parameters['interval'])
         }
 
-    def make_dbus_advertising_set_parameters(self, connectable, scannable,
-                                             is_legacy, is_anonymous,
-                                             include_tx_power, primary_phy,
-                                             secondary_phy, interval,
-                                             tx_power_level, own_address_type):
-        """Makes struct for advertising set parameters D-Bus."""
+    def make_dbus_advertising_set_parameters(self, adv_set_parameters):
+        """Makes a struct for advertising set parameters D-Bus.
+
+        @param adv_set_parameters: A dictionary of advertising set parameters.
+
+        @return: An empty dictionary if adv_set_parameters is None or some
+                 parameters are missing from it, else returns a dictionary with
+                 advertising set parameters.
+        """
+        if not adv_set_parameters:
+            return {}
+
+        missing_parameters = {
+                'connectable', 'scannable', 'is_legacy', 'is_anonymous',
+                'include_tx_power', 'primary_phy', 'secondary_phy', 'interval',
+                'tx_power_level', 'own_address_type'
+        } - set(adv_set_parameters.keys())
+
+        if missing_parameters:
+            logging.error('Missing advertisement parameters with keys: %s' %
+                          ','.join(missing_parameters))
+            return {}
+
         return {
-                'connectable': GLib.Variant('b', connectable),
-                'scannable': GLib.Variant('b', scannable),
-                'is_legacy': GLib.Variant('b', is_legacy),
-                'is_anonymous': GLib.Variant('b', is_anonymous),
-                'include_tx_power': GLib.Variant('b', include_tx_power),
-                'primary_phy': GLib.Variant('u', primary_phy),
-                'secondary_phy': GLib.Variant('u', secondary_phy),
-                'interval': GLib.Variant('i', interval),
-                'tx_power_level': GLib.Variant('i', tx_power_level),
-                'own_address_type': GLib.Variant('i', own_address_type)
+                'connectable':
+                GLib.Variant('b', adv_set_parameters['connectable']),
+                'scannable':
+                GLib.Variant('b', adv_set_parameters['scannable']),
+                'is_legacy':
+                GLib.Variant('b', adv_set_parameters['is_legacy']),
+                'is_anonymous':
+                GLib.Variant('b', adv_set_parameters['is_anonymous']),
+                'include_tx_power':
+                GLib.Variant('b', adv_set_parameters['include_tx_power']),
+                'primary_phy':
+                GLib.Variant('u', adv_set_parameters['primary_phy']),
+                'secondary_phy':
+                GLib.Variant('u', adv_set_parameters['secondary_phy']),
+                'interval':
+                GLib.Variant('i', adv_set_parameters['interval']),
+                'tx_power_level':
+                GLib.Variant('i', adv_set_parameters['tx_power_level']),
+                'own_address_type':
+                GLib.Variant('i', adv_set_parameters['own_address_type'])
         }
 
-    def make_dbus_advertise_data(self, service_uuids, solicit_uuids,
-                                 transport_discovery_data, manufacturer_data,
-                                 service_data, include_tx_power_level,
-                                 include_device_name):
-        """Makes struct for advertising data D-Bus."""
+    def make_dbus_advertise_data(self, adv_data):
+        """Makes a struct for advertising data D-Bus.
+
+        @param adv_data: A dictionary of advertising data.
+
+        @return: An empty dictionary if adv_data is None or some data are
+                 missing from it, else returns a dictionary with advertising
+                 data.
+        """
+        if not adv_data:
+            return {}
+
+        missing_data = {
+                'service_uuids', 'solicit_uuids', 'transport_discovery_data',
+                'manufacturer_data', 'service_data', 'include_tx_power_level',
+                'include_device_name'
+        } - set(adv_data.keys())
+
+        if missing_data:
+            logging.error('Missing advertisement data with keys: %s' %
+                          ','.join(missing_data))
+            return {}
+
         return {
                 'service_uuids':
-                GLib.Variant('aay', service_uuids),
+                GLib.Variant(
+                        'aay',
+                        self.convert_uuids_to_bytearray(
+                                adv_data['service_uuids'])),
                 'solicit_uuids':
-                GLib.Variant('aay', solicit_uuids),
+                GLib.Variant(
+                        'aay',
+                        self.convert_uuids_to_bytearray(
+                                adv_data['solicit_uuids'])),
                 'transport_discovery_data':
-                GLib.Variant('aay', transport_discovery_data),
+                GLib.Variant('aay', adv_data['transport_discovery_data']),
                 'manufacturer_data':
-                GLib.Variant('a{qay}', manufacturer_data),
+                GLib.Variant(
+                        'a{qay}',
+                        self.convert_manufacturer_data_to_bytearray(
+                                adv_data['manufacturer_data'])),
                 'service_data':
-                GLib.Variant('a{say}', service_data),
+                GLib.Variant(
+                        'a{say}',
+                        self.convert_service_data_to_bytearray(
+                                adv_data['service_data'])),
                 'include_tx_power_level':
-                GLib.Variant('b', include_tx_power_level),
+                GLib.Variant('b', adv_data['include_tx_power_level']),
                 'include_device_name':
-                GLib.Variant('b', include_device_name)
+                GLib.Variant('b', adv_data['include_device_name'])
         }
 
     @glib_call(False)
@@ -645,14 +724,14 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         return {int(k, 16): bytearray(v) for k, v in manufacturer_data.items()}
 
     @staticmethod
-    def convert_service_uuids_to_bytearray(service_uuids):
-        """Converts values in service uuids list to bytearray.
+    def convert_uuids_to_bytearray(uuids):
+        """Converts values in uuids list to bytearray.
 
-        @param service_uuids: A list of service UUID128bit.
+        @param uuids: A list of UUID128bit.
 
         @return: List of the data converted.
         """
-        return [uuid.UUID(i).bytes for i in service_uuids]
+        return [uuid.UUID(i).bytes for i in uuids]
 
     def wait_for_adv_started(self, reg_id):
         """Waits for advertising started.

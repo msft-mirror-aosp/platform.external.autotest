@@ -37,6 +37,8 @@ def run(machine):
                  recorder=chameleon_audio_ids.CrosIds.INTERNAL_MIC,
                  audio_nodes=(['INTERNAL_SPEAKER'],
                               [expected_internal_mic_node]),
-                 is_internal=True, tag = "internal_mic")
+                 is_internal=True, tag = "internal_mic",
+                 blocked_boards=['pyro']    # Pending fix for b/256101884
+                 )
 
 parallel_simple(run, machines)

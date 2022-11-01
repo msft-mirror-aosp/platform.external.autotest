@@ -26,6 +26,9 @@ chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
-    job.run_test("audio_AudioBasicInternalMicrophone", host=host)
+    job.run_test("audio_AudioBasicInternalMicrophone",
+                 host=host,
+                 blocked_boards=['pyro']    # Pending fix for b/256101884
+                )
 
 parallel_simple(run, machines)

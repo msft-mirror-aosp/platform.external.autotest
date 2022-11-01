@@ -14,10 +14,14 @@ This test records power related statistics while displaying different static
 pages with each of ChromeOS's 16 brightness levels.
 """
 
+METADATA = {
+  'requirements': ['pwr-batLife-0009-v01']
+}
+
 BRIGHTNESS_PAGES = ['white', 'black', 'checker1']
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_Display', brightness='all', tag=NAME.split('.')[1],
              pages=BRIGHTNESS_PAGES, secs_per_page=20, seconds_period=1,
-             pdash_note=pdash_note)
+             force_discharge='optional', pdash_note=pdash_note)

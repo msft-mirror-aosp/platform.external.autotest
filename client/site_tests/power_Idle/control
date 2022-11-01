@@ -27,6 +27,10 @@ This test records power related statistics while the system is idling.
       | 4     | 120     | off       | on - idle |
 """
 
+METADATA = {
+  'requirements': ['pwr-batLife-0009-v01']
+}
+
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
-job.run_test('power_Idle', pdash_note=pdash_note)
+job.run_test('power_Idle', force_discharge='optional')

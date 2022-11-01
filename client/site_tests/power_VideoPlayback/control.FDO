@@ -18,6 +18,10 @@ various format.
 force DUT to discharge. If it fails, then use AC as the power source.
 """
 
+METADATA = {
+  'requirements': ['pwr-batLife-0010-v01']
+}
+
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_VideoPlayback', tag=NAME.split('.')[1], 

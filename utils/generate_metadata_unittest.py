@@ -37,7 +37,8 @@ TEST_TYPE = 'client'
 DEPENDENCIES = 'chameleon,servo_state:WORKING'
 METADATA = {
     'requirements': ['req1', 'req2'],
-    'bugcomponent': 'xyz123'
+    'bugcomponent': 'xyz123',
+    'hw_agnostic' : True
 }
 
 DOC = '''
@@ -87,7 +88,8 @@ TEST_TYPE = 'client'
 DEPENDENCIES = 'fakedep3'
 METADATA = {
     'criteria': 'overriding purpose',
-    'Contacts': ['overriding_contact@google.com']
+    'Contacts': ['overriding_contact@google.com'],
+    'hw_agnostic': False
 }
 DOC = '''
 a doc
@@ -189,6 +191,9 @@ class MetadataTest(unittest.TestCase):
         actual_bug_component = meta_data.test_case_info.bug_component.value
         self.assertEqual(expected_bug_component, actual_bug_component)
 
+        # Test hw_agnostic when set to True
+        self.assertTrue(meta_data.test_case_info.hw_agnostic.value)
+
         # Test override of criteria and contacts
         meta_data = generate_metadata.serialized_test_case_metadata(self.test3)
         expected_criteria = 'overriding purpose'
@@ -198,6 +203,9 @@ class MetadataTest(unittest.TestCase):
         expected_contacts = set(['overriding_contact@google.com'])
         actual_contacts = set([item.email for item in meta_data.test_case_info.owners])
         self.assertEqual(expected_contacts, actual_contacts)
+
+        # Test hw_agnostic when set to False
+        self.assertFalse(meta_data.test_case_info.hw_agnostic.value)
 
     def test_serialized_test_case_metadata_list(self):
         """Test all control file get properly serialized."""

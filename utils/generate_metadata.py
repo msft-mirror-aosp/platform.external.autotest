@@ -102,13 +102,21 @@ def serialize_criteria(data):
         criteria = tc_metadata_pb.Criteria(value=data.metadata['criteria'])
     return criteria
 
+def serialize_hw_agnostic(data):
+    """Return a serialized HwAgnostic obj"""
+    hw_agnostic = None
+    if hasattr(data, 'metadata') and 'hw_agnostic' in data.metadata:
+        hw_agnostic = tc_metadata_pb.HwAgnostic(value=data.metadata['hw_agnostic'])
+    return hw_agnostic
+
 def serialize_test_case_info(data):
     """Return a serialized TestCaseInfo obj."""
 
     return tc_metadata_pb.TestCaseInfo(owners=serialize_contacts(data),
                                        requirements=serialize_requirements(data),
                                        bug_component=serialize_bug_component(data),
-                                       criteria=serialize_criteria(data))
+                                       criteria=serialize_criteria(data),
+                                       hw_agnostic=serialize_hw_agnostic(data))
 
 
 def serialized_deps(data):

@@ -6,6 +6,7 @@
 """This file provides core logic for connecting a Chameleon Daemon."""
 
 import logging
+import os
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -23,6 +24,8 @@ CHAMELEON_PORT_ATTR = 'chameleon_port'
 _CONFIG = global_config.global_config
 ENABLE_SSH_TUNNEL_FOR_CHAMELEON = _CONFIG.get_config_value(
         'CROS', 'enable_ssh_tunnel_for_chameleon', type=bool, default=False)
+CFT_BREADCRUMB = '/usr/local/f20container'
+
 
 class ChameleonHostError(Exception):
     """Error in ChameleonHost."""
@@ -64,7 +67,9 @@ class ChameleonHost(ssh_host.SSHHost):
         self._tunneling_process = None
 
         try:
-            if self._is_in_lab and not ENABLE_SSH_TUNNEL_FOR_CHAMELEON:
+            if (self._is_in_lab and
+                    not ENABLE_SSH_TUNNEL_FOR_CHAMELEON and
+                    not os.path.exists(CFT_BREADCRUMB)):
                 self._chameleon_connection = chameleon.ChameleonConnection(
                         self.hostname, chameleon_port)
             else:

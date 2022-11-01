@@ -119,11 +119,6 @@ Software setup, check this
 
 ## Known issues {#known-issues}
 
-### TCPMv2 {#tcpmv2}
-
-PD FAFT by far only supports testing DUT using TCPMv1. Porting to TCPMv2 is in
-progress.
-
 ### Multiple USB-C ports {#multiple-usb-c-ports}
 
 Due to the hardware limitation, that PDTester (ServoV4) only supports testing

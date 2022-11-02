@@ -77,12 +77,12 @@ class firmware_MiniDiag(FirmwareTest):
             raise error.TestError('Quick memory test failed')
 
         output = verifier.find_word('memory_test_run_step')
+        fmt = re.compile(
+                r'([0-9]+) ms \(([0-9]+) bytes/us\) ... \(([0-9]+)%\)')
         for entry in output:
             # src/diag/memory.c:[line]:memory_test_run_step:[pattern_name]:
             # [memory range]: state
             _, _, _, _, _, state = entry.split(':')
-            fmt = re.compile(
-                    r'([0-9]+) ms \(([0-9]+) bytes/us\) ... \(([0-9])%\)')
             # [loop time] ms ([speed] bytes/us) ... ([percentage]%)
             _, speed, _ = fmt.search(state).groups()
             if int(speed) == 0:

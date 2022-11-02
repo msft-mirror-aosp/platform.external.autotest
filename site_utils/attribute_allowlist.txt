@@ -529,6 +529,7 @@ suite:security
 suite:sensors-tast
 suite:servo_lab
 suite:servo_verification
+suite:shimlessrma_calibration_perbuild
 suite:shimlessrma_nodelocked_perbuild
 suite:shimlessrma_normal_perbuild
 suite:skylab_staging_test

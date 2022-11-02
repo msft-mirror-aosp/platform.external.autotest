@@ -470,6 +470,7 @@ suite:perfalerts
 suite:performance_cuj
 suite:performance_cuj_benchmarks
 suite:performance_cuj_experimental
+suite:performance_cuj_experimental_v2
 suite:performance_cuj_gaming
 suite:performance_cuj_gaming_lacros
 suite:performance_cuj_lacros

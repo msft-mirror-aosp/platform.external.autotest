@@ -481,9 +481,9 @@ def read_keyval(path, type_tag=None):
         return {}
 
     if type_tag:
-        pattern = r'^([-\.\w]+)\{%s\}=(.*)$' % type_tag
+        pattern = r'^([-@\.\w]+)\{%s\}=(.*)$' % type_tag
     else:
-        pattern = r'^([-\.\w]+)=(.*)$'
+        pattern = r'^([-@\.\w]+)=(.*)$'
 
     keyval = {}
     f = open(path)
@@ -526,12 +526,12 @@ def write_keyval(path, dictionary, type_tag=None):
     keyval = open(path, 'a')
 
     if type_tag is None:
-        key_regex = re.compile(r'^[-\.\w]+$')
+        key_regex = re.compile(r'^[-@\.\w]+$')
     else:
         if type_tag not in ('attr', 'perf'):
             raise ValueError('Invalid type tag: %s' % type_tag)
         escaped_tag = re.escape(type_tag)
-        key_regex = re.compile(r'^[-\.\w]+\{%s\}$' % escaped_tag)
+        key_regex = re.compile(r'^[-@\.\w]+\{%s\}$' % escaped_tag)
     try:
         for key in sorted(dictionary.keys()):
             if not key_regex.search(key):

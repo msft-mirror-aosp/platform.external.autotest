@@ -28,7 +28,28 @@ class power_VideoCall(power_test.power_Test):
 
     video_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_VideoCall/power_VideoCall.html'
     webrtc_video_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_VideoCall/power_VideoCall.webrtc.html'
+    vp9_only_video_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_VideoCall/power_VideoCallVP9Only.html'
     doc_url = 'http://crospower.page.link/power_VideoCall_doc'
+
+    HIGH_REGEX = r'''
+        AMD[ ]Athlon[ ](Gold|Silver)[ ][3-9][0-9]{3}C|     # AMD Athlon Gold 3150C
+        AMD[ ]Ryzen[ ][357][ ][3-9][0-9]{3}C|     # AMD Ryzen 7 3700C
+        AMD[ ]Eng[ ]Sample                        # Unreleased AMD CPU
+        Genuine[ ]Intel[ ]0000|                   # Unreleased Intel CPU
+        Intel[ ]Core[ ]i[357]-1[0-9]{3,4}[UPHG]|  # 10510U, 1135G7, 1250P
+        Intel[ ]Core[ ]i[357]-[6-9][0-9]{3}U|     # Intel Core i7-8650U
+    '''
+    MEDIUM_REGEX = r'''
+        Intel[ ]Celeron[ ][0-9]{4,5}[UY]|         # Intel Celeron 5205U
+        Intel[ ]Core[ ][im][357]-[0-9]{4,5}[UY]|  # Intel Core i5-8200Y
+        Intel[ ]Core[ ][im][357]-[67]Y[0-9]{2}|   # Intel Core m7-6Y75
+        Intel[ ]Pentium[ ][0-9]{4,5}[UY]|         # Intel Pentium 6405U
+        mediatek[ ]mt819[0-9]                     # mediatek mt8192
+        qcom[ ]sc[0-9]{4}|                        # qcom sc7180
+    '''
+    AMD_REGEX = r'''
+        AMD  # AMD
+    '''
 
     def initialize(self,
                    seconds_period=20.,
@@ -77,8 +98,10 @@ class power_VideoCall(power_test.power_Test):
         if not preset and not video_url:
             preset = self._get_camera_preset()
         if not video_url:
-            if webrtc:
+            if webrtc or self._get_platform_requires_webrtc():
                 video_url = self.webrtc_video_url
+            elif not self._get_vp8_hw_encoding_support():
+                video_url = self.vp9_only_video_url
             else:
                 video_url = self.video_url
 
@@ -259,8 +282,7 @@ class power_VideoCall(power_test.power_Test):
 
         Preset will be determined using this logic.
         - Newer Intel Core U/P-series CPU with fan -> 'high'
-        - AMD Ryzen CPU with fan -> 'high'
-        - Above without fan -> 'medium'
+        - AMD Ryzen CPU -> 'high'
         - High performance ARM -> 'medium'
         - Other Intel Core CPU -> 'medium'
         - AMD APU -> 'low'
@@ -268,29 +290,35 @@ class power_VideoCall(power_test.power_Test):
         - Older ARM CPU -> 'low'
         - Other CPU -> 'low'
         """
-        HIGH_IF_HAS_FAN_REGEX = r'''
-            Intel[ ]Core[ ]i[357]-[6-9][0-9]{3}U|     # Intel Core i7-8650U
-            Intel[ ]Core[ ]i[357]-1[0-9]{3,4}[UPHG]|  # 10510U, 1135G7, 1250P
-            AMD[ ]Ryzen[ ][357][ ][3-9][0-9]{3}C|     # AMD Ryzen 7 3700C
-            Genuine[ ]Intel[ ]0000|                   # Unreleased Intel CPU
-            AMD[ ]Eng[ ]Sample                        # Unreleased AMD CPU
-        '''
-        MEDIUM_REGEX = r'''
-            Intel[ ]Core[ ][im][357]-[0-9]{4,5}[UY]|  # Intel Core i5-8200Y
-            Intel[ ]Core[ ][im][357]-[67]Y[0-9]{2}|   # Intel Core m7-6Y75
-            Intel[ ]Pentium[ ][0-9]{4,5}[UY]|         # Intel Pentium 6405U
-            Intel[ ]Celeron[ ][0-9]{4,5}[UY]|         # Intel Celeron 5205U
-            qcom[ ]sc[0-9]{4}|                        # qcom sc7180
-            mediatek[ ]mt819[0-9]                     # mediatek mt8192
-        '''
+
         cpu_name = utils.get_cpu_name()
 
-        if re.search(HIGH_IF_HAS_FAN_REGEX, cpu_name, re.VERBOSE):
-            if power_status.has_fan():
+        if re.search(self.HIGH_REGEX, cpu_name, re.VERBOSE):
+            if power_status.has_fan() or re.search(self.AMD_REGEX, cpu_name,
+                                                   re.VERBOSE):
                 return 'high'
             return 'medium'
 
-        if re.search(MEDIUM_REGEX, cpu_name, re.VERBOSE):
+        if re.search(self.MEDIUM_REGEX, cpu_name, re.VERBOSE):
             return 'medium'
 
         return 'low'
+
+    def _get_vp8_hw_encoding_support(self):
+        """Return bool reflecting whether vp8 decoding has hw support."""
+
+        cpu_name = utils.get_cpu_name()
+
+        if re.search(self.AMD_REGEX, cpu_name, re.VERBOSE):
+            return False
+        return True
+
+    def _get_platform_requires_webrtc(self):
+        """Return bool reflecting whether the platform should use mediaencoder
+        or webrtc."""
+
+        cpu_name = utils.get_cpu_name()
+
+        if re.search(self.AMD_REGEX, cpu_name, re.VERBOSE):
+            return True
+        return False

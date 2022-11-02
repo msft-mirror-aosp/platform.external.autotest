@@ -9,7 +9,7 @@ CRITERIA = """
   The test will fail if the Chrome fails to configure the wifi network, or if
   the getProperties fails to retreive the correct properties once configured.
 """
-ATTRIBUTES = "suite:network_endtoend"
+ATTRIBUTES = "suite:wifi_endtoend"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "network"

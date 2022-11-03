@@ -263,6 +263,18 @@ def get_tast_expr_from_file(host, args_dict, results_dir, base_path=None):
     return None
 
 
+def get_test_args(args_dict, expr_key):
+    """Extract an arg or decode its b64 hash from args_dict."""
+    expr = args_dict.get(expr_key)
+    if expr:
+        return expr
+
+    expr_b64 = args_dict.get('{}_b64'.format(expr_key))
+    if expr_b64:
+        return base64.b64decode(expr_b64).decode()
+    return None
+
+
 def get_tast_expr(args_dict):
     """
     Gets Tast expression from argument dictionary.
@@ -274,32 +286,23 @@ def get_tast_expr(args_dict):
     @param args_dict: Argument dictionary
 
     """
-    expr = args_dict.get('tast_expr')
-    if expr:
-        return expr
-
-    expr_b64 = args_dict.get('tast_expr_b64')
-    if expr_b64:
-        try:
-            expr = base64.b64decode(expr_b64).decode()
-            return expr
-        except Exception as e:
-            raise Exception('Failed to decode tast_expr_b64: %s' %
-                            expr_b64) from e
-
-    raise Exception(
-        '''Tast expression is unspecified: set tast_expr or tast_expr_b64 in --args.\n'''
-        '''  Example: test_that --args="tast_expr=lacros.Basic"\n'''
-        '''  If the expression contains spaces, consider transforming it to\n'''
-        '''  base64 and passing it via tast_expr_b64 flag.\n'''
-        '''  Example:\n'''
-        '''    In Python:\n'''
-        '''      tast_expr = '("group:mainline" && "dep:lacros")'\n'''
-        '''      # Yields "KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'''
-        '''      tast_expr_b64 = base64.b64encode(s.encode("utf-8")).decode("ascii")\n'''
-        '''    Then in Autotest CLI:\n'''
-        '''      test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="\n'''
-        '''  More details at go/lacros-on-skylab.''')
+    exception_msg = """
+    Tast expression is unspecified: set tast_expr or tast_expr_b64 in --args.
+    Example: test_that --args="tast_expr=lacros.Basic"
+    If the expression contains spaces, consider transforming it to
+    base64 and passing it via tast_expr_b64 flag.
+    Example:
+      In Python:
+        tast_expr = '("group:mainline" && "dep:lacros")'
+        # Yields "KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="
+        tast_expr_b64 = base64.b64encode(s.encode("utf-8")).decode("ascii")
+      Then in Autotest CLI:
+        test_that --args="tast_expr_b64=KCJncm91cDptYWlubGluZSIgJiYgImRlcDpsYWNyb3MiKQ=="
+    More details at go/lacros-on-skylab.
+    """
+    res = get_test_args(args_dict, 'tast_expr')
+    assert res is not None, exception_msg
+    return res
 
 
 def _lookup_lacros_variant(arch):

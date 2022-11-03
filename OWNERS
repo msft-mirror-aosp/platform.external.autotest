@@ -4,4 +4,5 @@ per-file site_utils/attribute_allowlist.txt = *
 
 per-file CTS_OWNERS = file:/CTS_OWNERS
 per-file ENGPROD_OWNERS = file:/ENGPROD_OWNERS
+per-file POWER_OWNERS = file:/POWER_OWNERS
 per-file WIFI_OWNERS = file:/WIFI_OWNERS

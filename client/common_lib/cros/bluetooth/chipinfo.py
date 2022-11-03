@@ -26,11 +26,11 @@ _chip_info = {
         # Intel chipsets
         'Intel-AC7260': ChipInfo(False, False, 0),
         'Intel-AC7265': ChipInfo(False, False, 0),
-        'Intel-AC9260': ChipInfo(True, True, 0x001e),
-        'Intel-AC9560': ChipInfo(True, True, 0x001e),
-        'Intel-AX200': ChipInfo(True, True, 0x001e),
-        'Intel-AX201': ChipInfo(True, True, 0x001e),
-        'Intel-AX211': ChipInfo(True, True, 0x001e),
+        'Intel-AC9260': ChipInfo(False, True, 0x001e),
+        'Intel-AC9560': ChipInfo(False, True, 0x001e),
+        'Intel-AX200': ChipInfo(False, True, 0x001e),
+        'Intel-AX201': ChipInfo(False, True, 0x001e),
+        'Intel-AX211': ChipInfo(False, True, 0x001e),
 
         # Realtek chipsets
         'Realtek-RTL8822C-USB': ChipInfo(True, False, 0),

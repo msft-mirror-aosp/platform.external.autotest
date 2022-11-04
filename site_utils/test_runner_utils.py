@@ -664,11 +664,9 @@ def _set_default_servo_args(args, attributes):
     # relevant keys are entirely missing.
     if args is None:
         args = ''
-    if 'servo_host' in attributes and 'servo_port' in attributes:
-        return None
-    if 'servo_host' not in args:
+    if 'servo_host' not in args and 'servo_host' not in attributes:
         args += ' servo_host=localhost'
-    if 'servo_port' not in args:
+    if 'servo_port' not in args and 'servo_port' not in attributes:
         args += ' servo_port=9999'
     return args
 

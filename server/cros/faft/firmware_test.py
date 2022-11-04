@@ -1743,12 +1743,12 @@ class FirmwareTest(test.test):
         except ConnectionError:
             if self.faft_config.chrome_ec:
                 self.check_shutdown_power_state(self.POWER_STATE_G3)
-            logging.info(
-                'DUT is surely shutdown. We are going to power it on again...')
+            logging.info('DUT is surely shutdown')
 
         if pre_power_action:
             self._call_action(pre_power_action)
         if run_power_action:
+            logging.info('Power on DUT again')
             self.servo.power_key(self.faft_config.hold_pwr_button_poweron)
         if post_power_action:
             self._call_action(post_power_action)

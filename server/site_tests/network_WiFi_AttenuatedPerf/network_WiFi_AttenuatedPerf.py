@@ -13,6 +13,7 @@ from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.server.cros.network import netperf_runner
 from autotest_lib.server.cros.network import netperf_session
 from autotest_lib.server.cros.network import wifi_cell_test_base
+from autotest_lib.server.cros.network import perf_monitor_service
 
 
 class network_WiFi_AttenuatedPerf(wifi_cell_test_base.WiFiCellTestBase):
@@ -72,6 +73,10 @@ class network_WiFi_AttenuatedPerf(wifi_cell_test_base.WiFiCellTestBase):
                 ssid=self.context.router.get_ssid(),
                 security_config=self._ap_config.security_config)
         self.context.assert_connect_wifi(assoc_params)
+
+        # Start the performance monitoring of network throughput.
+        perf_monitor = perf_monitor_service.PerfMonitorService(self.context.client.host)
+        perf_monitor.start_monitoring_throughput()
 
         # Conduct the performance tests.  Ignore failures, since
         # at high attenuations, sometimes the control connection
@@ -138,6 +143,9 @@ class network_WiFi_AttenuatedPerf(wifi_cell_test_base.WiFiCellTestBase):
             if not results:
                 logging.warning('No results for atten %d dB; terminating',
                                 atten)
+
+        # Stop the performance monitoring of network throughput.
+        perf_monitor.stop_monitoring_throughput()
 
         # Clean up router and client state.
         self.context.client.shill.disconnect(assoc_params.ssid)

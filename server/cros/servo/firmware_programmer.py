@@ -133,8 +133,7 @@ class FlashromProgrammer(_BaseProgrammer):
         self._fw_path = None
         self.init_section_paths('/tmp')
         self._servo_version = self._servo.get_servo_version(active=True)
-        self._servo_serials = self._servo._server.get_servo_serials()
-
+        self._servo_active_device = self._servo.get_servo_active_device()
 
     def init_section_paths(self, tmp_path):
         """Update section paths to use the tmp directory"""
@@ -168,7 +167,7 @@ class FlashromProgrammer(_BaseProgrammer):
 
             if self._servo_version == 'servo_v2':
                 programmer = servo_v2_programmer
-                servo_serial = self._servo_serials.get('main')
+                servo_serial = self._servo_active_device._serial
                 if servo_serial:
                     programmer += ',serial=%s' % servo_serial
             elif self._servo_version == 'servo_v3':
@@ -176,11 +175,11 @@ class FlashromProgrammer(_BaseProgrammer):
             elif 'with_servo_micro' in self._servo_version:
                 # When a uServo is connected to a DUT with CCD support, the
                 # firmware programmer will always use the uServo to program.
-                servo_micro_serial = self._servo_serials.get('servo_micro')
+                servo_micro_serial = self._servo_active_device._serial
                 programmer = servo_v4_with_micro_programmer
                 programmer += ':serial=%s' % servo_micro_serial
             elif 'with_ccd' in self._servo_version:
-                ccd_serial = self._servo_serials.get('ccd')
+                ccd_serial = self._servo_active_device._serial
                 programmer = servo_v4_with_ccd_programmer
                 programmer += ',serial=%s' % ccd_serial
             else:

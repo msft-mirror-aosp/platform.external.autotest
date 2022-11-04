@@ -1367,6 +1367,14 @@ class Servo(object):
                                     ignore_status=ignore_status,
                                     args=args).stdout.strip()
 
+    def get_servo_active_device(self):
+        """Get the active/main device of a servod instance.
+
+        @return: The active/main device of the servod instance.
+        """
+        with _WrapServoErrors(
+                servo=self, description='get_servo_active_device()->get_main_device()'):
+            return self._server.get_main_device()
 
     def get_servo_version(self, active=False):
         """Get the version of the servo, e.g., servo_v2 or servo_v3.
@@ -1391,7 +1399,6 @@ class Servo(object):
         logging.warning("%s is active even though it's not in servo type",
                      active_device)
         return servo_type
-
 
     def get_servo_type(self):
         if self._servo_type is None:

@@ -1,0 +1,35 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This test verifies AVRCP commands issued by peer can be received at DUT.
+# Steps:
+# 1. Initialize the Bluetooth media player.
+# 2. Initialize input recorder.
+# 3. Send AVRCP command from peer to DUT.
+# 4. Check if input event was received at DUT.
+# 5. Return True if command issued by peer was received at DUT.
+# 6. Cleanup for Bluetooth media player.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterAUHealth.au_avrcp_command_test.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Verify AVRCP commands issued by peer can be received at DUT',
+    'hw_agnostic': False
+}
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterAUHealth', host=host, num_iterations=1,
+                 args_dict=args_dict, test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

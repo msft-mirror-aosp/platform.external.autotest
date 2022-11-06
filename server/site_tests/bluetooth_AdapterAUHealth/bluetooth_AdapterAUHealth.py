@@ -377,21 +377,27 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
             @param device: the bt peer device
             """
             self.initialize_bluetooth_player(device)
+            self.enable_audio_stream_for_avrcp(device)
             test_method(device)
+            self.stop_audio_stream_for_avrcp()
             self.cleanup_bluetooth_player(device)
 
         self.au_run_method(
                 device, lambda: wrapped_test_method(device), AVRCP)
 
 
-    @test_wrapper('avrcp command test', devices={'BLUETOOTH_AUDIO':1})
+    @test_wrapper('avrcp command test',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_avrcp_command_test(self):
         """AVRCP test to examine commands reception."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_run_avrcp_method(device, self.test_avrcp_commands)
 
 
-    @test_wrapper('avrcp media info test', devices={'BLUETOOTH_AUDIO': 1})
+    @test_wrapper('avrcp media info test',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def au_avrcp_media_info_test(self):
         """AVRCP test to examine metadata propgation."""
         device = self.devices['BLUETOOTH_AUDIO'][0]

@@ -316,6 +316,35 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         else:
             logging.warning('Failed to stop ofono. Ignored.')
 
+    def enable_audio_stream_for_avrcp(self, device):
+        """Adopt Android behavior, i.e., AVRCP is coupled with A2DP before
+        executing any AVRCP tests, and an active audio stream should be enabled.
+
+        @param device: the Bluetooth peer device.
+
+        """
+        test_data = audio_test_data['a2dp'].copy()
+        duration = test_data['duration']
+
+        test_data['file'] %= duration
+
+        # Wait for pulseaudio a2dp bluez source
+        self.test_device_a2dp_connected(device)
+
+        # Select audio output node so that we do not rely on chrome to do it.
+        self.test_select_audio_output_node_bluetooth()
+
+        # Start recording audio on the peer Bluetooth audio device.
+        self.test_device_to_start_recording_audio_subprocess(
+                device, 'a2dp', test_data)
+
+        # Play audio on the DUT in a non-blocked way and check the recorded
+        # audio stream in a real-time manner.
+        self.test_dut_to_start_playing_audio_subprocess(test_data)
+
+    def stop_audio_stream_for_avrcp(self):
+        """Stop playing audio on DUT"""
+        self.test_dut_to_stop_playing_audio_subprocess()
 
     def initialize_bluetooth_player(self, device):
         """Initialize the Bluetooth media player.
@@ -1140,6 +1169,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         of millisecond. Discard microsecond detail when comparing those media
         information.
 
+        The Floss player metadata consists of 'album', 'artist', 'title'
+        and 'length'. Unlike the Bluez metadata that does not include 'length'
+
         @param device: the Bluetooth peer device
 
         @returns: True if the all AVRCP media info received by DUT, false
@@ -1153,10 +1185,14 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         init_metadata = {'album': 'metadata_album_init',
                          'artist': 'metadata_artist_init',
                          'title': 'metadata_title_init'}
-        self.bluetooth_facade.set_player_playback_status(init_status)
-        self.bluetooth_facade.set_player_length(init_length)
-        self.bluetooth_facade.set_player_position(init_position)
+
+        if self.floss:
+            init_metadata.update({'length': init_length})
+        else:
+            self.bluetooth_facade.set_player_length(init_length)
         self.bluetooth_facade.set_player_metadata(init_metadata)
+        self.bluetooth_facade.set_player_playback_status(init_status)
+        self.bluetooth_facade.set_player_position(init_position)
 
         # Second round of updating for actual testing.
         expected_status = 'playing'
@@ -1165,10 +1201,14 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         expected_metadata = {'album': 'metadata_album_expected',
                              'artist': 'metadata_artist_expected',
                              'title': 'metadata_title_expected'}
-        self.bluetooth_facade.set_player_playback_status(expected_status)
-        self.bluetooth_facade.set_player_length(expected_length)
-        self.bluetooth_facade.set_player_position(expected_position)
+
+        if self.floss:
+            expected_metadata.update({'length': expected_length})
+        else:
+            self.bluetooth_facade.set_player_length(expected_length)
         self.bluetooth_facade.set_player_metadata(expected_metadata)
+        self.bluetooth_facade.set_player_playback_status(expected_status)
+        self.bluetooth_facade.set_player_position(expected_position)
 
         received_media_info = device.GetMediaPlayerMediaInfo()
         logging.debug(received_media_info)

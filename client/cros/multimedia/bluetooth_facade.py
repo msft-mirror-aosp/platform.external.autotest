@@ -63,6 +63,7 @@ from autotest_lib.client.cros.bluetooth.floss.admin_client import FlossAdminClie
 from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
         FlossAdvertisingClient)
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
+from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClient
 from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         GLIB_THREAD_NAME, make_kv_optional_value)
@@ -4424,6 +4425,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                                                       self.DEFAULT_ADAPTER)
         self.admin_client = FlossAdminClient(self.bus,
                                              self.DEFAULT_ADAPTER)
+        self.media_client = FlossMediaClient(self.bus, self.DEFAULT_ADAPTER)
         self.is_clean = False
 
         # Discovery needs to last longer than the default 12s. Keep an observer
@@ -4606,6 +4608,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
             self.advertising_client = FlossAdvertisingClient(
                     self.bus, default_adapter)
+            self.media_client = FlossMediaClient(self.bus, default_adapter)
 
             self.socket_client = FlossSocketManagerClient(
                     self.bus, default_adapter)
@@ -4628,6 +4631,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             if not self.advertising_client.register_advertiser_callback():
                 logging.error('advertising_client: Failed to register '
                               'advertiser callbacks')
+                return False
+            if not self.media_client.register_callback():
+                logging.error('media_client: Failed to register callbacks')
                 return False
 
             if not self.socket_client.register_callbacks():
@@ -5144,3 +5150,36 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             return None
 
         return self.advertising_client.get_tx_power(adv_id)
+
+    def set_player_playback_status(self, status):
+        """Sets player playback status.
+
+        @param status: Playback status as string such as 'playing', 'paused',
+                       'stopped'.
+
+        @return: True on success, False otherwise.
+        """
+        return self.media_client.set_player_playback_status(status)
+
+    def set_player_position(self, position):
+        """Sets media position for the registered media player.
+
+        @param position: The player position in microsecond.
+
+        @return: True on success, False otherwise.
+        """
+        return self.media_client.set_player_position(position)
+
+    def set_player_metadata(self, metadata):
+        """Sets metadata for the registered media player.
+
+        @param metadata: The media metadata to set it.
+
+        @return: True on success, False otherwise.
+        """
+        if not metadata:
+            return False
+        meta_data = self.media_client.make_dbus_player_metadata(
+                metadata.get("title"), metadata.get("artist"),
+                metadata.get("album"), metadata.get("length"))
+        return self.media_client.set_player_metadata(meta_data)

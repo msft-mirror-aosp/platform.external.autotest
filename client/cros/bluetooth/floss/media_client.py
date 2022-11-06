@@ -14,14 +14,6 @@ from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
                                                             glib_callback)
 
-
-class PlaybackStatus(Enum):
-    """Playback status."""
-    PLAYING = 'playing'
-    PAUSED = 'paused'
-    STOPPED = 'stopped'
-
-
 class BluetoothMediaCallbacks:
     """Callbacks for the media interface.
 
@@ -465,11 +457,12 @@ class FlossMediaClient(BluetoothMediaCallbacks):
     def set_player_playback_status(self, status):
         """Sets player playback status.
 
-        @param status: PlaybackStatus enum to set.
+        @param status: Playback status such as 'playing', 'paused', 'stopped'
+                       as string.
 
         @return: True on success, False otherwise.
         """
-        self.proxy().SetPlayerPlaybackStatus(status.value)
+        self.proxy().SetPlayerPlaybackStatus(status)
         return True
 
     @glib_call(False)

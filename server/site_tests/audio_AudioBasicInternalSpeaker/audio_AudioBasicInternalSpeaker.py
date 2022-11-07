@@ -8,6 +8,7 @@ import logging
 import os
 import time
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
@@ -25,10 +26,13 @@ class audio_AudioBasicInternalSpeaker(audio_test.AudioTest):
     DELAY_BEFORE_RECORD_SECONDS = 0.5
     RECORD_SECONDS = 8
 
-    def run_once(self):
+    def run_once(self, blocked_boards=[]):
         """Runs Basic Audio Speaker test."""
         if not audio_test_utils.has_internal_speaker(self.host):
             return
+
+        if self.host.get_board().split(':')[1] in blocked_boards:
+            raise error.TestNAError('Board NOT APPLICABLE to test!')
 
         golden_file = audio_test_data.GenerateAudioTestData(
                         path=os.path.join(self.bindir, 'fix_2k_16_0.5.raw'),

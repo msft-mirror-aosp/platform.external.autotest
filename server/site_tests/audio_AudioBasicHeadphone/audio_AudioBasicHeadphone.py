@@ -29,11 +29,14 @@ class audio_AudioBasicHeadphone(audio_test.AudioTest):
     DELAY_AFTER_BINDING = 0.5
     SILENCE_WAIT = 5
 
-    def run_once(self, check_quality=False):
+    def run_once(self, check_quality=False, blocked_boards=[]):
         """Running basic headphone audio tests.
 
         @param check_quality: flag to check audio quality.
+        @blocked_boards: boards to ignore and exit.
         """
+        if self.host.get_board().split(':')[1] in blocked_boards:
+            raise error.TestNAError('Board NOT APPLICABLE to test!')
         if not audio_test_utils.has_audio_jack(self.host):
             raise error.TestNAError(
                     'No audio jack for the DUT.'

@@ -75,11 +75,6 @@ class audio_LeftRightInternalSpeaker(audio_test.AudioTest):
         self.sound_recorder = widget_factory.create_widget(
             chameleon_audio_ids.ChameleonIds.MIC)
 
-        self.golden_file = audio_test_data.GenerateAudioTestData(
-            path=os.path.join(self.bindir, 'fix_2k_16.raw'),
-            frequencies=[2000, 2000],
-            duration_secs=10)
-
         self.play_and_record(
             host,
             player,
@@ -212,7 +207,7 @@ class audio_LeftRightInternalSpeaker(audio_test.AudioTest):
         # and HDMI.
         logging.info('Validating recorded output for channel %s', channel)
         audio_test_utils.check_recorded_frequency(
-            self.golden_file,
+            audio_test_data.SIMPLE_FREQUENCY_SPEAKER_TEST_FILE,
             self.sound_recorder,
             second_peak_ratio=0.1,
             ignore_frequencies=[50, 60])

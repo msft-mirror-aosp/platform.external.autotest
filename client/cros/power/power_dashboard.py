@@ -50,7 +50,7 @@ _HTML_CHART_STR = '''
             vAxis: {{ viewWindow: {{min: 0}}, title: '{type} ({unit})' }},
             hAxis: {{ viewWindow: {{min: 0}}, title: 'time (second)' }},
         }};
-        var element = document.getElementById('{type}');
+        var element = document.getElementById('chart{id}');
         var chart;
         if (unit == 'percent') {{
             options['isStacked'] = true;
@@ -80,7 +80,7 @@ _HTML_CHART_STR = '''
 </script>
 </head>
 <body>
-<div id="{type}"></div>
+<div id="chart{id}"></div>
 </body>
 </html>
 '''
@@ -250,7 +250,8 @@ class BaseDashboard(object):
 
             data_str = ',\n'.join(data_str_list)
             unit = powerlog_dict['power']['unit'][rail_type[t][0]]
-            html_str += _HTML_CHART_STR.format(data=data_str, unit=unit, type=t)
+            html_str += _HTML_CHART_STR.format(data=data_str, unit=unit,
+                                               id=hash(data_str), type=t)
 
         if not os.path.exists(resultsdir):
             raise error.TestError('resultsdir %s does not exist.' % resultsdir)

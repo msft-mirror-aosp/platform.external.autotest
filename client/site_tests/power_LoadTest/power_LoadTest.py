@@ -1011,7 +1011,8 @@ class power_LoadTest(arc.ArcTest):
         data_str = ',\n'.join([row_indent + json.dumps(row) for row in rows])
 
         out_str = power_dashboard._HTML_CHART_STR.format(
-                data=data_str, unit='percent', type='process cpu usage')
+                data=data_str, unit='percent', type='process cpu usage',
+                id=hash(data_str))
 
         with open(os.path.join(self.resultsdir, 'task-monitor.html'),
                   'w') as f:

@@ -31,7 +31,8 @@ def run(machine):
     job.run_test("audio_AudioVolume", host=host, tag="speaker",
                  source_id=chameleon_audio_ids.CrosIds.SPEAKER,
                  ignore_frequencies=[17, 29, 42],
-                 skipped_model_with_bugs={'tomato':'b/238855629'},
+                 skipped_model_with_bugs={'tomato':'b/238855629',
+                                          'eve': 'b/257859169'},
                 )
 
 parallel_simple(run, machines)

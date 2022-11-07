@@ -121,7 +121,7 @@ class tast(test.test):
     # Maximum time to wait for various tast commands to complete, in seconds.
     _VERSION_TIMEOUT_SEC = 10
     _DOWNLOAD_TIMEOUT_SEC = 120
-    _LIST_TIMEOUT_SEC = 30
+    _LIST_TIMEOUT_SEC = 120
     _LIST_TRIES = 3
 
     # Additional time to add to the run timeout (e.g. for collecting crashes and

@@ -5,8 +5,7 @@
     "default": {},
     "title": "Root Schema",
     "required": [
-        "internal_base",
-        "preview_url_pattern"
+        "internal_base"
     ],
     "properties": {
         "public_base": {
@@ -36,7 +35,7 @@
         "official_url_pattern": {
             "type": "string",
             "default": "",
-            "title": "the URL which means the filename of the official xTS zip file",
+            "title": "The URL which means the filename of the official xTS zip file.",
             "examples": [
                 "android-cts-11_r9-linux_x86-%s.zip"
             ]
@@ -44,28 +43,53 @@
         "preview_url_pattern": {
             "type": "string",
             "default": "",
-            "title": "the URL which means the filename of the preview xTS zip file",
+            "title": "The URL which means the filename of the preview xTS zip file.",
             "examples": [
                 "android-cts-9099362-linux_x86-%s.zip"
             ]
         },
-        "abi_list": {
-            "type": "array",
-            "default": [],
-            "title": "the list containing all possible abi",
-            "items": {
-                "type": "string",
-                "title": "the abi name",
-                "examples": [
-                    "arm",
-                    "x86"
-                ]
-            },
+        "official_version_name": {
+            "type": "string",
+            "default": "",
+            "title": "The version number to be inserted in the %s of official_url_pattern.",
             "examples": [
-                ["arm",
-                    "x86"
-                ]
+                "11_r9"
             ]
+        },
+        "preview_version_name": {
+            "type": "string",
+            "default": "",
+            "title": "The version number to be inserted in the %s of preview_url_pattern.",
+            "examples": [
+                "9099362"
+            ]
+        },
+        "abi_list": {
+            "type": "object",
+            "default": {},
+            "title": "A map from the ABI named used for uploading to the xTS target name.",
+            "properties": {
+                "arm": {
+                    "type": "string",
+                    "default": "",
+                    "title": "The key is a possible abi, and the value is a xTS target name.",
+                    "examples": [
+                        "test_suites_arm64"
+                    ]
+                },
+                "x86": {
+                    "type": "string",
+                    "default": "",
+                    "title": "The key is a possible abi, and the value is a xTS target name.",
+                    "examples": [
+                        "test_suites_x86_64"
+                    ]
+                }
+            },
+            "examples": [{
+                "arm": "test_suites_arm64",
+                "x86": "test_suites_x86_64"
+            }]
         },
         "bundle_password": {
             "type": "string",
@@ -81,11 +105,13 @@
         "public_base": "https://dl.google.com/dl/android/cts/",
         "internal_base": "gs://chromeos-arc-images/cts/bundle/R/",
         "partner_base": "gs://chromeos-partner-gts/R/",
-        "official_url_pattern": "android-cts-11_r9-linux_x86-%s.zip",
-        "preview_url_pattern": "android-cts-9099362-linux_x86-%s.zip",
-        "abi_list": [
-            "arm",
-            "x86"
-        ]
+        "official_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+        "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+        "official_version_name": "11_r9",
+        "preview_version_name": "9099362",
+        "abi_list": {
+            "arm": "test_suites_arm64",
+            "x86": "test_suites_x86_64"
+        }
     }]
 }

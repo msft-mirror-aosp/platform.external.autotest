@@ -2,7 +2,12 @@
     "public_base": "https://dl.google.com/dl/android/cts/",
     "internal_base": "gs://chromeos-arc-images/cts/bundle/R/",
     "partner_base": "gs://chromeos-partner-gts/R/",
-    "official_url_pattern": "android-cts-11_r9-linux_x86-%s.zip",
-    "preview_url_pattern": "android-cts-9216170-linux_x86-%s.zip",
-    "abi_list": ["arm", "x86"]
+    "official_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+    "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+    "official_version_name": "11_r9",
+    "preview_version_name": "9216170",
+    "abi_list": {
+        "arm": "test_suites_arm64",
+        "x86": "test_suites_x86_64"
+    }
 }

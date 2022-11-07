@@ -17,6 +17,29 @@ import flimflam
 from six.moves import range
 
 
+def _extract_kernel_warning(logs):
+    """Returns the kernel warning text found within the provided logs.
+
+    The returned contents includes from the start of the provided logs up to
+    the end of the stack trace, with timestamps stripped.
+
+    Args:
+        logs: List of log lines to be scanned.
+
+    Returns:
+        A string containing the first complete kernel warning logged.
+    """
+    for i, line in enumerate(logs):
+        if '---[ end trace' in line:
+            break
+    else:
+        # If we can't find the end of a stack trace, just include the following two
+        # lines.
+        i = 2
+
+    return '\n'.join(cros_logging.strip_timestamp(line) for line in logs[:i])
+
+
 class Suspender(object):
     """Class for suspend/resume measurements.
 
@@ -451,19 +474,12 @@ class Suspender(object):
         failed = False
 
         # TODO(scottz): warning_monitor crosbug.com/38092
-        log_len = len(self._logs)
-        for i in range(log_len):
-            line = self._logs[i]
+        for i, line in enumerate(self._logs):
             if warning_regex.search(line):
                 # match the source file from the WARNING line, and the
-                # actual error text by peeking one or two lines below that
+                # actual error text by peeking up to the end of the trace.
                 src = cros_logging.strip_timestamp(line)
-                text = ''
-                if i+1 < log_len:
-                    text = cros_logging.strip_timestamp(self._logs[i + 1])
-                if i+2 < log_len:
-                    text += '\n' + cros_logging.strip_timestamp(
-                        self._logs[i + 2])
+                text = _extract_kernel_warning(self._logs[i + 1:])
                 for p1, p2 in sys_power.KernelError.ALLOWLIST:
                     if re.search(p1, src) and re.search(p2, text):
                         logging.info('Allowlisted KernelError: %s', src)

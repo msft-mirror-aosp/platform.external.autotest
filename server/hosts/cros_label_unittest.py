@@ -154,13 +154,11 @@ class DeviceSkuLabelTests(unittest.TestCase):
     """Unit tests for DeviceSkuLabel"""
 
     def test_new_label(self):
-        mosys_cmd = 'mosys platform sku'
-        host = MockHost([], MockCmd(mosys_cmd, 0, '27\n'))
+        host = MockHost([], MockCmd('crosid -f SKU', 0, '27'))
         self.assertEqual(DeviceSkuLabel().generate_labels(host), ['27'])
 
-    def test_new_label_mosys_fails(self):
-        mosys_cmd = 'mosys platform sku'
-        host = MockHost([], MockCmd(mosys_cmd, 1, '27\n'))
+    def test_new_label_no_sku(self):
+        host = MockHost([], MockCmd('crosid -f SKU', 0, 'none'))
         self.assertEqual(DeviceSkuLabel().generate_labels(host), [])
 
     def test_existing_label(self):

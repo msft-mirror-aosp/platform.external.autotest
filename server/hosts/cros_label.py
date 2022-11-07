@@ -55,10 +55,9 @@ class DeviceSkuLabel(base_label.StringPrefixLabel):
         if device_sku:
             return [device_sku]
 
-        mosys_cmd = 'mosys platform sku'
-        result = host.run(command=mosys_cmd, ignore_status=True)
-        if result.exit_status == 0:
-            return [result.stdout.strip()]
+        result = host.run(command='crosid -f SKU', ignore_status=True)
+        if result.stdout != 'none':
+            return [result.stdout]
 
         return []
 

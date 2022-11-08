@@ -27,23 +27,26 @@ class bluetooth_WiFiCoexHealth(BluetoothAdapterQuickTests):
     def independent_reset_test(self):
         """Verify the adapter can be reset without affecting WiFi component"""
 
-        # We use the default router name by passing an empty args to WiFi
-        # context. E.g., the router name would be dut-router.cros if the DUT
-        # name is dut.cros.
-        wifi_context = wifi_test_context_manager.WiFiTestContextManager(
-                'bluetooth_WiFiCoexHealth.independent_reset_test', self.host,
-                {}, self.debugdir)
-        wifi_context.setup(include_pcap=False, include_attenuator=False)
+        try:
+            # We use the default router name by passing an empty args to WiFi
+            # context. E.g., the router name would be dut-router.cros if the DUT
+            # name is dut.cros.
+            wifi_context = wifi_test_context_manager.WiFiTestContextManager(
+                    'bluetooth_WiFiCoexHealth.independent_reset_test',
+                    self.host, {}, self.debugdir)
+            wifi_context.setup(include_pcap=False, include_attenuator=False)
 
-        # Connect to the AP and verify the connection with ping.
-        ap_config = hostap_config.HostapConfig(
-                channel=48, mode=hostap_config.HostapConfig.MODE_11A)
-        wifi_context.configure(ap_config)
-        ap_ssid = wifi_context.router.get_ssid()
-        assoc_params = xmlrpc_datatypes.AssociationParameters(
-                ssid=ap_ssid, security_config=ap_config.security_config)
-        wifi_context.assert_connect_wifi(assoc_params)
-        wifi_context.assert_ping_from_dut()
+            # Connect to the AP and verify the connection with ping.
+            ap_config = hostap_config.HostapConfig(
+                    channel=48, mode=hostap_config.HostapConfig.MODE_11A)
+            wifi_context.configure(ap_config)
+            ap_ssid = wifi_context.router.get_ssid()
+            assoc_params = xmlrpc_datatypes.AssociationParameters(
+                    ssid=ap_ssid, security_config=ap_config.security_config)
+            wifi_context.assert_connect_wifi(assoc_params)
+            wifi_context.assert_ping_from_dut()
+        except Exception as e:
+            raise error.TestNAError('Failed to set up WiFi connection') from e
 
         def do_ping():
             try:

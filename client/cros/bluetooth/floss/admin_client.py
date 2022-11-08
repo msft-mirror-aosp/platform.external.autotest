@@ -62,27 +62,32 @@ class FlossAdminClient(BluetoothAdminPolicyCallbacks):
         return False, None
 
     @staticmethod
-    def parse_dbus_policy_effect(new_policy_effect_dbus):
-        """Parses a D-Bus variant dict as a remote policy effect.
+    def parse_dbus_policy_effect(optional_policy_effect):
+        """Parses an optional D-Bus value of policy effect.
 
-        @param new_policy_effect_dbus: Variant dict with signature a{sv}.
+        @param optional_policy_effect: Optional value with signature a{sv}.
 
         @return: True and PolicyEffect tuple on success parsing,
                  otherwise False and None.
         """
-        if ('service_blocked' in new_policy_effect_dbus
-                    and 'affected' in new_policy_effect_dbus):
+        if not optional_policy_effect:
+            return False, None
+
+        policy_optional_value = optional_policy_effect['optional_value']
+
+        if ('service_blocked' in policy_optional_value
+                    and 'affected' in policy_optional_value):
             try:
                 uuids = [
-                        UUID(u)
-                        for u in new_policy_effect_dbus['service_blocked']
+                        UUID(bytes=bytes(u))
+                        for u in policy_optional_value['service_blocked']
                 ]
             except ValueError:
                 logging.exception("Failed to create UUID with values: %s",
                                   uuids)
                 return False, None
 
-            return True, (uuids, bool(new_policy_effect_dbus['affected']))
+            return True, (uuids, bool(policy_optional_value['affected']))
         return False, None
 
     class ExportedAdminPolicyCallbacks(ObserverBase):
@@ -237,8 +242,8 @@ class FlossAdminClient(BluetoothAdminPolicyCallbacks):
 
         @param address: Address of device containing policy effect.
 
-        @return: PolicyEffect as {service_blocked: list[Uuid128Bit],
-                 affected: bool} on success, None otherwise.
+        @return: PolicyEffect tuple as (List[UUID], bool) on success,
+                 None otherwise.
         """
         name = 'Test policy'
         if address in self.known_devices:
@@ -248,15 +253,24 @@ class FlossAdminClient(BluetoothAdminPolicyCallbacks):
                 'address': GLib.Variant('s', address),
                 'name': GLib.Variant('s', name)
         }
-        return self.proxy().GetDevicePolicyEffect(device)
+        policy_effect_dbus = self.proxy().GetDevicePolicyEffect(device)
+        parsed, policy_effect = FlossAdminClient.parse_dbus_policy_effect(
+            policy_effect_dbus)
+        if not parsed:
+            logging.error('Failed to parse policy effect for device %s, '
+                'policy effect = %s', device, policy_effect_dbus)
+            return None
+        return policy_effect
 
     @glib_call(None)
     def get_allowed_services(self):
         """Gets allowed services.
 
-        @return: List of allowed services on success, None otherwise.
+        @return: List of allowed services as type UUID on success,
+                 None otherwise.
         """
-        return self.proxy().GetAllowedServices()
+        uuids = self.proxy().GetAllowedServices()
+        return [UUID(bytes=bytes(u)) for u in uuids]
 
     @glib_call(False)
     def set_allowed_services(self, services):
@@ -266,7 +280,7 @@ class FlossAdminClient(BluetoothAdminPolicyCallbacks):
 
         @return: True on success, False otherwise.
         """
-        return self.proxy().SetAllowedServices(services)
+        return self.proxy().SetAllowedServices([s.bytes for s in services])
 
     @glib_call(None)
     def is_service_allowed(self, uuid):
@@ -276,4 +290,4 @@ class FlossAdminClient(BluetoothAdminPolicyCallbacks):
 
         @return: Service allowed as boolean on success, None otherwise.
         """
-        return self.proxy().IsServiceAllowed(uuid)
+        return self.proxy().IsServiceAllowed(uuid.bytes)

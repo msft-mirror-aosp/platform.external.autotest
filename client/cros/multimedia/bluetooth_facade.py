@@ -59,6 +59,7 @@ from autotest_lib.client.cros.bluetooth import logger_helper
 from autotest_lib.client.cros.bluetooth.floss.adapter_client import (
         FlossAdapterClient, BluetoothCallbacks, BluetoothConnectionCallbacks,
         BondState, SspVariant, Transport)
+from autotest_lib.client.cros.bluetooth.floss.admin_client import FlossAdminClient
 from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
         FlossAdvertisingClient)
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
@@ -4409,6 +4410,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         self.socket_client = FlossSocketManagerClient(self.bus,
                                                       self.DEFAULT_ADAPTER)
+        self.admin_client = FlossAdminClient(self.bus,
+                                             self.DEFAULT_ADAPTER)
         self.is_clean = False
 
         # Discovery needs to last longer than the default 12s. Keep an observer
@@ -4594,6 +4597,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
             self.socket_client = FlossSocketManagerClient(
                     self.bus, default_adapter)
+            self.admin_client = FlossAdminClient(self.bus, default_adapter)
             try:
                 utils.poll_for_condition(
                         condition=_is_adapter_ready(self.adapter_client),
@@ -4616,6 +4620,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
             if not self.socket_client.register_callbacks():
                 logging.error('socket_client: Failed to register callbacks')
+                return False
+            if not self.admin_client.register_admin_policy_callback():
+                logging.error('admin_client: Failed to register callbacks')
                 return False
         else:
             self.manager_client.stop(default_adapter)
@@ -4660,14 +4667,57 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         return True
 
     def policy_get_service_allow_list(self):
-        """Gets the service allow list for enterprise policy."""
-        # TODO(abps) - Actually implement this
-        return []
+        """Gets the service allow list for enterprise policy.
 
-    def policy_set_service_allow_list(self, uuids):
-        """Sets the service allow list for enterprise policy."""
-        # TODO(abps) - Actually implement this
-        return (True, '')
+        @return: List of allowed services as type string on success,
+                 None otherwise.
+        """
+        uuids = self.admin_client.get_allowed_services()
+        if uuids is None:
+            logging.error('Failed to get allowed services')
+            return None
+
+        return [str(u) for u in uuids]
+
+    def policy_set_service_allow_list(self, uuids_str):
+        """Sets the service allow list for enterprise policy.
+
+        @param uuids_str: A string representing the 128-bit UUIDs separated by
+                          commas. E.g., '00001112-0000-1000-8000-00805f9b34fb,
+                          00001113-0000-1000-8000-00805f9b34fb'.
+
+        @return: (True, '') on success, (False, '<error>') on failure.
+        """
+        uuids = []
+        if uuids_str:
+            uuids = [UUID(u) for u in uuids_str.split(',')]
+
+        if self.admin_client.set_allowed_services(uuids):
+            return True, ''
+        else:
+            return False, 'Cannot set the service allow list'
+
+    def policy_get_device_affected(self, device_address):
+        """Checks if the device is affected by enterprise policy.
+
+        @param device_address: Address of the device e.g. '6C:29:95:1A:D4:6F'.
+
+        @return: True if the device is affected by the enterprise policy.
+                 False if not. None if the device is not found.
+        """
+        device = self.has_device(device_address)
+        if not device:
+            logging.error('Failed to find device %s.', device_address)
+            return None
+
+        policy_effect = self.admin_client.get_device_policy_effect(
+                device_address)
+
+        if policy_effect is None:
+            logging.error('Failed to get device (%s) policy effect',
+                          device_address)
+            return None
+        return policy_effect[1]
 
     def get_address(self):
         """Gets the default adapter address."""

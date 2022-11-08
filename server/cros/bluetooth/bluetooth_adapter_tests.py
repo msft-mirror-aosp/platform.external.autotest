@@ -4443,6 +4443,11 @@ class BluetoothAdapterTests(test.test):
         exp_res_str = 'valid' if expected_result else 'invalid'
         logging.info('%s uuids: "%s"', exp_res_str, uuids)
 
+        # Convert 16-bit UUID or 32-bit UUID to 128-bit UUID in Floss.
+        if self.floss and uuids:
+            uuids = ','.join(
+                str(create_uuid(uuid)) for uuid in uuids.split(','))
+
         result, err_msg = self.bluetooth_facade.policy_set_service_allow_list(
                 uuids)
         logging.debug('result %s (%s)', result, err_msg)
@@ -4450,18 +4455,20 @@ class BluetoothAdapterTests(test.test):
         if expected_result:
             check_set_allowlist = result
         else:
-            check_set_allowlist = ('org.bluez.Error.InvalidArguments' in err_msg
-                                   and not result)
+            check_set_allowlist = (not result if self.floss else
+                    'org.bluez.Error.InvalidArguments' in err_msg
+                    and not result)
 
-        # Query bluez to read the allow list.
+        # Query Bluez/Floss to read the allow list and convert the actual UUIDs
+        # into a list of full-length UUIDs.
         actual_uuids_list = [
-                create_uuid(uuid) for uuid in
-                self.bluetooth_facade.policy_get_service_allow_list()]
+            create_uuid(uuid) for uuid in
+            self.bluetooth_facade.policy_get_service_allow_list()]
         actual_uuids_list.sort()
 
         # Convert the original UUIDs into a list of full-length UUIDs and
         # remove duplicate UUIDs in order to compare the original UUIDs
-        # with the actual UUIDs set by bluez.
+        # with the actual UUIDs set by Bluez/Floss.
         orig_uuids_list = []
         if expected_result and uuids != '':
             for uuid in uuids.split(','):

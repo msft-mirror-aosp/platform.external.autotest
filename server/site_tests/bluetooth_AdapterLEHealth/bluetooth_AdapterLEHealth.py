@@ -207,7 +207,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     # connection is initiated by the peripheral. Skip the test until 2021 uprev
     @test_wrapper('LE secondary Test',
                   devices={'BLE_KEYBOARD': 1},
-                  skip_models=['bob'])
+                  skip_models=['bob'],
+                  supports_floss=True)
     def le_role_secondary(self):
         """Tests connection as secondary"""
 
@@ -223,7 +224,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
-                  })
+                  },
+                  supports_floss=True)
     def le_role_primary_before_secondary(self):
         """Tests connection as primary and then as secondary"""
 
@@ -246,7 +248,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
-                  })
+                  },
+                  supports_floss=True)
     def le_role_secondary_before_primary(self):
         """Tests connection as secondary and then as primary"""
 
@@ -266,7 +269,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                                             secondary_info=hid_test_device)
 
     @test_wrapper('LE Sender Role Test',
-                  devices={'BLE_KEYBOARD': 1})
+                  devices={'BLE_KEYBOARD': 1},
+                  supports_floss=True)
     def le_role_sender(self):
         """Tests basic Nearby Sender role"""
 
@@ -283,7 +287,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
-                  })
+                  },
+                  supports_floss=True)
     def le_role_sender_during_hid(self):
         """Tests Nearby Sender role while already connected to HID device"""
 
@@ -306,7 +311,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
-                  })
+                  },
+                  supports_floss=True)
     def le_role_hid_during_sender(self):
         """Tests HID device while already in Nearby Sender role"""
 
@@ -329,7 +335,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     # connection is initiated by the peripheral. Skip the test until 2021 uprev
     @test_wrapper('LE Receiver Role Test',
                   devices={'BLE_KEYBOARD': 1},
-                  skip_models=['bob'])
+                  skip_models=['bob'],
+                  supports_floss=True)
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 
@@ -346,7 +353,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
-                  })
+                  },
+                  supports_floss=True)
     def le_role_receiver_during_hid(self):
         """Tests Nearby Receiver role while already connected to HID device"""
 
@@ -369,7 +377,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
-                  })
+                  },
+                  supports_floss=True)
     def le_role_hid_during_receiver_adv(self):
         """Tests HID device while already in Nearby Receiver role adv state"""
 
@@ -392,7 +401,8 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                   devices={
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
-                  })
+                  },
+                  supports_floss=True)
     def le_role_hid_during_receiver_connection(self):
         """Tests HID device while already in Nearby Receiver role connection"""
 

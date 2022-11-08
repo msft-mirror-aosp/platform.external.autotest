@@ -4326,6 +4326,18 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     # tracks how long an overall discovery session should be.
     DISCOVERY_TIMEOUT_SEC = 60
 
+    # A list of device models that do not support the role of
+    # 'central-peripheral'.
+    NON_CENTRAL_PERIPHERAL_MODELS = [
+            "akali", "asuka", "babymega", "barla", "basking", "bob", "burnet",
+            "careena", "caroline", "cave", "cerise", "chell", "cozmo",
+            "delbin", "dru", "electro", "elm", "esche", "eve", "fennel",
+            "hana", "juniper", "kakadu", "kappa", "karma", "katsu", "kench",
+            "kenzo", "kevin", "krane", "lars", "nocturne", "pantheon", "pyro",
+            "sand", "sentry", "snappy", "sona", "soraka", "stern", "teemo",
+            "treeya360", "willow"
+    ]
+
     class DiscoveryObserver(BluetoothCallbacks):
         """ Discovery observer that restarts discovery until a timeout.
 
@@ -5001,12 +5013,20 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                               prop_name)
 
     def get_adapter_properties(self):
-        """Reads the adapter properties from the Bluetooth Daemon.
+        """Gets the adapter properties.
 
         @return A JSON-encoded dictionary of the adapter properties on success,
              otherwise, an empty JSON-encoded dictionary.
         """
-        return json.dumps(self.adapter_client.get_properties())
+        properties = self.adapter_client.get_properties()
+        if properties:
+            platform = utils.get_platform()
+            roles = ['peripheral', 'central']
+            if platform not in self.NON_CENTRAL_PERIPHERAL_MODELS:
+                roles.append('central-peripheral')
+            properties['Roles'] = roles
+            logging.debug('BT adapter roles for %s: %s', platform, roles)
+        return json.dumps(properties)
 
     def register_advertisement(self, advertisement_data):
         """Registers advertisement set with advertising data.

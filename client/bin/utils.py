@@ -352,6 +352,7 @@ INTEL_UARCH_TABLE = {
     '0F_03': 'Prescott',
     '0F_04': 'Prescott',
     '0F_06': 'Presler',
+    '06_BA': 'Raptor Lake',
     '06_2A': 'Sandy Bridge',
     '06_2D': 'Sandy Bridge',
     '06_37': 'Silvermont',
@@ -379,7 +380,7 @@ INTEL_BIGCORE_ORDER = [
         'Sandy Bridge', 'Ivy Bridge', 'Ivy Bridge-E', 'Haswell', 'Haswell-E',
         'Broadwell', 'Skylake', 'Kaby Lake', 'Coffee Lake', 'Whiskey Lake',
         'Cannon Lake', 'Comet Lake', 'Ice Lake', 'Tiger Lake', 'Alder Lake',
-        'Meteor Lake'
+        'Raptor Lake', 'Meteor Lake'
 ]
 
 

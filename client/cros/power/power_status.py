@@ -1081,6 +1081,7 @@ class CPUPackageStats(CPUCStateStats):
                 'Skylake':      self.BROADWELL,
                 'Tiger Lake':   self.BROADWELL,
                 'Alder Lake':   self.BROADWELL,
+                'Raptor Lake':  self.BROADWELL,
                 'Tremont':      self.GOLDMONT,
                 'Westmere':     self.NEHALEM,
                 }.get(cpu_uarch, None)

@@ -16,10 +16,21 @@ from __future__ import print_function
 import datetime
 import time
 import logging
+import os
+import sys
 
 # import autotest libraries
 from autotest_lib.tko import models
-from autotest_lib.tko import tko_pb2
+
+# import tko pb from src/config if available
+tko_pb_path = os.path.join(os.getenv("CROS_WORKON_SRCROOT"), "src", "config", "python", "chromiumos", "test", "artifact")
+if os.path.exists(os.path.join(tko_pb_path, "tko_pb2.py")):
+    logging.debug("tko pb found in src/config")
+    sys.path.append(tko_pb_path)
+    import tko_pb2
+else:
+    from autotest_lib.tko import tko_pb2
+
 from autotest_lib.tko import utils
 import six
 

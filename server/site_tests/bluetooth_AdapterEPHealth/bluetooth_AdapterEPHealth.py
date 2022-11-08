@@ -1,5 +1,5 @@
-# Lint as: python2, python3
-# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Lint as:python3
+# Copyright 2021 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -214,7 +214,11 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
                 self.cleanup_bluetooth_audio(device, A2DP)
 
 
-    @test_wrapper('Set Allowlist with Different UUIDs')
+    # Floss admin API only accepts 128-bit UUIDs. Other test cases already cover
+    # the UUID validity tests for 128-bit UUID input.
+    # So we remove the test case for Floss.
+    @test_wrapper('Set Allowlist with Different UUIDs',
+                  supports_floss=False)
     def ep_check_set_allowlist(self):
         """The Enterprise Policy set valid and invalid allowlists test."""
         # Duplicate valid UUIDs

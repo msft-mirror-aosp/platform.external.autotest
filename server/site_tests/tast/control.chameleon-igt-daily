@@ -9,12 +9,12 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:graphics_per-day, suite:chameleon_igt_daily'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "chameleon:hdmi"
+DEPENDENCIES = 'chameleon:hdmi'
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
-DOC = '''
+DOC = """
 Run the Tast chameleon-igt test suite.
 
 Tast is an integration-testing framework analagous to the test-running portion
@@ -27,15 +27,55 @@ other and a clean device state is needed by rebooting before running a
 different graphics suite.
 
 See http://go/tast-failures for information about investigating failures.
-'''
+"""
+
+from autotest_lib.client.common_lib import utils
+from autotest_lib.server import utils as server_utils
+
 
 def run(machine):
-    host=hosts.create_host(machine)
-    host.reboot()
-    job.run_test('tast',
-                 host=host,
-                 test_exprs=['("group:graphics" && graphics_nightly && graphics_chameleon_igt)'],
-                 ignore_test_failures=True, max_run_sec=21600,
-                 command_args=args)
+    # Get host objects for each device.
+    host = hosts.create_host(machine)
+
+    # Extract Chameleon args from command line arguments
+    args_dict = utils.args_to_dict(args)
+    varslist = []
+
+    # In Skylab, Chameleon follows the naming convention '{DUT}-chameleon'.
+    # The series of tests are executed as Tast client tests, during which
+    # DUT would issues xmlrpc commands directly against Chameleon.
+    # The DUT and the corresponding Chameleon board access each other only
+    # through IP. The drone server can help look up the IP for '{DUT}-chameleon'
+    # and pass that to DUT.
+    if 'chameleon_host' in args_dict:
+        chameleon_host = args_dict['chameleon_host']
+    else:
+        chameleon_host = f'{host.hostname}-chameleon'
+    # Hack that uses the fact that we can see the lab network from here.
+    # This should be fixed by official lab support, details in b/246566625.
+    chameleon_ip = server_utils.get_ip_address(chameleon_host)
+
+    # Define list of Chameleon specific variables to pass to Tast.
+    varslist.append(f'graphics.chameleon_host={chameleon_host}')
+    varslist.append(f'graphics.chameleon_ip={chameleon_ip}')
+    if 'chameleon_port' in args_dict:
+        chameleon_port = args_dict['chameleon_port']
+        varslist.append(f'graphics.chameleon_port={chameleon_port}')
+    if 'chameleon_ssh_port' in args_dict:
+        chameleon_ssh_port = args_dict['chameleon_ssh_port']
+        varslist.append(f'graphics.chameleon_ssh_port={chameleon_ssh_port}')
+
+    logging.info(f'Running IGT with args: {args} and varslist: {varslist}')
+    job.run_test(
+        'tast',
+        host=host,
+        test_exprs=[
+            '("group:graphics" && graphics_nightly && graphics_chameleon_igt)'
+        ],
+        ignore_test_failures=True,
+        max_run_sec=21600,
+        command_args=args,
+        varslist=varslist)
+
 
 parallel_simple(run, machines)

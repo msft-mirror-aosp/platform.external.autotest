@@ -42,6 +42,7 @@ class FlossManagerClient(ManagerCallbacks):
     MGR_SERVICE = 'org.chromium.bluetooth.Manager'
     MGR_INTERFACE = 'org.chromium.bluetooth.Manager'
     MGR_OBJECT = '/org/chromium/bluetooth/Manager'
+    EXPR_INTERFACE = 'org.chromium.bluetooth.Experimental'
 
     # Exported callback interface and objects
     CB_EXPORTED_INTF = 'org.chromium.bluetooth.ManagerCallback'
@@ -109,6 +110,11 @@ class FlossManagerClient(ManagerCallbacks):
         return self.bus.get(self.MGR_SERVICE,
                             self.MGR_OBJECT)[self.MGR_INTERFACE]
 
+    def expr_proxy(self):
+        """Gets proxy object to experimental interface for method calls."""
+        return self.bus.get(self.MGR_SERVICE,
+                            self.MGR_OBJECT)[self.EXPR_INTERFACE]
+
     @glib_call(False)
     def register_callbacks(self):
         """Registers manager callbacks for this client if one doesn't already exist.
@@ -174,6 +180,10 @@ class FlossManagerClient(ManagerCallbacks):
     @glib_call()
     def set_floss_enabled(self, enabled):
         self.proxy().SetFlossEnabled(enabled)
+
+    @glib_call(False)
+    def set_ll_privacy(self, enabled):
+        return bool(self.expr_proxy().SetLLPrivacy(enabled))
 
     @glib_call([])
     def get_available_adapters(self):

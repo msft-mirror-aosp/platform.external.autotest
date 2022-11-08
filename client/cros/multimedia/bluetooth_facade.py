@@ -4625,6 +4625,18 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Enable or disable Floss."""
         self.manager_client.set_floss_enabled(enabled)
 
+    def set_ll_privacy(self, enabled):
+        """Enable or disable LL privacy."""
+        # TODO: Restart and return True for backward compatible. Remove when
+        # changes landed on all channels: aosp/2240909 and aosp/2321919.
+        status = self.manager_client.set_ll_privacy(enabled)
+        if not status:
+            logging.warn('Set LL privacy returns False.')
+        if self.is_powered_on():
+            self.stop_bluetoothd()
+            self.start_bluetoothd()
+        return True
+
     def start_bluetoothd(self):
         """Starts Floss. This includes enabling the adapter.
 

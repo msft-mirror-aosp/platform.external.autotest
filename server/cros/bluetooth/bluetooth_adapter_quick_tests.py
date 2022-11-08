@@ -418,15 +418,12 @@ class BluetoothAdapterQuickTests(
         self.test_is_facade_valid()
         self.test_is_adapter_valid()
 
-        # Explicitly enable/disable LL Privacy if we are not running Floss.
-        #
         # The test_set_ll_privacy() call will persist the LL privacy status in
         # the config file, so when the adapter is reset, unless the config file
         # is explicitly updated, the new LL privacy status is still valid.
-        if not self.floss:
-            if not self.test_set_ll_privacy(self.llprivacy):
-                raise error.TestError('Failed to set LL privacy to {}'.format(
-                        self.llprivacy))
+        if not self.test_set_ll_privacy(self.llprivacy):
+            raise error.TestError('Failed to set LL privacy to {}'.format(
+                    self.llprivacy))
 
         # Reset the adapter
         self.test_reset_on_adapter()

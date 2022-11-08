@@ -32,8 +32,11 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     GS_PRIVATE_PROD = GS_PRIVATE + 'ti50/'
     # Node locked test images are in this private debug directory.
     GS_PRIVATE_DBG = GS_PRIVATE + 'chromeos-ti50-debug/'
-    # ti50.ro.0.0.*.rw.RW_VER.BID.tbz2. RW_VER and BID are supplied by the test.
-    PROD_TAR = 'ti50.ro.0.0.*.rw.%s%s.tar.xz'
+    # This works for all ti50 file formats. RW_VER and BID are supplied by the
+    # test.
+    # old - ti50.ro.0.0.*.rw.RW_VER.BID.tar.xz
+    # new - ti50.r0.0.*.w0.RW_VER.BID.tar.xz
+    PROD_TAR = 'ti50.r*0.0.*%s%s.tar.xz'
     # Prod image from the tarball
     PROD_FILE = 'ti50.bin.prod'
     # ti50.dbg.0xDEVID0_0xDEVID1.bin.GIT_SHA.BID (SHA and BID are optional)

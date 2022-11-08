@@ -3,17 +3,17 @@
 # found in the LICENSE file.
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = 'spera_GoogleMeetCUJ_premium_large'
+NAME = 'spera_VideoProxyCUJ_essential_hevc'
 ATTRIBUTES = 'suite:performance_cuj_quick_v2'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
-PRIORITY = 4997
+PRIORITY = 4994
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 2
 REQUIRE_SSP = True
-DEPENDENCIES = 'premium'
+DEPENDENCIES = 'essential'
 PY_VERSION = 3
 
 DOC = '''
@@ -32,9 +32,9 @@ from autotest_lib.utils import labellib
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
   labels['test_version'] = 2
-  labels['test'] = 'spera.GoogleMeetCUJ.premium_large'
+  labels['test'] = 'spera.VideoProxyCUJ.essential_hevc'
   labels['test_iteration'] = '1'
-  labels['total_tests_to_run'] = 16
+  labels['total_tests_to_run'] = 8
   utils.write_keyval(job.resultdir, labels)
   try:
     # Try to retrieve and report DUT HWID and serial number.
@@ -49,7 +49,7 @@ def run(machine):
   report_host_info(host)
   job.run_test('tast',
               host=host,
-              test_exprs=['spera.GoogleMeetCUJ.premium_large'],
+              test_exprs=['spera.VideoProxyCUJ.essential_hevc'],
               ignore_test_failures=False,
               max_run_sec=3600,
               command_args=args,

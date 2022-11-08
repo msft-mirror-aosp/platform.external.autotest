@@ -33,6 +33,147 @@ from autotest_lib.utils import terminal
 _STDOUT_IS_TTY = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
 
 
+def _test_name_from_dir(test_dir):
+    """Return the name from the test_dir.
+
+    Examples:
+    /tmp/test_that_latest/something/else/results-n-testname
+        returns `testname`
+
+    /tmp/TTL/something/results-n-test-name-here
+        returns `test-name-here`
+
+    """
+    test_name = test_dir.split('/')[-1]
+    return '-'.join(test_name.split('-')[2:])
+
+
+def generate_json_report(topDir):
+    status_dirs = find_dirs(topDir)
+    raw_json = {'tests': []}
+    for testdir in status_dirs:
+        raw_stat = get_status(testdir)
+        load_json(raw_stat, raw_json, testdir)
+    return raw_json
+
+
+def load_json(raw_stat, raw_json, testdir):
+    indentLevel = -1
+    missingResult = False
+    lastStartTime = None
+    firstFound = False
+    for line in raw_stat.splitlines():
+        fields = get_fields(line)
+        if fields[0] == 'INFO' or fields[1] == '----':
+            continue
+        if fields[0] == 'START':
+            if missingResult:
+                # Nested starts.... skipping for now....
+                continue
+            missingResult = True
+            lastStartTime = fields[2]
+            indentLevel = indent(line)
+        elif indent(line) == indentLevel + 1:
+            if missingResult is not True:
+                raise Exception('Content found out of context.')
+            contentLine = line
+        elif indent(line) == indentLevel and isEndLine(fields[0]):
+            missingResult = False
+            verdict = (parseResult(fields[0]))
+            _translate_to_dict(raw_json, fields, verdict, contentLine,
+                               lastStartTime, testdir, firstFound)
+            firstFound = True
+        else:
+            # This is the case where we are dealing with lots of spammy logs
+            # inside of a task/test.
+            # We want to keep the parser as simple as possible:
+            # 1.) Find start of a test
+            # 2.) Find the first indented line prior to the close line.
+            # 3.) Find the closing line which matches the indent.
+            # 4.) Save all that info as a result.
+            continue
+
+
+def isEndLine(field):
+    if re.search(r'%s' % 'END', field):
+        return True
+    return False
+
+
+def _translate_to_dict(res, fields, verdict, contentLine,
+                       lastStartTime, testdir, firstFound):
+    """Return the full_status, testname, and err to a json dict."""
+    if not firstFound:
+        # Sigh, the first test found will actually be the full test name.
+        # because of inconsistencies in autotest tests, tast tests, and tagged
+        # tests, we can't actually "trust"  this name, thus we must get it from
+        # the dir name, which is always correct.
+        # The following test names will WAI.
+        name = _test_name_from_dir(testdir)
+    else:
+        name = fields[1]
+    res['tests'].append(
+        {'verdict': verdict,
+         'testname': name,
+         'errmsg': errFromContent(contentLine),
+         'resultspath': testdir,
+         'starttime': fields[2],
+         'endtime': lastStartTime
+         })
+
+
+def errFromContent(contentLine):
+    return contentLine.split('\t')[-1]
+
+
+def parseResult(status_raw):
+    status = 'Error'
+    if re.search(r'%s' % 'FAIL', status_raw):
+        status = 'Fail'
+    elif re.search(r'%s' % 'ERROR', status_raw):
+        status = 'Error'
+    elif re.search(r'%s' % 'ABORT', status_raw):
+        status = 'Abort'
+    elif re.search(r'%s' % 'WARN', status_raw):
+        status = 'Warn'
+    elif re.search(r'%s' % 'TEST_NA', status_raw):
+        status = 'Not Run'
+    elif re.search(r'GOOD', status_raw):
+        status = 'Pass'
+    return status
+
+
+def get_fields(line):
+    indents = indent(line)
+    items = line.split('\t')
+    status = items[0 + indents]
+    name = items[2 + indents]
+    taskTime = items[3 + indents]
+    return status, name, taskTime
+
+
+def indent(line):
+    return (len(line) - len(line.lstrip('\t')))
+
+
+def get_status(testdir):
+    status_file = os.path.join(testdir, 'status.log')
+    if not os.path.isfile(status_file):
+        return
+    return open(status_file, 'r').read()
+
+
+def find_dirs(topDir):
+    f = []
+    for (dirpath, dirnames, filenames) in os.walk(topDir):
+        for d in dirnames:
+            if 'results-' not in d:
+                continue
+            fp = os.path.join(dirpath, d)
+            if 'status.log' in os.listdir(fp):
+                f.append(fp)
+    return f
+
 def Die(message_format, *args, **kwargs):
     """Log a message and kill the current process.
 
@@ -916,20 +1057,6 @@ class ReportGenerator(object):
             sys.stderr.flush()
             sys.stdout.flush()
 
-    def _test_name_from_dir(self, test_dir):
-        """Return the name from the test_dir.
-
-        Examples:
-        /tmp/test_that_latest/something/else/results-n-testname
-            returns `testname`
-
-        /tmp/TTL/something/results-n-test-name-here
-            returns `test-name-here`
-
-        """
-        test_name = test_dir.split('/')[-1]
-        return '-'.join(test_name.split('-')[2:])
-
     def _translate_to_dict(self):
         """Return the full_status, testname, and err to a json dict."""
         res = {'tests': []}
@@ -938,7 +1065,7 @@ class ReportGenerator(object):
                 continue
             res['tests'].append(
                 {'verdict': test_info['full_status'],
-                 'testname': self._test_name_from_dir(test_info['testdir']),
+                 'testname': _test_name_from_dir(test_info['testdir']),
                  'errmsg': test_info['full_err'],
                  'resultspath': test_info['testdir'],
                  'starttime': test_info['starttimestamp'],
@@ -950,7 +1077,7 @@ class ReportGenerator(object):
         """Write the translated json results to results.json."""
         if not self._options.html_report_dir:
             return
-        json_results = self._translate_to_dict()
+        json_results = generate_json_report(self._options.html_report_dir)
         with open(os.path.join(self._options.html_report_dir,
                                "results.json"), 'w') as wf:
                 json.dump(json_results, wf)

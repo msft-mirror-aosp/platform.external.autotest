@@ -1,3 +1,5 @@
 include chromiumos/config:/OWNERS.testservices
 include /ENGPROD_OWNERS
 include /INFRA_OWNERS
+
+per-file utils.py = file:/POWER_OWNERS

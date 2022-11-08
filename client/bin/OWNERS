@@ -1,1 +1,3 @@
 include /HARNESS_OWNERS
+
+per-file utils.py = file:/POWER_OWNERS

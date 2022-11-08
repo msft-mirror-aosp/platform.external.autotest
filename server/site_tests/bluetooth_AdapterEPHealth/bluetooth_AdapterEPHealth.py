@@ -301,7 +301,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Incoming: HID: Service in Allowlist',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_incoming_hid_service_in_allowlist(self):
         """Service in allowlist for incoming reconnection from device."""
         device = self.devices['KEYBOARD'][0]
@@ -310,7 +311,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Incoming: Audio: Service in Allowlist',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def ep_incoming_audio_service_in_allowlist(self):
         """Service in allowlist for incoming reconnection from device."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -320,7 +322,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Incoming: HID: Service not in Allowlist',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_incoming_hid_service_not_in_allowlist(self):
         """Service not in allowlist for incoming reconnection from device."""
         device = self.devices['KEYBOARD'][0]
@@ -340,7 +343,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Incoming: HID: Service empty Allowlist',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_incoming_hid_service_empty_allowlist(self):
         """The test with an empty allowlist for incoming connection."""
         device = self.devices['KEYBOARD'][0]
@@ -350,7 +354,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Incoming: Audio: Service empty Allowlist',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def ep_incoming_audio_service_empty_allowlist(self):
         """The test with an empty allowlist for incoming connection."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -634,7 +639,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
                  peer_required=True,
                  args_dict=None,
                  test_name=None,
-                 flag='Quick Health'):
+                 flag='Quick Health',
+                 floss=False):
         """Run the batch of Bluetooth enterprise policy health tests
 
         @param host: the DUT, usually a chromebook
@@ -646,6 +652,7 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.quick_test_init(host,
                              use_btpeer=peer_required,
                              flag=flag,
-                             args_dict=args_dict)
+                             args_dict=args_dict,
+                             floss=floss)
         self.ep_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -244,7 +244,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.test_check_set_allowlist('aaaaaaaa-bbbb-cccc-dddd', False)
 
 
-    @test_wrapper('Outgoing: HID: Service in Allowlist', devices={'KEYBOARD':1})
+    @test_wrapper('Outgoing: HID: Service in Allowlist',
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_outgoing_hid_service_in_allowlist(self):
         """The test with service in allowlist for outgoing connection."""
         device = self.devices['KEYBOARD'][0]
@@ -253,7 +255,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Outgoing: Audio: Service in Allowlist',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def ep_outgoing_audio_services_in_allowlist(self):
         """The test with service in allowlist for outgoing connection."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -263,7 +266,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Outgoing: HID: Service not in Allowlist',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_outgoing_hid_service_not_in_allowlist(self):
         """The test with service not in allowlist for outgoing connection."""
         device = self.devices['KEYBOARD'][0]
@@ -272,7 +276,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Outgoing: Audio: Service not in Allowlist',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def ep_outgoing_audio_services_not_in_allowlist(self):
         """The test with service not in allowlist for outgoing connection."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -283,7 +288,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Outgoing: HID: Empty Allowlist',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_outgoing_hid_empty_allowlist(self):
         """The test with an empty allowlist for outgoing connection."""
         device = self.devices['KEYBOARD'][0]
@@ -292,7 +298,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Outgoing: Audio: Empty Allowlist',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def ep_outgoing_audio_empty_allowlist(self):
         """The test with an empty allowlist for outgoing connection."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -386,7 +393,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Outgoing: BLE Keyboard: Empty Allowlist',
-                  devices={'BLE_KEYBOARD':1})
+                  devices={'BLE_KEYBOARD':1},
+                  supports_floss=True)
     def ep_outgoing_ble_hid_empty_allowlist(self):
         """The test for BLE gatt services and an empty allowlist."""
         device = self.devices['BLE_KEYBOARD'][0]
@@ -415,7 +423,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
                              expected_passes=False)
 
 
-    @test_wrapper('Combo: Set Allowlist and Disconnect', devices={'KEYBOARD':1})
+    @test_wrapper('Combo: Set Allowlist and Disconnect',
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_combo_set_allowlist_and_disconnect(self):
         """Set a new allowlist and current connection should be terminated."""
         device = self.devices['KEYBOARD'][0]
@@ -428,7 +438,9 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         self.test_device_is_not_connected(device.address)
 
 
-    @test_wrapper('Combo: Successive Allowlist', devices={'KEYBOARD':1})
+    @test_wrapper('Combo: Successive Allowlist',
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_combo_successive_allowlists(self):
         """A new allowlist overwrites previoius one and allows connection."""
         device = self.devices['KEYBOARD'][0]
@@ -442,7 +454,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Combo: HID Allowlist Persists Adapter Reset',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_combo_hid_persists_adapter_reset(self):
         """The Allowlist with HID UUID should persist adapter reset."""
         device = self.devices['KEYBOARD'][0]
@@ -464,7 +477,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Combo: HID Allowlist Persists bluetoothd restart',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_combo_hid_persists_bluetoothd_restart(self):
         """The Allowlist with HID UUID should persist bluetoothd restart."""
         device = self.devices['KEYBOARD'][0]
@@ -494,7 +508,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Combo: HID Allowlist Persists reboot',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_combo_hid_persists_reboot(self):
         """The Allowlist with HID UUID should persist reboot."""
         device = self.devices['KEYBOARD'][0]
@@ -507,7 +522,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Combo: Non-HID Allowlist Persists reboot',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_combo_non_hid_persists_reboot(self):
         """The Allowlist with non-HID UUID should persist reboot."""
         device = self.devices['KEYBOARD'][0]
@@ -559,7 +575,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('MD: Classic and BLE HID: Services in Allowlist',
-                  devices={'BLE_KEYBOARD':1, 'MOUSE':1})
+                  devices={'BLE_KEYBOARD':1, 'MOUSE':1},
+                  supports_floss=True)
     def ep_md_hid_and_ble_hid_in_allowlist(self):
         """The multi-device test for Classic and BLE HID in the allowlist."""
         keyboard_device = self.devices['BLE_KEYBOARD'][0]
@@ -572,7 +589,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('MD: BLE HID and Audio: Empty Allowlist',
-                  devices={'BLE_KEYBOARD':1, 'BLUETOOTH_AUDIO':1})
+                  devices={'BLE_KEYBOARD':1, 'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def ep_md_ble_hid_and_audio_empty_allowlist(self):
         """The multi-device test for BLE HID and Audio with empty allowlist."""
         hid_device = self.devices['BLE_KEYBOARD'][0]

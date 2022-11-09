@@ -3,15 +3,15 @@
 # found in the LICENSE file.
 
 AUTHOR = 'asadrieh, chromeos-engprod-platform-syd'
-NAME = 'tabswitchcuj2_plus_noproxy'
-ATTRIBUTES = 'suite:performance_cuj_sprite'
+NAME = 'googlemeetcuj_basic_large'
+ATTRIBUTES = 'suite:performance_cuj_sprite_quick'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 4
-ITERATION = 10
+ITERATION = 1
 REQUIRE_SSP = True
 DEPENDENCIES = ''
 PY_VERSION = 3
@@ -31,7 +31,7 @@ from autotest_lib.utils import labellib
 
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
-  labels['test'] = 'meta.RunCUJ.tabswitchcuj2_plus_noproxy'
+  labels['test'] = 'meta.RunCUJ.googlemeetcuj_basic_large'
   utils.write_keyval(job.resultdir, labels)
   try:
     # Try to retrieve and report DUT HWID and serial number.
@@ -47,7 +47,7 @@ def run(machine):
   varslist = ['iteration=%d' % ITERATION]
   job.run_test('tast',
               host=host,
-              test_exprs=['meta.RunCUJ.tabswitchcuj2_plus_noproxy'],
+              test_exprs=['meta.RunCUJ.googlemeetcuj_basic_large'],
               ignore_test_failures=False,
               max_run_sec= 120 * 60,
               varslist=varslist,

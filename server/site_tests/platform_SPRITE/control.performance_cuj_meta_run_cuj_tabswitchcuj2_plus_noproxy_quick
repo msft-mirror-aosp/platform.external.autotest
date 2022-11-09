@@ -4,14 +4,14 @@
 
 AUTHOR = 'asadrieh, chromeos-engprod-platform-syd'
 NAME = 'tabswitchcuj2_plus_noproxy'
-ATTRIBUTES = 'suite:performance_cuj_sprite'
+ATTRIBUTES = 'suite:performance_cuj_sprite_quick'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 4
-ITERATION = 10
+ITERATION = 1
 REQUIRE_SSP = True
 DEPENDENCIES = ''
 PY_VERSION = 3

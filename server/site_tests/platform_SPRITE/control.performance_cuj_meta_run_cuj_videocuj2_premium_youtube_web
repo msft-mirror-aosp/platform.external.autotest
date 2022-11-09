@@ -11,6 +11,7 @@ TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 4
+ITERATION = 10
 REQUIRE_SSP = True
 DEPENDENCIES = ''
 PY_VERSION = 3
@@ -43,11 +44,13 @@ def report_host_info(host):
 def run(machine):
   host=hosts.create_host(machine)
   report_host_info(host)
+  varslist = ['iteration=%d' % ITERATION]
   job.run_test('tast',
               host=host,
               test_exprs=['meta.RunCUJ.videocuj2_premium_youtube_web'],
               ignore_test_failures=False,
               max_run_sec= 120 * 60,
+              varslist=varslist,
               command_args=args)
 
 parallel_simple(run, machines)

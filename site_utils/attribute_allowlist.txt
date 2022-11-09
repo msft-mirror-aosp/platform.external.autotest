@@ -477,6 +477,7 @@ suite:performance_cuj_gaming_lacros
 suite:performance_cuj_lacros
 suite:performance_cuj_quick
 suite:performance_cuj_sprite
+suite:performance_cuj_sprite_quick
 suite:performance_cuj_quick_v2
 suite:performance_cuj_v2
 suite:platform_internal_display

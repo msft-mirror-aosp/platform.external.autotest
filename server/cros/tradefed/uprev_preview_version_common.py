@@ -43,6 +43,7 @@ def get_latest_version_name(branch_name: str, abi_list: Dict[str, str]) -> str:
         ]
         # Get the latest 5 correctly built ids whose type is string in the specified branch and target.
         # For example: ['9204700', '9199760', '9198611', '9196948', '9196848']
+        logging.info(f'getting build ids: the command is {ab_cmd}.')
         build_ids = subprocess.check_output(ab_cmd,
                                             encoding='utf-8').splitlines()
         build_ids_per_target.append(build_ids)
@@ -83,7 +84,9 @@ def fetch_artifact(download_dir, branch_name, target_name, xts_name,
             f'--target={target_name}', f'android-{xts_name}.zip',
             f'--bid={version_name}'
     ]
-    logging.info(f'Downloading to {download_dir}.')
+    logging.info(
+            f'Downloading to {download_dir}: the command is {fetch_cmd} in {download_dir}.'
+    )
     subprocess.check_call(fetch_cmd, cwd=download_dir)
 
 
@@ -118,6 +121,9 @@ def upload_preview_xts(file_path: str, config_path: str, abi: str,
             f'{file_path}/android-{xts_name}.zip',
             f'{remote_url}'
         ]
+        logging.info(
+            f'Uploading to {remote_url}: the command is {cmd}.'
+        )
         subprocess.check_call(cmd)
         """
         pass

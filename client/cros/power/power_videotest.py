@@ -7,10 +7,15 @@ import logging
 import time
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.common_lib.cros import arc_common
+from autotest_lib.client.cros import tast
+from autotest_lib.client.cros.tast.ui import chrome_service_pb2
+from autotest_lib.client.cros.tast.ui import conn_service_pb2
+from autotest_lib.client.cros.tast.ui import conn_tab
+from autotest_lib.client.cros.tast.ui import tast_utils
+from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
 from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.power import power_test
-from autotest_lib.client.cros.power import power_utils
 
 
 class power_VideoTest(power_test.power_Test):
@@ -56,28 +61,26 @@ class power_VideoTest(power_test.power_Test):
         audio_helper.set_volume_levels(10, 10)
 
     @abc.abstractmethod
-    def _prepare_video(self, cr, url):
+    def _prepare_video(self, url):
         """Prepare browser session before playing video.
 
-        @param cr: Autotest Chrome instance.
         @param url: url of video file to play.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _start_video(self, cr, url):
+    def _start_video(self, tab, url):
         """Open the video and play it.
 
-        @param cr: Autotest Chrome instance.
+        @param tab: object, Tast Chrome tab instance.
         @param url: url of video file to play.
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _teardown_video(self, cr, url):
+    def _teardown_video(self, url):
         """Teardown browser session after playing video.
 
-        @param cr: Autotest Chrome instance.
         @param url: url of video file to play.
         """
         raise NotImplementedError()
@@ -85,7 +88,7 @@ class power_VideoTest(power_test.power_Test):
     def _calculate_dropped_frame_percent(self, tab):
         """Calculate percent of dropped frame.
 
-        @param tab: tab object that played video in Autotest Chrome instance.
+        @param tab: tab object that played video in Tast Chrome instance.
         """
         decoded_frame_count = tab.EvaluateJavaScript(
                 "document.getElementsByTagName"
@@ -105,28 +108,45 @@ class power_VideoTest(power_test.power_Test):
         return dropped_frame_percent
 
     def run_once(self, videos=None, secs_per_video=_MEASUREMENT_DURATION,
-                 use_hw_decode=True):
+                 use_hw_decode=True, tast_bundle_path=None):
         """run_once method.
 
         @param videos: list of tuple of tagname and video url to test.
         @param secs_per_video: time in seconds to play video and measure power.
         @param use_hw_decode: if False, disable hw video decoding.
         """
-        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
-        # so that each test run does not remember info from last test run.
-        extra_browser_args = ['--disable-sync']
-        # b/228256145 to avoid powerd restart
-        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
-        if not use_hw_decode:
-            extra_browser_args.append(self._DISABLE_HW_VIDEO_DECODE_ARGS)
 
-        with chrome.Chrome(extra_browser_args=extra_browser_args,
-                           init_network_controller=True,
-                           arc_mode=self._arc_mode) as self.cr:
-            # Chrome always starts with an empty tab, so we just use that one.
-            tab = self.cr.browser.tabs[0]
-            tab.Activate()
-            power_utils.set_fullscreen(self.cr)
+
+        with tast.GRPC(tast_bundle_path) as tast_grpc,\
+            tast.ChromeService(tast_grpc.channel) as chrome_service,\
+            tast.ConnService(tast_grpc.channel) as conn_service:
+            tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
+
+            # --disable-sync disables test account info sync, eg. Wi-Fi
+            # credentials, so that each test run does not remember info from
+            # last test run.
+            extra_args = ['--disable-sync']
+
+            if not use_hw_decode:
+                extra_args.append(self._DISABLE_HW_VIDEO_DECODE_ARGS)
+
+            chrome_service.New(chrome_service_pb2.NewRequest(
+                # b/228256145 to avoid powerd restart
+                disable_features = ['FirmwareUpdaterApp'],
+                extra_args = extra_args,
+                arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
+                            if self._arc_mode == arc_common.ARC_MODE_ENABLED
+                            else chrome_service_pb2.ARC_MODE_DISABLED),
+            ))
+
+            response = conn_service.NewConn(conn_service_pb2.NewConnRequest(
+                url = 'about:blank'
+            ))
+            tab = conn_tab.ConnTab(conn_service, response.id)
+            tab.ActivateTarget()
+
+            # Run in fullscreen.
+            tast_utils.make_current_screen_fullscreen(tconn_service)
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
@@ -137,21 +157,20 @@ class power_VideoTest(power_test.power_Test):
             idle_start = time.time()
 
             for name, url in videos:
-                self._prepare_video(self.cr, url)
+                self._prepare_video(url)
                 time.sleep(self._WAIT_FOR_IDLE)
 
                 logging.info('Playing video: %s', name)
-                self._start_video(self.cr, url)
+                self._start_video(tab, url)
                 self.checkpoint_measurements('idle', idle_start)
 
                 loop_start = time.time()
                 time.sleep(secs_per_video)
                 self.checkpoint_measurements(name, loop_start)
-
                 idle_start = time.time()
                 self.keyvals[name + '_dropped_frame_percent'] = \
                         self._calculate_dropped_frame_percent(tab)
-                self._teardown_video(self.cr, url)
+                self._teardown_video(url)
 
             # Re-enable multicast here instead of in the cleanup because Chrome
             # might re-enable it and we can't verify that multicast is off.

@@ -15,4 +15,5 @@ TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
-job.run_test('power_VideoPlayback', pdash_note=pdash_note)
+job.run_test('power_VideoPlayback', pdash_note=pdash_note,
+             tast_bundle_path=args_dict.get('tast_bundle_path'))

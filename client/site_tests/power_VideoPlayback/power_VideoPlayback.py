@@ -106,10 +106,9 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
         ),
     ]
 
-    def _prepare_video(self, cr, url):
+    def _prepare_video(self, url):
         """Prepare browser session before playing video.
 
-        @param cr: Autotest Chrome instance.
         @param url: url of video file to play.
         """
         # Download video to ramdisk
@@ -117,40 +116,39 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
         logging.info('Downloading %s to %s', url, local_path)
         file_utils.download_file(url, local_path)
 
-    def _start_video(self, cr, url):
+    def _start_video(self, tab, url):
         """Start playing video.
 
-        @param cr: Autotest Chrome instance.
+        @param tab: object, Tast Chrome tab instance.
         @param local_path: path to the local video file to play.
         """
         local_path = os.path.join(self._RAMDISK, os.path.basename(url))
-        tab = cr.browser.tabs[0]
         # Ensure the tab is activated because Chrome sometimes starts with
         # and focus on another "What's new" tab.
-        tab.Activate()
+        tab.ActivateTarget()
 
         tab.Navigate('file://' + local_path)
         tab.WaitForDocumentReadyStateToBeComplete()
         tab.EvaluateJavaScript(
             "document.getElementsByTagName('video')[0].loop=true")
 
-    def _teardown_video(self, cr, url):
+    def _teardown_video(self, url):
         """Teardown browser session after playing video.
 
-        @param cr: Autotest Chrome instance.
         @param url: url of video file to play.
         """
         local_path = os.path.join(self._RAMDISK, os.path.basename(url))
         os.remove(local_path)
 
     def run_once(self, videos=None, secs_per_video=_MEASUREMENT_DURATION,
-                 use_hw_decode=True, fast=False):
+                 use_hw_decode=True, fast=False, tast_bundle_path=None):
         """run_once method.
 
         @param videos: list of tuple of tagname and video url to test.
         @param secs_per_video: time in seconds to play video and measure power.
         @param use_hw_decode: if False, disable hw video decoding.
         @param fast: Use smaller set of videos when videos is None.
+        @param tast_bundle_path: Path to a tast_bundle executable.
         """
         default_videos = self._FAST_VIDEOS if fast else self._VIDEOS
         if not videos:
@@ -169,4 +167,4 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
                     raise error.TestError(estr)
 
         super(power_VideoPlayback, self).run_once(
-            videos, secs_per_video, use_hw_decode)
+            videos, secs_per_video, use_hw_decode, tast_bundle_path)

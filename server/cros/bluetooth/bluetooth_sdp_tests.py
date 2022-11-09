@@ -412,23 +412,32 @@ class bluetooth_SDP_ServiceAttributeRequest(bluetooth_SDP_Test,
         # Connect to the DUT via L2CAP using SDP socket.
         self.tester.connect(self.adapter['Address'])
 
-        self.test_record_handle_attribute()
         self.test_browse_group_attribute()
-        self.test_icon_url_attribute()
-        self.test_documentation_url_attribute()
-        self.test_client_executable_url_attribute()
         self.test_protocol_descriptor_list_attribute()
         self.test_continuation_state()
-        self.test_version_list_attribute()
-        self.test_service_database_state_attribute()
-        self.test_profile_descriptor_list_attribute()
         self.test_additional_protocol_descriptor_list_attribute()
-        self.test_fake_attributes()
         self.test_non_existing_attribute()
         self.test_invalid_record_handle()
-        self.test_invalid_pdu_size()
-        self.test_invalid_request_syntax()
+        # TODO(b/271393419): Floss missing some services and attributes. Will
+        #  be implemented later.
+        if not self.floss:
+            # Floss does not support 'SDP_SERVER_CLASS_ID'.
+            self.test_record_handle_attribute()
+            self.test_version_list_attribute()
+            self.test_service_database_state_attribute()
+            self.test_invalid_pdu_size()
+            self.test_invalid_request_syntax()
 
+            # Floss missing 'ICON_URL_ATTR_ID'.
+            self.test_icon_url_attribute()
+            # Floss missing 'DOCUMENTATION_URL_ATTR_ID'.
+            self.test_documentation_url_attribute()
+            # Floss missing 'CLIENT_EXECUTABLE_URL_ATTR_ID'.
+            self.test_client_executable_url_attribute()
+            # Floss missing 'PROFILE_DESCRIPTOR_LIST_ATTR_ID'.
+            self.test_profile_descriptor_list_attribute()
+            # Floss does not support adding attribute to fake services.
+            self.test_fake_attributes()
 
     def sdp_service_attribute_request_test(self, device):
         """Runs service attribute request test"""
@@ -1007,19 +1016,29 @@ class bluetooth_SDP_ServiceSearchAttributeRequest(bluetooth_SDP_Test,
         self.test_non_existing_attribute_sssar()
         self.test_non_existing_service_attribute()
         #self.test_existing_service_attribute()
-        self.test_service_database_state_attribute_sssar()
         self.test_protocol_descriptor_list_attribute_sssar()
         self.test_browse_group_attribute_sssar()
-        self.test_icon_url_attribute_sssar()
-        self.test_version_list_attribute_sssar()
-        self.test_profile_descriptor_list_attribute_sssar()
-        self.test_documentation_url_attribute_sssar()
-        self.test_client_executable_url_attribute_sssar()
         self.test_additional_protocol_descriptor_list_attribute_sssar()
-        self.test_fake_attributes_sssar()
         self.test_continuation_state_sssar()
-        self.test_invalid_request_syntax_sssar()
-        self.test_invalid_pdu_size_sssar()
+        # TODO(b/271393419): Floss missing some services and attributes. Will
+        #  be implemented later.
+        if not self.floss:
+            # Floss does not support 'SDP_SERVER_CLASS_ID'.
+            self.test_service_database_state_attribute_sssar()
+            self.test_version_list_attribute_sssar()
+            self.test_invalid_request_syntax_sssar()
+            self.test_invalid_pdu_size_sssar()
+
+            # Floss missing 'ICON_URL_ATTR_ID'.
+            self.test_icon_url_attribute_sssar()
+            # Floss missing 'PROFILE_DESCRIPTOR_LIST_ATTR_ID'.
+            self.test_profile_descriptor_list_attribute_sssar()
+            # Floss missing 'DOCUMENTATION_URL_ATTR_ID'.
+            self.test_documentation_url_attribute_sssar()
+            # Floss missing 'CLIENT_EXECUTABLE_URL_ATTR_ID'.
+            self.test_client_executable_url_attribute_sssar()
+            # Floss does not support adding attributes to fake services.
+            self.test_fake_attributes_sssar()
         logging.info('correct_request finished successfully!')
 
 

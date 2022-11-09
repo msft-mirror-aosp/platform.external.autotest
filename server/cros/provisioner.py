@@ -62,6 +62,9 @@ _TARGET_VERSION = '/run/update_target_version'
 
 _REBOOT_FAILURE_MESSAGE = 'Host did not return from reboot'
 
+# _MINIOS_IMAGE - The miniOS image name used for provisioning.
+_MINIOS_IMAGE = 'full_dev_part_MINIOS.bin.gz'
+
 DEVSERVER_PORT = '8082'
 GS_CACHE_PORT = '8888'
 
@@ -358,6 +361,22 @@ class ChromiumOSProvisioner(object):
         logging.info('Updating from version %s to %s.',
                      self.host.get_release_version(), self.update_version)
 
+    def _url_exists(self, url, timeout=30):
+        """
+        Check the existence of a URL.
+
+        @param url: The URL we want to check.
+        @param timeout: Maximum time in seconds that this operation can take.
+
+        @raises TestNAError if the URL is unavailable.
+        """
+        try:
+            self._run('curl -I -f -s -o /dev/null -m %d %s' % (timeout, url))
+        except:
+            raise error.TestNAError('The URL "%s" is not available.' % url)
+        else:
+            logging.info('Verified the existence of URL: %s', url)
+
     def _quick_provision_with_gs_cache(self, provision_command, devserver_name,
                                        image_name):
         """Run quick_provision using GsCache server.
@@ -377,8 +396,12 @@ class ChromiumOSProvisioner(object):
 
         # Check if GS_Cache server is enabled on the server.
         self._run('curl -s -o /dev/null %s' % gs_cache_url)
+        with_minios = ""
+        if self._with_minios:
+            with_minios = " --minios"
+            self._url_exists('%s/%s/%s' %
+                             (gs_cache_url, image_name, _MINIOS_IMAGE))
 
-        with_minios = " --minios" if self._with_minios else ""
         command = '%s --noreboot%s %s %s' % (provision_command, with_minios,
                                              image_name, gs_cache_url)
         self._run(command)
@@ -402,7 +425,12 @@ class ChromiumOSProvisioner(object):
                        image_name if self._is_release_bucket else None)
 
         static_url = 'http://%s/static' % devserver_name
-        with_minios = " --minios" if self._with_minios else ""
+        with_minios = ""
+        if self._with_minios:
+            with_minios = " --minios"
+            self._url_exists('%s/%s/%s' %
+                             (static_url, image_name, _MINIOS_IMAGE))
+
         command = '%s --noreboot%s %s %s' % (provision_command, with_minios,
                                              image_name, static_url)
         self._run(command)
@@ -422,7 +450,12 @@ class ChromiumOSProvisioner(object):
         logging.info('Try quick provision with public bucket.')
 
         bucket_url = self.update_url[:self.update_url.find(image_name) - 1]
-        with_minios = " --minios" if self._with_minios else ""
+        with_minios = ""
+        if self._with_minios:
+            with_minios = " --minios"
+            self._url_exists('%s/%s/%s' %
+                             (bucket_url, image_name, _MINIOS_IMAGE))
+
         command = '%s --noreboot%s %s %s' % (provision_command, with_minios,
                                              image_name, bucket_url)
         self._run(command)
@@ -462,6 +495,8 @@ class ChromiumOSProvisioner(object):
 
             self._set_target_version()
             return kernel_utils.verify_kernel_state_after_update(self.host)
+        except error.TestNAError:
+            raise
         except Exception:
             # N.B.  We handle only `Exception` here.  Non-Exception
             # classes (such as KeyboardInterrupt) are handled by our
@@ -560,6 +595,8 @@ class ChromiumOSProvisioner(object):
         try:
             expected_kernel = self._install_update()
         except _AttributedUpdateError:
+            raise
+        except error.TestNAError:
             raise
         except Exception as e:
             logging.exception('Failure during download and install.')

@@ -89,7 +89,7 @@ def fetch_artifact(download_dir, branch_name, target_name, xts_name,
 
 # TODO(b/256108932): Add --test_config flag for test upload to gs.
 def upload_preview_xts(file_path: str, config_path: str, abi: str,
-                       xts_name: str) -> None:
+                       xts_name: str, version_name: str) -> None:
     """Function to upload the preview xTS zip file to multiple places on gs.
 
     Multiple places are URLs beginning with gs://chromeos-arc-images/ for Googler,
@@ -100,8 +100,10 @@ def upload_preview_xts(file_path: str, config_path: str, abi: str,
         config_path: A string which means config json file path.
         abi: A string which means one of the abis (None, 'arm', 'x86', 'arm64', 'x86_64').
         xts_name: A string which is one of the test names: (cts, vts).
+        version_name: A string which means target build version name.
     """
     url_config = bundle_utils.load_config(config_path)
+    url_config[bundle_utils._PREVIEW_VERSION_NAME] = version_name
     remote_urls = [
             bundle_utils.make_bundle_url(url_config, bundle, abi)
             for bundle in ['DEV', 'DEV_MOBLAB']
@@ -152,11 +154,16 @@ def main(config_path: str,
         logging.info(f'{version_name} is the latest version. No work to do.')
         return
 
-    bundle_utils.modify_version_name_in_config(version_name, config_path,
-                                               'preview_version_name')
     for target_abi, target_name in abi_info.items():
         with tempfile.TemporaryDirectory(
                 prefix=f'fetch_artifact_{target_abi}_') as download_dir:
             fetch_artifact(download_dir, branch_name, target_name, xts_name,
                            version_name)
-            upload_preview_xts(download_dir, config_path, target_abi, xts_name)
+            upload_preview_xts(download_dir, config_path, target_abi, xts_name,
+                               version_name)
+
+    bundle_utils.modify_version_name_in_config(
+            version_name, config_path, bundle_utils._PREVIEW_VERSION_NAME)
+    logging.info(
+            f'The value of {bundle_utils._PREVIEW_VERSION_NAME} was correctly uploaded to {version_name}.'
+    )

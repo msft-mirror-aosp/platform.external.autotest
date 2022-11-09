@@ -27,8 +27,9 @@ These args are expected to be passed to test_that:
 --args="phone_station=$PHONE_HOST android_serial=$ANDROID_SERIAL_NUMBER"
 
 When using port forwarding to locahost, the expected args are:
---args="phone_station=locahost phone_station_ssh_port=$FORWARDED_PORT android_serial=$ANDROID_SERIAL_NUMBER"
+--args="phone_station=localhost phone_station_ssh_port=$FORWARDED_PORT android_serial=$ANDROID_SERIAL_NUMBER"
 
+You also need to specify the test_exprs for the Cross Device feature or area or you want to test.
 '''
 
 from autotest_lib.server import utils
@@ -54,7 +55,7 @@ def run(machine):
 
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:cross-device")'],
+                 test_exprs=['("group:cross-device" && "<cross-device_FEATURE NAME HERE>)'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=args,
                  varslist=[ip_address_arg])

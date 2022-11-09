@@ -2,7 +2,10 @@ import argparse
 import os
 import sys
 
-sys.path.append('../../cros/tradefed')
+tradefed_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..', '..', 'cros',
+                     'tradefed'))
+sys.path.append(tradefed_path)
 import uprev_official_version_common
 
 # TODO(b/256108932): Add --test_config flag for test upload to gs.

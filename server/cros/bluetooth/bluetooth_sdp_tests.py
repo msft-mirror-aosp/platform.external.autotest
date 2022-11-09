@@ -1081,6 +1081,7 @@ class bluetooth_SDP_ServiceSearchRequestBasic(
     SDP_SERVER_CLASS_ID                = 0x1000
     NO_EXISTING_SERVICE_CLASS_ID       = 0x0001
     FAKE_SERVICES_CNT                  = 300
+    FLOSS_FAKE_SERVICES_CNT            = 10
     FAKE_SERVICES_PATH                 = '/autotest/fake_service_'
     FAKE_SERVICES_CLASS_ID             = 0xABCD
     BLUETOOTH_BASE_UUID                = 0x0000000000001000800000805F9B34FB
@@ -1088,6 +1089,18 @@ class bluetooth_SDP_ServiceSearchRequestBasic(
     ERROR_CODE_INVALID_REQUEST_SYNTAX  = 0x0003
     ERROR_CODE_INVALID_PDU_SIZE        = 0x0004
 
+    @property
+    def fake_service_cnt(self):
+        """Gets Floss fake service count.
+
+        Floss is not able to store 300 services for now. However, we can
+        trigger the "continuation state" in Floss by using 10 services.
+
+        @return Floss fake service count
+        """
+        if self.floss:
+            return self.FLOSS_FAKE_SERVICES_CNT
+        return self.FAKE_SERVICES_CNT
 
     def correct_request_basic_test(self):
         """Search the existing service on the DUT using the Tester.
@@ -1099,13 +1112,6 @@ class bluetooth_SDP_ServiceSearchRequestBasic(
         self.tester.connect(self.adapter['Address'])
 
         for size in 16, 32, 128:
-            # test case TP/SERVER/SS/BV-01-C:
-            # at least the SDP server service exists
-            resp = json.loads(self.tester.service_search_request(
-                              [self.SDP_SERVER_CLASS_ID], 3,
-                              {'preferred_size':size}))
-            if resp != [0]:
-                return False
             # test case TP/SERVER/SS/BV-04-C:
             # Service with Class ID = 0x0001 should never exist, as this UUID is
             # reserved as Bluetooth Core Specification UUID
@@ -1114,28 +1120,51 @@ class bluetooth_SDP_ServiceSearchRequestBasic(
                               {'preferred_size':size}))
             if resp != []:
                 return False
+
             # test case TP/SERVER/SS/BV-03-C:
-            # request the fake services' Class ID to force SDP to use
+            # Request the fake services' Class ID to force SDP to use
             # continuation state
-            resp = json.loads(self.tester.service_search_request(
-                              [self.FAKE_SERVICES_CLASS_ID],
-                              self.FAKE_SERVICES_CNT * 2,
-                              {'preferred_size':size}))
-            if len(resp) != self.FAKE_SERVICES_CNT:
+            resp = json.loads(
+                    self.tester.service_search_request(
+                            [self.FAKE_SERVICES_CLASS_ID],
+                            self.fake_service_cnt * 2,
+                            {'preferred_size': size}))
+            if len(resp) != self.fake_service_cnt:
                 return False
-            # test case TP/SERVER/SS/BI-01-C:
-            # send a Service Search Request with intentionally invalid PDU size
-            resp = json.loads(self.tester.service_search_request(
-                              [self.SDP_SERVER_CLASS_ID], 3,
-                              {'preferred_size':size,
-                              'forced_pdu_size':self.SSRB_INVALID_PDU_SIZE}))
+
+            # TODO(b/254372140): Floss does not support 'SDP_SERVER_CLASS_ID'
+            # for now.
+            if self.floss:
+                continue
+            # test case TP/SERVER/SS/BV-01-C:
+            # at least the SDP server service exists
+            resp = json.loads(
+                    self.tester.service_search_request(
+                            [self.SDP_SERVER_CLASS_ID], 3,
+                            {'preferred_size': size}))
+            if resp != [0]:
+                return False
+
+            # test case TP/SERVER/SS/BI-01-C: send a Service Search Request with
+            # intentionally invalid PDU size
+            resp = json.loads(
+                    self.tester.service_search_request(
+                            [self.SDP_SERVER_CLASS_ID], 3, {
+                                    'preferred_size': size,
+                                    'forced_pdu_size':
+                                    self.SSRB_INVALID_PDU_SIZE
+                            }))
             if resp != self.ERROR_CODE_INVALID_PDU_SIZE:
                 return False
+
             # test case TP/SERVER/SS/BI-02-C:
             # send a Service Search Request with invalid syntax
-            resp = json.loads(self.tester.service_search_request(
-                              [self.SDP_SERVER_CLASS_ID], 3,
-                              {'preferred_size':size, 'invalid_request':True}))
+            resp = json.loads(
+                    self.tester.service_search_request(
+                            [self.SDP_SERVER_CLASS_ID], 3, {
+                                    'preferred_size': size,
+                                    'invalid_request': True
+                            }))
             if resp != self.ERROR_CODE_INVALID_REQUEST_SYNTAX:
                 return False
 
@@ -1161,7 +1190,7 @@ class bluetooth_SDP_ServiceSearchRequestBasic(
             raise error.TestNAError('Tester could not be initialized')
 
         # Create many fake services with the same Class ID
-        for num in range(0, self.FAKE_SERVICES_CNT):
+        for num in range(0, self.fake_service_cnt):
             path_str = self.FAKE_SERVICES_PATH + str(num)
             uuid128 = ((self.FAKE_SERVICES_CLASS_ID << 96) +
                       self.BLUETOOTH_BASE_UUID)

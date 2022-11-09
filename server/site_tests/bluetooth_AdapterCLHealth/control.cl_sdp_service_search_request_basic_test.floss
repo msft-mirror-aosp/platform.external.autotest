@@ -1,0 +1,47 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Verify the correct behaviour of the device when searching for services.
+
+# The tester sends a Service Search Request to the DUT, searching the UUID of
+# SDP Server Service, which is known to exist.
+# Tester also searches for Service Class ID = 0x0001, which should never exist.
+# In order to verify the correct behaviour of continuation state, some number of
+# fake Bluetooth services are registered on the device. This is needed to create
+# a request with a very long response, and to force the SDP server on the device
+# to use this continuation state functionality.
+
+# This test covers the following Bluetooth SIG test cases:
+# TP/SERVER/SS/BV-03-C
+# TP/SERVER/SS/BV-04-C
+
+# The following tests are not yet supported in Floss:
+# TP/SERVER/SS/BV-01-C
+# TP/SERVER/SS/BI-01-C
+# TP/SERVER/SS/BI-02-C
+
+from autotest_lib.server import utils
+
+NAME = ('bluetooth_AdapterCLHealth.cl_sdp_service_search_request_basic_test'
+        '.floss')
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Basic test for SDP service search request',
+    'hw_agnostic': False
+}
+ATTRIBUTES = 'suite:bluetooth_floss'
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterCLHealth', host=host,
+                 num_iterations=1, args_dict=args_dict,
+                 test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

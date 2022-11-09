@@ -288,8 +288,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         self.sdp_service_search_attribute_request_test(device=device)
 
 
-    @test_wrapper('SDP Service Search Request Basic Test', \
-                  devices={"BLUETOOTH_TESTER":1})
+    @test_wrapper('SDP Service Search Request Basic Test',
+                  devices={"BLUETOOTH_TESTER": 1},
+                  supports_floss=True)
     def cl_sdp_service_search_request_basic_test(self):
         """Performs sdp browse with tester peripheral"""
         device = self.devices['BLUETOOTH_TESTER'][0]

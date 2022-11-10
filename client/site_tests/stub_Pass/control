@@ -23,4 +23,8 @@ DOC = """
 This is a helper test that will succeed.
 """
 
+METADATA = {
+   'hw_agnostic': True
+}
+
 job.run_test('stub_Pass')

@@ -9,18 +9,6 @@ import unittest
 import common
 
 from autotest_lib.server.cros.tradefed import cts_expected_failure_parser
-from autotest_lib.server.hosts import cros_host
-
-
-class MockHost(cros_host.CrosHost):
-    """Simple host for running mock'd host commands"""
-
-    def __init__(self, hostname, vulkan=False):
-        self.hostname = hostname
-        self.vulkan = vulkan
-
-    def has_arc_hardware_vulkan(self):
-        return self.vulkan
 
 
 def glob_add_files(expected_fail_dir):
@@ -37,35 +25,7 @@ def glob_add_files(expected_fail_dir):
 class CtsExpectedFailureParserTest(unittest.TestCase):
     """Unittest for cts_expected_failure_parser."""
 
-    def test_should_skip_if_no_vulkan(self):
-        mockhost = MockHost('MockHost', False)
-        expected_fail_files = glob_add_files(
-                'cts_expected_failure_parser_unittest_data')
-
-        waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
-                expected_fail_files)
-        # params: arch, board, model, bundle_abi, sdk_ver, first_api_level, host
-        found_waivers = waivers.find_waivers('x86', 'hatch', 'kohaku', 'x86',
-                                             '30', '30', mockhost)
-        self.assertFalse('GtsOpenglTestCases' in found_waivers)
-        self.assertTrue('GtsVulkanTestCases' in found_waivers)
-
-    def test_should_not_skip_if_has_vulkan(self):
-        mockhost = MockHost('MockHost', True)
-        expected_fail_files = glob_add_files(
-                'cts_expected_failure_parser_unittest_data')
-
-        waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
-                expected_fail_files)
-        # params: arch, board, model, bundle_abi, sdk_ver, first_api_level, host
-        found_waivers = waivers.find_waivers('x86', 'hatch', 'kohaku', 'x86',
-                                             '30', '30', mockhost)
-
-        self.assertTrue('GtsOpenglTestCases' in found_waivers)
-        self.assertFalse('GtsVulkanTestCases' in found_waivers)
-
     def test_binarytranslated_tag(self):
-        mockhost = MockHost('MockHost', False)
         expected_fail_files = glob_add_files(
                 'cts_expected_failure_parser_unittest_data')
 
@@ -73,13 +33,13 @@ class CtsExpectedFailureParserTest(unittest.TestCase):
                 expected_fail_files)
         # params: arch, board, model, bundle_abi, sdk_ver, first_api_level, host
         found_waivers = waivers.find_waivers('x86', 'hatch', 'kohaku', 'arm',
-                                             '30', '30', mockhost)
+                                             '30', '30')
 
         self.assertTrue('GtsOnlyPrimaryAbiTestCases' in found_waivers)
 
         # params: arch, board, model, bundle_abi, sdk_ver, first_api_level, host
         found_waivers = waivers.find_waivers('x86', 'hatch', 'kohaku', 'x86',
-                                             '30', '30', mockhost)
+                                             '30', '30')
 
         self.assertFalse('GtsOnlyPrimaryAbiTestCases' in found_waivers)
 

@@ -995,8 +995,7 @@ class TradefedTest(test.test):
         waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
             expected_fail_files)
         return waivers.find_waivers(test_arch, test_board, test_model,
-                                    bundle_abi, sdk_ver, first_api_level,
-                                    self._hosts[0])
+                                    bundle_abi, sdk_ver, first_api_level)
 
     def _get_abilist(self):
         """Return the abilist supported by calling adb command.

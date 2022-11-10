@@ -14,7 +14,6 @@ from autotest_lib.client.cros.power import power_test
 from autotest_lib.client.cros.power import power_utils
 from autotest_lib.client.cros import tast
 from autotest_lib.client.cros.tast.ui import chrome_service_pb2
-from autotest_lib.client.cros.tast.ui import chrome_service_pb2_grpc
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
 
@@ -69,10 +68,9 @@ class power_Idle(power_test.power_Test):
             .BluetoothDeviceXmlRpcDelegate()
 
         logging.info('Starting gRPC Tast')
-        with tast.GRPC(tast_bundle_path) as tast_grpc:
-            channel = tast_grpc.channel
-            chrome_service = chrome_service_pb2_grpc.ChromeServiceStub(channel)
-            tconn_service = tconn_service_pb2_grpc.TconnServiceStub(channel)
+        with tast.GRPC(tast_bundle_path) as tast_grpc,\
+            tast.ChromeService(tast_grpc.channel) as chrome_service:
+            tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
 
             chrome_service.New(chrome_service_pb2.NewRequest(
                 # b/228256145 to avoid powerd restart

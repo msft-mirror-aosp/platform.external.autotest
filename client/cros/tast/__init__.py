@@ -4,10 +4,13 @@
 # found in the LICENSE file.
 
 import logging
+import os
 import subprocess
 
 import grpc
 
+from google.protobuf import empty_pb2
+from autotest_lib.client.cros.tast.ui import chrome_service_pb2_grpc
 
 # An arbitrary port number.
 _TCP_PORT = 23456
@@ -49,3 +52,28 @@ class GRPC:
     @property
     def channel(self):
         return self._channel
+
+
+class ChromeService(chrome_service_pb2_grpc.ChromeServiceStub):
+    """Wraps ChromeServiceStub to close Chrome on exit."""
+
+    def __init__(self, channel):
+        super().__init__(channel)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # Close makes the tast bundle disconnects from Chrome and cleans up
+        # standard extensions. However it does not terminate Chrome. See Close()
+        # on tast-tests/src/chromiumos/tast/local/chrome/chrome.go.
+        self.Close(empty_pb2.Empty())
+        # Restart ui (and thus Chrome). Do this to make the behaviour consistent
+        # with autotest Chrome.
+        self._restart_ui()
+
+    def _restart_ui(self):
+        logging.info('(Re)starting the ui (logs the user out)')
+
+        subprocess.run(['stop', 'ui'])
+        subprocess.run(['start', 'ui'])

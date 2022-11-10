@@ -11,6 +11,7 @@ suite:arc_playstore
 suite:arc_core
 suite:arc-cts
 suite:arc-cts-camera
+suite:arc-cts-camera-dut
 suite:arc-cts-deqp
 suite:arc-cts-hardware
 suite:arc-cts-perf

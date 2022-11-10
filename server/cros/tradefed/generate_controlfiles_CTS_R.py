@@ -43,6 +43,9 @@ CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 CONFIG['VM_SUITE_NAME'] = 'suite:arc-cts-vm'
 CONFIG['STABLE_VM_SUITE_NAME'] = 'suite:arc-cts-vm-stable'
 
+# Suite for rerunning failing camera test during qual
+CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-dut'
+
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
 CONFIG['CONTROLFILE_WRITE_CAMERA'] = True
@@ -152,6 +155,12 @@ CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
         'CtsSensorTestCases',
         'CtsCameraTestCases',
         'CtsBluetoothTestCases',
+]
+
+
+CONFIG['CAMERA_MODULES'] = [
+       # CONTAINS ONLY CAMERA TESTS
+       'CtsCameraTestCases',
 ]
 
 # Syntax:

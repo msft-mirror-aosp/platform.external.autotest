@@ -857,6 +857,11 @@ def is_in_vm_rule(module, rule):
 
     return False
 
+# Camera modules are static
+def get_camera_modules():
+   """Gets a list of modules for arc-cts-camera-dut."""
+   return CONFIG.get('CAMERA_MODULES', [])
+
 
 def is_vm_modules(module):
     """Checks if module eligible for VM."""
@@ -981,6 +986,13 @@ def get_controlfile_content(combined,
     name = '%s.%s' % (CONFIG['TEST_NAME'], tag)
     if not suites:
         suites = get_suites(modules, abi, is_public, camera_facing, hardware_suite)
+    # while creating the control files, check if this is meant for qualification suite. i.e. arc-cts-qual
+    # if it is meant for qualification suite, also add new suite ar-cts-camera-dut which is meant for
+    # qualification purposes when cameraboxes fail.
+    # if suites has arc-cts-qual and module is cameramodule then add arc-cts-camera-dut
+    if (set(CONFIG.get('QUAL_SUITE_NAMES',[])) & set(suites)) and (set(get_camera_modules()) & set(modules)):
+        suites = suites.copy()
+        suites.append(CONFIG.get('CAMERA_DUT_SUITE_NAME'))
     attributes = ', '.join(suites)
     uri = {
             SourceType.MOBLAB: None,

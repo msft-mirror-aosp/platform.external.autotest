@@ -151,7 +151,8 @@ function cycle_check_timeout(cycle) {
 
 function launch_task(task) {
   if (task.type == 'window' && task.tabs) {
-    chrome.windows.create({'url': '/focus.html'}, function (win) {
+    chrome.windows.create(
+        {'url': '/focus.html', state: 'maximized'}, function (win) {
       close_preexisting_windows();
       chrome.tabs.getSelected(win.id, function(tab) {
         for (var i = 1; i < task.tabs.length; i++) {
@@ -174,7 +175,8 @@ function launch_task(task) {
       });
     });
   } else if (task.type == 'cycle' && task.urls) {
-    chrome.windows.create({'url': '/focus.html'}, function (win) {
+    chrome.windows.create(
+      {'url': '/focus.html', state: 'maximized'}, function (win) {
       close_preexisting_windows();
       chrome.tabs.getSelected(win.id, function(tab) {
         var cycle = {

@@ -1,9 +1,11 @@
-# Lint as: python2, python3
+# Lint as: python3
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import collections
+import hashlib
 import json
 import logging
 import numpy
@@ -11,12 +13,12 @@ import os
 import re
 import time
 
+import grpc
+
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as _utils
 from autotest_lib.client.common_lib.cros import arc
-from autotest_lib.client.common_lib.cros import arc_common
-from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib.cros import power_load_util
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import multicast_disabler
@@ -25,6 +27,7 @@ from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
 from autotest_lib.client.cros import backchannel
 from autotest_lib.client.cros import httpd
 from autotest_lib.client.cros import memory_bandwidth_logger
+from autotest_lib.client.cros import tast
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.audio import audio_helper
 from autotest_lib.client.cros.networking import cellular_proxy
@@ -34,7 +37,10 @@ from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
 from autotest_lib.client.cros.power import force_discharge_utils
-from telemetry.core import exceptions
+from autotest_lib.client.cros.tast.ui import chrome_service_pb2
+from autotest_lib.client.cros.tast.ui import conn_service_pb2
+from autotest_lib.client.cros.tast.ui import conn_tab
+from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
 
 params_dict = {
     'test_time_ms': '_mseconds',
@@ -282,7 +288,7 @@ class power_LoadTest(arc.ArcTest):
 
         min_low_batt_p = min(self._sys_low_batt_p + low_batt_margin_p, 100)
         if self._sys_low_batt_p and (min_low_batt_p > self._test_low_batt_p):
-            logging.warning("test low battery threshold is below system " +
+            logging.warning("test low battery threshold is below system "\
                          "low battery requirement.  Setting to %f",
                          min_low_batt_p)
             self._test_low_batt_p = min_low_batt_p
@@ -297,7 +303,7 @@ class power_LoadTest(arc.ArcTest):
                                       **power_utils.encoding_kwargs())
 
 
-    def run_once(self):
+    def run_once(self, tast_bundle_path=None):
         """Test main loop."""
         t0 = time.time()
 
@@ -328,139 +334,152 @@ class power_LoadTest(arc.ArcTest):
         ext_path = os.path.join(os.path.dirname(__file__), 'extension')
         self._tmp_keyvals['username'] = self._username
 
-        arc_mode = arc_common.ARC_MODE_DISABLED
-        if utils.is_arc_available():
-            arc_mode = arc_common.ARC_MODE_ENABLED
+        with tast.GRPC(tast_bundle_path) as tast_grpc,\
+            tast.ConnService(tast_grpc.channel) as conn_service,\
+            tast.ChromeService(tast_grpc.channel) as chrome_service:
+            tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
 
-        # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
-        # so that each test run does not remember info from last test run.
-        extra_browser_args = ['--disable-sync']
-        # b/228256145 to avoid powerd restart
-        extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
-        try:
-            self._browser = chrome.Chrome(
-                    extension_paths=[ext_path],
-                    extra_browser_args=extra_browser_args,
-                    gaia_login=self._gaia_login,
-                    username=self._username,
-                    password=self._password,
-                    arc_mode=arc_mode)
-        except exceptions.LoginException:
-            # already failed guest login
+            chrome_new_request = chrome_service_pb2.NewRequest(
+                    # b/228256145 to avoid powerd restart
+                    disable_features = ['FirmwareUpdaterApp'],
+                    # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
+                    # so that each test run does not remember info from last test run.
+                    extra_args = ['--disable-sync'],
+                    login_mode = (chrome_service_pb2.LOGIN_MODE_GAIA_LOGIN
+                                if self._gaia_login else
+                                chrome_service_pb2.LOGIN_MODE_UNSPECIFIED),
+                    credentials = chrome_service_pb2.NewRequest.Credentials(
+                        username=self._username,
+                        password=self._password,
+                    ),
+                    arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
+                                if utils.is_arc_available()
+                                else chrome_service_pb2.ARC_MODE_DISABLED),
+                    unpacked_extensions = [ext_path],
+                )
+
+            try:
+                chrome_service.New(chrome_new_request)
+            except grpc.RpcError as rpc_error:
+                if self._gaia_login and ('login failed' in rpc_error.details()):
+                    logging.warning("Unable to use GAIA acct %s.  Using GUEST instead.\n", self._username)
+                    chrome_new_request.login_mode = \
+                        chrome_service_pb2.LOGIN_MODE_UNSPECIFIED
+                    chrome_service.New(chrome_new_request)
+                    self._gaia_login = False
+                else:
+                    raise rpc_error
             if not self._gaia_login:
-                raise
-            self._gaia_login = False
-            logging.warning("Unable to use GAIA acct %s.  Using GUEST instead.\n",
-                         self._username)
-            self._browser = chrome.Chrome(extension_paths=[ext_path],
-                                          gaia_login=self._gaia_login)
-        if not self._gaia_login:
-            self._tmp_keyvals['username'] = 'GUEST'
-        self._tmp_keyvals['gaia_login'] = int(self._gaia_login)
+                self._tmp_keyvals['username'] = 'GUEST'
+            self._tmp_keyvals['gaia_login'] = int(self._gaia_login)
 
-        extension = self._browser.get_extension(ext_path)
-        for k in params_dict:
-            if getattr(self, params_dict[k]) is not '':
-                extension.ExecuteJavaScript('var %s = %s;' %
-                                            (k, getattr(self, params_dict[k])))
+            response = conn_service.NewConnForTarget(conn_service_pb2.NewConnRequest(
+                url = _get_extension_bg_url(ext_path)
+            ))
+            extension = conn_tab.ConnTab(conn_service, response.id)
+            set_var_script = ''
+            for k, v in params_dict.items():
+                if getattr(self, v) is not '':
+                    set_var_script += 'var %s = %s;' % (k, getattr(self, v))
+            extension.EvaluateJavaScript(set_var_script)
 
-        # Stop services and disable multicast again as Chrome might have
-        # restarted them.
-        self._services.stop_services()
-        self._multicast_disabler.disable_network_multicast()
+            # Stop services and disable multicast again as Chrome might have
+            # restarted them.
+            self._services.stop_services()
+            self._multicast_disabler.disable_network_multicast()
 
-        # This opens a trap start page to capture tabs opened for first login.
-        # It will be closed when startTest is run.
-        extension.ExecuteJavaScript('chrome.windows.create(null, null);')
+            # This opens a trap start page to capture tabs opened for first login.
+            # It will be closed when startTest is run.
+            extension.EvaluateJavaScript('chrome.windows.create(null, null);')
 
-        for i in range(self._loop_count):
-            start_time = time.time()
-            extension.ExecuteJavaScript('startTest();')
-            # the power test extension will report its status here
-            latch = self._testServer.add_wait_url('/status')
+            for i in range(self._loop_count):
+                start_time = time.time()
+                extension.EvaluateJavaScript('startTest();')
+                # the power test extension will report its status here
+                latch = self._testServer.add_wait_url('/status')
 
-            # this starts a thread in the server that listens to log
-            # information from the script
-            script_logging = self._testServer.add_wait_url(url='/log')
+                # this starts a thread in the server that listens to log
+                # information from the script
+                script_logging = self._testServer.add_wait_url(url='/log')
 
-            # dump any log entry that comes from the script into
-            # the debug log
-            self._testServer.add_url_handler(url='/log',\
-                handler_func=(lambda handler, forms, loop_counter=i:\
-                    _extension_log_handler(handler, forms, loop_counter)))
+                # dump any log entry that comes from the script into
+                # the debug log
+                self._testServer.add_url_handler(url='/log',\
+                    handler_func=(lambda handler, forms, loop_counter=i:\
+                        _extension_log_handler(handler, forms, loop_counter)))
 
-            pagetime_tracking = self._testServer.add_wait_url(url='/pagetime')
+                pagetime_tracking = self._testServer.add_wait_url(url='/pagetime')
 
-            self._testServer.add_url_handler(url='/pagetime',\
-                handler_func=(lambda handler, forms, test_instance=self,
-                              loop_counter=i:\
-                    _extension_page_time_info_handler(handler, forms,
-                                                      loop_counter,
-                                                      test_instance)))
+                self._testServer.add_url_handler(url='/pagetime',\
+                    handler_func=(lambda handler, forms, test_instance=self,
+                                loop_counter=i:\
+                        _extension_page_time_info_handler(handler, forms,
+                                                        loop_counter,
+                                                        test_instance)))
 
-            keyvalues_tracking = self._testServer.add_wait_url(url='/keyvalues')
+                keyvalues_tracking = self._testServer.add_wait_url(url='/keyvalues')
 
-            self._testServer.add_url_handler(url='/keyvalues',\
-                handler_func=(lambda handler, forms, test_instance=self,
-                              loop_counter=i:\
-                    _extension_key_values_handler(handler, forms,
-                                                  loop_counter,
-                                                  test_instance)))
-            self._testServer.add_url(url='/task-monitor')
-            self._testServer.add_url_handler(
-                url='/task-monitor',
-                handler_func=lambda handler, forms:
-                    self._extension_task_monitor_handler(handler, forms)
-            )
+                self._testServer.add_url_handler(url='/keyvalues',\
+                    handler_func=(lambda handler, forms, test_instance=self,
+                                loop_counter=i:\
+                        _extension_key_values_handler(handler, forms,
+                                                    loop_counter,
+                                                    test_instance)))
+                self._testServer.add_url(url='/task-monitor')
+                self._testServer.add_url_handler(
+                    url='/task-monitor',
+                    handler_func=lambda handler, forms:
+                        self._extension_task_monitor_handler(handler, forms)
+                )
 
-            # setup a handler to simulate waking up the base of a detachable
-            # on user interaction. On scrolling, wake for 1s, on page
-            # navigation, wake for 10s.
-            self._testServer.add_url(url='/pagenav')
-            self._testServer.add_url(url='/scroll')
+                # setup a handler to simulate waking up the base of a detachable
+                # on user interaction. On scrolling, wake for 1s, on page
+                # navigation, wake for 10s.
+                self._testServer.add_url(url='/pagenav')
+                self._testServer.add_url(url='/scroll')
 
-            self._testServer.add_url_handler(url='/pagenav',
-                handler_func=(lambda handler, args, plt=self:\
-                    _extension_wake_base_handler(handler, args, plt, 10000)))
+                self._testServer.add_url_handler(url='/pagenav',
+                    handler_func=(lambda handler, args, plt=self:\
+                        _extension_wake_base_handler(handler, args, plt, 10000)))
 
-            self._testServer.add_url_handler(url='/scroll',
-                handler_func=(lambda handler, args, plt=self:\
-                    _extension_wake_base_handler(handler, args, plt, 1000)))
-            # reset backlight level since powerd might've modified it
-            # based on ambient light
-            self._set_backlight_level(i)
-            self._set_lightbar_level()
-            if self._keyboard_backlight:
-                self._set_keyboard_backlight_level(loop=i)
-            audio_helper.set_volume_levels(self._volume_level,
-                                           self._mic_gain)
+                self._testServer.add_url_handler(url='/scroll',
+                    handler_func=(lambda handler, args, plt=self:\
+                        _extension_wake_base_handler(handler, args, plt, 1000)))
+                # reset backlight level since powerd might've modified it
+                # based on ambient light
+                self._set_backlight_level(i)
+                self._set_lightbar_level()
+                if self._keyboard_backlight:
+                    self._set_keyboard_backlight_level(loop=i)
+                audio_helper.set_volume_levels(self._volume_level,
+                                            self._mic_gain)
 
-            low_battery = self._do_wait(self._verbose, self._loop_time,
-                                        latch)
-            script_logging.set()
-            pagetime_tracking.set()
-            keyvalues_tracking.set()
+                low_battery = self._do_wait(self._verbose, self._loop_time,
+                                            latch)
+                script_logging.set()
+                pagetime_tracking.set()
+                keyvalues_tracking.set()
 
-            # log at end of loop in case it was changed
-            self._log_backlight_level(i)
-            self._log_loop_checkpoint(i, start_time, time.time())
+                # log at end of loop in case it was changed
+                self._log_backlight_level(i)
+                self._log_loop_checkpoint(i, start_time, time.time())
 
-            if self._verbose:
-                logging.debug('loop %d completed', i)
+                if self._verbose:
+                    logging.debug('loop %d completed', i)
 
-            if low_battery:
-                logging.info('Exiting due to low battery')
-                break
+                if low_battery:
+                    logging.info('Exiting due to low battery')
+                    break
 
-        # done with logging from the script, so we can collect that thread
-        t1 = time.time()
-        psr.refresh()
-        self._tmp_keyvals['minutes_battery_life_tested'] = (t1 - t0) / 60
-        self._tmp_keyvals.update(psr.get_keyvals())
-        self._start_time = t0
-        self._end_time = t1
+            # done with logging from the script, so we can collect that thread
+            t1 = time.time()
+            psr.refresh()
+            self._tmp_keyvals['minutes_battery_life_tested'] = (t1 - t0) / 60
+            self._tmp_keyvals.update(psr.get_keyvals())
+            self._start_time = t0
+            self._end_time = t1
 
-        self._multicast_disabler.enable_network_multicast()
+            self._multicast_disabler.enable_network_multicast()
 
     def postprocess_iteration(self):
         """Postprocess: write keyvals / log and send data to power dashboard."""
@@ -697,8 +716,6 @@ class power_LoadTest(arc.ArcTest):
 
         if self._backchannel:
             self._backchannel.teardown()
-        if self._browser:
-            self._browser.close()
         if self._testServer:
             self._testServer.stop()
 
@@ -1185,3 +1202,50 @@ def _loop_keyname(loop, keyname):
     if loop != None:
         return "%s_%s" % (_loop_prefix(loop), keyname)
     return keyname
+
+
+def _get_public_key(filename):
+    # Assume it's an unpacked extension.
+    with open(os.path.join(filename, 'manifest.json'), 'rb') as f:
+        manifest = json.load(f)
+        if 'key' not in manifest:
+            raise Exception("'key' value missing in manifest.json file.")
+        return base64.standard_b64decode(manifest['key'])
+
+
+def _hex_to_mpdecimal(hex_chars):
+    """ Convert bytes to an MPDecimal string. Example \x00 -> "aa"
+        This gives us the AppID for a chrome extension.
+    """
+    def chr(x):
+        return bytes([x])
+
+    result = b''
+    base = b'a'[0]
+    for hex_char in hex_chars:
+        value = hex_char
+        dig1 = value // 16
+        dig2 = value % 16
+        result += chr(dig1 + base)
+        result += chr(dig2 + base)
+    return result.decode('utf-8')
+
+
+def _get_extension_id(filename):
+    """
+    Given path to unpacked extension directory, it calculates the extension id
+    using public key in 'manifest.json'.
+    """
+    pub_key = _get_public_key(filename)
+    pub_key_hash = hashlib.sha256(pub_key).digest()
+    # AppID is the MPDecimal of only the first 128 bits of the hash.
+    return _hex_to_mpdecimal(pub_key_hash[:128//8])
+
+
+def _get_extension_bg_url(filename):
+    """
+    Calculates the url to pg.html page for an unpacked extension in filename
+    dir.
+    """
+    extension_id = _get_extension_id(filename)
+    return "chrome-extension://%s/bg.html" % extension_id

@@ -7,9 +7,9 @@
 
 NAME = "dummy_Fail.naerror"
 METADATA = {
-    "Contacts": ["cros-automation-frameworks@google.com", "gatong@google.com"],
-    "BugComponent": "b:1034523",
-    "Doc": "Demonstrate TEST_NA error."
+    "contacts": ["cros-automation-frameworks@google.com", "gatong@google.com"],
+    "bug_component": "b:1034523",
+    "criteria": "Demonstrate TEST_NA error."
 }
 TEST_TYPE = "client"
 

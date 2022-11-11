@@ -7,9 +7,9 @@
 
 NAME = "dummy_Fail.dependency"
 METADATA = {
-    "Contacts": ["cros-automation-frameworks@google.com"],
-    "BugComponent": "b:1034523",
-    "Doc": ("Test if dependency is properly processed, the test should be shown "
+    "contacts": ["cros-automation-frameworks@google.com"],
+    "bug_component": "b:1034523",
+    "criteria": ("Test if dependency is properly processed, the test should be shown "
         "as TEST_NA in suite job result.")
 }
 ATTRIBUTES = "suite:push_to_prod"

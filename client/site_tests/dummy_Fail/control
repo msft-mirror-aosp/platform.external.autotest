@@ -7,9 +7,9 @@
 
 NAME = "dummy_Fail"
 METADATA = {
-    "Contacts": ["cros-automation-frameworks@google.com"],
-    "BugComponent": "b:1034523",
-    "Doc": "This test will never succeed."
+    "contacts": ["cros-automation-frameworks@google.com"],
+    "bug_component": "b:1034523",
+    "criteria": "This test will never succeed."
 }
 ATTRIBUTES = (
         "suite:another_suite, suite:dummy, suite:push_to_prod,"

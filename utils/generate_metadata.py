@@ -72,8 +72,8 @@ def all_control_files(args):
 def serialize_contacts(data):
     """Return a serialized Contact obj list"""
     serialized_contacts = []
-    if hasattr(data, 'metadata') and 'Contacts' in data.metadata:
-        serialized_contacts = [tc_metadata_pb.Contact(email=e) for e in data.metadata['Contacts']]
+    if hasattr(data, 'metadata') and 'contacts' in data.metadata:
+        serialized_contacts = [tc_metadata_pb.Contact(email=e) for e in data.metadata['contacts']]
     else:
         serialized_contacts = [tc_metadata_pb.Contact(email=data.author)]
 
@@ -90,8 +90,8 @@ def serialize_requirements(data):
 def serialize_bug_component(data):
     """Return a serialized BugComponent obj"""
     bug_component = None
-    if hasattr(data, 'metadata') and 'bugcomponent' in data.metadata:
-        bug_component = tc_metadata_pb.BugComponent(value=data.metadata['bugcomponent'])
+    if hasattr(data, 'metadata') and 'bug_component' in data.metadata:
+        bug_component = tc_metadata_pb.BugComponent(value=data.metadata['bug_component'])
     return bug_component
 
 

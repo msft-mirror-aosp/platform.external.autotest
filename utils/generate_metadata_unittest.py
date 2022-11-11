@@ -37,7 +37,7 @@ TEST_TYPE = 'client'
 DEPENDENCIES = 'chameleon,servo_state:WORKING'
 METADATA = {
     'requirements': ['req1', 'req2'],
-    'bugcomponent': 'xyz123',
+    'bug_component': 'xyz123',
     'hw_agnostic' : True
 }
 
@@ -88,7 +88,7 @@ TEST_TYPE = 'client'
 DEPENDENCIES = 'fakedep3'
 METADATA = {
     'criteria': 'overriding purpose',
-    'Contacts': ['overriding_contact@google.com'],
+    'contacts': ['overriding_contact@google.com'],
     'hw_agnostic': False
 }
 DOC = '''

@@ -32,14 +32,12 @@ class firmware_Cr50Open(Cr50Test):
         self.gsc.ccd_reset()
         self.gsc.set_ccd_level('lock')
 
-    def wait_ap_reboot(self, boot_id):
+    def wait_ap_reboot(self, old_boot_id):
         """Wait for AP reboot after ccd open."""
         time.sleep(15)
-        # Reading boot id also checks SSH to DUT works after reboot. CCD open
-        # should cause an AP reboot, so boot_id should change.
-        reboot_id = self.host.get_boot_id()
-        if reboot_id == boot_id:
-            raise error.TestFail('Failed to reboot after open')
+        # CCD open should cause an AP reboot, so boot_id should change.
+        # test_wait_for_boot will check this.
+        self.host.test_wait_for_boot(old_boot_id)
 
     def check_cr50_open(self, dev_mode, batt_pres):
         """Verify you can't open ccd unless dev mode is enabled.

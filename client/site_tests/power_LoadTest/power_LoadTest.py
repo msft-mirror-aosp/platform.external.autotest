@@ -974,7 +974,9 @@ class power_LoadTest(arc.ArcTest):
                         ]
                         if len(tabInfo) > 0 and 'url' in tabInfo[0]:
                             url = tabInfo[0]['url']
-                            key = 'Tab: ' + pattern.search(url).group('site')
+                            site = pattern.search(url)
+                            if site:
+                                key = 'Tab: ' + site.group('site')
 
                     if key.startswith('Service Worker'):
                         key = 'Service Worker: ' + \

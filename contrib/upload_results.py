@@ -55,13 +55,17 @@ DEFAULT_SUITE_NAME = "default_suite"
 SUITE_NAME_REGEX = "Fetching suite for suite named (.+?)\.\.\."
 DEBUG_FILE_PATH = "debug/test_that.DEBUG"
 
+APPLICATION_DEFAULT_CREDENTIALS_PATH = os.path.join(os.environ["HOME"], ".config/gcloud", "application_default_credentials.json")
+PUB_SUB_KEY_JSON_NAME = "pubsub-key-do-not-delete.json"
+SERVICE_ACCOUNT_JSON_NAME = ".service_account.json"
+POSSIBLE_SERVICE_ACCOUNT_NAMES = [".service_account.json", "pubsub-key-do-not-delete.json"]
+
 CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
 if "UPLOAD_CONFIG_DIR" in os.environ:
     CONFIG_DIR = os.environ["UPLOAD_CONFIG_DIR"]
-
-DEFAULT_BOTO_CONFIG = os.path.join(CONFIG_DIR, ".boto_upload_utils")
-UPLOAD_CONFIG = os.path.join(CONFIG_DIR, "upload_config.json")
-SERVICE_ACCOUNT_CONFIG = os.path.join(CONFIG_DIR, ".service_account.json")
+PUB_SUB_KEY_JSON_PATH = os.path.join(CONFIG_DIR, PUB_SUB_KEY_JSON_NAME)
+SERVICE_ACCOUNT_JSON_PATH = os.path.join(CONFIG_DIR, SERVICE_ACCOUNT_JSON_NAME)
+UPLOAD_CONFIG_JSON_PATH = os.path.join(CONFIG_DIR, "upload_config.json")
 LABEL_REGEX = r"(.*)results-\d*-(.*)"
 
 logging = log.getLogger(__name__)
@@ -107,7 +111,8 @@ def parse_arguments(argv):
             "-b",
             "--bucket",
             type=str,
-            required=True,
+            required=False,
+            default="",
             help="The GCS bucket that test results are uploaded to, e.g."
             "'gs://xxxx'.")
     config_parser.add_argument("-f",
@@ -177,94 +182,124 @@ def _confirm_option(question):
     return answer[0] == "y"
 
 
-def _read_until_string(pipe, stop_string):
-    lines = [""]
-    while True:
-        c = pipe.read(1)
-        lines[-1] = lines[-1] + c.decode("utf-8")
-        if stop_string == lines[-1]:
-            return lines
-        if c.decode("utf-8") == "\n":
-            lines.append("")
+def _migrate_legacy_data_if_present():
+    """
+    In the old upload config workflow, the service account file could be named
+    pubsub-key-do-not-delete.json instead of .service_account.json. If a
+    pubsub-key-do-not-delete.json file is found in the configuration directory
+    from the old flow, this function will rename it to .service_account.json
+    """
+
+    if os.path.exists(PUB_SUB_KEY_JSON_PATH):
+        logging.info(
+            f'found legacy {PUB_SUB_KEY_JSON_NAME} file; renaming it to {SERVICE_ACCOUNT_JSON_NAME}'
+        )
+        os.rename(PUB_SUB_KEY_JSON_PATH, SERVICE_ACCOUNT_JSON_PATH)
 
 
-def _configure_environment(parsed_args):
-    # create config directory if not exists
-    os.makedirs(CONFIG_DIR, exist_ok=True)
+def _environment_already_configured():
+    """
+    Returns True if environment has previously been configured, False otherwise
+    """
+    return os.path.exists(UPLOAD_CONFIG_JSON_PATH)
 
-    if os.path.exists(UPLOAD_CONFIG) and not parsed_args.force:
-        logging.error("Environment already configured, run with --force")
-        exit(1)
 
-    # call the gsutil config tool to set up accounts
-    if os.path.exists(DEFAULT_BOTO_CONFIG + ".bak"):
-        os.remove(DEFAULT_BOTO_CONFIG + ".bak")
+def _download_service_account(bucket, dest):
+    """
+    Downloads the service account json from the given bucket to the given path.
+    Assumes user has already run:
+    ```
+    gcloud auth application-default login
+    ```
 
-    if os.path.exists(DEFAULT_BOTO_CONFIG):
-        os.remove(DEFAULT_BOTO_CONFIG)
-    os.mknod(DEFAULT_BOTO_CONFIG)
-    os.environ["BOTO_CONFIG"] = DEFAULT_BOTO_CONFIG
-    os.environ[
-            "GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(CONFIG_DIR, ".service_account.json")
-    with subprocess.Popen(["gsutil", "config"],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE,
-                          stdin=subprocess.PIPE) as sp:
-        lines = _read_until_string(sp.stdout, "Enter the authorization code: ")
-        code = input("enter auth code from " + str(lines[1]) + ": ")
-        sp.stdin.write(bytes(code + '\n', "utf-8"))
-        sp.stdin.flush()
-        lines = _read_until_string(sp.stdout, "What is your project-id? ")
-        sp.stdin.write(bytes(parsed_args.bucket + '\n', "utf-8"))
-        sp.stdin.flush()
+    Args:
+        bucket (str): The bucket from which to download the service account
+        dest (str): Path to download the service account to
 
-    subprocess.run([
-            "gsutil", "cp",
-            "gs://" + parsed_args.bucket + "/.service_account.json", CONFIG_DIR
-    ])
-    subprocess.run([
-            "gsutil", "cp",
-            "gs://" + parsed_args.bucket + "/pubsub-key-do-not-delete.json",
-            CONFIG_DIR
-    ])
+    Raises:
+        Exception: If service account cannot be found in given bucket
+    """
 
-    sa_filename = ""
-    if os.path.exists(os.path.join(CONFIG_DIR, ".service_account.json")):
-        sa_filename = ".service_account.json"
-    elif os.path.exists(os.path.join(CONFIG_DIR, "pubsub-key-do-not-delete.json")):
-        sa_filename = "pubsub-key-do-not-delete.json"
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = APPLICATION_DEFAULT_CREDENTIALS_PATH
+    gs_client_bucket = storage.Client(bucket).bucket(bucket)
+
+    # search for the service account file in the bucket, download if found
+    for service_account_name in POSSIBLE_SERVICE_ACCOUNT_NAMES:
+        service_account = gs_client_bucket.blob(service_account_name)
+        if service_account.exists():
+            service_account.download_to_filename(dest)
+            return
+
+    raise ValueError("service account not found in bucket")
+
+
+def _configure_environment(bucket, force):
+    """
+    Sets up the configuration directory (specified by the UPLOAD_CONFIG_JSON_PATH_DIR
+    environment variable) with the service account credentials and the bucket
+    information. If the directory has already been initialized, no configuration
+    changes occur unless force is set to True
+
+    Args:
+        bucket (str): The bucket from which to download the service account needed
+                      for results processing
+        force (bool): If True, the configuration directory will be re-initialized
+                      regardless if it has been already
+
+    Raises:
+        Exception: If service account cannot be found in given bucket
+    """
+
+    _migrate_legacy_data_if_present()
+
+    if _environment_already_configured() and not force:
+        logging.info("environment already configured, run with --force if you want to reconfigure")
     else:
-        logging.error("No pubsub key found in bucket, failed config!")
-        exit(1)
+        os.makedirs(CONFIG_DIR, exist_ok=True)
 
-    # deposit parsed_args.bucket to the json file
-    with open(UPLOAD_CONFIG, "w") as cf:
-        settings = {}
-        settings["bucket"] = parsed_args.bucket
-        settings["service_account"] = os.path.join(CONFIG_DIR, sa_filename)
-        settings["boto_key"] = DEFAULT_BOTO_CONFIG
+        if bucket == "":
+            bucket = input("input gcs bucket: ")
+        _download_service_account(bucket, SERVICE_ACCOUNT_JSON_PATH)
 
-        cf.write(json.dumps(settings))
+        upload_config_dict = {"bucket": bucket}
+        with open(UPLOAD_CONFIG_JSON_PATH, "w") as cf:
+            cf.write(json.dumps(upload_config_dict))
+
+
+def _assert_config_file_exists(file):
+    """
+    Raises exception if given config file does not have mandatory files
+    """
+    if not os.path.exists(file):
+        raise Exception(f"missing {file} file, run config command")
 
 
 def _load_config():
-    mandatory_keys = ["bucket", "service_account", "boto_key"]
+    """
+    Initializes the GOOGLE_APPLICATION_CREDENTIALS with the configured service
+    account and reads the persistent settings in the upload configuration json
 
-    if not os.path.exists(UPLOAD_CONFIG):
-        logging.error("Missing mandatory config file, run config command")
-        exit(1)
-    with open(UPLOAD_CONFIG, "r") as cf:
-        settings = json.load(cf)
+    Args:
+        bucket (str): The bucket from which to download the service account needed
+                      for results processing
+        force (bool): If True, the configuration directory will be re-initialized
+                      regardless if it has been already
 
-    for key in mandatory_keys:
-        if key not in settings:
-            logging.error("Missing mandatory setting " + str(key) +
-                          ", run config command")
-            exit()
+    Returns:
+        A dictionary with all the settings in the upload configuration json
 
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings["service_account"]
-    os.environ["BOTO_CONFIG"] = settings["boto_key"]
-    return argparse.Namespace(**settings)
+    Raises:
+        Exception: If configuration directory does not have mandatory files
+    """
+
+    _assert_config_file_exists(SERVICE_ACCOUNT_JSON_PATH)
+    _assert_config_file_exists(UPLOAD_CONFIG_JSON_PATH)
+
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_JSON_PATH
+
+    with open(UPLOAD_CONFIG_JSON_PATH, "r") as cf:
+        persistent_settings = json.load(cf)
+    return persistent_settings
 
 
 class ResultsManager:
@@ -760,13 +795,13 @@ def main(args):
     logging.addHandler(file_handler)
 
     if parsed_args.subcommand == "config":
-        _configure_environment(parsed_args)
+        _configure_environment(parsed_args.bucket, parsed_args.force)
         return
 
     persistent_settings = _load_config()
 
     results_manager = ResultsManager(ResultsParser, ResultsSender)
-    results_manager.set_destination(persistent_settings.bucket)
+    results_manager.set_destination(persistent_settings["bucket"])
     results_manager.new_directory(parsed_args.directory)
 
     if parsed_args.bug:
@@ -788,3 +823,6 @@ if __name__ == "__main__":
         main(sys.argv[1:])
     except KeyboardInterrupt:
         sys.exit(0)
+    except Exception as err:
+        logging.error(str(err))
+        sys.exit(1)

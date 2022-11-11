@@ -402,7 +402,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         self._servo.set_nocheck('cr50_uart_timeout', self.CONSERVATIVE_CCD_WAIT)
         try:
             rv = self.send_command_retry_get_output('ccd', ['ccd.*>'],
-                                                    safe=True)[0]
+                                                    safe=True,
+                                                    compare_output=True)[0]
         finally:
             self._servo.set_nocheck('cr50_uart_timeout', original_timeout)
         ccd_output = {}

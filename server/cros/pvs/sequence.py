@@ -72,7 +72,9 @@ class test_sequence(test.test):
                 if res == False:
                     raise err
             else:
-                client.run_test(test, check_client_result=True, **argv)
+                client.run_test(test,
+                                timeout=87300,
+                                check_client_result=True, **argv)
         except BaseException as err:
             self._sequence_verdicts[test] = False
             self.postprocess()

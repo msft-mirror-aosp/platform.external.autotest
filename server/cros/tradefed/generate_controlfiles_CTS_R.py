@@ -241,15 +241,8 @@ _WIFI_CONNECT_COMMANDS_V2 = [
         "'adb shell dumpsys wifi transports -eth'",
 ]
 
-_DISPLAY_REFRESH_COMMANDS = [
-        "'sleep 20'",  # Wait for the intent helper mojo connection established
-        "'android-sh -c \\'am start -a android.intent.action.VIEW -d https://webglsamples.org/electricflower/electricflower.html\\''"
-]
-
 # Preconditions applicable to public and internal tests.
-CONFIG['PRECONDITION'] = {
-        'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
-}
+CONFIG['PRECONDITION'] = {}
 
 CONFIG['LOGIN_PRECONDITION'] = {
         'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
@@ -261,7 +254,6 @@ CONFIG['LOGIN_PRECONDITION'] = {
 
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
-        'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
         'CtsHostsideNetworkTests': _WIFI_CONNECT_COMMANDS_V2,
         'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS_V2,
         'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS_V2,
@@ -348,9 +340,6 @@ R_REGRESSION_SUITES = ['suite:arc-cts-r', 'suite:arc-cts']
 R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
 
 CONFIG['EXTRA_MODULES'] = {
-    'CtsCameraTestCases': {
-        'CtsCameraTestCases.NativeCameraDeviceTest': R_REGRESSION_AND_QUAL_SUITES,
-    },
     'CtsDeqpTestCases': {
         'CtsDeqpTestCases.dEQP-EGL': R_QUAL_SUITES,
         'CtsDeqpTestCases.dEQP-GLES2': R_QUAL_SUITES,
@@ -369,9 +358,6 @@ CONFIG['EXTRA_MODULES'] = {
 CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
         'CtsAppTestCases': {
                 'CtsAppTestCases.feature': [],
-        },
-        'CtsCameraTestCases': {
-                'CtsCameraTestCases.NativeCameraDeviceTest': [],
         },
         'CtsDeqpTestCases': {
                 'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [],
@@ -407,10 +393,6 @@ CONFIG['PERF_MODULES'] = {
 # for deqp but it is no longer required for that module.  Retaining
 # feature in case future slower module needs to be sharded.
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
-        'CtsCameraTestCases': {
-             'CtsCameraTestCases.NativeCameraDeviceTest':
-                [CONFIG['MOBLAB_SUITE_NAME']],
-        },
 }
 
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {
@@ -420,16 +402,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
         'CtsAppTestCases.feature': [
                 '--module', 'CtsAppTestCases', '--test',
                 'android.app.cts.SystemFeaturesTest'
-        ],
-        'CtsCameraTestCases.NativeCameraDeviceTest': [
-                '--include-filter',
-                'CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest',
-                '--include-filter',
-                'CtsCameraTestCases[instant] android.hardware.camera2.cts.NativeCameraDeviceTest',
-                '--include-filter',
-                'CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]',
-                '--include-filter',
-                'CtsCameraTestCases[instant] android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]',
         ],
         'CtsDeqpTestCases.dEQP-EGL': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',

@@ -26,11 +26,16 @@ HOURS=60 * 60
 
 args_dict = utils.args_to_dict(args)
 
+pdash_note = args_dict.get('pdash_note', '')
 duration = int(args_dict.get('duration', 2 * HOURS))
 preset = str(args_dict.get('preset', ''))
 video_url = str(args_dict.get('video_url', ''))
 num_video = int(args_dict.get('num_video', 5))
 multitask = args_dict.get('multitask')
+min_run_time_percent = int(args_dict.get('min_run_time_percent', 100))
+disable_hdrnet = args_dict.get('disable_hdrnet')
+webrtc = args_dict.get('webrtc')
+
 if multitask and (str(multitask).lower() == 'false' or int(multitask) == 0):
     multitask = False
 else:
@@ -39,12 +44,13 @@ if disable_hdrnet and (str(disable_hdrnet).lower() == 'true' or int(disable_hdrn
     disable_hdrnet = True
 else:
     disable_hdrnet = False
-min_run_time_percent = int(args_dict.get('min_run_time_percent', 100))
-
-pdash_note = args_dict.get('pdash_note', '')
+if webrtc and (str(webrtc).lower() == 'true' or int(webrtc) == 1):
+    webrtc = True
+else:
+    webrtc = False
 
 job.run_test('power_VideoCall', pdash_note=pdash_note, tag=NAME.split('.')[1],
              duration=duration, preset=preset, video_url=video_url,
              num_video=num_video, multitask=multitask,
              min_run_time_percent=min_run_time_percent,
-             disable_hdrnet=disable_hdrnet)
+             disable_hdrnet=disable_hdrnet, webrtc=webrtc)

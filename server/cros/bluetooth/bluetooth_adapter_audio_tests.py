@@ -813,6 +813,32 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
     @test_retry_and_log(False)
+    def test_enable_disable_ui(self, enable):
+        """Enables or disables the ui service.
+
+        @param enable: A bool indicating enabling or disabling the ui service.
+
+        @returns: True on success. False otherwise.
+        """
+        self.results = {
+            'enable_disable_ui_success': self.enable_disable_ui(enable)
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_set_force_sr_bt_enabled(self, enable):
+        """Sets the force sr bt enabled status to `enabled`.
+
+        @param enable: A bool to be set as the force sr bt enabled status.
+        """
+        self.audio_facade.set_force_sr_bt_enabled(enable)
+        enabled = self.audio_facade.get_force_sr_bt_enabled()
+        self.results = {
+                f'set_force_sr_bt_enabled_to_{enable}': enable == enabled
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
     def test_check_input_device_sample_rate(self, rate):
         """Checks the input device sample rate.
 
@@ -826,12 +852,20 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         summaries = self.audio_facade.get_audio_thread_summary()
         # Example summaries when capturing:
         # Summary: Input device [RASPI_AUDIO] 14400 24000 1
-        # Summary: Input stream 0x130000 CRAS_CLIENT_TYPE_TEST CRAS_STREAM_TYPE_DEFAULT 160 80
-        #     0x0000 16000 1 0
-        pattern = re.compile(r'Summary: Input device \[.*?\] (\d+) (?P<rate>\d+) (\d+) ')
+        # Summary: Input stream 0x130000 CRAS_CLIENT_TYPE_TEST
+        #          CRAS_STREAM_TYPE_DEFAULT 160 80 0x0000 16000 1 0
+        pattern = re.compile(
+            r'Summary: Input device \[.*?\] (\d+) (?P<rate>\d+) (\d+) ')
         filtered = map(lambda x: pattern.match(x), summaries)
-        filtered = filter(lambda x: x and int(x.group('rate')) == rate, filtered)
-        return len(list(filtered)) == 1
+        filtered = filter(lambda x: x and int(x.group('rate')) == rate,
+                          filtered)
+        result = len(list(filtered)) == 1
+        if not result:
+            logging.debug("summaries: %s", '\n'.join(summaries))
+        self.results = {
+            'check_input_device_sample_rate': result
+        }
+        return all(self.results.values())
 
     @test_retry_and_log(False)
     def test_dut_to_start_capturing_audio_subprocess(self, audio_data,
@@ -973,43 +1007,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                                 'test_hfp_connected',
                                                 timeout=timeout)
         self.results = {'peer hfp connected': is_connected}
-
-        return all(self.results.values())
-
-    @test_retry_and_log(False)
-    def test_start_custom_chrome(self, kwargs):
-        """Tests starting a custom chrome.
-
-        This is useful for running tests that require chrome.
-        However, since the bluetooth_adapter_audio_tests is designed for
-        testing without ui enabled originally, remember to call
-        self.test_stop_ui after each test if this function is called.
-
-        @param kwargs: a dict that will be passed to the start_custom_chrome.
-                For example, {'extra_browser_args':
-                ['--enable-features=CrOSLateBootAudioHFPMicSR']}
-
-        @returns: True on success. False otherwise.
-        """
-        is_enabled = self.enable_disable_ui(enable=True)
-        is_started = self.factory.create_browser_facade().start_custom_chrome(kwargs)
-
-        self.results = {
-                'enable_disable_ui': is_enabled,
-                'start custom chrome': is_started,
-        }
-
-        return all(self.results.values())
-
-    @test_retry_and_log(False)
-    def test_stop_ui(self):
-        """Tests stopping ui.
-
-        @returns: True on success. False otherwise.
-        """
-        is_disabled = self.enable_disable_ui(enable=False)
-
-        self.results = {'enabled_disable_ui': is_disabled}
 
         return all(self.results.values())
 
@@ -1645,19 +1642,24 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     def hfp_dut_as_sink_with_super_resolution(self, device, test_profile):
-        """Test Case: HFP sinewave streaming with super_resolution from peer device to the DUT.
+        """HFP sinewave streaming with super_resolution from peer device to DUT.
 
         @param device: the Bluetooth peer device.
         @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
         """
-        self.test_start_custom_chrome({
-            'extra_browser_args':
-            ['--enable-features=CrOSLateBootAudioHFPMicSR']})
+        # Enabling ui is needed, or the downloading in dlc service won't work.
+        self.test_enable_disable_ui(True)
+        # Sleeping is needed, or the step test_hfp_connected inside the method
+        # hfp_dut_as_sink will fail.
+        time.sleep(10)
+        # Force enabling the sr bt and expect the sample rate to be 24000.
+        self.test_set_force_sr_bt_enabled(True)
         self.hfp_dut_as_sink(
                 device,
                 test_profile,
                 check_input_device_sample_rate=24000)
-        self.test_stop_ui()
+        self.test_set_force_sr_bt_enabled(False)
+        self.test_enable_disable_ui(False)
 
 
     def hfp_dut_as_source_back2back(self, device, test_profile):

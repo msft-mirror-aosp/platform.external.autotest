@@ -534,6 +534,25 @@ class AudioFacadeLocal(object):
         """
         cras_utils.set_noise_cancellation_enabled(enabled)
 
+
+    def set_force_sr_bt_enabled(self, enabled):
+        """Sets the state to enable or disable bluetooth mic super_resolution.
+
+        @param enabled: True to enable; False to disable.
+
+        """
+        cras_utils.set_force_sr_bt_enabled(enabled)
+
+
+    def get_force_sr_bt_enabled(self):
+        """Gets the force_sr_bt_enabled state.
+
+        @returns: The bool state of force_sr_bt_enabled.
+
+        """
+        return cras_utils.get_force_sr_bt_enabled()
+
+
     @check_arc_resource
     def start_arc_recording(self):
         """Starts recording using microphone app in container."""

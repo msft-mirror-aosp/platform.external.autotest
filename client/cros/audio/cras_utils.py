@@ -726,6 +726,22 @@ def set_noise_cancellation_enabled(enabled):
     get_cras_control_interface().SetNoiseCancellationEnabled(enabled)
 
 
+def set_force_sr_bt_enabled(enabled):
+    """Sets the force sr bt enabled state.
+
+    @param enabled: True to enable; False to disable.
+    """
+    get_cras_control_interface().SetForceSrBtEnabled(enabled)
+
+
+def get_force_sr_bt_enabled():
+    """Gets the force sr bt enabled state.
+
+    @returns: The bool state of force_sr_bt_enabled.
+    """
+    return bool(get_cras_control_interface().GetForceSrBtEnabled())
+
+
 def set_floss_enabled(enabled):
     """Sets whether CRAS stack expects to use Floss.
 

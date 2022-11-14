@@ -946,42 +946,6 @@ class DevServerTest(unittest.TestCase):
         """Call the dev server's download method with synchronous=False."""
         self._testSuccessfulTriggerDownloadAndroid(synchronous=False)
 
-
-    @unittest.expectedFailure
-    def testGetUnrestrictedDevservers(self):
-        """Test method get_unrestricted_devservers works as expected."""
-        restricted_devserver = 'http://192.168.0.100:8080'
-        unrestricted_devserver = 'http://172.1.1.3:8080'
-        with patch.object(dev_server.ImageServer, 'servers') as servers_patch:
-            dev_server.ImageServer.servers.return_value = ([
-                    restricted_devserver, unrestricted_devserver
-            ])
-            # crbug.com/1027277: get_unrestricted_devservers() now returns all
-            # servers.
-            self.assertEqual(
-                    dev_server.ImageServer.get_unrestricted_devservers([
-                            ('192.168.0.0', 24)
-                    ]), [unrestricted_devserver])
-
-            servers_patch.assert_called_once()
-
-    def testGetUnrestrictedDevserversReturnsAll(self):
-        """Test method get_unrestricted_devservers works as expected."""
-        restricted_devserver = 'http://192.168.0.100:8080'
-        unrestricted_devserver = 'http://172.1.1.3:8080'
-        with patch.object(dev_server.ImageServer, 'servers') as servers_patch:
-            dev_server.ImageServer.servers.return_value = ([
-                    restricted_devserver, unrestricted_devserver
-            ])
-            # crbug.com/1027277: get_unrestricted_devservers() now returns all
-            # servers.
-            self.assertEqual(
-                    dev_server.ImageServer.get_unrestricted_devservers([
-                            ('192.168.0.0', 24)
-                    ]), [restricted_devserver, unrestricted_devserver])
-
-            servers_patch.assert_called_once()
-
     def testDevserverHealthy(self):
         """Test which types of connections that method devserver_healthy uses
         for different types of DevServer.

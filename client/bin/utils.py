@@ -315,6 +315,7 @@ def get_cpu_soc_family():
 # INTEL_*_ORDER lists below.
 INTEL_UARCH_TABLE = {
     '06_9A': 'Alder Lake',
+    '06_BE': 'Alder Lake',
     '06_4C': 'Airmont',
     '06_1C': 'Atom',
     '06_26': 'Atom',

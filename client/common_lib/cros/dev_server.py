@@ -754,6 +754,9 @@ class DevServer(object):
                  can_retry will be False.
         """
         logging.info('Getting devservers for host: %s',  hostname)
+        metrics.Counter(
+                'chromeos/autotest/devserver/get_available_devservers'
+        ).increment(fields={'with_hostname': bool(hostname)})
         host_ip = None
         if hostname:
             host_ip = bin_utils.get_ip_address(hostname)

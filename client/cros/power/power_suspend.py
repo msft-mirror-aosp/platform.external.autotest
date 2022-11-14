@@ -550,6 +550,33 @@ class Suspender(object):
                                        self._DEFAULT_SUSPEND_DELAY)
 
 
+    def _get_cbmem_log(self, base_log=None):
+        """Get the cbmem log of the current boot.
+
+        @param base_log: If not None, the base log to compare the current cbmem
+            log with.
+
+        @returns: If `base_log` is None, return the whole cbmem log. Otherwise,
+            only the newer part of the log not contained in `base_log` will be
+            returned.
+        """
+        log = subprocess.check_output(['cbmem', '-1'], encoding='utf-8')
+        if not base_log:
+            return log
+
+        # Only find the last 20 lines of `base_log`
+        lines_to_match = base_log.splitlines()[-20:]
+        lines = log.splitlines()
+        num_lines = len(lines_to_match)
+        for i in range(len(lines) - num_lines + 1):
+            # Try to match lines[i:] with lines_to_match
+            if lines[i:i+num_lines] == lines_to_match:
+                return '\n'.join(lines[i+num_lines:])
+
+        logging.warning('Could not match with base log; ignoring base log')
+        return log
+
+
     def suspend(self, duration=10, ignore_kernel_warns=False,
                 measure_arc=False):
         """
@@ -573,6 +600,8 @@ class Suspender(object):
                 self._s2idle_residency_stats = \
                     power_status.S2IdleResidencyStats()
 
+        orig_cbmem_log = self._get_cbmem_log()
+
         try:
             iteration = len(self.failures) + len(self.successes) + 1
             # Retry suspend in case we hit a known (allowlisted) bug
@@ -593,8 +622,7 @@ class Suspender(object):
                     # might be another error, we check for it ourselves below
                     alarm = self._ALARM_FORCE_EARLY_WAKEUP
 
-                log_data = subprocess.check_output(['cbmem',
-                                                    '-1']).decode('utf-8')
+                log_data = self._get_cbmem_log(orig_cbmem_log)
 
                 for msg in re.findall(r'^.*ERROR.*$', log_data, re.M):
                     for board, pattern in sys_power.FirmwareError.ALLOWLIST:

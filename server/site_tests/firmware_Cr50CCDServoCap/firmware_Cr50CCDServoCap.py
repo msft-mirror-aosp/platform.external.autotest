@@ -135,6 +135,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
                             self.servo.get_ccd_servo_device())
         # Check EC uart if servo has ccd controls and the board has an EC.
         self.check_ec_uart = (
+                self.servo.get_ccd_servo_device() and
                 self.servo.has_control('ec_board', prefix=self._ccd_prefix)
                 and self.check_ec_capability(suppress_warning=True))
 

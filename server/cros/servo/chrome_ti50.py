@@ -50,6 +50,17 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     DUT_PREPVT = DUT_FW + 'ti50.bin.prepvt'
     # ===============================================================
 
+    # Ti50 reset flags as defined in PMU_RSTSRC.
+    RESET_FLAGS = {
+           'RESET_FLAG_POWER_ON'         : 1 << 0, # POR
+           'RESET_FLAG_HIBERNATE'        : 1 << 1, # EXIT
+           'RESET_FLAG_SOFT'             : 1 << 4, # SYSRESET
+           'RESET_FLAG_HARD'             : 1 << 5, # SOFTWARE
+           'RESET_FLAG_BROWNOUT'         : 1 << 6, # FST_BRNOUT
+           'RESET_FLAG_SECURITY'         : 1 << 7, # SEC_THREAT
+           'RESET_FLAG_RBOX'             : 1 << 8, # RBOX_COMB_RST
+    }
+
     # Ti50 interrupt numbers reported in taskinfo
     IRQ_DICT = {
         0 : 'UART0_GRP0',

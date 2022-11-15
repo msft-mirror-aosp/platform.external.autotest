@@ -4799,8 +4799,11 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 self.bond_state = BondState.NOT_BONDED
                 self.connected = self.adapter_client.is_connected(address)
 
-            def __del__(self):
-                """Destructor"""
+            def __enter__(self):
+                pass
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                del exc_type, exc_value, traceback  # unused
                 if self.adapter_client:
                     self.cleanup()
 
@@ -4889,36 +4892,38 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         done_evt = threading.Event()
 
-        # First we need an observer that watches for callbacks
-        pairing_observer = PairingObserver(self.adapter_client, done_evt,
-                                           address, pin)
+        # Construct an observer that watches for callbacks and make sure the
+        # callbacks are unregistered.
+        with PairingObserver(self.adapter_client, done_evt, address, pin):
 
-        # Pair and connect. If either action fails, mark the done event so that
-        # we fall through without blocking.
-        if not self.device_is_paired(address):
-            if not self.adapter_client.create_bond(address, Transport.AUTO):
-                done_evt.set()
-        elif not self.device_is_connected(address):
-            if not self.adapter_client.connect_all_enabled_profiles(address):
-                done_evt.set()
+            # Pair and connect. If either action fails, mark the done event so
+            # that we fall through without blocking.
+            if not self.device_is_paired(address):
+                if not self.adapter_client.create_bond(address,
+                                                       Transport.AUTO):
+                    done_evt.set()
+            elif not self.device_is_connected(address):
+                if not self.adapter_client.connect_all_enabled_profiles(
+                        address):
+                    done_evt.set()
 
-        done_evt.wait(timeout=timeout)
-        if not done_evt.is_set():
-            logging.error('Timed out waiting for pairing to complete.')
+            done_evt.wait(timeout=timeout)
+            if not done_evt.is_set():
+                logging.error('Timed out waiting for pairing to complete.')
 
-        is_paired = self.device_is_paired(address)
-        is_connected = self.device_is_connected(address)
+            is_paired = self.device_is_paired(address)
+            is_connected = self.device_is_connected(address)
 
-        # If pairing and hci connection is complete, also trigger all profile
-        # connections here. This is necessary because device connection doesn't
-        # always imply profile connection.
-        if is_paired and is_connected:
-            self.adapter_client.connect_all_enabled_profiles(address)
+            # If pairing and hci connection is complete, also trigger all
+            # profile connections here. This is necessary because device
+            # connection doesn't always imply profile connection.
+            if is_paired and is_connected:
+                self.adapter_client.connect_all_enabled_profiles(address)
 
-        logging.info('Pairing result: paired(%s) connected(%s)', is_paired,
-                     is_connected)
+            logging.info('Pairing result: paired(%s) connected(%s)', is_paired,
+                         is_connected)
 
-        return is_paired and is_connected
+            return is_paired and is_connected
 
     def device_is_connected(self, address):
         """Checks whether a device is connected.

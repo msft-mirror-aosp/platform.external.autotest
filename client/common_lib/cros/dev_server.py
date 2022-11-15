@@ -735,18 +735,20 @@ class DevServer(object):
                  used. For example, if hostname is in a restricted subnet,
                  can_retry will be False.
         """
-        logging.info('Getting devservers for host: %s',  hostname)
+        logging.info('Getting devservers for host: %s', hostname)
         metrics.Counter(
                 'chromeos/autotest/devserver/get_available_devservers'
         ).increment(fields={'with_hostname': bool(hostname)})
-        host_ip = None
-        if hostname:
-            host_ip = bin_utils.get_ip_address(hostname)
-            if not host_ip:
-                logging.error('Failed to get IP address of %s. Will pick a '
-                              'devserver without subnet constraint.', hostname)
+        if not hostname:
+            logging.error(
+                    'No hostname specified. Will pick a random cache server.')
+            return cls.servers(), False
 
+        host_ip = bin_utils.get_ip_address(hostname)
         if not host_ip:
+            logging.error(
+                    'Failed to get IP address of %s. '
+                    'Will pick a random cache server.', hostname)
             return cls.servers(), False
 
         # For the sake of backward compatibility, we use the argument

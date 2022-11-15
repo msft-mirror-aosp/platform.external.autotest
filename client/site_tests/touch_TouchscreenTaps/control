@@ -2,25 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "kathrelkeld"
 NAME = "touch_TouchscreenTaps"
-PURPOSE = "Test that touchscreen finger presses are interpreted as taps."
-CRITERIA = """
-This test will fail if, after playback of touch events, taps do not appear
-on test page.
-"""
-# Disabled due to 0% pass rate over 30 days. See b/241833106
-# ATTRIBUTES = "suite:touch_replay"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "touch"
+METADATA = {
+    "contacts": ["chromeos-tango@google.com"],
+    "bug_component": "b:167277",
+    "criteria": "Touchscreen tap works and click count is up.",
+    "hw_agnostic": False
+}
+ATTRIBUTES = "suite:touch_replay"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchscreen"
-PY_VERSION = 3
-
-DOC = """
-Uses javascript page to listen for touchscreen taps.  If all goes well, the
-click count will increase.
-"""
 
 job.run_test('touch_TouchscreenTaps')

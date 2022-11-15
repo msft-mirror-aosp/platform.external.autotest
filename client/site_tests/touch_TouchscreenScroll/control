@@ -2,25 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "kathrelkeld"
 NAME = "touch_TouchscreenScroll"
-PURPOSE = "Test that touchscreen scrolling occurs in the correct direction."
-CRITERIA = """
-This test will fail if, after playback of touchscreen events, no scrolling is
-detected or if scrolling is in the wrong direction.
-"""
-# Disabled due to 0% pass rate over 30 days. See b/241833068
-# ATTRIBUTES = "suite:touch_replay"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "touch"
+METADATA = {
+    "contacts": ["chromeos-tango@google.com"],
+    "bug_component": "b:167277",
+    "criteria": "One finger touchscreen scroll in 4 directions.",
+    "hw_agnostic": False
+}
+ATTRIBUTES = "suite:touch_replay"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchscreen"
-PY_VERSION = 3
-
-DOC = """
-Plays back touchscreen movements and checks for scroll.
-
-"""
 
 job.run_test('touch_TouchscreenScroll')

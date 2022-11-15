@@ -2,26 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "kathrelkeld"
 NAME = "touch_TapSettings"
-PURPOSE = "Test that tap-to-click and tap dragging can be enabled/disabled."
-CRITERIA = """
-This test will fail if, after playback of touch events, tap-to-click or tap
-dragging does not work when supposed to or works when not supposed to.
-"""
+METADATA = {
+    "contacts": ["chromeos-tango@google.com"],
+    "bug_component": "b:167253",
+    "criteria": "Tap-to-click and tap-drag work/not_work when eanbled/disabled.",
+    "hw_agnostic": False
+}
 ATTRIBUTES = "suite:touch_replay"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "touch"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchpad"
-PY_VERSION = 3
-
-DOC = """
-Uses javascript page to listen for mouse clicks and drags.  If tap-to-click is
-working, the click count will increase.  If tap dragging is working, movement
-will be detected during a click.  Enables and disables tap-to-click and tap
-dragging, checking whether they change.
-"""
 
 job.run_test('touch_TapSettings')

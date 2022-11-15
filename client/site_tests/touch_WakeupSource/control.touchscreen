@@ -2,24 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "kathrelkeld"
 NAME = "touch_WakeupSource.touchscreen"
-PURPOSE = "Test whether onboard touchscreen is wakeup source for the DUT."
-CRITERIA = """
-This test will fail if the touchpad is not a wakeup source or if the
-touchscreen (if any) is one.
-"""
+METADATA = {
+    "contacts": ["chromeos-tango@google.com"],
+    "bug_component": "b:167277",
+    "criteria": "Touchscreen is a a wakeup source.",
+    "hw_agnostic": False
+}
 ATTRIBUTES = "suite:touch"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "touch"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchscreen"
-PY_VERSION = 3
-
-DOC = """
-For this device's touchscreen, verify whether that device is
-listed as a wake source or not.
-"""
 
 job.run_test('touch_WakeupSource', source='touchscreen')

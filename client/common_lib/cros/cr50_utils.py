@@ -244,7 +244,7 @@ def GSCTool(client, args, ignore_status=False, expect_reboot=False):
 
     Args:
         client: the object to run commands on
-        args: a list of strings that contiain the gsctool args
+        args: a list of strings that contain the gsctool args
         ignore_status: Ignore the exit status
         expect_reboot: Expect a reboot
 
@@ -702,6 +702,9 @@ def SetChipBoardId(client, board_id, flags=None, pad=True):
 
     CheckChipBoardId(client, board_id, flags)
 
-def DumpFlog(client):
+def DumpFlog(client, ti50=False):
     """Retrieve contents of the flash log"""
-    return GSCTool(client, ['-a', '-L']).stdout.strip()
+    args = ['-a', '-L']
+    if ti50:
+        args = ['-D'] + args
+    return GSCTool(client, args).stdout.strip()

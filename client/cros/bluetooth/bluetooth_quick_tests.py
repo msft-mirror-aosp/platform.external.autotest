@@ -73,6 +73,7 @@ class BluetoothQuickTests(test.test,
         self.common_failures = {
                 'Freeing adapter /org/bluez/hci': 'adapter_freed',
                 '/var/spool/crash/bluetoothd': 'bluetoothd_crashed',
+                '/var/spool/crash/btadapterd': 'btadapterd_crashed',
                 'btintel_hw_error': 'intel hardware error detected',
                 'qca_hw_error': 'qca hardware error detected',
                 'cmd_cnt 0 cmd queued ([5-9]|[1-9][0-9]+)':

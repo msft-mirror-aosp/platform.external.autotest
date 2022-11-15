@@ -63,7 +63,7 @@ class network_WiFi_BluetoothStreamPerf(
 
     def verify_result(self, result_drop, should_expected_drop,
                       must_expected_drop, test_type, failed_test_types,
-                      ap_config_tag):
+                      ap_config_tag, bt_tag):
         """Verfiy that performance test result passes the must and should
         throughput requirements.
 
@@ -74,6 +74,8 @@ class network_WiFi_BluetoothStreamPerf(
         @param failed_test_types: a set of failed test_types
         @param power_save: powersaving configuration
         @param ap_config: the AP configuration
+        @param bt_tag: string for BT operation
+
         """
         must_drop_failed = False
         should_drop_failed = False
@@ -99,6 +101,7 @@ class network_WiFi_BluetoothStreamPerf(
             failed_test_type_list = [
                     '[test_type=%s' % test_type,
                     'ap_config_tag=%s' % ap_config_tag,
+                    'bt_tag=%s' % bt_tag,
                     'measured_drop=%d' % result_drop
             ]
             if must_drop_failed:
@@ -184,7 +187,7 @@ class network_WiFi_BluetoothStreamPerf(
                                    graph=ap_config_tag + '_drop')
             self.verify_result(drop, expected_drop[0],
                                expected_drop[1], test_type,
-                               failed_test_types, ap_config_tag)
+                               failed_test_types, ap_config_tag, bt_tag)
             self.write_perf_keyval(
                     {'_'.join([config.test_type, test_str, 'drop']): drop})
             logging.info('logging drop value as %d%%', drop)

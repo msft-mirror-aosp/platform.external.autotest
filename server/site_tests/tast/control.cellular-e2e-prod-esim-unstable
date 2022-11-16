@@ -40,7 +40,7 @@ def run(machine):
                         json.dumps(host_info.labels)},
                         stream=temp_file)
         temp_file.flush()
-    job.run_test('tast',
+        job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['("group:cellular" && "cellular_e2e_unstable" && "cellular_sim_prod_esim")'],
                  ignore_test_failures=False, max_run_sec=10800,

@@ -40,8 +40,8 @@ CONFIG['INTERNAL_SUITE_NAMES'] = [
 ]
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
-# TODO(b/235915212): This doesn't run on VM yet.
 CONFIG['VM_SUITE_NAME'] = 'suite:arc-cts-vm'
+CONFIG['STABLE_VM_SUITE_NAME'] = 'suite:arc-cts-vm-stable'
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
@@ -192,6 +192,18 @@ CONFIG['VM_MODULES_RULES'] = [
         # Add everything else.
         '+.*',
 ]
+
+
+# Same Syntax as VM_MODULES_RULES.
+# These VM testing are unstable, and will also run at regular frequency on
+# hardware.
+CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
+    # Mark all tests unstable until migration.
+    '+.*',
+]
+
+# List of suite that stable VM modules will skip.
+CONFIG['VM_SKIP_SUITES'] = ['suite:arc-cts']
 
 # The suite is divided based on the run-time hint in the *.config file.
 CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()

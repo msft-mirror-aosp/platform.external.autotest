@@ -373,6 +373,7 @@ def get_suites(modules, abi, is_public, camera_facing=None,
 
     vm_modules = []
     nonvm_modules = []
+    has_unstable_vm_modules = False
     for module in modules:
         if module in get_collect_modules(is_public, hardware_suite):
             # We collect all tests both in arc-gts and arc-gts-qual as both have
@@ -393,6 +394,8 @@ def get_suites(modules, abi, is_public, camera_facing=None,
             # should not do it once in production.
             suites.add(CONFIG['VM_SUITE_NAME'])
             vm_modules.append(module)
+            if is_unstable_vm_modules(module):
+                has_unstable_vm_modules = True
         else:
             nonvm_modules.append(module)
         if abi == 'x86':
@@ -425,6 +428,14 @@ def get_suites(modules, abi, is_public, camera_facing=None,
         logging.warning(
                 '%s is also added to vm suites because of %s, please check your config',
                 nonvm_modules, vm_modules)
+
+    # For group with stalbe VM test only, remove it from HW suite, and add to
+    # stable VM suite.
+    if vm_modules and not nonvm_modules and not has_unstable_vm_modules:
+        for suite_to_skip in CONFIG.get('VM_SKIP_SUITES'):
+            suites.remove(suite_to_skip)
+        if 'STABLE_VM_SUITE_NAME' in CONFIG:
+            suites.add(CONFIG['STABLE_VM_SUITE_NAME'])
 
     return sorted(list(suites))
 
@@ -837,14 +848,24 @@ def get_extra_hardware_modules_dict(is_public, abi):
 
 
 # TODO(fqj): come up a better way for vm modules generation.
-def is_vm_modules(module):
-    """Gets a list of modules for arc-cts-vm."""
-    for vm_module_pattern in CONFIG.get('VM_MODULES_RULES', []):
+def is_in_vm_rule(module, rule):
+    """Checks if module in given rule of VM rule syntax"""
+    for vm_module_pattern in rule:
         assert vm_module_pattern[0] in '+-'
         if re.match(vm_module_pattern[1:], module):
             return True if vm_module_pattern[0] == '+' else False
 
     return False
+
+
+def is_vm_modules(module):
+    """Checks if module eligible for VM."""
+    return is_in_vm_rule(module, CONFIG.get('VM_MODULES_RULES', []))
+
+
+def is_unstable_vm_modules(module):
+    """Checks if module is still unstable for VM."""
+    return is_in_vm_rule(module, CONFIG.get('VM_UNSTABLE_MODULES_RULES', []))
 
 
 def get_extra_artifacts(modules):

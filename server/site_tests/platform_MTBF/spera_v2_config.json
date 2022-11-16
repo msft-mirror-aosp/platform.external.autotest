@@ -341,8 +341,7 @@
         "tabswitch-essential", "tabswitch-advanced",
         "video-essential-youtube-app", "video-advanced-youtube-app",
         "everyday-essential-ytmusic", "everyday-advanced-ytmusic",
-        "video-proxy-essential-h264", "video-proxy-advanced-h264",
-        "video-proxy-essential-hevc", "video-proxy-advanced-hevc"
+        "video-proxy-essential-h264", "video-proxy-advanced-h264"
       ]
     },
     {
@@ -354,7 +353,7 @@
       "test_list": [
         "meet-essential-large", "meet-essential-class", "tabswitch-essential",
         "video-essential-youtube-app", "everyday-essential-ytmusic", "video-proxy-essential-h264",
-        "video-proxy-essential-hevc", "edu-video-advanced-wevideo"
+        "edu-video-advanced-wevideo"
       ]
     },
     {

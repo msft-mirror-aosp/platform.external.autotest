@@ -73,7 +73,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                 num_iterations=1)
 
 
-    @test_wrapper('Reboot LE advertising test')
+    @test_wrapper('Reboot LE advertising test', supports_floss=False)
     def adv_reboot_advertising_test(self):
         """Run all test cases for advertisements involving reboot."""
         self.run_le_advertising_test(

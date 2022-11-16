@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'asadrieh, chromeos-engprod-platform-syd'
-NAME = 'quickcheckcuj2_basic_wakeup'
+NAME = 'quickcheckcuj2_basic_wakeup_quick'
 ATTRIBUTES = 'suite:performance_cuj_sprite_quick'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'

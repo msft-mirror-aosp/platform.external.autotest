@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'asadrieh, chromeos-engprod-platform-syd'
-NAME = 'tabswitchcuj2_premium_noproxy'
+NAME = 'tabswitchcuj2_premium_noproxy_quick'
 ATTRIBUTES = 'suite:performance_cuj_sprite_quick'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'

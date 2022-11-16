@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'asadrieh, chromeos-engprod-platform-syd'
-NAME = 'videocuj2_basic_youtube_app'
+NAME = 'videocuj2_basic_youtube_app_quick'
 ATTRIBUTES = 'suite:performance_cuj_sprite_quick'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'

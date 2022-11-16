@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Bluetooth Team"
-NAME = "bluetooth_floss"
+NAME = "bluetooth_floss_flaky"
 PURPOSE = "Automated testing of Bluetooth Floss Stack"
 
 TIME = "LONG"
@@ -12,10 +12,9 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite consists of bluetooth stable tests which test the Floss stack.
-Stable tests are defined as tests with >=90% pass rate. Any tests with
-lower success rate should be moved to suite:bluetooth_floss_flaky
-
+This suite consists of bluetooth tests which tests the Floss stack.
+This suite contains the flaky suites which is defined as tests with success
+rate <90%. Stable tests are moved to suite:bluetooth_floss
 
 More documentation available at
 https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites

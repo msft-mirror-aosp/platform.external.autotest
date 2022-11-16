@@ -198,6 +198,9 @@ CONFIG['VM_MODULES_RULES'] = [
 # These VM testing are unstable, and will also run at regular frequency on
 # hardware.
 CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
+    # Mark as stable VM testing.
+    '-CtsDreams.*',
+
     # Mark all tests unstable until migration.
     '+.*',
 ]

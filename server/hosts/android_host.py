@@ -135,13 +135,20 @@ class AndroidHost(base_classes.Host):
         logging.info('Android device state from adb: %s', state)
         return state == 'device'
 
+    def get_gmscore_version(self):
+        """Get the GMSCore version of the Android device."""
+        res = self.run_adb_command('shell dumpsys package com.google.android.gms | grep versionCode')
+        version = res.stdout.strip()
+        logging.info('GMSCore Version on phone: %s', version)
+        return version
+
     def get_wifi_ip_address(self):
         """Get ipv4 address from the Android device"""
         res = self.run_adb_command('shell ip route')
         # An example response would looks like: "192.168.86.0/24 dev wlan0"
         # " proto kernel scope link src 192.168.86.22 \n"
         ip_string = res.stdout.strip().split(' ')[-1]
-        logging.info('Ip address collected from the Android device: %s',
+        logging.info('IP address collected from the Android device: %s',
                      ip_string)
         try:
             socket.inet_aton(ip_string)
@@ -224,6 +231,7 @@ class AndroidHost(base_classes.Host):
         self.restart_adb_server()
         self.cache_usb_dev_path()
         self.ensure_device_connectivity()
+        self.get_gmscore_version()
         ip_address = self.get_wifi_ip_address()
         self.adb_over_tcp(persist_reboot=adb_persist_reboot)
         return ip_address

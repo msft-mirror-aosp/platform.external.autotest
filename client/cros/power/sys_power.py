@@ -52,10 +52,6 @@ class KernelError(SuspendFailure):
             # crosbug.com/37594: debug tracing clock desync we don't care about
             (r'kernel/trace/ring_buffer.c:\d+ rb_reserve_next_event',
              r'Delta way too big!'),
-            # TODO(crosbug.com/p/52008): Remove from allowlist once watermark
-            # implementation has landed.
-            (r'v3.18/\S+/intel_pm.c:\d+ skl_update_other_pipe_wm',
-             r'WARN_ON\(\!wm_changed\)'),
             # Ignore I2C transfer errors due to cr50_i2c_transfer_message.
             # See b/250089565.
             (r'i2c_dw_xfer|__i2c_transfer', r'cr50_i2c_'),

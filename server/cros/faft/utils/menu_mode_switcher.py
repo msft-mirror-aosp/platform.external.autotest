@@ -345,7 +345,9 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
             raise error.TestError('MiniDiag is not enabled for this board')
 
         # From root screen to storage screen
-        self.menu.select('Selecting "Storage"...')
+        self.menu.move_to(5, 0) # language menu
+        self.menu.down() # storage health info
+        self.menu.select('Selecting "Storage (Health) Info"...')
         self.test.wait_for('keypress_delay')
         # Since the default selection is unknown, navigate to item 4 first
         self.menu.move_to(0, 4)
@@ -362,7 +364,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         Menu items in quick memory test screen:
             0. Language
             1. Page up (disabled)
-            2. Page down (disabled
+            2. Page down (disabled)
             3. Back
             4. Power off
 

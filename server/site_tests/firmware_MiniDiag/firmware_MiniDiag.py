@@ -63,13 +63,13 @@ class firmware_MiniDiag(FirmwareTest):
 
         # Verify storage health info by "<Storage health info>"
         # or "<Health info>"
-        if not (verifier.find_word('<Storage health info>')
-                or verifier.find_word('<Health info>')):
+        if not (verifier.find_word('<Storage health info> menu')
+                or verifier.find_word('<Health info> menu')):
             raise error.TestError('No storage health info log found,' +
                                   cbmem_loss_msg)
 
         # Verify quick memory test by "<Memory check (quick)>"
-        if not verifier.find_word('<Memory check (quick)>'):
+        if not verifier.find_word('<Memory check (quick)> menu'):
             raise error.TestError('No quick memory test log found,' +
                                   cbmem_loss_msg)
 

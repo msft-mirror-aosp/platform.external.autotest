@@ -1934,6 +1934,14 @@ def get_hardware_revision():
 
     @returns a string representing this host's hardware revision.
     """
+    result = utils.run("crossystem board_id", ignore_status=True)
+
+    if result.exit_status == 0:
+        return f"rev{result.stdout.strip()}"
+
+    # TODO(b/187790074): "crossystem board_id" works on M110 and later.
+    # Below can be removed after autotest no longer needs to support M109
+    # and earlier.
     command = 'mosys platform version'
     result = utils.run(command, ignore_status=True)
     if result.exit_status != 0:

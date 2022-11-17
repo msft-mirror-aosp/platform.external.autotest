@@ -2,36 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Flashes new RW firmware with a rollback ID of '1' and verifies that all
+# rollback state is set correctly. Then attempts to flash RW firmware with
+# rollback ID of '0' and verifies that the RO version of firmware is running
+# (i.e., not running older version). Finally, flashes RW firmware with rollback
+# ID of '9' and validates that the RW version of '9' is running.
+
 from autotest_lib.server import utils
 
-AUTHOR = "ChromeOS Team"
 NAME = "firmware_Fingerprint.ObeysRollback"
+METADATA = {
+    "contacts": ["chromeos-fingerprint@google.com"],
+    "bug_component": "b:782045",
+    "criteria": "Fails if the rollback minimum version is not updated or min rollback version does not prevent running an older version.",
+}
+
 PURPOSE = """
 Verify that fingerprint firmware rollback functions correctly.
 """
-CRITERIA = """
-Fails if the rollback minimum version is not updated or min rollback version
-does not prevent running an older version.
-"""
 ATTRIBUTES = "suite:fingerprint"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"
 JOB_RETRIES = 0
-PY_VERSION = 3
 
 # This test uses futility and dev keys from autotest/files/server/cros/faft.
 REQUIRE_SSP = True
-
-DOC = """
-Flashes new RW firmware with a rollback ID of '1' and verifies that all
-rollback state is set correctly. Then attempts to flash RW firmware with
-rollback ID of '0' and verifies that the RO version of firmware is running
-(i.e., not running older version). Finally, flashes RW firmware with rollback
-ID of '9' and validates that the RW version of '9' is running.
-"""
 
 test_images = [ 'TEST_IMAGE_DEV_RB_ZERO',
                 'TEST_IMAGE_DEV_RB_ONE',

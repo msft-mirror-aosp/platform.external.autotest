@@ -6,6 +6,12 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
 NAME = 'storage_qual_v2_stress_35'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Part of storage AVL qualification suite',
+    'hw_agnostic': False
+}
 ATTRIBUTES = 'suite:storage_qual_v2_xl'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'

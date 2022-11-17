@@ -8,7 +8,9 @@ AUTHOR = 'Leena BaniOdeh <leena.baniodeh@exalt.ps>'
 NAME = 'bluetooth_AdapterSAHealth.sa_adapter_reboot_test.floss'
 PURPOSE = ('Reboot device and ensure Bluetooth adapter is up')
 CRITERIA = 'Pass all health test'
-ATTRIBUTES = 'suite:bluetooth_floss'
+# TODO(b/256653722) re-enable this test once BT state persists properly around
+# reboots
+ATTRIBUTES = ''
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageTrim.mmc'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Measure write performance before and after trim. (for eMMC)',
+    'hw_agnostic': False
+}
 AUTHOR = 'puthik'
 PURPOSE = 'Measure write performance before and after trim. (for eMMC)'
 TIME = 'LENGTHY'

@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_SsdDetection'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Determine if main disk is a solid state device.',
+    'hw_agnostic': False
+}
 AUTHOR = 'The Chromium OS Authors'
 PURPOSE = 'Determine if main disk is a solid state device.'
 CRITERIA = 'Fails if the main disk is not a solid state device.'

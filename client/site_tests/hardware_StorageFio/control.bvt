@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageFio.bvt'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Make sure that hardware StorageFio work',
+    'hw_agnostic': False
+}
 AUTHOR = 'puthik'
 PURPOSE = 'Make sure that hardware StorageFio work'
 TIME = 'SHORT'

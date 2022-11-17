@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageWearoutDetect.non_cache'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Detect wear out status of storage device',
+    'hw_agnostic': False
+}
 AUTHOR = 'puthik'
 PURPOSE = 'Detect wear out status of storage device'
 TIME = 'SHORT'

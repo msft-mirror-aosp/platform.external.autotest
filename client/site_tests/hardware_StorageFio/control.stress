@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageFio.stress'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Test the root device, when booted from a USB stick',
+    'hw_agnostic': False
+}
 AUTHOR = 'gwendal'
 PURPOSE = 'Test the root device, when booted from a USB stick'
 TIME = 'LENGTHY'

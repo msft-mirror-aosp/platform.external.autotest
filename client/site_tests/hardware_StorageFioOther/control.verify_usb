@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageFioOther.verify_usb'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Verify storage performance using an external device',
+    'hw_agnostic': False
+}
 AUTHOR = 'The Chromium OS Authors'
 PURPOSE = 'Verify storage performance using an external device'
 TIME = 'MEDIUM'

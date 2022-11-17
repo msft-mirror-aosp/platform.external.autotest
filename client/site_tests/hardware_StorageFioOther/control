@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageFioOther.test'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Benchmark storage performance using an external device',
+    'hw_agnostic': False
+}
 AUTHOR = 'The Chromium OS Authors'
 PURPOSE = 'Benchmark storage performance using an external device'
 CRITERIA = 'This test is a benchmark'

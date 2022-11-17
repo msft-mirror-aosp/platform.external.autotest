@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageStress.test'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Part of storage AVL qualification suite',
+    'hw_agnostic': False
+}
 AUTHOR = 'grundler, gwendal, puthik'
 PURPOSE = 'Test StorageStress code'
 TIME = 'MEDIUM'

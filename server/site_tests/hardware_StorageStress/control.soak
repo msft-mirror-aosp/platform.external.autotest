@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageStress.soak'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Part of storage AVL qualification suite',
+    'hw_agnostic': False
+}
 AUTHOR = 'gwendal'
 PURPOSE = 'Stress the SSD to age it prematurely.'
 TIME = 'LENGTHY'

@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageFio'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Benchmark storage performance using an unmounted root partition.',
+    'hw_agnostic': False
+}
 AUTHOR = 'The Chromium OS Authors'
 PURPOSE = 'Benchmark storage performance using an unmounted root partition.'
 CRITERIA = 'This test is a benchmark.'

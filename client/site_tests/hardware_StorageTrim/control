@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageTrim'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Measure write performance before and after trim. (for SSD)',
+    'hw_agnostic': False
+}
 AUTHOR = 'puthik'
 PURPOSE = 'Measure write performance before and after trim. (for SSD)'
 TIME = 'LENGTHY'

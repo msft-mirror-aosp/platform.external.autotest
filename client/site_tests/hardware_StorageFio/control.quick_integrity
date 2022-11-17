@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageFio.quick_integrity'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Short integrity test to verify the integrity test',
+    'hw_agnostic': False
+}
 AUTHOR = 'jcasse, grundler'
 PURPOSE = 'Short integrity test to verify the integrity test'
 TIME = 'LENGTHY'

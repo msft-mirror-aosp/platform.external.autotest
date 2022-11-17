@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageFio.vendor'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Test the internal device for new storage vendor',
+    'hw_agnostic': False
+}
 AUTHOR = 'puthik'
 PURPOSE = 'Test the internal device for new storage vendor'
 TIME = 'LENGTHY'

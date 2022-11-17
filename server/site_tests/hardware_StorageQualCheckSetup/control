@@ -4,6 +4,12 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "hardware_StorageQualCheckSetup"
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Part of storage AVL qualification suite',
+    'hw_agnostic': False
+}
 PURPOSE = "Test that the moblab has the correct setup for storage_qual suite"
 ATTRIBUTES = "suite:check_setup_storage_qual"
 TIME = "SHORT"

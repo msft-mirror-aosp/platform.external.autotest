@@ -4,6 +4,12 @@
 
 AUTHOR = "gwendal"
 NAME = 'hardware_DiskFirmwareUpgrade_Server'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Verify diskfirmware upgrade is not broken',
+    'hw_agnostic': False
+}
 PURPOSE = 'Verify diskfirmware upgrade is not broken'
 TIME = 'SHORT'
 TEST_CLASS = 'hardware'
@@ -62,4 +68,3 @@ def run_hardware_disk_firmware_upgrade(machine):
                  disk_fw_packages=DISK_FW_PACKAGES)
 
 job.parallel_simple(run_hardware_disk_firmware_upgrade, machines)
-

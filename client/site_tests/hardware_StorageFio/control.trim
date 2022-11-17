@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = 'hardware_StorageFio.trim'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Test the root device for trim command support',
+    'hw_agnostic': False
+}
 AUTHOR = 'puthik'
 PURPOSE = 'Test the root device for trim command support'
 TIME = 'MEDIUM'

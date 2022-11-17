@@ -104,12 +104,10 @@ class firmware_SoftwareSync(FirmwareTest):
 
     def wait_software_sync_and_boot(self):
         """Wait for software sync to update EC."""
+        self.wait_for('software_sync_update')
         if self.dev_mode:
-            time.sleep(self.faft_config.software_sync_update +
-                       self.faft_config.firmware_screen)
-            self.servo.ctrl_d()
-        else:
-            time.sleep(self.faft_config.software_sync_update)
+            self.switcher.bypass_dev_mode()
+        self.switcher.wait_for_client()
 
     def run_test_corrupt_ec_rw(self):
         """Runs a single iteration of the test."""
@@ -120,7 +118,6 @@ class firmware_SoftwareSync(FirmwareTest):
         logging.info("Reboot AP, check EC hash, and software sync it.")
         self.switcher.simple_reboot(reboot_type='warm')
         self.wait_software_sync_and_boot()
-        self.switcher.wait_for_client()
 
         logging.info("Expect EC in RW and RW is restored.")
         self.check_state(self.software_sync_checker)
@@ -165,7 +162,6 @@ class firmware_SoftwareSync(FirmwareTest):
 
         # Wait for software sync is done.
         self.wait_software_sync_and_boot()
-        self.switcher.wait_for_client()
 
         # The boot mode should be "NORMAL".
         logging.info('Check the boot mode is NORMAL mode.')

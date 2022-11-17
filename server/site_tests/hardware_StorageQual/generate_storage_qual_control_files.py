@@ -300,6 +300,12 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = "chromeos-storage"
 NAME = "{name}"
+METADATA = {{
+    "contacts": ["chromeos-storage@google.com"],
+    "bug_component": "b:974567",
+    "criteria": "Part of storage AVL qualification suite",
+    "hw_agnostic": False
+}}
 ATTRIBUTES = "{attributes}"
 PURPOSE = "{name}"
 TIME = "{length}"

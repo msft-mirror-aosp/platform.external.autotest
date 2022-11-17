@@ -112,6 +112,24 @@ def _stop_chrome_if_necessary(host):
     return False
 
 
+def _mount_lacros(host, chrome_dir, lacros_mount_point):
+    """
+    Mounts lacros chrome to a mount point
+
+    A mutation of _mount_chrome, but lacros does not require
+    mount command. We only move it to the specified path.
+
+    @param host: The DUT to execute the command on
+    @param chrome_dir: directory where the lacros binary and artifacts
+                       was provisioned.
+    @param chrome_mount_point: The path that lacros is expected to exist.
+
+    """
+    host.run(['rm', '-rf', lacros_mount_point])
+    host.run(['mkdir', '-p', '--mode', '0755', lacros_mount_point])
+    host.run(['mv', '%s/*' % chrome_dir, '%s/' % lacros_mount_point])
+
+
 def _mount_chrome(host, chrome_dir, chrome_mount_point):
     """
     Mounts chrome to a mount point
@@ -142,6 +160,20 @@ def _mount_chrome(host, chrome_dir, chrome_mount_point):
         host.run('start ui', ignore_status=True)
 
 
+def _umount_lacros(host, lacros_mount_point):
+    """
+    Unmounts lacros
+
+    Because lacros does not require "mount", so we just remove its
+    path. See _mount_lacros.
+
+    @param host: The DUT to execute the command on
+    @param lacros_mount_point: See _mount_lacros.
+
+    """
+    host.run(['rm', '-rf', lacros_mount_point])
+
+
 def _umount_chrome(host, chrome_mount_point):
     """
     Unmounts chrome
@@ -163,7 +195,7 @@ def _umount_chrome(host, chrome_mount_point):
         host.run('start ui', ignore_status=True)
 
 
-def setup_host(host, chrome_dir, chrome_mount_point):
+def setup_host(host, chrome_dir, chrome_mount_point, is_cros_chrome=True):
     """
     Performs setup on host.
 
@@ -178,21 +210,21 @@ def setup_host(host, chrome_dir, chrome_mount_point):
     @param chrome_dir: directory where the chrome binary and artifacts
                        will be placed.
     @param chrome_mount_point: Chrome mount point
-
+    @is_cros_chrome: Mount cros chrome or lacros. True by default.
     """
     logging.info('Setting up host:%s', host)
     try:
         extract_from_image(host, 'lacros', chrome_dir)
         if chrome_mount_point:
-            _mount_chrome(host, '%s/out/Release' % chrome_dir,
-                          chrome_mount_point)
+            _mount = _mount_chrome if is_cros_chrome else _mount_lacros
+            _mount(host, '%s/out/Release' % chrome_dir, chrome_mount_point)
     except Exception as e:
         raise Exception(
             'Exception while mounting %s on host %s' %
             (chrome_mount_point, host), e)
 
 
-def cleanup_host(host, chrome_dir, chrome_mount_point):
+def cleanup_host(host, chrome_dir, chrome_mount_point, is_cros_chrome=True):
     """
     Umounts chrome and performs cleanup.
 
@@ -200,12 +232,13 @@ def cleanup_host(host, chrome_dir, chrome_mount_point):
     @param chrome_dir: directory where the chrome binary and artifacts
                        is placed.
     @param chrome_mount_point: Chrome mount point
-
+    @is_cros_chrome: Umount cros chrome or lacros. True by default.
     """
     logging.info('Unmounting chrome on host: %s', host)
     try:
         if chrome_mount_point:
-            _umount_chrome(host, chrome_mount_point)
+            _umount = _umount_chrome if is_cros_chrome else _umount_lacros
+            _umount(host, chrome_mount_point)
         host.run(['rm', '-rf', chrome_dir])
     except Exception as e:
         raise Exception('Exception during cleanup on host %s' % host, e)

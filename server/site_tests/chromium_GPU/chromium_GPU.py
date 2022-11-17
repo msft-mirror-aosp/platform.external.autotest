@@ -32,7 +32,8 @@ class chromium_GPU(test.test):
     # GPU integration tests are calling telemetry to manipulate the DUT.
     # In telemetry the lacros chrome must be stored at below path.
     # See go/lacros_browser_backend.
-    CHROME_DIR = '/usr/local/lacros-chrome'
+    LACROS_MOUNT_POINT = '/usr/local/lacros-chrome'
+    CHROME_MOUNT_POINT = '/opt/google/chrome'
 
     def initialize(self, host=None, args=None):
         self.host = host
@@ -40,21 +41,17 @@ class chromium_GPU(test.test):
                 'lacros artifact'
                 'is not provisioned by CTP. Please check the CTP request.')
 
-        chrome_sideloader.setup_host(self.host, self.CHROME_BUILD, None)
-
         self.args_dict = utils.args_to_dict(args)
-        path_to_chrome = os.path.join(
-                self.CHROME_BUILD, self.args_dict.get('exe_rel_path',
-                                                      'chrome'))
-        logging.info('provisioned lacros to %s', path_to_chrome)
+        self.test_args = chrome_sideloader.get_test_args(
+                self.args_dict, 'test_args').split(' ')
 
-        self.host.run(['rm', '-rf', self.CHROME_DIR])
-        self.host.run(['mkdir', '-p', '--mode', '0755', self.CHROME_DIR])
-        self.host.run([
-                'mv',
-                '%s/*' % os.path.dirname(path_to_chrome),
-                '%s/' % self.CHROME_DIR
-        ])
+        chrome_sideloader.setup_host(
+                self.host,
+                self.CHROME_BUILD,
+                self.CHROME_MOUNT_POINT
+                if self.is_cros_chrome else self.LACROS_MOUNT_POINT,
+                is_cros_chrome=self.is_cros_chrome,
+        )
 
         if not self.args_dict.get('run_private_tests',
                                   True) in [False, 'False']:
@@ -70,6 +67,10 @@ class chromium_GPU(test.test):
                            '{}/'.format(self.server_pkg),
                            preserve_perm=False,
                            preserve_symlinks=True)
+
+    @property
+    def is_cros_chrome(self):
+        return any(['--browser=cros-chrome' in x for x in self.test_args])
 
     def run_once(self):
         """Run a GPU integration test."""
@@ -89,15 +90,12 @@ class chromium_GPU(test.test):
                         os.path.join(self.server_pkg, 'out', 'Release')),
                 '--remote={}'.format(self.host.hostname),
         ]
-
         # Pass the test arguments from the browser test owners.
         # Note utils.run() quotes all members in the cmd list. We have
         # to split our test_args, or it will feed to
         # run_gpu_integration_test.py as a single string. The same
         # reason we have to pass extra-browser-args separately.
-        cmd.extend(
-                chrome_sideloader.get_test_args(self.args_dict,
-                                                'test_args').split(' '))
+        cmd.extend(self.test_args)
         # Autotest does not recognize args with '-'.
         cmd.append('--extra-browser-args="{}"'.format(
                 chrome_sideloader.get_test_args(self.args_dict,
@@ -120,6 +118,10 @@ class chromium_GPU(test.test):
                                  ' failed to run.')
 
     def cleanup(self):
-        chrome_sideloader.cleanup_host(self.host, self.CHROME_BUILD, None)
-        chrome_sideloader.cleanup_host(self.host, self.CHROME_DIR, None)
+        chrome_sideloader.cleanup_host(
+                self.host,
+                self.CHROME_BUILD,
+                self.CHROME_MOUNT_POINT
+                if self.is_cros_chrome else self.LACROS_MOUNT_POINT,
+                is_cros_chrome=self.is_cros_chrome)
         shutil.rmtree(self.server_pkg)

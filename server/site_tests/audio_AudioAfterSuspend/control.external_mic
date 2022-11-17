@@ -40,7 +40,9 @@ def run(machine):
                  audio_nodes=(None, ['MIC']),
                  plug_status=plug_status, tag = "external_mic",
                  blocked_boards=['lars',    # Pending fix for b/147647051
-                                 'lars-kernelnext']
+                                 'lars-kernelnext',
+                                 'caroline',
+                                 'chell']
 )
 
 parallel_simple(run, machines)

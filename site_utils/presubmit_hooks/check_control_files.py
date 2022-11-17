@@ -196,15 +196,15 @@ def CheckOnlyOneContactSource(ctrl_data, ctrl_file_path):
     @param test_name: A string with the name of the test.
     """
     if hasattr(ctrl_data, 'author') and hasattr(ctrl_data, 'metadata'):
-        if 'Contacts' in ctrl_data.metadata:
+        if 'contacts' in ctrl_data.metadata:
             raise ControlFileCheckerError(
                 'Conflicting sources of test ownership found. Cannot have '
-                'both Author and Metadata "Contacts" fields in %s' %
+                'both Author and Metadata "contacts" fields in %s' %
                 ctrl_file_path)
     elif (not hasattr(ctrl_data, 'author') and
-          not (hasattr(ctrl_data, 'metadata') and 'Contacts' in ctrl_data.metadata)):
+          not (hasattr(ctrl_data, 'metadata') and 'contacts' in ctrl_data.metadata)):
         raise ControlFileCheckerError(
-                'Need "Contacts" field in Metadata attribute : %s.' % ctrl_file_path)
+                'Need "contacts" field in Metadata attribute : %s.' % ctrl_file_path)
 
 
 

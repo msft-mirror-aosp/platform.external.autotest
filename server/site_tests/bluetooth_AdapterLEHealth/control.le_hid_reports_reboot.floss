@@ -9,7 +9,7 @@ NAME = 'bluetooth_AdapterLEHealth.le_hid_reports_reboot.floss'
 PURPOSE = ('Test bluetooth adapter receiving reports from bluetooth LE HID '
            'devices after a reboot.')
 CRITERIA = 'Adapter should receive LE HID events correctly.'
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

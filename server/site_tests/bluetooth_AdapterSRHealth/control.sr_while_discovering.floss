@@ -11,7 +11,7 @@ PURPOSE = (
     'with and without setting discovery filter'
 )
 CRITERIA = 'Pass test'
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

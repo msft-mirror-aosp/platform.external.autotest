@@ -3,10 +3,10 @@
 # found in the LICENSE file.
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
-NAME = 'tast.cross-device'
+NAME = 'tast.cross-device-floss'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cross-device'
+ATTRIBUTES = 'suite:cross-device-floss'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 
@@ -36,7 +36,7 @@ def run(machine):
 
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:cross-device" && ("cross-device_phonehub" || "cross-device_smartlock") && !"cross-device_floss")'],
+                 test_exprs=['("group:cross-device" && ("cross-device_phonehub" || "cross-device_smartlock") && "cross-device_floss")'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=args,
                  varslist=[ip_address_arg])

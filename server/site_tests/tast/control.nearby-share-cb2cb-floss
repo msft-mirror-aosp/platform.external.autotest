@@ -3,10 +3,10 @@
 # found in the LICENSE file.
 #
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
-NAME = 'tast.nearby-share-cb2cb'
+NAME = 'tast.nearby-share-cb2cb-floss'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:nearby-share-remote'
+ATTRIBUTES = 'suite:nearby-share-remote-floss'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 
@@ -19,7 +19,7 @@ def run(machine):
     companions = hosts.create_companion_hosts(companion_hosts)
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:cross-device-remote" && !"cross-device_floss")'],
+                 test_exprs=['("group:cross-device-remote" && "cross-device-remote_floss")'],
                  ignore_test_failures=False, max_run_sec=3600,
                  companion_duts={'cd1':companions[0]},
 		 command_args=args)

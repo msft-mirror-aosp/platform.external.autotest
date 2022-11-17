@@ -346,6 +346,7 @@ suite:crosbolt_perf_weekly
 suite:cross-device
 suite:cross-device-cellular
 suite:cross-device-cq
+suite:cross-device-floss
 suite:cts
 suite:cts-hardware
 suite:cts_P
@@ -462,8 +463,10 @@ suite:nearby-share
 suite:nearby-share-android
 suite:nearby-share-arc
 suite:nearby-share-dev
+suite:nearby-share-floss
 suite:nearby-share-prod
 suite:nearby-share-remote
+suite:nearby-share-remote-floss
 suite:network_endtoend
 suite:network_endtoend_flaky
 suite:network_nightly

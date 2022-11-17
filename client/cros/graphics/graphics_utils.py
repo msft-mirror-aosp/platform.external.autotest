@@ -954,8 +954,8 @@ class GraphicsKernelMemory(object):
     # e.g. ".../memory" vs ".../gpu_memory" -- if the system has either one of
     # these, the test will read from that path.
     amdgpu_fields = {
-        'gem_objects': ['/sys/kernel/debug/dri/0/amdgpu_gem_info'],
-        'memory': ['/sys/kernel/debug/dri/0/amdgpu_gtt_mm'],
+        'gem_objects': ['/sys/kernel/debug/dri/*/amdgpu_gem_info'],
+        'memory': ['/sys/kernel/debug/dri/*/amdgpu_gtt_mm'],
     }
     arm_fields = {}
     exynos_fields = {
@@ -972,12 +972,12 @@ class GraphicsKernelMemory(object):
         'memory': ['/sys/kernel/debug/memblock/memory'],
     }
     i915_fields = {
-        'gem_objects': ['/sys/kernel/debug/dri/0/i915_gem_objects'],
-        'memory': ['/sys/kernel/debug/dri/0/i915_gem_gtt'],
+        'gem_objects': ['/sys/kernel/debug/dri/*/i915_gem_objects'],
+        'memory': ['/sys/kernel/debug/dri/*/i915_gem_gtt'],
     }
     # In Linux Kernel 5, i915_gem_gtt merged into i915_gem_objects
     i915_fields_kernel_5 = {
-        'gem_objects': ['/sys/kernel/debug/dri/0/i915_gem_objects'],
+        'gem_objects': ['/sys/kernel/debug/dri/*/i915_gem_objects'],
     }
     cirrus_fields = {}
     virtio_fields = {}

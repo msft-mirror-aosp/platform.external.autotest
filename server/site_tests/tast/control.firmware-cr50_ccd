@@ -7,12 +7,16 @@ from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.firmware-cr50_ccd'
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Run Tast tests for firmware"
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_cr50'
 ATTRIBUTES = 'suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt'
 MAX_RESULT_SIZE_KB = 1024 * 1024
-PY_VERSION = 3
 JOB_RETRIES = 0
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

@@ -83,7 +83,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
             'QCA-WCN3991', 'Intel-AC7265', 'Intel-AC9260', 'Intel-AC9560',
             'Intel-AX200', 'Intel-AX201', 'Intel-AX211',
             'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
-            'Realtek-RTL8852A-USB'
+            'Realtek-RTL8852A-USB', 'QCA-WCN6750'
     ]
 
     CHIPSETS_UNSUPPORT_LLT_QUIRK = [

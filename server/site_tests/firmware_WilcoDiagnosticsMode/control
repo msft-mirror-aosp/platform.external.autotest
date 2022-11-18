@@ -6,13 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "The Chromium OS Authors"
 NAME = "firmware_WilcoDiagnosticsMode"
-PURPOSE = "Verify that AP firmware handles a corrupt Wilco diagnostics binary and applies updates to it"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify that AP firmware handles a corrupt Wilco diagnostics binary and applies updates to it"
+}
 ATTRIBUTES = "suite:faft_wilco, suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, board:sarien"
 JOB_RETRIES = 0
-PY_VERSION = 3
 
 DOC = """Corrupt the Wilco diagnostics image and then reinstall it.
 

@@ -6,16 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECWakeFromULP"
-PURPOSE = "Servo based EC wake from ULP test"
-CRITERIA = "This test will fail if EC wake source misbehaved."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Servo based EC wake from ULP test"
+}
 ATTRIBUTES = "suite:faft_pd"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
 DEPENDENCIES = "ec:cros, servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test check the functionality of EC waking host from suspend. This includes

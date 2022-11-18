@@ -6,16 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECLidShutdown"
-PURPOSE = "Verify functionality of DUT with GBB_FLAG_DISABLE_LID_SHUTDOWN"
-CRITERIA = "This test will ensure disable lid shutdown GBB flag working"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify functionality of DUT with GBB_FLAG_DISABLE_LID_SHUTDOWN"
+}
 ATTRIBUTES = "suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
 DEPENDENCIES = "ec:cros, servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test checks the functionality of the disable lid shutdown GBB flag.

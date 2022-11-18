@@ -6,16 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECBattery"
-PURPOSE = "Servo based EC battery status report test"
-CRITERIA = "This test will fail if EC battery status report misbehalved."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Servo based EC battery status report test"
+}
 ATTRIBUTES = "suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot, suite:faft_smoke, suite:labqual, suite:distributed_lab_qual_faft"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
 DEPENDENCIES = "ec:cros, servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test check battery status read from EC console and kernel sysfs match.

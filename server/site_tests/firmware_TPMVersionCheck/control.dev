@@ -6,15 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_TPMVersionCheck.dev"
-PURPOSE = "Crossystem reports the tpm versions correctly"
-CRITERIA = "This test will fail if crossystem reports tpm version incorrectly"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Crossystem reports the tpm versions correctly"
+}
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_dev, suite:faft_lv1, suite:faft_bios_tot"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
 DOC = """
 This test will fail if crossystem does not report correctly.

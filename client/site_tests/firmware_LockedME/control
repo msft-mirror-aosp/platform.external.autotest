@@ -4,14 +4,14 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_LockedME"
-PURPOSE = "Ensure the ME region is locked."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Ensure the ME region is locked"
+}
 ATTRIBUTES = "suite:faft_bios_ro_qual, suite:faft_bios_rw_qual"
-CRITERIA = "Fail if any part of the BIOS ME region is mutable from userspace"
 TIME = "SHORT"
-TEST_CATEGORY = "Security"
-TEST_CLASS = "firmware"
 TEST_TYPE = "client"
-PY_VERSION = 3
 
 DOC = """
 Intel x86 CPUs (Sandybridge and later) reserve a portion of the BIOS

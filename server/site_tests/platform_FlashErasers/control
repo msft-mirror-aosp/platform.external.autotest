@@ -6,14 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "platform_FlashErasers"
-PURPOSE = "Test flashrom erasing blocks of various sizes."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Test flashrom erasing blocks of various sizes"
+}
 ATTRIBUTES = "suite:faft_flashrom"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 DEPENDENCIES = "flashrom, servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test should be executed on every flash chip and SPI controller

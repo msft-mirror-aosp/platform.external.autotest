@@ -4,11 +4,13 @@
 
 AUTHOR = "yllin"
 NAME = "faft_ec_fw_qual"
-PURPOSE = "Qualify the EC firmware for RW or RO+RW release"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "yllin@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Qualify the EC firmware for RW or RO+RW release"
+}
 
 TIME = "LONG"
-TEST_CATEGORY = "General"
-TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """

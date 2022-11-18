@@ -4,11 +4,13 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "faft_ec"
-PURPOSE = "Test hard-to-automate firmware and ec scenarios."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify EC behavior"
+}
 
 TIME = "SHORT"
-TEST_CATEGORY = "General"
-TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """

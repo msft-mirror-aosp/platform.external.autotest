@@ -4,14 +4,14 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_CbfsMcache"
-PURPOSE = "Ensure the CBFS metadata cache did not overflow."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Ensure the CBFS metadata cache did not overflow"
+}
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv4"
-CRITERIA = "Fail if either RO or RW CBFS mcache overflowed."
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "client"
-PY_VERSION = 3
 
 DOC = """
 The CBFS metadata cache size in coreboot is configured by CONFIG_CBFS_MCACHE_SIZE

@@ -6,15 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_RollbackFirmware.dev"
-PURPOSE = "Servo based firmware rollback test."
-CRITERIA = "This test will fail if firmware rollback doesn't fail verification."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Servo based firmware rollback test"
+}
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_dev, suite:faft_lv3, suite:faft_bios_tot"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
 DOC = """
 This test requires a USB disk plugged-in, which contains a ChromeOS test

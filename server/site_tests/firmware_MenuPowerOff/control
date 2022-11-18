@@ -6,16 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_MenuPowerOff"
-PURPOSE = "Select power off menu item on firmware screens"
-CRITERIA = "This test will fail the power off menu item doesn't have any effect"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Select power off menu item on firmware screens"
+}
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv2, suite:faft_bios_tot"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "Server"
 JOB_RETRIES = 0
-PY_VERSION = 3
 
 DOC = """
 This test selects "Power off" menu item in firmware UI.

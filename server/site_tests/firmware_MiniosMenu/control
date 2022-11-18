@@ -6,16 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_MiniosMenu"
-PURPOSE = "Navigate to the MiniOS by menu navigation"
-CRITERIA = "This test will fail if the device fail to boot to MiniOS"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Navigate to the MiniOS by menu navigation"
+}
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_lv4, suite:faft_bios_tot"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
-PY_VERSION = 3
 
 DOC = """
 This test requires the device to support MiniOS. This test will boot to the

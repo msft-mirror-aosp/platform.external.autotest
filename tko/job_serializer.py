@@ -23,13 +23,14 @@ import sys
 from autotest_lib.tko import models
 
 # import tko pb from src/config if available
-tko_pb_path = os.path.join(os.getenv("CROS_WORKON_SRCROOT"), "src", "config", "python", "chromiumos", "test", "artifact")
-if os.path.exists(os.path.join(tko_pb_path, "tko_pb2.py")):
-    logging.debug("tko pb found in src/config")
+try:
+    tko_pb_path = os.path.join(os.getenv("CROS_WORKON_SRCROOT"), "src", "config", "python", "chromiumos", "test", "artifact")
     sys.path.append(tko_pb_path)
     import tko_pb2
-else:
+    logging.debug("tko pb found in src/config")
+except:
     from autotest_lib.tko import tko_pb2
+    logging.debug("tko pb found in autotest dir")
 
 from autotest_lib.tko import utils
 import six

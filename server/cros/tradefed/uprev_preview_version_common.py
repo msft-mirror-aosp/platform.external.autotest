@@ -107,12 +107,8 @@ def upload_preview_xts(file_path: str, config_path: str, abi: str,
     """
     url_config = bundle_utils.load_config(config_path)
     url_config[bundle_utils._PREVIEW_VERSION_NAME] = version_name
-    remote_urls = [
-            bundle_utils.make_bundle_url(url_config, bundle, abi)
-            for bundle in ['DEV', 'DEV_MOBLAB']
-    ]
 
-    for remote_url in remote_urls:
+    for remote_url in bundle_utils.make_preview_urls(url_config, abi):
         # TODO(b/256108932): Uncomment this with replacing the remote_url and the value of --test_config.
         """
         cmd = [

@@ -275,3 +275,22 @@ def make_bundle_url(url_config: Dict[str, str], bundle_type: Optional[str], abi:
 
     return base + pattern % (version_name,
                              abi) if abi else base + pattern % version_name
+
+
+def make_preview_urls(url_config: Dict[str, str], abi: str) -> List[str]:
+    """Function to make possible preview urls from url_config.
+
+    Args:
+        url_config: A bundle config object.
+        abi: A string which means one of the abis ('arm', 'x86').
+
+    Returns:
+        A list of strings of possible urls that contain the preview_base url.
+    """
+    if _PARTNER_BASE not in url_config:
+        return [make_bundle_url(url_config, 'DEV', abi)]
+
+    return [
+            make_bundle_url(url_config, bundle, abi)
+            for bundle in ['DEV', 'DEV_MOBLAB']
+    ]

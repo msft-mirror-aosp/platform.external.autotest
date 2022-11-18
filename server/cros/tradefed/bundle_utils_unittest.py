@@ -556,3 +556,22 @@ class BundelUtilsTest(unittest.TestCase):
         self.assertEqual(
                 bundle_utils.get_bundle_password(
                         {'non_password_entry': 'somethingsomething123'}), '')
+
+    def test_make_preview_urls_cts(self):
+        """Test for cts make_preview_urls"""
+
+        preview_urls = bundle_utils.make_preview_urls(
+                url_config=CTS_URL_CONFIG, abi='arm')
+        self.assertEquals([
+                'gs://chromeos-arc-images/cts/bundle/R/android-cts-9199760-linux_x86-arm.zip',
+                'gs://chromeos-partner-gts/R/android-cts-9199760-linux_x86-arm.zip'
+        ], preview_urls)
+
+    def test_make_preview_urls_vts(self):
+        """Test for vts make_preview_urls"""
+
+        preview_urls = bundle_utils.make_preview_urls(
+                url_config=VTS_URL_CONFIG, abi='arm')
+        self.assertEquals([
+                'gs://chromeos-arc-images/vts/bundle/T/android-vts-8890152-linux_arm.zip'
+        ], preview_urls)

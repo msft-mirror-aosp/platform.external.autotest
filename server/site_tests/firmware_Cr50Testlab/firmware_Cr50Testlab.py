@@ -95,13 +95,13 @@ class firmware_Cr50Testlab(Cr50Test):
         """Try to set testlab mode from different privilege levels."""
         # Dummy isn't a valid mode. Make sure it fails
         self.reset_ccd()
-        self.try_testlab('dummy', err=self.INVALID_PARAM)
+        self.try_testlab('bogus', err=self.INVALID_PARAM)
 
-        # If ccd is locked, ccd testlab dummy should fail with access denied not
-        # invalid param.
+        # If ccd is locked, `ccd testlab bogus` should fail with access denied
+        # not invalid param.
         self.reset_ccd()
         self.gsc.set_ccd_level('lock')
-        self.try_testlab('dummy', err=self.ACCESS_DENIED)
+        self.try_testlab('bogus', err=self.ACCESS_DENIED)
 
         # CCD can be opened without physical presence if testlab mode is enabled
         self.reset_ccd()

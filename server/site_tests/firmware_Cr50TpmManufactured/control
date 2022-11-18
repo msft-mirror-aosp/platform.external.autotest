@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50TpmManufactured"
-PURPOSE = "Check if the TPM is manufactured."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Check if the TPM is manufactured"
+}
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """Check if the TPM is manufactured.
 

@@ -6,11 +6,14 @@ from autotest_lib.server import utils
 
 AUTHOR = "allenwebb"
 NAME = "firmware_Cr50PinWeaverServer"
-PURPOSE = "Validate PinWeaver functionality on Cr50"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "allenwebb@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Validate PinWeaver functionality on Cr50"
+}
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:experimental, suite:faft_cr50_pvt, suite:faft_cr50_prepvt, suite:distributed_lab_qual_faft, suite:faft_ti50_qual"
 TIME = "SHORT"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
 DOC = """
 Check that PinWeaver functionality on Cr50 works as intended across hard

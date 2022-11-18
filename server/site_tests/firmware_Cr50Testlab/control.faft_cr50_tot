@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50Testlab.faft_cr50_tot"
-PURPOSE = "Verify ccd testlab mode"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify ccd testlab mode"
+}
 ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Verify the testlab mode can be changed when ccd is open.

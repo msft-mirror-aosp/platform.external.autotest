@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50PartialBoardId"
-PURPOSE = "Verify the board id flags can be set then the board id type."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify the board id flags can be set then the board id type"
+}
 ATTRIBUTES = "suite:faft_cr50_experimental"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Verify Cr50 handles partial board ids correctly. If only the flags are set, the

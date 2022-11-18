@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "Cr50 FW team"
 NAME = "firmware_Cr50CCDUartStress.ccd.ec"
-PURPOSE = "Uart Stress Test in ccd mode"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Uart Stress Test in ccd mode"
+}
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_ccd, suite:faft_cr50_prepvt, suite:faft_cr50_pvt, suite:faft_ti50_qual"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This is a test for Uart-USB bridging qualification.

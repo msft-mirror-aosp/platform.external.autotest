@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50DeepSleepStress.reboot_faft_cr50_tot"
-PURPOSE = "Verify deep sleep"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify deep sleep"
+}
 ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "LONG"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Cr50 should enter deep sleep every time the system goes into S5. Run

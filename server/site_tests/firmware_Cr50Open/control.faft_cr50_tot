@@ -6,13 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50Open.faft_cr50_tot"
-PURPOSE = "Verify cr50 open"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify cr50 open"
+}
 # Disabled due to 0% pass rate over 30 days. See b/241832896
 # ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Verify the console can be opened by pressing the power button after the device

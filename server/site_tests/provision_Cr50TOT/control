@@ -5,16 +5,17 @@
 
 AUTHOR = "chromeos-lab-infrastructure"
 NAME = "provision_Cr50TOT"
-PURPOSE = "Provision Cr50 TOT image."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Provision Cr50 TOT image"
+}
 ATTRIBUTES = "suite:faft_cr50_tot"
 # Provision runs quickly. TIME is set to LENGTHY, so this test gets scheduled
 # first in the suite.
 TIME = "LENGTHY"
-TEST_CATEGORY = "System"
-TEST_CLASS = "provision"
 TEST_TYPE = "Server"
 DEPENDENCIES = "servo_state:WORKING,cr50-ro-keyid:dev"
-PY_VERSION = 3
 
 DOC = """
 Update the Cr50 to the TOT image from the latest reef build. This requires that

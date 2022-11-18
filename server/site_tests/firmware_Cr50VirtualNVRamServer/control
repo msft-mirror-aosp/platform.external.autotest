@@ -6,12 +6,14 @@ from autotest_lib.server import utils
 
 AUTHOR = "louiscollard, apronin"
 NAME = "firmware_Cr50VirtualNVRamServer"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "louiscollard@chromium.org", "apronin@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Checks Virtual NVRAM functionality in cr50"
+}
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt"
-PY_VERSION = 3
 
 DOC = """
 This test clears the TPM if necessary, the runs a client side test that checks

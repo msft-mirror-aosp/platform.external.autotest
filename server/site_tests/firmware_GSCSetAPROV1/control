@@ -4,12 +4,15 @@
 
 AUTHOR = "mruthven"
 NAME = "firmware_GSCSetAPROV1"
-PURPOSE = "Verify GSC can set the AP RO hash"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify GSC can set the AP RO hash"
+}
 ATTRIBUTES = "suite:faft_cr50_experimental"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test verifies GSC can set and clear the AP RO hash when the board id type

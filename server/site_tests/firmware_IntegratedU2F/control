@@ -6,13 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_IntegratedU2F"
-PURPOSE = "Verify U2F"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify U2F"
+}
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_pvt, suite:faft_cr50_prepvt"
 TIME = "SHORT"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Verify second-factor authentication (U2F) using the on-board cr50 firmware

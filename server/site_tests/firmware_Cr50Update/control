@@ -4,12 +4,15 @@
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50Update"
-PURPOSE = "Verify Cr50 update"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify Cr50 update"
+}
 ATTRIBUTES = "suite:faft_cr50_experimental"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test verifies Cr50 update works or recovery from erased nvmem.

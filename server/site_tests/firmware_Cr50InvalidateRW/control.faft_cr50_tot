@@ -6,11 +6,14 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50InvalidateRW.faft_cr50_tot"
-PURPOSE = "Verify the inactive cr50 header is corrupted after login"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify the inactive cr50 header is corrupted after login"
+}
 ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
 DOC = """
 Verify the inactive Cr50 header on the first login after cryptohome restarts.

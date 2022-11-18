@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_FWMPDisableCCD.faft_cr50_tot"
-PURPOSE = "Verify the cr50 response to FWMP flags being set"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify the cr50 response to FWMP flags being set"
+}
 TIME = "MEDIUM"
 ATTRIBUTES = "suite:faft_cr50_tot"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test will set FWMP flags. If the test has access to the cr50 console, it

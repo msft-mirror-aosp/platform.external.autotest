@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50DeviceState"
-PURPOSE = "Verify Cr50 tracks the EC and AP state correctly"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify Cr50 tracks the EC and AP state correctly"
+}
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_pvt, suite:faft_cr50_prepvt, suite:faft_ti50_qual"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Verify Cr50 tracks the EC and AP state correctly.

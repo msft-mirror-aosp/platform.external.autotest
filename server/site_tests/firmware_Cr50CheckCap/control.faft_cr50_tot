@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50CheckCap.faft_cr50_tot"
-PURPOSE = "Verify cr50 ccd capabilities."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify cr50 ccd capabilities"
+}
 ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """Verify cr50 ccd capabilities.
 

@@ -6,12 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50SetBoardId"
-PURPOSE = "Verify cr50-set-board-id"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify cr50-set-board-id"
+}
 ATTRIBUTES = "suite:faft_cr50_experimental"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Verify cr50-set-board-id.sh sets the right board id and flags with the given

@@ -4,12 +4,15 @@
 
 AUTHOR = "mruthven"
 NAME = "firmware_GSCAPROV1Trigger"
-PURPOSE = "Test triggering AP RO verification."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Test triggering AP RO verification"
+}
 ATTRIBUTES = "suite:faft_cr50_experimental"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Verify triggering AP RO verification on GSC.

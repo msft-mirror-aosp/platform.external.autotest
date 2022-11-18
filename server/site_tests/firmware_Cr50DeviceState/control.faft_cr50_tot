@@ -6,13 +6,16 @@ from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50DeviceState.faft_cr50_tot"
-PURPOSE = "Verify Cr50 tracks the EC and AP state correctly"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify Cr50 tracks the EC and AP state correctly"
+}
 # Disabled due to 0% pass rate over 30 days. See b/241832418
 # ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 Verify Cr50 tracks the EC and AP state correctly.

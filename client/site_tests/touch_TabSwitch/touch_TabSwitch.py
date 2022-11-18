@@ -46,7 +46,7 @@ class touch_TabSwitch(touch_playback_test_base.touch_playback_test_base):
         """
         self._tabs = cr.browser.tabs
         tab_count = 3
-        for i in xrange(1, tab_count):
+        for i in range(1, tab_count):
             tab = cr.browser.tabs.New()
 
         if len(self._tabs) != tab_count:

@@ -6,15 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "kmshelton, waihong"
 NAME = "firmware_FAFTRPC.rootfs"
-PURPOSE = "Verify that the RPC system, and all rootfs RPCs, work as expected."
-CRITERIA = "This test will fail if the rootfs system is not set up correctly."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "kmshelton@chromium.org", "waihong@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify that the RPC system, and all rootfs RPCs, work as expected"
+}
 ATTRIBUTES = "suite:faft_smoke"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
 DOC = """
 This test checks that all RPC functions on the rootfs subsystem are connected,

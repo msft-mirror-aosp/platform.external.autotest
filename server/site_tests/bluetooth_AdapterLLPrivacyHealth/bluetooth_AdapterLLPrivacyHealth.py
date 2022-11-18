@@ -18,8 +18,7 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
-     import (LL_PRIVACY_UNSUPPORTED_CHIPSETS,
-     BluetoothAdapterLLPrivacyTests)
+     import (BluetoothAdapterLLPrivacyTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_qr_tests import (
         BluetoothAdapterQRTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests\
@@ -141,8 +140,7 @@ class bluetooth_AdapterLLPrivacyHealth(
             for _, device, __ in devtuples:
                 self.test_remove_pairing(device.address)
 
-    @test_wrapper('Monitor Object Health Tests',
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+    @test_wrapper('Monitor Object Health Tests')
     def advmon_monitor_health_tests(self):
         """Tests advertisement monitor object health."""
         self.advmon_test_monitor_creation()
@@ -153,24 +151,19 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Interleave Scan Tests',
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def advmon_interleaved_scan_tests(self):
         """Tests interleave scan."""
         self.advmon_test_interleaved_scan()
 
-    @test_wrapper('Reconnect Classic HID',
-                  devices={'MOUSE': 1},
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+    @test_wrapper('Reconnect Classic HID', devices={'MOUSE': 1})
     def sr_reconnect_classic_hid(self):
         """ Reconnects a classic HID device after suspend/resume. """
         device_type = 'MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device([(device_type, device, self._test_mouse)])
 
-    @test_wrapper('Reconnect LE HID',
-                  devices={'BLE_MOUSE': 1},
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+    @test_wrapper('Reconnect LE HID', devices={'BLE_MOUSE': 1})
     def sr_reconnect_le_hid(self):
         """ Reconnects a LE HID device after suspend/resume. """
         device_type = 'BLE_MOUSE'
@@ -183,8 +176,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={'MOUSE': 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
                   ['bob'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
@@ -198,8 +190,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={'BLE_MOUSE': 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
                   ['bob'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
         device = self.devices['BLE_MOUSE'][0]
@@ -213,8 +204,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                           'MOUSE': 1,
                           'KEYBOARD': 1
                   },
-                  skip_models=['hana'],
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  skip_models=['hana'])
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
         devices = [('MOUSE', self.devices['MOUSE'][0], self._test_mouse),
@@ -226,8 +216,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={
                           'BLE_MOUSE': 1,
                           'KEYBOARD': 1
-                  },
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  })
     def sr_reconnect_multiple_classic_le_hid(self):
         """ Reconnects one of each classic and LE HID devices after
             suspend/resume.
@@ -240,8 +229,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Connect Disconnect by Device Loop',
                   devices={'BLE_MOUSE': 1},
-                  flags=['Quick Health'],
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  flags=['Quick Health'])
     def le_connect_disconnect_by_device_loop(self):
         """Run connect/disconnect loop initiated by device.
            The test also checks that there are no undesired
@@ -255,9 +243,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                 device_type='BLE_MOUSE',
                 check_connected_method=self.test_mouse_move_in_xy)
 
-    @test_wrapper('Connect Disconnect Loop',
-                  devices={'BLE_MOUSE': 1},
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+    @test_wrapper('Connect Disconnect Loop', devices={'BLE_MOUSE': 1})
     def le_connect_disconnect_loop(self):
         """Run connect/disconnect loop initiated by DUT.
            The test also checks that there are no undesired
@@ -271,17 +257,14 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('HID Reconnect Speed',
                   devices={'BLE_MOUSE': 1},
-                  flags=['Quick Health'],
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  flags=['Quick Health'])
     def le_hid_reconnect_speed(self):
         """Test the speed of a LE HID device reconnect to DUT"""
 
         device = self.devices['BLE_MOUSE'][0]
         self.hid_reconnect_speed(device=device, device_type='BLE_MOUSE')
 
-    @test_wrapper('Auto Reconnect',
-                  devices={'BLE_MOUSE': 1},
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+    @test_wrapper('Auto Reconnect', devices={'BLE_MOUSE': 1})
     def le_auto_reconnect(self):
         """LE reconnection loop by resetting HID and check reconnection"""
 
@@ -295,8 +278,7 @@ class bluetooth_AdapterLLPrivacyHealth(
     # connection is initiated by the peripheral. Skip the test until 2021 uprev
     @test_wrapper('LE Receiver Role Test',
                   devices={'BLE_KEYBOARD': 1},
-                  skip_models=['bob'],
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  skip_models=['bob'])
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 
@@ -309,9 +291,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
         self.nearby_receiver_role_test(kbd, kbd_test_func)
 
-    @test_wrapper('LE Sender Role Test',
-                  devices={'BLE_KEYBOARD': 1},
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+    @test_wrapper('LE Sender Role Test', devices={'BLE_KEYBOARD': 1})
     def le_role_sender(self):
         """Tests basic Nearby Sender role"""
 
@@ -328,8 +308,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
-                  },
-                  skip_chipsets=LL_PRIVACY_UNSUPPORTED_CHIPSETS)
+                  })
     def le_role_sender_during_hid(self):
         """Tests Nearby Sender role while already connected to HID device"""
 

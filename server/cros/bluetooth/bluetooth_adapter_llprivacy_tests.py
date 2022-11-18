@@ -6,15 +6,6 @@
 
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 
-# List of the controllers that does not support LL privacy.
-LL_PRIVACY_UNSUPPORTED_CHIPSETS = [
-        'Realtek-RTL8852A-USB',
-        'Realtek-RTL8852C-USB',
-        'Realtek-RTL8822C-UART',
-        'Realtek-RTL8822C-USB',
-]
-
-
 class BluetoothAdapterLLPrivacyTests(
         bluetooth_adapter_tests.BluetoothAdapterTests):
     """Server side bluetooth adapter ll privacy Test.

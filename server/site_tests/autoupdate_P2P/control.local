@@ -4,12 +4,16 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_P2P.local"
-PURPOSE = "Test autoupdate via peer to peer(P2P) locally."
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests autoupdate via peer to peer(P2P) locally."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
 DOC = """
 This tests autoupdate between two devices via peer to peer.

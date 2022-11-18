@@ -4,14 +4,18 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_Cellular.delta.tmobile"
-PURPOSE = "Test autoupdate over cellular with a delta payload."
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Test autoupdate over cellular with a delta payload."
+}
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:cellular_au_nightly"
 DEPENDENCIES = "carrier:tmobile"
-PY_VERSION = 3
 DOC = """
 This tests autoupdate over a cellular connection.
 

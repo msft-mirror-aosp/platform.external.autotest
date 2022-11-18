@@ -6,6 +6,14 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = "Chromium OS"
 NAME = "autoupdate_Rollback.powerwash_before_rollback"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests powerwash and rollback after an update."
+}
 TIME = "MEDIUM"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"

@@ -4,13 +4,17 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_Lacros"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests an N-to-N update and check rootfs-lacros."
+}
 TIME = "MEDIUM"
-PURPOSE = "Tests an N-to-N update and check rootfs-lacros."
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-perbuild"
-PY_VERSION = 3
 DOC = """
 Logs in and launches rootfs-lacros before and after a N-to-N autoupdate.
 

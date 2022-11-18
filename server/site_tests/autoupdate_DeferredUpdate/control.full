@@ -4,13 +4,17 @@
 
 AUTHOR = "kimjae, Chromium OS"
 NAME = "autoupdate_DeferredUpdate.full"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Test deferred update."
+}
 TIME = "MEDIUM"
-PURPOSE = "Tests deferred update."
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-perbuild"
-PY_VERSION = 3
 DOC = """
 Tests that the DUT handles deferred updates.
 

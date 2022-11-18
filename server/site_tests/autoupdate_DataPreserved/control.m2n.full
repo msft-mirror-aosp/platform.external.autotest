@@ -4,13 +4,17 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_DataPreserved.m2n.full"
-PURPOSE = "Tests user data is not reset by updating."
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Test user data is not reset by updating."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-m2n"
-PY_VERSION = 3
 DOC = """
 This tests that user's timezone, input methods, and downloaded files remain
 unchanged after an update.

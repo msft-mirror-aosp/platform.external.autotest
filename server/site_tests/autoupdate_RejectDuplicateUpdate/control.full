@@ -4,13 +4,17 @@
 
 AUTHOR = "vyshu@google.com, Chromium OS"
 NAME = "autoupdate_RejectDuplicateUpdate.full"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests duplicate repeated update."
+}
 TIME = "MEDIUM"
-PURPOSE = "Tests duplicate repeated update with Nebraska."
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-perbuild"
-PY_VERSION = 3
 DOC = """
 This tests a repeated update by enabling the repeated updates feature.
 It sends two updates with the same fingerprint value. Client side should reject

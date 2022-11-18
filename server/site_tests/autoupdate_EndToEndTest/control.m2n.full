@@ -7,12 +7,17 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = "kyleshima, Chromium OS"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Test autoupdate from the latest stable version."
+}
 NAME = "autoupdate_EndToEndTest.m2n.full"
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
-PY_VERSION = 3
 ATTRIBUTES = "suite:au-m2n"
 JOB_RETRIES = 2
 

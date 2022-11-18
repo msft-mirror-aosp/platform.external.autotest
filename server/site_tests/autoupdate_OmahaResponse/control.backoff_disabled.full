@@ -4,13 +4,17 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_OmahaResponse.backoff_disabled.full"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests second update attempt succeeds if backoff is disabled."
+}
 TIME = "MEDIUM"
-PURPOSE = "Tests second update attempt succeeds if backoff is disabled."
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-perbuild"
-PY_VERSION = 3
 DOC = """
 Test we can update when we fail the first attempt and backoff is disabled.
 """

@@ -4,13 +4,17 @@
 
 AUTHOR = "kyleshima, Chromium OS"
 NAME = "autoupdate_FromUI.full"
-PURPOSE = "Tests updating from the UI."
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests updating from the UI."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-perbuild"
-PY_VERSION = 3
 DOC = """
 This tests that an update can be triggered by clicking the 'Check for updates'
 button in the ChromeOS Settings app.

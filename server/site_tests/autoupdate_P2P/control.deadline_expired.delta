@@ -4,13 +4,17 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_P2P.deadline_expired.delta"
-PURPOSE = "Test autoupdate via peer to peer(P2P)."
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests autoupdate via peer to peer(P2P)."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-p2p"
-PY_VERSION = 3
 DOC = """
 This tests autoupdate between two devices via peer to peer is disabled when
 deadline has expired.

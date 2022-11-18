@@ -4,13 +4,17 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_Periodic.delta"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests periodic update with test-update-check-interval-timeout pref."
+}
 TIME = "MEDIUM"
-PURPOSE = "Tests periodic update with test-update-check-interval-timeout pref."
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-perbuild"
-PY_VERSION = 3
 DOC = """
 Tests that the DUT makes periodic update checks. On test images, periodic
 checks are disabled but by using a pref (test-update-check-interval-timeout) we

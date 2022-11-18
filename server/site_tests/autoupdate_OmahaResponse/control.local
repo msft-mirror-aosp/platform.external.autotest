@@ -4,12 +4,16 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_OmahaResponse.local"
-PURPOSE = "Test different things in the omaha response from your workstation."
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Test different things in the omaha response from your workstation."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
-PY_VERSION = 3
 DOC = """
 Change the various arguments to the test to test different things in the
 omaha response. Example:

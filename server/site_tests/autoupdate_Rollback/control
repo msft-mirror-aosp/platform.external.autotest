@@ -6,12 +6,17 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = "Chromium OS"
 NAME = "autoupdate_Rollback"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests rollback after an update."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:bvt-installer, suite:satlab-qual-bvt-installer, suite:distributed_lab_qual_bvt_shard1"
-PY_VERSION = 3
 
 DOC = """
 This is a rollback test for ChromeOS releases. It first updates a machine and

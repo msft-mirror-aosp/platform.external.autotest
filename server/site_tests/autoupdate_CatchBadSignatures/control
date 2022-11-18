@@ -6,13 +6,18 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = "Chromium OS"
 NAME = "autoupdate_CatchBadSignatures"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests that update_engine checks signatures in the metadata hash and update payload."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:bvt-inline, suite:pvs-bvt-inline, suite:satlab-qual-bvt-inline, suite:distributed_lab_qual_bvt_shard1"
 JOB_RETRIES = 2
-PY_VERSION = 3
 
 DOC = """
 This is a test to verify that update_engine correctly checks signatures in the

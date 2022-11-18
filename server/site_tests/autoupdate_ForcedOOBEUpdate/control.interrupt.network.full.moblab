@@ -4,13 +4,17 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_ForcedOOBEUpdate.interrupt.network.full.moblab"
-PURPOSE = "Test forced update at OOBE with network interruptions."
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests forced update at OOBE with network interruptions."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au_fsi"
-PY_VERSION = 3
 DOC = """
 This tests the forced autoupdate flow at OOBE with interruptions.
 

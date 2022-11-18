@@ -4,13 +4,17 @@
 
 AUTHOR = "dhaddock, Chromium OS"
 NAME = "autoupdate_ForcedOOBEUpdate.interrupt.reboot.full"
-PURPOSE = "Test forced update at OOBE with reboot interruptions."
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests forced update at OOBE with reboot interruptions."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-oobe"
-PY_VERSION = 3
 DOC = """
 This tests the forced autoupdate flow at OOBE with interruptions.
 

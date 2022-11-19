@@ -69,7 +69,7 @@ class touch_playback_test_base(test.test):
 
         self._autotest_ext = None
         self._has_inputcontrol = os.path.isfile(self._INPUTCONTROL)
-        self._platform = utils.get_board()
+        self._platform = utils.get_platform()
         if 'cheets' in self._platform:
             self._platform = self._platform[:-len('-cheets')]
 

@@ -21,7 +21,8 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
     """
     version = 1
 
-    SLEEP_DELAY = 20
+    # Ti50 delays deep sleep for 60 seconds after AP turns on.
+    SLEEP_DELAY = 65
     SHORT_DELAY = 2
     CCD_PASSWORD_RATE_LIMIT = 3
 
@@ -67,12 +68,12 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         # possible.
         self.reset_ec = self.gsc.uses_board_property('BOARD_USE_PLT_RESET')
         self.changed_dut_state = True
-        if self.reset_ec and not self.reset_device_get_deep_sleep_count(True):
+        if self.reset_ec and not self.check_deep_sleep_while_off():
             # Some devices can't tell the AP is off when the EC is off. Try
             # deep sleep with just the AP off.
             self.reset_ec = False
             # If deep sleep doesn't work at all, we can't run the test.
-            if not self.reset_device_get_deep_sleep_count(True):
+            if not self.check_deep_sleep_while_off():
                 raise error.TestNAError('Skipping test on device without deep '
                         'sleep support')
             # We can't hold the ec in reset and enter deep sleep. Set the
@@ -150,20 +151,17 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
             time.sleep(self.SHORT_DELAY)
 
 
-    def reset_device_get_deep_sleep_count(self, deep_sleep):
-        """Reset the device. Use dts mode to enable deep sleep if requested.
-
-        Args:
-            deep_sleep: True if Cr50 should enter deep sleep
+    def check_deep_sleep_while_off(self):
+        """Check Cr50 entered deep sleep when device was off.
 
         Returns:
-            The number of times Cr50 entered deep sleep during reset
+            True if Cr50 entered deep sleep
         """
         self.turn_device('off')
         # Do a deep sleep reset to restore the cr50 console.
-        ds_count = self.deep_sleep_reset_get_count() if deep_sleep else 0
+        ds = self.check_deep_sleep()
         self.turn_device('on')
-        return ds_count
+        return ds
 
 
     def set_dts(self, state):
@@ -188,28 +186,28 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         self.set_dts('on')
 
 
-    def deep_sleep_reset_get_count(self):
-        """Toggle ccd to get to do a deep sleep reset
+    def check_deep_sleep(self):
+        """Toggle ccd to enter deep sleep
 
         Returns:
-            The number of times cr50 entered deep sleep
+            True if Cr50 entered deep sleep
         """
         start_count = self.gsc.get_deep_sleep_count()
         # CCD is what's keeping Cr50 awake. Toggle DTS mode to turn off ccd
         # so cr50 will enter deep sleep
         self.toggle_dts_mode()
         # Return the number of times cr50 entered deep sleep.
-        return self.gsc.get_deep_sleep_count() - start_count
+        return self.gsc.get_deep_sleep_count() > start_count
 
 
-    def try_ccd_open(self, cr50_reset):
+    def try_ccd_open(self, deep_sleep):
         """Try 'ccd open' and make sure the console doesn't hang"""
         self.gsc.set_ccd_level('lock', self.CCD_PASSWORD)
         try:
             self.turn_device('off')
-            if cr50_reset:
-                if not self.deep_sleep_reset_get_count():
-                    raise error.TestFail('Did not detect a cr50 reset')
+            if deep_sleep:
+                if not self.check_deep_sleep():
+                    raise error.TestFail('Did not detect deep sleep')
             # Verify ccd open
             self.gsc.set_ccd_level('open', self.CCD_PASSWORD)
         finally:

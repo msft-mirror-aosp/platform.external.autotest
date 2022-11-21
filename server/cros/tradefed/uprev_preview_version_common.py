@@ -90,8 +90,7 @@ def fetch_artifact(download_dir, branch_name, target_name, xts_name,
     subprocess.check_call(fetch_cmd, cwd=download_dir)
 
 
-# TODO(b/256108932): Add --test_config flag for test upload to gs.
-def upload_preview_xts(file_path: str, config_path: str, abi: str,
+def upload_preview_xts(file_path: str, url_config: Dict[str, str], abi: str,
                        xts_name: str, version_name: str) -> None:
     """Function to upload the preview xTS zip file to multiple places on gs.
 
@@ -100,17 +99,17 @@ def upload_preview_xts(file_path: str, config_path: str, abi: str,
 
     Args:
         file_path: A string which means the file path where a test suite is downloaded.
-        config_path: A string which means config json file path.
+        url_config: A (dictionary) configuration for this xts bundle.
         abi: A string which means one of the abis (None, 'arm', 'x86', 'arm64', 'x86_64').
         xts_name: A string which is one of the test names: (cts, vts).
         version_name: A string which means target build version name.
     """
-    url_config = bundle_utils.load_config(config_path)
     url_config[bundle_utils._PREVIEW_VERSION_NAME] = version_name
 
     for remote_url in bundle_utils.make_preview_urls(url_config, abi):
-        # TODO(b/256108932): Uncomment this with replacing the remote_url and the value of --test_config.
-        """
+        # TODO(b/256108932): Add a method to dryrun this to make it easier to
+        # test without actually uploading. Alternatively inject a configuration
+        # so that the upload destination can be changed.
         cmd = [
             'gsutil',
             'cp',
@@ -121,8 +120,6 @@ def upload_preview_xts(file_path: str, config_path: str, abi: str,
             f'Uploading to {remote_url}: the command is {cmd}.'
         )
         subprocess.check_call(cmd)
-        """
-        pass
     return
 
 
@@ -161,7 +158,7 @@ def main(config_path: str,
                 prefix=f'fetch_artifact_{target_abi}_') as download_dir:
             fetch_artifact(download_dir, branch_name, target_name, xts_name,
                            version_name)
-            upload_preview_xts(download_dir, config_path, target_abi, xts_name,
+            upload_preview_xts(download_dir, url_config, target_abi, xts_name,
                                version_name)
 
     bundle_utils.modify_version_name_in_config(

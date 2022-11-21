@@ -66,3 +66,44 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
                         '--branch=test_branch', '--target=test_target',
                         'android-cts.zip', '--bid=test_version'
                 ]), set(fetch_cmd[1:]))
+
+    @mock.patch('subprocess.check_call')
+    def test_upload_preview_xts(self, check_call_mock):
+        """Verify that gsutil cp is called with the right flags."""
+
+        _TEST_CONFIG = {
+                "public_base": "https://dl.google.com/dl/android/cts/",
+                "internal_base": "gs://chromeos-arc-images/cts/bundle/R/",
+                "partner_base": "gs://chromeos-partner-gts/R/",
+                "official_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+                "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+                "official_version_name": "11_r9",
+                "preview_version_name": "9199760",
+                "abi_list": {
+                        "arm": "test_suites_arm64",
+                        "x86": "test_suites_x86_64"
+                }
+        }
+
+        uprev_preview_version_common.upload_preview_xts(
+                file_path='test_file_path',
+                url_config=_TEST_CONFIG,
+                abi='arm',
+                xts_name='cts',
+                version_name='9199760',
+        )
+
+        self.assertEquals(check_call_mock.call_count, 2)
+        check_call_mock.assert_any_call([
+                'gsutil',
+                'cp',
+                'test_file_path/android-cts.zip',
+                'gs://chromeos-partner-gts/R/android-cts-9199760-linux_x86-arm.zip',
+        ])
+
+        check_call_mock.assert_any_call([
+                'gsutil',
+                'cp',
+                'test_file_path/android-cts.zip',
+                'gs://chromeos-arc-images/cts/bundle/R/android-cts-9199760-linux_x86-arm.zip',
+        ])

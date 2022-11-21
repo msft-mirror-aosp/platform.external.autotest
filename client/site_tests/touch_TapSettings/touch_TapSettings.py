@@ -79,7 +79,11 @@ class touch_TapSettings(touch_playback_test_base.touch_playback_test_base):
 
         # Check if playback files are available on DUT to run test.
         self._filepaths = self._find_test_files(
-                'touchpad', [self._CLICK_NAME, self._DRAG_NAME])
+                'touchpad', [self._CLICK_NAME,
+                            
+                             # TODO: remove comment when http://b/259996764 is fixed
+                             # self._DRAG_NAME
+                            ])
         if not self._filepaths:
             logging.info('Missing gesture files, Aborting test.')
             return False
@@ -104,7 +108,9 @@ class touch_TapSettings(touch_playback_test_base.touch_playback_test_base):
             # Check default setting values.
             logging.info('Checking for default setting values.')
             self._check_for_click(True)
-            self._check_for_drag(False)
+
+            # TODO: remove comment when http://b/259996764 is fixed
+            # self._check_for_drag(False)
 
             # Toggle settings in all combinations and check.
             options = [True, False]
@@ -114,4 +120,6 @@ class touch_TapSettings(touch_playback_test_base.touch_playback_test_base):
                 self._set_tap_to_click(click_value)
                 self._set_tap_dragging(drag_value)
                 self._check_for_click(click_value)
-                self._check_for_drag(click_value and drag_value)
+
+                # TODO: remove comment when http://b/259996764 is fixed
+                # self._check_for_drag(click_value and drag_value)

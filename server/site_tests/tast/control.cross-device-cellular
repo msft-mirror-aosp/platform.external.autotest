@@ -3,10 +3,10 @@
 # found in the LICENSE file.
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
-NAME = 'tast.cross-device'
+NAME = 'tast.cross-device-cellular'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cross-device'
+ATTRIBUTES = 'suite:cross-device-cellular'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

@@ -39,6 +39,7 @@
   <Entry include="CtsDeqpTestCases dEQP-VK.pipeline.creation_feedback.graphics_tests#vertex_stage_tessellation_control_stage_tessellation_evaluation_stage_fragment_stage" />
   <Entry include="CtsFragmentTestCases android.fragment.cts.PostponedTransitionTest" />
   <Entry include="CtsFragmentTestCases[intent] android.fragment.cts.PostponedTransitionTest" />
+  <Entry include="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testJobsInRestrictedBucket_ParoleSession" />
   <Entry include="CtsSecurityHostTestCases android.security.cts.KernelConfigTest#testConfigHardwareMitigations" />
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_imageblurclampmode" />
   <Entry include="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testAppLaunchCount" />

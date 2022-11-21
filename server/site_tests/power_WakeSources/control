@@ -27,6 +27,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("power_WakeSources", host=host, disable_sysinfo=True)
+    job.run_test("power_WakeSources", host=host)
 
 parallel_simple(run, machines)

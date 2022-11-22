@@ -3,17 +3,17 @@
 # found in the LICENSE file.
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
-NAME = '{name}'
-ATTRIBUTES = '{attributes}'
-TIME = '{length}'
+NAME = 'spera_TabSwitch_essential_06'
+ATTRIBUTES = 'suite:performance_cuj_v2'
+TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
-PRIORITY = {priority}
+PRIORITY = 4955
 MAX_RESULT_SIZE_KB = 1024 * 1024
-JOB_RETRIES = {retries}
+JOB_RETRIES = 4
 REQUIRE_SSP = True
-DEPENDENCIES = '{dependencies}'
+DEPENDENCIES = 'essential'
 PY_VERSION = 3
 
 DOC = '''
@@ -31,10 +31,10 @@ from autotest_lib.utils import labellib
 
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
-  labels['test_version'] = {version}
-  labels['test'] = '{test_exprs}'
-  labels['test_iteration'] = '{iteration}'
-  labels['total_tests_to_run'] = {total_tests}
+  labels['test_version'] = 2
+  labels['test'] = 'spera.TabSwitch.essential'
+  labels['test_iteration'] = '6'
+  labels['total_tests_to_run'] = 120
   utils.write_keyval(job.resultdir, labels)
   try:
     # Try to retrieve and report DUT HWID and serial number.
@@ -49,11 +49,11 @@ def run(machine):
   report_host_info(host)
   job.run_test('tast',
               host=host,
-              test_exprs=['{test_exprs}'],
+              test_exprs=['spera.TabSwitch.essential'],
               clear_tpm=False,
               ignore_test_failures=False,
-              max_run_sec={duration},
+              max_run_sec=3600,
               command_args=args,
-              vars_gs_path='{args_file}')
+              vars_gs_path='config/perf_cuj/perf_cuj.config')
 
 parallel_simple(run, machines)

@@ -8,140 +8,140 @@
     {
       "name": "meet-essential-large",
       "tool": "tast",
-      "test_expr": "spera.GoogleMeetCUJ.essential_large",
+      "test_expr": "spera.GoogleMeet.grid_essential",
       "attributes": ["essential"],
       "deps": ["essential"]
     },
     {
       "name": "meet-essential-large-lacros",
       "tool": "tast",
-      "test_expr": "spera.GoogleMeetCUJ.essential_lacros_large",
+      "test_expr": "spera.GoogleMeet.grid_essential_lacros",
       "attributes": ["essential", "lacros"],
       "deps": ["essential"]
     },
     {
       "name": "meet-essential-class",
       "tool": "tast",
-      "test_expr": "spera.GoogleMeetCUJ.essential_class",
+      "test_expr": "spera.GoogleMeet.class_essential",
       "attributes": ["essential"],
       "deps": ["essential"]
     },
     {
       "name": "meet-essential-class-lacros",
       "tool": "tast",
-      "test_expr": "spera.GoogleMeetCUJ.essential_lacros_class",
+      "test_expr": "spera.GoogleMeet.class_essential_lacros",
       "attributes": ["essential", "lacros"],
       "deps": ["essential"]
     },
     {
       "name": "meet-advanced-large",
       "tool": "tast",
-      "test_expr": "spera.GoogleMeetCUJ.advanced_large",
+      "test_expr": "spera.GoogleMeet.grid_advanced",
       "attributes": ["advanced"],
       "deps": ["advanced"]
     },
     {
       "name": "meet-advanced-large-lacros",
       "tool": "tast",
-      "test_expr": "spera.GoogleMeetCUJ.advanced_lacros_large",
+      "test_expr": "spera.GoogleMeet.grid_advanced_lacros",
       "attributes": ["advanced", "lacros"],
       "deps": ["advanced"]
     },
     {
       "name": "meet-advanced-class",
       "tool": "tast",
-      "test_expr": "spera.GoogleMeetCUJ.advanced_class",
+      "test_expr": "spera.GoogleMeet.class_advanced",
       "attributes": ["advanced"],
       "deps": ["advanced"]
     },
     {
       "name": "meet-advanced-class-lacros",
       "tool": "tast",
-      "test_expr": "spera.GoogleMeetCUJ.advanced_lacros_class",
+      "test_expr": "spera.GoogleMeet.class_advanced_lacros",
       "attributes": ["advanced", "lacros"],
       "deps": ["advanced"]
     },
     {
       "name": "tabswitch-essential",
       "tool": "tast",
-      "test_expr": "spera.TabSwitchCUJ2.essential",
+      "test_expr": "spera.TabSwitch.essential",
       "attributes": ["essential"],
       "deps": ["essential"]
     },
     {
       "name": "tabswitch-essential-lacros",
       "tool": "tast",
-      "test_expr": "spera.TabSwitchCUJ2.essential_lacros",
+      "test_expr": "spera.TabSwitch.essential_lacros",
       "attributes": ["essential", "lacros"],
       "deps": ["essential"]
     },
     {
       "name": "tabswitch-advanced",
       "tool": "tast",
-      "test_expr": "spera.TabSwitchCUJ2.advanced",
+      "test_expr": "spera.TabSwitch.advanced",
       "attributes": ["advanced"],
       "deps": ["advanced"]
     },
     {
       "name": "tabswitch-advanced-lacros",
       "tool": "tast",
-      "test_expr": "spera.TabSwitchCUJ2.advanced_lacros",
+      "test_expr": "spera.TabSwitch.advanced_lacros",
       "attributes": ["advanced", "lacros"],
       "deps": ["advanced"]
     },
     {
       "name": "video-essential-youtube-app",
       "tool": "tast",
-      "test_expr": "spera.VideoCUJ2.essential_youtube_app",
+      "test_expr": "spera.VideoStreamingApp.essential",
       "attributes": ["essential"],
       "deps": ["essential"]
     },
     {
       "name": "video-essential-youtube-app-lacros",
       "tool": "tast",
-      "test_expr": "spera.VideoCUJ2.essential_lacros_youtube_app",
+      "test_expr": "spera.VideoStreamingApp.essential_lacros",
       "attributes": ["essential", "lacros"],
       "deps": ["essential"]
     },
     {
       "name": "video-advanced-youtube-app",
       "tool": "tast",
-      "test_expr": "spera.VideoCUJ2.advanced_youtube_app",
+      "test_expr": "spera.VideoStreamingApp.advanced",
       "attributes": ["advanced"],
       "deps": ["advanced"]
     },
     {
       "name": "video-advanced-youtube-app-lacros",
       "tool": "tast",
-      "test_expr": "spera.VideoCUJ2.advanced_lacros_youtube_app",
+      "test_expr": "spera.VideoStreamingApp.advanced_lacros",
       "attributes": ["advanced", "lacros"],
       "deps": ["advanced"]
     },
     {
       "name": "everyday-essential-ytmusic",
       "tool": "tast",
-      "test_expr": "spera.EverydayMultiTaskingCUJ.essential_ytmusic",
+      "test_expr": "spera.MultiTaskingApp.essential",
       "attributes": ["essential"],
       "deps": ["essential"]
     },
     {
       "name": "everyday-essential-ytmusic-lacros",
       "tool": "tast",
-      "test_expr": "spera.EverydayMultiTaskingCUJ.essential_lacros_ytmusic",
+      "test_expr": "spera.MultiTaskingApp.essential_lacros",
       "attributes": ["essential", "lacros"],
       "deps": ["essential"]
     },
     {
       "name": "everyday-advanced-ytmusic",
       "tool": "tast",
-      "test_expr": "spera.EverydayMultiTaskingCUJ.advanced_ytmusic",
+      "test_expr": "spera.MultiTaskingApp.advanced",
       "attributes": ["advanced"],
       "deps": ["advanced"]
     },
     {
       "name": "everyday-advanced-ytmusic-lacros",
       "tool": "tast",
-      "test_expr": "spera.EverydayMultiTaskingCUJ.advanced_lacros_ytmusic",
+      "test_expr": "spera.MultiTaskingApp.advanced_lacros",
       "attributes": ["advanced", "lacros"],
       "deps": ["advanced"]
     },
@@ -204,56 +204,56 @@
     {
       "name": "video-proxy-essential-h264",
       "tool": "tast",
-      "test_expr": "spera.VideoProxyCUJ.essential_h264",
+      "test_expr": "spera.WebStreaming.h264_essential",
       "attributes": ["essential"],
       "deps": ["essential"]
     },
     {
       "name": "video-proxy-essential-h264-lacros",
       "tool": "tast",
-      "test_expr": "spera.VideoProxyCUJ.essential_lacros_h264",
+      "test_expr": "spera.WebStreaming.h264_essential_lacros",
       "attributes": ["essential", "lacros"],
       "deps": ["essential"]
     },
     {
       "name": "video-proxy-advanced-h264",
       "tool": "tast",
-      "test_expr": "spera.VideoProxyCUJ.advanced_h264",
+      "test_expr": "spera.WebStreaming.h264_advanced",
       "attributes": ["advanced"],
       "deps": ["advanced"]
     },
     {
       "name": "video-proxy-advanced-h264-lacros",
       "tool": "tast",
-      "test_expr": "spera.VideoProxyCUJ.advanced_lacros_h264",
+      "test_expr": "spera.WebStreaming.h264_advanced_lacros",
       "attributes": ["advanced", "lacros"],
       "deps": ["advanced"]
     },
     {
       "name": "video-proxy-essential-hevc",
       "tool": "tast",
-      "test_expr": "spera.VideoProxyCUJ.essential_hevc",
+      "test_expr": "spera.WebStreaming.h265_essential",
       "attributes": ["essential"],
       "deps": ["essential"]
     },
     {
       "name": "video-proxy-essential-hevc-lacros",
       "tool": "tast",
-      "test_expr": "spera.VideoProxyCUJ.essential_lacros_hevc",
+      "test_expr": "spera.WebStreaming.h265_essential_lacros",
       "attributes": ["essential", "lacros"],
       "deps": ["essential"]
     },
     {
       "name": "video-proxy-advanced-hevc",
       "tool": "tast",
-      "test_expr": "spera.VideoProxyCUJ.advanced_hevc",
+      "test_expr": "spera.WebStreaming.h265_advanced",
       "attributes": ["advanced"],
       "deps": ["advanced"]
     },
     {
       "name": "video-proxy-advanced-hevc-lacros",
       "tool": "tast",
-      "test_expr": "spera.VideoProxyCUJ.advanced_lacros_hevc",
+      "test_expr": "spera.WebStreaming.h265_advanced_lacros",
       "attributes": ["advanced", "lacros"],
       "deps": ["advanced"]
     },
@@ -288,28 +288,28 @@
     {
       "name": "edu-video-advanced-wevideo",
       "tool": "tast",
-      "test_expr": "spera.EDUVideoEditingCUJ.advanced_wevideo",
+      "test_expr": "spera.VideoEditingApp.advanced",
       "attributes": ["edu", "advanced"],
       "deps": ["advanced"]
     },
     {
       "name": "edu-video-advanced-wevideo-lacros",
       "tool": "tast",
-      "test_expr": "spera.EDUVideoEditingCUJ.advanced_lacros_wevideo",
+      "test_expr": "spera.VideoEditingApp.advanced_lacros",
       "attributes": ["edu", "advanced", "lacros"],
       "deps": ["advanced"]
     },
     {
       "name": "edu-cast2class-essential",
       "tool": "tast",
-      "test_expr": "spera.EDUCastToClass.essential",
+      "test_expr": "spera.CastToClass.essential",
       "attributes": ["edu", "essential"],
       "deps": ["essential"]
     },
     {
       "name": "edu-cast2class-essential-lacros",
       "tool": "tast",
-      "test_expr": "spera.EDUCastToClass.essential_lacros_cast",
+      "test_expr": "spera.CastToClass.essential_lacros",
       "attributes": ["edu", "essential", "lacros"],
       "deps": ["essential"]
     },

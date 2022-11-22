@@ -2,31 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'Chromium OS team'
 NAME = 'tast.hwsec-destructive-func'
-TIME = 'MEDIUM'
+METADATA = {
+    "contacts": ["cros-hwsec@google.com", "zuan@chromium.org"],
+    "bug_component": "b:1188704",
+    "criteria": ("Run the Tast test group hwsec_destructive in the suite"
+                 "bvt-tast-informational"),
+    "hw_agnostic": False
+}
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:bvt-tast-informational'
 MAX_RESULT_SIZE_KB = 1024 * 1024
-PY_VERSION = 3
 JOB_RETRIES = 0  # Do not retry informational tests.
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
-
-DOC = '''
-Run the Tast test group hwsec_destructive in the suite bvt-tast-informational.
-
-Tast is an integration-testing framework analagous to the test-running portion
-of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
-more information.
-
-This test runs HWSec Tast-based remote tests that may wipe and recreate
-encstateful in the middle, e.g., via clearing the TPM. It only reports failure
-if the tast process itself (rather than individual Tast tests) fails.
-
-See http://go/tast-failures for information about investigating failures.
-'''
 
 def run(machine):
     job.run_test('tast',

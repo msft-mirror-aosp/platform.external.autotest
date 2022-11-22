@@ -2,31 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'ChromiumOS team'
 NAME = 'tast.hwsec-nightly'
-TIME = 'LONG'
+METADATA = {
+    "contacts": ["cros-hwsec@google.com", "zuan@chromium.org"],
+    "bug_component": "b:1188704",
+    "criteria": ("Run the nightly hwsec-related tests. Tests in the nightly "
+                 "hwsec-related group are usually tests that are too heavy "
+                 "to be in the mainline group."),
+    "hw_agnostic": False
+}
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cros-hwsec_nightly'
 MAX_RESULT_SIZE_KB = 1024 * 1024
-PY_VERSION = 3
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
-
-DOC = '''
-Run the nightly hwsec-related tests. Tests in the nightly hwsec-related group
-are usually tests that are too heavy to be in the mainline group.
-
-Note: only stable tests should be added to this "hwsec-nightly" group.
-
-Tast is an integration-testing framework analagous to the test-running portion
-of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
-more information.
-
-This test runs Tast-based hwsec tests against a remote DUT.
-
-See http://go/tast-failures for information about investigating failures.
-'''
 
 def run(machine):
     host=hosts.create_host(machine)

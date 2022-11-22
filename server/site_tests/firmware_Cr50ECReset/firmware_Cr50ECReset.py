@@ -69,7 +69,7 @@ class firmware_Cr50ECReset(Cr50Test):
         """If the console is responsive, then the EC is awake"""
         time.sleep(self.EC_SETTLE_TIME)
         try:
-            self.ec.send_command_get_output('time', ['.*>'])
+            self.ec.send_command_get_output('gettime', ['Time: 0x'])
         except servo.UnresponsiveConsoleError as e:
             logging.info(str(e))
             return False

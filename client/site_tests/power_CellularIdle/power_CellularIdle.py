@@ -7,6 +7,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.cros.networking.chrome_testing \
         import chrome_networking_test_api as cnta
 from autotest_lib.client.cros.networking.chrome_testing \
@@ -20,6 +21,7 @@ class power_CellularIdle(power_test.power_Test):
   version = 2
   _before_test_cool_down_sec = 30
   _cellular_on_off_time_sec = 900
+  _cellular_conn_check_timeout_sec = 30
   _measurement_tag_cool_down = 'cool_down'
   _measurement_tag_cellular_on = 'cellular_on'
   _measurement_tag_cellular_off = 'cellular_off'
@@ -38,18 +40,18 @@ class power_CellularIdle(power_test.power_Test):
     enabled_devices = self.chrome_net.get_enabled_devices()
     return self.chrome_net.CELLULAR in enabled_devices
 
-  def _verify_connected_to_network(self):
-    """Raise TestNAError if not connected to network, else do nothing."""
+  def _verify_connected_to_cellular_network(self):
+    """Return true if connected to cellular network, else return false."""
     networks = self.chrome_net.get_cellular_networks()
-    logging.info('Networks found: %s', networks)
+    logging.info('Cellular networks found: %s', networks)
 
     for network in networks:
       if network['ConnectionState'] == 'Connected':
         logging.info('Connected to network: %s', network)
-        return
+        return True
 
     logging.info('Not connected to network.')
-    raise error.TestNAError('Not connected to network.')
+    return False
 
   def postprocess_iteration(self):
     """<Modem ON power> - <Modem LOW power>"""
@@ -79,13 +81,13 @@ class power_CellularIdle(power_test.power_Test):
           units='W',
           higher_is_better=False)
       if modem_on_power > self._modem_on_power_high_threshold:
-        raise error.TestWarn('Modem on power is too high: %f > %f (W)',
-                              modem_on_power,
-                              self._modem_on_power_high_threshold)
+        raise error.TestWarn(
+            'Modem on power is too high: %f > %f (W)' %
+            (modem_on_power, self._modem_on_power_high_threshold))
       elif modem_on_power < self._modem_on_power_low_threshold:
-        raise error.TestWarn('Modem on power is too low: %f < %f (W)',
-                              modem_on_power,
-                              self._modem_on_power_low_threshold)
+        raise error.TestWarn(
+            'Modem on power is too low: %f < %f (W)' %
+            (modem_on_power, self._modem_on_power_low_threshold))
 
   def run_once(self):
     """Collect power stats when cellular is on or off"""
@@ -114,7 +116,12 @@ class power_CellularIdle(power_test.power_Test):
         raise error.TestNAError('Failed to enable cellular.')
 
       self.chrome_net.scan_for_networks()
-      self._verify_connected_to_network()
+      test_err = error.TestNAError('Failed to connect to cellular.')
+      utils.poll_for_condition(
+          self._verify_connected_to_cellular_network,
+          exception=test_err,
+          timeout=self._cellular_conn_check_timeout_sec,
+          sleep_interval=1)
 
       power_utils.set_display_power(power_utils.DISPLAY_POWER_ALL_OFF)
       logging.info('Start cellular on test for %d seconds', run_time)

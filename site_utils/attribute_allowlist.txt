@@ -335,6 +335,7 @@ suite:check_setup_cts_N
 suite:check_setup_storage_qual
 suite:chrome-informational
 suite:commercial-limited
+suite:cq-minimal
 suite:cros-av-analysis
 suite:cros-hwsec_nightly
 suite:cros-hwsec_per-week

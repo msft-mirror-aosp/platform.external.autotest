@@ -64,6 +64,9 @@ def load_json(raw_stat, raw_json, testdir):
     firstFound = False
     for line in raw_stat.splitlines():
         fields = get_fields(line)
+        # A non-formatted line won't have fields, thus don't parse it.
+        if not fields:
+            continue
         if fields[0] == 'INFO' or fields[1] == '----':
             continue
         if fields[0] == 'START':
@@ -146,6 +149,9 @@ def parseResult(status_raw):
 def get_fields(line):
     indents = indent(line)
     items = line.split('\t')
+    # A "real" status line will at min have 5 fields.
+    if len(items) < 6:
+        return None
     status = items[0 + indents]
     name = items[2 + indents]
     taskTime = items[3 + indents]

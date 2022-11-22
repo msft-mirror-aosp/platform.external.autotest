@@ -2,28 +2,24 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
-NAME = "power_CPUFreq"
-PURPOSE = "Verify that supported CPU frequencies can be set."
-CRITERIA = """
-This test will fail under the following conditions:
-  - cpu frequencies are not supported
-  - no more than 1 frequency is supported
-  - if a supported frequency cannot be set
-"""
-ATTRIBUTES = "suite:power_build"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# This test will read the supporting frequencies from the file
+# scaling_available_governors, and attempt to set the system to use each supported
+# frequency by writing to files scaling_max_freq, scaling_min_freq, and
+# scaling_setspeed. All files are located under:
+#   /sys/devices/system/cpu/cpu*/cpufreq/
 
-DOC = """
-This test will read the supporting frequencies from the file
-scaling_available_governors, and attempt to set the system to use each supported
-frequency by writing to files scaling_max_freq, scaling_min_freq, and
-scaling_setspeed. All files are located under:
-  /sys/devices/system/cpu/cpu*/cpufreq/
-"""
+NAME = "power_CPUFreq"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": """ This test will fail under the following conditions:
+                    - cpu frequencies are not supported
+                    - no more than 1 frequency is supported
+                    - if a supported frequency cannot be set """,
+    "hw_agnostic": False
+}
+ATTRIBUTES = "suite:power_build"
+TEST_TYPE = "client"
 
 job.run_test('power_CPUFreq')

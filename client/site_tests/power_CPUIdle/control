@@ -2,20 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
-NAME = "power_CPUIdle"
-PURPOSE = "Ensure the processor drops into idle state when it is idle."
-CRITERIA = "Fails if the cpu did not have any idle cycles during this test."
-ATTRIBUTES = "suite:power_build"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# This test will read values from /sys/devices/system/cpu/cpu*/cpuidle to
+# determine idle cycles.
 
-DOC = """
-This test will read values from /sys/devices/system/cpu/cpu*/cpuidle to
-determine idle cycles.
-"""
+NAME = "power_CPUIdle"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "Fails if the cpu did not have any idle cycles during this test.",
+    "hw_agnostic": False
+}
+ATTRIBUTES = "suite:power_build"
+TEST_TYPE = "client"
 
 job.run_test('power_CPUIdle')

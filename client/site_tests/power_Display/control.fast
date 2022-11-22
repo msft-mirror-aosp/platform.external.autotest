@@ -1,17 +1,15 @@
-AUTHOR = "ChromeOS Team"
+# Description
+# This test makes sure that power_Display works.
+
 NAME = "power_Display.fast"
-PURPOSE = "Measure display power usage."
-
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": False
+}
+ATTRIBUTES = ""
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test makes sure that power_Display works.
-"""
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

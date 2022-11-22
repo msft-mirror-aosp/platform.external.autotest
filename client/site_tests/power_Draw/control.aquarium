@@ -2,22 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# Description
+# This test will run for 3600 seconds by default.
+
+# This test tries to emulate the factory Run-In test workload in order to
+# (more) easily replicate issues that might happen in the factory test.
+
 NAME = "power_Draw.Aquarium"
-PURPOSE = "Stress system similar to Factory Run-in."
-CRITERIA = "This test is a benchmark."
-TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": False
+}
+ATTRIBUTES = ""
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test will run for 3600 seconds by default.
-
-This test tries to emulate the factory Run-In test workload in order to
-(more) easily replicate issues that might happen in the factory test.
-"""
 
 tag = 'PowerDraw'
 seconds = 3600

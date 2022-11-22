@@ -2,24 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "sque"
-NAME = "power_AudioDetector"
-PURPOSE = "Verify the system does not suspend while playing audio."
-CRITERIA = """
-Fail if any of the following occur:
-  - The system suspends during audio playback.
-  - The powerd log does not contain logging to indicate that the audio detector
-    delayed suspend.
-"""
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-ATTRIBUTES = "suite:bvt-perbuild"
-PY_VERSION = 3
+# Description
+# This test verifies that the system will not suspend while audio is playing.
 
-DOC = """
-This test verifies that the system will not suspend while audio is playing.
-"""
+NAME = "power_AudioDetector"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": """
+                Fail if any of the following occur:
+                - The system suspends during audio playback.
+                - The powerd log does not contain logging to indicate that the audio detector
+                """,
+    "hw_agnostic": False
+}
+ATTRIBUTES = "suite:bvt-perbuild"
+TEST_TYPE = "client"
 
 job.run_test("power_AudioDetector")

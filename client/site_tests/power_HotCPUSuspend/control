@@ -2,18 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
-NAME = "power_HotCPUSuspend"
-ATTRIBUTES = "suite:kernel_daily_regression"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# Suspend the system with lots of CPU activity.
 
-DOC = """
-Suspend the system with lots of CPU activity.
-"""
+NAME = "power_HotCPUSuspend"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "hw_agnostic": False
+}
+ATTRIBUTES = "suite:kernel_daily_regression"
+TEST_TYPE = "client"
 
 job.add_sysinfo_logfile('/sys/kernel/debug/suspend_stats', on_every_test=True)
 job.run_test('power_HotCPUSuspend')

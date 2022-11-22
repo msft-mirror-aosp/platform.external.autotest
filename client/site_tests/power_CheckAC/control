@@ -2,17 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "dbasehore@chromium.org"
-NAME = "power_CheckAC"
-PURPOSE = "Check the state of the power supply"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# This test checks the status of the power supply to see that it is on.
 
-DOC = """
-This test checks the status of the power supply to see that it is on.
-"""
+NAME = "power_CheckAC"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com", "dbasehore@chromium.org"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": False
+}
+ATTRIBUTES = ""
+TEST_TYPE = "client"
 
 job.run_test('power_CheckAC', power_on=True)

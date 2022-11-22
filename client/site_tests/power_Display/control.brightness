@@ -1,22 +1,17 @@
-AUTHOR = "ChromeOS Team"
+# Description
+# This test records power related statistics while displaying different static
+# pages with each of ChromeOS's 16 brightness levels.
+
 NAME = "power_Display.brightness"
-PURPOSE = "Measure display power usage at each brightness."
-
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test records power related statistics while displaying different static
-pages with each of ChromeOS's 16 brightness levels.
-"""
-
 METADATA = {
-  'requirements': ['pwr-batLife-0009-v01']
+  "requirements": ['pwr-batLife-0009-v01'],
+  "contacts": ["chromeos-platform-power@google.com"],
+  "bug_component": "b:167191",
+  "criteria": "This test is a benchmark.",
+  "hw_agnostic": False
 }
+ATTRIBUTES = ""
+TEST_TYPE = "client"
 
 BRIGHTNESS_PAGES = ['white', 'black', 'checker1']
 

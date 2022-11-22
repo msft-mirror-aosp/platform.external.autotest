@@ -2,25 +2,23 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
-NAME = "power_BatteryDrain"
-PURPOSE = "Drain the battery quickly, as a utility for other tests."
-CRITERIA = """
-DUT must not be on AC power, and battery must drop to or below the
-specified threshold within the given timeout in seconds.
-"""
-TIME = "MEDIUM"
-TEST_CATEGORY = "Stress"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# This test drains the battery quickly, as a utility for other tests. It requires
+# that AC power is not supplied, so you will have to turn it off via servo in a
+# server test. You can specify a battery threshold to drain to, and a timeout in
+# seconds.
 
-DOC = """
-This test drains the battery quickly, as a utility for other tests. It requires
-that AC power is not supplied, so you will have to turn it off via servo in a
-server test. You can specify a battery threshold to drain to, and a timeout in
-seconds.
-"""
+NAME = "power_BatteryDrain"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": """ DUT must not be on AC power, and battery must drop to
+                    or below the specified threshold within the given timeout
+                    in seconds.""",
+    "hw_agnostic": False
+}
+ATTRIBUTES = ""
+TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)
 

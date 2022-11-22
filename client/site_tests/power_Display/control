@@ -1,19 +1,16 @@
-AUTHOR = "ChromeOS Team"
+# Description
+# This test records power related statistics while displaying different static
+# pages.
+
 NAME = "power_Display"
-PURPOSE = "Measure display power usage."
-
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": False
+}
 ATTRIBUTES = "suite:power_daily, suite:power_check, suite:power_monitoring"
-PY_VERSION = 3
-
-DOC = """
-This test records power related statistics while displaying different static
-pages.
-"""
+TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

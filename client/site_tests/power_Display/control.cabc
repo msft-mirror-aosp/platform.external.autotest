@@ -1,18 +1,16 @@
-AUTHOR = "ChromeOS Team"
+# Description
+# This test records power related statistics while displaying different static
+# pages using settings that usually utilize panel CABC algorithm.
+
 NAME = "power_Display.cabc"
-PURPOSE = "Measure display power usage."
-
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": False
+}
+ATTRIBUTES = ""
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test records power related statistics while displaying different static
-pages using settings that usually utilize panel CABC algorithm.
-"""
 
 CABC_PAGES = ['white', 'black',
               'white', 'grey10',

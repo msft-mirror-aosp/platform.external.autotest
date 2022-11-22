@@ -1,19 +1,16 @@
-AUTHOR = "Chrome OS Cellular Team"
+# Description
+# This test records power related statistics while staying idle, and
+# compares between cellular on and off.
+
 NAME = "power_CellularIdle"
-PURPOSE = "Measure power usage with cellular on or off."
-
-CRITERIA = "This test is a benchmark."
-TIME = "MEDIUM"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
+METADATA = {
+    "contacts": ["chromeos-cellular-team@google.com"],
+    "bug_component": "b:167157",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": False
+}
 ATTRIBUTES = "suite:cellular_power"
-PY_VERSION = 3
-
-DOC = """
-This test records power related statistics while staying idle, and
-compares between cellular on and off.
-"""
+TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

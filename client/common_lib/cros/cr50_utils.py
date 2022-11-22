@@ -126,6 +126,7 @@ gsctool.add_argument('-b',
 # upstart and post_reset will post resets instead of rebooting immediately
 gsctool.add_argument('-u', '--upstart', '-p', '--post_reset', dest='post_reset',
                      action='store_true')
+gsctool.add_argument('-D', '--dauntless', dest='dauntless', action='store_true')
 gsctool.add_argument('extras', nargs=argparse.REMAINDER)
 
 

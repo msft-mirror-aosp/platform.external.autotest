@@ -119,6 +119,8 @@ BOARDS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('octopus', 'sparky', ''),
         BoardInfo('octopus', 'sparky360', ''),
         BoardInfo('octopus', 'vortininja', ''),
+        BoardInfo('skyrim', 'skyrim6w360', ''),
+        BoardInfo('skyrim', 'skyrim15w360', ''),
         BoardInfo('snappy', 'snappy', '8'),
         BoardInfo('zork', 'dalboz', ''),
         BoardInfo('zork', 'ezkinil', ''),

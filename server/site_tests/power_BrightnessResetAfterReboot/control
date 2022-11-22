@@ -40,6 +40,6 @@ test_that -b <board> <host> power_BrightnessResetAfterReboot
 def run(machine):
     host = hosts.create_host(machine)
     job.run_test("power_BrightnessResetAfterReboot", host=host,
-                 disable_sysinfo=True, client_autotest="desktopui_SimpleLogin")
+                 client_autotest="desktopui_SimpleLogin")
 
 parallel_simple(run, machines)

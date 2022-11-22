@@ -9,7 +9,7 @@ CRITERIA = """
 Fails if the mount-encrypted helper does not operated as expected
 """
 TIME = "SHORT"
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "security"
 TEST_TYPE = "client"

@@ -4,7 +4,7 @@
 
 AUTHOR = "ChromeOS team"
 NAME = "platform_LogoutPerf"
-ATTRIBUTES = "suite:bvt-perbuild, suite:crosbolt_perf_perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:crosbolt_perf_perbuild, suite:distributed_lab_qual_bvt_shard2"
 TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "login"

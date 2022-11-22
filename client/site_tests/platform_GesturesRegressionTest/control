@@ -5,7 +5,7 @@
 AUTHOR = "Chromium OS Authors"
 NAME = "platform_GesturesRegressionTest"
 PURPOSE = "Regression tests of ChromeOS gestures library."
-ATTRIBUTES = "suite:bvt-perbuild, suite:touch"
+ATTRIBUTES = "suite:bvt-perbuild, suite:touch, suite:distributed_lab_qual_bvt_shard2"
 TIME = "SHORT"
 TEST_CATEGORY = "Regression"
 TEST_CLASS = "platform"

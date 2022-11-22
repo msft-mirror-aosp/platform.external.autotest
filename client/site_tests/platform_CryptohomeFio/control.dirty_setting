@@ -15,7 +15,7 @@ TEST_CLASS = 'platform'
 TEST_CATEGORY = 'Stress'
 TEST_TYPE = 'client'
 PY_VERSION = 3
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 
 sysctls_list = [
     { 'vm/dirty_background_ratio': 1 },

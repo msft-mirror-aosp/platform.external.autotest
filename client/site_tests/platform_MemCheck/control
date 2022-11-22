@@ -15,7 +15,7 @@ TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'platform'
 TEST_TYPE = 'client'
 JOB_RETRIES = 2
-ATTRIBUTES = "suite:bvt-perbuild, suite:memory_qual2"
+ATTRIBUTES = "suite:bvt-perbuild, suite:memory_qual2, suite:distributed_lab_qual_bvt_shard2"
 DEPENDENCIES = 'cleanup-reboot'
 PY_VERSION = 3
 

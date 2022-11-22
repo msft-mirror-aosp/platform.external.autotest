@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "The test fails in case of malfunctioning of CUPS printing stack (cupsd, cupstestppd, cups filters) for at least one of tested PPD files.",
 }
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 JOB_RETRIES = 0
 
 job.run_test(

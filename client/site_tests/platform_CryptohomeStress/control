@@ -6,7 +6,7 @@ TEST_CATEGORY = "Security"
 TEST_CLASS = "security"
 TEST_TYPE = "client"
 PY_VERSION = 3
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 
 DOC = """
 This is a stress test of the file system in Chromium OS. While performing the

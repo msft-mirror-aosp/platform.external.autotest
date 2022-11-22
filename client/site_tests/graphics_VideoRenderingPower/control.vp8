@@ -7,7 +7,7 @@ AUTHOR = "chromeos-gfx"
 NAME = "graphics_VideoRenderingPower.vp8"
 PURPOSE = "Measure power consumption of VP8 video rendering"
 
-ATTRIBUTES = "suite:graphics, suite:graphics_browser, suite:bvt-perbuild"
+ATTRIBUTES = "suite:graphics, suite:graphics_browser, suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Performance"
 TEST_CLASS = "graphics"

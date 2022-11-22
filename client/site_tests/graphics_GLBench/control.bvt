@@ -21,7 +21,7 @@ Note: it should nearly never be required to remove old versions of good/bad
 images from these directories.
 """
 # TODO(b/227756677) Add suite:infra_qual back to attributes
-ATTRIBUTES = "suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system"
+ATTRIBUTES = "suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system, suite:distributed_lab_qual_bvt_shard2"
 TIME='SHORT'
 TEST_CATEGORY = 'Performance'
 TEST_CLASS = "gl"

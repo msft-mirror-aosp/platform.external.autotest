@@ -5,7 +5,7 @@
 PY_VERSION = 3
 AUTHOR = 'chromeos-gfx'
 NAME = "graphics_Idle.arc"
-ATTRIBUTES = "suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system"
+ATTRIBUTES = "suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:graphics_system, suite:distributed_lab_qual_bvt_shard2"
 PURPOSE = "Verify that graphics behaves as expected on idle."
 CRITERIA = """
 This test will fail if we don't see the appropriate GPU idle states.

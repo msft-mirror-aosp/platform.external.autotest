@@ -38,7 +38,8 @@ class firmware_Cr50DeviceState(Cr50Test):
     # enough that cr50 has enough time to enter deep sleep twice, so we can
     # catch extra wakeups.
     SLEEP_TIME = 60
-    SHORT_WAIT = 5
+    ENTER_STATE_WAIT = 10
+    POWER_STATE_CHECK_TRIES = 6
     CONSERVATIVE_WAIT_TIME = SLEEP_TIME * 2
 
     DEEP_SLEEP_MAX = 2
@@ -428,9 +429,9 @@ class firmware_Cr50DeviceState(Cr50Test):
             elif state == 'G3':
                 self.faft_client.system.run_shell_command('poweroff', True)
 
-        time.sleep(self.SHORT_WAIT)
+        time.sleep(self.ENTER_STATE_WAIT)
         # check state transition
-        if not self.wait_power_state(state, self.SHORT_WAIT):
+        if not self.wait_power_state(state, self.POWER_STATE_CHECK_TRIES):
             raise error.TestFail('Platform failed to reach %s state.' % state)
 
     def enter_suspend(self, state):

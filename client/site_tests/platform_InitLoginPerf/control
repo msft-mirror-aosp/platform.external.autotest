@@ -2,18 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "The Chromium OS Authors"
 NAME = "platform_InitLoginPerf"
-PURPOSE = "Measures first boot initialization and login performance"
-TIME = "MEDIUM"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "platform"
+METADATA = {
+    "contacts": ["cros-hwsec@google.com", "zuan@chromium.org"],
+    "bug_component": "b:1188704",
+    "criteria": ("Client side test that measures the first boot initialization "
+                 "and login performance. This test goes through initialization "
+                 "and logins and measures performance. The stages are called by "
+                 "platform_InitLoginPerfServer."),
+    "hw_agnostic": False
+}
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This is the client-side test that goes through initialization and logins and
-measures performance. The stages are called by platform_InitLoginPerfServer.
-"""
 
 job.run_test('platform_InitLoginPerf')

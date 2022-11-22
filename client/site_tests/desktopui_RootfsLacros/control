@@ -9,7 +9,7 @@ TEST_CLASS = "platform"
 TEST_TYPE = "client"
 PURPOSE = "Get rootfs-lacros version."
 TIME = "SHORT"
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 PY_VERSION = 3
 DOC = """ Tests launching rootfs-lacros and checking version number. """
 

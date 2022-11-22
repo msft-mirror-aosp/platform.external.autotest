@@ -18,7 +18,7 @@ CRITERIA = """
 Same as security_NosymfollowMountOption.baseline with the added criteria that
 the chromiumos LSM code works alongside SELinux being enabled.
 """
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 TEST_CLASS = "security"
 TEST_CATEGORY = "Functional"
 TEST_TYPE = "client"

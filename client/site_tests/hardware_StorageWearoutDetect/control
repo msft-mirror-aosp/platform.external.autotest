@@ -19,7 +19,7 @@ PY_VERSION = 3
 # needs to be replaced. This test should not run in bvt-cq which will cause
 # flakes due to random machine allocation when a DUT nears end of life (and slow
 # bug filing/DUT replacement in lab).
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 JOB_RETRIES = 2
 PY_VERSION = 3
 

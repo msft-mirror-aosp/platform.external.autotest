@@ -10,7 +10,7 @@ TEST_CATEGORY = "Functional"
 TEST_CLASS = "logging"
 TEST_TYPE = "client"
 JOB_RETRIES = 0
-ATTRIBUTES = "suite:bvt-perbuild, suite:jailed_build, suite:partners"
+ATTRIBUTES = "suite:bvt-perbuild, suite:jailed_build, suite:partners, suite:distributed_lab_qual_bvt_shard1"
 DEPENDENCIES='cleanup-reboot'
 PY_VERSION = 3
 

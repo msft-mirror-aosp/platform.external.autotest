@@ -12,7 +12,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "power"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:bvt-perbuild, suite:partners"
+ATTRIBUTES = "suite:bvt-perbuild, suite:partners, suite:distributed_lab_qual_bvt_shard1"
 REQUIRE_SSP = False
 PY_VERSION = 3
 

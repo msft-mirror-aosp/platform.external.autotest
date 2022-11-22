@@ -4,7 +4,7 @@
 
 AUTHOR = "achuith"
 NAME = "login_GaiaLogin"
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "login"

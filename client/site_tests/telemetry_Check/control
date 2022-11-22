@@ -9,7 +9,7 @@ CRITERIA = """
 Test will fail if telemetry_check fails.
 """
 # crbug.com/1188852: Test fails on novato consistently.
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "login"

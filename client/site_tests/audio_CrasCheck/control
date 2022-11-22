@@ -11,7 +11,7 @@ does not match.
 '''
 # Temporarily remove the test to unblock PFQ.  See crbug/718171 in detail.
 #ATTRIBUTES = "suite:bvt-cq, suite:partners"
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'General'
 TEST_CLASS = 'audio'

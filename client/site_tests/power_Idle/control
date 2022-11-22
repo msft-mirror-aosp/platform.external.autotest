@@ -11,7 +11,7 @@ TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "client"
 ATTRIBUTES = ("suite:bvt-perbuild, suite:power_idle, suite:power_check, "
-              "suite:power_monitoring")
+              "suite:power_monitoring, suite:distributed_lab_qual_bvt_shard1")
 PY_VERSION = 3
 
 DOC = """

@@ -26,7 +26,7 @@ This autotest ensures that symlink traversal is blocked on filesystems that
 were mounted with the "nosymfollow" option, as well as that filesystems
 mounted without that option can still traverse symlinks.
 """
-ATTRIBUTES = "suite:bvt-perbuild"
+ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 TEST_CLASS = "security"
 TEST_CATEGORY = "Functional"
 TEST_TYPE = "client"

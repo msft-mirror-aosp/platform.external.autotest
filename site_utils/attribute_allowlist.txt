@@ -356,6 +356,7 @@ suite:debug_kernel_testing
 suite:deqp
 suite:dev_drone_image_test
 suite:display
+suite:distributed_lab_qual_bvt_shard1
 suite:distributed_lab_qual_faft
 suite:dmserver-enrollment-daily
 suite:dmserver-zteenrollment-daily

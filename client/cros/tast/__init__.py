@@ -10,9 +10,10 @@ import subprocess
 import grpc
 
 from google.protobuf import empty_pb2
-from autotest_lib.client.cros.tast.ui import conn_service_pb2_grpc
 from autotest_lib.client.cros.tast.ui import chrome_service_pb2_grpc
+from autotest_lib.client.cros.tast.ui import conn_service_pb2_grpc
 from autotest_lib.client.cros.tast.ui import conn_service_pb2
+from autotest_lib.client.cros.tast.ui import lacros_service_pb2_grpc
 
 # An arbitrary port number.
 _TCP_PORT = 23456
@@ -157,3 +158,22 @@ class ChromeService(chrome_service_pb2_grpc.ChromeServiceStub):
 
         subprocess.run(['stop', 'ui'])
         subprocess.run(['start', 'ui'])
+
+
+class LacrosService(lacros_service_pb2_grpc.LacrosServiceStub):
+    """Wraps LacrosServiceStub to call Close on exit."""
+
+    def __init__(self, channel):
+        super().__init__(channel)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            self.Close(empty_pb2.Empty())
+        except grpc.RpcError as rpc_error:
+            # Since Lacros gets terminated if all Lacros windows are already
+            # closed, LacrosServiceStub.Close can fail so we simply log the
+            # error but not raise an exception.
+            logging.warning(rpc_error.details())

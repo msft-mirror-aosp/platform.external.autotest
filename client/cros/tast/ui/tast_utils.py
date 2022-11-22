@@ -7,7 +7,7 @@
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2
 
 
-def make_current_screen_fullscreen(tconn_service):
+def make_current_screen_fullscreen(tconn_service, call_on_lacros=False):
     """Makes the current Chrome screen fullscreen.
 
     @param tconn_service: tconn_service instance connected to Chrome.
@@ -22,4 +22,5 @@ def make_current_screen_fullscreen(tconn_service):
                 (resolve) => chrome.windows.update(
                     window_id, { state: 'fullscreen' },
                     resolve));
-        })()'''))
+        })()'''),
+        call_on_lacros=call_on_lacros)

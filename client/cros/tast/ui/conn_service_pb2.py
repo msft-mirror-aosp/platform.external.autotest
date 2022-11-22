@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z chromiumos/tast/services/cros/ui',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x12\x63onn_service.proto\x12\x0ctast.cros.ui\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1bgoogle/protobuf/empty.proto\"\x1d\n\x0eNewConnRequest\x12\x0b\n\x03url\x18\x01 \x01(\t\"\x1d\n\x0fNewConnResponse\x12\n\n\x02id\x18\x01 \x01(\r\"&\n\x17NewConnForTargetRequest\x12\x0b\n\x03url\x18\x01 \x01(\t\"\x1a\n\x0c\x43loseRequest\x12\n\n\x02id\x18\x01 \x01(\r\"#\n\x15\x41\x63tivateTargetRequest\x12\n\n\x02id\x18\x01 \x01(\r\"*\n\x0fNavigateRequest\x12\n\n\x02id\x18\x01 \x01(\r\x12\x0b\n\x03url\x18\x02 \x01(\t\"+\n\x0f\x43onnEvalRequest\x12\n\n\x02id\x18\x01 \x01(\r\x12\x0c\n\x04\x65xpr\x18\x02 \x01(\t\"O\n\x0f\x43onnCallRequest\x12\n\n\x02id\x18\x01 \x01(\r\x12\n\n\x02\x66n\x18\x02 \x01(\t\x12$\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\x16.google.protobuf.Value\"]\n\x16\x43onnWaitForExprRequest\x12\n\n\x02id\x18\x01 \x01(\r\x12\x0c\n\x04\x65xpr\x18\x02 \x01(\t\x12\x14\n\x0ctimeout_secs\x18\x03 \x01(\r\x12\x13\n\x0b\x66\x61il_on_err\x18\x04 \x01(\x08\x32\x97\x05\n\x0b\x43onnService\x12H\n\x07NewConn\x12\x1c.tast.cros.ui.NewConnRequest\x1a\x1d.tast.cros.ui.NewConnResponse\"\x00\x12Z\n\x10NewConnForTarget\x12%.tast.cros.ui.NewConnForTargetRequest\x1a\x1d.tast.cros.ui.NewConnResponse\"\x00\x12=\n\x05\x43lose\x12\x1a.tast.cros.ui.CloseRequest\x1a\x16.google.protobuf.Empty\"\x00\x12<\n\x08\x43loseAll\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x00\x12O\n\x0e\x41\x63tivateTarget\x12#.tast.cros.ui.ActivateTargetRequest\x1a\x16.google.protobuf.Empty\"\x00\x12\x43\n\x08Navigate\x12\x1d.tast.cros.ui.NavigateRequest\x1a\x16.google.protobuf.Empty\"\x00\x12?\n\x04\x45val\x12\x1d.tast.cros.ui.ConnEvalRequest\x1a\x16.google.protobuf.Value\"\x00\x12?\n\x04\x43\x61ll\x12\x1d.tast.cros.ui.ConnCallRequest\x1a\x16.google.protobuf.Value\"\x00\x12M\n\x0bWaitForExpr\x12$.tast.cros.ui.ConnWaitForExprRequest\x1a\x16.google.protobuf.Empty\"\x00\x42\"Z chromiumos/tast/services/cros/uib\x06proto3'
+  serialized_pb=b'\n\x12\x63onn_service.proto\x12\x0ctast.cros.ui\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1bgoogle/protobuf/empty.proto\"5\n\x0eNewConnRequest\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x16\n\x0e\x63\x61ll_on_lacros\x18\x02 \x01(\x08\"\x1d\n\x0fNewConnResponse\x12\n\n\x02id\x18\x01 \x01(\r\">\n\x17NewConnForTargetRequest\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x16\n\x0e\x63\x61ll_on_lacros\x18\x02 \x01(\x08\"\x1a\n\x0c\x43loseRequest\x12\n\n\x02id\x18\x01 \x01(\r\"#\n\x15\x41\x63tivateTargetRequest\x12\n\n\x02id\x18\x01 \x01(\r\"*\n\x0fNavigateRequest\x12\n\n\x02id\x18\x01 \x01(\r\x12\x0b\n\x03url\x18\x02 \x01(\t\"+\n\x0f\x43onnEvalRequest\x12\n\n\x02id\x18\x01 \x01(\r\x12\x0c\n\x04\x65xpr\x18\x02 \x01(\t\"O\n\x0f\x43onnCallRequest\x12\n\n\x02id\x18\x01 \x01(\r\x12\n\n\x02\x66n\x18\x02 \x01(\t\x12$\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\x16.google.protobuf.Value\"]\n\x16\x43onnWaitForExprRequest\x12\n\n\x02id\x18\x01 \x01(\r\x12\x0c\n\x04\x65xpr\x18\x02 \x01(\t\x12\x14\n\x0ctimeout_secs\x18\x03 \x01(\r\x12\x13\n\x0b\x66\x61il_on_err\x18\x04 \x01(\x08\x32\x97\x05\n\x0b\x43onnService\x12H\n\x07NewConn\x12\x1c.tast.cros.ui.NewConnRequest\x1a\x1d.tast.cros.ui.NewConnResponse\"\x00\x12Z\n\x10NewConnForTarget\x12%.tast.cros.ui.NewConnForTargetRequest\x1a\x1d.tast.cros.ui.NewConnResponse\"\x00\x12=\n\x05\x43lose\x12\x1a.tast.cros.ui.CloseRequest\x1a\x16.google.protobuf.Empty\"\x00\x12<\n\x08\x43loseAll\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x00\x12O\n\x0e\x41\x63tivateTarget\x12#.tast.cros.ui.ActivateTargetRequest\x1a\x16.google.protobuf.Empty\"\x00\x12\x43\n\x08Navigate\x12\x1d.tast.cros.ui.NavigateRequest\x1a\x16.google.protobuf.Empty\"\x00\x12?\n\x04\x45val\x12\x1d.tast.cros.ui.ConnEvalRequest\x1a\x16.google.protobuf.Value\"\x00\x12?\n\x04\x43\x61ll\x12\x1d.tast.cros.ui.ConnCallRequest\x1a\x16.google.protobuf.Value\"\x00\x12M\n\x0bWaitForExpr\x12$.tast.cros.ui.ConnWaitForExprRequest\x1a\x16.google.protobuf.Empty\"\x00\x42\"Z chromiumos/tast/services/cros/uib\x06proto3'
   ,
   dependencies=[google_dot_protobuf_dot_struct__pb2.DESCRIPTOR,google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
 
@@ -43,6 +43,13 @@ _NEWCONNREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='call_on_lacros', full_name='tast.cros.ui.NewConnRequest.call_on_lacros', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -56,7 +63,7 @@ _NEWCONNREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=95,
-  serialized_end=124,
+  serialized_end=148,
 )
 
 
@@ -87,8 +94,8 @@ _NEWCONNRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=126,
-  serialized_end=155,
+  serialized_start=150,
+  serialized_end=179,
 )
 
 
@@ -107,6 +114,13 @@ _NEWCONNFORTARGETREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='call_on_lacros', full_name='tast.cros.ui.NewConnForTargetRequest.call_on_lacros', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -119,8 +133,8 @@ _NEWCONNFORTARGETREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=157,
-  serialized_end=195,
+  serialized_start=181,
+  serialized_end=243,
 )
 
 
@@ -151,8 +165,8 @@ _CLOSEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=197,
-  serialized_end=223,
+  serialized_start=245,
+  serialized_end=271,
 )
 
 
@@ -183,8 +197,8 @@ _ACTIVATETARGETREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=225,
-  serialized_end=260,
+  serialized_start=273,
+  serialized_end=308,
 )
 
 
@@ -222,8 +236,8 @@ _NAVIGATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=262,
-  serialized_end=304,
+  serialized_start=310,
+  serialized_end=352,
 )
 
 
@@ -261,8 +275,8 @@ _CONNEVALREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=306,
-  serialized_end=349,
+  serialized_start=354,
+  serialized_end=397,
 )
 
 
@@ -307,8 +321,8 @@ _CONNCALLREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=351,
-  serialized_end=430,
+  serialized_start=399,
+  serialized_end=478,
 )
 
 
@@ -360,8 +374,8 @@ _CONNWAITFOREXPRREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=432,
-  serialized_end=525,
+  serialized_start=480,
+  serialized_end=573,
 )
 
 _CONNCALLREQUEST.fields_by_name['args'].message_type = google_dot_protobuf_dot_struct__pb2._VALUE
@@ -449,8 +463,8 @@ _CONNSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=528,
-  serialized_end=1191,
+  serialized_start=576,
+  serialized_end=1239,
   methods=[
   _descriptor.MethodDescriptor(
     name='NewConn',

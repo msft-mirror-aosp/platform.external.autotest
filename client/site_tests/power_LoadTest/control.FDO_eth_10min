@@ -1,4 +1,4 @@
-# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,15 +6,15 @@
 # This test runs a load test consisting of cycling though web pages, playing
 # videos, etc. and measures battery power draw. The duration of this test is
 # determined by loop_time * loop_cnt.
-# 
+#
 # This version of test allows:
-#   - AC is connected.
-#   - Ethernet is connected.
+#  - AC is connected.
+#  - Ethernet is connected.
 #
 # "FDO" is short for "force discharge optional." Test will use EC command to
 # force DUT to discharge. If it fails, then use AC as the power source.
 
-NAME = "power_LoadTest.FDO_eth_1hr"
+NAME = "power_LoadTest.FDO_eth_10min"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",
@@ -22,13 +22,13 @@ METADATA = {
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ""
+ATTRIBUTES = ("suite:power_daily")
 TEST_TYPE = "client"
 
-# TODO (bleung): Find a way to do automatic Facebook login for test account.
-
-loop_time = 3600
+loop_time = 600
 loop_count = 1
+
+# TODO (bleung): Find a way to do automatic Facebook login for test account.
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

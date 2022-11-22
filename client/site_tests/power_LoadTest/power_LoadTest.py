@@ -40,7 +40,7 @@ from autotest_lib.client.cros.power import force_discharge_utils
 from autotest_lib.client.cros.tast.ui import chrome_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_tab
-from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
+from google.protobuf import empty_pb2
 
 params_dict = {
     'test_time_ms': '_mseconds',
@@ -306,7 +306,7 @@ class power_LoadTest(arc.ArcTest):
                                       **power_utils.encoding_kwargs())
 
 
-    def run_once(self, tast_bundle_path=None):
+    def run_once(self, tast_bundle_path=None, use_lacros=False):
         """Test main loop."""
         t0 = time.time()
 
@@ -338,9 +338,9 @@ class power_LoadTest(arc.ArcTest):
         self._tmp_keyvals['username'] = self._username
 
         with tast.GRPC(tast_bundle_path) as tast_grpc,\
-            tast.ConnService(tast_grpc.channel) as conn_service,\
-            tast.ChromeService(tast_grpc.channel) as chrome_service:
-            tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
+            tast.ChromeService(tast_grpc.channel) as chrome_service,\
+            tast.LacrosService(tast_grpc.channel) as lacros_service,\
+            tast.ConnService(tast_grpc.channel) as conn_service:
 
             chrome_new_request = chrome_service_pb2.NewRequest(
                     # b/228256145 to avoid powerd restart
@@ -358,8 +358,13 @@ class power_LoadTest(arc.ArcTest):
                     arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
                                 if self._run_arc and utils.is_arc_available()
                                 else chrome_service_pb2.ARC_MODE_DISABLED),
-                    unpacked_extensions = [ext_path],
                 )
+
+            if use_lacros:
+                chrome_new_request.lacros_unpacked_extensions.append(ext_path)
+                chrome_new_request.lacros.mode = chrome_service_pb2.Lacros.Mode.MODE_ONLY
+            else:
+                chrome_new_request.unpacked_extensions.append(ext_path)
 
             try:
                 chrome_service.New(chrome_new_request)
@@ -376,8 +381,14 @@ class power_LoadTest(arc.ArcTest):
                 self._tmp_keyvals['username'] = 'GUEST'
             self._tmp_keyvals['gaia_login'] = int(self._gaia_login)
 
+            if use_lacros:
+                # Launch Lacros. The window opened will be closed when startTest
+                # is run.
+                lacros_service.Launch(empty_pb2.Empty())
+
             response = conn_service.NewConnForTarget(conn_service_pb2.NewConnRequest(
-                url = _get_extension_bg_url(ext_path)
+                url = _get_extension_bg_url(ext_path),
+                call_on_lacros = use_lacros,
             ))
             extension = conn_tab.ConnTab(conn_service, response.id)
             set_var_script = ''

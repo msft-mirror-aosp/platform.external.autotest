@@ -4,25 +4,17 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_AudioBasicHotwording"
-PURPOSE = "Remotely controlled hotwording test."
-CRITERIA = ("This test will fail if the captured audio after hotword does not"
-            "match the original file.")
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the captured audio after hotword does not match the original file",
+    "doc" : "Tests hotwording function"
+}
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:audio_essential"
 DEPENDENCIES = "audio_box, hotwording"
 JOB_RETRIES = 1
-PY_VERSION = 3
-
-DOC = """
-This test remotely tests hotwording function.
-We need a DUT with hotwording function, chameleon with speaker and a quiet space
-to run the test (audio_box).
-"""
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

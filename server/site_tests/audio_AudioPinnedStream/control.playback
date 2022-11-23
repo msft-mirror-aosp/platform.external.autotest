@@ -4,23 +4,16 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-chameleon'
 NAME = 'audio_AudioPinnedStream.playback'
-PURPOSE = 'Verify audio pinned stream playback works correctly'
-CRITERIA = """
-This test will fail if pinned stream playback doesn't work as expected.
-"""
-TIME='SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if pinned stream playback doesn't work as expected.",
+    "doc" : "This test remotely tests pinned stream function."
+}
 TEST_TYPE = 'server'
 #ATTRIBUTES = "suite:audio_advanced"
-DEPENDENCIES = "chameleon, audio_board, test_audiojack, test_usbaudio"
-PY_VERSION = 3
-
-DOC = """
-This test remotely tests pinned stream function.
-"""
+DEPENDENCIES = "audio_board, test_audiojack, test_usbaudio"
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

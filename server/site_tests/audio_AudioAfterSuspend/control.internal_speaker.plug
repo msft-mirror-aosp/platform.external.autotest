@@ -6,29 +6,25 @@ from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_AudioAfterSuspend.internal_speaker.plug"
-PURPOSE = "Remotely controlled internal_speaker AFTER SUSPEND audio test."
-CRITERIA = "This test will fail if the captured audio does not match original file."
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the captured audio does not match original file.",
+    "doc" : " Tests speaker audio function against DUT after suspend"
+}
 TEST_TYPE = "server"
-#ATTRIBUTES = "suite:chameleon_audio_unstable"
+#ATTRIBUTES = "suite:audio_advanced"
 DEPENDENCIES = "audio_box"
-JOB_RETRIES = 1
-PY_VERSION = 3
 
-DOC = """
-This test remotely tests internal_speaker audio function against DUT after suspend.
-"""
 # Plug unplug sequnce
 # (plugged_before_suspend, plugged_after_suspend, plugged_before_resume,
 # plugged_after_resume)
 plug_status = [(False,True,True,False),
                (False,True,False,False),
-               (True,False,False,False),
-               (True,False,True,False),]
+               #(True,False,False,False),
+               #(True,False,True,False),
+              ]
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

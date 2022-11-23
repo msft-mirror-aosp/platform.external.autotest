@@ -7,22 +7,17 @@ from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_AudioAfterSuspend.internal_mic"
-PURPOSE = "Remotely controlled internal_mic AFTER SUSPEND audio test."
-CRITERIA = "This test will fail if the captured audio does not match original file."
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the captured audio does not match original file.",
+    "doc" : " Tests internal mic audio function against DUT after suspend"
+}
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:audio_essential"
 DEPENDENCIES = "audio_box"
 JOB_RETRIES = 1
-PY_VERSION = 3
-
-DOC = """
-This test remotely tests internal_mic audio function against DUT after suspend.
-"""
 
 # Plug unplug sequnce
 # (plugged_before_suspend, plugged_after_suspend, plugged_before_resume,

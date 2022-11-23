@@ -6,22 +6,17 @@ from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_AudioArtifacts.hsp"
-PURPOSE = "Remotely controlled bluetooth HSP audio artifacts test."
-CRITERIA = "This test will fail if the recorded audio contains artifacts"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the recorded audio contains artifacts",
+    "doc" : " Tests BT HSP artifacts against DUT"
+}
 TEST_TYPE = "server"
-#ATTRIBUTES = "suite:chameleon_audio_unstable"
+#ATTRIBUTES = "suite:audio_advanced"
 DEPENDENCIES = "chameleon, audio_board, test_bluetooth"
 JOB_RETRIES = 1
-PY_VERSION = 3
-
-DOC = """
-This test remotely tests bluetooth HSP audio artifacts against DUT.
-"""
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

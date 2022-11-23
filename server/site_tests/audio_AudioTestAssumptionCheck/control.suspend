@@ -4,20 +4,17 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_AudioTestAssumptionCheck.suspend"
-PURPOSE = "Functionality check for chrome.audio and suspend."
-CRITERIA = """
-This test will fail if target fail to suspend or wake up after a suspension.
-"""
-ATTRIBUTES = "suite:audio_advanced"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if functions that audio tests rely on are broken after suspend-resume.",
+    "doc" : "This test audio functions work correctly after suspend."
+}
 TEST_TYPE = "server"
-DEPENDENCIES = 'chameleon, audio_board'
+#ATTRIBUTES = "suite:audio_advanced"
+DEPENDENCIES = "chameleon, audio_board"
 JOB_RETRIES = 1
-PY_VERSION = 3
 
 DOC = """
 This test remotely tests if suspend, audio tests rely on, work correctly.

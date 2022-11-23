@@ -4,22 +4,17 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_AudioBasicExternalMicrophone.quality"
-PURPOSE = "Remotely controlled external microphone audio test with quality check."
-CRITERIA = "This test will fail if the captured audio does not match original file."
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the captured audio does not match original file.",
+    "doc" : "Tests external mic audio with quality check"
+}
 TEST_TYPE = "server"
-#ATTRIBUTES = "suite:chameleon_audio_unstable"
+#ATTRIBUTES = "suite:audio_advanced"
 DEPENDENCIES = "chameleon, audio_board, test_audiojack"
 JOB_RETRIES = 1
-PY_VERSION = 3
-
-DOC = """
-This test remotely tests external microphone audio function and quality.
-"""
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

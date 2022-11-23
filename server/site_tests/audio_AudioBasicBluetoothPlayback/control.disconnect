@@ -4,23 +4,17 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_AudioBasicBluetoothPlayback.disconnect"
-PURPOSE = "Remotely controlled bluetooth playback audio test."
-CRITERIA = "This test will fail if the captured audio does not match original file."
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the captured audio does not match original file.",
+    "doc" : "Tests BT playback audio function after disconnect-connect"
+}
 TEST_TYPE = "server"
-#ATTRIBUTES = "suite:chameleon_audio_unstable"
+#ATTRIBUTES = "suite:audio_advanceds"
 DEPENDENCIES = "chameleon, audio_board, test_bluetooth"
 JOB_RETRIES = 1
-PY_VERSION = 3
-
-DOC = """
-This test remotely tests bluetooth playback audio function
-after BT module disconnect and connect.
-"""
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

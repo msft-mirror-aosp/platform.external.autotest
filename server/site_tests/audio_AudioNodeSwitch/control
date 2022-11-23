@@ -6,15 +6,15 @@ from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server import utils
 
-AUTHOR = "ChromeOS Team"
 NAME = "audio_AudioNodeSwitch"
-PURPOSE = "Check if correct audio channel selected."
-CRITERIA = "This test will fail if expected audio channel is not selected."
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the audio node is not as expected.",
+    "doc" : "Tests selection of audio nodes"
+}
 TEST_TYPE = "server"
-#ATTRIBUTES = "chameleon_audio_unstable"
+ATTRIBUTES = "suite:audio_advanced"
 DEPENDENCIES = "audio_box, test_audio_jack_usb_hdmi"
 PY_VERSION = 3
 

@@ -6,20 +6,16 @@ from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server import utils
 
-AUTHOR = "Intel"
 NAME = "audio_AudioNodeSwitch.HDMI_while_playing_audio"
-PURPOSE = "Check if audio is routing through HDMI node"
-CRITERIA = "This test will fail if audio is not routing through selected node"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the audio node is not as expected.",
+    "doc" : "Check if audio is routing through HDMI node"
+}
+#ATTRIBUTES = "suite:audio_advanced"
 TEST_TYPE = "server"
 DEPENDENCIES = "audio_box, test_audio_jack_usb_hdmi"
-PY_VERSION = 3
-
-DOC = """
-This test remotely tests audio nodes selection and audio routing.
-"""
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

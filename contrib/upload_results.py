@@ -261,7 +261,10 @@ def _configure_environment(bucket, force):
             bucket = input("input gcs bucket: ")
         _download_service_account(bucket, SERVICE_ACCOUNT_JSON_PATH)
 
-        upload_config_dict = {"bucket": bucket}
+        upload_config_dict = {
+            "bucket": bucket,
+            "service_account": SERVICE_ACCOUNT_JSON_PATH
+        }
         with open(UPLOAD_CONFIG_JSON_PATH, "w") as cf:
             cf.write(json.dumps(upload_config_dict))
 
@@ -291,6 +294,7 @@ def _load_config():
     Raises:
         Exception: If configuration directory does not have mandatory files
     """
+    _migrate_legacy_data_if_present()
 
     _assert_config_file_exists(SERVICE_ACCOUNT_JSON_PATH)
     _assert_config_file_exists(UPLOAD_CONFIG_JSON_PATH)

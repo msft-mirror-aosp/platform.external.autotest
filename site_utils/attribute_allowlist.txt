@@ -461,6 +461,7 @@ suite:moblab_quick
 suite:moblab_storage_qual
 suite:mtp
 suite:nbr
+suite:nbr-au
 suite:nbr-wifi
 suite:nearby-share
 suite:nearby-share-android

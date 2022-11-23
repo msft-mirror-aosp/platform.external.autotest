@@ -8,7 +8,6 @@ import six
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
-from autotest_lib.client.bin import utils as cat
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
@@ -107,20 +106,19 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         self.switcher.mode_aware_reboot(reboot_type = 'cold')
         super(firmware_CsmeFwUpdate, self).cleanup()
 
-    def read_current_bios_and_save(self):
+    def save_spi_bios(self):
         """
-        Dumps current bios from spi to two file.(working copy and backup)
-
-        @returns the working copy file path
-
+        Dumps current bios.
         """
-        # Dump the current spi bios to file
         self.spi_bios = self.ORIGINAL_BIOS
         logging.info("Copying current bios image to %s for upgrade " \
                      "test", self.spi_bios)
         self.faft_client.bios.dump_whole(self.spi_bios)
 
-        # Get the downgrade bios image from user or from shellball
+    def save_downgrade_bios(self):
+        """
+        Saves downgrade bios.
+        """
         self.downgrade_bios = self.DOWNGRADE_BIOS
         if self.bios_input:
             logging.info("Copying user given bios image to %s for downgrade " \
@@ -457,28 +455,23 @@ class firmware_CsmeFwUpdate(FirmwareTest):
                                       "failed (rc=%s)" % result.exit_status)
 
     def run_once(self):
-        if ('None' in cat.get_intel_cpu_uarch()):
-            raise error.TestNAError("The firmware_CsmeFwUpdate test is only " \
-                                    "applicable to Intel platforms. Skipping " \
-                                    "test.")
-
-        # Read current bios from SPI and create a backup copy
-        self.read_current_bios_and_save()
-
+        # Dump the current spi bios to file
+        self.save_spi_bios()
         if not self.check_if_me_blob_exist_in_image(self.spi_bios):
-            raise error.TestNAError("The me_rw blob is not present in the " \
+            raise error.TestNAError("The me_rw blob is not present in the "
                                     "current bios.  Skipping test.")
+
+        # Get the downgrade bios image from user or from shellball
+        self.save_downgrade_bios()
+        if not self.check_if_me_blob_exist_in_image(self.downgrade_bios):
+            raise error.TestNAError("The me_rw blob is not present in the "
+                                    "downgrade bios.  Skipping test.")
 
         # Check fmap scheme of the bios read from SPI
         spi_bios_fmap_ver = self.check_fmap_format(self.spi_bios)
 
         # Check fmap scheme of the default bios in shellball
         downgrade_bios_fmap = self.check_fmap_format(self.downgrade_bios)
-
-        # Check if me_rw blob is present in FW_MAIN
-        if not self.check_if_me_blob_exist_in_image(self.downgrade_bios):
-            raise error.TestNAError("Test setup issue : me_rw blob is not " \
-                                    "present in downgrade bios.")
 
         # Check if both of the bios versions use same fmap structure for me_rw
         if downgrade_bios_fmap not in spi_bios_fmap_ver:

@@ -4,18 +4,19 @@
 
 from autotest_lib.client.common_lib import utils
 
-AUTHOR = "ChromeOS Team"
-NAME = "power_KernelSuspend"
-ATTRIBUTES = "suite:jailed_build"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# Simple system suspend. This is the most basic suspend test.
 
-DOC = """
-Simple system suspend. This is the most basic suspend test.
-"""
+NAME = "power_KernelSuspend"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:jailed_build")
+TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)
 seconds = int(args_dict.get('seconds', 10))

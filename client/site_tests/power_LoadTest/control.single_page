@@ -2,29 +2,27 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# Description
+# This test measures the power of a single webpage including stats such as
+# cpu usage.
+#
+# @args: the website url to run the test with
+#
+# The following manual steps need to be performed on the device under test
+# before this test can be run:
+#   - make sure that Ethernet cable is disconnected and WiFi is connected
+#   - disconnect power cable
+
 NAME = "power_LoadTest.single_page"
-PURPOSE = "Measure power draw when system is under load."
-CRITERIA = "This test is a benchmark."
-TIME = "MEDIUM"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ""
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test measures the power of a single webpage including stats such as
-cpu usage.
-
-@args: the website url to run the test with
-
-The following manual steps need to be performed on the device under test
-before this test can be run:
-  - make sure that Ethernet cable is disconnected and WiFi is connected
-  - disconnect power cable
-
-You are now ready to run the test.
-"""
 
 # TODO (bleung): Find a way to do automatic Facebook login for test account.
 # TODO (tbroch): Find way to not replicate all these parameters that are common

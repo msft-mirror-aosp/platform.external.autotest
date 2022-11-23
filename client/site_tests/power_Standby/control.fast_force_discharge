@@ -2,25 +2,26 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# Description
+# This test measures the power draw during suspend.
+# 
+# Test uses RTC wake to transition from suspend to S0 every sample_hours for a
+# total standby time of test_hours.  The suspend to S0 transitions are added to
+#  1. Validate battery use
+#  2. Guarantee that suspend was maintained (no external/false wake)
+#  3. Create transitions which more closely model user's interaction.
+
 NAME = "power_Standby.fast_force_discharge"
-TIME = "MEDIUM"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
 # Disabled due to 0% pass rate over 30 days. See b/241832890
-# ATTRIBUTES = "suite:power_daily"
-PY_VERSION = 3
-
-DOC = """
-This test measures the power draw during suspend.
-
-Test uses RTC wake to transition from suspend to S0 every sample_hours for a
-total standby time of test_hours.  The suspend to S0 transitions are added to
-  1. Validate battery use
-  2. Guarantee that suspend was maintained (no external/false wake)
-  3. Create transitions which more closely model user's interaction.
-"""
+# ATTRIBUTES = ("suite:power_daily")
+TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

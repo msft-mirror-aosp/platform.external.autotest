@@ -2,23 +2,22 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
-NAME = "power_LoadTest.eth_1hour"
-ATTRIBUTES = ""
-PURPOSE = "Measure power draw when system is under load."
-CRITERIA = "This test is a benchmark."
-TIME = "LENGTHY"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-EXTENDED_TIMEOUT = 4500
-PY_VERSION = 3
+# Description
+# This test runs a load test consisting of cycling though web pages, playing
+# videos, etc. and measures battery power draw. The maximum duration of this test
+# in seconds is determined by the loop_time * loop_cnt.
 
-DOC = """
-This test runs a load test consisting of cycling though web pages, playing
-videos, etc. and measures battery power draw. The maximum duration of this test
-in seconds is determined by the loop_time * loop_cnt.
-"""
+NAME = "power_LoadTest.eth_1hour"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ""
+TEST_TYPE = "client"
+
 loop_time = 3600
 loop_count = 1
 

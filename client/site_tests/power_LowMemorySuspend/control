@@ -2,21 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Description
+# This is a suspending stress test. It suspends the system many times
+# when memory is low. It simulates the memory fragmentation by creating
+# many tabs and cycling tabs.
+
 NAME = "power_LowMemorySuspend"
-PURPOSE = "Low memory suspension tests."
-CRITERIA = """Fails if system hang or reboot during this test."""
-ATTRIBUTES = "suite:crosbolt_perf_weekly"
-AUTHOR="Vovo Yang"
-TIME = "LONG"
-TEST_CATEGORY = "Stress"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "Vovo Yang",
+    "bug_component": "b:167191",
+    "criteria": "Fails if system hang or reboot during this test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:crosbolt_perf_weekly")
 TEST_TYPE = "client"
-EXTENDED_TIMEOUT = 4500
-PY_VERSION = 3
-DOC = """
-This is a suspending stress test. It suspends the system many times
-when memory is low. It simulates the memory fragmentation by creating
-many tabs and cycling tabs.
-"""
 
 job.run_test('power_LowMemorySuspend')

@@ -2,20 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
-NAME = "power_StatsCPUFreq"
-ATTRIBUTES = "suite:power_build"
-PURPOSE = "Measure time spent at each CPU Frequency when system is idle."
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Performance"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# This test measures percentage time spent at each CPU frequency level when
+# the system is idle
 
-DOC = """
-This test measures percentage time spent at each CPU frequency level when
-the system is idle
-"""
+NAME = "power_StatsCPUFreq"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:power_build")
+TEST_TYPE = "client"
 
 job.run_test('power_StatsCPUFreq')

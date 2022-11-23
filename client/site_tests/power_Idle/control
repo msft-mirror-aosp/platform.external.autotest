@@ -2,34 +2,30 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# Description
+# This test records power related statistics while the system is idling.
+#
+#     Current tests,
+#
+#       | test# | seconds | display   | bluetooth |
+#       -------------------------------------------
+#       | 1     | 120     | off       | off       |
+#       | 2     | 120     | default   | off       |
+#       | 3     | 120     | default   | on - idle |
+#       | 4     | 120     | off       | on - idle |
+
 NAME = "power_Idle"
-PURPOSE = "Measure power usage when system is idle."
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark",
+    "requirements": ["pwr-batLife-0009-v01"],
+    "hw_agnostic": False,
+}
 ATTRIBUTES = ("suite:bvt-perbuild, suite:power_idle, suite:power_check, "
               "suite:power_monitoring, suite:distributed_lab_qual_bvt_shard1")
-PY_VERSION = 3
-
-DOC = """
-This test records power related statistics while the system is idling.
-
-    Current tests,
-
-      | test# | seconds | display   | bluetooth |
-      -------------------------------------------
-      | 1     | 120     | off       | off       |
-      | 2     | 120     | default   | off       |
-      | 3     | 120     | default   | on - idle |
-      | 4     | 120     | off       | on - idle |
-"""
-
-METADATA = {
-  'requirements': ['pwr-batLife-0009-v01']
-}
+TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

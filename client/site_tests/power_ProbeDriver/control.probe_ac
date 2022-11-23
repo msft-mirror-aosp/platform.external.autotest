@@ -2,30 +2,26 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# Description
+# This is a sample test that probes sysfs and makes sure that AC driver
+# is loaded and functioning.
+# Plug AC before run this test. This test will pass only if
+#     all of the following conditions occur:
+#     - Find exactly one AC."
+#     - AC is online."
+# This test will fail if all of the following conditions occur:
+# - Find one or more batteries.
+# - One of batteries is discharging.",
+
 NAME = "power_ProbeDriver.probe_ac"
-ATTRIBUTES = "suite:power_build"
-PURPOSE = "Confirm that AC driver is loaded and functioning."
-CRITERIA = """\
-Plug AC before run this test.
-
-This test will pass only if all of the following conditions occur:
-- Find exactly one AC.
-- AC is online.
-
-This test will fail if all of the following conditions occur:
-- Find one or more batteries.
-- One of batteries is discharging.
-"""
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:power_build")
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This is a sample test that probes sysfs and makes sure that AC driver
-is loaded and functioning.
-"""
 
 job.run_test('power_ProbeDriver', test_which='Mains')

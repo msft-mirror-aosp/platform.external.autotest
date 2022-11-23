@@ -2,28 +2,28 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# Description
+# This test records power related statistics while the system is idling.
+#
+#     Current tests,
+#
+#       | test# | seconds | display   | bluetooth |
+#       -------------------------------------------
+#       | 1     | 120     | off       | off       |
+#       | 2     | 120     | default   | off       |
+#       | 3     | 120     | default   | on - idle |
+#       | 4     | 120     | off       | on - idle |
+
 NAME = "power_Idle.fast"
-PURPOSE = "Measure power usage when system is idle."
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ""
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test records power related statistics while the system is idling.
-
-    Current tests,
-
-      | test# | seconds | display   | bluetooth |
-      -------------------------------------------
-      | 1     |  10     | off       | off       |
-      | 2     |  10     | default   | off       |
-      | 3     |  10     | default   | on - idle |
-      | 4     |  10     | off       | on - idle |
-"""
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

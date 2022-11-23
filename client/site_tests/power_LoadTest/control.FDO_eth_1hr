@@ -2,31 +2,28 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# Description
+# This test runs a load test consisting of cycling though web pages, playing
+# videos, etc. and measures battery power draw. The duration of this test is
+# determined by loop_time * loop_cnt.
+# 
+# This version of test allows:
+#   - AC is connected.
+#   - Ethernet is connected.
+#
+# "FDO" is short for "force discharge optional." Test will use EC command to
+# force DUT to discharge. If it fails, then use AC as the power source.
+
 NAME = "power_LoadTest.FDO_eth_1hr"
-ATTRIBUTES = "suite:power_daily"
-PURPOSE = "Measure power draw when system is under load."
-CRITERIA = "This test is a benchmark."
-TIME = "LENGTHY"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ""
 TEST_TYPE = "client"
-EXTENDED_TIMEOUT = 4500
-PY_VERSION = 3
-
-DOC = """
-This test runs a load test consisting of cycling though web pages, playing
-videos, etc. and measures battery power draw. The duration of this test is
-determined by loop_time * loop_cnt.
-
-
-This version of test allows:
-  - AC is connected.
-  - Ethernet is connected.
-
-"FDO" is short for "force discharge optional." Test will use EC command to
-force DUT to discharge. If it fails, then use AC as the power source.
-"""
 
 # TODO (bleung): Find a way to do automatic Facebook login for test account.
 

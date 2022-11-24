@@ -15,7 +15,7 @@ This test measures the battery charging time and enforces constraints. Before
 running this test, the battery charge should be less than 5% and the device
 should be plugged into AC. Also, the battery capacity at test time must be
 at least 80% of design capacity (battery wear can be 20% at most). Over the
-course of 3 hours, the battery charge should  increase by at least 90% of the
+course of testing, the battery charge should increase by at least 90% of the
 maximum battery charge.
 """
 

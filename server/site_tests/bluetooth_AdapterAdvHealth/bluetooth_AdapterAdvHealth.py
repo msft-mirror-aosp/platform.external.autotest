@@ -89,7 +89,9 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                 num_iterations=1)
 
 
-    @test_wrapper('Advertising peer test', devices={'BLE_MOUSE':1})
+    @test_wrapper('Advertising peer test',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def adv_peer_test(self):
         """Verify advertising from a peer"""
 

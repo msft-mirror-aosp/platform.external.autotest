@@ -247,6 +247,16 @@ class bluetooth_AdapterLEAdvertising(
 
         return discovered_service_data
 
+    def to_uuid16(self, uuid):
+        """Converts the UUID to 16-bit UUID.
+
+        Note that the UUID format is a hex string.
+
+        @param uuid: A 16-bit UUID in Bluez and a 128-bit UUID in Floss.
+
+        @return: The value of the 16-bit UUID.
+        """
+        return uuid[4:8] if self.floss else uuid
 
     def validate_scan_rsp_reception(self, peer, advertisement, discover_time):
         """Validate our advertisement's scan response is located by the peer
@@ -263,21 +273,46 @@ class bluetooth_AdapterLEAdvertising(
         @returns: True if scan response is discovered and is correct, else False
         """
 
-        scan_rsp_data = advertisement.get('ScanResponseData', {})
+        if self.floss:
+            scan_rsp_data = advertisement.get('scan_response',
+                                              {}).get('service_data', {})
+        else:
+            scan_rsp_data = advertisement.get('ScanResponseData', {})
 
-        # For now, scan response can only contain service data (ad type 0x16):
-        # It appears in a scan response event with the following format:
-        # 'Service Data (UUID 0xfef3): 010203...'
-        if '0x16' in scan_rsp_data:
-            service_uuid_data = scan_rsp_data['0x16']
+        def bytes_to_hex_str(b_list):
+            """Converts bytes to hex string.
 
-            # First two bytes of data make up 16 bit service UUID
-            uuid = service_uuid_data[1] * 256 + service_uuid_data[0]
-            # Subsequent bytes make up the service data
-            service_data = ''.join(
-                    ['{:02x}'.format(data) for data in service_uuid_data[2:]])
+            @param b_list: List of bytes to convert.
 
-            search_str = 'Service Data (UUID 0x{:4x}): {}'.format(
+            @return: A hexadecimal string.
+            """
+            return ''.join('%02x' % b for b in b_list)
+
+        for key, val in scan_rsp_data.items():
+            # For now, in Bluez scan response can only contain service data
+            # (ad type 0x16)
+            if not self.floss and int(key, 16) != 0x16:
+                continue
+
+            if self.floss:
+                uuid128, service_uuid_data = key, val
+                # A UUID in service data is represented as UUID128bit and
+                # we want to convert it to UUID16bit to find it in btmon.
+                uuid = self.to_uuid16(uuid128)
+
+                # Subsequent bytes make up the service data.
+                service_data = bytes_to_hex_str(service_uuid_data)
+            else:
+                service_uuid_data = val
+
+                # First two bytes of data make up 16 bit service UUID
+                uuid = bytes_to_hex_str(
+                        [service_uuid_data[1], service_uuid_data[0]])
+
+                # Subsequent bytes make up the service data
+                service_data = bytes_to_hex_str(service_uuid_data[2:])
+
+            search_str = 'Service Data (UUID 0x{}): {}'.format(
                     uuid, service_data)
             logging.debug('Searching btmon for content: {}'.format(search_str))
 
@@ -311,16 +346,31 @@ class bluetooth_AdapterLEAdvertising(
         @returns: True if advertisement is discovered and is correct, else False
         """
 
+        if self.floss:
+            expected_company_info = advertisement.get(
+                    'advertise_data', {}).get('manufacturer_data', {})
+            expected_service_uuids = advertisement.get(
+                    'advertise_data', {}).get('service_uuids', [])
+            expected_service_data = advertisement.get(
+                    'advertise_data', {}).get('service_data', {})
+            expected_solicit_uuids = advertisement.get(
+                    'advertise_data', {}).get('solicit_uuids', [])
+        else:
+            expected_company_info = advertisement.get('ManufacturerData', {})
+            expected_service_uuids = advertisement.get('ServiceUUIDs', [])
+            expected_service_data = advertisement.get('ServiceData', {})
+            expected_solicit_uuids = advertisement.get('SolicitUUIDs', [])
+
         self.results = {}
 
         # We locate the advertisement by searching for the ServiceData
         # attribute we configured.
         data_to_match_uuid, data_to_match_data = list(
-                advertisement['ServiceData'].items())[0]
+                expected_service_data.items())[0]
         data_to_match_data = ''.join(
                 format(d, '02x') for d in data_to_match_data)
         data_to_match = 'Service Data (UUID 0x{}): {}'.format(
-                data_to_match_uuid, data_to_match_data)
+                self.to_uuid16(data_to_match_uuid), data_to_match_data)
 
         start_time = time.time()
         found_adv = peer.FindAdvertisementWithAttributes([data_to_match],
@@ -335,9 +385,10 @@ class bluetooth_AdapterLEAdvertising(
         found_service_uuids = self._get_uuids_from_advertisement(
                 found_adv, 'Service')
 
-        for UUID in advertisement.get('ServiceUUIDs', []):
-            if int(UUID, 16) not in found_service_uuids:
-                logging.info('Service id %d not found in %s', int(UUID, 16),
+        for uuid in expected_service_uuids:
+            uuid_val = int(self.to_uuid16(uuid), 16)
+            if uuid_val not in found_service_uuids:
+                logging.info('Service id %d not found in %s', uuid_val,
                              str(found_service_uuids))
                 self.results['service_ids_found'] = False
                 return False
@@ -346,9 +397,10 @@ class bluetooth_AdapterLEAdvertising(
         found_solicit_uuids = self._get_uuids_from_advertisement(
                 found_adv, 'Solicit')
 
-        for UUID in advertisement.get('SolicitUUIDs', []):
-            if int(UUID, 16) not in found_solicit_uuids:
-                logging.info('Solicid ID %d not found in %s', int(UUID, 16),
+        for uuid in expected_solicit_uuids:
+            uuid_val = int(self.to_uuid16(uuid), 16)
+            if uuid_val not in found_solicit_uuids:
+                logging.info('Solicid ID %d not found in %s', uuid_val,
                              str(found_solicit_uuids))
                 self.results['solicit_ids_found'] = False
                 return False
@@ -356,40 +408,40 @@ class bluetooth_AdapterLEAdvertising(
         # Check that our Manufacturer info is correct
         company_info = self._get_company_data_from_advertisement(found_adv)
 
-        expected_company_info = advertisement.get('ManufacturerData', {})
-        for UUID in expected_company_info:
-            if int(UUID, 16) not in company_info:
+        for uuid in expected_company_info:
+            uuid_val = int(uuid, 16)
+            if uuid_val not in company_info:
                 logging.info('Company ID %d not found in advertisement',
-                        int(UUID, 16))
+                             uuid_val)
                 self.results['manufacturer_uuid_found'] = False
                 return False
 
-            expected_data = expected_company_info.get(UUID, None)
+            expected_data = expected_company_info.get(uuid, None)
             formatted_data = ''.join([format(d, '02x') for d in expected_data])
 
-            if formatted_data != company_info.get(int(UUID, 16)):
+            if formatted_data != company_info.get(uuid_val):
                 logging.info('Manufacturer data %s didn\'t match expected %s',
-                        company_info.get(int(UUID, 16)), formatted_data)
+                             company_info.get(uuid_val), formatted_data)
                 self.results['manufacturer_data_found'] = False
                 return False
 
         # Check that our service data is correct
         service_data = self._get_service_data_from_advertisement(found_adv)
 
-        expected_service_data = advertisement.get('ServiceData', {})
-        for UUID in expected_service_data:
-            if int(UUID, 16) not in service_data:
+        for uuid in expected_service_data:
+            uuid_val = int(self.to_uuid16(uuid), 16)
+            if uuid_val not in service_data:
                 logging.info('Service UUID %d not found in advertisement',
-                             int(UUID, 16))
+                             uuid_val)
                 self.results['service_data_uuid_found'] = False
                 return False
 
-            expected_data = expected_service_data.get(UUID, None)
+            expected_data = expected_service_data.get(uuid, None)
             formatted_data = ''.join([format(d, '02x') for d in expected_data])
 
-            if formatted_data != service_data.get(int(UUID, 16)):
+            if formatted_data != service_data.get(uuid_val):
                 logging.info('Service data %s didn\'t match expected %s',
-                             service_data.get(int(UUID, 16)), formatted_data)
+                             service_data.get(uuid_val), formatted_data)
                 self.results['service_data_found'] = False
                 return False
 
@@ -448,7 +500,8 @@ class bluetooth_AdapterLEAdvertising(
         num_adv = 3
         self.test_reset_advertising()
 
-        advertisements = advertisements_data.gen_advertisements(0, num_adv)
+        advertisements = advertisements_data.gen_advertisements(
+                0, num_adv, floss=self.floss)
 
         for i in range(0, num_adv):
             self.bluetooth_facade.register_advertisement(advertisements[i])

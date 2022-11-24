@@ -128,6 +128,7 @@ class TradefedTest(test.test):
     _first_api_level = None
     _num_media_bundles = 0
     _abilist = []
+    _feature_list = []
 
     # A job will be aborted after 16h. Subtract 30m for setup/teardown.
     _MAX_LAB_JOB_LENGTH_IN_SEC = 16 * 60 * 60 - 30 * 60
@@ -1022,6 +1023,26 @@ class TradefedTest(test.test):
                     logging.error('Empty abilist.')
         return self._abilist
 
+    def _get_feature_list(self):
+        """Return the Android feature list via adb.
+
+        This method should only be called after the android environment is
+        successfully initialized."""
+        if not self._feature_list:
+            features_str = self._adb.run(
+                    self._hosts[0],
+                    args=('shell', 'pm', 'list', 'features')).stdout
+            for line in features_str.split():
+                if line.startswith('feature:'):
+                    self._feature_list.append(line[8:])
+        return self._feature_list
+
+    def _has_back_camera(self):
+        return 'android.hardware.camera.back' in self._get_feature_list()
+
+    def _is_back_camera_collect_test(self, test_name):
+        return 'camerabox.back' in test_name and 'collect-tests' in test_name
+
     def _get_release_branch_number(self):
         """Returns the DUT branch number (z of Rxx-yyyyy.z.w) or 0 on error."""
         if not self._release_branch_number:
@@ -1533,6 +1554,12 @@ class TradefedTest(test.test):
                                 'Specified ABI %s is not in the device ABI list %s. Skipping.',
                                 abi, abilist)
                         return
+
+                # Skip back-camera collect tests on devices without back camera
+                if (self._is_back_camera_collect_test(test_name) and
+                        not self._has_back_camera()):
+                    logging.info('No back camera. Skipping back-camera collect-tests.')
+                    return
 
                 # TODO(kinaba): Make it a general config (per-model choice
                 # of tablet,clamshell,default) if the code below works.

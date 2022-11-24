@@ -19,6 +19,7 @@ from autotest_lib.client.cros.tast.ui import tconn_service_pb2
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
 from autotest_lib.client.cros.tast.ui import conn_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_tab
+from autotest_lib.client.cros.tast.ui import lacros_service_pb2
 
 
 class power_VideoCall(power_test.power_Test):
@@ -52,7 +53,8 @@ class power_VideoCall(power_test.power_Test):
                  multitask=True,
                  min_run_time_percent=100,
                  webrtc=False,
-                 tast_bundle_path=None):
+                 tast_bundle_path=None,
+                 use_lacros=False):
         """run_once method.
 
         @param duration: time in seconds to display url and measure power.
@@ -87,24 +89,39 @@ class power_VideoCall(power_test.power_Test):
         logging.info('Starting gRPC Tast')
         with keyboard.Keyboard() as keys,\
             tast.GRPC(tast_bundle_path) as tast_grpc,\
-            tast.ConnService(tast_grpc.channel) as conn_service,\
-            tast.ChromeService(tast_grpc.channel) as chrome_service:
+            tast.ChromeService(tast_grpc.channel) as chrome_service,\
+            tast.LacrosService(tast_grpc.channel) as lacros_service,\
+            tast.ConnService(tast_grpc.channel) as conn_service:
             tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
 
-            chrome_service.New(chrome_service_pb2.NewRequest(
+            new_request = chrome_service_pb2.NewRequest(
                 # b/228256145 to avoid powerd restart
                 disable_features = ['FirmwareUpdaterApp'],
                 extra_args = self.get_extra_browser_args_for_camera_test(),
-            ))
+            )
+            if use_lacros:
+                new_request.lacros.mode = chrome_service_pb2.Lacros.Mode.MODE_ONLY
+                new_request.lacros_extra_args.extend(self.get_extra_browser_args_for_camera_test())
+            # Connect to Ash Chrome and login.
+            chrome_service.New(new_request)
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
             self._services.stop_services()
             self._multicast_disabler.disable_network_multicast()
 
-            response = conn_service.NewConn(conn_service_pb2.NewConnRequest(
-                url = 'about:blank'
-            ))
+            if use_lacros:
+                lacros_service.LaunchWithURL(lacros_service_pb2.LaunchWithURLRequest(
+                    url = 'about:blank'
+                ))
+                response = conn_service.NewConnForTarget(conn_service_pb2.NewConnForTargetRequest(
+                    url = 'about:blank',
+                    call_on_lacros = True
+                ))
+            else:
+                response = conn_service.NewConn(conn_service_pb2.NewConnRequest(
+                    url = 'about:blank'
+                ))
 
             tab_left = conn_tab.ConnTab(conn_service, response.id)
 
@@ -125,7 +142,8 @@ class power_VideoCall(power_test.power_Test):
                             (resolve) => chrome.windows.update(
                                 window_id, { state: 'fullscreen' },
                                 resolve));
-                    })()'''))
+                    })()''',
+                    call_on_lacros=use_lacros))
 
             logging.info('Navigating left window to %s', video_url)
             tab_left.Navigate(video_url)
@@ -147,10 +165,12 @@ class power_VideoCall(power_test.power_Test):
                                 { url: url, focused: true },
                                 () => resolve()));
                         }''',
-                    args=[arg_value]
+                    args=[arg_value],
+                    call_on_lacros=use_lacros
                     ))
                 response = conn_service.NewConnForTarget(conn_service_pb2.NewConnForTargetRequest(
-                    url = self.doc_url
+                    url = self.doc_url,
+                    call_on_lacros=use_lacros
                 ))
                 tab_right = conn_tab.ConnTab(conn_service, response.id)
                 tab_right.ActivateTarget()

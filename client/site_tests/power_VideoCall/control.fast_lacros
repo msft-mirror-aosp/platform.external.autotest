@@ -1,0 +1,32 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description
+# This is the Lacros variant for power_VideoCall.fast.
+# This test simulates video call multitasking and record power related statistic.
+#
+# Workload
+# - Camera preview in 720p using VP9 codec.
+# - Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
+# - Google Doc with emulated typing.
+#
+# The fast version only runs for 3 minutes to make sure the test works as expected.
+
+NAME = "power_VideoCall.fast_lacros"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
+TEST_TYPE = "client"
+
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_VideoCall', pdash_note=pdash_note, duration=180,
+             tag=NAME.split('.')[1], seconds_period=5,
+             tast_bundle_path=args_dict.get('tast_bundle_path'),
+             use_lacros=True)

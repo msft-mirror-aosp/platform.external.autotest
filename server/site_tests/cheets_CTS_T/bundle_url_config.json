@@ -1,0 +1,10 @@
+{
+    "public_base": "https://dl.google.com/dl/android/cts/",
+    "internal_base": "gs://chromeos-arc-images/cts/bundle/T/",
+    "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+    "preview_version_name": "9300319",
+    "abi_list": {
+        "arm": "test_suites_arm64",
+        "x86": "test_suites_x86_64"
+    }
+}

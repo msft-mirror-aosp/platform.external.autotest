@@ -1,0 +1,34 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'ARC++ Team'
+NAME = 'cheets_CTS_T.internal.arm.CtsHiddenApi'
+ATTRIBUTES = 'suite:arc-cts-t'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+PY_VERSION = 3
+DOC = 'Run module CtsHiddenApiBlocklistApi27TestCases, CtsHiddenApiBlocklistApi27TestCases[secondary_user], CtsHiddenApiBlocklistApi28TestCases, CtsHiddenApiBlocklistApi28TestCases[secondary_user], CtsHiddenApiBlocklistCurrentApiTestCases, CtsHiddenApiBlocklistCurrentApiTestCases[secondary_user], CtsHiddenApiBlocklistDebugClassTestCases, CtsHiddenApiBlocklistDebugClassTestCases[secondary_user], CtsHiddenApiBlocklistTestApiTestCases, CtsHiddenApiBlocklistTestApiTestCases[secondary_user], CtsHiddenApiKillswitchDebugClassTestCases, CtsHiddenApiKillswitchDebugClassTestCases[instant], CtsHiddenApiKillswitchDebugClassTestCases[secondary_user], CtsHiddenApiKillswitchSdkListTestCases, CtsHiddenApiKillswitchSdkListTestCases[instant], CtsHiddenApiKillswitchSdkListTestCases[secondary_user], CtsHiddenApiKillswitchWildcardTestCases, CtsHiddenApiKillswitchWildcardTestCases[instant], CtsHiddenApiKillswitchWildcardTestCases[secondary_user] of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_T',
+        hosts=host_list,
+        iterations=1,
+        tag='internal.arm.CtsHiddenApi',
+        test_name='cheets_CTS_T.internal.arm.CtsHiddenApi',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsHiddenApiBlocklistApi27TestCases', '--include-filter', 'CtsHiddenApiBlocklistApi27TestCases[secondary_user]', '--include-filter', 'CtsHiddenApiBlocklistApi28TestCases', '--include-filter', 'CtsHiddenApiBlocklistApi28TestCases[secondary_user]', '--include-filter', 'CtsHiddenApiBlocklistCurrentApiTestCases', '--include-filter', 'CtsHiddenApiBlocklistCurrentApiTestCases[secondary_user]', '--include-filter', 'CtsHiddenApiBlocklistDebugClassTestCases', '--include-filter', 'CtsHiddenApiBlocklistDebugClassTestCases[secondary_user]', '--include-filter', 'CtsHiddenApiBlocklistTestApiTestCases', '--include-filter', 'CtsHiddenApiBlocklistTestApiTestCases[secondary_user]', '--include-filter', 'CtsHiddenApiKillswitchDebugClassTestCases', '--include-filter', 'CtsHiddenApiKillswitchDebugClassTestCases[instant]', '--include-filter', 'CtsHiddenApiKillswitchDebugClassTestCases[secondary_user]', '--include-filter', 'CtsHiddenApiKillswitchSdkListTestCases', '--include-filter', 'CtsHiddenApiKillswitchSdkListTestCases[instant]', '--include-filter', 'CtsHiddenApiKillswitchSdkListTestCases[secondary_user]', '--include-filter', 'CtsHiddenApiKillswitchWildcardTestCases', '--include-filter', 'CtsHiddenApiKillswitchWildcardTestCases[instant]', '--include-filter', 'CtsHiddenApiKillswitchWildcardTestCases[secondary_user]', '--logcat-on-failure'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='CtsHiddenApi',
+        target_plan=None,
+        bundle='arm',
+        uri='DEV',
+        timeout=36000)
+
+parallel_simple(run_TS, machines)

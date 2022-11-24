@@ -1,7 +1,13 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 # Description
+# This is the Lacros variant of power_VideoPlayback.fast.
+#
 # This test makes sure that power_VideoPlayback working fine.
 
-NAME = "power_VideoPlayback.fast"
+NAME = "power_VideoPlayback.fast_lacros"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",
@@ -16,4 +22,5 @@ args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
 job.run_test('power_VideoPlayback', tag=NAME.split('.')[1], secs_per_video=10,
              pdash_note=pdash_note, seconds_period=1, fast=True,
-             tast_bundle_path=args_dict.get('tast_bundle_path'))
+             tast_bundle_path=args_dict.get('tast_bundle_path'),
+             use_lacros=True)

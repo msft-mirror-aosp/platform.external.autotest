@@ -12,6 +12,7 @@ from autotest_lib.client.cros import tast
 from autotest_lib.client.cros.tast.ui import chrome_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_tab
+from autotest_lib.client.cros.tast.ui import lacros_service_pb2
 from autotest_lib.client.cros.tast.ui import tast_utils
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
 from autotest_lib.client.cros.audio import audio_helper
@@ -108,17 +109,20 @@ class power_VideoTest(power_test.power_Test):
         return dropped_frame_percent
 
     def run_once(self, videos=None, secs_per_video=_MEASUREMENT_DURATION,
-                 use_hw_decode=True, tast_bundle_path=None):
+                 use_hw_decode=True, tast_bundle_path=None, use_lacros=False):
         """run_once method.
 
         @param videos: list of tuple of tagname and video url to test.
         @param secs_per_video: time in seconds to play video and measure power.
         @param use_hw_decode: if False, disable hw video decoding.
+        @param tast_bundle_path: Path to a tast_bundle executable.
+        @param use_lacros: Whether to use Lacros as the browser.
         """
 
 
         with tast.GRPC(tast_bundle_path) as tast_grpc,\
             tast.ChromeService(tast_grpc.channel) as chrome_service,\
+            tast.LacrosService(tast_grpc.channel) as lacros_service,\
             tast.ConnService(tast_grpc.channel) as conn_service:
             tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
 
@@ -130,6 +134,7 @@ class power_VideoTest(power_test.power_Test):
             if not use_hw_decode:
                 extra_args.append(self._DISABLE_HW_VIDEO_DECODE_ARGS)
 
+            # Connect to Ash Chrome and login.
             chrome_service.New(chrome_service_pb2.NewRequest(
                 # b/228256145 to avoid powerd restart
                 disable_features = ['FirmwareUpdaterApp'],
@@ -137,16 +142,28 @@ class power_VideoTest(power_test.power_Test):
                 arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
                             if self._arc_mode == arc_common.ARC_MODE_ENABLED
                             else chrome_service_pb2.ARC_MODE_DISABLED),
+                lacros = (chrome_service_pb2.Lacros(
+                    mode=chrome_service_pb2.Lacros.Mode.MODE_ONLY)
+                    if use_lacros else chrome_service_pb2.Lacros())
             ))
 
-            response = conn_service.NewConn(conn_service_pb2.NewConnRequest(
-                url = 'about:blank'
-            ))
+            if use_lacros:
+                lacros_service.LaunchWithURL(lacros_service_pb2.LaunchWithURLRequest(
+                    url = 'about:blank'
+                ))
+                response = conn_service.NewConnForTarget(conn_service_pb2.NewConnForTargetRequest(
+                    url = 'about:blank',
+                    call_on_lacros = True
+                ))
+            else:
+                response = conn_service.NewConn(conn_service_pb2.NewConnRequest(
+                    url = 'about:blank'
+                ))
             tab = conn_tab.ConnTab(conn_service, response.id)
             tab.ActivateTarget()
 
             # Run in fullscreen.
-            tast_utils.make_current_screen_fullscreen(tconn_service)
+            tast_utils.make_current_screen_fullscreen(tconn_service, call_on_lacros=use_lacros)
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.

@@ -141,7 +141,8 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
         os.remove(local_path)
 
     def run_once(self, videos=None, secs_per_video=_MEASUREMENT_DURATION,
-                 use_hw_decode=True, fast=False, tast_bundle_path=None):
+                 use_hw_decode=True, fast=False, tast_bundle_path=None,
+                 use_lacros=False):
         """run_once method.
 
         @param videos: list of tuple of tagname and video url to test.
@@ -149,6 +150,7 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
         @param use_hw_decode: if False, disable hw video decoding.
         @param fast: Use smaller set of videos when videos is None.
         @param tast_bundle_path: Path to a tast_bundle executable.
+        @param use_lacros: Whether to use Lacros as the browser.
         """
         default_videos = self._FAST_VIDEOS if fast else self._VIDEOS
         if not videos:
@@ -167,4 +169,5 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
                     raise error.TestError(estr)
 
         super(power_VideoPlayback, self).run_once(
-            videos, secs_per_video, use_hw_decode, tast_bundle_path)
+            videos, secs_per_video, use_hw_decode, tast_bundle_path,
+            use_lacros)

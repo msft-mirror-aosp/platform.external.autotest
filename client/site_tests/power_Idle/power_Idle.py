@@ -16,6 +16,7 @@ from autotest_lib.client.cros import tast
 from autotest_lib.client.cros.tast.ui import chrome_service_pb2
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
+from autotest_lib.client.cros.tast.ui import lacros_service_pb2
 
 
 class power_Idle(power_test.power_Test):
@@ -45,7 +46,7 @@ class power_Idle(power_test.power_Test):
                                            run_arc=run_arc)
 
     def run_once(self, warmup_secs=20, idle_secs=120, default_only=False,
-                 tast_bundle_path=None):
+                 tast_bundle_path=None, use_lacros=False):
         """Collect power stats for idle tests."""
 
         def measure_it(warmup_secs, idle_secs, tagname):
@@ -69,7 +70,8 @@ class power_Idle(power_test.power_Test):
 
         logging.info('Starting gRPC Tast')
         with tast.GRPC(tast_bundle_path) as tast_grpc,\
-            tast.ChromeService(tast_grpc.channel) as chrome_service:
+            tast.ChromeService(tast_grpc.channel) as chrome_service,\
+            tast.LacrosService(tast_grpc.channel) as lacros_service:
             tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
 
             chrome_service.New(chrome_service_pb2.NewRequest(
@@ -82,24 +84,45 @@ class power_Idle(power_test.power_Test):
                 arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
                             if self._arc_mode == arc_common.ARC_MODE_ENABLED
                             else chrome_service_pb2.ARC_MODE_DISABLED),
+                lacros = (chrome_service_pb2.Lacros(
+                    mode=chrome_service_pb2.Lacros.Mode.MODE_ONLY)
+                    if use_lacros else chrome_service_pb2.Lacros())
             ))
 
             # Measure power in full-screen blank tab.
             # In order to hide address bar, we call chrome.windows API twice.
             # TODO(b/253003075): Get rid of explicit promise by switching Tast
             # test extension to MV3.
-            tconn_service.Eval(tconn_service_pb2.EvalRequest(
-                expr='''(async () => {
-                    let window_id = await new Promise(
-                        (resolve) => chrome.windows.create(
-                            { url: ["about:blank"], focused: true },
-                            (window) => resolve(window.id)));
-                    await new Promise(
-                        (resolve) => chrome.windows.update(
-                            window_id, { state: 'fullscreen' },
-                            resolve));
-                })()'''
-            ))
+            if use_lacros:
+                lacros_service.LaunchWithURL(lacros_service_pb2.LaunchWithURLRequest(
+                    url = 'about:blank'
+                ))
+                tconn_service.Eval(tconn_service_pb2.EvalRequest(
+                    expr='''(async () => {
+                        let window_id = await new Promise(
+                            (resolve) => chrome.windows.getCurrent({},
+                            (window) => resolve(window.id))
+                        )
+                        await new Promise(
+                            (resolve) => chrome.windows.update(
+                                window_id, { state: 'fullscreen' },
+                                resolve));
+                    })()''',
+                    call_on_lacros=True
+                ))
+            else:
+                tconn_service.Eval(tconn_service_pb2.EvalRequest(
+                    expr='''(async () => {
+                        let window_id = await new Promise(
+                            (resolve) => chrome.windows.create(
+                                { url: ["about:blank"], focused: true },
+                                (window) => resolve(window.id)));
+                        await new Promise(
+                            (resolve) => chrome.windows.update(
+                                window_id, { state: 'fullscreen' },
+                                resolve));
+                    })()'''
+                ))
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.

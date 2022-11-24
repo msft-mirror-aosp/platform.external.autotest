@@ -1,0 +1,25 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description
+# This test records power related statistics while the system is idling.
+# This version tests only the default state of the DUT for 2 minutes.
+
+NAME = "power_Idle.default_lacros"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:crosbolt_perf_perbuild")
+TEST_TYPE = "client"
+
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_Idle', default_only=True, force_discharge='optional',
+             tast_bundle_path=args_dict.get('tast_bundle_path'),
+             pdash_note=pdash_note, tag=NAME.split('.')[1],
+             use_lacros=True)

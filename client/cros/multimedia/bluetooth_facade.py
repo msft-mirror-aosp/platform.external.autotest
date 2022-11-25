@@ -281,7 +281,7 @@ class BluetoothBaseFacadeLocal(object):
     BLUETOOTH_LIBDIR = '/var/lib/bluetooth'
 
     # How long to wait for hid device
-    HID_TIMEOUT = 15
+    HID_TIMEOUT = 20
     HID_CHECK_SECS = 2
 
     # Due to problems transferring a date object, we convert to stringtime first

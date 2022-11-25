@@ -255,10 +255,11 @@ class power_WakeSources(test.test):
         """Test if |wake_source| triggers a full resume.
 
         @param wake_source: wake source to test. One of |FULL_WAKE_SOURCES|.
-        @return: True, if we are able to successfully test the |wake source|
-            triggers a full wake.
+        @raises: error.TestFail if |wake_source| does not correctly trigger the
+            expected type of wake.
         """
         is_success = True
+        fail_msg = None
         logging.info(
                 'Testing wake by %s triggers a %s wake when dark resume is '
                 'enabled.', wake_source, 'full' if full_wake else 'dark')
@@ -267,7 +268,8 @@ class power_WakeSources(test.test):
             # Still run the _after_resume callback since we can do things like
             # stop charging.
             self._after_resume(wake_source)
-            return False
+            raise error.TestFail(
+                'Before suspend action failed for %s.' % wake_source)
 
         count_before = self._dr_utils.count_dark_resumes()
         rtc_wake = NET_UP_TIMEOUT
@@ -292,27 +294,28 @@ class power_WakeSources(test.test):
                 raise error.TestFail(
                         'Device failed to wakeup from backup wake sources'
                         ' (power button and RTC).')
-
-            return False
+            raise error.TestFail(
+                'Device did not resume from suspend for %s.' % wake_source)
 
         count_after = self._dr_utils.count_dark_resumes()
         if full_wake:
             if count_before != count_after:
-                logging.error('%s incorrectly caused a dark resume.',
-                              wake_source)
+                fail_msg = '%s incorrectly caused a dark resume.' % wake_source
+                logging.error(fail_msg)
                 is_success = False
             elif is_success:
                 logging.info('%s caused a full resume.', wake_source)
         else:
             if count_before == count_after:
-                logging.error('%s incorrectly caused a full resume.',
-                              wake_source)
+                fail_msg = '%s incorrectly caused a full resume.' % wake_source
+                logging.error(fail_msg)
                 is_success = False
             elif is_success:
                 logging.info('%s caused a dark resume.', wake_source)
 
         self._after_resume(wake_source)
-        return is_success
+        if not is_success:
+            raise error.TestFail(fail_msg)
 
     def _trigger_wake(self, wake_source):
         """Trigger wake using the given |wake_source|.
@@ -377,20 +380,34 @@ class power_WakeSources(test.test):
     def run_once(self):
         """Body of the test."""
 
-        test_ws = set(
-            ws for ws in FULL_WAKE_SOURCES if self._is_valid_wake_source(ws))
-        passed_ws = set(ws for ws in test_ws if self._test_wake(ws, True))
-        failed_ws = test_ws.difference(passed_ws)
-        skipped_ws = set(FULL_WAKE_SOURCES).difference(test_ws)
+        passed_ws = []
+        failed_ws = []
+        skipped_ws = []
+        fail_msgs = []
 
-        test_dark_ws = set(ws for ws in DARK_RESUME_SOURCES
-                           if self._is_valid_wake_source(ws))
-        skipped_ws.update(set(DARK_RESUME_SOURCES).difference(test_dark_ws))
-        for ws in test_dark_ws:
-            if self._test_wake(ws, False):
-                passed_ws.add(ws)
+        for ws in FULL_WAKE_SOURCES:
+            if not self._is_valid_wake_source(ws):
+                skipped_ws.append(ws)
+                continue
+            try:
+                self._test_wake(ws, True)
+            except error.TestFail as e:
+                failed_ws.append(ws)
+                fail_msgs.append(str(e))
             else:
-                failed_ws.add(ws)
+                passed_ws.append(ws)
+
+        for ws in DARK_RESUME_SOURCES:
+            if not self._is_valid_wake_source(ws):
+                skipped_ws.append(ws)
+                continue
+            try:
+                self._test_wake(ws, False)
+            except error.TestFail as e:
+                failed_ws.append(ws)
+                fail_msgs.append(str(e))
+            else:
+                passed_ws.append(ws)
 
         test_keyval = {}
 
@@ -404,15 +421,16 @@ class power_WakeSources(test.test):
 
         if passed_ws:
             logging.info('[%s] woke the device as expected.',
-                         ''.join(str(elem) + ', ' for elem in passed_ws))
+                         ', '.join(passed_ws))
 
         if skipped_ws:
             logging.info(
                 '[%s] are not wake sources on this platform. '
                 'Please test manually if not the case.',
-                ''.join(str(elem) + ', ' for elem in skipped_ws))
+                ', '.join(skipped_ws))
 
         if failed_ws:
-            raise error.TestFail(
-                '[%s] wake sources did not behave as expected.' %
-                (''.join(str(elem) + ', ' for elem in failed_ws)))
+            logging.info(
+                '[%s] wake sources did not behave as expected.',
+                ', '.join(failed_ws))
+            raise error.TestFail(' '.join(fail_msgs))

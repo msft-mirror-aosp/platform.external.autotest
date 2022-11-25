@@ -82,7 +82,8 @@ class power_LoadTest(arc.ArcTest):
                    log_mem_bandwidth=False,
                    gaia_login=None,
                    force_discharge='false',
-                   pdash_note=''):
+                   pdash_note='',
+                   run_arc=True):
         """
         percent_initial_charge_min: min battery charge at start of test
         check_network: check that Ethernet interface is not running
@@ -116,6 +117,7 @@ class power_LoadTest(arc.ArcTest):
             error when it fails, which is more friendly to devices without a
             battery.
         pdash_note: note of the current run to send to power dashboard.
+        run_arc: enable ARC when available.
         """
         self._backlight = None
         self._services = None
@@ -148,6 +150,7 @@ class power_LoadTest(arc.ArcTest):
         self._wait_time = 60
         self._stats = collections.defaultdict(list)
         self._pdash_note = pdash_note
+        self._run_arc = run_arc
 
         self._power_status = power_status.get_status()
 
@@ -353,7 +356,7 @@ class power_LoadTest(arc.ArcTest):
                         password=self._password,
                     ),
                     arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
-                                if utils.is_arc_available()
+                                if self._run_arc and utils.is_arc_available()
                                 else chrome_service_pb2.ARC_MODE_DISABLED),
                     unpacked_extensions = [ext_path],
                 )

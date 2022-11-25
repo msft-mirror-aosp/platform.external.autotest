@@ -1,0 +1,75 @@
+# Copyright (c) 2022 The ChromeOS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+# Description
+# This test runs a load test consisting of cycling though web pages, playing
+# videos, etc. and measures battery power draw, on Ethernet instead of WiFi,
+# with ARC disabled.  The duration of this test is determined by the seconds
+# variable. The following manual steps need to be performed on the device
+# under test before this test can be run:
+#   - make sure that Ethernet cable is connected and WiFi is disabled
+#   - disconnect power cable
+
+NAME = "power_LoadTest.video_noarc_eth_1hour"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ""
+TEST_TYPE = "client"
+
+loop_time = 3600
+loop_count = 1
+
+# Task format:
+# This sets the tasks variable in the extension directly via javascript.
+#
+# Args:
+# type: [window, cycle] Window will open a window with tabs for the duration of
+# the window. Cycle will cycle through the urls for the duration of the window
+# every delay ms.
+# name: name of the window
+# start: start time (ms)
+# duration: duration of task (ms)
+# delay: time for each url for the cycle type (ms)
+# timeout: time before loading a url times out for the cycle type (ms)
+# focus: whether the window should be in the foreground
+# tabs: list of urls for the window type
+# urls: list of urls to cycle through for the cycle type
+
+tasks = """
+[
+  {
+    type: 'window',
+    name: 'background',
+    start: 0,
+    duration: minutes(60),
+    focus: false,
+    tabs: [
+      'https://www.google.com/search?q=google',
+      'https://news.google.com',
+    ],
+  },
+  {
+    type: 'window',
+    name: 'video',
+    start: seconds(1),
+    duration: minutes(60),
+    focus: true,
+    tabs: [
+      'http://www.youtube.com/embed/YE7VzlLtp-4?autoplay=1&loop=1&playlist=YE7VzlLtp-4',
+    ],
+  },
+]
+"""
+
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_LoadTest', loop_time=loop_time, loop_count=loop_count,
+             test_low_batt_p=6, check_network=False, tasks=tasks, tag=NAME.split('.')[1],
+             pdash_note=pdash_note, run_arc=False)

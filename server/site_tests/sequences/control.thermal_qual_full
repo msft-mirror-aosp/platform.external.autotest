@@ -42,14 +42,14 @@ CLIENT_TESTS = [
 
     ('power_BatteryDrain', {
         'force_discharge' : True, 'drain_to_percent' : 30,
-        'drain_timeout': 5 * HOURS}),
+        'drain_timeout': 7 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_ThermalLoad', {'tag' : 'thermal_qual_full_charge'}),
     ('power_Speedometer2', {'tag' : 'thermal_qual_full_ThermalLoad_charge'}),
 
     ('power_BatteryDrain', {
         'force_discharge' : True, 'drain_to_percent' : 30,
-        'drain_timeout': 5 * HOURS}),
+        'drain_timeout': 7 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_VideoCall', {'tag' : 'thermal_qual_full_charge'}),
     ('power_Speedometer2', {'tag' : 'thermal_qual_full_VideoCall_charge'})

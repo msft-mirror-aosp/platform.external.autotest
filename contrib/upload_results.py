@@ -263,7 +263,9 @@ def _configure_environment(bucket, force):
 
         upload_config_dict = {
             "bucket": bucket,
-            "service_account": SERVICE_ACCOUNT_JSON_PATH
+            # these keys are needed for backwards compatibility
+            "service_account": SERVICE_ACCOUNT_JSON_PATH,
+            "boto_key": ""
         }
         with open(UPLOAD_CONFIG_JSON_PATH, "w") as cf:
             cf.write(json.dumps(upload_config_dict))

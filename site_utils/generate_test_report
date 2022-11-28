@@ -149,7 +149,7 @@ def parseResult(status_raw):
 def get_fields(line):
     indents = indent(line)
     items = line.split('\t')
-    # A "real" status line will at min have 5 fields.
+    # A "real" status line will at min have 6 fields.
     if len(items) < 6:
         return None
     status = items[0 + indents]

@@ -1,5 +1,7 @@
 # Autotest for Chromium OS developers
 
+_Self-link: [go/cros-autotest-doc](https://goto.google.com/cros-autotest-doc)_
+
 [TOC]
 
 ## Useful documents

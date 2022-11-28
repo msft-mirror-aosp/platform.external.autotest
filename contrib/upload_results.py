@@ -195,6 +195,12 @@ def _migrate_legacy_data_if_present():
             f'found legacy {PUB_SUB_KEY_JSON_NAME} file; renaming it to {SERVICE_ACCOUNT_JSON_NAME}'
         )
         os.rename(PUB_SUB_KEY_JSON_PATH, SERVICE_ACCOUNT_JSON_PATH)
+        with open(UPLOAD_CONFIG_JSON_PATH, "r") as cf:
+            persistent_settings = json.load(cf)
+        persistent_settings["service_account"] = SERVICE_ACCOUNT_JSON_PATH
+        persistent_settings["boto_key"] = ""
+        with open(UPLOAD_CONFIG_JSON_PATH, "w") as cf:
+            json.dump(persistent_settings, cf)
 
 
 def _environment_already_configured():

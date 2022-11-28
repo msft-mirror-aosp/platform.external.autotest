@@ -24,7 +24,7 @@ class firmware_ECSystemLocked(FirmwareTest):
 
         logging.info("Querying sysinfo.")
         verdict = self.ec.send_command_get_output("sysinfo",
-                                                  ["Flags:\s+([^\s]+)\s*.*$"])
+                                                  [r"Flags:\s+(locked|unlocked)[^\n]*\n"])
 
         if len(verdict) > 0 and len(verdict[0]) > 1:
             if verdict[0][1] != 'locked':

@@ -2,7 +2,7 @@
 
 This page links to more in depth autotetst guides located in this documentation directory.
 
-* [FAFT (Fully Automated Firmware Tests)](fatf-links.md)
+* [FAFT (Fully Automated Firmware Tests)](faft-links.md)
 * [Autotest Documentation For Enterprise](enterprise.md)
 * [Loading autotestPrivate extension on your device](loading-autotest-extension-on-device.md)
 * [Running WiFi tests](wificell.md)

@@ -2,24 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'rsorokin, alemate'
-NAME = 'login_OobeLocalization'
-PURPOSE = 'Tests different region configurations at OOBE.'
-CRITERIA = """
-Fails if the language or keyboard dropdowns in OOBE under a supported region
-configuration do not include the desired values.
-"""
+# Tests different region configurations at OOBE.
+#
+# This test verifies the locale and keyboard options present at OOBE under
+# supported region configurations.
+
+NAME = "login_OobeLocalization"
+METADATA = {
+    "contacts": ["cros-oobe@google.com", "bohdanty@google.com"],
+    "bug_component": "b:1263090", # ChromeOS > Software > OOBE
+    "criteria": "Fails if the language or keyboard dropdowns in OOBE under a supported region configuration do not include the desired values.",
+    "hw_agnostic": True
+}
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
-TIME = 'LENGTHY'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'login'
 TEST_TYPE = 'client'
 JOB_RETRIES = 2
-PY_VERSION = 3
-
-DOC = """
-This test verifies the locale and keyboard options present at OOBE under
-supported region configurations.
-"""
 
 job.run_test('login_OobeLocalization')

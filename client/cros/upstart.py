@@ -50,6 +50,14 @@ def is_running(service_name):
         sleep_interval=1)
     return utils.system_output(cmd).find('start/running') != -1
 
+def has_started(service_name):
+    """
+    Returns true if |service_name| is in start state.
+
+    @param service_name: name of service
+    """
+    cmd = 'status %s' % service_name
+    return utils.system_output(cmd).find('start/') != -1
 
 def get_pid(service_name):
     """
@@ -72,7 +80,7 @@ def restart_job(service_name, timeout=None):
     @param service_name: name of service
     """
 
-    if is_running(service_name):
+    if has_started(service_name):
         logging.debug('%s is already running: restart instead.', service_name)
         utils.system_output('restart %s' % service_name, timeout=timeout)
     else:

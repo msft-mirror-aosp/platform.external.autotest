@@ -2,21 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "rsorokin"
+# This test consists of two parts:
+#  * Login as a new user and setup a pin for the user
+#  * Login as an exising user with the pin
+# By default both parts are executed consequentially. To skip any part one could
+# use `setup_pin` and `login_pin` boolean parameters.
+
 NAME = "login_LoginPin"
+METADATA = {
+    "contacts": ["cros-lurs@google.com", "anastasiian@chromium.org"],
+    "bug_component": "b:1207311", # ChromeOS > Software > Commercial (Enterprise) > Identity > LURS
+    "criteria": "Login as a new user, setup pin, login again with the pin",
+}
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
-TIME = "SHORT"
-TEST_CATEGORY = "General"
 TEST_CLASS = "login"
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test consists of two parts:
- * Login as a new user and setup a pin for the user
- * Login as an exising user with the pin
-By default both parts are executed consequentially. To skip any part one could
-use `setup_pin` and `login_pin` boolean parameters.
-"""
 
 job.run_test('login_LoginPin')

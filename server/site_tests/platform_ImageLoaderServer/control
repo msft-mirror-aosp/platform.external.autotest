@@ -4,12 +4,14 @@
 
 AUTHOR = "kerrnel@chromium.org, ejcaruso@chromium.org"
 NAME = "platform_ImageLoaderServer"
+METADATA = {
+  "contacts": ["chromeos-core-services@google.com"],
+  "bug_component": "b:188251",
+  "criteria": "Integration testing of imageloader through DBus cmdline."
+}
 TIME = "SHORT"
-TEST_CATEGORY = "General"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
-PY_VERSION = 3
 
 DOC = """
 This test runs ImageLoader through its various dbus and command line

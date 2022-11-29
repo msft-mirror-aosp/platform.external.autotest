@@ -6,14 +6,14 @@ from autotest_lib.server import utils
 
 AUTHOR = "Intel"
 NAME = "firmware_RecoveryStress.rec_force_mrc"
-PURPOSE = "Servo based recovery stress test"
-CRITERIA = "This test will fail if DUT failed to boot into USB OS"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Servo based recovery stress test"
+}
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
 TIME = "SHORT"
-TEST_CATEGORY = "Stress"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
 DOC = """
 This test checks the following FAFT hardware requirement:

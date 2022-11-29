@@ -6,14 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_TypeCCharging"
-PURPOSE = "Remotely controlled USB type C charging test."
-CRITERIA = "This test will fail if Plankton type C VBUS voltage not in range."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Remotely controlled USB type C charging test."
+}
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
-PY_VERSION = 3
 
 DOC = """
 This test remotely emulates type C charging adapter with different source

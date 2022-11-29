@@ -6,14 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_StandbyPowerConsumption.30min"
-PURPOSE = "Collect power consumption during hibernate."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Collect power consumption during hibernate."
+}
 TIME = "LONG"
-TEST_CATEGORY = "Performance"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:powerplay"
 DEPENDENCIES = "servo_state:WORKING, powerplay"
-PY_VERSION = 3
 
 DOC = """
 This test collects and reports the power consumtion data during hibernate state.

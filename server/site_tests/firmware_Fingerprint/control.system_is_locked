@@ -18,10 +18,6 @@ METADATA = {
     "criteria": "Fails if FPMCU firmware is not locked.",
 }
 
-PURPOSE = """
-Verify that system_is_locked() is true in the firmware (i.e.,
-CONFIG_CMD_FPSENSOR_DEBUG) is disabled.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

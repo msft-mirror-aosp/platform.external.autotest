@@ -16,9 +16,6 @@ METADATA = {
     "criteria": "Fails if the bytes that we read do not exactly match the firmware that was flashed.",
 }
 
-PURPOSE = """
-Verify that we can read flash when RDP (readout protection) is set to level 0.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

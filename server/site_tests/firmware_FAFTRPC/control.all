@@ -6,15 +6,15 @@ from autotest_lib.server import utils
 
 AUTHOR = "kmshelton, waihong"
 NAME = "firmware_FAFTRPC.all"
-PURPOSE = "Verify that the RPC server, and all RPC functions, work as expected."
-CRITERIA = "This test will fail if the FAFT RPC system is not set up correctly."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "kmshelton@chromium.org", "waihong@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify that the RPC server, and all RPC functions, work as expected."
+}
 ATTRIBUTES = "suite:infra_qual, suite:py3-beta"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
 DOC = """
 This test checks that all RPC functions on all subsystems are connected,

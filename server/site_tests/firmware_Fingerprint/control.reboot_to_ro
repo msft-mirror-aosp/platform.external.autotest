@@ -14,9 +14,6 @@ METADATA = {
     "criteria": "Fails if unable to boot into RO fingerprint firmware.",
 }
 
-PURPOSE = """
-Validates that booting into RO fingerprint firmware succeeds.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

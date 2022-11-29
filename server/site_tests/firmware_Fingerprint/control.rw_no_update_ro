@@ -14,9 +14,6 @@ METADATA = {
     "criteria": "Fails if the RO firmware can be written while HW write protect is enabled.",
 }
 
-PURPOSE = """
-Verify HW write protect prevents RO fingerprint firmware modification.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

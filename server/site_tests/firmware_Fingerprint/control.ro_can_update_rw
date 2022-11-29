@@ -16,9 +16,6 @@ METADATA = {
     "criteria": "Fails if the RO fingerprint firmware cannot update the RW firmware.",
 }
 
-PURPOSE = """
-Validates that the RO fingerprint firmware can update the RW firmware.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

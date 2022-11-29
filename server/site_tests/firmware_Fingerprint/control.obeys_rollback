@@ -17,9 +17,6 @@ METADATA = {
     "criteria": "Fails if the rollback minimum version is not updated or min rollback version does not prevent running an older version.",
 }
 
-PURPOSE = """
-Verify that fingerprint firmware rollback functions correctly.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

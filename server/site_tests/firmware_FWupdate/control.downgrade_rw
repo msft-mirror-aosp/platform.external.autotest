@@ -4,12 +4,14 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_FWupdate.downgrade_rw"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "RO+RW firmware update using chromeos-firmwareupdate --mode=recovery"
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 RO+RW firmware update using chromeos-firmwareupdate --mode=recovery

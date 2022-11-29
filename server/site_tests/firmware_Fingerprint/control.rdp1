@@ -26,10 +26,6 @@ METADATA = {
     "criteria": "Fails if transitioning from RDP level 1 to RDP level 0 does not trigger a mass erase.",
 }
 
-PURPOSE = """
-Verify that when RDP (readout protection) is set to level 1 and then changed to
-level 0, a mass erase takes place.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

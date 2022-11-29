@@ -6,11 +6,14 @@ from autotest_lib.server import utils
 
 AUTHOR = "Cr50 FW team"
 NAME = "firmware_Cr50CCDUartStress"
-PURPOSE = "Run uart stress through the main servo device"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Run uart stress through the main servo device"
+}
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This is a test for Uart-USB bridging qualification.

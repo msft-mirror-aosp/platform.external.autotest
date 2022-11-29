@@ -14,9 +14,7 @@ METADATA = {
     "criteria": "Fails if reading from flash succeeds." ,
 }
 
-PURPOSE = """
-Verify that fingerprint flash cannot be read.
-"""
+
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

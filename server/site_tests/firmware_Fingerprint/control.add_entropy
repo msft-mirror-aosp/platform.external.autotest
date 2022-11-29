@@ -16,9 +16,6 @@ METADATA = {
     "criteria": "Fails if we can add entropy from RW or cannot add entropy from RO.",
 }
 
-PURPOSE = """
-Verify that the add_entropy behavior works correctly.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

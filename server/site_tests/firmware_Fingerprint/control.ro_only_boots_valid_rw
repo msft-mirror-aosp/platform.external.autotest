@@ -17,9 +17,6 @@ METADATA = {
     "criteria": "Fails if the RO firmware boots invalid RW firmware.",
 }
 
-PURPOSE = """
-Verify the RO fingerprint firmware only boots valid RW firmware.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

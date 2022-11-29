@@ -4,14 +4,14 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_RomSize with performance constraints."
-PURPOSE = "Ensure the firmware size is large enough."
-CRITERIA = "Firmware size must be >= 4MB."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Ensure the firmware size is large enough."
+}
 ATTRIBUTES = "suite:hwqual"
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "client"
-PY_VERSION = 3
 
 DOC = """
 This test relies on dmidecode to find the ROM Size.

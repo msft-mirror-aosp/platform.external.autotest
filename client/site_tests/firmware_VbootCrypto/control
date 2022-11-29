@@ -4,25 +4,13 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_VbootCrypto"
-PURPOSE = """
-Verifies Firmware Verified Boot Reference Implementation, its components, and
-crypto performance.
-"""
-CRITERIA = """
-This test is a benchmark.
-
-Errors in any of the following tests will cause a failure:
-  - _sha_test()
-  - _rsa_test()
-  - _image_verification_test()
-  - _rollback_tests()
-  - _splicing_tests()
-"""
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verifies Firmware Verified Boot Reference Implementation"
+}
 TIME = "LONG"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "client"
-PY_VERSION = 3
 
 DOC = """
 This test implements various RSA and SHA by creating and verifying various

@@ -4,12 +4,15 @@
 
 AUTHOR = "mruthven"
 NAME = "firmware_ClearTPMOwnerAndReset"
-PURPOSE = "Verify normal boot after clearing the tpm owner and rebooting the ec"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify normal boot after clearing the tpm owner and rebooting the ec"
+}
 TIME = "SHORT"
 TEST_TYPE = "server"
 JOB_RETRIES = 0
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test verifies the device doesn't get into a bad state when the EC is reset

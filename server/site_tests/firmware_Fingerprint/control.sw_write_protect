@@ -16,10 +16,6 @@ METADATA = {
     "criteria": "Fails if we can disable software write protect from RO or RW.",
 }
 
-PURPOSE = """
-Verify that software write protect cannot be disabled when hardware write
-protect is enabled.
-"""
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"

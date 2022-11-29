@@ -4,14 +4,17 @@
 
 AUTHOR = "hbarnor, ChromiumOS"
 NAME = "nbr_EndToEndTest.basic_wifi"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Test an NBR N-to-M recovery with Nebraska over WiFi."
+}
 TIME = "MEDIUM"
-PURPOSE = "Test an NBR N-to-M recovery with Nebraska over WiFi."
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, wificell"
 ATTRIBUTES = "suite:nbr-wifi"
-PY_VERSION = 3
 
 DOC = """
 This tests an N-to-M recovery. This means that it will recover from a ToT

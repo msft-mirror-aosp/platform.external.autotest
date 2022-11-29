@@ -2,16 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "hbarnor, ChromiumOS"
+AUTHOR = "hbarnor, Chromium OS"
 NAME = "nbr_NetworkInterruptions"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Test an NBR N-to-N recovery with network interruptions."
+}
 TIME = "MEDIUM"
-PURPOSE = "Test an NBR N-to-N recovery with persistent network interruption."
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 ATTRIBUTES = "suite:nbr"
-PY_VERSION = 3
 
 DOC = """
 This tests an N-to-N recovery with a persistent network failure during the

@@ -29,12 +29,7 @@ from autotest_lib.client.common_lib import mail, pidfile
 from autotest_lib.tko.parse import parse_one, export_tko_job_to_file
 from autotest_lib.tko.job_serializer import JobSerializer
 
-# Appends the moblab source paths for the pubsub wrapper
-if "MOBLAB_REPO_ROOT" in os.environ:
-    sys.path.append(os.path.join(os.environ["MOBLAB_REPO_ROOT"], "src"))
-else:
-    sys.path.append('/mnt/host/source/src/platform/moblab/src')
-from moblab_common import pubsub_client
+import pubsub_client
 
 STATUS_FILE = "status"
 STATUS_LOG_FILE = "status.log"

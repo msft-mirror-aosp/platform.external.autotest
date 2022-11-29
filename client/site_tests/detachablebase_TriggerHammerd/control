@@ -4,15 +4,15 @@
 
 NAME = "detachablebase_TriggerHammerd"
 AUTHOR = "ChromeOS Team"
-PURPOSE = "Check hammerd starts correctly on boot."
-CRITERIA = "This test will fail if hammerd returns non-zero value."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Check hammerd starts correctly on boot."
+}
 TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "detachablebase"
 TEST_TYPE = "client"
 ATTRIBUTES = "suite:bvt-perbuild"
 DEPENDENCIES = "detachablebase"
-PY_VERSION = 3
 
 DOC = """
 The test checks hammerd upstart job is triggered on boot and exits normally.

@@ -4,14 +4,17 @@
 
 AUTHOR = "yuanpengni, ChromiumOS"
 NAME = "autoupdate_MiniOS.with_os.m2n.full"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Test MiniOS M-to-N update with CrOS using full payload."
+}
 TIME = "MEDIUM"
-PURPOSE = "Tests MiniOS update."
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 ATTRIBUTES = "suite:nbr-au"
-PY_VERSION = 3
 DOC = """
 This tests the MiniOS update with the platform (OS) update. The M2N test
 provisions the DUT with stable version of the OS and miniOS, and updates

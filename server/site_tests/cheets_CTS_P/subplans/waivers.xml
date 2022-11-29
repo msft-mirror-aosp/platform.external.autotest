@@ -12,6 +12,7 @@
   <Entry include="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAeModeAndLock" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.info.get_physical_device_properties2#memory_properties" />
   <Entry include="CtsLibcoreTestCases libcore.libcore.io.OsTest#test_sendfile_errno" />
+  <Entry include="CtsNetTestCases android.net.wifi.cts.NsdManagerTest#testNDSManager" />
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_c_gms" />
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_glyph_pos_h_b" />
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_gradients_2pt_conical_inside_repeat" />

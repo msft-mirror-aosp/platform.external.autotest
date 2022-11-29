@@ -47,4 +47,5 @@
   <Entry include="CtsWidgetTestCases android.widget.cts.ToastTest" />
   <Entry include="CtsWidgetTestCases[instant] android.widget.cts.SearchView_CursorTest#testSuggestionSelection" />
   <Entry include="CtsWidgetTestCases[instant] android.widget.cts.ToastTest" />
+  <Entry include="CtsWifiTestCases android.net.wifi.cts.NsdManagerTest#testNDSManager" />
 </SubPlan>

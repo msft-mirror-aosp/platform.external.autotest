@@ -1,18 +1,19 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2013 The ChromiumOS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server import utils as server_utils
 
-AUTHOR = "cmtice@chromium.org c-compiler-chrome@google.com"
 NAME = "telemetry_Crosperf"
-TIME = "LONG"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "performance"
+METADATA = {
+    "contacts": ["c-compiler-chrome@google.com"],
+    "bug_component": "b:1038090",
+    "criteria": "Run Chrome telemetry tests under crosperf",
+}
+ATTRIBUTES = ""
 TEST_TYPE = "server"
 JOB_RETRIES = 0
-PY_VERSION = 3
 
 DOC = """
 This runs various Telemetry performance tests under the crosperf script.

@@ -23,7 +23,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
     # DBG image has to be able to set the AP RO hash with the board id set.
     MIN_DBG_VER = '1.6.100'
     MIN_RELEASE_MAJOR = 5
-    MIN_RELEASE_MINOR = 140
+    MIN_RELEASE_MINOR = 141
 
     APRO_PASS = 6
     APRO_FAIL = 2

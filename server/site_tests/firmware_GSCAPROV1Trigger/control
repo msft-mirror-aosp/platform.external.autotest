@@ -9,7 +9,7 @@ METADATA = {
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Test triggering AP RO verification"
 }
-ATTRIBUTES = "suite:faft_cr50_experimental"
+ATTRIBUTES = "suite:faft_cr50_experimental,suite:faft_gsc_nightly"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"

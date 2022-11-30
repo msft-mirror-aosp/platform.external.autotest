@@ -2,14 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 AUTHOR = "rnanjappan"
-NAME = "arc_playstore"
-PURPOSE = "Suite for automated ARC++ Playstore tests"
+NAME = "arc_core"
+PURPOSE = "Suite for automated ARC++ Core Functional tests"
 TIME = "LONG"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 DOC = """
-This is the part of the playstore test suite which should run.
+This is the part of the ARC Core test suite.
 @param build: The name of the image to test.
               Ex: x86-mario-release/R17-1412.33.0-a1-b29
 @param board: The board to test on.  Ex: x86-mario

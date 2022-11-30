@@ -1,20 +1,18 @@
-AUTHOR = "ChromeOS Team"
+# Description
+# Test video decode
+# - 1 hour of h264 1080p 30fps
+# - 1 hour of vp9 1080p 30fps
+
 NAME = "power_VideoPlayback.powerqual"
-PURPOSE = "Measure video playback power usage."
-
-CRITERIA = "This test is a benchmark."
-TIME = "LENGTHY"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
-ATTRIBUTES = ""
-PY_VERSION = 3
-
-DOC = """
-Test video decode
-- 1 hour of h264 1080p 30fps
-- 1 hour of vp9 1080p 30fps
-"""
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

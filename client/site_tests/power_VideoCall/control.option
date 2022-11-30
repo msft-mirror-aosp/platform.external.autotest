@@ -1,26 +1,26 @@
-AUTHOR = "jpmurphy"
-NAME = "power_VideoCall.option"
-PURPOSE = "Simulates video call multitasking."
-CRITERIA = "This test is a benchmark."
-TIME = "LENGTHY"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+# Description
+# This test simulates video call multitasking and record power related statistic.
+# 
+# This test accepts command line arguments to override default arguments to
+# run_once.
+# 
+# Default Workload
+# - Camera preview in 720p using VP9 codec.
+# - Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
+# - Google Doc with emulated typing.
+# 
+# The default run time is 2 hours to allow the DUT to heat up to steady state.
+
+NAME = ""
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "jpmurphy",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test simulates video call multitasking and record power related statistic.
-
-This test accepts command line arguments to override default arguments to
-run_once.
-
-Default Workload
-- Camera preview in 720p using VP9 codec.
-- Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
-- Google Doc with emulated typing.
-
-The default run time is 2 hours to allow the DUT to heat up to steady state.
-"""
 
 HOURS=60 * 60
 

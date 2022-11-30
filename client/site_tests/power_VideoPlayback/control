@@ -1,19 +1,17 @@
-AUTHOR = "ChromeOS Team"
-NAME = "power_VideoPlayback"
-PURPOSE = "Measure video playback power usage."
+# Description
+# This test records power related statistics while play back video file in various
+# format.
 
-CRITERIA = "This test is a benchmark."
-TIME = "LENGTHY"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+NAME = ""
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:power_check, suite:power_monitoring")
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:power_check, suite:power_monitoring"
-PY_VERSION = 3
-
-DOC = """
-This test records power related statistics while play back video file in various
-format.
-"""
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

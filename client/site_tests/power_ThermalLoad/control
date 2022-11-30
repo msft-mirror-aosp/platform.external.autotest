@@ -1,18 +1,17 @@
-AUTHOR = "puthik"
+# Description
+# This test records power and temperature related statistics while open WebGL
+# heavy page, WebGL Aquarium with 3000 fish.
+
 NAME = "power_ThermalLoad"
-PURPOSE = "Run thermal workload and log temperature."
-
-CRITERIA = "This test is a benchmark."
-TIME = "LONG"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "puthik",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test records power and temperature related statistics while open WebGL
-heavy page, WebGL Aquarium with 3000 fish.
-"""
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

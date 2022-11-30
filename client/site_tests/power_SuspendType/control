@@ -2,20 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "bbrotherton,chromeos-pvs-dev"
+# Description
+# This test verify that either mem or freeze suspend mode is supported
+
 NAME = "power_SuspendType"
-PURPOSE = "This test is used to verify requirement boot-perf-0003-v01."
-ATTRIBUTES = ""
-TIME = "SHORT"
-TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test verify that either mem or freeze suspend mode is supported
-"""
-
 METADATA = {
-    'requirements': ['boot-perf-0003-v01']
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "bbrotherton,chromeos-pvs-dev",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+    "requirements": ["boot-perf-0003-v01"]
 }
+ATTRIBUTES = ("")
+TEST_TYPE = "client"
 
 job.run_test('power_SuspendType')

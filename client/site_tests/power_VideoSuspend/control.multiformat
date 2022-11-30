@@ -7,21 +7,22 @@
 # To re-enable migrate to Python 3.
 # If the test is not migrated by 1/14/22 it will be deleted.
 
-AUTHOR = "ChromeOS Team"
+# Description
+# Suspends the system with a video playing.
+# 
+# This version of the test plays multiple formats (mp4, webm, ogg).
+
 NAME = "power_VideoSuspend.multiformat"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+}
 #TODO: move back to suite:kernel_daily_regression when test stable.
-ATTRIBUTES = "suite:experimental"
-TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
+ATTRIBUTES = ("suite:experimental")
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-Suspends the system with a video playing.
-
-This version of the test plays multiple formats (mp4, webm, ogg).
-"""
 
 videos = [
     'big_buck_bunny/big_buck_bunny_trailer_400p.mp4',

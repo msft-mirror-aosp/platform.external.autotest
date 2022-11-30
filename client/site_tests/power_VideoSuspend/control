@@ -2,18 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
-NAME = "power_VideoSuspend"
-ATTRIBUTES = "suite:kernel_daily_regression, suite:video"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# Suspends the system with a video playing.
 
-DOC = """
-Suspends the system with a video playing.
-"""
+NAME = "power_VideoSuspend"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:kernel_daily_regression, suite:video")
+TEST_TYPE = "client"
 
 videos = ['big_buck_bunny/big_buck_bunny_trailer_400p.mp4']
 base_url = 'http://commondatastorage.googleapis.com/chromeos-test-public/'

@@ -7,19 +7,19 @@
 # To re-enable migrate to Python 3.
 # If the test is not migrated by 1/14/22 it will be deleted.
 
-AUTHOR = "jwerner, chromeos-power"
-NAME = "power_SuspendStress.disk"
-ATTRIBUTES = "suite:jailed_build"
-PURPOSE = "Run repeated iterations of suspend/resume while stressing the disk."
-TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# Runs eight minutes of suspend/resume cycles in the background of a file I/O bench.
 
-DOC = """
-Runs eight minutes of suspend/resume cycles in the background of a file I/O bench.
-"""
+NAME = ""
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "jwerner, chromeos-power",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:jailed_build")
+TEST_TYPE = "client"
 
 DURATION=480
 INIT_DELAY=10

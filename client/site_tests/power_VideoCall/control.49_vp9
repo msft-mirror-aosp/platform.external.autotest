@@ -1,22 +1,22 @@
-AUTHOR = "puthik"
+# Description
+# This test simulates video call and record power related statistic.
+# 
+# Workload
+# -#  Camera preview in 135p using VP8 codec.
+# - 49 135p 24fps VP9 video playback.
+# 
+# The run time is 3 minutes.
+
 NAME = "power_VideoCall.49_vp9"
-PURPOSE = "Simulates video call."
-CRITERIA = "This test is a benchmark."
-TIME = "MEDIUM"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "puthik",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test simulates video call and record power related statistic.
-
-Workload
-- Camera preview in 135p using VP8 codec.
-- 49 135p 24fps VP9 video playback.
-
-The run time is 3 minutes.
-"""
 
 video_url = 'http://crospower.page.link/power_VideoCall_' + NAME.split('.')[1]
 

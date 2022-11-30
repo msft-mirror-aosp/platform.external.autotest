@@ -2,22 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "chromeos-platform-power"
-NAME = "power_SuspendStress.bareDaily"
-ATTRIBUTES = "suite:power_daily"
-PURPOSE = "Run repeated iterations of suspend/resume to find errors."
-TIME = "MEDIUM"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-EXTENDED_TIMEOUT = 7500
-PY_VERSION = 3
+# Description
+# Runs 250 iterations (~30mins) of bare suspend/resume cycles without additional
+# workload. Follows this by a few short checks to make sure the system is still in
+# a good state (work in progress, feel free to add some more).
 
-DOC = """
-Runs 250 iterations (~30mins) of bare suspend/resume cycles without additional
-workload. Follows this by a few short checks to make sure the system is still in
-a good state (work in progress, feel free to add some more).
-"""
+NAME = "power_SuspendStress.bare"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "chromeos-platform-power",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:jailed_build")
+TEST_TYPE = "client"
 
 job.run_test('power_SuspendStress', duration=None, suspend_iterations=250,
              tag='bare')

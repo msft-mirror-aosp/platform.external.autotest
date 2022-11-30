@@ -2,19 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "puthik"
-NAME = "power_WaitForCoolDown"
-PURPOSE = "Transition test to wait for DUT to cool down after thermal test."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-PY_VERSION = 3
+# Description
+# Transition test to wait for DUT to cool down after thermal test while collecting
+# power / thermal releated log.
 
-DOC = """
-Transition test to wait for DUT to cool down after thermal test while collecting
-power / thermal releated log.
-"""
+NAME = "power_WaitForCoolDown"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "puthik",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
+TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

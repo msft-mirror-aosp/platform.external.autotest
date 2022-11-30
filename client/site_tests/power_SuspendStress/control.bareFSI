@@ -2,25 +2,22 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "chromeos-power"
+# Description
+# Runs iterations of bare suspend/resume cycles without additional workload.
+# Follows this by a few short checks to make sure the system is still in a good
+# state (work in progress, feel free to add some more).
+
 NAME = "power_SuspendStress.bareFSI"
-PURPOSE = "Run repeated iterations of suspend/resume to find rare errors."
-TIME = "LONG"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "power"
-TEST_TYPE = "client"
-EXTENDED_TIMEOUT = 80000 # 20 hours + guard
-PY_VERSION = 3
-
-DOC = """
-Runs iterations of bare suspend/resume cycles without additional workload.
-Follows this by a few short checks to make sure the system is still in a good
-state (work in progress, feel free to add some more).
-"""
-
 METADATA = {
-    'requirements': ['pwr-susp-0001-v01']
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "chromeos-power",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+    "requirements": ["pwr-susp-0001-v01"]
 }
+ATTRIBUTES = ("")
+TEST_TYPE = "client"
 
 job.run_test('power_SuspendStress', duration=None, suspend_iterations=2500,
              modemfwd_workaround=True, tag='bareFSI')

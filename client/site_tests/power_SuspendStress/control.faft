@@ -2,22 +2,22 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "dchan"
+# Description
+# Runs eight minutes of bare suspend/resume cycles without additional workload.
+# Follows this by a few short checks to make sure the system is still in a good
+# state (work in progress, feel free to add some more).
+# Put .bare in a loop and run for 2 days.  This test replaces suspend resume test.
+
 NAME = "power_SuspendStress.faft"
-PURPOSE = "Run long repeated iterations of suspend/resume to find rare errors."
-TIME = "LONG"
-TEST_CATEGORY = "Stress"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "dchan",
+    "bug_component": "b:167191",
+    "criteria": "This test is a stress test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-Runs eight minutes of bare suspend/resume cycles without additional workload.
-Follows this by a few short checks to make sure the system is still in a good
-state (work in progress, feel free to add some more).
-
-Put .bare in a loop and run for 2 days.  This test replaces suspend resume test.
-"""
 
 # Suspend stress run per iteration in seconds.
 RUN_PER_ITER=480

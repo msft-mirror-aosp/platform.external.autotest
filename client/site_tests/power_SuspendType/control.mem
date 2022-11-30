@@ -1,21 +1,22 @@
 # Copyright 2022 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-AUTHOR = 'bbrotherton,chromeos-pvs-dev'
+
+# Description
+# Call this test to report if the DUT supports suspend type mem, if so it
+# will return a PASS result, if not it will return a FAIL result.
+
 NAME = 'power_SuspendType.mem'
-PURPOSE = 'This test is used to verify the client supports type mem'
-ATTRIBUTES = ''
-TIME = 'SHORT'
-TEST_TYPE = 'client'
-PY_VERSION = 3
-DOC = """
-Call this test to report if the DUT supports suspend type mem, if so it
-will return a PASS result, if not it will return a FAIL result.
-"""
-
 METADATA = {
-    'requirements': ['boot-perf-0004-v01']
-}
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "bbrotherton,chromeos-pvs-dev",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+    "requirements": ["boot-perf-0004-v01"]
 
+}
+ATTRIBUTES = ("")
+TEST_TYPE = "client"
 
 job.run_test('power_SuspendType', tag=NAME.split('.')[1], desired_suspend_type='mem')

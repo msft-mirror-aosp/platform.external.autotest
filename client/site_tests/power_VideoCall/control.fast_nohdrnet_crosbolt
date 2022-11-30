@@ -1,25 +1,24 @@
-AUTHOR = "puthik"
+# Description
+# This test simulates video call multitasking and record power related statistic.
+# 
+# Workload
+# - Camera preview in 720p using VP9 codec.
+# - Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
+# - Google Doc with emulated typing.
+# 
+# The fast version only runs for 3 minutes to make sure the test works as expected.
+# Crosbolt version adds force_discharge to collect total system power from battery.
+
 NAME = "power_VideoCall.fast_nohdrnet_crosbolt"
-PURPOSE = "Make sure power_VideoCall works fine."
-CRITERIA = "This test is a benchmark."
-TIME = "MEDIUM"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "puthik",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:crosbolt_perf_perbuild")
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:crosbolt_perf_perbuild"
-PY_VERSION = 3
-
-DOC = """
-This test simulates video call multitasking and record power related statistic.
-
-Workload
-- Camera preview in 720p using VP9 codec.
-- Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
-- Google Doc with emulated typing.
-
-The fast version only runs for 3 minutes to make sure the test works as expected.
-Crosbolt version adds force_discharge to collect total system power from battery.
-"""
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

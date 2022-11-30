@@ -1,20 +1,20 @@
-AUTHOR = "puthik"
+# Description
+# This test is power_ThermalLoad that can use custom args.
+# 
+# - duration: time in seconds to display url and measure power, default 2.5 hours.
+# - numfish: number of fish to pass to WebGL Aquarium, default 3000 fishes.
+
 NAME = "power_ThermalLoad.option"
-PURPOSE = "Run thermal workload and log temperature."
-
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "puthik",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
-PY_VERSION = 3
 
-DOC = """
-This test is power_ThermalLoad that can use custom args.
-
-- duration: time in seconds to display url and measure power, default 2.5 hours.
-- numfish: number of fish to pass to WebGL Aquarium, default 3000 fishes.
-"""
 HOURS=60 * 60
 
 args_dict = utils.args_to_dict(args)

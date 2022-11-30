@@ -1,21 +1,20 @@
-AUTHOR = "puthik"
+# Description
+# This test makes sure that power_VideoEncode is working fine while optionally
+# force discharge.
+# 
+# "FDO" is short for "force discharge optional." Test will use EC command to
+# force DUT to discharge. If it fails, then use AC as the power source.
+
 NAME = "power_VideoEncode.FDO_fast"
-PURPOSE = "Make sure video encode works fine with optional force discharge."
-
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "puthik",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test makes sure that power_VideoEncode is working fine while optionally
-force discharge.
-
-"FDO" is short for "force discharge optional." Test will use EC command to
-force DUT to discharge. If it fails, then use AC as the power source.
-"""
 
 formats = [
     ('h264', 'hd', 24),

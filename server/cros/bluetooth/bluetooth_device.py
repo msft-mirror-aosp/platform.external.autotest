@@ -1809,6 +1809,14 @@ class BluetoothDevice(object):
         return self._proxy.policy_set_service_allow_list(uuids)
 
     @proxy_thread_safe
+    def is_multi_adv_supported(self):
+        """Checks if multiple advertisements are supported.
+
+        @return: True on success, False on failure, None on DBus error.
+        """
+        return self._proxy.is_multi_adv_supported()
+
+    @proxy_thread_safe
     def policy_get_device_affected(self, device_address):
         """Get if the device is affected by enterprise policy.
 

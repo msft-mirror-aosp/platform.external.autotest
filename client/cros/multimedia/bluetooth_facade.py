@@ -11,6 +11,7 @@ from __future__ import print_function
 import base64
 import binascii
 import collections
+import copy
 from datetime import datetime, timedelta
 import glob
 # AU tests use ToT client code, but ToT -3 client version.
@@ -4338,6 +4339,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             "sand", "sentry", "snappy", "sona", "soraka", "stern", "teemo",
             "treeya360", "willow"
     ]
+    FLOSS_ADVERTISING_INTERVAL_UNIT = 0.625  # ms
 
     class DiscoveryObserver(BluetoothCallbacks):
         """ Discovery observer that restarts discovery until a timeout.
@@ -5018,6 +5020,13 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         raise error.TestError('Property %s is not supported in Floss',
                               prop_name)
 
+    def is_multi_adv_supported(self):
+        """Checks if multiple advertisements are supported.
+
+        @return: True on success, False on failure, None on DBus error.
+        """
+        return self.adapter_client.is_multi_advertisement_supported()
+
     def get_adapter_properties(self):
         """Gets the adapter properties.
 
@@ -5034,6 +5043,22 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             logging.debug('BT adapter roles for %s: %s', platform, roles)
         return json.dumps(properties)
 
+    def convert_adv_interval_unit(self, adv_interval):
+        """Convert Floss advertisement interval from ms to jiffies.
+        1 ms = 1.6 jiffies
+
+        @param adv_interval: advertising interval in ms.
+
+        @return: Interval in jiffies.
+        """
+        # Ensure converting a valid value.
+        if adv_interval % self.FLOSS_ADVERTISING_INTERVAL_UNIT:
+            raise error.TestError(
+                    'Invalid Floss advertisement interval %f. '
+                    'Should be the integer multiple of %f' %
+                    (adv_interval, self.FLOSS_ADVERTISING_INTERVAL_UNIT))
+        return round(adv_interval / self.FLOSS_ADVERTISING_INTERVAL_UNIT)
+
     def register_advertisement(self, advertisement_data):
         """Registers advertisement set with advertising data.
 
@@ -5041,6 +5066,11 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         @return: Empty string '' on success, error_msg otherwise.
         """
+        # Floss store passed interval value multiplied with 0.625.
+        adv_params = copy.deepcopy(advertisement_data['parameters'])
+        adv_params['interval'] = self.convert_adv_interval_unit(
+                adv_params['interval'])
+
         advertise_name = advertisement_data['advertise_name']
 
         if not advertise_name:
@@ -5050,9 +5080,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             raise error.TestError('The set of advertising name: %s is already '
                                   'registered', advertise_name)
 
-        parameters = (
-                self.advertising_client.make_dbus_advertising_set_parameters(
-                        advertisement_data['parameters']))
+        parameters = (self.advertising_client.
+                      make_dbus_advertising_set_parameters(adv_params))
 
         advertise_data = self.advertising_client.make_dbus_advertise_data(
                 advertisement_data['advertise_data'])

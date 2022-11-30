@@ -715,6 +715,7 @@ class BluetoothAdapterTests(test.test):
     # Constants about advertising Floss.
     DEFAULT_FLOSS_MIN_ADVERTISEMENT_INTERVAL_MS = 100
     DEFAULT_FLOSS_MAX_ADVERTISEMENT_INTERVAL_MS = 131.25
+    GAP_BETWEEN_MIN_AND_MAX_ADVERTISEMENT_INTERVAL_MS = 31.25
 
     # Error messages about advertising dbus methods.
     ERROR_FAILED_TO_REGISTER_ADVERTISEMENT = (
@@ -3075,6 +3076,10 @@ class BluetoothAdapterTests(test.test):
             return abs(expected - actual) / abs(expected) <= max_error
 
 
+        if self.floss:
+            max_adv_interval_ms = (
+                    min_adv_interval_ms +
+                    self.GAP_BETWEEN_MIN_AND_MAX_ADVERTISEMENT_INTERVAL_MS)
         start_str = 'Set Advertising Intervals:'
         search_strings = ['HCI Command: LE Set Advertising Data', 'Company']
         search_str = '|'.join(search_strings)
@@ -3364,13 +3369,19 @@ class BluetoothAdapterTests(test.test):
 
         # We need to know the intervals used to verify later. If advertisement
         # structure contains it, use them. Otherwise, use bluez's defaults
-        if set(advertisement_data) >= {'MinInterval', 'MaxInterval'}:
-            min_adv_interval_ms = advertisement_data['MinInterval']
-            max_adv_interval_ms = advertisement_data['MaxInterval']
-
+        if self.floss:
+            min_adv_interval_ms = advertisement_data['parameters']['interval']
+            max_adv_interval_ms = (
+                    min_adv_interval_ms +
+                    self.GAP_BETWEEN_MIN_AND_MAX_ADVERTISEMENT_INTERVAL_MS)
         else:
-            min_adv_interval_ms, max_adv_interval_ms = (
-                    self.get_default_advertisement_interval_range())
+            if set(advertisement_data) >= {'MinInterval', 'MaxInterval'}:
+                min_adv_interval_ms = advertisement_data['MinInterval']
+                max_adv_interval_ms = advertisement_data['MaxInterval']
+
+            else:
+                min_adv_interval_ms, max_adv_interval_ms = (
+                        self.get_default_advertisement_interval_range())
 
         # When registering a new advertisement, it is possible that another
         # instance is advertising. It may need to wait for all other

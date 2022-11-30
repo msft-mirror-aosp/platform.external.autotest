@@ -5,6 +5,7 @@
 
 """A Batch of Bluetooth advertising tests"""
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS)
 from autotest_lib.server.cros.bluetooth import advertisements_data
@@ -34,12 +35,17 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Multiple LE advertising test',
                   skip_chipsets=[
                           'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
-                          'Realtek-RTL8852A-USB',
-                          'Realtek-RTL8852C-USB'
+                          'Realtek-RTL8852A-USB', 'Realtek-RTL8852C-USB'
                   ],
-                  skip_common_errors=True)
+                  skip_common_errors=True,
+                  supports_floss=True)
     def adv_multiple_advertising_test(self):
         """Run all test cases for multiple advertisements."""
+        if self.floss:
+            if not self.bluetooth_facade.is_multi_adv_supported():
+                raise error.TestNAError(
+                        'DUT BT control does not support multiple '
+                        'advertisements')
         self.run_le_advertising_test(
                 self.host,
                 advertisements_data.gen_advertisements(floss=self.floss),
@@ -47,7 +53,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                 num_iterations=1)
 
 
-    @test_wrapper('Single LE advertising test')
+    @test_wrapper('Single LE advertising test', supports_floss=True)
     def adv_single_advertising_test(self):
         """Run all test cases for single advertisements."""
         self.run_le_advertising_test(

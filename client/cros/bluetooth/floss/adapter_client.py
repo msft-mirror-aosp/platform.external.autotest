@@ -579,6 +579,14 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         """Is LE extended advertising supported?"""
         return bool(self.proxy().IsLeExtendedAdvertisingSupported())
 
+    @glib_call(None)
+    def is_multi_advertisement_supported(self):
+        """Checks if multiple advertisements are supported.
+
+        @return: True on success, False on failure, None on DBus error.
+        """
+        return bool(self.proxy().IsMultiAdvertisementSupported())
+
     @glib_call(False)
     def start_discovery(self):
         """Starts discovery session."""

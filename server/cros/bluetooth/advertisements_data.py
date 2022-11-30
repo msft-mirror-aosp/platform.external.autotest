@@ -62,9 +62,7 @@ _ADV_TEMPLATE0_FLOSS = {
         'periodic_parameters': None,
         'periodic_data': None,
         'duration': 0,
-        'max_ext_adv_events': 0,
-        'MinInterval': 100,
-        'MaxInterval': 100
+        'max_ext_adv_events': 0
 }
 
 _ADV_TEMPLATE1_FLOSS = {
@@ -114,9 +112,7 @@ _ADV_TEMPLATE1_FLOSS = {
         'periodic_parameters': None,
         'periodic_data': None,
         'duration': 0,
-        'max_ext_adv_events': 0,
-        'MinInterval': 100,
-        'MaxInterval': 100
+        'max_ext_adv_events': 0
 }
 
 _ADV_TEMPLATE2_FLOSS = {
@@ -166,9 +162,7 @@ _ADV_TEMPLATE2_FLOSS = {
         'periodic_parameters': None,
         'periodic_data': None,
         'duration': 0,
-        'max_ext_adv_events': 0,
-        'MinInterval': 100,
-        'MaxInterval': 100
+        'max_ext_adv_events': 0
 }
 
 _ADV_TEMPLATE3_FLOSS = {
@@ -218,9 +212,7 @@ _ADV_TEMPLATE3_FLOSS = {
         'periodic_parameters': None,
         'periodic_data': None,
         'duration': 0,
-        'max_ext_adv_events': 0,
-        'MinInterval': 100,
-        'MaxInterval': 100
+        'max_ext_adv_events': 0
 }
 
 _ADV_TEMPLATE4_FLOSS = {
@@ -270,9 +262,7 @@ _ADV_TEMPLATE4_FLOSS = {
         'periodic_parameters': None,
         'periodic_data': None,
         'duration': 0,
-        'max_ext_adv_events': 0,
-        'MinInterval': 100,
-        'MaxInterval': 100
+        'max_ext_adv_events': 0
 }
 
 _ADV_TEMPLATE5_FLOSS = {
@@ -322,9 +312,7 @@ _ADV_TEMPLATE5_FLOSS = {
         'periodic_parameters': None,
         'periodic_data': None,
         'duration': 0,
-        'max_ext_adv_events': 0,
-        'MinInterval': 100,
-        'MaxInterval': 100
+        'max_ext_adv_events': 0
 }
 
 _NEARBY_BROADCAST_ADV_TEMPLATE_FLOSS = {
@@ -374,9 +362,7 @@ _NEARBY_BROADCAST_ADV_TEMPLATE_FLOSS = {
         'periodic_parameters': None,
         'periodic_data': None,
         'duration': 0,
-        'max_ext_adv_events': 0,
-        'MinInterval': 100,
-        'MaxInterval': 100
+        'max_ext_adv_events': 0
 }
 
 _NEARBY_MEDIUMS_FAST_ADV_TEMPLATE_FLOSS = {
@@ -426,9 +412,7 @@ _NEARBY_MEDIUMS_FAST_ADV_TEMPLATE_FLOSS = {
         'periodic_parameters': None,
         'periodic_data': None,
         'duration': 0,
-        'max_ext_adv_events': 0,
-        'MinInterval': 100,
-        'MaxInterval': 100
+        'max_ext_adv_events': 0
 }
 
 _ADV_TEMPLATE0 = {

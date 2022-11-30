@@ -62,6 +62,17 @@ class Cr50Test(FirmwareTest):
         if 'ccd' in self.servo.get_servo_version():
             self.servo.disable_ccd_watchdog_for_test()
 
+        if ((restore_cr50_image or restore_cr50_board_id) and
+            self.servo.main_device_uses_gsc_drv() and
+            self.gsc.running_mp_image()):
+                # Tests that restore the image or the board id have to update
+                # to the DBG image. This clears testlab mode. If a board relies
+                # on ccd for basic servo functionality, this could make the dut
+                # unusable. Skip the tests. Rely on other boards and prepvt
+                # images to cover the test.
+                raise error.TestNAError('Test clears testlab mode. Cannot '
+                        'run with mp images on boards that use ccd for servo')
+
         logging.info('Test Args: %r', full_args)
 
         self._devid = self.gsc.get_devid()

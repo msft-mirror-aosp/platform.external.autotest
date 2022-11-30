@@ -790,6 +790,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Get the RW version"""
         return self.get_active_version_info()[1].strip()
 
+    def running_mp_image(self):
+        """Returns True if gsc is running a mp image"""
+        major = int(self.get_version().split('.')[1])
+        return bool(major % 2)
 
     def get_full_version(self):
         """Get the complete RW version string."""

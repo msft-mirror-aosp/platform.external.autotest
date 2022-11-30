@@ -6,22 +6,17 @@
 
 from autotest_lib.client.common_lib import utils
 
-AUTHOR = 'ChromeOS Team'
 NAME = 'telemetry_Benchmarks.speedometer2'
+METADATA = {
+    'contacts': ['chromeos-perfmetrics-eng@google.com'],
+    'bug_component': 'b:1045832',  # ChromeOS > Software > Performance > TPS
+    'criteria': ('Executes the Telemetry Benchmark: speedometer2.'
+                 'Pass local=True to run with local telemetry and no AFE '
+                 'server.'),
+    'hw_agnostic': False
+}
 ATTRIBUTES = 'suite:crosbolt_perf_perbuild'
-TIME = 'LONG'
-TEST_CATEGORY = 'Benchmark'
-TEST_CLASS = 'performance'
 TEST_TYPE = 'server'
-PY_VERSION = 3
-
-DOC = '''
-This server side test suite executes the Telemetry Benchmark:
-speedometer2
-This is part of Chrome for ChromeOS performance testing.
-
-Pass local=True to run with local telemetry and no AFE server.
-'''
 
 def run_benchmark(machine):
     host = hosts.create_host(machine)

@@ -198,7 +198,50 @@ CONFIG['VM_MODULES_RULES'] = [
 # These VM testing are unstable, and will also run at regular frequency on
 # hardware.
 CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
-    # Mark as stable VM testing.
+    # These tests failed more than once between Oct/13 and Nov/09 2022.
+    "+CtsApp.*",
+    "+CtsBionic.*",
+    "+CtsCamera.*",
+    "+CtsJobScheduler.*",
+    "+CtsNet.*",
+    "+CtsOs.*",
+    "+CtsProvider.*",
+    "+CtsSimpleperfTestCases",
+    "+CtsStatsdHost.*",
+
+    # These tests has suspicious bug reports.
+    '+CtsAccessibility.*', # b/192310577, b/196934844
+    '+CtsApp.*', # b/216741475
+    '+CtsAssist.*', # b/160541876
+    '+CtsAutoFillService.*', # b/216897339
+    '+CtsBionic.*', # b/160851611
+    '+CtsBlobStore.*', # b/180681350
+    '+CtsBootStats.*', # b/174224484
+
+    # Tests between CtsA-CtsB that has no suspicious bug reports.
+    # This list will be removed once bug search finishes.
+    '-CtsAbiOverrideHost.*',
+    '-CtsAcceleration.*',
+    '-CtsAccountManager.*',
+    '-CtsAccountsHost.*',
+    '-CtsActivityManagerBackgroundActivity.*',
+    '-CtsAdb.*',
+    '-CtsAdmin.*',
+    '-CtsAlarmManager.*',
+    '-CtsAndroid.*',
+    '-CtsAngleIntegrationHost.*',
+    '-CtsAnimation.*',
+    '-CtsApacheHttpLegacy.*',
+    '-CtsApex.*',
+    '-CtsAslrMalloc.*',
+    '-CtsAtomicInstall.*',
+    '-CtsAtraceHost.*',
+    '-CtsAttentionServiceDevice.*',
+    '-CtsBackgroundRestrictions.*',
+    '-CtsBackup.*',
+    '-CtsBatterySaving.*',
+
+    # Initially selected trial stable test.
     '-CtsDreams.*',
 
     # Mark all tests unstable until migration.

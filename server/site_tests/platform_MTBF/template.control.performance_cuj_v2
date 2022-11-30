@@ -2,12 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'abergman, chromeos-engprod-platform-syd'
+AUTHOR = 'n/a'
 NAME = '{name}'
+METADATA = {
+    "contacts": ["chromeos-perf-reliability-eng@google.com", "abergman@google.com"],
+    "bug_component": "b:1025042",
+    "criteria": "Tauto wrapper for SPERA v2 Tast test.",
+    "hw_agnostic": True
+}
 ATTRIBUTES = '{attributes}'
 TIME = '{length}'
-TEST_CATEGORY = 'Stress'
-TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
 PRIORITY = {priority}
 MAX_RESULT_SIZE_KB = 1024 * 1024

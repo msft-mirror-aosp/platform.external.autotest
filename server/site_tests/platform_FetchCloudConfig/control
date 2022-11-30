@@ -2,11 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "abergman, chromeos-engprod-platform-syd"
+AUTHOR = "n/a"
 NAME = "platform_FetchCloudConfig"
+METADATA = {
+    "contacts": ["chromeos-perf-reliability-eng@google.com", "abergman@google.com"],
+    "bug_component": "b:1025042",
+    "criteria": "Not an actual test, but rather loads a fresh copy of the performance CUJ config from the cloud.",
+    "hw_agnostic": True
+}
 TIME = "SHORT"
-TEST_CATEGORY = "Stress"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 
 DOC = """

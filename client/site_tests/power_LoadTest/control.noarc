@@ -1,0 +1,33 @@
+# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description
+# This test runs a load test consisting of cycling though web pages, playing
+# videos, etc. and measures battery power draw, with ARC disabled. The
+# duration of this test is determined by the seconds variable.
+# The following manual steps need to be performed on the device under test
+# before this test can be run:
+#   - make sure that Ethernet cable is disconnected and WiFi is connected
+#   - disconnect power cable
+
+NAME = "power_LoadTest.noarc"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+TEST_TYPE = "client"
+
+# TODO (bleung): Find a way to do automatic Facebook login for test account.
+
+loop_time = 3600
+loop_count = 16
+
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_LoadTest', loop_time=loop_time, loop_count=loop_count,
+             test_low_batt_p=3, pdash_note=pdash_note, run_arc=False,
+	     tag=NAME.split('.')[1])

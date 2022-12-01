@@ -41,7 +41,7 @@ from autotest_lib.site_utils import test_runner_utils
 
 # These are arguments to the linux "perf" tool.
 # The -e value is processor specific and comes from the Intel SDM vol 3b
-INTEL_PROFILER_ARGS = 'record -a -e r20c4 -c 100003 -b'
+INTEL_PROFILER_ARGS = 'record -a -e r20c4 -c 150001 -b'
 
 ARM_PROFILER_ARGS = 'record -e cs_etm/autofdo/u -a -S'
 ETM_STROBING_WINDOW = 1000

@@ -17,6 +17,7 @@ from autotest_lib.client.common_lib import log
 from autotest_lib.client.common_lib import test as common_test
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server import hosts, autotest
+from autotest_lib.server.hosts import gsc_devboard_host
 
 
 class test(common_test.base_test):
@@ -116,6 +117,8 @@ class _sysinfo_logger(object):
         if not self.host:
             self.host = hosts.create_target_machine(
                     self.job.machine_dict_list[0])
+            if isinstance(self.host, gsc_devboard_host.GSCDevboardHost):
+                return
             try:
                 # Remove existing autoserv-* directories before creating more
                 self.host.delete_all_tmp_dirs([self.AUTOTEST_PARENT_DIR,
@@ -186,6 +189,8 @@ class _sysinfo_logger(object):
     @log.log_and_ignore_errors("pre-test server sysinfo error:")
     @install_autotest_and_run
     def before_hook(self, mytest, host, at, outputdir):
+        if isinstance(self.host, gsc_devboard_host.GSCDevboardHost):
+            return
         # run the pre-test sysinfo script
         at.run(_sysinfo_before_test_script % outputdir,
                results_dir=self.job.resultdir)
@@ -196,6 +201,8 @@ class _sysinfo_logger(object):
     @log.log_and_ignore_errors("pre-test iteration server sysinfo error:")
     @install_autotest_and_run
     def before_iteration_hook(self, mytest, host, at, outputdir):
+        if isinstance(self.host, gsc_devboard_host.GSCDevboardHost):
+            return
         # this function is called after before_hook() se we have sysinfo state
         # to push to the server
         self._push_pickle(host, outputdir);
@@ -212,6 +219,8 @@ class _sysinfo_logger(object):
     @log.log_and_ignore_errors("post-test iteration server sysinfo error:")
     @install_autotest_and_run
     def after_iteration_hook(self, mytest, host, at, outputdir):
+        if isinstance(self.host, gsc_devboard_host.GSCDevboardHost):
+            return
         # push latest sysinfo state to the client
         self._push_pickle(host, outputdir);
         # run the post-test iteration sysinfo script
@@ -227,6 +236,8 @@ class _sysinfo_logger(object):
     @log.log_and_ignore_errors("post-test server sysinfo error:")
     @install_autotest_and_run
     def after_hook(self, mytest, host, at, outputdir):
+        if isinstance(self.host, gsc_devboard_host.GSCDevboardHost):
+            return
         self._push_pickle(host, outputdir);
         # run the post-test sysinfo script
         at.run(_sysinfo_after_test_script %
@@ -246,6 +257,8 @@ class _sysinfo_logger(object):
         if not self.host:
             self.host = hosts.create_target_machine(
                     self.job.machine_dict_list[0])
+        if isinstance(self.host, gsc_devboard_host.GSCDevboardHost):
+            return
         output_path = '%s/sysinfo' % mytest.outputdir
         utils.run('mkdir -p %s' % output_path)
         crossystem_output = self.host.run_output('crossystem')
@@ -254,6 +267,8 @@ class _sysinfo_logger(object):
 
     def cleanup(self, host_close=True):
         if self.host and self.autotest:
+            if isinstance(self.host, gsc_devboard_host.GSCDevboardHost):
+                return
             try:
                 try:
                     self.autotest.uninstall()

@@ -1,0 +1,37 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "faft_gsc_devboard"
+PURPOSE = "Suite to run faft gsc devboard tests."
+
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This is the faft_gsc_devboard test suite.
+
+This will verify gsc images on devboards before they are released to ChromeOS.
+After the image is released and verified, we will update the chromeos image to
+include the new gsc image.
+
+@param build: The name of the image to test.
+              Ex: firmware-ti50-postsubmit/R111-15289.0.0-75500-8794056063434194849
+@param board: The board to test on.  Ex: andreiboard
+@param pool: The pool of machines to utilize for scheduling. If pool=None
+             board is used.
+@param check_hosts: require appropriate live hosts to exist in the lab.
+@param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = 'faft_gsc_devboard'
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

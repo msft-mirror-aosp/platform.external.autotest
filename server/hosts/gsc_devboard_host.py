@@ -17,6 +17,7 @@ try:
 except ImportError:
     logging.info("Docker API is not installed in this environment")
 
+from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import remote
 
 # Create this file in the chroot home directory
@@ -41,6 +42,14 @@ DEFAULT_SERVICE_PORT = 39999
 ULTRADEBUG = '18d1:0304'
 TI50 = '18d1:504a'
 
+# Host Info Attributes
+ULTRADEBUG_SERIAL_ATTR = 'ultradebug_serial'
+DEVBOARD_TYPE_ATTR = 'devboard_type'
+ANDREIBOARD_TYPE = 'andreiboard'
+
+def IsGSCDevboardHost(hostname):
+    """ Returns True iff the hostname is a GSC devboard. """
+    return ANDREIBOARD_TYPE in hostname
 
 class GSCDevboardHost(remote.RemoteHost):
     """
@@ -55,6 +64,7 @@ class GSCDevboardHost(remote.RemoteHost):
                     service_ip=None,
                     service_port=DEFAULT_SERVICE_PORT,
                     service_gsc_serial=None,
+                    host_info_store=None,
                     *args,
                     **dargs):
         """Construct a GSCDevboardHost object.
@@ -69,12 +79,31 @@ class GSCDevboardHost(remote.RemoteHost):
 
         super(GSCDevboardHost, self)._initialize(hostname, *args, **dargs)
 
+        self._dut_name = hostname
+        #Tast will not make any connections to '-'
+        self.hostname = '-'
+        self.port = None
+
+        self.host_info_store = (host_info_store or
+                                host_info.InMemoryHostInfoStore())
+
+        hi = self.host_info_store.get()
+
+        # Populate unset params from host info store.
+        hi_devboard_type = hi.attributes.get(DEVBOARD_TYPE_ATTR)
+        if hi_devboard_type == ANDREIBOARD_TYPE:
+            hi_ultradebug_serial = hi.attributes.get(ULTRADEBUG_SERIAL_ATTR)
+            if service_debugger_serial is None and hi_ultradebug_serial is not None:
+                logging.info('Using andreiboard ultradebug %s from host_info_store', hi_ultradebug_serial)
+                service_debugger_serial = hi_ultradebug_serial
+
         # Use docker host from environment or by probing a list of candidates.
         self._client = None
 
         self._docker_container = None
         self._service_ip = service_ip
         self._service_port = service_port
+        self._prestart = None
         logging.info("Using service port %s", self._service_port)
 
         if service_ip is not None:
@@ -146,20 +175,23 @@ class GSCDevboardHost(remote.RemoteHost):
 
         self._docker_network = 'default_satlab' if self._satlab else 'host'
 
-        self._service_debugger_serial = self._get_valid_serial(ULTRADEBUG,
-            service_debugger_serial)
-        self._service_gsc_serial = self._get_valid_serial(TI50,
-            service_gsc_serial)
+        def prestart():
+            self._service_debugger_serial = self._get_valid_serial(ULTRADEBUG,
+                service_debugger_serial)
+            self._service_gsc_serial = self._get_valid_serial(TI50,
+                service_gsc_serial)
 
-        if (self._service_debugger_serial == "" and
-            self._service_gsc_serial == ""):
-            raise ValueError('No valid debugger nor gsc found')
+            if (self._service_debugger_serial == "" and
+                self._service_gsc_serial == ""):
+                raise ValueError('No valid debugger nor gsc found')
 
-        logging.info("Using debugger %s", self._service_debugger_serial)
-        logging.info("Using gsc %s", self._service_gsc_serial)
+            logging.info("Using debugger %s", self._service_debugger_serial)
+            logging.info("Using gsc %s", self._service_gsc_serial)
 
-        self._docker_container_name = "gsc_dev_board_{}".format(
-                self._service_debugger_serial)
+            self._docker_container_name = "gsc_dev_board_{}".format(
+                    self._service_debugger_serial)
+
+        self._prestart = prestart
 
 
     def _get_valid_serial(self, vidpid, serial):
@@ -234,6 +266,9 @@ class GSCDevboardHost(remote.RemoteHost):
             logging.info("Skip start_service due to set service_ip")
             return
 
+        if self._prestart is not None:
+            self._prestart()
+
         environment = {
                 'DEVBOARDSVC_PORT': self._service_port,
                 'DEBUGGER_SERIAL': self._service_debugger_serial,
@@ -295,6 +330,7 @@ class GSCDevboardHost(remote.RemoteHost):
 
         self._docker_container = None
 
+
     @property
     def service_port(self):
         """Return service port (local to the container host)."""
@@ -314,3 +350,15 @@ class GSCDevboardHost(remote.RemoteHost):
             else:
                 settings = self._docker_container.attrs['NetworkSettings']
                 return settings['Networks'][self._docker_network]['IPAddress']
+
+    def job_start(self):
+        """ Start job, no-op """
+        pass
+
+    def run(self, command, **argv):
+        """ Run command, ignored """
+        logging.warn('GSCDevboardHost does not support run: %s', command)
+
+    def run_background(self, command, **argv):
+        """ Run command in background, ignored """
+        logging.warn('GSCDevboardHost does not support run_background: %s', command)

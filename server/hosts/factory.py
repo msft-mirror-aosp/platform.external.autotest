@@ -22,6 +22,7 @@ from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import jetstream_host
 from autotest_lib.server.hosts import moblab_host
 from autotest_lib.server.hosts import gce_host
+from autotest_lib.server.hosts import gsc_devboard_host
 from autotest_lib.server.hosts import ssh_host
 from autotest_lib.server.hosts import labstation_host
 from autotest_lib.server.hosts import file_store
@@ -187,6 +188,8 @@ def _choose_connectivity_class(hostname, ssh_port):
     """
     if (hostname == 'localhost' and ssh_port == DEFAULT_SSH_PORT):
         return local_host.LocalHost
+    elif gsc_devboard_host.IsGSCDevboardHost(hostname):
+        return local_host.LocalHost
     else:
         return ssh_host.SSHHost
 
@@ -273,6 +276,9 @@ def create_host(machine, host_class=None, connectivity_class=None, **args):
         # We don't have direct ssh access to Android devices, so we do
         # not need connectivity_class for AndroidHost here.
         connectivity_class = None
+
+    if host_class is None and gsc_devboard_host.IsGSCDevboardHost(hostname):
+        host_class = gsc_devboard_host.GSCDevboardHost
 
     if host_class is None:
         # TODO(pprabhu) If we fail to verify connectivity, we skip the costly

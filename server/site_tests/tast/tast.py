@@ -350,7 +350,7 @@ class tast(test.test):
     def run_once(self):
         """Runs a single iteration of the test."""
 
-        if self._clear_tpm:
+        if self._clear_tpm and self._host_supports_clear_tpm_owner():
             tpm_utils.ClearTPMOwnerRequest(self._host, wait_for_ready=True)
 
         self._log_version()
@@ -702,6 +702,15 @@ class tast(test.test):
         except error.CmdError as e:
             logging.error('Failed to log tast version: %s', str(e))
 
+    def _tast_target(self):
+        """Returns the <target> portion of the tast command."""
+        return '%s%s' % (self._host.hostname, ':%d' %
+                         self._host.port if self._host.port else '')
+
+    def _host_supports_clear_tpm_owner(self):
+        """True iff host supports TPM clear owner request."""
+        return self._tast_target() != '-'
+
     def _run_tast(self,
                   subcommand,
                   extra_subcommand_args,
@@ -769,8 +778,7 @@ class tast(test.test):
         if not self._f20_container:
             cmd.extend(self._devserver_args)
         cmd.extend(extra_subcommand_args)
-        cmd.append('%s%s' % (self._host.hostname, ':%d' %
-                             self._host.port if self._host.port else ''))
+        cmd.append(self._tast_target())
         cmd.extend(test_exprs)
 
         logging.info('Running %s',

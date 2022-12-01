@@ -510,7 +510,6 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
 
         logging.info('Verifying setup with GBB outside of hash')
         self._prefix = 'gbb outside of hash'
-        strs_gbb_not_in_hash_pass = [self.STR_SKIP_GBB, self.STR_PASSED]
 
         # GBB flags are non-zero, but they're outside of the hash, so it
         # shouldn't matter.

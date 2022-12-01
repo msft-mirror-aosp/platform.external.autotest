@@ -57,4 +57,5 @@ message Job {
     optional string board = 20;
     optional string dlm_sku_id = 21;
     optional string hwid = 22;
+    optional string uploader = 23;
 }

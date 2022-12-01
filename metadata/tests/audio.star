@@ -20,11 +20,6 @@ def define_tests():
             main_package = 'autotest_lib.client.site_tests.audio_ActiveStreamStress.audio_ActiveStreamStress',
         ),
         test_common.define_test(
-            'audio/Aplay',
-            suites = ['kernel_per-build_regression'],
-            main_package = 'autotest_lib.client.site_tests.audio_Aplay.audio_Aplay',
-        ),
-        test_common.define_test(
             'audio/AudioBasicAssistant',
             suites = [],
             main_package = '',

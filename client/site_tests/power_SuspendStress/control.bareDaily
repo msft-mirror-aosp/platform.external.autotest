@@ -24,4 +24,3 @@ job.run_test('power_SuspendStress', duration=None, suspend_iterations=250,
 job.run_test('hardware_EC', tag='power_SuspendStress')
 job.run_test('login_LoginSuccess', tag='power_SuspendStress')
 job.run_test('hardware_TPMCheck', tag='power_SuspendStress')
-job.run_test('audio_Aplay', tag='power_SuspendStress')

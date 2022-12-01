@@ -173,6 +173,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     USB_ERROR = 'timer_sof_calibration_overflow_int'
     # Message printed during watchdog reset.
     WATCHDOG_RST = 'WATCHDOG PC'
+    # Regex for checking if the ccd device is connected.
+    CCD_CONNECTED_RE = r'ccd.*: connected'
     # ===============================================================
     # AP_RO strings
     # Cr50 only supports v2
@@ -800,21 +802,20 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         _, rw_ver, dbg, ver_str = self.get_active_version_info()
         return  rw_ver + (dbg if dbg else '') + ver_str
 
-
     def ccd_is_enabled(self):
         """Return True if ccd is enabled.
 
-        If the test is running through ccd, return the ccd_state value. If
-        a flex cable is being used, use the CCD_MODE_L gpio setting to determine
-        if Cr50 has ccd enabled.
+        If the test is running through ccd, the console won't be available when
+        ccd is disconnected. Use the watchdog state to check if ccd is enabled.
+        If a flex cable is being used, use the CCD_MODE_L gpio setting to
+        determine the ccd state.
 
-        @return: 'off' or 'on' based on whether the cr50 console is working.
+        @return: True if ccd is enabled. False if it's disabled.
         """
         if self._servo.main_device_is_ccd():
-            return self._servo.get('ccd_state') == 'on'
-        else:
-            return not bool(self.gpioget('CCD_MODE_L'))
-
+            return bool(re.search(self.CCD_CONNECTED_RE,
+                                  self._servo.get('watchdog')))
+        return not bool(self.gpioget('CCD_MODE_L'))
 
     @dts_control_command
     def wait_for_stable_ccd_state(self, state, timeout, raise_error):

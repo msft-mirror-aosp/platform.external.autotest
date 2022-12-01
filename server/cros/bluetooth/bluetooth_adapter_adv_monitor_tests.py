@@ -460,6 +460,8 @@ class BluetoothAdapterAdvMonitorTests(
         @returns: True on success, False otherwise.
 
         """
+        if self.floss:
+            return True
         return self.exit_app(app_id)
 
 
@@ -472,6 +474,8 @@ class BluetoothAdapterAdvMonitorTests(
         @returns: True on success, False otherwise.
 
         """
+        if self.floss:
+            return True
         return self.kill_app(app_id)
 
 
@@ -485,6 +489,8 @@ class BluetoothAdapterAdvMonitorTests(
         @returns: True on success, False otherwise.
 
         """
+        if self.floss:
+            return True
         return self.register_app(app_id) == expected
 
 
@@ -498,6 +504,8 @@ class BluetoothAdapterAdvMonitorTests(
         @returns: True on success, False otherwise.
 
         """
+        if self.floss:
+            return True
         return self.unregister_app(app_id) == expected
 
 
@@ -511,6 +519,9 @@ class BluetoothAdapterAdvMonitorTests(
         @returns: True on success, False otherwise.
 
         """
+        if self.floss:
+            return True
+
         app_id = monitor.get_app_id()
         monitor_id = monitor.get_monitor_id()
         if monitor_id is None:
@@ -546,6 +557,9 @@ class BluetoothAdapterAdvMonitorTests(
         @returns: True on success, False otherwise.
 
         """
+        if self.floss:
+            return True
+
         app_id = monitor.get_app_id()
         monitor_id = monitor.get_monitor_id()
         if monitor_id is None:

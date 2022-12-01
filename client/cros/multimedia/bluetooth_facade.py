@@ -65,9 +65,11 @@ from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
         FlossAdvertisingClient)
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClient
+from autotest_lib.client.cros.bluetooth.floss.scanner_client import FlossScannerClient
 from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import (
-        GLIB_THREAD_NAME, make_kv_optional_value)
+        GLIB_THREAD_NAME, make_kv_optional_value, GLIB_THREAD_NAME)
+
 from autotest_lib.client.cros.power import power_suspend_delay
 from autotest_lib.client.cros.power import sys_power
 import six
@@ -4374,6 +4376,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     ]
     FLOSS_ADVERTISING_INTERVAL_UNIT = 0.625  # ms
 
+    # For floss AdvMon tests.
+    FAKE_APP_ID = 0
+    FLOSS_INTERVAL = 0
+    FLOSS_WINDOW = 0
+    FLOSS_SCAN_TYPE = 0
+
     class DiscoveryObserver(BluetoothCallbacks):
         """ Discovery observer that restarts discovery until a timeout.
 
@@ -4461,6 +4469,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.admin_client = FlossAdminClient(self.bus,
                                              self.DEFAULT_ADAPTER)
         self.media_client = FlossMediaClient(self.bus, self.DEFAULT_ADAPTER)
+        self.scanner_client = FlossScannerClient(self.bus,
+                                                 self.DEFAULT_ADAPTER)
         self.is_clean = False
 
         # Discovery needs to last longer than the default 12s. Keep an observer
@@ -4648,6 +4658,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.socket_client = FlossSocketManagerClient(
                     self.bus, default_adapter)
             self.admin_client = FlossAdminClient(self.bus, default_adapter)
+            self.scanner_client = FlossScannerClient(self.bus, default_adapter)
             try:
                 utils.poll_for_condition(
                         condition=_is_adapter_ready(self.adapter_client),
@@ -4676,6 +4687,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 return False
             if not self.admin_client.register_admin_policy_callback():
                 logging.error('admin_client: Failed to register callbacks')
+                return False
+            if not self.scanner_client.register_scanner_callback():
+                logging.error('scanner_client: Failed to register callbacks')
                 return False
         else:
             self.manager_client.stop(default_adapter)
@@ -5275,3 +5289,129 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 metadata.get("title"), metadata.get("artist"),
                 metadata.get("album"), metadata.get("length"))
         return self.media_client.set_player_metadata(meta_data)
+
+    def advmon_check_manager_interface_exist(self):
+        """Checks if scanner_client interface is available.
+
+        @return: True if scanner_client proxy is available, False otherwise.
+        """
+        return self.scanner_client.has_proxy()
+
+    def advmon_create_app(self):
+        """Returns the fake app_id for the test purpose in Floss.
+
+        @return: FAKE_APP_ID which is a constant equal to 0 .
+        """
+        return self.FAKE_APP_ID
+
+    def is_msft_supported(self):
+        """Checks if MSFT Adv Monitor is supported.
+
+        @return: MSFT capability as boolean on success, None otherwise.
+        """
+        return self.scanner_client.is_msft_supported()
+
+    def advmon_read_supported_types(self):
+        """Returns the supported monitor types.
+
+        The types are defined in the BlueZ API, while Floss only supports and
+        implements 'or_patterns'.
+
+        @return: List containing 'or_patterns'.
+        """
+        return ['or_patterns']
+
+    def advmon_read_supported_features(self):
+        """Returns the supported feature names.
+
+         The feature names are defined in the BlueZ API, while on Floss the
+         capability of equivalent functionality of 'controller-patterns' could
+         be queried from IsMsftSupported.
+
+         @return: List containing 'controller-patterns'.
+         """
+        return ['controller-patterns'] if self.is_msft_supported() else []
+
+    def advmon_add_monitor(self, app_id, scanner_data):
+        """Creates and starts the scanner.
+
+        @param app_id: The app ID (ignored in Floss).
+        @param scanner_data: The list containing scanner type, RSSI filter
+                             values and patterns.
+
+        @return: Scanner ID, once the scanner is created and started on success,
+                 None otherwise.
+        """
+        scanner_id = self.scanner_client.register_scanner_sync()
+        if scanner_id is None:
+            return None
+
+        settings = self.scanner_client.make_dbus_scan_settings(
+                self.FLOSS_INTERVAL, self.FLOSS_WINDOW,
+                self.FLOSS_SCAN_TYPE)
+
+        patterns = scanner_data[2]
+        condition = []
+        for pattern in patterns:
+            condition.append(
+                {'start_position': pattern[0],
+                 'ad_type': pattern[1],
+                 'content': pattern[2]})
+
+        (rssi_high_threshold, _, rssi_low_threshold,
+         rssi_low_timeout, rssi_sampling_period) = scanner_data[1]
+
+        filter = self.scanner_client.make_dbus_scan_filter(
+                rssi_high_threshold, rssi_low_threshold, rssi_low_timeout,
+                rssi_sampling_period, condition)
+
+        scan_result = self.scanner_client.start_scan(
+                scanner_id, settings, make_kv_optional_value(filter))
+        if not scan_result:
+            return None
+        return scanner_id
+
+    def advmon_get_event_count(self, app_id, scanner_id, event):
+        """Reads the count of a particular event on the given scanner.
+
+         @param app_id: The app ID.
+         @param scanner_id: The scanner ID.
+         @param event: Name of the specific event or 'All' for all events.
+
+         @return: Count of the specific event or dict of counts of all events.
+         """
+        return self.scanner_client.get_event_count(scanner_id, event)
+
+    def advmon_reset_event_count(self, app_id, scanner_id, event):
+        """Resets the count of a particular event on the given monitor.
+
+        @param app_id: The app ID.
+        @param scanner_id: The scanner ID.
+        @param event: Name of the specific event or 'All' for all events.
+
+        @return: True on success, False otherwise.
+        """
+        return self.scanner_client.reset_event_count(scanner_id, event)
+
+    def advmon_set_target_devices(self, app_id, scanner_id, devices):
+        """Sets the target devices to the given scanner.
+        DeviceFound and DeviceLost will only be counted if it is triggered by
+        a target device.
+
+        @param app_id: The app ID.
+        @param scanner_id: The scanner ID.
+        @param devices: A list of devices in MAC address.
+
+        @return: True on success, False otherwise.
+        """
+        return self.scanner_client.set_target_devices(scanner_id, devices)
+
+    def advmon_remove_monitor(self, app_id, scanner_id):
+        """Removes the Advertisement Monitor object.
+
+        @param app_id: The app ID.
+        @param scanner_id: The scanner ID.
+
+        @return: True on success, False otherwise.
+        """
+        return self.scanner_client.stop_scan(scanner_id)

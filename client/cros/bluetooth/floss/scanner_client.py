@@ -3,16 +3,37 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """Client class to access the Floss scanner interface."""
-
+import copy
 from enum import IntEnum
 from gi.repository import GLib
+from uuid import UUID
 import logging
 import math
 import random
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
                                                             glib_callback)
+
+
+class BtStatus(IntEnum):
+    """Bluetooth return status."""
+    SUCCESS = 0
+    FAIL = 1
+    NOT_READY = 2
+    NO_MEMORY = 3
+    BUSY = 4
+    DONE = 5
+    UNSUPPORTED = 6
+    INVALID_PARAM = 7
+    UNHANDLED = 8
+    AUTH_FAILURE = 9
+    REMOTE_DEVICE_DOWN = 10
+    AUTH_REJECTED = 11
+    JNI_ENVIRONMENT_ERROR = 12
+    JNI_THREAD_ATTACH_ERROR = 13
+    WAKE_LOCK_ERROR = 14
 
 
 class GattStatus(IntEnum):
@@ -104,6 +125,74 @@ class BluetoothScannerCallbacks:
         pass
 
 
+class ScannerObj:
+    """The scanner object for Advertisement Monitor Tests.
+
+    This class creates instances of multiple scanners.
+    """
+
+    def __init__(self, scanner_id, uuid, status):
+        """Construction of a scanner object.
+
+        @param scanner_id: Scanner ID of scanning set.
+        @param uuid: The specific UUID for scanner.
+        @param status: GATT status.
+        """
+        self.scanner_id = scanner_id
+        self.uuid = uuid
+        self.status = status
+        self.events = {
+            'DeviceFound': 0,
+            'DeviceLost': 0,
+        }
+        self.target_devices = []
+
+    def get_event_count(self, event):
+        """Reads the event count.
+
+        @param event: Name of the specific event or 'All' for all events.
+        @return: Count of a specific event or dict of counts of all events.
+        """
+        if event == 'All':
+            return self.events
+
+        return self.events.get(event)
+
+    def add_event_count(self, event):
+        """Increase the event count by one.
+
+        @param event: Name of the event as a string.
+        """
+        self.events[event] += 1
+
+    def reset_event_count(self, event):
+        """Resets the event count.
+
+        @param event: Name of a specific event or 'All' for all events.
+        @return: True on success, False otherwise.
+        """
+        if event == 'All':
+            for event_key in self.events:
+                self.events[event_key] = 0
+            return True
+
+        if event in self.events:
+            self.events[event] = 0
+            return True
+
+        return False
+
+    def set_target_devices(self, devices):
+        """Sets the target devices to the given scanner.
+
+        DeviceFound and DeviceLost will only be counted if it is triggered by a
+        target device.
+
+        @param devices: A list of devices in dbus object path.
+        """
+        self.target_devices = copy.deepcopy(devices)
+
+
 class FlossScannerClient(BluetoothScannerCallbacks):
     """Handles method calls to and callbacks from the scanner interface."""
 
@@ -114,6 +203,7 @@ class FlossScannerClient(BluetoothScannerCallbacks):
     SCANNER_CB_INTF = 'org.chromium.bluetooth.ScannerCallback'
     SCANNER_CB_OBJ_PATTERN = (
         '/org/chromium/bluetooth/hci{}/test_scanner_client{}')
+    FLOSS_RESPONSE_LATENCY_SECS = 3
 
     class ExportedScannerCallbacks(ObserverBase):
         """
@@ -178,6 +268,8 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         # We don't register callbacks by default.
         self.callbacks = None
         self.callback_id = None
+        self.register_scanner_results = {}
+        self.scanners = {}
 
     def __del__(self):
         """Destructor"""
@@ -195,6 +287,19 @@ class FlossScannerClient(BluetoothScannerCallbacks):
                 'on_scanner_registered: uuid: %s, scanner_id: %s, '
                 'status: %s', uuid, scanner_id, status)
 
+        # The uuid is returned as a list of bytes (128-bit UUID) so
+        # we need convert it to uuid object in order to store it in the
+        # dictionary as a key.
+        uuid_object = UUID(bytes=bytes(uuid))
+        self.register_scanner_results[uuid_object] = (scanner_id, status)
+
+        if GattStatus(status) != GattStatus.SUCCESS:
+            return
+
+        # Creates a scanner object every time a new scanner registered.
+        scanner = ScannerObj(scanner_id, uuid_object, status)
+        self.scanners[scanner_id] = scanner
+
     @glib_callback()
     def on_scan_result(self, scan_result):
         """Handles scan result callback.
@@ -202,6 +307,13 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         @param scan_result: The struct of ScanResult.
         """
         logging.debug('on_scan_result: scan_result: %s', scan_result)
+
+        # Update DeviceFound if the received address device exists in
+        # the target_device list.
+        for scanner in self.scanners.values():
+            if scan_result['address'] in scanner.target_devices:
+                scanner.add_event_count('DeviceFound')
+
 
     @glib_callback()
     def on_suspend_mode_change(self, suspend_mode):
@@ -314,6 +426,30 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         self.callback_id = self.proxy().RegisterScannerCallback(objpath)
         return True
 
+    def wait_for_on_scanner_registered(self, uuid):
+        """Waits for register scanner.
+
+        @param uuid: The specific uuid for scanner.
+
+        @return: scanner_id, status for specific uuid on success,
+                 (None, None) otherwise.
+        """
+        try:
+            utils.poll_for_condition(condition=(
+                    lambda: uuid in self.register_scanner_results),
+                                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
+        except TimeoutError:
+            logging.error('on_scanner_registered not called')
+            return None, None
+        scanner_id, status = self.register_scanner_results[uuid]
+
+        # Consume the result here because we have no straightforward timing
+        # to drop the info. We can't drop it in unregister_scanner because
+        # if the advertising failed to start then it makes no sense for the
+        # user to call unregister_scanner.
+        del self.register_scanner_results[uuid]
+        return scanner_id, status
+
     @glib_call(False)
     def unregister_scanner_callback(self):
         """Unregisters scanner callback for this client.
@@ -328,7 +464,28 @@ class FlossScannerClient(BluetoothScannerCallbacks):
 
         @return: UUID of the registered scanner on success, None otherwise.
         """
-        return self.proxy().RegisterScanner(self.callback_id)
+        return UUID(bytes=bytes(self.proxy().RegisterScanner(self.callback_id)))
+
+    def register_scanner_sync(self):
+        """Registers scanner for the callback id.
+
+         @return: scanner_id of the registered scanner on success,
+                  None otherwise.
+         """
+        uuid = self.register_scanner()
+
+        # Failed if we have issue in D-bus (None).
+        if uuid is None:
+            logging.error('Failed to register the scanner')
+            return None
+
+        scanner_id, status = self.wait_for_on_scanner_registered(uuid)
+
+        if GattStatus(status) != GattStatus.SUCCESS:
+            logging.error('Failed to register the scanner with id: %s, '
+                          'status = %s' % (scanner_id, status))
+            return None
+        return scanner_id
 
     @glib_call(False)
     def unregister_scanner(self, scanner_id):
@@ -338,9 +495,10 @@ class FlossScannerClient(BluetoothScannerCallbacks):
 
         @return: True on success, False otherwise.
         """
+        del self.scanners[scanner_id]
         return self.proxy().UnregisterScanner(scanner_id)
 
-    @glib_call(None)
+    @glib_call(False)
     def start_scan(self, scanner_id, settings, filter):
         """Starts scan.
 
@@ -348,9 +506,15 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         @param settings: ScanSettings structure.
         @param filter: ScanFilter structure.
 
-        @return: BtStatus as int on success, None otherwise.
+        @return: True on success, False otherwise.
         """
-        return self.proxy().StartScan(scanner_id, settings, filter)
+        status = self.proxy().StartScan(scanner_id, settings, filter)
+
+        if BtStatus(status) != BtStatus.SUCCESS:
+            logging.error('Failed to start the scanner with id: %s, '
+                          'status = %s' % (scanner_id, status))
+            return False
+        return True
 
     @glib_call(None)
     def stop_scan(self, scanner_id):
@@ -377,3 +541,46 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         @return: MSFT capability as boolean on success, None otherwise.
         """
         return self.proxy().IsMsftSupported()
+
+    def get_event_count(self, scanner_id, event):
+        """Reads the count of a particular event on the given scanner.
+
+        @param scanner_id: The scanner ID.
+        @param event: Name of the specific event or 'All' for all events.
+
+        @return: Count of the specific event or dict of counts of all events.
+        """
+        if scanner_id not in self.scanners:
+            return None
+
+        return self.scanners[scanner_id].get_event_count(event)
+
+    def reset_event_count(self, scanner_id, event):
+        """Resets the count of a particular event on the given scanner.
+
+        @param scanner_id: The scanner ID.
+        @param event: Name of the specific event or 'All' for all events.
+
+        @return: True on success, False otherwise.
+        """
+        if scanner_id not in self.scanners:
+            return False
+
+        return self.scanners[scanner_id].reset_event_count(event)
+
+    def set_target_devices(self, scanner_id, devices):
+        """Sets target devices to the given scanner.
+
+        DeviceFound and DeviceLost will only be counted if it is triggered
+        by a target device.
+
+        @param scanner_id: The scanner ID.
+        @param devices: A list of devices in dbus object path.
+
+        @return: True on success, False otherwise.
+        """
+        if scanner_id not in self.scanners:
+            return False
+
+        self.scanners[scanner_id].set_target_devices(devices)
+        return True

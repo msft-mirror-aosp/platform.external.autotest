@@ -2,20 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "dkrahn, dpursell"
 NAME = "login_CryptohomeOwnerQuery"
+METADATA = {
+    "contacts": ["cros-hwsec@google.com", "zuan@chromium.org"],
+    "bug_component": "b:1188704",
+    "criteria": ("This test verifies that the owner user query in cryptohome "
+                 "reports the proper status. The test will wipe credentials "
+                 "from the device and verify that the query shows no owner, "
+                 "then give the device an owner and verify the query result "
+                 "changes."),
+    "hw_agnostic": False
+}
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "login"
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test verifies that the owner user query in cryptohome reports the proper
-status. The test will wipe credentials from the device and verify that the
-query shows no owner, then give the device an owner and verify the query
-result changes.
-"""
 
 job.run_test('login_CryptohomeOwnerQuery')

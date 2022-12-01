@@ -15,7 +15,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:audio_basic"
-DEPENDENCIES = "audio_board, test_audiojack"
+DEPENDENCIES = "audio_cable"
 JOB_RETRIES = 1
 
 args_dict = utils.args_to_dict(args)

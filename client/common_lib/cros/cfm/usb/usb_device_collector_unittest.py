@@ -17,7 +17,7 @@ class UsbDeviceCollectorTest(unittest.TestCase):
                 'MxCh= 0\n'
             'D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1\n'
             'P:  Vendor=0000 ProdID=aaaa Rev=01.01\n'
-            'S:  Manufacturer=Google Inc.\n'
+            'S:  Manufacturer=Google LLC\n'
             'S:  Product=FOO\n'
             'S:  SerialNumber=GATRW17340078\n'
             'C:  #Ifs= 5 Cfg#= 1 Atr=80 MxPwr=500mA\n'

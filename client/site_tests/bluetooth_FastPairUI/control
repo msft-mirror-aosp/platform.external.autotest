@@ -1,8 +1,8 @@
-# Copyright (c) 2022 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "shafit, Chromium OS, chromeos-cross-device-eng@google.com"
+AUTHOR = "shafit, The ChromiumOS Authors, chromeos-cross-device-eng@google.com"
 NAME = "bluetooth_FastPairUI"
 PURPOSE = "To test the Fast Pair feature"
 CRITERIA = "Fail if any hang or crash"

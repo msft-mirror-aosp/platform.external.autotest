@@ -1,9 +1,9 @@
-# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Copyright 2010 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 TIME='LONG'
-AUTHOR = 'The Chromium OS Authors'
+AUTHOR = 'The ChromiumOS Authors'
 PURPOSE = 'Stress test the ecryptfs home directory across power state changes.'
 CRITERIA = 'This test is a stress test. Expected success, no crashes.'
 DOC = """This test uses fio and a basic configuration to test and

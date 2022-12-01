@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Lint as: python2, python3
-# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Copyright 2019 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -37,7 +37,7 @@ SourceType = Enum('SourceType', ['MOBLAB', 'LATEST', 'DEV'])
 # job, downgrade all others. Make sure this still works in CQ/smoke suite.
 _CONTROLFILE_TEMPLATE = Template(
         textwrap.dedent("""\
-    # Copyright {{year}} The Chromium OS Authors. All rights reserved.
+    # Copyright {{year}} The ChromiumOS Authors
     # Use of this source code is governed by a BSD-style license that can be
     # found in the LICENSE file.
 

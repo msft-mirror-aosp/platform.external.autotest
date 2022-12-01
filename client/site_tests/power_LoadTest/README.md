@@ -62,7 +62,7 @@ basis:
 ### Via cros_sdk & autotest
 
 If you are interested in running `power_LoadTest` on a ChromeOS system, you
-will need a Chromium OS test image that can be built by following [Build your
+will need a ChromiumOS test image that can be built by following [Build your
 own Chromium image][3] instruction with `./build_image --board=${BOARD} test`
 command. After the test image is built, you can follow the [Installing Chromium
 OS on your device][4] instruction to install the test image to your DUT.

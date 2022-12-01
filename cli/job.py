@@ -1,5 +1,5 @@
 #
-# Copyright 2008 Google Inc. All Rights Reserved.
+# Copyright 2008 Google LLC
 
 """
 The job module contains the objects and methods used to

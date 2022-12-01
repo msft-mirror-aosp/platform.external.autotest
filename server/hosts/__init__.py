@@ -1,5 +1,5 @@
 #
-# Copyright 2007 Google Inc. Released under the GPL v2
+# Copyright 2007 Google LLC Released under the GPL v2
 
 """This is a convenience module to import all available types of hosts.
 

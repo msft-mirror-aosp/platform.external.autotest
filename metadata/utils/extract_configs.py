@@ -1,5 +1,5 @@
 # Lint as: python3
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2020 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -74,7 +74,7 @@ def _category_def_file(category: str) -> str:
 
 
 _CATEGORY_TEMPLATE = """
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2020 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -108,7 +108,7 @@ def _generate_category_def(controls: List[control_files.Control]) -> str:
 
 
 _ALL_CATEGORIES_TEMPLATE = """
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2020 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 

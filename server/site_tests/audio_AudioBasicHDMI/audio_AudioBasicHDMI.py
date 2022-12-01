@@ -1,5 +1,5 @@
 # Lint as: python2, python3
-# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Copyright 2014 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """This is a server side HDMI audio test using the Chameleon board."""

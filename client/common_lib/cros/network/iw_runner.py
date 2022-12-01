@@ -1,5 +1,5 @@
 # Lint as: python2, python3
-# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Copyright 2019 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -878,7 +878,7 @@ class IwRunner(object):
         """Determines security from the given list of supported securities.
 
         This function won't consider WPA when WPA3 presents. Although TKIP
-        hasn't been deprecated by Chromium OS, WPA/WPA3 or WPA/WPA2/WPA3
+        hasn't been deprecated by ChromiumOS, WPA/WPA3 or WPA/WPA2/WPA3
         mixed modes won't be tested due to their extremely uncommon usage.
 
         @param supported_securities: list of supported securities from scan

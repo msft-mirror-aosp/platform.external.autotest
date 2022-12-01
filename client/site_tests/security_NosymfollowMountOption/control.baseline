@@ -1,9 +1,9 @@
-# Copyright 2018 The Chromium OS Authors. All rights reserved.
+# Copyright 2018 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 TIME="SHORT"
-AUTHOR = "The Chromium OS Authors"
+AUTHOR = "The ChromiumOS Authors"
 DOC = """
 When mounting a filesystem, Linux provides no way to specify that symlink
 traversal should be blocked on the given filesystem. For user-supplied

@@ -1,6 +1,6 @@
-AUTHOR = "Chromium OS Team"
+AUTHOR = "The ChromiumOS Authors"
 NAME = "platform_CryptohomeStress"
-PURPOSE = "Stress test the encrypted file system in Chromium OS."
+PURPOSE = "Stress test the encrypted file system in ChromiumOS."
 TIME = "LONG"
 TEST_CATEGORY = "Security"
 TEST_CLASS = "security"
@@ -9,7 +9,7 @@ PY_VERSION = 3
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 
 DOC = """
-This is a stress test of the file system in Chromium OS. While performing the
+This is a stress test of the file system in ChromiumOS. While performing the
 test, we will cycle through power states, and interrupt disk activity.
 """
 

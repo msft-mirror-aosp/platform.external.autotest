@@ -1,4 +1,4 @@
-# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Copyright 2012 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,7 +9,7 @@ METADATA = {
     'criteria': 'Benchmark storage performance using an unmounted root partition',
     'hw_agnostic': False
 }
-AUTHOR = 'The Chromium OS Authors'
+AUTHOR = 'The ChromiumOS Authors'
 PURPOSE = 'Benchmark storage performance using an unmounted root partition.'
 CRITERIA = 'This test is a quick benchmark.'
 ATTRIBUTES = "suite:kernel_per-build_benchmarks"

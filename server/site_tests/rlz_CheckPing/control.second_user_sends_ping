@@ -1,8 +1,8 @@
-# Copyright 2020 The Chromium OS Authors. All rights reserved.
+# Copyright 2020 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "kyleshima, Chromium OS"
+AUTHOR = "kyleshima, ChromiumOS"
 NAME = "rlz_CheckPing.second_user_sends_ping"
 PURPOSE = "Tests that CAF RLZ ping can be sent by a second user."
 TIME = "Short"

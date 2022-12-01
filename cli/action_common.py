@@ -1,6 +1,6 @@
 # pylint: disable-msg=C0111
 #
-# Copyright 2008 Google Inc. All Rights Reserved.
+# Copyright 2008 Google LLC
 
 """This module contains the common behavior of some actions
 

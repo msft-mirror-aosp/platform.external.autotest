@@ -1,5 +1,5 @@
 # Lint as: python2, python3
-# Copyright 2008 Google Inc, Martin J. Bligh <mbligh@google.com>,
+# Copyright 2008 Google LLC, Martin J. Bligh <mbligh@google.com>,
 #                Benjamin Poirier, Ryan Stutsman
 # Released under the GPL v2
 """

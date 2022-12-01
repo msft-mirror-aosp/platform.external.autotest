@@ -1,9 +1,9 @@
-# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Copyright 2011 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 NAME = "hardware_TPMttci"
-AUTHOR = "The Chromium OS Authors"
+AUTHOR = "The ChromiumOS Authors"
 PURPOSE = "Exercise TPM TTCI board modules with TPM"
 CRITERIA = "Check TTCI module functionality and TPM confidence check"
 TIME = "MEDIUM"

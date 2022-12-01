@@ -1,5 +1,5 @@
 # Lint as: python2, python3
-# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Copyright 2010 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -14,7 +14,7 @@ CRYPTOHOMESTRESS_START = '/tmp/cryptohomestress_begin'
 CRYPTOHOMESTRESS_END = '/tmp/cryptohomestress_end'
 
 class platform_CryptohomeStress(test.test):
-    """This is a stress test of the file system in Chromium OS.
+    """This is a stress test of the file system in ChromiumOS.
        While performing the test, we will cycle through power
        states, and interrupt disk activity.
     """

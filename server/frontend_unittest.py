@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copyright Gregory P. Smith, Google Inc 2008
+# Copyright Gregory P. Smith Google LLC 2008
 # Released under the GPL v2
 
 """Tests for server.frontend."""

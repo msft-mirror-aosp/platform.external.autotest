@@ -1,9 +1,9 @@
-# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Copyright 2019 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 TIME="SHORT"
-AUTHOR = "The Chromium OS Authors"
+AUTHOR = "The ChromiumOS Authors"
 DOC = """
 Similar to security_NosymfollowMountOption.baseline, except mounts
 filesystems with SELinux custom mount strings for extra testing alongside

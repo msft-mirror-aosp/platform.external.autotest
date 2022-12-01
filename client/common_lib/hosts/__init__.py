@@ -1,4 +1,4 @@
-# Copyright 2009 Google Inc. Released under the GPL v2
+# Copyright 2009 Google LLC Released under the GPL v2
 
 """This is a convenience module to import all available types of hosts.
 

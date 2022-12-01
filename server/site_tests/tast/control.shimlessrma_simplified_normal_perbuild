@@ -4,7 +4,7 @@
 
 from autotest_lib.client.common_lib import utils
 
-AUTHOR = 'Chromium OS team'
+AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.shimlessrma_simplified_normal_perbuild'
 TIME = 'SHORT'
 TEST_TYPE = 'Server'

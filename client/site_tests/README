@@ -1,4 +1,4 @@
-This directory contains client-side test cases for Chromium OS,
+This directory contains client-side test cases for ChromiumOS,
 classified by test area. See
 https://github.com/autotest/autotest/wiki/AutotestApi for documentation on the
 distinction between client side tests and server side tests.

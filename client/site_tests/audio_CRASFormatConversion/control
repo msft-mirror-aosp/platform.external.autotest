@@ -1,8 +1,8 @@
-# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Copyright 2011 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'The Chromium OS Authors'
+AUTHOR = 'The ChromiumOS Authors'
 NAME = 'audio_CRASFormatConversion'
 PURPOSE = 'Test playing audio with the CRAS test client.'
 CRITERIA = """

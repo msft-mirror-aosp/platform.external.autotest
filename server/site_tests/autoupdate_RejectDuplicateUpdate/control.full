@@ -1,8 +1,8 @@
-# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Copyright 2021 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "vyshu@google.com, Chromium OS"
+AUTHOR = "vyshu@google.com, ChromiumOS"
 NAME = "autoupdate_RejectDuplicateUpdate.full"
 METADATA = {
   "contacts": [

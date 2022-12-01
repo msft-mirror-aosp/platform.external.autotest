@@ -1,8 +1,8 @@
-# Copyright (c) 2019 The Chromium OS Authors. All rights reserved.
+# Copyright 2019 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "The Chromium OS Authors,chromeos-audio-sw@google.com"
+AUTHOR = "The ChromiumOS Authors,chromeos-audio-sw@google.com"
 NAME = "audio_advanced"
 PURPOSE = "Suite for testing advanced audio functionalities."
 

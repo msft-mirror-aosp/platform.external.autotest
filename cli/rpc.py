@@ -1,5 +1,5 @@
 #
-# Copyright 2008 Google Inc. All Rights Reserved.
+# Copyright 2008 Google LLC
 #
 
 from __future__ import print_function

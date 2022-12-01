@@ -1,9 +1,9 @@
-# Copyright 2015 The Chromium OS Authors. All rights reserved.
+# Copyright 2015 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 NAME = "platform_Crossystem"
-AUTHOR = "The Chromium OS Authors"
+AUTHOR = "The ChromiumOS Authors"
 PURPOSE = "Ensure crossystem works"
 CRITERIA = "Fails if any basic functionality of crossystem is missing"
 # TODO(semenzato) promote to bvt-inline after testing

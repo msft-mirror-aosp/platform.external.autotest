@@ -49,7 +49,7 @@ DEFAULT_YEAR = str(datetime.now().year)
 DEFAULT_AUTHOR = 'ChromeOS Team'
 
 CONTROLFILE_TEMPLATE = (
-        """# Copyright {year} The Chromium OS Authors. All rights reserved.
+        """# Copyright {year} The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -102,7 +102,7 @@ def get_existing_fields(filename):
     copyright_year = DEFAULT_YEAR
     author = DEFAULT_AUTHOR
     copyright_pattern = re.compile(
-            '# Copyright (\d+) The Chromium OS Authors.')
+            '# Copyright (\d+) The ChromiumOS Authors')
     author_pattern = re.compile("AUTHOR = '(.+)'")
     with open(filename) as f:
         for line in f:

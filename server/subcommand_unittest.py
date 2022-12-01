@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright 2009 Google Inc. Released under the GPL v2
+# Copyright 2009 Google LLC Released under the GPL v2
 
 from __future__ import absolute_import
 from __future__ import division

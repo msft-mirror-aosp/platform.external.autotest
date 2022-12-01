@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copyright 2008 Google Inc. All Rights Reserved.
+# Copyright 2008 Google LLC
 
 """Test for the rpc proxy class."""
 

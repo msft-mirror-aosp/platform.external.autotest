@@ -1,4 +1,4 @@
-// Copyright 2009 Google Inc. All Rights Reserved.
+// Copyright 2009 Google LLC
 
 package autotest.common.ui;
 

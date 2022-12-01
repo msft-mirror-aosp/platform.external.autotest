@@ -1,11 +1,11 @@
-# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server.hosts import gsc_devboard_host
 
-AUTHOR = 'Chromium OS BaseOS Engprod'
+AUTHOR = 'ChromiumOS BaseOS Engprod'
 NAME = 'tast.firmware-Ti50CCDUpdate'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

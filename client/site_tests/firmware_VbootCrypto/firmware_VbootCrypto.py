@@ -1,4 +1,4 @@
-# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Copyright 2010 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -18,7 +18,7 @@ class firmware_VbootCrypto(test.test):
     # of running these in a 64-bit environment (since for x86, this
     # code is run in 64-bit mode.
     #
-    # This issue is tracked as Issue 3792 on the Chromium OS Bug Tracker.
+    # This issue is tracked as Issue 3792 on the ChromiumOS Bug Tracker.
     # http://code.google.com/p/chromium-os/issues/detail?id=3792
     def setup_Disabled(self):
         os.chdir(self.srcdir)

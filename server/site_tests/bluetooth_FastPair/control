@@ -1,10 +1,10 @@
-# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.server import utils
 
-AUTHOR = "shafit, Chromium OS, chromeos-cross-device-eng@google.com"
+AUTHOR = "shafit, ChromiumOS, chromeos-cross-device-eng@google.com"
 NAME = 'bluetooth_FastPair'
 PURPOSE = ('Tests for the Fast Pair feature')
 CRITERIA = """

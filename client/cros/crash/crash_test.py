@@ -1,4 +1,4 @@
-# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Copyright 2012 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -49,7 +49,7 @@ class CrashTest(test.test):
     want to check that the correct crash dump is available and can be
     retrieved.
 
-    Chromium OS has a crash sender which checks for new crash data and sends
+    ChromiumOS has a crash sender which checks for new crash data and sends
     it to a server. This crash data is used to track software quality and find
     bugs. The system crash sender normally is always running, but can be paused
     by creating _PAUSE_FILE. When crash sender sees this, it pauses operation.

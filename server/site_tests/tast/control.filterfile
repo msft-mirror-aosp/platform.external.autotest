@@ -1,11 +1,11 @@
-# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
-AUTHOR = 'Chromium OS team'
+AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.testfilterfile'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

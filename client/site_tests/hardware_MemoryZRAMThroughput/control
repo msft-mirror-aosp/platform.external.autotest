@@ -1,9 +1,9 @@
-# Copyright 2017 The Chromium OS Authors. All rights reserved.
+# Copyright 2017 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 NAME = 'hardware_MemoryZRAMThroughput'
-AUTHOR = 'The Chromium OS Authors'
+AUTHOR = 'The ChromiumOS Authors'
 PURPOSE = 'Measure page access throughput, with and without ZRAM.'
 ATTRIBUTES = "suite:crosbolt_perf_weekly"
 TIME='SHORT'

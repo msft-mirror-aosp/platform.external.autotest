@@ -1,11 +1,11 @@
-# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Copyright 2022 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
-AUTHOR = 'Chromium OS'
+AUTHOR = 'ChromiumOS'
 NAME = 'tast.firmware-faft_trial'
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],

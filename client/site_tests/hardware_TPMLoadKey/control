@@ -1,9 +1,9 @@
-# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Copyright 2011 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 NAME = "hardware_TPMLoadKey"
-AUTHOR = "The Chromium OS Authors"
+AUTHOR = "The ChromiumOS Authors"
 PURPOSE = "Detect that the TPM can execute the LoadKey function"
 CRITERIA = "The TPM must be able to execute the TPM LoadKey function to pass"
 TIME = "SHORT"

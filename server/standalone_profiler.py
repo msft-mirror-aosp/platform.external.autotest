@@ -1,6 +1,6 @@
 # Lint as: python2, python3
 #
-# Copyright 2007 Google Inc. All Rights Reserved.
+# Copyright 2007 Google LLC
 
 """Runs profilers on a machine when no autotest job is running.
 

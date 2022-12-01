@@ -1,5 +1,5 @@
 #
-# Copyright 2007 Google Inc. Released under the GPL v2
+# Copyright 2007 Google LLC Released under the GPL v2
 
 """
 This module defines the base classes for the server Host hierarchy.

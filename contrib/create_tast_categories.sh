@@ -58,7 +58,7 @@ for c in "${categories[@]}"; do
         exit 1
     fi
     cat << EOF > "${test_suites_file}"
-# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Copyright 2021 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -99,13 +99,13 @@ EOF
         exit 1
     fi
     cat << EOF > "${tast_file}"
-# Copyright 2021 The Chromium OS Authors. All rights reserved.
+# Copyright 2021 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import utils
 
-AUTHOR = 'Chromium OS team'
+AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.category-${c}'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

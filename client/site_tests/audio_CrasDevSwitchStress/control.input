@@ -1,8 +1,8 @@
-# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Copyright 2019 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'The Chromium OS Authors,chromeos-audio@google.com'
+AUTHOR = 'The ChromiumOS Authors,chromeos-audio@google.com'
 NAME = 'audio_CrasDevSwitchStress.input'
 ATTRIBUTES = "suite:audio"
 PURPOSE = 'Test device buffer can stay at reasonable level at repeated switching'

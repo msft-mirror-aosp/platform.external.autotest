@@ -1,5 +1,5 @@
 # Lint as: python2, python3
-# Copyright Martin J. Bligh, Google Inc 2008
+# Copyright Martin J. Bligh Google LLC 2008
 # Released under the GPL v2
 
 """

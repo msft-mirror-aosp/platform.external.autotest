@@ -1,8 +1,8 @@
-# Copyright 2019 The Chromium OS Authors. All rights reserved.
+# Copyright 2019 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'The Chromium OS Audio Team, chromeos-audio@google.com'
+AUTHOR = 'The ChromiumOS Authors, chromeos-audio@google.com'
 NAME = 'audio_CrasPinnedStream'
 PURPOSE = """
 Test that all audio recording still works when multiple devices records

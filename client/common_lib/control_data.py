@@ -1,6 +1,6 @@
 # Lint as: python2, python3
 # pylint: disable-msg=C0111
-# Copyright 2008 Google Inc. Released under the GPL v2
+# Copyright 2008 Google LLC Released under the GPL v2
 
 from __future__ import absolute_import
 from __future__ import division

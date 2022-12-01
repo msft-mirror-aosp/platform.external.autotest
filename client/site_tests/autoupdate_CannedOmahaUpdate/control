@@ -1,9 +1,9 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright 2013 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 TIME='MEDIUM'
-AUTHOR = 'Chromium OS'
+AUTHOR = 'The ChromiumOS Authors'
 
 DOC = """
 Client-side mechanism to update a DUT with a given image. It is used

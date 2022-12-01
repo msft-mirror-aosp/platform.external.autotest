@@ -1,8 +1,8 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright 2013 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chromium OS Authors"
+AUTHOR = "ChromiumOS Authors"
 NAME = "platform_GesturesRegressionTest"
 PURPOSE = "Regression tests of ChromeOS gestures library."
 ATTRIBUTES = "suite:bvt-perbuild, suite:touch, suite:distributed_lab_qual_bvt_shard2"

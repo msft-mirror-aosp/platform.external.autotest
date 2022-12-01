@@ -1,5 +1,5 @@
 # Lint as: python2, python3
-# Copyright 2007 Google Inc. Released under the GPL v2
+# Copyright 2007 Google LLC Released under the GPL v2
 #
 # Eric Li <ericli@google.com>
 

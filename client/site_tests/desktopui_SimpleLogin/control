@@ -2,21 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "kathrelkeld"
+AUTHOR = "n/a"
 NAME = "desktopui_SimpleLogin"
-PURPOSE = "Logs into the system; this is used be server based servo tests."
-CRITERIA = """
-This test logs in and waits forever (or until exit flag is seen).
-"""
-TIME = "LONG"
-TEST_CATEGORY = "General"
-TEST_CLASS = "desktopui"
+METADATA = {
+    "contacts": ["tauto-core@google.com"],
+    "bug_component": "b:1284375", # ChromeOS > Test > Harness > Tauto > Examples
+    "criteria": "This test logs in and waits forever (or until exit flag is seen).",
+    "hw_agnostic": True
+}
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test logs in and waits forever (or until the exit flag is seen).
-Telemetry based test.
-"""
 
 job.run_test('desktopui_SimpleLogin')

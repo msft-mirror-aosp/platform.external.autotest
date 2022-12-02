@@ -14,6 +14,7 @@ from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
 from autotest_lib.server.cros.faft.rpc_proxy import RPCProxy
 from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 from autotest_lib.server.cros.power import servo_charger
+from autotest_lib.server.cros.power import utils as power_utils
 from autotest_lib.server.cros.servo import chrome_ec
 
 
@@ -43,6 +44,9 @@ NET_UP_TIMEOUT = 180
 # Max time taken by the device to suspend. This includes the time powerd takes
 # trigger the suspend after receiving the suspend request from autotest script.
 SECS_FOR_SUSPENDING = 20
+
+# Number of seconds to wait after the DUT suspends before resuming it again.
+DELAY_BEFORE_RESUMING_SECS = 5
 
 # Time to allow lid transition to take effect.
 WAIT_TIME_LID_TRANSITION_SECS = 5
@@ -276,10 +280,17 @@ class power_WakeSources(test.test):
         if wake_source == 'RTC':
             rtc_wake = RTC_WAKE_SECS
         self._dr_utils.suspend(SECS_FOR_SUSPENDING + rtc_wake)
+        suspended = power_utils.wait_power_state(
+            self._ec, 'S0ix|S3', retries=SECS_FOR_SUSPENDING, retry_delay=1)
+        if not suspended:
+            logging.error('DUT failed to suspend for %s', wake_source)
+            self._after_resume(wake_source)
+            raise error.TestFail('DUT failed to suspend for %s.' % wake_source)
         logging.info('DUT suspended! Waiting to resume...')
-        # Wait at least |SECS_FOR_SUSPENDING| secs for the kernel to
-        # fully suspend.
-        time.sleep(SECS_FOR_SUSPENDING)
+        # Leave the DUT suspended for a short while before triggering resume,
+        # so that there is a clear separation in the logs.
+        time.sleep(DELAY_BEFORE_RESUMING_SECS)
+
         self._trigger_wake(wake_source)
 
         # Give enough time to reconnect if the ethernet dongle accidentally

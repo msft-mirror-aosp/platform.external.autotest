@@ -439,6 +439,7 @@ class TestPage(object):
         utils.poll_for_condition(
                 lambda: self._tab.EvaluateJavaScript('pageReady'),
                 exception=error.TestError('Test page is not ready!'))
+        time.sleep(1)
 
 
     def expand_page(self):
@@ -570,6 +571,7 @@ class EventsPage(TestPage):
                         os.path.join(httpdir, filename))
 
         super(EventsPage, self).__init__(cr, httpdir, filename)
+        self.wait_for_page_ready()
 
 
     def clear_previous_events(self):

@@ -1,0 +1,33 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+from autotest_lib.server.site_tests.tast import tast
+
+AUTHOR = 'Chromium OS team'
+NAME = 'tast.maxsysmsglogsize'
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+MAX_RESULT_SIZE_KB = 256 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Serve as an example of how to use maxsysmsglogsize flag for tast.
+
+Examples:
+    test_that --args=max_sys_msg_log_size=50 ${DUT} tast.maxsysmsglogsize
+'''
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['("group:meta")'],
+                 ignore_test_failures=False, max_run_sec=3600,
+                 max_sys_msg_log_size=50,
+                 command_args=args)
+
+parallel_simple(run, machines)

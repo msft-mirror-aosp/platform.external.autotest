@@ -184,6 +184,9 @@ class tast(test.test):
     # Status reason used when an individual Tast test doesn't start running.
     _TEST_DID_NOT_RUN_MSG = 'Test did not run'
 
+    # Default Max System Message Log Size 20MB
+    _DEFAULT_MAX_SYS_MSG_LOG_SIZE = 20 * 1024 * 1024
+
     def initialize(self,
                    host,
                    test_exprs,
@@ -210,7 +213,8 @@ class tast(test.test):
                    is_cft=False,
                    exclude_missing=False,
                    test_filter_files=[],
-                   report_skipped=False):
+                   report_skipped=False,
+                   max_sys_msg_log_size=_DEFAULT_MAX_SYS_MSG_LOG_SIZE):
         """
         @param host: remote.RemoteHost instance representing DUT.
         @param test_exprs: Array of strings describing tests to run.
@@ -261,6 +265,8 @@ class tast(test.test):
         of test to be disabled.
         @param report_skipped: If true then skipped tests will be reported in
         the status.log
+        @param max_sys_msg_log_size: Max size for the downloaded system message log after
+        each test (default to 20MB)
 
         When the F20 breadcrumb is detected, it is assumed we are running in
             the F20 container, meaning we will force disable SSP (though the
@@ -306,6 +312,7 @@ class tast(test.test):
         self._exclude_missing = exclude_missing
         self._test_filter_files = test_filter_files
         self._report_skipped = report_skipped
+        self._max_sys_msg_log_size = max_sys_msg_log_size
 
         # Need to pass in dut_servers for every test in CFT.
         # But only add it if not already in varslist.
@@ -870,6 +877,7 @@ class tast(test.test):
                 '-waituntilready=true',
                 '-timeout=' + str(self._max_run_sec),
                 '-continueafterfailure=true',
+                '-maxsysmsglogsize=' + str(self._max_sys_msg_log_size),
         ]
         args.extend(self._get_servo_args())
         args.extend(self._get_rpm_args())

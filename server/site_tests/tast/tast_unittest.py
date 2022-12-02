@@ -147,7 +147,8 @@ class TastTest(unittest.TestCase):
                             companion_duts={},
                             maybemissingvars='',
                             port=True,
-                            test_filter_files=[]):
+                            test_filter_files=[],
+                            max_sys_msg_log_size=500):
         """Sets fake_tast.py's behavior for 'list' and 'run' commands.
 
         @param tests: List of TestInfo objects.
@@ -161,6 +162,8 @@ class TastTest(unittest.TestCase):
         @param shardindex: shard index to be run.
         @param companion_duts: mapping between roles and DUTs.
         @param test_filter_files: a list of files specify which tests to disable.
+        @param max_sys_msg_log_size: Max size for the downloaded system message log after
+        each test
         """
         list_args = [
                 'build=%s' % build,
@@ -196,6 +199,7 @@ class TastTest(unittest.TestCase):
             'resultsdir=%s' % self._test.resultsdir,
             'continueafterfailure=True',
             'var=%s' % run_vars,
+            'maxsysmsglogsize=%d' % max_sys_msg_log_size,
         ]
         if run_varsfiles:
             run_args.append('varsfile=%s' % run_varsfiles)
@@ -245,7 +249,8 @@ class TastTest(unittest.TestCase):
                   use_camera_box=False,
                   vars_gs_path='',
                   test_filter_files=[],
-                  report_skipped=False):
+                  report_skipped=False,
+                  max_sys_msg_log_size=500):
         """Writes fake_tast.py's configuration and runs the test.
 
         @param ignore_test_failures: Passed as the identically-named arg to
@@ -291,6 +296,7 @@ class TastTest(unittest.TestCase):
                               use_camera_box=use_camera_box,
                               vars_gs_path=vars_gs_path,
                               test_filter_files=test_filter_files,
+                              max_sys_msg_log_size=max_sys_msg_log_size,
                               report_skipped=report_skipped)
         self._test.set_fake_now_for_testing(
                 (NOW - tast._UNIX_EPOCH).total_seconds())
@@ -560,6 +566,13 @@ class TastTest(unittest.TestCase):
         self._init_tast_commands(tests=tests,
                                  test_filter_files=test_filter_files)
         self._run_test(test_filter_files=test_filter_files)
+
+    def testRunCommandWithMaxSysMsgLogSize(self):
+        """Tests that companion dut parameter is passing thru without issues."""
+        tests = [TestInfo('pkg.Test1', 0, 2), TestInfo('pkg.Test2', 3, 5)]
+        self._init_tast_commands(tests=tests,
+                                 max_sys_msg_log_size=600)
+        self._run_test(max_sys_msg_log_size=600)
 
     def testNoResultsFile(self):
         """Tests that an error is raised if no results file is written."""

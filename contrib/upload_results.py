@@ -370,8 +370,7 @@ class ResultsManager:
             A string representing a fake moblab id.
         """
         script_dir = os.path.dirname(__file__)
-        fake_moblab_id_path = os.path.join(script_dir, "config",
-                                           FAKE_MOBLAB_ID_FILE)
+        fake_moblab_id_path = os.path.join(CONFIG_DIR, FAKE_MOBLAB_ID_FILE)
 
         # Migrate from prior moblab ID location into config directory if possible
         old_moblab_id_file = os.path.join(script_dir, FAKE_MOBLAB_ID_FILE)

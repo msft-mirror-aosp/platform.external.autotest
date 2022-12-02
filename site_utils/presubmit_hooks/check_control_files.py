@@ -187,7 +187,8 @@ def CheckValidAttr(ctrl_data, attr_allowlist, bvt_allowlist, test_name):
                     (test_name, TAST_PSA_URL))
 
 
-# TODO: delete this check after metadata transition is complete.
+# TODO: reenable Contacts == !AUTHOR check once moblab fix is broadly used and delete this
+# check entirely after metadata transition is complete.
 def CheckOnlyOneContactSource(ctrl_data, ctrl_file_path):
     """
     Ensure there is exactly one source of Ownership data.
@@ -195,14 +196,7 @@ def CheckOnlyOneContactSource(ctrl_data, ctrl_file_path):
     @param ctrl_data: The control_data object for a test.
     @param test_name: A string with the name of the test.
     """
-    if hasattr(ctrl_data, 'author') and hasattr(ctrl_data, 'metadata'):
-        if 'contacts' in ctrl_data.metadata:
-            raise ControlFileCheckerError(
-                'Conflicting sources of test ownership found. Cannot have '
-                'both Author and Metadata "contacts" fields in %s' %
-                ctrl_file_path)
-    elif (not hasattr(ctrl_data, 'author') and
-          not (hasattr(ctrl_data, 'metadata') and 'contacts' in ctrl_data.metadata)):
+    if not (hasattr(ctrl_data, 'metadata') and 'contacts' in ctrl_data.metadata):
         raise ControlFileCheckerError(
                 'Need "contacts" field in Metadata attribute : %s.' % ctrl_file_path)
 

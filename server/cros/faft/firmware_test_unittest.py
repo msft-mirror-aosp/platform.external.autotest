@@ -107,49 +107,6 @@ class TestRunOnce(unittest.TestCase):
         ft.test_arg2_mock.assert_called_with('arg2')
 
 
-class TestCheckPowerState(unittest.TestCase):
-    """Test that power_state matching is precise"""
-    # Mock out EC behavior to return definable power states
-    class MockedECFirmwareTest(firmware_test.FirmwareTest):
-        """A stubbed out FirmwareTest to check the precision behavior"""
-
-        def __init__(self, *_args, **_dargs):
-            # pylint: disable=super-init-not-called
-            pass
-
-    # power_state is supposed to be a string, but lists seem somewhat common,
-    # so guard against them.
-    def test_fails_on_list(self):
-        ft = self.MockedECFirmwareTest()
-
-        with self.assertRaises(error.TestError):
-            ft._check_power_state([], 'S0')
-
-    def test_s0ix_isnt_s0(self):
-        ft = self.MockedECFirmwareTest()
-
-        self.assertEqual(False, ft._check_power_state("S0", "S0ix"))
-
-    def test_s0_is_found(self):
-        ft = self.MockedECFirmwareTest()
-
-        self.assertEqual(True, ft._check_power_state("S0", "S0"))
-
-    def test_s0_is_found_unicode(self):
-        ft = self.MockedECFirmwareTest()
-
-        self.assertEqual(True, ft._check_power_state(u"S0", "S0"))
-        self.assertEqual(True, ft._check_power_state("S0", u"S0"))
-        self.assertEqual(True, ft._check_power_state(u"S0", u"S0"))
-
-    def test_s0_or_s3_is_found(self):
-        ft = self.MockedECFirmwareTest()
-
-        self.assertEqual(True, ft._check_power_state("(S0|S3)", "S0"))
-        self.assertEqual(True, ft._check_power_state("(S0|S3)", "S3"))
-        self.assertEqual(False, ft._check_power_state("(S0|S3)", "G3"))
-
-
 class Test_stage_build_to_usbkey(unittest.TestCase):
     """stage_build_to_usbkey test"""
 

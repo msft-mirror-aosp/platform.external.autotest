@@ -12,7 +12,6 @@ import pprint
 import re
 import time
 import uuid
-from xml.parsers import expat
 
 import six
 from autotest_lib.client.bin import utils
@@ -1220,41 +1219,7 @@ class FirmwareTest(test.test):
             # Don't fail when EC not present or not fully initialized
             return None
 
-        pattern = r'power state (\w+) = (\w+),'
-
-        try:
-            match = self.ec.send_command_get_output("powerinfo", [pattern],
-                                                    retries=3)
-        except (error.TestFail, expat.ExpatError) as err:
-            logging.warning("powerinfo command encountered an error: %s", err)
-            return None
-        if not match:
-            logging.warning("powerinfo output did not match pattern: %r",
-                            pattern)
-            return None
-        (line, state_num, state_name) = match[0]
-        logging.debug("power state info %r", match)
-        return state_name
-
-    def _check_power_state(self, expected_power_state, actual_power_state):
-        """
-        Check for correct power state of the AP (via EC 'powerinfo' command)
-
-        @param expected_power_state: full-string regex of power state you are
-        expecting
-        @param actual_power_state: the power state returned from get_power_state
-        @return: the line and the match, if the output matched.
-        @raise error.TestFail: if output didn't match after the delay.
-        """
-        if not isinstance(expected_power_state, six.string_types):
-            raise error.TestError('%s is not a string while it should be.' %
-                                  expected_power_state)
-        if not isinstance(actual_power_state, six.string_types):
-            raise error.TestError('%s is not a string while it should be.' %
-                                  actual_power_state)
-        if re.match('^' + expected_power_state + '$', actual_power_state):
-            return True
-        return False
+        return PowerUtils.get_power_state(self.ec)
 
     def wait_power_state(self, power_state, retries, retry_delay=3):
         """
@@ -1265,29 +1230,7 @@ class FirmwareTest(test.test):
         and transitioning through different states.
         @param retry_delay: delay between retries in seconds
         """
-        logging.info('Checking power state "%s" maximum %d times.',
-                     power_state, retries)
-
-        last_power_state = ''
-        while retries > 0:
-            logging.debug("try count: %d", retries)
-            start_time = time.time()
-            try:
-                retries = retries - 1
-                actual_power_state = self.get_power_state()
-                if last_power_state != actual_power_state:
-                    logging.info("power state: %s", actual_power_state)
-                if actual_power_state is None:
-                    continue
-                if self._check_power_state(power_state, actual_power_state):
-                    return True
-                last_power_state = actual_power_state
-            except (error.TestFail, expat.ExpatError):
-                pass
-            delay_time = retry_delay - time.time() + start_time
-            if delay_time > 0:
-                time.sleep(delay_time)
-        return False
+        return PowerUtils.wait_power_state(self.ec, power_state, retries, retry_delay)
 
     def run_shutdown_cmd(self, wait_for_offline=True):
         """Shut down the DUT by running '/sbin/shutdown -P now'."""

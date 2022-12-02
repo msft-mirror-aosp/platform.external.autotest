@@ -24,12 +24,25 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     DEEP_SLEEP_STEP_SUFFIX = ' Num Deep Sleep Steps'
 
-    # Use negative numbers to keep track of counts not in the IRQ list.
-    KEY_CMD_END_TIME = -4
-    KEY_DEEP_SLEEP = -3
+    # Use negative numbers to keep track of counts not in the IRQ list. The
+    # actual number don't matter too much. Just make sure deep sleep is the
+    # lowest, so it's printed first.
+    KEY_DEEP_SLEEP = -10
+    KEY_TPM_INIT = -4
+    KEY_CMD_END_TIME = -3
     KEY_TIME = -2
     KEY_RESET = -1
+
     IGNORED_KEYS = [KEY_CMD_END_TIME]
+    # TPM initialization time doesn't relate to the previous boot. Don't look
+    # at the difference between each step. Look at each value independently.
+    STEP_INDEPENDENT_KEYS = [KEY_TPM_INIT]
+    GSC_STATUS_DICT = {
+            KEY_TPM_INIT : 'TPM init (us)',
+            KEY_RESET  : 'Reset Count',
+            KEY_DEEP_SLEEP  : 'Deep Sleep Count',
+            KEY_TIME  : 'GSC Time',
+    }
 
     # Cr50 won't enable any form of sleep until it has been up for 20 seconds.
     SLEEP_DELAY = 20
@@ -42,6 +55,7 @@ class firmware_Cr50DeviceState(Cr50Test):
     POWER_STATE_CHECK_TRIES = 6
     CONSERVATIVE_WAIT_TIME = SLEEP_TIME * 2
 
+    TPM_INIT_MAX = 120000
     DEEP_SLEEP_MAX = 2
     ARM = 'ARM '
     # If there are over 100,000 interrupts, it is an interrupt storm.
@@ -49,6 +63,7 @@ class firmware_Cr50DeviceState(Cr50Test):
     # A dictionary of ok count values for each irq that shouldn't follow the
     # DEFAULT_COUNTS range.
     EXPECTED_IRQ_COUNT_RANGE = {
+        KEY_TPM_INIT : [0, TPM_INIT_MAX],
         KEY_RESET : [0, 0],
         KEY_DEEP_SLEEP : [0, DEEP_SLEEP_MAX],
         KEY_TIME : [0, CONSERVATIVE_WAIT_TIME],
@@ -62,10 +77,13 @@ class firmware_Cr50DeviceState(Cr50Test):
         ARM + 'G3' + DEEP_SLEEP_STEP_SUFFIX : [1, 2],
         # Regular sleep is calculated based on the cr50 time
     }
-
     START = ''
     INCREASE = '+'
     DS_RESUME = 'DS'
+    # Keys like tpm initialization time aren't related to the previous boot.
+    # Don't look at the value from the previous step to determine anything.
+    # Use ' ' since it has to be different from START.
+    STEP_INDEPENDENT = ' '
 
     TMP_POWER_MANAGER_PATH = '/tmp/power_manager'
     POWER_MANAGER_PATH = '/var/lib/power_manager'
@@ -95,11 +113,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             raise error.TestNAError("Nothing needs to be tested on this device")
 
         self.INT_NAME = self.gsc.IRQ_DICT.copy()
-        self.INT_NAME.update({
-            self.KEY_RESET  : 'Reset Count',
-            self.KEY_DEEP_SLEEP  : 'Deep Sleep Count',
-            self.KEY_TIME  : 'Cr50 Time',
-        })
+        self.INT_NAME.update(self.GSC_STATUS_DICT)
         self.KEY_REGULAR_SLEEP = [k for k,v in self.INT_NAME.items()
                                     if 'WAKEUP' in v][0]
         self.SLEEP_KEYS = [ self.KEY_REGULAR_SLEEP, self.KEY_DEEP_SLEEP ]
@@ -113,6 +127,14 @@ class firmware_Cr50DeviceState(Cr50Test):
         if self.deep_sleep_in_s0i3:
             irq_s0ix_deep_sleep_key = 'S0ix' + self.DEEP_SLEEP_STEP_SUFFIX
             self.EXPECTED_IRQ_COUNT_RANGE[irq_s0ix_deep_sleep_key] = [0, 2]
+
+    def get_tpm_init_time(self):
+        """If the AP is on, return the time it took the tpm to initialize."""
+        if not self.gsc.ap_is_on():
+            return -1
+        result = self.host.run('cbmem -t')
+        match = re.search('TPM initialization.*\((.*)\)', result.stdout)
+        return int(match.group(1).replace(',', ''))
 
     def mount_power_config(self):
         """Mounts power_manager settings to tmp,
@@ -339,6 +361,9 @@ class firmware_Cr50DeviceState(Cr50Test):
                     irq_key == self.KEY_TIME and event == self.DS_RESUME):
                     event = self.INCREASE
 
+                if irq_key in self.STEP_INDEPENDENT_KEYS:
+                    event = self.STEP_INDEPENDENT
+
                 if event == self.INCREASE:
                     count -= irq_counts[step - 1]
 
@@ -469,7 +494,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         """Reset the test IRQ counts"""
         self.steps = []
         self.step_names = []
-        self.irqs = set()
+        self.irqs = set(self.GSC_STATUS_DICT.keys())
 
 
     def run_transition(self, state):
@@ -502,6 +527,9 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         self.stage_irq_add(self.get_irq_counts(), 'idle in S0')
 
+        self.steps[-1][self.KEY_TPM_INIT] = self.get_tpm_init_time()
+        logging.info('Resume from %s tpm initialized in %dus', state,
+                      self.steps[-1][self.KEY_TPM_INIT])
 
     def verify_state(self, state):
         """Verify cr50 behavior while running through the power state"""
@@ -543,6 +571,11 @@ class firmware_Cr50DeviceState(Cr50Test):
         client_at = autotest.Autotest(self.host)
         client_at.run_test('login_LoginSuccess')
 
+        # Enter G3 first. All boards support it and tpm initialization will take
+        # place. Entering G3 first ensures the tpm initialization data will be
+        # from this test run.
+        self.verify_state('G3')
+
         self.mount_power_config()
         try:
             if self.s0ix_supported:
@@ -553,8 +586,6 @@ class firmware_Cr50DeviceState(Cr50Test):
         finally:
             self.umount_power_config()
 
-        # Enter G3
-        self.verify_state('G3')
         if self.run_errors:
             self.all_errors[self.ccd_str] = self.run_errors
 

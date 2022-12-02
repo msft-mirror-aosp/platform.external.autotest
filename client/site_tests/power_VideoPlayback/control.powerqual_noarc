@@ -1,0 +1,22 @@
+# Description
+# Test video decode with ARC disabled
+# - 1 hour of h264 1080p 30fps
+# - 1 hour of vp9 1080p 30fps
+
+NAME = "power_VideoPlayback.powerqual_noarc"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("")
+TEST_TYPE = "client"
+
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_VideoPlayback', tag=NAME.split('.')[1],
+             videos=[('h264_1080_30fps', ''), ('vp9_1080_30fps', '')],
+             secs_per_video=3600, run_arc=False, force_discharge='optional',
+             pdash_note=pdash_note)

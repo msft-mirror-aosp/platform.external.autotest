@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Touchpad scroll occurs in expected direction. Repeats with Australian.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:touch_replay"
+ATTRIBUTES = "suite:touch_replay_touchpad"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchpad"
 

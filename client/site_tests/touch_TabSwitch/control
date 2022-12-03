@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Three finger swipe left/right changes tabs. Not affected by Australian.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:touch_replay"
+ATTRIBUTES = "suite:touch_replay_touchpad"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchpad"
 

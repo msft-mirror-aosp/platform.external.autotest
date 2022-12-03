@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Two finger swipe can navigate back and forth.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:touch_replay"
+ATTRIBUTES = "suite:touch_replay_touchpad"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchpad"
 

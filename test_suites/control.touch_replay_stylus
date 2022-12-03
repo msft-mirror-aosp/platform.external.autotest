@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "chromeos-test"
-NAME = "touch_replay"
+AUTHOR = "chromeos-tango"
+NAME = "touch_replay_stylus"
 PURPOSE = "Tests basic touch input functionality."
 
 TIME = "SHORT"
@@ -26,7 +26,7 @@ Touch input playback based tests.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['name'] = 'touch_replay'
+args_dict['name'] = 'touch_replay_stylus'
 args_dict['add_experimental'] = True
 args_dict['max_runtime_mins'] = 60
 args_dict['job'] = job

@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Tap-to-click and tap-drag work/not_work when eanbled/disabled.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:touch_replay"
+ATTRIBUTES = "suite:touch_replay_touchpad"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchpad"
 

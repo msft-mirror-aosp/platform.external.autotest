@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Touchscreen tap works and click count is up.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:touch_replay"
+ATTRIBUTES = "suite:touch_replay_touchscreen"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchscreen"
 

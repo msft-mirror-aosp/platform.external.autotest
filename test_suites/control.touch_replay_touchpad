@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "chromeos-tango"
-NAME = "touch"
+NAME = "touch_replay_touchpad"
 PURPOSE = "Tests basic touch input functionality."
 
 TIME = "SHORT"
@@ -26,7 +26,7 @@ Touch input playback based tests.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['name'] = 'touch'
+args_dict['name'] = 'touch_replay_touchpad'
 args_dict['add_experimental'] = True
 args_dict['max_runtime_mins'] = 60
 args_dict['job'] = job

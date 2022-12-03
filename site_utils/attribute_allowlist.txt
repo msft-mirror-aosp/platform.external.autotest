@@ -587,7 +587,9 @@ suite:thermal_qual_fast
 suite:thermal_qual_full
 suite:toolchain-tests
 suite:touch
-suite:touch_replay
+suite:touch_replay_touchpad
+suite:touch_replay_touchscreen
+suite:touch_replay_stylus
 suite:typec_lab
 suite:usb_detect
 suite:usb_detect_stress

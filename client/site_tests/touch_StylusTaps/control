@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Taps/Clicks from stylus are present, and click count is up.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:touch_replay"
+ATTRIBUTES = "suite:touch_replay_stylus"
 TEST_TYPE = "client"
 DEPENDENCIES = "stylus"
 

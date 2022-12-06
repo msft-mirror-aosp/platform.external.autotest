@@ -416,6 +416,7 @@ suite:fingerprint-mcu-dragonclaw
 suite:fleet_firmware_update
 suite:flashrom
 suite:flex-perbuild
+suite:golden-tier
 suite:graphics
 suite:graphics_browser
 suite:graphics_per-build

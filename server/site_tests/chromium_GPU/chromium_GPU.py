@@ -84,8 +84,18 @@ class chromium_GPU(test.test):
                              'run_gpu_integration_test_as_googletest.py'),
                 os.path.join(self.server_pkg, 'content', 'test', 'gpu',
                              'run_gpu_integration_test.py'),
+                # Generate a gtest-ish result file. This is mostly for reference now,
+                # because GPU tests do not upload it to RDB.
                 '--isolated-script-test-output={}'.format(
                         os.path.join(self.resultsdir, 'output.json')),
+                # GPU team requires a bunch of tags with the results, and the
+                # gtest output does not suffice.
+                # GPUT test script exports each test result into a json string
+                # in sinkpb.TestResult, aka the native RDB format.
+                # Test runner recipe will call native result_adapter
+                # to upload them to RDB. See crrev.com/c/4081733.
+                '--rdb-content-output-file={}'.format(
+                        os.path.join(self.resultsdir, 'native_results.jsonl')),
                 '--chromium-output-directory={}'.format(
                         os.path.join(self.server_pkg, 'out', 'Release')),
                 '--remote={}'.format(self.host.hostname),

@@ -26,7 +26,13 @@ suite:arcappgameperf
 suite:arc-gts
 suite:arc-gts-qual
 suite:arc-sts-full
+suite:arc-sts-full-p
+suite:arc-sts-full-r
+suite:arc-sts-full-t
 suite:arc-sts-incremental
+suite:arc-sts-incremental-p
+suite:arc-sts-incremental-r
+suite:arc-sts-incremental-t
 suite:arc-video
 suite:arc-vts-t
 suite:assistant-audiobox

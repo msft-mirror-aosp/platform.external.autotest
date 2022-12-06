@@ -103,6 +103,11 @@ def isEndLine(field):
     return False
 
 
+def _raw_time(timestamp):
+    """timestamp=1670062718 --> 1670062718"""
+    return timestamp.replace('timestamp=', '')
+
+
 def _translate_to_dict(res, fields, verdict, contentLine,
                        lastStartTime, testdir, firstFound):
     """Return the full_status, testname, and err to a json dict."""
@@ -120,8 +125,8 @@ def _translate_to_dict(res, fields, verdict, contentLine,
          'testname': name,
          'errmsg': errFromContent(contentLine),
          'resultspath': testdir,
-         'starttime': fields[2],
-         'endtime': lastStartTime
+         'starttime': _raw_time(lastStartTime),
+         'endtime': _raw_time(fields[2])
          })
 
 
@@ -179,6 +184,7 @@ def find_dirs(topDir):
             if 'status.log' in os.listdir(fp):
                 f.append(fp)
     return f
+
 
 def Die(message_format, *args, **kwargs):
     """Log a message and kill the current process.

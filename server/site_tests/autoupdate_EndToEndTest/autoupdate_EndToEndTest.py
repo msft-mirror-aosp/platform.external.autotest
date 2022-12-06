@@ -134,7 +134,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                 raise error.TestNAError("Skipping test on kernelnext board")
             # No test_conf is provided, we need to assemble it ourselves for
             # the target update information.
-            source_release = self._get_latest_serving_stable_build().rsplit(
+            source_release = self._get_serving_stable_build().rsplit(
                     '/')[-1]
             target_release = build.split(
                     '-')[1] if build else self._host.get_release_version()
@@ -162,7 +162,7 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         build_name = None
         source_payload_uri = test_conf['source_payload_uri']
         if m2n:
-            build_name = self._get_latest_serving_stable_build()
+            build_name = self._get_serving_stable_build()
         elif source_payload_uri:
             build_name, _ = self._get_update_parameters_from_uri(
                 source_payload_uri)

@@ -949,7 +949,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param release_path: path to the build artifacts in either
             gs://chromeos-releases or gs://chromeos-image-archive.
             Ex: dev-channel/asurada/14515.0.0 for gs://chromeos-releases. The
-            output of _get_latest_serving_stable_build matches this format.
+            output of _get_serving_stable_build matches this format.
             Ex: asurada-release/14515.0.0 for gs://chromeos-image-archive. The
             output of _get_release_builder_path matches this format.
         @param is_release_bucket: If True (default), use release bucket
@@ -1127,9 +1127,12 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 result.append(delta)
         return result
 
-    def _get_latest_serving_stable_build(self, release_archive_path=True):
+    def _get_serving_stable_build(self,
+                                  release_archive_path=True,
+                                  oldest_stable=False):
         """
-      Returns the latest serving stable build on Omaha for the current board.
+      Returns the latest or oldest serving stable build on Omaha for the
+      current board.
 
       It will lookup the paygen.json file and return the build label that can
       be passed to quick_provision. This is useful for M2N tests to easily find
@@ -1140,6 +1143,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                    <channel>-channel/<board>/<build number>
                                    False to return the build name in the format
                                    RXX-XXXXX.X.X
+      @param oldest_stable: True to return the oldest serving stable build.
+                            False to return the latest.
 
       @returns release archive path to the build or the build name, depending
                on the value of the release_archive_path arg. Example:
@@ -1168,16 +1173,17 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if not stable_paygen_data:
             raise error.TestFail(
                     'No stable build found in paygen.json for %s' % board)
-        latest_stable_paygen_data = max(
+        find = min if oldest_stable else max
+        target_stable_paygen_data = find(
                 stable_paygen_data, key=(lambda key: key['chrome_os_version']))
 
         if release_archive_path:
             return os.path.join(channel, board,
-                                latest_stable_paygen_data["chrome_os_version"])
+                                target_stable_paygen_data["chrome_os_version"])
 
         return 'R' + '-'.join([
-                str(latest_stable_paygen_data['milestone']),
-                latest_stable_paygen_data["chrome_os_version"]
+                str(target_stable_paygen_data['milestone']),
+                target_stable_paygen_data["chrome_os_version"]
         ])
 
     def provision_dut(self,
@@ -1185,9 +1191,13 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                       is_release_bucket=True,
                       public_bucket=False,
                       skip_board_suffixes=[],
-                      with_minios=False):
+                      with_minios=False,
+                      oldest_stable=False):
         """
-        Provisions the DUT with the latest version from stable channel.
+        Provisions the DUT with either:
+        * Latest serving stable version (default)
+        * Oldest serving stable version
+        * Version specified by the build_name param
 
         @param build_name: The build name to use, such as
                            dev-channel/asurada/14515.0.0 for the release
@@ -1207,6 +1217,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                     leading '-' will be prepended if not
                                     already included.
         @param with_minios: If True, also provision the inactive miniOS.
+        @param oldest_stable: True to use the oldest serving stable version
+                              instead of the latest.
 
         """
         for suffix in skip_board_suffixes:
@@ -1215,8 +1227,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 raise error.TestNAError("Skipping test on %s board" % suffix)
 
         # Provision latest stable build for the current build.
-        build_name = build_name or self._get_latest_serving_stable_build()
-        logging.debug('build name is %s', build_name)
+
+        build_name = (build_name or
+            self._get_serving_stable_build(oldest_stable=oldest_stable))
+        logging.info('build name is %s', build_name)
 
         # Install the matching build with quick provision.
         cache_server_url = None

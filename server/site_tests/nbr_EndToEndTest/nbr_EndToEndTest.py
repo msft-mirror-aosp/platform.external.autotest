@@ -27,7 +27,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
         network_name, network_password = self._configure_network_for_test()
 
         if n2m:
-            build = self._get_latest_serving_stable_build(
+            build = self._get_serving_stable_build(
                     release_archive_path=False)
             logging.debug('stable build name is %s', build)
 

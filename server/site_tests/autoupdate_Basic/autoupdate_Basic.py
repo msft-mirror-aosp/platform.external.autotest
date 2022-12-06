@@ -23,7 +23,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                  build=None,
                  m2n=False,
                  running_at_desk=False,
-                 pin_login=False):
+                 pin_login=False,
+                 oldest_stable=False):
         """
         Performs a N-to-N autoupdate with Nebraska.
 
@@ -36,6 +37,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
               of this board before updating to ToT.
         @param running_at_desk: Indicates test is run locally from workstation.
         @param pin_login: True to use login via PIN.
+        @param oldest_stable: True to update from the oldest serving stable
+                              version.
 
         """
         if pin_login:
@@ -53,7 +56,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         if self._m2n:
             skip_board_suffixes = ['-kernelnext', '-manatee']
             self.provision_dut(public_bucket=running_at_desk,
-                               skip_board_suffixes=skip_board_suffixes)
+                               skip_board_suffixes=skip_board_suffixes,
+                               oldest_stable=oldest_stable)
 
         # Login to device before update
         if pin_login:

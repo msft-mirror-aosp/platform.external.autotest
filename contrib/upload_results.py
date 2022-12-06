@@ -157,6 +157,9 @@ def parse_arguments(argv):
             help="The suite is used to identify the type of test results,"
             "e.g. 'power' for platform power team. If not specific, the "
             "default value is 'default_suite'.")
+
+    # checkacls subcommand to verify service account has proper acls to upload results to bucket
+    subparsers.add_parser(name="checkacls", help='check ACLs of configured service account')
     return parser.parse_args(argv)
 
 
@@ -806,6 +809,10 @@ def main(args):
 
     persistent_settings = _load_config()
 
+    if parsed_args.subcommand == "checkacls":
+        _check_acls(persistent_settings)
+        return
+
     results_manager = ResultsManager(ResultsParser, ResultsSender)
     results_manager.set_destination(persistent_settings["bucket"])
     results_manager.new_directory(parsed_args.directory)
@@ -823,6 +830,19 @@ def main(args):
         results_manager.parse_all_results()
         results_manager.upload_all_results(force=parsed_args.force)
 
+
+def _check_acls(settings):
+    bucket_name = settings["bucket"]
+    gs_client_bucket = storage.Client().bucket(bucket_name)
+
+    # use https://cloud.google.com/storage/docs/access-control/iam-gsutil to get list of required permissions
+    needed_perms = ["storage.objects.create", "storage.objects.delete", "storage.objects.list", "storage.objects.get"]
+    perms = gs_client_bucket.test_iam_permissions(needed_perms)
+    if len(perms) != len(needed_perms):
+        logging.error("did not find neccesary ACLs for bucket: %s want permissions: %s, got permissions: %s", settings["bucket"], needed_perms, perms)
+        sys.exit(1)
+    else:
+        logging.info("found valid ACLs for bucket: %s", bucket_name)
 
 if __name__ == "__main__":
     try:

@@ -1,0 +1,32 @@
+# Copyright 2022 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+
+AUTHOR = 'cros-engprod-muc'
+NAME = 'tast.medium-low-tier'
+TIME = 'LONG'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:medium-low-tier'
+MAX_RESULT_SIZE_KB = 512 * 1024
+PY_VERSION = 3
+JOB_RETRIES = 0
+
+DOC = '''
+This suite runs the tests in Tast on medium and low tier devices.
+'''
+
+args_dict = utils.args_to_dict(args)
+assert 'servo_state:WORKING' in DEPENDENCIES
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine, servo_args=servo_args),
+                 test_exprs=['("group:medium_low_tier")'],
+                 ignore_test_failures=True,
+                 max_run_sec=3*60*60,
+                 command_args=args)
+
+parallel_simple(run, machines)

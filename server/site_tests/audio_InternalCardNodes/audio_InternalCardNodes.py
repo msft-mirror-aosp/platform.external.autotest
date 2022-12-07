@@ -47,7 +47,7 @@ class audio_InternalCardNodes(audio_test.AudioTest):
             nodes[1].append('ECHO_REFERENCE')
         return nodes
 
-    def run_once(self, plug=True, blocked_boards=[]):
+    def run_once(self, blocked_boards=[]):
         """Runs InternalCardNodes test."""
         if self.host.get_board().split(':')[1] in blocked_boards:
             raise error.TestNAError('Board not applicable to test!')
@@ -58,12 +58,10 @@ class audio_InternalCardNodes(audio_test.AudioTest):
 
         jack_plugger = self.host.chameleon.get_audio_board().get_jack_plugger()
 
-        if plug:
-            jack_plugger.plug()
-        else:
-            jack_plugger.unplug()
-
+        jack_plugger.plug()
         audio_test_utils.check_plugged_nodes(self.facade,
-                                             self.get_expected_nodes(plug))
+                                             self.get_expected_nodes(True))
 
-        jack_plugger.reset();
+        jack_plugger.unplug()
+        audio_test_utils.check_plugged_nodes(self.facade,
+                                             self.get_expected_nodes(False))

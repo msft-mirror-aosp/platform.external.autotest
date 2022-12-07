@@ -4,13 +4,14 @@
 
 AUTHOR = "chromeos-lab-infrastructure"
 NAME = "provision_Cr50Update"
-PURPOSE = "Provision a system to the correct firmware version."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Provision a system to the correct gsc firmware version."
+}
 TIME = "MEDIUM"
-TEST_CATEGORY = "System"
-TEST_CLASS = "provision"
 TEST_TYPE = "Server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This is a test used by the provision control segment in autoserv to set the

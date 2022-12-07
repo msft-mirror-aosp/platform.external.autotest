@@ -2,24 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS PVS Team"
-NAME = "pvs_Sequence.ExampleSequence"
-PURPOSE = "stub_Pass and PassServer, instrumented as a basic sequence example"
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "pvs"
-TEST_TYPE = "server"
-ATTRIBUTES = ""
-PY_VERSION = 3
-DOC = """
-This is an example sequence, showing how to use the pvs_Sequence test class to
-standardize sequence implementation in control files. When creating a new
-sequence, start from this example implementation and:
+NAME = 'pvs_Sequence.ExampleSequence'
+TEST_TYPE = 'server'
+METADATA = {
+    'contacts': ['chromeos-pvs-eng@google.com'],
+    'bug_component': 'b:1110659',
+    'criteria': 'Example PVS sequence',
+}
 
-(1) Make sure your NAME is in the form 'pvs_Sequence.<sequence-name>'
-(2) Fill the SEQUENCE data structure below as the fields are indicated
-"""
+# This is an example sequence, showing how to use the pvs_Sequence test class to
+# standardize sequence implementation in control files. When creating a new
+# sequence, start from this example implementation and:
+#
+# (1) Make sure your NAME is in the form 'pvs_Sequence.<sequence-name>'
+# (2) Fill the SEQUENCE data structure below as the fields are indicated
 
 from autotest_lib.server import utils
 
@@ -28,8 +24,8 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 # Fill this list with tuples of (<test-name>, <args_dict>, <is_server_test>)
 SEQUENCE = [
-    ("stub_PassServer", {}, True),
-    ("stub_Pass",       {}, False)
+    ('stub_PassServer', {}, True),
+    ('stub_Pass',       {}, False)
 ]
 
 def run(machine):
@@ -38,7 +34,7 @@ def run(machine):
 
     # run the pvs_Sequence wrapper, with the input of the SEQUENCE
     # defined above
-    job.run_test("pvs_Sequence",
+    job.run_test('pvs_Sequence',
                            tag=NAME.split('.')[1],
                            host=host,
                            sequence=SEQUENCE)

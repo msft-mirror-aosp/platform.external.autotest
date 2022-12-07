@@ -2,21 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'ChromeOS PVS Team'
 NAME = 'pvs_Sequence.ChargeActiveState'
-PURPOSE = 'PVS test for pwr-chg-0003-v01'
-TIME = 'LENGTHY'
-TEST_CLASS = 'pvs'
 TEST_TYPE = 'server'
-PY_VERSION = 3
-DOC = '''
-PVS Sequence for qualification for charging while system is running
-
-- power_BatteryDrain
-- power_BatteryCharge (charging to full battery)
-'''
-
 METADATA = {
+    'contacts': ['chromeos-pvs-eng@google.com'],
+    'bug_component': 'b:1110659',
+    'criteria': 'Sequence for qualification, charging with system running',
     'requirements': ['pwr-chg-0003-v01']
 }
 

@@ -2,22 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'ChromeOS PVS Team'
 NAME = 'pvs_Sequence.ThermalQualChargingVideoCall'
-PURPOSE = 'Validate thermal stability while charging, in a video call'
-CRITERIA = 'This test is a benchmark.'
-TIME = 'LENGTHY'
-TEST_CATEGORY = 'Benchmark'
-TEST_CLASS = 'pvs'
 TEST_TYPE = 'server'
-ATTRIBUTES = ''
-PY_VERSION = 3
-DOC = '''
-This is the PVS sequence to validate thermal stability in a video call
-(state: charging)
-'''
-
 METADATA = {
+    'contacts': ['chromeos-pvs-eng@google.com'],
+    'bug_component': 'b:1110659',
+    'criteria': 'Sequence to validate thermal stability while charging',
     'requirements': ['pwr-therm-0001-v01']
 }
 

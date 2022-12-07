@@ -2,23 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'ChromeOS PVS Team'
 NAME = 'pvs_Sequence.PowerVideoPlayback'
-PURPOSE = 'PVS test for pwr-batLife-0010-v01'
-TIME = 'LENGTHY'
-TEST_CLASS = 'pvs'
 TEST_TYPE = 'server'
-ATTRIBUTES = ''
-PY_VERSION = 3
-DOC = '''
-PVS Sequence for qualification for power.
-
-- power_BatteryCharge (to full battery)
-- power_WaitForCoolDown
-- power_VideoPlayback (h264 1080p & vp9 1080p 1 hour each)
-'''
-
 METADATA = {
+    'contacts': ['chromeos-pvs-eng@google.com'],
+    'bug_component': 'b:1110659',
+    'criteria': 'Sequence to qualify power during Video Playback',
     'requirements': ['pwr-batLife-0010-v01']
 }
 

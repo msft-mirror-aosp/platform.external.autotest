@@ -37,6 +37,7 @@ from autotest_lib.server import test
 from autotest_lib.server.cros import gsutil_wrapper
 from autotest_lib.server.cros import provisioner
 from autotest_lib.server.cros.dynamic_suite import tools
+from autotest_lib.server.hosts import cros_firmware
 from autotest_lib.utils.frozen_chromite.lib import constants as chromite_constants
 from autotest_lib.utils.frozen_chromite.lib import gob_util
 from autotest_lib.utils.frozen_chromite.lib import osutils
@@ -1192,7 +1193,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                       public_bucket=False,
                       skip_board_suffixes=[],
                       with_minios=False,
-                      oldest_stable=False):
+                      oldest_stable=False,
+                      with_firmware=False):
         """
         Provisions the DUT with either:
         * Latest serving stable version (default)
@@ -1219,6 +1221,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param with_minios: If True, also provision the inactive miniOS.
         @param oldest_stable: True to use the oldest serving stable version
                               instead of the latest.
+        @param with_firmware: If True, also provision the firmware.
 
         """
         for suffix in skip_board_suffixes:
@@ -1254,4 +1257,24 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 is_release_bucket=True,
                 public_bucket=public_bucket,
                 cache_server_url=cache_server_url,
-                with_minios=with_minios).run_provision()
+                with_minios=with_minios,
+                with_firmware=with_firmware).run_provision()
+
+    def get_current_fw_version(self):
+        """
+        Gets the current active firmware version on the device.
+
+        @returns the active firmware version.
+
+        """
+        return self._host.run("crossystem fwid").stdout
+
+    def get_os_bundled_fw_version(self):
+        """
+        Gets the firmware version that is bundled with the current OS version.
+
+        @returns the bundled firmware version.
+
+        """
+        model = self._host.get_platform()
+        return cros_firmware._get_available_firmware(self._host, model)

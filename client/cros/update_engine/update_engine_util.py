@@ -489,7 +489,9 @@ class UpdateEngineUtil(object):
 
     def _check_for_update(self, update_url, interactive=True,
                           wait_for_completion=False,
-                          check_kernel_after_update=True, **kwargs):
+                          check_kernel_after_update=True,
+                          update_firmware=False,
+                          **kwargs):
         """
         Starts a background update check.
 
@@ -500,6 +502,8 @@ class UpdateEngineUtil(object):
         @param check_kernel_after_update: True to check kernel state after a
                 successful update. False to skip. wait_for_completion must also
                 be True.
+        @param update_firmware: True to run the firmware updater as part of
+                                post-install.
         @param kwargs: The dictionary to be converted to a query string and
                 appended to the end of the update URL. e.g:
                 {'critical_update': True, 'foo': 'bar'} ->
@@ -516,6 +520,9 @@ class UpdateEngineUtil(object):
 
         if not interactive:
             cmd.append('--interactive=false')
+        if update_firmware:
+            # TODO(b/228121045): Append a flag to update the firmware here.
+            pass
         self._run(cmd, ignore_status=False)
         if wait_for_completion and check_kernel_after_update:
             kernel_utils.verify_kernel_state_after_update(

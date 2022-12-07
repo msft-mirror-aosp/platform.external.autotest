@@ -18,6 +18,7 @@ from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server import autotest
 from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools
+from autotest_lib.server.hosts import cros_firmware
 
 try:
     from autotest_lib.utils.frozen_chromite.lib import metrics
@@ -158,6 +159,21 @@ class NewBuildUpdateError(_AttributedUpdateError):
         return 'Build failed to work after installing'
 
 
+class FirmwareUpdateError(_AttributedUpdateError):
+    """Failure updating a DUT when updating the firmware.
+
+    This class of exception should be raised when the target DUT fails
+    to update the firmware.
+    """
+
+    _SUMMARY = 'Failed to update the firmware'
+    _CLASSIFIERS = []
+
+    def __init__(self, msg):
+        super(FirmwareUpdateError, self).__init__(
+                'Firmware update failed')
+
+
 def _url_to_version(update_url):
     """Return the version based on update_url.
 
@@ -223,7 +239,8 @@ class ChromiumOSProvisioner(object):
                  is_servohost=False,
                  public_bucket=False,
                  cache_server_url=None,
-                 with_minios=False):
+                 with_minios=False,
+                 with_firmware=False):
         """Initializes the object.
 
         @param update_url: The URL we want the update to use.
@@ -240,6 +257,7 @@ class ChromiumOSProvisioner(object):
                                  servers, allowing tests to provision lab DUTs
                                  when running from a workstation host.
         @param with_minios: If True, also provision the inactive miniOS.
+        @param with_firmware: If True, also provision the OS firmware.
         """
         self.update_url = update_url
         self.host = host
@@ -250,6 +268,7 @@ class ChromiumOSProvisioner(object):
         self._public_bucket = public_bucket
         self._cache_server_url = cache_server_url
         self._with_minios = with_minios
+        self._with_firmware = with_firmware
 
     def _run(self, cmd, *args, **kwargs):
         """Abbreviated form of self.host.run(...)"""
@@ -562,6 +581,40 @@ class ChromiumOSProvisioner(object):
         except autotest.AutodirNotFoundError:
             logging.debug('No autotest installed directory found.')
 
+    def _update_firmware(self):
+        """ Update the firmware using chromeos-firmwareupdate. """
+        logging.info("Updating the firmware.")
+        fw_updater_path = '/usr/sbin/chromeos-firmwareupdate'
+        if not self.host.path_exists(fw_updater_path):
+            logging.info(
+                    'Skipping firmware provisioning as firmware updater does '
+                    'not exist on the build.')
+            return
+
+        # Wait for the UI to stabilize.
+        self.host.wait_for_service('ui')
+
+        # Run the firmware update.
+        self._run([fw_updater_path, '--wp=1', '--mode=autoupdate'])
+
+        # Reboot if the firmware slot changed.
+        current_slot = self._run('crossystem mainfw_act').stdout
+        next_slot = self._run('crossystem fw_try_next').stdout
+        if current_slot != next_slot:
+            logging.info("Rebooting after firmware update.")
+            self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
+
+        # Verify that the active firmware version matches the expected one.
+        model = self.host.get_platform()
+        expected = cros_firmware._get_available_firmware(self.host, model)
+        actual = self.host.run("crossystem fwid").stdout
+        msg = ("Expected firmware: %s, actual firmware on DUT: %s." %
+                      (expected, actual))
+        logging.info(msg)
+        if expected != actual:
+            raise FirmwareUpdateError(msg)
+        logging.info('Successfully updated firmware')
+
     def run_provision(self):
         """Perform a full provision of a DUT in the test lab.
 
@@ -611,6 +664,16 @@ class ChromiumOSProvisioner(object):
             except Exception as e:
                 logging.exception('Failure from build after update.')
                 raise NewBuildUpdateError(self.update_version, str(e))
+
+        # Update the CrOS firmware if specified.
+        if self._with_firmware:
+            try:
+                self._update_firmware()
+            except _AttributedUpdateError:
+                raise
+            except Exception as e:
+                logging.exception('Failure during firmware update.')
+                raise FirmwareUpdateError(self.host.hostname, str(e))
 
         image_name = url_to_image_name(self.update_url)
 

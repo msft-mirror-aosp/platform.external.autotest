@@ -1,0 +1,38 @@
+# Copyright 2022 The ChromiumOS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = "autoupdate_WithFirmware.m2n.full"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests that the OS and firmware update together."
+}
+TIME = "MEDIUM"
+TEST_TYPE = "server"
+ATTRIBUTES = "suite:au-m2n"
+DOC = """
+Tests that update_engine can update both the OS and firwmare (firmware updates
+are not triggered by default in most other AU tests).
+
+Refer to autoupdate_Basic's control.delta file for instructions on how to run
+this test locally from your workstation.
+
+Note: for m2n tests, the source version is the currently serving stable channel
+version.
+
+"""
+
+from autotest_lib.client.common_lib import utils
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('autoupdate_WithFirmware', host=host, full_payload=True,
+                 **args_dict)
+
+job.parallel_simple(run, machines)

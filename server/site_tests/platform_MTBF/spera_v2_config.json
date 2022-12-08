@@ -258,6 +258,62 @@
       "deps": ["advanced"]
     },
     {
+      "name": "video-conf-proxy-essential",
+      "tool": "tast",
+      "test_expr": "spera.VideoConfProxy.vp9_essential",
+      "attributes": ["essential"],
+      "deps": ["essential"]
+    },
+    {
+      "name": "video-conf-proxy-essential-lacros",
+      "tool": "tast",
+      "test_expr": "spera.VideoConfProxy.vp9_essential_lacros",
+      "attributes": ["essential"],
+      "deps": ["essential"]
+    },
+    {
+      "name": "video-conf-proxy-grid-essential",
+      "tool": "tast",
+      "test_expr": "spera.VideoConfProxy.vp9_grid_essential",
+      "attributes": ["essential"],
+      "deps": ["essential"]
+    },
+    {
+      "name": "video-conf-proxy-grid-essential-lacros",
+      "tool": "tast",
+      "test_expr": "spera.VideoConfProxy.vp9_grid_essential_lacros",
+      "attributes": ["essential"],
+      "deps": ["essential"]
+    },
+    {
+      "name": "video-conf-proxy-advanced",
+      "tool": "tast",
+      "test_expr": "spera.VideoConfProxy.vp9_advanced",
+      "attributes": ["advanced"],
+      "deps": ["advanced"]
+    },
+    {
+      "name": "video-conf-proxy-advanced-lacros",
+      "tool": "tast",
+      "test_expr": "spera.VideoConfProxy.vp9_advanced_lacros",
+      "attributes": ["advanced"],
+      "deps": ["advanced"]
+    },
+    {
+      "name": "video-conf-proxy-grid-advanced",
+      "tool": "tast",
+      "test_expr": "spera.VideoConfProxy.vp9_grid_advanced",
+      "attributes": ["advanced"],
+      "deps": ["advanced"]
+    },
+    {
+      "name": "video-conf-proxy-grid-advanced-lacros",
+      "tool": "tast",
+      "test_expr": "spera.VideoConfProxy.vp9_grid_advanced_lacros",
+      "attributes": ["advanced"],
+      "deps": ["advanced"]
+    },
+    {
       "name": "edu-3dmodeling-advanced-tinkercad",
       "tool": "tast",
       "test_expr": "spera.EDU3DModelingCUJ.plus_tinkercad",
@@ -341,7 +397,10 @@
         "tabswitch-essential", "tabswitch-advanced",
         "video-essential-youtube-app", "video-advanced-youtube-app",
         "everyday-essential-ytmusic", "everyday-advanced-ytmusic",
-        "video-proxy-essential-h264", "video-proxy-advanced-h264"
+        "video-proxy-essential-h264", "video-proxy-advanced-h264",
+        "video-proxy-essential-hevc", "video-proxy-advanced-hevc",
+        "video-conf-proxy-essential", "video-conf-proxy-advanced",
+        "video-conf-proxy-grid-essential", "video-conf-proxy-grid-advanced"
       ]
     },
     {
@@ -353,7 +412,7 @@
       "test_list": [
         "meet-essential-large", "meet-essential-class", "tabswitch-essential",
         "video-essential-youtube-app", "everyday-essential-ytmusic", "video-proxy-essential-h264",
-        "edu-video-advanced-wevideo"
+        "video-proxy-essential-hevc", "edu-video-advanced-wevideo", "video-conf-proxy-essential"
       ]
     },
     {
@@ -370,6 +429,8 @@
         "everyday-essential-ytmusic", "everyday-advanced-ytmusic",
         "video-proxy-essential-h264", "video-proxy-advanced-h264",
         "video-proxy-essential-hevc", "video-proxy-advanced-hevc",
+        "video-conf-proxy-essential", "video-conf-proxy-advanced",
+        "video-conf-proxy-grid-essential", "video-conf-proxy-grid-advanced",
         "gdocs-essential", "gdocs-advanced",
         "msoffice-essential", "msoffice-essential",
         "edu-3dmodeling-advanced-tinkercad", "edu-essential-google-photos",
@@ -390,7 +451,9 @@
         "video-essential-youtube-app-lacros", "video-advanced-youtube-app-lacros",
         "everyday-essential-ytmusic-lacros", "everyday-advanced-ytmusic-lacros",
         "video-proxy-essential-h264-lacros", "video-proxy-advanced-h264-lacros",
-        "video-proxy-essential-hevc-lacros", "video-proxy-advanced-hevc-lacros"
+        "video-proxy-essential-hevc-lacros", "video-proxy-advanced-hevc-lacros",
+        "video-conf-proxy-essential-lacros", "video-conf-proxy-advanced-lacros",
+        "video-conf-proxy-grid-essential-lacros", "video-conf-proxy-grid-advanced-lacros"
       ]
     }
   ]

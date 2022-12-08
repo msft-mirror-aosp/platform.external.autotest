@@ -4,12 +4,12 @@
 
 AUTHOR = 'n/a'
 NAME = '{name}'
-METADATA = {
+METADATA = {{
     "contacts": ["chromeos-perf-reliability-eng@google.com", "abergman@google.com"],
     "bug_component": "b:1025042",
     "criteria": "Tauto wrapper for SPERA v1 Tast test.",
     "hw_agnostic": True
-}
+}}
 ATTRIBUTES = '{attributes}'
 TIME = '{length}'
 TEST_TYPE = 'Server'

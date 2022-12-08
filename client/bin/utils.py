@@ -18,7 +18,6 @@ import chardet
 import collections
 import errno
 import glob
-import json
 import logging
 import math
 import multiprocessing
@@ -260,55 +259,11 @@ def get_cpu_arch():
     raise error.TestError('unsupported machine type %s' % machine_name)
 
 
-def get_arm_soc_family_from_devicetree():
-    """
-    Work out which ARM SoC we're running on based on the 'compatible' property
-    of the base node of devicetree, if it exists.
-    """
-    devicetree_compatible = '/sys/firmware/devicetree/base/compatible'
-    if not os.path.isfile(devicetree_compatible):
-        return None
-    f = open(devicetree_compatible, 'r')
-    compatible = f.read().split(chr(0))
-    f.close()
-    if list_grep(compatible, '^rockchip,'):
-        return 'rockchip'
-    elif list_grep(compatible, '^mediatek,'):
-        return 'mediatek'
-    elif list_grep(compatible, '^qcom,'):
-        return 'qualcomm'
-    return None
-
-
-def get_arm_soc_family():
-    """Work out which ARM SoC we're running on"""
-    family = get_arm_soc_family_from_devicetree()
-    if family is not None:
-        return family
-
-    f = open('/proc/cpuinfo', 'r')
-    cpuinfo = f.readlines()
-    f.close()
-    if list_grep(cpuinfo, 'EXYNOS5'):
-        return 'exynos5'
-    elif list_grep(cpuinfo, 'Tegra'):
-        return 'tegra'
-    elif list_grep(cpuinfo, 'Rockchip'):
-        return 'rockchip'
-    return 'arm'
-
-
 def get_cpu_soc_family():
     """Like get_cpu_arch, but for ARM, returns the SoC family name"""
-    f = open('/proc/cpuinfo', 'r')
-    cpuinfo = f.readlines()
-    f.close()
-    family = get_cpu_arch()
-    if family == 'arm':
-        family = get_arm_soc_family()
-    if list_grep(cpuinfo, '^vendor_id.*:.*AMD'):
-        family = 'amd'
-    return family
+    cmd = '/usr/local/graphics/hardware_probe --cpu-soc-family'
+    output = utils.run(cmd, ignore_status=True).stdout
+    return output.split(":")[1].strip()
 
 
 # When adding entries here, also add them at the right spot in the
@@ -1163,9 +1118,6 @@ _UI_USE_FLAGS_FILE_PATH = '/etc/ui_use_flags.txt'
 _CHECK_PACKAGE_INSTALLED_COMMAND =(
         "dpkg-query -W -f='${Status}\n' %s | head -n1 | awk '{print $3;}' | "
         "grep -q '^installed$'")
-
-pciid_to_amd_architecture = {}
-pciid_to_intel_architecture = {}
 
 class Crossystem(object):
     """A wrapper for the crossystem utility."""
@@ -2139,49 +2091,9 @@ def has_mali():
 
 def get_gpu_family():
     """Returns the GPU family name."""
-    global pciid_to_amd_architecture
-    global pciid_to_intel_architecture
-
-    socfamily = get_cpu_soc_family()
-    if socfamily == 'exynos5' or socfamily == 'rockchip' or has_mali():
-        cmd = wflinfo_cmd()
-        wflinfo = utils.system_output(cmd,
-                                      retain_output=True,
-                                      ignore_status=False)
-        m = re.findall(r'OpenGL renderer string: (Mali-\w+)', wflinfo)
-        if m:
-            return m[0].lower()
-        return 'mali-unrecognized'
-    if socfamily == 'tegra':
-        return 'tegra'
-    if socfamily == 'qualcomm':
-        return 'qualcomm'
-    if os.path.exists('/sys/kernel/debug/pvr'):
-        return 'rogue'
-
-    pci_vga_device = utils.run("lspci | grep VGA").stdout.rstrip('\n')
-    bus_device_function = pci_vga_device.partition(' ')[0]
-    pci_path = '/sys/bus/pci/devices/0000:' + bus_device_function + '/device'
-
-    if not os.path.exists(pci_path):
-        raise error.TestError('PCI device 0000:' + bus_device_function + ' not found')
-
-    device_id = utils.read_one_line(pci_path).lower()
-
-    if "Advanced Micro Devices" in pci_vga_device:
-        if not pciid_to_amd_architecture:
-            with open(_AMD_PCI_IDS_FILE_PATH, 'r') as in_f:
-                pciid_to_amd_architecture = json.load(in_f)
-
-        return pciid_to_amd_architecture[device_id]
-
-    if "Intel Corporation" in pci_vga_device:
-        # Only load Intel PCI ID file once and only if necessary.
-        if not pciid_to_intel_architecture:
-            with open(_INTEL_PCI_IDS_FILE_PATH, 'r') as in_f:
-                pciid_to_intel_architecture = json.load(in_f)
-
-        return pciid_to_intel_architecture[device_id]
+    cmd = '/usr/local/graphics/hardware_probe --gpu-family'
+    output = utils.run(cmd, ignore_status=True).stdout
+    return output.split(":")[1].strip()
 
 # TODO(ihf): Consider using /etc/lsb-release DEVICETYPE != CHROMEBOOK/CHROMEBASE
 # for confidence check, but usage seems a bit inconsistent. See

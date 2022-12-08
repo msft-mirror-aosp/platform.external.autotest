@@ -136,7 +136,10 @@ class TradefedTest(test.test):
     # Currently this is only used for dependency injection for testing.
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
-        self._adb = kwargs.get('adb', adb_utils.Adb())
+        # Random ADB port is required for CFT where containers use host
+        # networking.
+        # TODO(b/261368446): Handle port collisions.
+        self._adb = kwargs.get('adb', adb_utils.Adb(random_port=True))
 
     def _log_java_version(self):
         """Log java version to debug failures due to version mismatch."""
@@ -1399,12 +1402,15 @@ class TradefedTest(test.test):
         raise NotImplementedError('Subclass should override this function')
 
     def _tradefed_env(self):
-        return None
+        env = os.environ.copy()
+        env['ANDROID_ADB_SERVER_PORT'] = str(self._adb.get_port())
+        return env
 
     def _run_tradefed_with_timeout(self, command, timeout):
         tradefed = self._tradefed_cmd_path()
         with tradefed_utils.adb_keepalive(
-                adb_utils.get_adb_targets(self._hosts), self._install_paths):
+                adb_utils.get_adb_targets(self._hosts), self._install_paths,
+                socket=self._adb.get_socket()):
             logging.info('RUN(timeout=%d): %s', timeout,
                          ' '.join([tradefed] + command))
             output = self._run(

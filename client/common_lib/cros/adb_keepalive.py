@@ -7,8 +7,7 @@
 import argparse
 import logging
 import os
-import pipes
-import re
+import shlex
 import signal
 import sys
 import time
@@ -34,16 +33,7 @@ def _signal_handler(signum, frame):
 
 def _get_adb_options(target, socket):
     """Get adb global options."""
-    # ADB 1.0.36 does not support -L adb socket option. Parse the host and port
-    # part from the socket instead.
-    # https://developer.android.com/studio/command-line/adb.html#issuingcommands
-    pattern = r'^[^:]+:([^:]+):(\d+)$'
-    match = re.match(pattern, socket)
-    if not match:
-        raise ValueError('Unrecognized socket format: %s' % socket)
-    server_host, server_port = match.groups()
-    return '-s %s -H %s -P %s' % (
-        pipes.quote(target), pipes.quote(server_host), pipes.quote(server_port))
+    return f'-s {shlex.quote(target)} -L {shlex.quote(socket)}'
 
 
 def _run_adb_cmd(cmd, adb_option="", **kwargs):
@@ -90,7 +80,7 @@ def _ensure_adb_connected(target, adb_option=""):
         if not did_reconnect:
             logging.info('adb not connected. attempting to reconnect')
             did_reconnect = True
-        _run_adb_cmd('connect %s' % pipes.quote(target),
+        _run_adb_cmd('connect %s' % shlex.quote(target),
                      adb_option=adb_option,
                      timeout=_ADB_COMMAND_TIMEOUT_SECONDS, ignore_status=True)
         time.sleep(_ADB_CONNECT_INTERVAL_SECONDS)

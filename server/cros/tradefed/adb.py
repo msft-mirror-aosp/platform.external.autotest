@@ -9,6 +9,7 @@
 # use "import adb as someothername".
 
 import logging
+import random
 import re
 
 from autotest_lib.server import utils
@@ -17,8 +18,13 @@ from autotest_lib.server import utils
 class Adb:
     """Class for running adb commands."""
 
-    def __init__(self):
+    def __init__(self, random_port=False):
         self._install_paths = set()
+        if random_port:
+            self._port = random.randint(1024, 65535)
+        else:
+            self._port = 5037
+        logging.info('adb using port %s', self._port)
 
     def add_path(self, path):
         """Adds path for executing commands.
@@ -31,6 +37,14 @@ class Adb:
     def get_paths(self):
         return self._install_paths
 
+    def get_socket(self):
+        """Returns the ADB server socket string as in `adb -L <socket>`."""
+        return f'tcp:localhost:{self._port}'
+
+    def get_port(self):
+        """Returns the ADB server port being used."""
+        return self._port
+
     def run(self, host, *args, **kwargs):
         """Runs an ADB command on the host.
 
@@ -38,7 +52,7 @@ class Adb:
         @param args: Extra args passed to the adb command.
         @param kwargs: Extra arguments passed to utils.run().
         """
-        additional_option = _tradefed_options(host)
+        additional_option = self._get_options(host)
         kwargs['args'] = additional_option + kwargs.get('args', ())
 
         # _install_paths should include the directory with adb.
@@ -49,6 +63,19 @@ class Adb:
         logging.info('adb %s:\n%s', ' '.join(kwargs.get('args')),
                      result.stdout + result.stderr)
         return result
+
+    def _get_options(self, host):
+        """Returns ADB options for executing commands.
+
+        @param host: DUT that want to connect to. (None if the adb command is
+                     intended to run in the server. eg. keygen)
+        @return a tuple of arguments for adb command.
+        """
+        opts = ['-L', self.get_socket()]
+        if host:
+            host_port = get_adb_target(host)
+            opts.extend(('-s', host_port))
+        return tuple(opts)
 
 
 def get_adb_target(host):
@@ -73,21 +100,3 @@ def get_adb_target(host):
 def get_adb_targets(hosts):
     """Get a list of adb targets."""
     return [get_adb_target(host) for host in hosts]
-
-
-def _tradefed_options(host):
-    """ADB arguments for tradefed.
-
-    These arguments are specific to using adb with tradefed.
-
-    @param host: DUT that want to connect to. (None if the adb command is
-                 intended to run in the server. eg. keygen)
-    @return a tuple of arguments for adb command.
-    """
-    if host:
-        host_port = get_adb_target(host)
-        ret = ('-s', host_port)
-        return ret
-    # As of N, tradefed could not specify which adb socket to use, which use
-    # tcp:localhost:5037 by default.
-    return ('-H', 'localhost', '-P', '5037')

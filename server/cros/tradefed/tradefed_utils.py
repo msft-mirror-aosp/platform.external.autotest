@@ -73,7 +73,7 @@ def lock(filename):
 
 
 @contextlib.contextmanager
-def adb_keepalive(targets, extra_paths):
+def adb_keepalive(targets, extra_paths, socket=None):
     """A context manager that keeps the adb connection alive.
 
     AdbKeepalive will spin off a new process that will continuously poll for
@@ -84,14 +84,19 @@ def adb_keepalive(targets, extra_paths):
     @param target: the hostname and port of the DUT.
     @param extra_paths: any additional components to the PATH environment
                         variable.
+    @param socket: (optional) the ADB server socket.
     """
     from autotest_lib.client.common_lib.cros import adb_keepalive as module
     # |__file__| returns the absolute path of the compiled bytecode of the
     # module. We want to run the original .py file, so we need to change the
     # extension back.
     script_filename = module.__file__.replace('.pyc', '.py')
+    common_args = [script_filename]
+    if socket:
+        common_args.extend(['--socket', socket])
+
     jobs = [common_utils.BgJob(
-        [script_filename, target],
+        common_args + [target],
         nickname='adb_keepalive',
         stderr_level=logging.DEBUG,
         stdout_tee=common_utils.TEE_TO_LOGS,

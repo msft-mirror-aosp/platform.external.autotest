@@ -70,7 +70,8 @@ class AdbTest(unittest.TestCase):
 
         instance.run(mock_host, args=('some', 'command'), timeout=240)
         mock_run.assert_called_with('adb',
-                                    args=('-s', '123.76.0.29:3467', 'some',
+                                    args=('-L', 'tcp:localhost:5037', '-s',
+                                          '123.76.0.29:3467', 'some',
                                           'command'),
                                     timeout=240,
                                     extra_paths=['/some/install/path'])
@@ -82,7 +83,20 @@ class AdbTest(unittest.TestCase):
 
         instance.run(None, args=('some', 'command'), timeout=240)
         mock_run.assert_called_with('adb',
-                                    args=('-H', 'localhost', '-P', '5037',
-                                          'some', 'command'),
+                                    args=('-L', 'tcp:localhost:5037', 'some',
+                                          'command'),
                                     timeout=240,
                                     extra_paths=['/some/install/path'])
+
+    @patch('autotest_lib.server.utils.run')
+    @patch('random.randint', return_value=12345)
+    def test_run_random_port(self, mock_randint, mock_run):
+        instance = adb.Adb(random_port=True)
+        mock_randint.assert_called()
+
+        instance.run(None, args=('some', 'command'), timeout=240)
+        mock_run.assert_called_with('adb',
+                                    args=('-L', 'tcp:localhost:12345', 'some',
+                                          'command'),
+                                    timeout=240,
+                                    extra_paths=[])

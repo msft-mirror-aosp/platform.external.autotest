@@ -357,6 +357,8 @@ suite:cross-device
 suite:cross-device-cellular
 suite:cross-device-cq
 suite:cross-device-floss
+suite:crostini-slow-cq
+suite:crostini-slow-informational
 suite:cts
 suite:cts-hardware
 suite:cts_P

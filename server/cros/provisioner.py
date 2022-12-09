@@ -528,7 +528,7 @@ class ChromiumOSProvisioner(object):
         # the exercise is to paper over problems; allowing this to
         # fail would defeat the purpose.
         self._run('crossystem clear_tpm_owner_request=1', ignore_status=True)
-        self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
+        self.host.reboot(timeout=3*self.host.REBOOT_TIMEOUT)
 
         # Touch the lab machine file to leave a marker that
         # distinguishes this image from other test images.

@@ -171,6 +171,18 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             # Install the matching build with quick provision.
             self.provision_dut(build_name=build_name,
                                public_bucket=running_at_desk)
+            try:
+                self._run(['python', '--version'])
+            except error.AutoservRunError as e:
+                # TODO(b/261782079): Remove this once provisioning between
+                # certain versions is fixed and doesn't trigger repairs that
+                # wipe the stateful partition. For now, provision again in to
+                # ensure the DUT is in a good state for testing.
+                logging.warning(
+                    'Python unavailable after provisioning source version. '
+                    'Re-attempting provisioning.')
+                self.provision_dut(build_name=build_name,
+                                   public_bucket=running_at_desk)
 
             self._run_client_test_and_check_result(
                     self._LOGIN_TEST,

@@ -82,6 +82,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     GET_TASKINFO = ['IRQ counts by type:\s+(([\d ]{13}[\r\n]+)+)>']
     # Ti50 has no periodic wake from regular sleep
     SLEEP_RATE = 0
+    # Ti50 inhibits deep sleep for 60 seconds after AP power on.
+    DEEP_SLEEP_DELAY = 60
     DS_RESETS_TIMER = False
 
     def set_ccd_level(self, level, password=''):

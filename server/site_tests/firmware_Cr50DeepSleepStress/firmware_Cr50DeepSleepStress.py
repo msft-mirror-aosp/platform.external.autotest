@@ -27,9 +27,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     """
     version = 1
 
-    SLEEP_DELAY = 20
     MIN_RESUME = 15
-    MIN_SUSPEND = 15
     # Initialize the FWMP with a non-zero value. Use 100, because it's an
     # unused flag and it wont do anything like lock out dev mode or ccd.
     FWMP_FLAGS = '0x100'
@@ -49,6 +47,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         if self.servo.main_device_is_ccd():
             raise error.TestNAError('deep sleep tests can only be run with a '
                                     'servo flex')
+
+        # Suspend longer than DEEP_SLEEP_DELAY to ensure entering deep sleep.
+        self.min_suspend = self.gsc.DEEP_SLEEP_DELAY + 5
 
         # Reset the device
         self.host.reset_via_servo()
@@ -126,7 +127,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             # Power off the device
             self.set_ap_off_power_mode('shutdown')
 
-            time.sleep(self.MIN_SUSPEND)
+            time.sleep(self.min_suspend)
 
             # Power on the device
             self.servo.power_normal_press()
@@ -202,7 +203,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         client_at.run_test('power_SuspendStress',
                            tag='idle',
                            duration=0,
-                           min_suspend=self.MIN_SUSPEND,
+                           min_suspend=self.min_suspend,
                            min_resume=self.MIN_RESUME,
                            check_connection=False,
                            suspend_iterations=suspend_count,
@@ -295,11 +296,6 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         if reset_type not in ['reboot', 'freeze', 'mem']:
             raise error.TestNAError('Invalid reset_type. Use "freeze", "mem" '
                                     'or "reboot"')
-        if self.MIN_SUSPEND + self.MIN_RESUME < self.SLEEP_DELAY:
-            logging.info('Minimum suspend-resume cycle is %ds. This is '
-                         'shorter than the Cr50 idle timeout. Cr50 may not '
-                         'enter deep sleep every cycle',
-                         self.MIN_SUSPEND + self.MIN_RESUME)
         if not suspend_count:
             raise error.TestFail('Need to provide non-zero suspend_count')
         original_flog = cr50_utils.DumpFlog(self.host,

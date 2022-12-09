@@ -76,7 +76,11 @@ class FirmwareError(SuspendFailure):
             # Individual EC error responses are meaningless on their own.
             # Ignore such low-level errors in favor of capturing any errors
             # they generate instead.
-            (r'.*', r'EC returned error result code')
+            (r'.*', r'EC returned error result code'),
+            # Ignore i2c address write failure messages for cr50/ti50 as they
+            # occur during initial probing of DidVid of GSC
+            (r'.*', r'cr50_i2c_read: Address write failed'),
+            (r'.*', r'I2C TX abort detected (00000001)')
     ]
 
 

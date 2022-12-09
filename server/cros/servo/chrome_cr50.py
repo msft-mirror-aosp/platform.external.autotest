@@ -257,6 +257,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     GET_TASKINFO = ['IRQ counts by type:\s+(([\d ]{13}\r\n)+)Service calls']
     # Cr50 should wake up twice per second while in regular sleep
     SLEEP_RATE = 2
+    # Cr50 will deep sleep after 20 seconds.
+    DEEP_SLEEP_DELAY = 20
     DS_RESETS_TIMER = True
 
     def __init__(self, servo, faft_config):

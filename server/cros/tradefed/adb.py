@@ -12,7 +12,11 @@ import logging
 import random
 import re
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
+
+# The default ADB port.
+_DEFAULT_ADB_PORT = 5037
 
 
 class Adb:
@@ -20,14 +24,57 @@ class Adb:
 
     def __init__(self):
         self._install_paths = set()
-        self._port = 5037
+        self._port = _DEFAULT_ADB_PORT
 
-    def pick_random_port(self):
-        """Picks a random ADB server port for subsequent ADB commands."""
-        # TODO(b/261368446): Detect port collisions in CFT so we don't end up
-        # killing adb in another test container.
-        self._port = random.randint(1024, 65535)
-        logging.info('adb using random port %s', self._port)
+    def pick_random_port(self, max_retries=3, start_timeout=3):
+        """Picks a random ADB server port for subsequent ADB commands.
+
+        This is required by CFT where test containers share the same host
+        network namespace. This function implements heuristics to detect if a
+        port is already occupied by an ADB server in another test container, to
+        prevent tests from breaking each other's state.
+
+        TODO: Possibly remove the heuristics once go/cft-port-discovery is
+        implemented; allow the caller to specify a safe port range or simply
+        decide which port to use.
+
+        @param max_retries: Try this many times until we find an available port.
+        @param start_timeout: Seconds to wait until `adb start-server` returns.
+        """
+        num_tries = 0
+        while num_tries < max_retries:
+            self._port = random.randint(1024, 65535)
+            if self._port == _DEFAULT_ADB_PORT:
+                continue
+            num_tries += 1
+
+            # Run `adb start-server` on the candidate port. There are 4 possible
+            # outcomes:
+            # (1) The port is unused and ADB server starts successfully. The
+            #     command would print a message containing "daemon started
+            #     successfully" to stderr and return successfully.
+            # (2) The port is occupied by another ADB server. The command would
+            #     return successfully, but print nothing to stderr.
+            # (3) The port is occupied by some process, and it returns an
+            #     invalid response. The command would return a non-zero status.
+            # (4) The port is occupied by some process, and it doesn't respond.
+            #     The command would hang until timeout.
+            try:
+                result = self.run(None, verbose=True, args=('start-server',),
+                                  timeout=start_timeout)
+            except (error.CmdError, error.CmdTimeoutError):
+                # Cases (3) and (4); try another port
+                continue
+
+            if 'daemon started successfully' not in result.stderr:
+                # Case (2); try another port
+                continue
+
+            # Case (1)
+            logging.info('adb using random port %s', self._port)
+            return
+
+        raise Exception('Failed to find available port for ADB server')
 
     def add_path(self, path):
         """Adds path for executing commands.

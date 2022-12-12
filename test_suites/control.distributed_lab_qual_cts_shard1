@@ -1,0 +1,36 @@
+# Copyright 2022 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Distributed Fleet Platform"
+NAME = "distributed_lab_qual_cts_shard1"
+PURPOSE = "Optimized test suite for distributed satlab tests"
+
+TEST_CATEGORY = "General"
+TIME = "LONG"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+Chromeos Deqp Test runs.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+def predicate(test):
+  if not hasattr(test, 'suite') or not hasattr(test, 'name'):
+    return False
+  if not NAME in test.suite.split(','):
+    return False
+  # Strip off the cheets_CTS_P. from the test name before comparing to args
+  name = test.name[test.name.find('.') + 1:]
+  if 'tests' in args_dict and name not in args_dict['tests']:
+    return False
+  return True
+
+args_dict['name'] = NAME
+args_dict['job'] = job
+args_dict['max_runtime_mins'] = 10080
+args_dict['timeout_mins'] = 10080
+dynamic_suite.reimage_and_run(**args_dict)

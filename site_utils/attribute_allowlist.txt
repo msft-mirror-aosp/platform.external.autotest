@@ -370,6 +370,7 @@ suite:dev_drone_image_test
 suite:display
 suite:distributed_lab_qual_bvt_shard1
 suite:distributed_lab_qual_bvt_shard2
+suite:distributed_lab_qual_cts_shard1
 suite:distributed_lab_qual_faft
 suite:dmserver-enrollment-daily
 suite:dmserver-zteenrollment-daily

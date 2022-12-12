@@ -90,8 +90,9 @@ class AdbTest(unittest.TestCase):
 
     @patch('autotest_lib.server.utils.run')
     @patch('random.randint', return_value=12345)
-    def test_run_random_port(self, mock_randint, mock_run):
-        instance = adb.Adb(random_port=True)
+    def test_pick_random_port(self, mock_randint, mock_run):
+        instance = adb.Adb()
+        instance.pick_random_port()
         mock_randint.assert_called()
 
         instance.run(None, args=('some', 'command'), timeout=240)

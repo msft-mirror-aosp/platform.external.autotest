@@ -18,13 +18,16 @@ from autotest_lib.server import utils
 class Adb:
     """Class for running adb commands."""
 
-    def __init__(self, random_port=False):
+    def __init__(self):
         self._install_paths = set()
-        if random_port:
-            self._port = random.randint(1024, 65535)
-        else:
-            self._port = 5037
-        logging.info('adb using port %s', self._port)
+        self._port = 5037
+
+    def pick_random_port(self):
+        """Picks a random ADB server port for subsequent ADB commands."""
+        # TODO(b/261368446): Detect port collisions in CFT so we don't end up
+        # killing adb in another test container.
+        self._port = random.randint(1024, 65535)
+        logging.info('adb using random port %s', self._port)
 
     def add_path(self, path):
         """Adds path for executing commands.

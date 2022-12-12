@@ -136,10 +136,7 @@ class TradefedTest(test.test):
     # Currently this is only used for dependency injection for testing.
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
-        # Random ADB port is required for CFT where containers use host
-        # networking.
-        # TODO(b/261368446): Handle port collisions.
-        self._adb = kwargs.get('adb', adb_utils.Adb(random_port=True))
+        self._adb = kwargs.get('adb', adb_utils.Adb())
 
     def _log_java_version(self):
         """Log java version to debug failures due to version mismatch."""
@@ -527,6 +524,11 @@ class TradefedTest(test.test):
                 # Kill existing adb server to ensure that the env var is picked
                 # up, and reset any previous bad state.
                 self._kill_adb_server()
+
+                # Random ADB port is required for CFT where containers use host
+                # networking. Pick a random port every time as setup may fail
+                # due to port collision.
+                self._adb.pick_random_port()
 
                 # TODO(pwang): connect_adb takes 10+ seconds on a single DUT.
                 #              Parallelize it if it becomes a bottleneck.

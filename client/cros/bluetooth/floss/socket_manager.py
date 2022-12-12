@@ -165,8 +165,6 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         """Handle incoming socket ready callback."""
         logging.debug('on_incoming_socket_ready: socket: %s, status: %s',
                       socket, status)
-        if BtStatus(status) != BtStatus.SUCCESS:
-            return
         socket_id = socket['id']
         self.ready_sockets[socket_id] = (socket, status)
 
@@ -246,6 +244,10 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
             logging.error('on_incoming_socket_ready not called')
             return None, None
         socket, status = self.ready_sockets[socket_id]
+
+        # Consume the result here because we have no straightforward timing to
+        # drop the info.
+        del self.ready_sockets[socket_id]
 
         return socket, status
 

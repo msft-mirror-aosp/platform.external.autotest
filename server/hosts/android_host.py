@@ -103,6 +103,8 @@ class AndroidHost(base_classes.Host):
         """
         port = str(port)
         if persist_reboot:
+            # Configuring the adb-over-tcpip port to persist requires root.
+            self.run_adb_command('root')
             self.run_adb_command('shell setprop persist.adb.tcp.port %s' %
                                  port)
             self.run_adb_command('shell setprop ctl.restart adbd')

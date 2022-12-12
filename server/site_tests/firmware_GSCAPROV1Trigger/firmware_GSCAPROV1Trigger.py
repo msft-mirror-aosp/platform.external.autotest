@@ -150,6 +150,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         """Clear the Hash."""
         # Make sure the AP is up before trying to update.
         self.recover_dut()
+        self.clear_gbb_flags()
         self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
         self.gsc.send_command('ap_ro_info erase')
         time.sleep(3)
@@ -210,6 +211,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
                 return
             logging.info('Cleanup')
             self.recover_dut()
+            self.clear_gbb_flags()
             self.update_to_dbg_and_clear_hash()
             self.rollback_to_release_image()
             self.delete_test_ro_vpd_key()
@@ -370,6 +372,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         self.restore_ro()
         self.set_hash('WP_RO')
         self.rollback_to_release_image()
+        self.fast_ccd_open(True)
 
         logging.info('Verifying standard behavior')
         logging.info('the hash was generated with 0 gbb flags')
@@ -425,7 +428,11 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         self.restore_ro()
         self.set_factory_gbb_flags()
         self.set_hash('WP_RO')
+        # Clear the gbb flags, so the test can open ccd.
+        self.clear_gbb_flags()
         self.rollback_to_release_image()
+        self.fast_ccd_open(True)
+        self.set_factory_gbb_flags()
 
         logging.info('Verifying the gbb workaround')
         logging.info('cr50 can handle hashes generated with non-zero flags')
@@ -506,7 +513,11 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         self.restore_ro()
         self.set_factory_gbb_flags()
         self.set_hash('FMAP RO_VPD')
+
+        self.clear_gbb_flags()
         self.rollback_to_release_image()
+        self.fast_ccd_open(True)
+        self.set_factory_gbb_flags()
 
         logging.info('Verifying setup with GBB outside of hash')
         self._prefix = 'gbb outside of hash'
@@ -538,6 +549,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         self.clear_gbb_flags()
         self.set_hash('GBB')
         self.rollback_to_release_image()
+        self.fast_ccd_open(True)
 
         logging.info('Verifying setup with FMAP outside of hash')
         self._prefix = 'fmap not in hash'

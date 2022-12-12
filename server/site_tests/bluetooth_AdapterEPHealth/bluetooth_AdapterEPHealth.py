@@ -57,12 +57,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
         elif device.device_type == 'MOUSE':
             return self.test_mouse_left_click
         elif device.device_type == 'BLUETOOTH_AUDIO':
-            # If the test is expected to pass, verify the whole audio procedure
-            # Otherwise only make sure A2DP is not connected on peer device.
-            if expected_pass:
-                return lambda device: self.test_a2dp_sinewaves(device, A2DP, 0)
-            else:
-                return lambda device: self.test_device_a2dp_connected(device)
+            return lambda device: self.test_a2dp_sinewaves(
+                    device, A2DP, 0, expected_pass)
         else:
             raise error.TestError('Failed to find verifier for device type %s' %
                                   device.device_type)
@@ -202,8 +198,12 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
                 self.expect_test(expected_pass, self.test_hid_device_created,
                                  device.address)
 
-            # Whether the test should pass or fail depends on expected_pass.
-            self.expect_test(expected_pass, verifier, device)
+            if device.device_type == 'BLUETOOTH_AUDIO':
+                # The verifier already handles expected pass/fail.
+                verifier(device)
+            else:
+                # Whether the test should pass or fail depends on expected_pass.
+                self.expect_test(expected_pass, verifier, device)
 
             if multi_conn_workaround:
                 self.test_disconnection_by_adapter(device.address)
@@ -343,7 +343,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Incoming: Audio: Service not in Allowlist',
-                  devices={'BLUETOOTH_AUDIO':1})
+                  devices={'BLUETOOTH_AUDIO':1},
+                  supports_floss=True)
     def ep_incoming_audio_service_not_in_allowlist(self):
         """Service not in allowlist for incoming reconnection from device."""
         device = self.devices['BLUETOOTH_AUDIO'][0]

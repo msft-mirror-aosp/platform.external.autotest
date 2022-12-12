@@ -1241,15 +1241,25 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # Definitions of all bluetooth audio test sequences
     # ---------------------------------------------------------------
 
-    def test_a2dp_sinewaves(self, device, test_profile, duration):
-        """Test Case: a2dp sinewaves
+    def test_a2dp_sinewaves(self,
+                            device,
+                            test_profile,
+                            duration,
+                            expected_pass=True):
+        """Test Case: A2DP sinewaves.
 
-        @param device: the bluetooth peer device
-        @param test_profile: the a2dp test profile;
-                             choices are A2DP and A2DP_LONG
-        @param duration: the duration of the audio file to test
-                         0 means to use the default value in the test profile
+        If the test is expected to pass, verify A2DP is connected on the peer
+        device and it receives the audio stream.
+        If the test is expected to fail, verify that A2DP is not connected
+        **OR** the DUT doesn't receive the audio stream.
 
+        @param device: The bluetooth peer device.
+        @param test_profile: The a2dp test profile;
+                             choices are A2DP and A2DP_LONG.
+        @param duration: The duration of the audio file to test
+                         0 means to use the default value in the test profile.
+        @param expected_pass: True if the test is expected to pass, False
+                              otherwise.
         """
         # Make a copy since the test_data may be formatted with distinct
         # arguments in the follow-up tests.
@@ -1262,8 +1272,17 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         test_data['file'] %= duration
         logging.info('%s test for %d seconds.', test_profile, duration)
 
-        # Wait for pulseaudio a2dp bluez source
-        self.test_device_a2dp_connected(device)
+        # Wait for pulseaudio A2DP source.
+        if not expected_pass:
+            device_connected = self.ignore_failure(
+                    self.test_device_a2dp_connected, device)
+        else:
+            device_connected = self.test_device_a2dp_connected(device)
+
+        # If expected_test is False and device_connected is False, we don't need
+        # to check if the peer receives an audio stream.
+        if not device_connected:
+            return
 
         # Select audio output node so that we do not rely on chrome to do it.
         self.test_select_audio_output_node_bluetooth()
@@ -1278,7 +1297,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         # Check chunks of recorded streams and verify the primary frequencies.
         # This is a blocking call until all chunks are completed.
-        self.test_check_chunks(device, test_profile, test_data, duration)
+        self.expect_test(expected_pass, self.test_check_chunks, device,
+                         test_profile, test_data, duration)
 
         # Stop recording audio on the peer Bluetooth audio device.
         self.test_device_to_stop_recording_audio_subprocess(device)

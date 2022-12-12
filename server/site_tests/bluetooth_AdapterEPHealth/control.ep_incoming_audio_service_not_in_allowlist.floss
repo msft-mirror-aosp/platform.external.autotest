@@ -1,0 +1,32 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Server side bluetooth test with service in allowlist for incoming
+# reconnection from device.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterEPHealth.ep_incoming_audio_service_not_in_allowlist.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Batch of Bluetooth enterprise policy health tests',
+    'hw_agnostic': False
+}
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterEPHealth',
+                 host=host,
+                 num_iterations=1,
+                 args_dict=args_dict,
+                 test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

@@ -538,7 +538,8 @@ class bluetooth_AdapterLEAdvertising(
         discover_time = self.get_host_discovery_time(num_adv)
         self.test_reset_advertising()
 
-        advertisements = advertisements_data.gen_advertisements(0, num_adv)
+        advertisements = advertisements_data.gen_advertisements(
+                0, num_adv, floss=self.floss)
 
         for i in range(0, num_adv):
             self.bluetooth_facade.register_advertisement(advertisements[i])

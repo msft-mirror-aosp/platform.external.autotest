@@ -69,7 +69,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Suspend resume LE advertising test',
                   skip_models=SUSPEND_POWER_DOWN_MODELS + ['winky'],
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
-                  skip_common_errors=True)
+                  skip_common_errors=True,
+                  supports_floss=True)
     def adv_suspend_resume_advertising_test(self):
         """Run all test cases for advertisements involving suspend resume."""
         self.run_le_advertising_test(
@@ -125,7 +126,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
-                  skip_common_errors=True)
+                  skip_common_errors=True,
+                  supports_floss=True)
     def adv_suspend_peer_test(self):
         """Verify advertising around suspend from a peer"""
 

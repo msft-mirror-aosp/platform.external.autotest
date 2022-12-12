@@ -1,0 +1,44 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This test case verifies that the Bluetooth adapter of the DUT can behave as a
+# Bluetooth low-energy device and advertise correctly around a suspend/resume.
+#
+# This autotest include the following test cases:
+#    self.test_case_SI200_RA3_CD_SR_CD_UA3()
+#    self.test_case_RA3_CD_SI200_CD_SR_CD_UA3()
+#    self.test_case_SI200_RA1_CD_SR_CD_UA1()
+#    self.test_case_RA1_CD_SI200_CD_SR_CD_UA1()
+#
+# Mnemonics of the test cases:
+#    CD: check advertising duration and intervals
+#    RA: register advertisements
+#    UA: unregister advertisements
+#    SI: set advertising intervals
+#    RS: reset advertising
+#    FRA: fail to register extra advertisements when max ones have
+#         been registered.
+#    FSI: fail to set advertising intervals beyond legitimate range
+#         of [20 ms, 10,240 ms].
+#    PC: power cycle the bluetooth adapter (controller).
+#    SR: suspend and resume the DUT (chromebook)
+
+NAME = 'bluetooth_AdapterAdvHealth.adv_suspend_resume_advertising_test.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Test bluetooth adapter advertising across suspend/resume',
+    'hw_agnostic': True
+}
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth'
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterAdvHealth', host=host, num_iterations=1,
+                 test_name=NAME.split('.')[1], peer_required=False, floss=True)
+
+parallel_simple(run, machines)

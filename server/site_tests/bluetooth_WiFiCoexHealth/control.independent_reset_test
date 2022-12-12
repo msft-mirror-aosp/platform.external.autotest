@@ -7,7 +7,7 @@ from autotest_lib.server import utils
 AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_WiFiCoexHealth.independent_reset_test'
 PURPOSE = 'Verify the adapter can be reset without affecting WiFi component'
-ATTRIBUTES = 'suite:bluetooth_flaky'
+ATTRIBUTES = 'suite:bluetooth_wifi_coex'
 TIME = 'short'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell, bluetooth'

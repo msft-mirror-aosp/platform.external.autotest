@@ -22,8 +22,7 @@ class bluetooth_WiFiCoexHealth(BluetoothAdapterQuickTests):
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
-    @test_wrapper('Independent reset test', flags='Quick Health')
+    @test_wrapper('Independent reset test')
     def independent_reset_test(self):
         """Verify the adapter can be reset without affecting WiFi component"""
 
@@ -100,7 +99,7 @@ class bluetooth_WiFiCoexHealth(BluetoothAdapterQuickTests):
         @param test_name: a single test to run or leave None to run the batch.
         @param peer_required: whether a btpeer is required.
         @param flag: run 'Quick Health' tests or 'AVL' tests.
-        @param floss: enbluetooth_WiFiCoexHealthble Floss.
+        @param floss: enable Floss.
         """
         self.quick_test_init(host,
                              use_btpeer=peer_required,

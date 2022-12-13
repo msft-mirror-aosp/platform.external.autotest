@@ -1,0 +1,30 @@
+# Copyright 2022 The ChromiumOS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = "dlc_Install.scaled"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests scaled DLC installations."
+}
+TIME = "MEDIUM"
+TEST_TYPE = "server"
+ATTRIBUTES = "suite:au-perbuild"
+JOB_RETRIES = 2
+DOC = """
+This test will install the 'scaled-dlc' DLC, which is a DLC specifically
+enabled with scaled feature.
+"""
+
+from autotest_lib.client.common_lib import utils
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('dlc_Install', host=host, dlc='scaled-dlc', **args_dict)
+
+job.parallel_simple(run, machines)

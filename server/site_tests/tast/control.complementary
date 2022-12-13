@@ -8,6 +8,7 @@ AUTHOR = 'cros-engprod-muc'
 NAME = 'tast.complementary'
 TIME = 'LONG'
 TEST_TYPE = 'Server'
+DEPENDENCIES = 'servo_state:WORKING'
 ATTRIBUTES = 'suite:complementary'
 MAX_RESULT_SIZE_KB = 512 * 1024
 PY_VERSION = 3

@@ -67,6 +67,8 @@ class chromium_GPU(test.test):
                            '{}/'.format(self.server_pkg),
                            preserve_perm=False,
                            preserve_symlinks=True)
+        # The test script needs to know it is running in Skylab environment.
+        os.environ['RUNNING_IN_SKYLAB'] = '1'
 
     @property
     def is_cros_chrome(self):

@@ -8,7 +8,7 @@
 # 
 # The version runs for 25 minutes as it is common duration of the video call.
 
-NAME = ""
+NAME = "power_VideoCall.25min"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "puthik",

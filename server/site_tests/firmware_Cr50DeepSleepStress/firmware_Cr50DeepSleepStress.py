@@ -335,10 +335,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                         'Invalid configuration, S0ix not supported, but '
                         'deep_sleep_in_s0i3 is true')
 
-            if self.check_cr50_capability(['deep_sleep_in_s0i3']) and \
-               self.s0ix_supported and not self.s3_supported:
-                logging.info('Switching suspend type from "mem" to "freeze" '
-                             'to support s0ix(S3 unsupported)')
+            if self.check_cr50_capability(['deep_sleep_in_s0i3']) or not \
+               self.s3_supported:
+                logging.info('Switching suspend type from "mem" to "freeze"')
                 suspend_type = 'freeze'
 
             # Check if the Cr50 enters deep sleep on this device.

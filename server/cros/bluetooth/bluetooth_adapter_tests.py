@@ -3412,8 +3412,6 @@ class BluetoothAdapterTests(test.test):
 
         if self.floss:
             adv_broadcast = not advertisement_data['parameters']['connectable']
-            add_adv_data_str = 'LE Set Extended Advertising Data'
-            instance_str = 'Handle: 0x%02X' % (instance_id - 1)
             add_adv_param_str = 'LE Set Extended Advertising Parameters'
             manufacturer_data = advertisement_data.get(
                 'advertise_data', {}).get('manufacturer_data')
@@ -3421,19 +3419,22 @@ class BluetoothAdapterTests(test.test):
                                                    {}).get('service_uuids')
             service_data = advertisement_data.get(
                 'advertise_data', {}).get('service_data').items()
+
+            # Verify that a new advertisement is added.
+            advertisement_added = (self.bluetooth_facade.btmon_find(
+                    'LE Set Extended Advertising Data'))
         else:
             adv_broadcast = advertisement_data.get('Type') == 'broadcast'
-            add_adv_data_str = 'Advertising Added'
-            instance_str = 'Instance: %d' % instance_id
             add_adv_param_str = 'Add Extended Advertising Parameters'
             manufacturer_data = advertisement_data.get('ManufacturerData', '')
             service_uuids = advertisement_data.get('ServiceUUIDs', [])
             service_data = advertisement_data.get('ServiceData', {}).items()
 
-        # Verify that a new advertisement is added.
-        advertisement_added = (
-                self.bluetooth_facade.btmon_find(add_adv_data_str)
-                and self.bluetooth_facade.btmon_find(instance_str))
+            # Verify that a new advertisement is added.
+            advertisement_added = (
+                    self.bluetooth_facade.btmon_find('Advertising Added')
+                    and self.bluetooth_facade.btmon_find(
+                            'Instance: %d' % instance_id))
 
         # Verify that the manufacturer data could be found.
         manufacturer_data_found = True
@@ -3598,17 +3599,16 @@ class BluetoothAdapterTests(test.test):
         self.count_advertisements -= 1
         self._get_btmon_log(lambda: self.bluetooth_facade.
                             unregister_advertisement(advertisement_data))
-        if self.floss:
-            remove_adv_data_str = 'LE Remove Advertising Set'
-            instance_str = 'Handle: %d' % (instance_id - 1)
-        else:
-            remove_adv_data_str = 'Advertising Removed'
-            instance_str = 'Instance: %d' % instance_id
 
         # Verify that the advertisement is removed.
-        advertisement_removed = (
-                self.bluetooth_facade.btmon_find(remove_adv_data_str)
-                and self.bluetooth_facade.btmon_find(instance_str))
+        if self.floss:
+            advertisement_removed = (self.bluetooth_facade.btmon_find(
+                    'LE Remove Advertising Set'))
+        else:
+            advertisement_removed = (
+                    self.bluetooth_facade.btmon_find('Advertising Removed')
+                    and self.bluetooth_facade.btmon_find(
+                            'Instance: %d' % instance_id))
 
         # If advertising_disabled is True, there should be no log like
         #       'Advertising: Enabled (0x01)'
@@ -3815,14 +3815,13 @@ class BluetoothAdapterTests(test.test):
                 remove_adv_data_str = 'Advertising Removed'
             advertisement_removed = self.bluetooth_facade.btmon_find(
                     remove_adv_data_str)
-            if advertisement_removed:
-                for instance_id in instance_ids:
-                    if self.floss:
-                        instance_str = 'Handle: %d' % (instance_id - 1)
-                    else:
-                        instance_str = 'Instance: %d' % instance_id
 
-                    if not self.bluetooth_facade.btmon_find(instance_str):
+            # The way Floss selects the handle ID is different from how
+            # instance ID is selected by BlueZ, thus skipping it.
+            if advertisement_removed and not self.floss:
+                for instance_id in instance_ids:
+                    if not self.bluetooth_facade.btmon_find(
+                            'Instance: %d' % instance_id):
                         advertisement_removed = False
                         break
         else:

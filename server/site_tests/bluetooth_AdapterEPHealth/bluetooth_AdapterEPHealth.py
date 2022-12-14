@@ -470,7 +470,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Combo: Non-HID Allowlist Persists Adapter Reset',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_combo_non_hid_persists_adapter_reset(self):
         """The Allowlist with non-HID UUID should persist adapter reset."""
         device = self.devices['KEYBOARD'][0]
@@ -497,7 +498,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Combo: Non-HID Allowlist Persists bluetoothd restart',
-                  devices={'KEYBOARD':1})
+                  devices={'KEYBOARD':1},
+                  supports_floss=True)
     def ep_combo_non_hid_persists_bluetoothd_restart(self):
         """The Allowlist with non-HID UUID should persist bluetoothd restart."""
         device = self.devices['KEYBOARD'][0]

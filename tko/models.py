@@ -23,7 +23,7 @@ class job(object):
                  finished_time, machine_owner, machine_group, aborted_by,
                  aborted_on, keyval_dict, afe_job_id=None,
                  afe_parent_job_id=None, build_version=None, suite=None,
-                 board=None, dlm_sku_id=None, hwid=None):
+                 board=None, dlm_sku_id=None, hwid=None, uploader=None):
         self.dir = dir
         self.tests = []
         self.user = user
@@ -49,6 +49,7 @@ class job(object):
         self.task_reference_id = None
         self.dlm_sku_id = dlm_sku_id
         self.hwid = hwid
+        self.uploader = uploader
 
     @staticmethod
     def read_keyval(dir):

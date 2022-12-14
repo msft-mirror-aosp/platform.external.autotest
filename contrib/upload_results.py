@@ -157,6 +157,13 @@ def parse_arguments(argv):
             help="The suite is used to identify the type of test results,"
             "e.g. 'power' for platform power team. If not specific, the "
             "default value is 'default_suite'.")
+    upload_parser.add_argument(
+            "-u",
+            "--uploader",
+            type=str,
+            required=False,
+            default=os.getenv("USER"),
+            help="Uploader/User. Default: " + uploader)
 
     # checkacls subcommand to verify service account has proper acls to upload results to bucket
     subparsers.add_parser(name="checkacls", help='check ACLs of configured service account')
@@ -806,6 +813,8 @@ def main(args):
     file_handler.setFormatter(fmt)
     file_handler.setLevel(log.DEBUG)
     logging.addHandler(file_handler)
+
+    logging.info("uploaded by %s", parsed_args.uploader)
 
     if parsed_args.subcommand == "config":
         _configure_environment(parsed_args.bucket, parsed_args.force)

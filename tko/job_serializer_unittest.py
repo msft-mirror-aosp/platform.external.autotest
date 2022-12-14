@@ -46,6 +46,7 @@ class JobSerializerUnittest(unittest.TestCase):
         tko_job.index = 2
         tko_job.dlm_sku_id = '5129'
         tko_job.hwid = 'CRET-BKLL C7B-C2C-G4G-R3U-Q3A-Q4N'
+        tko_job.uploader = 'test uploader'
 
         tko_iteration = models.iteration(0, {'2+2':4, '3+3':6},
                                    {'4+4':8, '5+5':10, '6+6':12})
@@ -202,6 +203,11 @@ class JobSerializerUnittest(unittest.TestCase):
         """Test serializing hwid field."""
         self.assertEqual(self.tko_job.hwid,
                         self.pb_job.hwid)
+
+    def test_uploader(self):
+        """Test serializing uploader field."""
+        self.assertEqual(self.tko_job.uploader,
+                        self.pb_job.uploader)
 
     def test_tests(self):
         """Check if all the test are the same.

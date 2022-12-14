@@ -4,7 +4,12 @@
 
 # This file is not auto-generated. Don't delete it.
 
-AUTHOR = 'ARC++ Team'
+AUTHOR = 'n/a'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
 NAME = 'cheets_CTS_P.arm.waivers'
 ATTRIBUTES = 'suite:cts_P, suite:cts, suite:cts-hardware'
 DEPENDENCIES = 'arc'
@@ -12,8 +17,7 @@ JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
-PY_VERSION = 3
-DOC = 'Run waived tests of the Android Compatibility Test Suite (CTS) using arm ABI in the ARC++ container.'
+DOC = 'n/a'
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]

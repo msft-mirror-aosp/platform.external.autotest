@@ -79,16 +79,17 @@ elif '.' in cts_test:
 tag = 'tradefed-run-test.%s.%s' % (cts_module, simplified_test)
 
 # The usual testing stanza. We are suppressing some DEPENDENCIES on purpose.
-AUTHOR = 'ARC++ Team'
 NAME = 'cheets_CTS_T.tradefed-run-test'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
 ATTRIBUTES = ''
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 0
 TEST_TYPE = 'server'
-TIME = 'LONG'
 MAX_RESULT_SIZE_KB = 256000
-PY_VERSION = 3
-DOC = 'Run a test of the Android Compatibility Test Suite (CTS) in ARC++'
 
 # And launch.
 def run_TS(machine):

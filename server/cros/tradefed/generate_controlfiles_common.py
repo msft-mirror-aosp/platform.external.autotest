@@ -52,22 +52,26 @@ _CONTROLFILE_TEMPLATE = Template(
     import pipes
     {%- endif %}
 
-    AUTHOR = 'ARC++ Team'
+    AUTHOR = 'n/a'
     NAME = '{{name}}'
+    METADATA = {
+        "contacts": ["arc-cts-eng@google.com"],
+        "bug_component": "b:183644",
+        "criteria": "A part of Android CTS",
+    }
     ATTRIBUTES = '{{attributes}}'
     DEPENDENCIES = '{{dependencies}}'
     JOB_RETRIES = {{job_retries}}
     TEST_TYPE = 'server'
     TIME = '{{test_length}}'
     MAX_RESULT_SIZE_KB = {{max_result_size_kb}}
-    PY_VERSION = 3
     {%- if sync_count and sync_count > 1 %}
     SYNC_COUNT = {{sync_count}}
     {%- endif %}
     {%- if priority %}
     PRIORITY = {{priority}}
     {%- endif %}
-    DOC = '{{DOC}}'
+    DOC = 'n/a'
     {%- if servo_support_needed %}
 
     # For local debugging, if your test setup doesn't have servo, REMOVE these
@@ -288,22 +292,6 @@ def get_extension(module,
     if not CONFIG.get('SINGLE_CONTROL_FILE') and abi and abi_bits:
         ext_parts += [str(abi_bits)]
     return '.'.join(ext_parts)
-
-
-def get_doc(modules, abi, is_public):
-    """Defines the control file DOC string."""
-    if modules.intersection(get_collect_modules(is_public)) or CONFIG.get(
-            'SINGLE_CONTROL_FILE'):
-        module_text = 'all'
-    else:
-        # Generate per-module DOC
-        module_text = 'module ' + ', '.join(sorted(list(modules)))
-
-    abi_text = (' using %s ABI' % abi) if abi else ''
-
-    doc = ('Run %s of the %s%s in the ARC++ container.'
-           % (module_text, CONFIG['DOC_TITLE'], abi_text))
-    return doc
 
 
 def servo_support_needed(modules, is_public=True):
@@ -1037,7 +1025,6 @@ def get_controlfile_content(combined,
             enable_default_apps=enable_default_apps(modules),
             tag=tag,
             uri=uri,
-            DOC=get_doc(modules, abi, is_public),
             servo_support_needed=servo_support_needed(modules, is_public),
             wifi_info_needed=wifi_info_needed(modules, is_public),
             has_precondition_escape=has_precondition_escape(modules, is_public),

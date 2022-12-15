@@ -22,5 +22,5 @@ def make_current_screen_fullscreen(tconn_service, call_on_lacros=False):
                 (resolve) => chrome.windows.update(
                     window_id, { state: 'fullscreen' },
                     resolve));
-        })()'''),
-        call_on_lacros=call_on_lacros)
+        })()''',
+        call_on_lacros=call_on_lacros))

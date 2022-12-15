@@ -5217,17 +5217,35 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             return 'Failed to reset advertisement sets'
         return ''
 
+    def unregister_profile(self, socket_id):
+        """Unregisters Floss service with specific socket id.
+
+        @param socket_id: Socket id.
+
+        @return: True on success, False otherwise.
+        """
+        return self.socket_client.close_sync(socket_id)
+
+    def unregister_all_profile(self):
+        """Unregisters all active Floss service.
+
+        @return: True on success, False otherwise.
+        """
+        return self.socket_client.close_all()
+
     def register_profile(self, name, uuid, option):
         """Registers Floss service with specific name and uuid.
 
         This function registers the UUID to the Floss SDP server by listening
         to an RFCOMM channel with the UUID as the service record.
 
+        Note: Return value is different from BlueZ facade
+
         @param name: Service name.
         @param uuid: Service uuid as string.
         @param option: Unused by Floss.
 
-        @return: True on success, False otherwise.
+        @return: BluetoothServerSocket on success, None otherwise.
         """
         try:
             uuid_value = UUID(uuid).bytes
@@ -5237,7 +5255,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         socket_result = (self.socket_client.
                          listen_using_rfcomm_with_service_record_sync(
                                  name, uuid_value))
-        return socket_result is not None
+        return socket_result
 
     def get_advertisement_property(self, adv_path, prop_name):
         """Grabs property of an advertisement registered on the DUT.

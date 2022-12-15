@@ -155,6 +155,7 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         self.callback_id = None
         self.objpath = self.ADAPTER_OBJECT_PATTERN.format(hci)
         self.ready_sockets = {}
+        self.active_sockets = {}
 
     def __del__(self):
         """Destructor"""
@@ -168,11 +169,23 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         socket_id = socket['id']
         self.ready_sockets[socket_id] = (socket, status)
 
+        if BtStatus(status) != BtStatus.SUCCESS:
+            return
+        if socket_id in self.active_sockets:
+            logging.warn('The socket_id: %s, is already registered', socket_id)
+        else:
+            self.active_sockets[socket_id] = socket
+
     @glib_callback()
     def on_incoming_socket_closed(self, listener_id, reason):
         """Handle incoming socket closed callback."""
         logging.debug('on_incoming_socket_closed: listener_id: %s, reason: %s',
                       listener_id, reason)
+        if listener_id in self.active_sockets:
+            self.active_sockets.pop(listener_id)
+        else:
+            logging.warn('The socket_id: %s, is not registered yet',
+                         listener_id)
 
     @glib_callback()
     def on_handle_incoming_connection(self, listener_id, connection):
@@ -384,3 +397,65 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         """
         timeout_ms = self._make_dbus_timeout(timeout_ms)
         return self.proxy().Accept(self.callback_id, socket_id, timeout_ms)
+
+    @glib_call(False)
+    def close(self, socket_id):
+        """Closes socket connection.
+
+        @param socket_id: Socket id to be closed.
+
+        @return: True on success, False otherwise.
+        """
+        status = self.proxy().Close(self.callback_id, socket_id)
+        if BtStatus(status) != BtStatus.SUCCESS:
+            logging.error('Failed to close socket with id: %s, '
+                          'status = %s' % (socket_id, status))
+        return BtStatus(status) == BtStatus.SUCCESS
+
+    def wait_for_incoming_socket_closed(self, socket_id):
+        """Waits for incoming socket closed.
+
+        @param socket_id: Socket id.
+
+        @return: True on success, False otherwise.
+        """
+        try:
+            utils.poll_for_condition(
+                    condition=(lambda: socket_id not in self.active_sockets),
+                    timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
+
+            return True
+        except TimeoutError:
+            logging.error('on_incoming_socket_closed not called')
+            return False
+
+    def close_sync(self, socket_id):
+        """Closes socket connection sync.
+
+        @param socket_id: Socket id to be closed.
+
+        @return: True on success, False otherwise.
+        """
+        if not self.close(socket_id):
+            return False
+
+        return self.wait_for_incoming_socket_closed(socket_id)
+
+    def close_all(self):
+        """Closes all sockets connections.
+
+        @return: True on success, False otherwise.
+        """
+        # Copy the keys of self.active_sockets as the following loop will pop
+        # the keys via self.close_sync().
+        failed_socket_ids = []
+        socket_ids = [i for i in self.active_sockets]
+        for i in socket_ids:
+            if not self.close_sync(i):
+                failed_socket_ids.append(i)
+
+        if failed_socket_ids:
+            logging.error('Failed to close sockets with ids: %s' %
+                          ','.join(failed_socket_ids))
+            return False
+        return True

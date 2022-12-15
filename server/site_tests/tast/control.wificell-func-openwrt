@@ -28,7 +28,8 @@ See http://go/tast-failures for information about investigating failures.
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:wificell" && wificell_func && !wificell_unstable)'],
+                 test_exprs=['("group:wificell" && wificell_func &&'
+                 '(!wificell_unstable || (wificell_unstable && wificell_func_ax)))'],
                  ignore_test_failures=False, max_run_sec=18000,
                  command_args=args)
 

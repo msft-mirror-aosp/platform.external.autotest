@@ -11,7 +11,7 @@ PURPOSE = (
     'after suspend/resume.'
 )
 CRITERIA = 'Pass test'
-ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+ATTRIBUTES = 'suite:bluetooth_floss'
 TIME = 'SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = 'bluetooth'

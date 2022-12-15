@@ -14,7 +14,7 @@ METADATA = {
     'criteria': 'Tests controller can handle basic Sender role',
     'hw_agnostic': False
 }
-ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 

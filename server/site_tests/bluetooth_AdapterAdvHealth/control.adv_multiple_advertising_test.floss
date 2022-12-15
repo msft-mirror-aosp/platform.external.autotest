@@ -57,7 +57,7 @@ METADATA = {
     'criteria': 'Test bluetooth adapter multiple advertising capability',
     'hw_agnostic': True
 }
-ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'
 

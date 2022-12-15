@@ -1,0 +1,30 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description
+# This is the Lacros variant of power_VideoPlayback.FDO_10min.
+# This test records power related statistics while play back video file in various
+# format. It iterates through 5 videos for 120 seconds each.
+#
+# "FDO" is short for "force discharge optional." Test will use EC command to
+# force DUT to discharge. If it fails, then use AC as the power source.
+
+NAME = "power_VideoPlayback.FDO_10min_lacros"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "ChromeOS Team",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
+ATTRIBUTES = ("suite:power_daily")
+TEST_TYPE = "client"
+
+videos = [('h264_1080_30fps', ''), ('vp9_1080_30fps', ''),
+    ('h264_720_30fps', ''), ('vp9_720_30fps', ''), ('vp8_1080_60fps', '')]
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_VideoPlayback', tag=NAME.split('.')[1], videos=videos,
+             pdash_note=pdash_note, force_discharge='optional',
+             use_lacros=True)

@@ -92,7 +92,7 @@ def has_echo_reference(board_name):
 
     """
     board_name = strip_kernelnext_suffix(board_name)
-    return board_name in ['nocturne', 'atlas', 'volteer']
+    return board_name in ['nocturne', 'atlas', 'volteer', 'brya', 'rammus']
 
 
 BoardInfo = collections.namedtuple('BoardInfo', ['board', 'model', 'sku'])

@@ -41,6 +41,9 @@ CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts', 'suite:arc-cts-unibuild']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 
+# Suite for rerunning failing camera test during qual
+CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-dut'
+
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
 CONFIG['CONTROLFILE_WRITE_CAMERA'] = True
@@ -166,6 +169,11 @@ CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
     'CtsSensorTestCases',
     'CtsCameraTestCases',
     'CtsBluetoothTestCases',
+]
+
+CONFIG['CAMERA_MODULES'] = [
+       # CONTAINS ONLY CAMERA TESTS
+       'CtsCameraTestCases',
 ]
 
 # The suite is divided based on the run-time hint in the *.config file.

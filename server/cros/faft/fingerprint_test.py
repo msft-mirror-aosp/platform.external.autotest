@@ -336,8 +336,7 @@ class FingerprintTest(test.test):
             running_ro_firmware_version))
         logging.info('RW firmware running: {}'.format(
             running_rw_firmware_version))
-        logging.info('The OS version is: {}'.format(chrome_os_version ))
-
+        logging.info('The OS version is: {}'.format(chrome_os_version))
 
         super(FingerprintTest, self).cleanup()
 
@@ -419,7 +418,8 @@ class FingerprintTest(test.test):
             self.get_build_rw_firmware_version(use_dev_signed_fw)
         golden_ro_firmware_version = \
             self.get_golden_ro_firmware_version(use_dev_signed_fw)
-        logging.info('Build RW firmware version: %s', build_rw_firmware_version)
+        logging.info('Build RW firmware version: %s',
+                     build_rw_firmware_version)
         logging.info('Golden RO firmware version: %s',
                      golden_ro_firmware_version)
 
@@ -429,14 +429,14 @@ class FingerprintTest(test.test):
             build_rw_firmware_version, golden_ro_firmware_version)
 
         if not running_rw_firmware or not fw_versions_match \
-            or not self.is_rollback_set_to_initial_val() \
-            or force_firmware_flashing:
+                or not self.is_rollback_set_to_initial_val() \
+                or force_firmware_flashing:
             fw_file = self._build_fw_file
             if use_dev_signed_fw:
                 fw_file = self.TEST_IMAGE_DEV
             self.flash_rw_ro_firmware(fw_file)
             if not self.running_fw_version_matches_given_version(
-                build_rw_firmware_version, golden_ro_firmware_version):
+                    build_rw_firmware_version, golden_ro_firmware_version):
                 raise error.TestFail(
                     'Running firmware version does not match expected version')
 
@@ -888,7 +888,7 @@ class FingerprintTest(test.test):
 
     def set_software_write_protect(self, enable):
         """Enables or disables software write protect."""
-        arg  = 'enable' if enable else 'disable'
+        arg = 'enable' if enable else 'disable'
         self._run_ectool_cmd('flashprotect ' + arg)
         # TODO(b/116396469): The flashprotect command returns an error even on
         # success.

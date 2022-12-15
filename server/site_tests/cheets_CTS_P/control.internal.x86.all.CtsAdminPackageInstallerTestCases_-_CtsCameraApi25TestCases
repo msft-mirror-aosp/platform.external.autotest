@@ -5,16 +5,20 @@
 # This file has been automatically generated. Do not edit!
 from autotest_lib.server import utils as server_utils
 
-AUTHOR = 'ARC++ Team'
+AUTHOR = 'n/a'
 NAME = 'cheets_CTS_P.internal.x86.all.CtsAdminPackageInstallerTestCases_-_CtsCameraApi25TestCases'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
 ATTRIBUTES = 'suite:arc-cts-qual'
 DEPENDENCIES = 'arc, cts_abi_x86'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
-PY_VERSION = 3
-DOC = 'Run module CtsAdminPackageInstallerTestCases, CtsAdminTestCases, CtsAlarmClockTestCases, CtsAlarmManagerTestCases, CtsAndroidAppTestCases, CtsAndroidTestBase27ApiSignatureTestCases, CtsAndroidTestMockCurrentApiSignatureTestCases, CtsAndroidTestRunnerCurrentApiSignatureTestCases, CtsAnimationTestCases, CtsApacheHttpLegacy27ApiSignatureTestCases, CtsApacheHttpLegacyCurrentApiSignatureTestCases, CtsApacheHttpLegacyUsesLibraryApiSignatureTestCases, CtsAppComponentFactoryTestCases, CtsAppSecurityHostTestCases, CtsAppTestCases, CtsAppUsageHostTestCases, CtsAppWidgetTestCases, CtsAslrMallocTestCases, CtsAssistTestCases, CtsAtraceHostTestCases, CtsAutoFillServiceTestCases, CtsBackgroundRestrictionsTestCases, CtsBackupHostTestCases, CtsBackupTestCases, CtsBatterySavingTestCases, CtsBionicTestCases, CtsBluetoothTestCases, CtsBootStatsTestCases, CtsCalendarcommon2TestCases, CtsCameraApi25TestCases of the Android Compatibility Test Suite (CTS) using x86 ABI in the ARC++ container.'
+DOC = 'n/a'
 
 # For local debugging, if your test setup doesn't have servo, REMOVE these
 # two lines.

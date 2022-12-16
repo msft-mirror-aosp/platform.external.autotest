@@ -94,9 +94,10 @@ class firmware_FAFTSetup(FirmwareTest):
         self.switcher.mode_aware_reboot(reboot_type='cold')
 
         if self.faft_config.mode_switcher_type in (
-                'menu_switcher',
-                'keyboard_dev_switcher') and not self.faft_config.is_detachable:
+                'menu_switcher', 'keyboard_dev_switcher'
+        ) and not self.faft_config.is_detachable and self.check_ec_capability(
+                suppress_warning=True):
             logging.info("Check keyboard simulation")
             self.check_state(self.keyboard_checker)
         else:
-            logging.info("Skip keyboard simulation on an embedded device")
+            logging.info("Skip keyboard simulation")

@@ -591,7 +591,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             return result
 
 
-    def _create_hostlog_files(self, ignore_event_rootfs=False):
+    def _create_hostlog_files(self,
+                              ignore_event_rootfs=False,
+                              rootfs_filename=None,
+                              reboot_filename=None):
         """Create the two hostlog files for the update.
 
         To ensure the update was successful we need to compare the update
@@ -600,6 +603,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param ignore_event_rootfs: Ignores the last event in the rootfs
                                     log.
+        @param rootfs_filename: Filename to use for the rootfs hostlog file
+                                instead of the default.
+        @param reboot_filename: Filename to use for the reboot hostlog file
+                                instead of the default.
 
         """
         # Check that update logs exist for the update that just happened.
@@ -610,7 +617,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Each time we reboot in the middle of an update we ping omaha again
         # for each update event. So parse the list backwards to get the final
         # events.
-        rootfs_hostlog = os.path.join(self.resultsdir, 'hostlog_rootfs')
+        rootfs_fname = rootfs_filename or 'hostlog_rootfs'
+        rootfs_hostlog = os.path.join(self.resultsdir, rootfs_fname)
         with open(rootfs_hostlog, 'w') as fp:
             # There are four expected hostlog events during update.
             extract_logs = self._extract_request_logs(
@@ -621,7 +629,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 logs = extract_logs[-4:]
             json.dump(logs, fp)
 
-        reboot_hostlog = os.path.join(self.resultsdir, 'hostlog_reboot')
+        reboot_fname = reboot_filename or 'hostlog_reboot'
+        reboot_hostlog = os.path.join(self.resultsdir, reboot_fname)
         with open(reboot_hostlog, 'w') as fp:
             # There is one expected hostlog events after reboot.
             json.dump(self._extract_request_logs(

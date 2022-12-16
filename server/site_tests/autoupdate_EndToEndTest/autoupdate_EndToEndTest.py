@@ -92,12 +92,21 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
             self._check_for_update(nebraska.get_update_url(),
                                    critical_update=True)
             self._wait_for_update_to_complete()
-            # Set no_update=True in the nebraska startup config to get the
-            # post-reboot update event.
-            nebraska.create_startup_config(no_update=True)
             nebraska.save_log(self.resultsdir)
 
         self._host.reboot()
+
+        # Restoring stateful triggers a reboot and creation of another
+        # update_engine log, so grab the update_engine events before that.
+        rootfs, _ = self._create_hostlog_files(
+                rootfs_filename='rootfs_pre_stateful_restore',
+                reboot_filename='reboot_pre_stateful_restore')
+        self.verify_update_events(source_release, rootfs)
+
+        # Restore stateful in case of any incompatibility between source and
+        # target versions.
+        logging.info('Restoring stateful partition to target version')
+        self._update_stateful()
 
         # Check that update-engine is ready after reboot. Wait for the UI to
         # come up first, in case there are any FW updates that delay
@@ -106,11 +115,14 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         utils.poll_for_condition(self._get_update_engine_status,
                                  desc='update engine to start')
         # Do a final update check with no_update=True to get post reboot event.
-        self._check_for_update(self._get_nebraska_update_url())
+        with nebraska_wrapper.NebraskaWrapper(
+                host=self._host,
+                payload_url=payload_url) as nebraska:
+            nebraska.update_config(no_update=True)
+            self._check_for_update(nebraska.get_update_url())
 
         # Compare hostlog events from the update to the expected ones.
-        rootfs, reboot = self._create_hostlog_files()
-        self.verify_update_events(source_release, rootfs)
+        _, reboot = self._create_hostlog_files()
         self.verify_update_events(source_release, reboot, target_release)
         kernel_utils.verify_boot_expectations(inactive, host=self._host)
         logging.info('Update successful, test completed')

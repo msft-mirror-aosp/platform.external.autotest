@@ -226,8 +226,17 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
     '+CtsBionic.*', # b/160851611
     '+CtsBlobStore.*', # b/180681350
     '+CtsBootStats.*', # b/174224484
+    '+CtsDownloadManager.*', # b/163729385
+    '+CtsDropBoxManagerTestCases.*', # b/177029550
+    '+CtsDynamic.*', # b/163121640
+    '+CtsFragment.*', # b/251276296
 
-    # Tests between CtsA-CtsB that has no suspicious bug reports.
+    # May depend on HW ?
+    '+CtsDisplay.*',
+    '+CtsDpi.*',
+
+
+    # Tests between CtsA-CtsG that has no suspicious bug reports.
     # This list will be removed once bug search finishes.
     '-CtsAbiOverrideHost.*',
     '-CtsAcceleration.*',
@@ -249,9 +258,34 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
     '-CtsBackgroundRestrictions.*',
     '-CtsBackup.*',
     '-CtsBatterySaving.*',
-
-    # Initially selected trial stable test.
+    '-CtsCalendarProvider.*',
+    '-CtsCalendarcommon2.*',
+    '-CtsCar.*',
+    '-CtsCarrierApiTestCases.*',
+    '-CtsClassLoaderFactory.*',
+    '-CtsClassloaderSplitsHost.*',
+    '-CtsCodePathHost.*',
+    '-CtsColorMode.*',
+    '-CtsCompilation.*',
+    '-CtsContactsProvider.*',
+    '-CtsContent.*',
+    '-CtsControlsDevice.*',
+    '-CtsCppTools.*',
+    '-CtsCurrentApiSignature.*',
+    '-CtsDatabase.*',
+    '-CtsDevice.*',
+    '-CtsDexMetadataHost.*',
     '-CtsDreams.*',
+    '-CtsDrm.*',
+    '-CtsDumpsysHost.*',
+    '-CtsEdiHost.*',
+    '-CtsEffect.*',
+    '-CtsExtendedMocking.*',
+    '-CtsExternalService.*',
+    '-CtsExtractNativeLibsHost.*',
+    '-CtsFsMgr.*',
+    '-CtsGesture.*',
+    '-CtsGwpAsan.*',
 
     # Mark all tests unstable until migration.
     '+.*',

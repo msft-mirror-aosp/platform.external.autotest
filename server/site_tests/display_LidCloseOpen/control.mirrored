@@ -13,7 +13,7 @@ TIME = "LONG"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "display"
 TEST_TYPE = "server"
-DEPENDENCIES = "chameleon:hdmi, chameleon, servo_state:WORKING"
+DEPENDENCIES = "chameleon_state:WORKING, servo_state:WORKING"
 JOB_RETRIES = 1
 PY_VERSION = 3
 

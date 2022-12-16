@@ -2,6 +2,7 @@
 # Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+import dbus
 import glob
 import logging
 import os
@@ -12,6 +13,7 @@ import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input.input_device import InputDevice
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import dbus_util
 from autotest_lib.client.cros import upstart
 from six.moves import range
 
@@ -648,13 +650,24 @@ class PowerPrefChanger(object):
 
     _PREFDIR = '/var/lib/power_manager'
     _TEMPDIR = '/tmp/autotest_powerd_prefs'
+    _DBUS_TIMEOUT_SECONDS = 10
 
     def __init__(self, prefs):
         shutil.copytree(self._PREFDIR, self._TEMPDIR)
         for name, value in prefs.items():
             utils.write_one_line('%s/%s' % (self._TEMPDIR, name), value)
         utils.system('mount --bind %s %s' % (self._TEMPDIR, self._PREFDIR))
+        self._restart_powerd()
+
+    @classmethod
+    def _restart_powerd(cls):
         upstart.restart_job('powerd')
+        # Wait for the DBus session to start
+        bus = dbus.SystemBus()
+        dbus_util.get_dbus_object(bus,
+                                  'org.chromium.PowerManager',
+                                  '/org/chromium/PowerManager',
+                                  cls._DBUS_TIMEOUT_SECONDS)
 
     @classmethod
     def finalize(cls):
@@ -662,7 +675,7 @@ class PowerPrefChanger(object):
         if os.path.exists(cls._TEMPDIR):
             utils.system('umount %s' % cls._PREFDIR, ignore_status=True)
             shutil.rmtree(cls._TEMPDIR)
-            upstart.restart_job('powerd')
+            cls._restart_powerd()
 
     def __del__(self):
         self.finalize()

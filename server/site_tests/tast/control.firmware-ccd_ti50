@@ -28,7 +28,7 @@ The tests are part of 'group:firmware'. The 'firmware_ec' and
 command_args, varslist = tast.split_arguments(args)
 args_dict = utils.args_to_dict(command_args)
 assert 'servo_state:WORKING' in DEPENDENCIES
-assert 'servo_component:ccd_ti50' in DEPENDENCIES
+assert 'servo_component:ccd_gsc' in DEPENDENCIES
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):

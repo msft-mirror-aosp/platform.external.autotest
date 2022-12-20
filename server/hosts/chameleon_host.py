@@ -245,6 +245,9 @@ def create_btpeer_host(dut, btpeer_args_list):
             ret_args['port'] = int(args['btpeer_ssh_port'])
         return ret_args
 
+    def _is_satlab_dut(dut_host):
+        return dut_host.startswith('satlab')
+
     if not utils.is_in_container():
         is_moblab = utils.is_moblab()
     else:
@@ -254,8 +257,8 @@ def create_btpeer_host(dut, btpeer_args_list):
     btpeer_hosts = []
 
     if not is_moblab:
-        if (not dnsname_mangler.is_ip_address(dut) and
-            utils.host_is_in_lab_zone(dut)):
+        if ((not dnsname_mangler.is_ip_address(dut)
+             and utils.host_is_in_lab_zone(dut)) or _is_satlab_dut(dut)):
             # This is a device in the lab. Ignore any arguments passed and
             # derive peer hostnames from the DUT hostname
             btpeer_hostnames = chameleon.make_btpeer_hostnames(dut)

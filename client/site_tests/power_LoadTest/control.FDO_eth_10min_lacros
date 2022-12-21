@@ -24,7 +24,7 @@ METADATA = {
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:power_daily")
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
 
 loop_time = 600

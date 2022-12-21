@@ -24,7 +24,7 @@ METADATA = {
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("")
+ATTRIBUTES = ("suite:power_daily")
 TEST_TYPE = "client"
 
 # TODO (bleung): Find a way to do automatic Facebook login for test account.

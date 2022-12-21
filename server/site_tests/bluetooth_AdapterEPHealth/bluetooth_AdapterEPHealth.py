@@ -387,7 +387,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Outgoing: BLE Keyboard: Services not in Allowlist',
-                  devices={'BLE_KEYBOARD':1})
+                  devices={'BLE_KEYBOARD':1},
+                  supports_floss=True)
     def ep_outgoing_ble_hid_services_not_in_allowlist(self):
         """The test for BLE gatt services not in allowlist."""
         device = self.devices['BLE_KEYBOARD'][0]
@@ -418,7 +419,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Reconnection: BLE Keyboard: Service not in Allowlist',
-                  devices={'BLE_KEYBOARD':1})
+                  devices={'BLE_KEYBOARD':1},
+                  supports_floss=True)
     def ep_reconnection_ble_hid_service_not_in_allowlist(self):
         """Service in allowlist for auto reconnection from device."""
         device = self.devices['BLE_KEYBOARD'][0]
@@ -556,7 +558,11 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('MD: BLE HID and Audio: Only Audio in Allowlist',
-                  devices={'BLE_MOUSE':1, 'BLUETOOTH_AUDIO':1})
+                  devices={
+                          'BLE_MOUSE':1,
+                          'BLUETOOTH_AUDIO':1
+                  },
+                  supports_floss=True)
     def ep_md_audio_in_allowlist(self):
         """The multi-device test for audio services in allowlist."""
         hid_device = self.devices['BLE_MOUSE'][0]

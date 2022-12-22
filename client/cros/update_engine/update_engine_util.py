@@ -521,8 +521,7 @@ class UpdateEngineUtil(object):
         if not interactive:
             cmd.append('--interactive=false')
         if update_firmware:
-            # TODO(b/228121045): Append a flag to update the firmware here.
-            pass
+            cmd.append('--force_fw_update')
         self._run(cmd, ignore_status=False)
         if wait_for_completion and check_kernel_after_update:
             kernel_utils.verify_kernel_state_after_update(

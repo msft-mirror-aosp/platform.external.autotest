@@ -342,8 +342,17 @@ _WIFI_CONNECT_COMMANDS_V2 = [
         "'adb shell dumpsys wifi transports -eth'",
 ]
 
+# R-container: Behave more like in the verififed mode.
+_SECURITY_PARANOID_COMMAND = (
+    "\'echo 3 > /proc/sys/kernel/perf_event_paranoid\'")
+# R-container: Expose /proc/config.gz
+_CONFIG_MODULE_COMMAND = "\'modprobe configs\'"
+
 # Preconditions applicable to public and internal tests.
-CONFIG['PRECONDITION'] = {}
+CONFIG['PRECONDITION'] = {
+        'CtsSecurityHostTestCases':
+            [_SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND],
+}
 
 CONFIG['LOGIN_PRECONDITION'] = {
         'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],

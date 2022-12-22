@@ -34,6 +34,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
+        precondition_commands=['echo 3 > /proc/sys/kernel/perf_event_paranoid', 'modprobe configs'],
         timeout=172800)
 
 parallel_simple(run_TS, machines)

@@ -1,0 +1,19 @@
+# Description
+# This test records power related statistics while iterating through keyboard
+# backlight brightness.
+
+NAME = "power_KeyboardBacklight.100percent"
+METADATA = {
+  "Contacts": ["chromeos-platform-power@google.com"],
+  "bug_component": "b:167191",
+  "criteria": "This test is a benchmark.",
+  "hw_agnostic": False
+}
+ATTRIBUTES = ""
+TEST_TYPE = "client"
+
+args_dict = utils.args_to_dict(args)
+pdash_note = args_dict.get('pdash_note', '')
+job.run_test('power_KeyboardBacklight', seconds_period=1,
+             force_discharge='optional', pdash_note=pdash_note,
+             tag=NAME.split('.')[1], percent_step_size=100, sec_per_step=300)

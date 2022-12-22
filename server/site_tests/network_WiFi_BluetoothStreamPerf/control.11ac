@@ -17,6 +17,9 @@ This test uses netperf to measure the maximal receiving and transmitting
 throughput on a DUT with an open 802.11ac network while operating bluetooth.
 """
 
+METADATA = {
+    'requirements': ['wifi-coex-0001-v01']
+}
 
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config

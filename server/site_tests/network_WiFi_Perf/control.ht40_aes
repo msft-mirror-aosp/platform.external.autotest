@@ -16,6 +16,9 @@ This test uses netperf to measure and verify the maximal receiving and
 transmitting throughput on a DUT with an AES encrypted HT40 802.11n network.
 """
 
+METADATA = {
+    'requirements': ['wifi-tput-0007-v01', 'wifi-tput-0008-v01', 'wifi-tput-0009-v01', 'wifi-tput-0036-v01', 'wifi-tput-0037-v01', 'wifi-tput-0038-v01']
+}
 
 from autotest_lib.server.cros.network import hostap_config
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types

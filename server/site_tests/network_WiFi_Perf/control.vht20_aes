@@ -16,6 +16,9 @@ This test uses netperf to measure and verify the maximal receiving and
 transmitting throughput on a DUT with an AES encrypted VHT20 802.11ac network.
 """
 
+METADATA = {
+    'requirements': ['wifi-tput-0010-v01', 'wifi-tput-0011-v01', 'wifi-tput-0012-v01', 'wifi-tput-0039-v01', 'wifi-tput-0040-v01', 'wifi-tput-0041-v01']
+}
 
 from autotest_lib.server.cros.network import hostap_config
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types

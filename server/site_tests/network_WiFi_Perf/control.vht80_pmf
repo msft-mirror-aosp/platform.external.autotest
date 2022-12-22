@@ -18,7 +18,7 @@ enabled.
 """
 
 METADATA = {
-    'requirements': ['wifi-gen-0006-v01']
+    'requirements': ['wifi-gen-0006-v01', 'wifi-tput-0016-v01', 'wifi-tput-0017-v01', 'wifi-tput-0018-v01', 'wifi-tput-0045-v01', 'wifi-tput-0046-v01', 'wifi-tput-0047-v01']
 }
 
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes

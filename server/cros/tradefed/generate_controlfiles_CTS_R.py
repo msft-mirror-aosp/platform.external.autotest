@@ -444,10 +444,9 @@ CONFIG['HARDWARE_MODULES'] = [
         'CtsSensorTestCases',
 ]
 
-SUITE_ARC_CTS_R = ['suite:arc-cts-r']
-R_QUAL_SUITES = ['suite:arc-cts-r', 'suite:arc-cts-qual']
-R_REGRESSION_SUITES = ['suite:arc-cts-r', 'suite:arc-cts']
-R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
+R_SUITES = ['suite:arc-cts-r']
+R_QUAL_SUITES = R_SUITES + ['suite:arc-cts-qual']
+R_QUAL_AND_REGRESSION_SUITES = R_QUAL_SUITES + ['suite:arc-cts']
 DEQP_SUITES = ['suite:arc-cts-deqp', 'suite:graphics_per-week']
 
 CONFIG['EXTRA_MODULES'] = {
@@ -459,8 +458,8 @@ CONFIG['EXTRA_MODULES'] = {
         'CtsDeqpTestCases.dEQP-VK': R_QUAL_SUITES + DEQP_SUITES,
     },
     'CtsMediaTestCases': {
-        'CtsMediaTestCases.audio': R_REGRESSION_AND_QUAL_SUITES,
-        'CtsMediaTestCases.video': R_REGRESSION_AND_QUAL_SUITES,
+        'CtsMediaTestCases.audio': R_QUAL_AND_REGRESSION_SUITES,
+        'CtsMediaTestCases.video': R_QUAL_AND_REGRESSION_SUITES,
     },
 }
 

@@ -448,14 +448,15 @@ SUITE_ARC_CTS_R = ['suite:arc-cts-r']
 R_QUAL_SUITES = ['suite:arc-cts-r', 'suite:arc-cts-qual']
 R_REGRESSION_SUITES = ['suite:arc-cts-r', 'suite:arc-cts']
 R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
+DEQP_SUITES = ['suite:arc-cts-deqp', 'suite:graphics_per-week']
 
 CONFIG['EXTRA_MODULES'] = {
     'CtsDeqpTestCases': {
-        'CtsDeqpTestCases.dEQP-EGL': R_QUAL_SUITES,
-        'CtsDeqpTestCases.dEQP-GLES2': R_QUAL_SUITES,
-        'CtsDeqpTestCases.dEQP-GLES3': R_QUAL_SUITES,
-        'CtsDeqpTestCases.dEQP-GLES31': R_QUAL_SUITES,
-        'CtsDeqpTestCases.dEQP-VK': R_QUAL_SUITES,
+        'CtsDeqpTestCases.dEQP-EGL': R_QUAL_SUITES + DEQP_SUITES,
+        'CtsDeqpTestCases.dEQP-GLES2': R_QUAL_SUITES + DEQP_SUITES,
+        'CtsDeqpTestCases.dEQP-GLES3': R_QUAL_SUITES + DEQP_SUITES,
+        'CtsDeqpTestCases.dEQP-GLES31': R_QUAL_SUITES + DEQP_SUITES,
+        'CtsDeqpTestCases.dEQP-VK': R_QUAL_SUITES + DEQP_SUITES,
     },
     'CtsMediaTestCases': {
         'CtsMediaTestCases.audio': R_REGRESSION_AND_QUAL_SUITES,

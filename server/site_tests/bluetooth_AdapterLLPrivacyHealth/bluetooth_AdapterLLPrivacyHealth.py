@@ -11,6 +11,8 @@ from __future__ import print_function
 import logging
 import time
 
+from autotest_lib.client.common_lib import error
+
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests \
      import (BluetoothAdapterQuickTests, PROFILE_CONNECT_WAIT, SUSPEND_SEC)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
@@ -61,6 +63,95 @@ class bluetooth_AdapterLLPrivacyHealth(
     # ---------------------------------------------------------------
     # Reconnect after suspend tests
     # ---------------------------------------------------------------
+
+    def run_reconnect_device_with_rpa(self,
+                                      devtuples,
+                                      iterations=1,
+                                      auto_reconnect=False,
+                                      rpa_timeout=None):
+        """ Reconnects a device in privacy mode after suspend/resume.
+
+        @param devtuples: array of tuples consisting of the following
+                            * device_type: MOUSE, BLE_MOUSE, etc.
+                            * device: meta object for peer device
+                            * device_test: Optional; test function to run w/
+                                           device (for example, mouse click)
+        @params iterations: number of suspend/resume + reconnect iterations
+        @params auto_reconnect: Expect host to automatically reconnect to peer
+        """
+        boot_id = self.host.get_boot_id()
+        default_timeout = 900
+        try:
+            # Set up the device; any failures should assert
+            for device_type, device, device_test in devtuples:
+                if 'BLE' not in device_type:
+                    raise error.TestFail("Only BLE device has RPA.")
+
+                if rpa_timeout is not None:
+                    logging.info('Set RPA timeout to %d', rpa_timeout)
+                    self.test_update_rpa_timeout(device, rpa_timeout)
+
+                self.test_set_device_privacy(device, True)
+                self.test_start_device_advertise_with_rpa(device)
+                logging.info('Device use RPA: %s', device.rpa)
+                self.test_discover_device(device.rpa)
+                self.test_pairing_with_rpa(device)
+                self.test_stop_device_advertise_with_rpa(device)
+                self.test_connection_by_adapter(device.init_paired_addr,
+                                                device.address)
+
+                if device_test is not None:
+                    self.assert_on_fail(device_test(device))
+                else:
+                    time.sleep(PROFILE_CONNECT_WAIT)
+
+            for it in range(iterations):
+                logging.info('Running iteration {}/{} of suspend reconnection'.
+                             format(it + 1, iterations))
+
+                # Start the suspend process
+                suspend = self.suspend_async(suspend_time=SUSPEND_SEC)
+                start_time = self.bluetooth_facade.get_device_utc_time()
+
+                # Trigger suspend, wait for regular resume, verify we can reconnect
+                # and run device specific test
+                self.test_suspend_and_wait_for_sleep(suspend,
+                                                     sleep_timeout=SUSPEND_SEC)
+                self.test_wait_for_resume(boot_id,
+                                          suspend,
+                                          resume_timeout=SUSPEND_SEC,
+                                          test_start_time=start_time)
+
+                if not auto_reconnect:
+                    for device_type, device, _ in devtuples:
+                        if rpa_timeout is not None:
+                            logging.info(
+                                    "Sleep %d s to wait for RPA rotation.",
+                                    rpa_timeout - SUSPEND_SEC)
+                            time.sleep(rpa_timeout - SUSPEND_SEC)
+                        # LE can't reconnect without advertising/discoverable
+                        self.test_start_device_advertise_with_rpa(device)
+                        logging.info('Device current RPA: %s', device.rpa)
+                        # Make sure we're actually connected
+                        self.test_device_is_connected(
+                                device.init_paired_addr,
+                                timeout=45,
+                                identity_address=device.address)
+                        self.test_stop_device_advertise_with_rpa(device)
+
+                for _, device, device_test in devtuples:
+                    if device_test is not None:
+                        self.assert_on_fail(device_test(device))
+
+        finally:
+            for _, device, _ in devtuples:
+                self.test_remove_pairing(device.init_paired_addr,
+                                         identity_address=device.address)
+
+                self.test_set_device_privacy(device, False)
+                if rpa_timeout is not None:
+                    self.test_update_rpa_timeout(device, default_timeout)
+                    logging.info('Restore RPA timeout to %d', default_timeout)
 
     def run_reconnect_device(self,
                              devtuples,
@@ -169,6 +260,14 @@ class bluetooth_AdapterLLPrivacyHealth(
         device_type = 'BLE_MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device([(device_type, device, self._test_mouse)])
+
+    @test_wrapper('Reconnect LE HID', devices={'BLE_MOUSE': 1})
+    def sr_reconnect_le_hid_with_rpa(self):
+        """ Reconnects a LE HID device in privacy mode after suspend/resume. """
+        device_type = 'BLE_MOUSE'
+        device = self.devices[device_type][0]
+        self.run_reconnect_device_with_rpa(
+                [(device_type, device, self._test_mouse)], rpa_timeout=30)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
@@ -473,6 +572,7 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.le_auto_reconnect_with_privacy_by_device()
         self.le_auto_reconnect_with_privacy()
         self.sr_peer_wake_le_hid_with_rpa()
+        self.sr_reconnect_le_hid_with_rpa()
 
     def run_once(self,
                  host,

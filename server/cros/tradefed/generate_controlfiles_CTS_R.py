@@ -230,10 +230,24 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
     '+CtsDropBoxManagerTestCases.*', # b/177029550
     '+CtsDynamic.*', # b/163121640
     '+CtsFragment.*', # b/251276296
+    '+CtsIke.*', # b/160541882
+    '+CtsInputMethod.*', # b/253540001, b/191413875
+    '+CtsJni.*', # b/160867403
+    '+CtsJobScheduler.*', # b/226422237
+    '+CtsMidiTestCases.*', # b/222242213
+    '+CtsNdkBinder.*', # b/163123128
+    '+CtsNet.*', # b/258074918
+    '+CtsOs.*', # b/b/187745471
+    '+CtsPerfetto.*', # b/203614416
+    '+CtsProvider.*', # b/212194116
+    '+CtsRs.*', # b/166168119
 
     # May depend on HW ?
     '+CtsDisplay.*',
     '+CtsDpi.*',
+    # This suite include tests sensitive to graphics performance
+    # (GraphicsStatsValidationTest) so we probably need HW coverage.
+    '+CtsIncidentHost.*',
 
 
     # Tests between CtsA-CtsG that has no suspicious bug reports.
@@ -286,6 +300,49 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
     '-CtsFsMgr.*',
     '-CtsGesture.*',
     '-CtsGwpAsan.*',
+    '-CtsHarmfulAppWarningHost.*',
+    '-CtsHdmiCecHost.*',
+    '-CtsHiddenApi.*',
+    '-CtsHostTzData.*',
+    '-CtsHostside.*',
+    '-CtsIcu.*',
+    '-CtsIdentity.*',
+    '-CtsIncrementalInstallHost.*',
+    '-CtsInit.*',
+    '-CtsInlineMocking.*',
+    '-CtsInstantApp.*',
+    '-CtsIntentSignature.*',
+    '-CtsJdwp.*',
+    '-CtsJvmti.*',
+    '-CtsKernelConfigTestCases.*',
+    '-CtsKeystore.*',
+    '-CtsLeanbackJank.*',
+    '-CtsLegacyNotification2.*',
+    '-CtsLibcore.*',
+    '-CtsLiblog.*',
+    '-CtsLocation.*',
+    '-CtsLogd.*',
+    '-CtsMatchFlag.*',
+    '-CtsMimeMap.*',
+    '-CtsMocking.*',
+    '-CtsMonkey.*',
+    '-CtsMultiUser.*',
+    '-CtsNdef.*',
+    '-CtsNfc.*',
+    '-CtsNoPermission.*',
+    '-CtsOmapi.*',
+    '-CtsPackage.*',
+    '-CtsPdf.*',
+    '-CtsPermission.*',
+    '-CtsPreference.*',
+    '-CtsPrint.*',
+    '-CtsProto.*',
+    '-CtsQuickAccessWallet.*',
+    '-CtsRenderscript.*',
+    '-CtsResolverService.*',
+    '-CtsResourcesLoader.*',
+    '-CtsRole.*',
+    '-CtsRollbackManagerHostTestCases.*',
 
     # Mark all tests unstable until migration.
     '+.*',

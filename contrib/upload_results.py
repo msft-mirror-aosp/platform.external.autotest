@@ -502,8 +502,12 @@ class ResultsParserClass:
         Args:
             path: The test directory for non-moblab test results.
         """
-        git_hash = subprocess.check_output(shlex.split(GIT_COMMAND),
-                                           cwd=AUTOTEST_DIR)
+        git_hash = ""
+        try:
+            git_hash = subprocess.check_output(shlex.split(GIT_COMMAND),
+                                            cwd=AUTOTEST_DIR)
+        except:
+            git_hash = "CONTAINER_UPLOAD".encode("utf-8")
         git_hash_path = os.path.join(path, GIT_HASH_FILE)
         with open(git_hash_path, "w") as git_hash_file:
             git_hash_file.write(git_hash.decode("utf-8"))

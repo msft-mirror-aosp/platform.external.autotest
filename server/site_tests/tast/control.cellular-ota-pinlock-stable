@@ -9,7 +9,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:multisim"
+DEPENDENCIES = "carrier:pinlock"
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True

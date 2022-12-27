@@ -46,9 +46,9 @@ class audio_AudioBasicHeadphone(audio_test.AudioTest):
             )
 
         golden_file = audio_test_data.GenerateAudioTestData(
-                path=os.path.join(self.bindir, 'fix_1k_440_16.wav'),
-                duration_secs=6,
-                frequencies=[1000, 440])
+                path=os.path.join(self.bindir, 'fix_1330_16.raw'),
+                duration_secs=10,
+                frequencies=[1330, 1330])
 
         source = self.widget_factory.create_widget(
                 chameleon_audio_ids.CrosIds.HEADPHONE)

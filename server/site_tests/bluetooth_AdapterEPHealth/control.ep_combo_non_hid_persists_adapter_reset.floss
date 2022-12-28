@@ -11,7 +11,7 @@ NAME = 'bluetooth_AdapterEPHealth.ep_combo_non_hid_persists_adapter_reset.floss'
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth
-    'bug_component': 'b:238783348',
+    'bug_component': 'b:167317',
     'criteria': 'Batch of Bluetooth enterprise policy health tests',
     'hw_agnostic': False
 }

@@ -197,13 +197,15 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """
         try:
             result = host.run(
+                    'test -f /etc/lsb-release && '
                     'grep -q CHROMEOS /etc/lsb-release && '
                     '! grep -q moblab /etc/lsb-release && '
                     '! grep -q labstation /etc/lsb-release &&'
-                    ' grep CHROMEOS_RELEASE_BOARD /etc/lsb-release',
+                    ' grep CHROMEOS_RELEASE_BOARD /etc/lsb-release &&'
+                    ' grep CHROMEOS_RELEASE_BUILDER_PATH /etc/lsb-release',
                     ignore_status=True,
                     timeout=timeout).stdout
-            if result:
+            if result and len(result):
                 return not (
                     lsbrelease_utils.is_jetstream(
                         lsb_release_content=result) or
@@ -415,6 +417,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param try_servo_recovery:  When True, start servod in recovery mode.
                                     See servo_host for details.
         """
+        logging.info('Initializing CrosHost')
         super(CrosHost, self)._initialize(hostname=hostname, *args, **dargs)
         self._repair_strategy = cros_repair.create_cros_repair_strategy()
         # hold special dut_state for repair process
@@ -1781,8 +1784,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
     def _get_lsb_release_content(self):
         """Return the content of lsb-release file of host."""
-        return self.run(
-                'cat "%s"' % client_constants.LSB_RELEASE).stdout.strip()
+        return self.run('cat "%s"' % client_constants.LSB_RELEASE,
+                        ignore_status=True).stdout.strip()
 
 
     def get_release_version(self):

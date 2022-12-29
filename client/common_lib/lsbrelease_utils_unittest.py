@@ -87,6 +87,25 @@ CHROMEOS_RELEASE_VERSION=9641.0.0
 CHROMEOS_AUSERVER=https://tools.google.com/service/update2
 """
 
+# pylint: disable=line-too-long
+_GALE_WIFICELL_LSB_RELEASE_REDACTED = """
+CHROMEOS_RELEASE_NAME=Chromium OS
+CHROMEOS_AUSERVER=http://chromeos-ci-pretry-us-central2-c-x32-1-tn97:8080/update
+CHROMEOS_DEVSERVER=http://chromeos-ci-pretry-us-central2-c-x32-1-tn97:8080
+CHROMEOS_RELEASE_BUILDER_PATH=gale-test-ap-tryjob/R92-13982.81.0-b4959409
+CHROMEOS_RELEASE_KEYSET=devkeys
+CHROMEOS_RELEASE_TRACK=testimage-channel
+CHROMEOS_RELEASE_BUILD_TYPE=Continuous Builder - Builder: N/A
+CHROMEOS_RELEASE_DESCRIPTION=13982.81.2021_08_11_1044 (Continuous Builder - Builder: N/A) gale
+CHROMEOS_RELEASE_BOARD=gale
+CHROMEOS_RELEASE_BRANCH_NUMBER=81
+CHROMEOS_RELEASE_BUILD_NUMBER=13982
+CHROMEOS_RELEASE_CHROME_MILESTONE=92
+CHROMEOS_RELEASE_PATCH_NUMBER=2021_08_11_1044
+CHROMEOS_RELEASE_VERSION=13982.81.2021_08_11_1044
+GOOGLE_RELEASE=13982.81.2021_08_11_1044
+"""
+
 
 class LsbreleaseUtilsTestCase(unittest.TestCase):
     """Validates the helper free functions in lsbrelease_utils."""
@@ -105,6 +124,12 @@ class LsbreleaseUtilsTestCase(unittest.TestCase):
         """Test helper function."""
         self.assertTrue(lsbrelease_utils.is_jetstream(
             _GALE_LSB_RELEASE_REDACTED))
+
+    def test_is_jestream_with_gale_wificell_lsbrelease(self):
+        """Test helper function."""
+        self.assertFalse(
+                lsbrelease_utils.is_jetstream(
+                        _GALE_WIFICELL_LSB_RELEASE_REDACTED))
 
     def test_is_jestream_with_whirlwind_lsbrelease(self):
         """Test helper function."""

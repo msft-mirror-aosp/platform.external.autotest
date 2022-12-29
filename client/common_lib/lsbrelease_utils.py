@@ -126,7 +126,15 @@ def is_jetstream(lsb_release_content=None):
     @return True if the host is a Jetstream device, otherwise False.
     """
     board = get_current_board(lsb_release_content=lsb_release_content)
-    return board in JETSTREAM_BOARDS
+    builder_path = get_chromeos_release_builder_path(
+            lsb_release_content=lsb_release_content)
+    # It's unclear how many different types of custom gale images are
+    # in labs. For a safer approach, exclude gale-test-ap profile which
+    # is built specifically for wificell from Jetstream.
+    # See b/172218755
+    return board in JETSTREAM_BOARDS and not builder_path.startswith(
+            'gale-test-ap')
+
 
 def is_gce_board(lsb_release_content=None):
     """Parses lsb_contents to determine if host is a GCE board.

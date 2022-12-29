@@ -147,7 +147,7 @@ def _detect_host(connectivity_class, hostname, **args):
     @returns: Class type of the first host class that returns True to the
               check_host method.
     """
-    preset_host = _preset_host(hostname)
+    preset_host = _preset_host(hostname, **args)
     if preset_host:
         logging.debug("Using preset_host %s for %s ", preset_host.__name__,
                       hostname)
@@ -157,7 +157,12 @@ def _detect_host(connectivity_class, hostname, **args):
             logging.info('Attempting to autodetect if host is of type %s',
                          host_module.__name__)
             if host_module.check_host(host, timeout=10):
-                os.environ['HOST_%s' % hostname] = str(host_module.__name__)
+                if 'port' in args and args['port']:
+                    os.environ['HOST_%s_%d' % (hostname, args['port'])] = str(
+                            host_module.__name__)
+                else:
+                    os.environ['HOST_%s' % hostname] = str(
+                            host_module.__name__)
                 return host_module
 
     logging.warning('Unable to apply conventional host detection methods, '
@@ -165,7 +170,7 @@ def _detect_host(connectivity_class, hostname, **args):
     return cros_host.CrosHost
 
 
-def _preset_host(hostname):
+def _preset_host(hostname, **args):
     """Check the environmental variables to see if the host type has been set.
 
     @param hostname: A string representing the host name of the device.
@@ -173,7 +178,10 @@ def _preset_host(hostname):
     @returns: Class type of the host, if previously found & set in
         _detect_host, else None.
     """
-    preset_host = os.getenv('HOST_%s' % hostname)
+    if 'port' in args and args['port']:
+        preset_host = os.getenv('HOST_%s_%d' % (hostname, args['port']))
+    else:
+        preset_host = os.getenv('HOST_%s' % hostname)
     if preset_host:
         return LOOKUP_DICT.get(preset_host, None)
 

@@ -791,15 +791,20 @@ class ServoHost(base_servohost.BaseServoHost):
             logging.info("Cleanup of non functional container.")
             self.stop_containerized_servod()
 
-        label = os.environ.get("SERVOD_CONTAINER_LABEL", "release")
-        registry = os.environ.get("REGISTRY_URI", SERVOD_CONTAINER_IMAGE_PATH)
-        image = "%s/servod:%s" % (registry, label)
-        logging.info("Servod container image: %s", image)
+        if "SERVOD_CUSTOM_CONTAINER" in os.environ:
+            image = os.environ["SERVOD_CUSTOM_CONTAINER"]
+            logging.info("Servod custom container image: %s", image)
+        else:
+            label = os.environ.get("SERVOD_CONTAINER_LABEL", "release")
+            registry = os.environ.get("REGISTRY_URI",
+                                      SERVOD_CONTAINER_IMAGE_PATH)
+            image = "%s/servod:%s" % (registry, label)
+            logging.info("Servod container image: %s", image)
 
-        try:
-            client.images.pull(image)
-        except docker.errors.APIError:
-            logging.exception("Failed to pull servod container image.")
+            try:
+                client.images.pull(image)
+            except docker.errors.APIError:
+                logging.exception("Failed to pull servod container image.")
 
         environment = [
                 "BOARD=%s" % self.servo_board,

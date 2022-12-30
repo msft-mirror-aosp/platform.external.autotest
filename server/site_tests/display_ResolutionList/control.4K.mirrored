@@ -13,7 +13,7 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "display"
 TEST_TYPE = "server"
-DEPENDENCIES = "4k_resolution, chameleon_state:WORKING"
+DEPENDENCIES = "chameleon:hdmi, 4k_resolution, chameleon"
 PY_VERSION = 3
 
 DOC = """

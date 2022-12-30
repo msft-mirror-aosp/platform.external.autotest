@@ -63,8 +63,6 @@ class audio_AudioBasicUSBPlayback(audio_test.AudioTest):
 
             self.facade.set_selected_output_volume(70)
 
-            source.set_playback_data(golden_file)
-
             if suspend:
                 audio_test_utils.suspend_resume_and_verify(
                         self.host, self.factory)
@@ -75,6 +73,8 @@ class audio_AudioBasicUSBPlayback(audio_test.AudioTest):
                 self.facade.set_selected_node_types(['USB'], None)
                 audio_test_utils.check_audio_nodes(self.facade,
                                                    (['USB'], None))
+
+            source.set_playback_data(golden_file)
 
             # Starts recording from Chameleon, waits for some time, and then
             # starts playing from Cros device.

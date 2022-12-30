@@ -78,9 +78,6 @@ class audio_AudioBasicUSBPlaybackRecord(audio_test.AudioTest):
 
                 self.facade.set_selected_output_volume(70)
 
-                playback_source.set_playback_data(golden_file)
-                record_source.set_playback_data(golden_file)
-
                 if suspend:
                     audio_test_utils.suspend_resume_and_verify(
                             self.host, self.factory)
@@ -105,6 +102,9 @@ class audio_AudioBasicUSBPlaybackRecord(audio_test.AudioTest):
 
                     audio_test_utils.check_audio_nodes(self.facade,
                                                        (['USB'], ['USB']))
+
+                playback_source.set_playback_data(golden_file)
+                record_source.set_playback_data(golden_file)
 
                 logging.info('Start recording from Chameleon.')
                 playback_recorder.start_recording()

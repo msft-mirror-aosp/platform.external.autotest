@@ -31,7 +31,9 @@ Informational tests
 """
 
 import datetime
+import os
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.cros.power import power_dashboard
 
 HOURS=60*60
 
@@ -126,5 +128,8 @@ def run_client_test(machine):
     for test, argv in CLIENT_TESTS:
         argv['pdash_note'] = pdash_note
         client_at.run_test(test, timeout=EXTENDED_TIMEOUT, **argv)
+
+    power_dashboard.generate_parallax_report(output_dir=os.getcwd(),
+                    local_dir=os.getcwd(), testname='PowerQual')
 
 job.parallel_on_machines(run_client_test, machines)

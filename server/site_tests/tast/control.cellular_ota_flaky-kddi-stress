@@ -5,10 +5,10 @@
 # Do not edit manually. Generated using ~/chromiumos/src/platform/dev/net/gen_control_files.py
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.cellular_ota-kddi-stress'
+NAME = 'tast.cellular_ota_flaky-kddi-stress'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cellular_ota'
+ATTRIBUTES = 'suite:cellular_ota_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 DEPENDENCIES = "carrier:kddi"

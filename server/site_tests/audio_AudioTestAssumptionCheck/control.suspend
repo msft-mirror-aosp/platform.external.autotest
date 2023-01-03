@@ -12,7 +12,7 @@ METADATA = {
     "doc" : "This test audio functions work correctly after suspend."
 }
 TEST_TYPE = "server"
-#ATTRIBUTES = "suite:audio_advanced"
+ATTRIBUTES = "suite:audio_essential"
 DEPENDENCIES = "chameleon, audio_board"
 JOB_RETRIES = 1
 

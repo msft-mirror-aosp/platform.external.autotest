@@ -25,12 +25,14 @@ HOURS=60*60
 
 # Need separate list for client and server test due to how these test work.
 CLIENT_TESTS = [
-    ('power_WaitForCoolDown', {}),
-    ('power_Speedometer2', {'tag' : 'thermal_qual_full_before'}),
-
+    ('power_BatteryDrain', {
+        'force_discharge' : True, 'drain_to_percent' : 70,
+        'drain_timeout': 3 * HOURS}),
     ('power_BatteryCharge', {
         'percent_target_charge' : 70, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
+    ('power_Speedometer2', {'tag' : 'thermal_qual_full_before'}),
+
     ('power_ThermalLoad', {
         'tag' : 'thermal_qual_full_discharge', 'force_discharge' : True}),
     ('power_Speedometer2', {'tag' : 'thermal_qual_full_ThermalLoad_discharge'}),

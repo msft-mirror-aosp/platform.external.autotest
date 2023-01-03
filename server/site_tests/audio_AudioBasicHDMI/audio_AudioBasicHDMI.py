@@ -8,6 +8,7 @@ import logging
 import os
 import time
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.audio import audio_test_data
 from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_helper
@@ -67,7 +68,8 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
     def run_once(self,
                  suspend=False,
                  while_playback=False,
-                 check_quality=False):
+                 check_quality=False,
+                 skipped_model_with_bugs={}):
         """Running basic HDMI audio tests.
 
         @param host: device under test host
@@ -76,6 +78,11 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
         @param check_quality: True to check quality.
 
         """
+        model = self.host.get_model_from_cros_config()
+        if model in skipped_model_with_bugs:
+            raise error.TestNAError('model pending fix for %s!' %
+                                    skipped_model_with_bugs[model])
+
         golden_file = audio_test_data.GenerateAudioTestData(
                     path=os.path.join(self.bindir, 'fix_2k_1k_16.raw'),
                     duration_secs=10,

@@ -74,13 +74,8 @@ class audio_AudioVolume(audio_test.AudioTest):
 
         def get_golden_file(source_id):
             """ Create the golden file for the source_id. """
-            if source_id == chameleon_audio_ids.CrosIds.SPEAKER:
-                return audio_test_data.GenerateAudioTestData(
-                        path=os.path.join(self.bindir, 'fix_2k_16.raw'),
-                        duration_secs=10,
-                        frequencies=[2000, 2000])
             return audio_test_data.GenerateAudioTestData(
-                    path=os.path.join(self.bindir, 'fix_2k_1k_16.raw'),
+                    path=os.path.join(self.bindir, 'fix_2k_16.raw'),
                     duration_secs=10,
                     frequencies=[2000, 1000])
 
@@ -158,8 +153,7 @@ class audio_AudioVolume(audio_test.AudioTest):
                 logging.info('Read recorded binary from Chameleon.')
 
                 recorder.remove_head(self.DELAY_BEFORE_PLAYBACK)
-                if node_type == "INTERNAL_SPEAKER":
-                    recorder.lowpass_filter(3000)
+                recorder.lowpass_filter(3000)
                 recorded_file = os.path.join(self.resultsdir,
                                              "recorded_%s.raw" % tag)
                 logging.info('Saving recorded data to %s', recorded_file)

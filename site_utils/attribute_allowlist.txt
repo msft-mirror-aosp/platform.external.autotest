@@ -322,7 +322,6 @@ suite:cellular_endtoend
 suite:cellular_endtoend_flaky
 suite:cellular_mbim_compliance
 suite:cellular_modem_fw
-suite:cellular_modem_repair
 suite:cellular_ota
 suite:cellular_ota_avl
 suite:cellular_ota_flaky

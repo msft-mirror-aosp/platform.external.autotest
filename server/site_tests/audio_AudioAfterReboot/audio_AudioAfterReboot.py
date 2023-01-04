@@ -112,29 +112,37 @@ class audio_AudioAfterReboot(audio_test.AudioTest):
         # when the test involes plugger.
         # For case where audio bus is used but no plugger is used, it is no
         # harm to disconnect audio bus and reconnect it.
-        if self.use_audio_bus:
-            logging.info('Disconnecting audio bus before reboot')
-            self.widget_link.disconnect_audio_bus()
+        try:
+            if self.use_audio_bus:
+                logging.info('Disconnecting audio bus before reboot')
+                self.widget_link.disconnect_audio_bus()
 
-        self.host.reboot()
-        utils.poll_for_condition(
-                condition=self.factory.ready,
-                timeout=self.PRC_RECONNECT_TIMEOUT,
-        )
-        logging.debug('After reboot')
+            self.host.reboot()
+            utils.poll_for_condition(
+                    condition=self.factory.ready,
+                    timeout=self.PRC_RECONNECT_TIMEOUT,
+            )
+            logging.debug('After reboot')
 
-        audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
-                                              self.resultsdir, 'after_reboot')
+            audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                                  self.resultsdir,
+                                                  'after_reboot')
 
-        self.check_correct_audio_node_selected()
+            self.check_correct_audio_node_selected()
 
-        if self.use_audio_bus:
-            logging.info('Reconnecting audio bus after reboot before playback')
-            self.widget_link.reconnect_audio_bus()
+        except:
+            raise
 
-        audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
-                                              self.resultsdir,
-                                              'after_bus_reconnect')
+        finally:
+            # Always reconnect after disconnect to prevent wrong snapshot.
+            if self.use_audio_bus:
+                logging.info(
+                        'Reconnecting audio bus after reboot before playback')
+                self.widget_link.reconnect_audio_bus()
+
+            audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                                  self.resultsdir,
+                                                  'after_bus_reconnect')
 
         self.play_and_record(source_widget, recorder_widget)
 

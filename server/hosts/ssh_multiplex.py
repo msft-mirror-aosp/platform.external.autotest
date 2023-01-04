@@ -18,6 +18,7 @@ import six
 
 # TODO b:169251326 terms below are set outside of this codebase
 # and should be updated when possible. ("master" -> "main")
+# TODO b:264334279, make the timeouts configurable by server test ctrl files.
 _MAIN_SSH_COMMAND_TEMPLATE = (
         '/usr/bin/ssh -a -x -N '
         '-o ControlMaster=yes '  # Create multiplex socket. # nocheck
@@ -25,8 +26,8 @@ _MAIN_SSH_COMMAND_TEMPLATE = (
         '-o StrictHostKeyChecking=no '
         '-o UserKnownHostsFile=/dev/null '
         '-o BatchMode=yes '
-        '-o ConnectTimeout=30 '
-        '-o ServerAliveInterval=30 '
+        '-o ConnectTimeout=300 '
+        '-o ServerAliveInterval=300 '
         '-o ServerAliveCountMax=1 '
         '-o ConnectionAttempts=1 '
         '-o Protocol=2 '

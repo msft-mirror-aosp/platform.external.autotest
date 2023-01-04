@@ -529,6 +529,8 @@ suite:power_measurement_wrapper
 suite:power_monitoring
 suite:power_qual_fast
 suite:power_qual_full
+suite:power_qual_webrtc_fast
+suite:power_qual_webrtc_full
 suite:power_requirements
 suite:powerplay
 suite:printscan

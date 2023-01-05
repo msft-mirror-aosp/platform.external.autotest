@@ -1,20 +1,18 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
 NAME = "network_ChromeWifiConfigure"
-PURPOSE = "Verify that chrome.networkingPrivate can configure a wifi network."
-CRITERIA = """
-  The test will fail if the Chrome fails to configure the wifi network, or if
-  the getProperties fails to retreive the correct properties once configured.
-"""
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:1131912',
+    'criteria': 'Verify that chrome.networkingPrivate can configure a wifi network. '
+                'The test will fail if the Chrome fails to configure the wifi network, '
+                'or if the getProperties fails to retreive the correct properties once configured.',
+    'hw_agnostic': False
+}
 ATTRIBUTES = "suite:wifi_endtoend"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "network"
 TEST_TYPE = "client"
-PY_VERSION = 3
 
 DOC = """
   Tests that Chrome can do the following using chrome.networkingPrivate:

@@ -1,19 +1,17 @@
-# Copyright 2015 The Chromium Authors
+# Copyright 2023 The ChromiumOS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'wiley, zqiu, pstew, quiche'
 NAME = 'network_WiFi_UpdateRouter'
-TIME = 'SHORT'
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'This test updates the router in WiFi cell to the latest stable version.',
+    'hw_agnostic': False
+}
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
 ATTRIBUTES = 'suite:bluetooth_wifi_testbed_update'
-PY_VERSION = 3
-
-DOC = """
-This test updates the router in a WiFi cell to the latest stable version.
-"""
-
 
 def run(machine):
     job.run_test('network_WiFi_UpdateRouter',

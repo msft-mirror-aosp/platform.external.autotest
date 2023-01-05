@@ -1,19 +1,19 @@
-# Copyright 2018 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'harpreet'
 NAME = 'network_WiFi_ChaosConnectDisconnect.static_2Ghz'
-TIME = 'LONG'
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'This test iterates through all 2Ghz APs in Chaos chamber '
+                'and connects/disconnects with DUT.',
+    'hw_agnostic': False
+}
 TEST_TYPE = 'server'
 ATTRIBUTES = 'suite:wifi_interop'
 DEPENDENCIES = 'chaos_dut'
 MAX_RESULT_SIZE_KB = 512000
-PY_VERSION = 3
-
-DOC = """
-This script iterates through all 2Ghz access points in Chaos chamber.
-"""
 
 from autotest_lib.server.cros.ap_configurators import ap_spec
 from autotest_lib.server.cros.chaos_lib import static_runner

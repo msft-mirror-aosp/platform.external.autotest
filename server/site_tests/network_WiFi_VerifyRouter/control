@@ -1,26 +1,23 @@
-# Copyright 2013 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_VerifyRouter'
-TIME = 'SHORT'
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'This test is designed to check as quickly as possible that a '
+                'dual radio router is working correctly.',
+    'hw_agnostic': False
+}
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
 ATTRIBUTES = 'suite:bluetooth_wifi_testbed_update, suite:wificell_dut_validation'
-PY_VERSION = 3
-
-DOC = """
-This test is designed to check as quickly as possible that a dual radio
-router is working correctly.
-"""
-
 
 def run(machine):
     host = hosts.create_host(machine)
     job.run_test('network_WiFi_VerifyRouter',
                  host=host,
                  raw_cmdline_args=args)
-
 
 parallel_simple(run, machines)

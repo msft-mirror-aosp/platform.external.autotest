@@ -2,25 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TEST IS DISABLED UNTIL MIGRATED TO PYTHON 3.
-# For instructions on how to: go/tauto-py3-migration
-# To re-enable migrate to Python 3.
-# If the test is not migrated by 1/14/22 it will be deleted.
-
-AUTHOR = 'Chrome browser infra team'
 NAME = 'chromium'
-TIME = 'MEDIUM'
+METADATA = {
+    'contacts': ['chrome-browser-infra@google.com'],
+    'bug_component': 'b:1085804',
+    'criteria': 'Invoke the gtest executable built by chromium builders',
+    'hw_agnostic': True
+}
 TEST_TYPE = "Server"
-PY_VERSION = 3
 
 MAX_RESULT_SIZE_KB = 256 * 1024
-
 REQUIRE_SSP = True
 
 DOC = '''
-Invoke the test executable built by chromium builders.
-
-This is a generic wrapper for chromium tests. The test executable and runtime
+This is a generic wrapper for chromium gtests. The test executable and runtime
 deps are provisioned by TLS. The wrapper mounts it, kicks off the script and
 copies the result to autotest/results.
 '''

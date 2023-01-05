@@ -2,19 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'Chrome browser infra team'
 NAME = 'chromium_GPU'
-TIME = 'MEDIUM'
+METADATA = {
+    'contacts': ['chrome-browser-infra@google.com'],
+    'bug_component': 'b:1085804',
+    'criteria': 'Run telemetry based server package on Drone for chromium GPU tests',
+    'hw_agnostic': True
+}
 TEST_TYPE = "Server"
-PY_VERSION = 3
 
 MAX_RESULT_SIZE_KB = 256 * 1024
-
 REQUIRE_SSP = True
 
 DOC = '''
-Run telemetry based server package on Drone for chromium GPU tests.
-
 This is a wrapper for chromium GPU tests. The test executable, runtime
 deps and server packages are provisioned by TLS.
 The wrapper mounts it, copy the server package to drone and invoke

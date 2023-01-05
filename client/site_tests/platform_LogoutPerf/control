@@ -2,24 +2,24 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS team"
+# Description
+# This test measures the time elapsed for signing out from a logged on
+# GAIA account.
+#
+# The test logs in using the telemetry gaia_login flag, and navigates to
+# accounts.google.com to verify that we're logged in to gaia, as opposed
+# to fake telemetry login, then we press the ctrl+shift+q twice to sign
+# out and measures the time elasped between the uptime metric 'logout-started'
+# and 'chrome-exec'.
+
 NAME = "platform_LogoutPerf"
+METADATA = {
+    'contacts': [ 'baseos-perf@google.com' ],
+    'bug_component': "b:167279", # ChromeOS > Platform > System > Performance
+    'criteria': 'Measure performance of user session logout',
+    'hw_agnostic': False
+}
 ATTRIBUTES = "suite:bvt-perbuild, suite:crosbolt_perf_perbuild, suite:distributed_lab_qual_bvt_shard2"
-TIME = "SHORT"
-TEST_CATEGORY = "General"
-TEST_CLASS = "login"
 TEST_TYPE = "client"
-PY_VERSION = 3
-
-DOC = """
-This test measures the time elapsed for signing out from a logged on
-GAIA account.
-
-The test logs in using the telemetry gaia_login flag, and navigates to
-accounts.google.com to verify that we're logged in to gaia, as opposed
-to fake telemetry login, then we press the ctrl+shift+q twice to sign
-out and measures the time elasped between the uptime metric 'logout-started'
-and 'chrome-exec'.
-"""
 
 job.run_test('platform_LogoutPerf')

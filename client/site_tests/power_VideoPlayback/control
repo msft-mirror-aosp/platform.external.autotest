@@ -2,7 +2,7 @@
 # This test records power related statistics while play back video file in various
 # format.
 
-NAME = ""
+NAME = "power_VideoPlayback"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",

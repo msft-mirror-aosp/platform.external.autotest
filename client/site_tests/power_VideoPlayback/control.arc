@@ -8,7 +8,7 @@
 # on the DUT. The details of video encoding and length aren't relevant other
 # than `arc` and `noarc` should be identical.
 
-NAME = ""
+NAME = "power_VideoPlayback.arc"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",

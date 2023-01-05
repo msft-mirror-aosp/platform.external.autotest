@@ -11,7 +11,7 @@
 # 
 # The default run time is 2 hours to allow the DUT to heat up to steady state.
 
-NAME = ""
+NAME = "power_VideoCall.option"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "jpmurphy",

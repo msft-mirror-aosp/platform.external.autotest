@@ -1,7 +1,7 @@
 # Description
 # This test makes sure that power_VideoEncode is working fine.
 
-NAME = ""
+NAME = "power_VideoEncode.fast"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "puthik",

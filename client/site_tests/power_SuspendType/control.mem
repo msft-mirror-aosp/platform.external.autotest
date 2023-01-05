@@ -6,7 +6,7 @@
 # Call this test to report if the DUT supports suspend type mem, if so it
 # will return a PASS result, if not it will return a FAIL result.
 
-NAME = 'power_SuspendType.mem'
+NAME = "power_SuspendType.mem"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "bbrotherton,chromeos-pvs-dev",

@@ -2,7 +2,7 @@
 # This test records power related statistics while encode video file in various
 # formats.
 
-NAME = ""
+NAME = "power_VideoEncode"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "puthik",

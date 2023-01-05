@@ -2,19 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'The ChromiumOS Authors'
 NAME = 'audio_CRASFormatConversion'
-PURPOSE = 'Test playing audio with the CRAS test client.'
-CRITERIA = """
-Check that converting between different sample rates doesn't crash.
-"""
-TIME='SHORT'
-TEST_CATEGORY = 'PLAYBACKCAPTURE'
-TEST_CLASS = 'audio'
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "Check that converting between different sample rates doesn't crash."
+}
 TEST_TYPE = 'client'
 ATTRIBUTES = ''
 DEPENDENCIES = 'audio_loopback_dongle'
-PY_VERSION = 3
 
 DOC = """
 NOTE: For this test to pass you need to have the line out looped back to mic-in.

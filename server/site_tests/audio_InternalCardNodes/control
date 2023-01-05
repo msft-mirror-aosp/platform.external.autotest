@@ -4,28 +4,24 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_InternalCardNodes"
-PURPOSE = "Remotely controlled audio test checking audio nodes created for internal card."
-CRITERIA = "This test will fail if the plugged nodes are not expected."
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the plugged nodes are not expected."
+}
+
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:audio_essential"
-# Currently, CrOS audio team rely on the audio_box to mark tests that should
-# run on a dedicated pool of DUTs.
-# This test doesn't necessarily need to be in a audio box.
 DEPENDENCIES = "audio_box"
 JOB_RETRIES = 1
-PY_VERSION = 3
-
-DOC = """
-This test remotely tests plugged audio nodes for internal cards.
-"""
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)
+
+"""
+This test remotely tests plugged audio nodes for internal cards.
+"""
 
 def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)

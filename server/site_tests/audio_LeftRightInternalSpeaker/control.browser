@@ -4,20 +4,18 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "audio_LeftRightInternalSpeaker.browser"
-PURPOSE = "Remotely controlled left/right internal speaker audio test."
-CRITERIA = "This test will fail if the captured audio does not match original file."
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the captured audio does not match original file."
+}
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:chameleon_audio_unstable"
 DEPENDENCIES = "audio_box"
 JOB_RETRIES = 1
-PY_VERSION = 3
 
-DOC = """
+"""
 This test remotely tests internal speaker audio function by playing
 sounds to left and right channels separately. It can't detect if the
 channel/speaker pairing is incorrect, but it can detect when a certain

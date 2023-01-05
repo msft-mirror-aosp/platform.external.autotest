@@ -2,20 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'The ChromiumOS Authors,chromeos-audio@google.com'
 NAME = 'audio_CrasStress'
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "Fail if device buffer drifts too high."
+}
 ATTRIBUTES = "suite:audio, suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
-PURPOSE = 'Test device buffer can stay at reasonable level'
-CRITERIA = """
-Fail if device buffer drifts too high.
-"""
-TIME='MEDIUM'
-TEST_CATEGORY = 'Functional'
 TEST_CLASS = "audio"
-TEST_TYPE = 'client'
-PY_VERSION = 3
+TEST_TYPE = "client"
 
-DOC = """
+"""
 Test device buffer can stay at reasonable level by running input and output
 streams randomly.
 """

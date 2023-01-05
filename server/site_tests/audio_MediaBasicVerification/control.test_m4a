@@ -4,19 +4,17 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "rohitbm@chromium.org ChromeOS Audio"
 NAME = "audio_MediaBasicVerification.m4a"
-PURPOSE = "Verify m4a audio formats playback quality"
-CRITERIA = "This test will fail if the captured audio does not match original file."
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "audio"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the captured audio does not match original file."
+}
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:chameleon_audio_unstable"
 DEPENDENCIES = "chameleon, audio_board, test_audiojack"
-PY_VERSION = 3
 
-DOC = """
+"""
 This test remotely tests audio quality over headphone.
 """
 

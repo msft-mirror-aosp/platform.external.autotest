@@ -2,25 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'The ChromiumOS Authors, chromeos-audio@google.com'
 NAME = 'audio_CrasPinnedStream'
-PURPOSE = """
-Test that all audio recording still works when multiple devices records
-simultaneously. This is essential for enabling assistant.
-"""
-CRITERIA = """
-Check if the internal mic can record samples while the headset is also
-recording.
-"""
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": """
+                Check if the internal mic can record samples while the headset
+                is also recording.
+                """
+}
 ATTRIBUTES = ""
-TIME = 'SHORT'
-TEST_CATEGORY = 'PLAYBACKCAPTURE'
-TEST_CLASS = "audio"
 TEST_TYPE = 'client'
 DEPENDENCIES = 'audio_loopback_dongle'
-PY_VERSION = 3
 
-DOC = """
+"""
 Test that we can record from multiple devices simultaneously.
 
 NOTE: For this test to pass you need to have the line out looped back to mic-in.

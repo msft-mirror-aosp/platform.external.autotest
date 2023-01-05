@@ -4,18 +4,16 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "coconutruben"
 NAME = "servo_LabControlVerification"
-PURPOSE = "Validate basic, critical servo controls for the lab work."
-TIME = "LONG"
+METADATA = {
+    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "bug_component": "b:1032353",
+    "criteria": "Validate basic, critical servo controls for the lab work.",
+}
 CRITERIA="Run on DUT with a servo attached and a functional DUT on the servo."
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "servo"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
-DOC = """
-
+"""
 This test uses a servo host as DUT and then verifies that basic servod
 controls work on it, that are required for critical lab functionality.
 Additionally, it tries to ensure that all consoles (cr50, EC, and AP) are

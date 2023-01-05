@@ -4,16 +4,16 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "ChromeOS Team"
 NAME = "servo_USBInstall"
-PURPOSE = "Force reinstall cros to a dut from the servo."
-TIME = "MEDIUM"
-TEST_CATEGORY = "Install"
+METADATA = {
+    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "bug_component": "b:1032353",
+    "criteria": "Force reinstall cros to a dut from the servo.",
+}
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
-DOC = """
+"""
 This test will do the same thing as ServoInstallRepair does, but with out
 need any trigger. It will install cros on the dut use the image from USB
 that plugged into the servo.

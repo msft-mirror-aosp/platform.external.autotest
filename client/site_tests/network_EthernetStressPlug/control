@@ -2,13 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+AUTHOR = "n/a"
 NAME = "network_EthernetStressPlug"
-PURPOSE = "Stress-test Ethernet plug/unplug"
-CRITERIA = """
-This test fails if device fails to obtain dhcp through ethernet.
-"""
-PY_VERSION = 3
+METADATA = {
+    'contacts': ['chromeos-ethernet@google.com'],
+    # ChromeOS > Platform > Technologies > Ethernet
+    'bug_component': 'b:1140301',
+    'criteria': 'Stress-tests simulating plugging/unplugging the ethernet dongle. This test fails if device fails to obtain dhcp through ethernet.',
+    'hw_agnostic': False
+}
+
 
 # Note: This test is currently only intended for manual runs in
 # a "well controlled" enviroment.  This test is primarily intended for
@@ -22,13 +25,9 @@ PY_VERSION = 3
 # is a regression in a "known" configuration.
 #
 TIME = "SHORT"
-TEST_CATEGORY = "Stress"
-TEST_CLASS = "network"
 TEST_TYPE = "client"
 
-DOC = """
-  Stress-tests simulating plugging/unplugging the ethernet dongle.
-"""
+DOC = "n/a"
 
 # We want the default number of loops per test run
 # to be 100.

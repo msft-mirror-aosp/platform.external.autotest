@@ -36,7 +36,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             self._restart_update_engine()
         super(autoupdate_ForcedOOBEUpdate, self).cleanup()
 
-    def _wait_for_reboot_after_update(self, timeout_minutes=15):
+    def _wait_for_reboot_after_update(self, active, timeout_minutes=15):
         """
         Waits for the OOBE update to finish and autoreboot.
 
@@ -47,6 +47,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         1) Checking the number of logs in /var/log/update_engine/ increased.
         2) Checking that the two recent statuses were FINALIZING and IDLE.
 
+        @param active: The active kernel state per `kernel_utils`.
         @param timeout_minutes: How long to wait for the update to finish.
                                 See crbug/1073855 for context on this default.
 
@@ -56,6 +57,23 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         logs_before = len(self._get_update_engine_logs())
 
         while True:
+            # We could also check log length changing earlier to break, but this
+            # check is more explicit in slot switches in case logs don't get
+            # generated.
+            try:
+                current_active, _ = kernel_utils.get_kernel_state(self._host)
+            except:
+                # Poll ourselves here.
+                time.sleep(1)
+                continue
+
+            if current_active != active:
+                # Means the device rebooted and switched slots, stop checking
+                # status.
+                logging.info(
+                        "Device switched slots from update, breaking out.")
+                return
+
             # Use timeout so if called during reboot we fail early and retry.
             status = self._get_update_engine_status(timeout=10,
                                                     ignore_timeout=True)
@@ -91,9 +109,13 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                                 status[self._PROGRESS],
                         ))
 
-    def _wait_for_oobe_update_to_complete(self):
-        """Wait for the update that started to complete."""
-        self._wait_for_reboot_after_update()
+    def _wait_for_oobe_update_to_complete(self, active):
+        """
+        Wait for the update that started to complete.
+
+        @param active: The active kernel state per `kernel_utils`.
+        """
+        self._wait_for_reboot_after_update(active)
 
         def found_post_reboot_event():
             """
@@ -212,7 +234,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         # post-reboot update event.
         self._edit_nebraska_startup_config(no_update=True)
 
-        self._wait_for_oobe_update_to_complete()
+        self._wait_for_oobe_update_to_complete(active)
 
         # Verify the update was successful by checking hostlog and kernel.
         rootfs_hostlog, reboot_hostlog = self._create_hostlog_files()

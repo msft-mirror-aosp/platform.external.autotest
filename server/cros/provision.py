@@ -289,7 +289,6 @@ class Provision(_SpecialTaskAction):
     # version label is used for firmware update to stage desired ChromeOS image
     # on to the servo USB stick.
     _priorities = [CROS_VERSION_PREFIX,
-                   CROS_ANDROID_VERSION_PREFIX,
                    FW_RO_VERSION_PREFIX,
                    FW_RW_VERSION_PREFIX,
                    FW_CR50_RW_VERSION_PREFIX]
@@ -308,8 +307,6 @@ class Provision(_SpecialTaskAction):
                             'disable_after_test_sysinfo': True,
                             'disable_after_iteration_sysinfo': True
                     }),
-            CROS_ANDROID_VERSION_PREFIX:
-            actionables.TestActionable('provision_CheetsUpdate'),
             FW_RO_VERSION_PREFIX:
             actionables.TestActionable('provision_FirmwareUpdate'),
             FW_RW_VERSION_PREFIX:

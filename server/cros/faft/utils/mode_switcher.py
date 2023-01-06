@@ -928,10 +928,10 @@ class _BaseModeSwitcher(object):
                 timeout):
             logging.warning("-[FAFT]-[ system did not respond to ping ]")
         if self.client_host.wait_up(timeout, host_is_down=True):
-            # Check the FAFT client is avaiable.
-            self.faft_client.system.is_available()
             # Stop update-engine as it may change firmware/kernel.
-            self.faft_framework.faft_client.updater.stop_daemon()
+            logging.info('Stopping update-engine...')
+            cmd = 'status update-engine | grep stop || stop update-engine'
+            self.client_host.run(cmd)
         else:
             logging.error('wait_for_client() timed out.')
             power_state = self.faft_framework.get_power_state()

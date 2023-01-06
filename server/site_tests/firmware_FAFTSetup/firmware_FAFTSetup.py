@@ -1,18 +1,24 @@
+# Lint as: python3
 # Copyright 2012 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+"""firmware_FAFTSetup test"""
+
+import io
 import logging
 from threading import Timer
 
+# pylint:disable=import-error
 from autotest_lib.client.bin.input import linux_input
-from autotest_lib.client.common_lib import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
 
 class firmware_FAFTSetup(FirmwareTest):
-    """This test checks the following FAFT hardware requirement:
+    """Basic test to verify DUT is ready for FAFT testing.
+
+    This test checks the following FAFT hardware requirement:
       - Warm reset
       - Cold reset
       - Recovery boot with USB stick
@@ -78,6 +84,7 @@ class firmware_FAFTSetup(FirmwareTest):
 
     def run_once(self):
         """Main test logic"""
+
         logging.info("Check EC console is available and test warm reboot")
         self.console_checker()
         self.switcher.mode_aware_reboot()
@@ -86,12 +93,14 @@ class firmware_FAFTSetup(FirmwareTest):
         self.setup_usbkey(usbkey=True, host=False)
         self.switcher.reboot_to_mode(to_mode='rec')
 
-        self.check_state((self.checkers.crossystem_checker, {
-                'mainfw_type': 'recovery'
-        }))
+        stdout = io.StringIO()
+        self._client.run(['crossystem', 'mainfw_type'], stdout_tee=stdout)
+        self.check_state(lambda: stdout.getvalue() == 'recovery')
 
         logging.info("Check cold boot")
-        self.switcher.mode_aware_reboot(reboot_type='cold')
+        self.run_shutdown_cmd()
+        self.switcher.mode_aware_reboot(reboot_type='cold',
+                                        sync_before_boot=False)
 
         if self.faft_config.mode_switcher_type in (
                 'menu_switcher', 'keyboard_dev_switcher'

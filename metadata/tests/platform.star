@@ -35,11 +35,6 @@ def define_tests():
             main_package = '',
         ),
         test_common.define_test(
-            'platform/BootPerf',
-            suites = ['crosbolt_perf_nightly'],
-            main_package = 'autotest_lib.client.site_tests.platform_BootPerf.platform_BootPerf',
-        ),
-        test_common.define_test(
             'platform/CheckErrorsInLog',
             suites = [],
             main_package = 'autotest_lib.client.site_tests.platform_CheckErrorsInLog.platform_CheckErrorsInLog',

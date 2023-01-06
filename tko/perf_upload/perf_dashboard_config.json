@@ -540,10 +540,6 @@
     "main_name": "ChromeOSWiFi"
   },
   {
-    "autotest_name": "platform_BootPerfServer",
-    "main_name": "ChromeOSPerf"
-  },
-  {
     "autotest_name": "platform_GesturesRegressionTest",
     "main_name": "ChromeOSTouchpad"
   },

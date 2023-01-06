@@ -241,16 +241,5 @@
             "mpixels_sec_yuv_shader_2",
             "mtri_sec_triangle_setup"
         ]
-    },
-    {
-        "benchmark": "boot_perf",
-        "autotest_name": "platform_BootPerfServer/control$",
-        "perf_keys": [
-            "rdbytes_kernel_to_login",
-            "seconds_power_on_to_kernel",
-            "seconds_power_on_to_lf_end",
-            "seconds_power_on_to_lk_end",
-            "seconds_power_on_to_lk_start"
-        ]
     }
 ]

@@ -978,7 +978,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                          require the same physical presence.
         @raise TestFail: if the level couldn't be set
         """
-        # TODO(mruthven): add support for CCD password
         level = level.lower()
 
         if level == self.get_ccd_level():
@@ -1015,6 +1014,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                          ' ccd password attempts',
                          self.CCD_PASSWORD_RATE_LIMIT)
             time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
+        else:
+            # 'lock' does not accept a password, so don't provide one.
+            password = ''
 
         ap_is_on = self.ap_is_on()
         try:

@@ -369,6 +369,7 @@ suite:debug_kernel_testing
 suite:deqp
 suite:dev_drone_image_test
 suite:display
+suite:distributed_bvt_tast_info_chrome_shard_0
 suite:distributed_lab_qual_bvt_shard1
 suite:distributed_lab_qual_bvt_shard2
 suite:distributed_lab_qual_cts_shard1

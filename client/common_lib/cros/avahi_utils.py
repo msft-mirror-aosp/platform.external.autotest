@@ -63,7 +63,7 @@ def avahi_config(options, src_file='/etc/avahi/avahi-daemon.conf', host=None):
 
 
 def avahi_ping(host=None):
-    """Returns True when the avahi-deamon's DBus interface is ready.
+    """Returns True when the avahi-daemon's DBus interface is ready.
 
     After your launch avahi-daemon, there is a short period of time where the
     daemon is running but the DBus interface isn't ready yet. This functions

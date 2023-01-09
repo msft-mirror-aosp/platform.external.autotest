@@ -776,7 +776,7 @@ class ServoHost(base_servohost.BaseServoHost):
         logging.info("Starting servod container %s.",
                      self.servod_container_name)
         client = docker_utils.get_docker_client()
-        logging.debug("Docker deamon ping %s", client.ping())
+        logging.debug("Docker daemon ping %s", client.ping())
         labels = {'WITH_SERVOD': str(with_servod)}
         try:
             if self.is_up(with_servod=with_servod):

@@ -501,6 +501,7 @@ suite:performance_cuj_experimental_v2
 suite:performance_cuj_gaming
 suite:performance_cuj_gaming_lacros
 suite:performance_cuj_lacros
+suite:performance_cuj_lacros_v2
 suite:performance_cuj_quick
 suite:performance_cuj_sprite
 suite:performance_cuj_sprite_quick

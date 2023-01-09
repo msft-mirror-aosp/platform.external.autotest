@@ -3,21 +3,21 @@
 # found in the LICENSE file.
 
 AUTHOR = 'n/a'
-NAME = '{name}'
-METADATA = {{
+NAME = 'spera_VideoConfProxy_vp9_essential_lacros_01'
+METADATA = {
     "contacts": ["chromeos-perf-reliability-eng@google.com", "abergman@google.com"],
     "bug_component": "b:1025042",
     "criteria": "Tauto wrapper for SPERA v2 Tast test.",
     "hw_agnostic": True
-}}
-ATTRIBUTES = '{attributes}'
-TIME = '{length}'
+}
+ATTRIBUTES = 'suite:performance_cuj_lacros_v2'
+TIME = 'long'
 TEST_TYPE = 'Server'
-PRIORITY = {priority}
+PRIORITY = 4860
 MAX_RESULT_SIZE_KB = 1024 * 1024
-JOB_RETRIES = {retries}
+JOB_RETRIES = 2
 REQUIRE_SSP = True
-DEPENDENCIES = '{dependencies}'
+DEPENDENCIES = 'essential'
 PY_VERSION = 3
 
 DOC = '''
@@ -35,10 +35,10 @@ from autotest_lib.utils import labellib
 
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
-  labels['test_version'] = {version}
-  labels['test'] = '{test_exprs}'
-  labels['test_iteration'] = '{iteration}'
-  labels['total_tests_to_run'] = {total_tests}
+  labels['test_version'] = 2
+  labels['test'] = 'spera.VideoConfProxy.vp9_essential_lacros'
+  labels['test_iteration'] = '1'
+  labels['total_tests_to_run'] = 180
   utils.write_keyval(job.resultdir, labels)
   try:
     # Try to retrieve and report DUT HWID and serial number.
@@ -53,11 +53,11 @@ def run(machine):
   report_host_info(host)
   job.run_test('tast',
               host=host,
-              test_exprs=['{test_exprs}'],
+              test_exprs=['spera.VideoConfProxy.vp9_essential_lacros'],
               clear_tpm=False,
               ignore_test_failures=False,
-              max_run_sec={duration},
+              max_run_sec=3600,
               command_args=args,
-              vars_gs_path='{args_file}')
+              vars_gs_path='config/perf_cuj/perf_cuj.config')
 
 parallel_simple(run, machines)

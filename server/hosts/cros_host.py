@@ -1,4 +1,4 @@
-# Lint as: python2, python3
+# Lint as: python3
 # Copyright 2012 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -2635,6 +2635,12 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return cros_config.call_cros_config_get_output('/ name',
                 self.run, ignore_status=True)
 
+    def get_firmware_manifest_key(self):
+        key = self.run(command='crosid -f FIRMWARE_MANIFEST_KEY',
+                       ignore_status=True).stdout
+        if key:
+            return key
+        return self.get_platform()
 
     def get_architecture(self):
         """Determine the correct architecture label for this host.

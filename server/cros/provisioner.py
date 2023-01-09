@@ -605,8 +605,7 @@ class ChromiumOSProvisioner(object):
             self.host.reboot(timeout=self.host.REBOOT_TIMEOUT)
 
         # Verify that the active firmware version matches the expected one.
-        model = self.host.get_platform()
-        expected = cros_firmware._get_available_firmware(self.host, model)
+        expected = cros_firmware._get_available_firmware(self.host)
         actual = self.host.run("crossystem fwid").stdout
         msg = ("Expected firmware: %s, actual firmware on DUT: %s." %
                       (expected, actual))

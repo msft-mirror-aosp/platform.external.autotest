@@ -99,13 +99,13 @@ def _is_firmware_update_supported(host):
     return not _is_firmware_testing_device(host)
 
 
-def _get_available_firmware(host, model):
+def _get_available_firmware(host):
     """Get the available RW firmware version given the model.
 
     @param host     The host to get available firmware for.
-    @param model    The model name to get corresponding firmware version.
     @return The available RW firmware version if found, else, None.
     """
+    model = host.get_firmware_manifest_key()
     result = host.run('chromeos-firmwareupdate --manifest', ignore_status=True)
 
     if result.exit_status != 0:
@@ -449,7 +449,7 @@ class FirmwareVersionVerifier(hosts.Verifier):
             return
         # Test 4 - The firmware supplied in the running OS build is not
         # the assigned stable firmware.
-        available_firmware = _get_available_firmware(host, info.model)
+        available_firmware = _get_available_firmware(host)
         if available_firmware is None:
             logging.error('Supplied firmware version in OS can\'t be '
                           'determined.')

@@ -66,8 +66,9 @@ class FirmwareVersionVerifierTest(unittest.TestCase):
         result = utils.CmdResult(exit_status=1)
         host = mock.Mock()
         host.run.return_value = result
+        host.get_firmware_manifest_key.return_value = 'lumpy'
 
-        fw = cros_firmware._get_available_firmware(host, 'lumpy')
+        fw = cros_firmware._get_available_firmware(host)
         self.assertIsNone(fw)
 
     def test_get_available_firmware_returns_version(self):
@@ -75,8 +76,9 @@ class FirmwareVersionVerifierTest(unittest.TestCase):
         result = utils.CmdResult(stdout=VERSION_OUTPUT, exit_status=0)
         host = mock.Mock()
         host.run.return_value = result
+        host.get_firmware_manifest_key.return_value = 'kukui'
 
-        fw = cros_firmware._get_available_firmware(host, 'kukui')
+        fw = cros_firmware._get_available_firmware(host)
         self.assertEqual(fw, 'Google_Kukui.12573.13.0')
 
     def test_get_available_firmware_returns_none(self):
@@ -84,8 +86,9 @@ class FirmwareVersionVerifierTest(unittest.TestCase):
         result = utils.CmdResult(stdout=NO_VERSION_OUTPUT, exit_status=0)
         host = mock.Mock()
         host.run.return_value = result
+        host.get_firmware_manifest_key.return_value = 'kukui'
 
-        fw = cros_firmware._get_available_firmware(host, 'kukui')
+        fw = cros_firmware._get_available_firmware(host)
         self.assertIsNone(fw)
 
     def test_get_available_firmware_unibuild(self):
@@ -95,13 +98,16 @@ class FirmwareVersionVerifierTest(unittest.TestCase):
         host = mock.Mock()
         host.run.return_value = result
 
-        fw = cros_firmware._get_available_firmware(host, 'kukui')
+        host.get_firmware_manifest_key.return_value = 'kukui'
+        fw = cros_firmware._get_available_firmware(host)
         self.assertEqual(fw, 'Google_Kukui.12573.13.0')
 
-        fw = cros_firmware._get_available_firmware(host, 'kodama')
+        host.get_firmware_manifest_key.return_value = 'kodama'
+        fw = cros_firmware._get_available_firmware(host)
         self.assertEqual(fw, 'Google_Kodama.12573.15.0')
 
-        fw = cros_firmware._get_available_firmware(host, 'flapjack')
+        host.get_firmware_manifest_key.return_value = 'flapjack'
+        fw = cros_firmware._get_available_firmware(host)
         self.assertIsNone(fw)
 
 

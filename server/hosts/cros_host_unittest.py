@@ -87,6 +87,21 @@ class GetPlatformModelTests(unittest.TestCase):
         self.assertEqual(host.get_platform(), 'reef')
 
 
+class GetFirmwareManifestKeyTests(unittest.TestCase):
+    """Unit tests for CrosHost.get_firmware_manifest_key"""
+
+    def test_crosid_succeeds(self):
+        host = MockHost(MockCmd('crosid -f FIRMWARE_MANIFEST_KEY', 0, 'coral'))
+        self.assertEqual(host.get_firmware_manifest_key(), 'coral')
+
+    def test_crosid_fails(self):
+        host = MockHost(
+                MockCmd('crosid -f FIRMWARE_MANIFEST_KEY', 1, ''),
+                MockCmd('cat /etc/lsb-release', 0, UNI_LSB_RELEASE_OUTPUT),
+                MockCmd('cros_config / name', 0, 'coral'))
+        self.assertEqual(host.get_firmware_manifest_key(), 'coral')
+
+
 class DictFilteringTestCase(unittest.TestCase):
     """Tests for dict filtering methods on CrosHost."""
 

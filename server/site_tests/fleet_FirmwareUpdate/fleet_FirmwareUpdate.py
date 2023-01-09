@@ -60,8 +60,7 @@ class fleet_FirmwareUpdate(test.test):
         Args:
           host: Target host machine to check.
         """
-        model = host.get_platform()
-        expected = cros_firmware._get_available_firmware(host, model)
+        expected = cros_firmware._get_available_firmware(host)
         if not expected:
             logging.info("Couldn't get expected version based on model"
                          " info, skip firmware version check.")

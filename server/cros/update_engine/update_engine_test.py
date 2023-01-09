@@ -1,4 +1,4 @@
-# Lint as: python2, python3
+# Lint as: python3
 # Copyright 2017 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -1285,5 +1285,4 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @returns the bundled firmware version.
 
         """
-        model = self._host.get_platform()
-        return cros_firmware._get_available_firmware(self._host, model)
+        return cros_firmware._get_available_firmware(self._host)

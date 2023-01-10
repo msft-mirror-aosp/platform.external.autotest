@@ -4,16 +4,19 @@
 
 AUTHOR = "puthik"
 NAME = "power_LW.power_VideoPlayback"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a power benchmark with different display playbacks.",
+    "hw_agnostic": False,
+    "doc" : "Control file for running power_VideoPlayback in power lab.",
+}
 TIME = "MEDIUM"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:power_dashboard"
 PY_VERSION = 3
-
-DOC = """
-Control file for running power_VideoPlayback in power lab.
-"""
 
 from autotest_lib.client.common_lib import utils
 

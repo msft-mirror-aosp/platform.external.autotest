@@ -4,6 +4,13 @@
 
 AUTHOR = "puthik"
 NAME = "power_LW.power_WebGL"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a power benchmark with different WebGL pages.",
+    "hw_agnostic": False,
+    "doc" : "Control file for running power_WebGL in power lab.",
+}
 TIME = "MEDIUM"
 TEST_CATEGORY = "Benchmark"
 TEST_CLASS = "power"

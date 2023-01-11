@@ -11,11 +11,11 @@ NAME = 'bluetooth_AdapterEPHealth.ep_combo_non_hid_persists_bluetoothd_restart.f
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth
-    'bug_component': 'b:238775477',
+    'bug_component': 'b:167317',
     'criteria': 'Batch of Bluetooth enterprise policy health tests',
     'hw_agnostic': False
 }
-ATTRIBUTES = ''
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

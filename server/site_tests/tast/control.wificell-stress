@@ -4,6 +4,10 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.wificell-stress'
+METADATA = {
+	 "contacts": ["chromeos-wifi-champs@google.com"], # WiFi oncall rotation
+	 "bug_component": "b:893827", # ChromeOS > Platform > Connectivity > WiFi
+}
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:wifi_stress'
@@ -28,7 +32,7 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['("group:wificell" && wificell_stress)'],
-                 ignore_test_failures=False, max_run_sec=18000,
+                 ignore_test_failures=False, max_run_sec=21600,
                  command_args=args)
 
 parallel_simple(run, machines)

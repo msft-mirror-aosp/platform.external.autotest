@@ -25,11 +25,12 @@ class power_UiResume(arc.ArcTest):
     """
     version = 3
 
-    def initialize(self, no_arc=False):
+    def initialize(self, no_arc=False, min_resume=5):
         """
         Entry point. Initialize ARC if it is enabled on the DUT, otherwise log
         in Chrome browser.
 
+        @param min_resume: minimal time in seconds between suspends.
         """
         # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
         # so that each test run does not remember info from last test run.
@@ -45,6 +46,7 @@ class power_UiResume(arc.ArcTest):
         else:
             self._chrome = chrome.Chrome(extra_browser_args=extra_browser_args)
 
+        self._min_resume = min_resume
 
     def run_once(self,
                  max_devs_returned=10,
@@ -72,7 +74,8 @@ class power_UiResume(arc.ArcTest):
                                 suspend_state=suspend_state,
                                 suspend_iterations=suspend_iterations,
                                 ignore_kernel_warns=ignore_kernel_warns,
-                                measure_arc=self._enable_arc)
+                                measure_arc=self._enable_arc,
+                                iteration_delay=self._min_resume)
         if res:
             result_files = os.listdir(
                     os.path.join(self.outputdir, "..", "power_Resume",

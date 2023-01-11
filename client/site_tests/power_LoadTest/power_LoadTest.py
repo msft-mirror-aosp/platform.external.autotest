@@ -363,6 +363,10 @@ class power_LoadTest(arc.ArcTest):
             if use_lacros:
                 chrome_new_request.lacros_unpacked_extensions.append(ext_path)
                 chrome_new_request.lacros.mode = chrome_service_pb2.Lacros.Mode.MODE_ONLY
+                # We set this in order to keep Lacros alive when all windows
+                # are closed at the end of one loop. This removes the need to
+                # re-launch Lacros for each loop.
+                chrome_new_request.lacros_keep_alive = True
             else:
                 chrome_new_request.unpacked_extensions.append(ext_path)
 

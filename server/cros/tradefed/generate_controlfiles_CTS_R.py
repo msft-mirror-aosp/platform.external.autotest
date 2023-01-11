@@ -207,6 +207,9 @@ CONFIG['VM_MODULES_RULES'] = [
 # These VM testing are unstable, and will also run at regular frequency on
 # hardware.
 CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
+    # Uncomment the line below to add all tests back to hardware.
+    # "+.*",
+
     # These tests failed more than once between Oct/13 and Nov/09 2022.
     "+CtsApp.*",
     "+CtsBionic.*",

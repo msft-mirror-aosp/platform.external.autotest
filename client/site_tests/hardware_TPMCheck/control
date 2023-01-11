@@ -2,11 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "The ChromiumOS Authors"
+AUTHOR = "n/a"
 NAME = "hardware_TPMCheck"
 ATTRIBUTES = "suite:kernel_per-build_regression, suite:pvs-kernel"
 PURPOSE = "Basic check of the TPM state"
 CRITERIA = "Check that the TPM is in the expected state for use in ChromeOS."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "kmshelton@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Used during AP/EC firmware suspend stress testing"
+}
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "Hardware"

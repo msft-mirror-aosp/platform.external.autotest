@@ -244,6 +244,13 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
     '+CtsPerfetto.*', # b/203614416
     '+CtsProvider.*', # b/212194116
     '+CtsRs.*', # b/166168119
+    '+CtsScopedStorageHostTest.*', # b/232055847
+    '+CtsSimpleperfTestCases.*', # b/247434877
+    '+CtsTransition.*', # b/160544400
+    '+CtsWidget.*', # b/214332007
+    '+LegacyStorageTest.*', # b/190457907
+    '+ScopedStorageTest.*', # b/190457907
+    '+vm-tests-tf.*', # b/158533921
 
     # May depend on HW ?
     '+CtsDisplay.*',
@@ -251,6 +258,13 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
     # This suite include tests sensitive to graphics performance
     # (GraphicsStatsValidationTest) so we probably need HW coverage.
     '+CtsIncidentHost.*',
+    # We do see device-specfic failure from CtsWM (e.g., b/264339925) and
+    # formfactor dependence (5 or 6 kukui/nocturne-only failures must have
+    # been addressed before they become launch ready.) It is safer to leave
+    # this to the hw-dependence family at least until we have tablet/laptop
+    # coverage by Betty
+    '+CtsWindowManager.*',
+    '+signed-Cts.*',
 
 
     # Tests between CtsA-CtsG that has no suspicious bug reports.
@@ -346,6 +360,49 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
     '-CtsResourcesLoader.*',
     '-CtsRole.*',
     '-CtsRollbackManagerHostTestCases.*',
+    '-CtsSax.*',
+    '-CtsSdkExtensions.*',
+    '-CtsSeccompHost.*',
+    '-CtsSecure.*',
+    '-CtsSelinux.*',
+    '-CtsSettings.*',
+    '-CtsSharedLibsApiSignature.*',
+    '-CtsSharesheet.*',
+    '-CtsShortcut.*',
+    '-CtsSignedConfigHost.*',
+    '-CtsSimRestrictedApis.*',
+    '-CtsSlice.*',
+    '-CtsSoundTrigger.*',
+    '-CtsSpeech.*',
+    '-CtsStagedInstallHostTestCases.*',
+    '-CtsStatsdHost.*',
+    '-CtsStrictJavaPackages.*',
+    '-CtsSuspendApps.*',
+    '-CtsSustainedPerformanceHost.*',
+    '-CtsSync.*',
+    '-CtsSystem.*',
+    '-CtsTaggingHost.*',
+    '-CtsTelecom.*',
+    '-CtsTelephony.*',
+    '-CtsTestHarnessMode.*',
+    '-CtsTetheringTest.*',
+    '-CtsText.*',
+    '-CtsTfliteNnapiDelegate.*',
+    '-CtsTheme.*',
+    '-CtsThermal.*',
+    '-CtsToast.*',
+    '-CtsTrustedVoiceHost.*',
+    '-CtsTv.*',
+    '-CtsUidIsolation.*',
+    '-CtsUsageStats.*',
+    '-CtsUsb.*',
+    '-CtsUsesLibraryHost.*',
+    '-CtsUtil.*',
+    '-CtsVoice.*',
+    '-CtsVr.*',
+    '-CtsWebkit.*',
+    '-CtsWrap.*',
+
 
     # Mark all tests unstable until migration.
     '+.*',

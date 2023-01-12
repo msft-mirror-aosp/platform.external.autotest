@@ -2,24 +2,30 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'Rajaa Abdallah <rajaa.abdallah@exalt.ps>'
+# Validate that we can register an advertisement that uses the 'broadcast' mode,
+# which may configure alternate advertising intervals, and uses a random
+# address.
+#
+# Purpose: Test broadcast advertising capabilities.
+
+# Deprecated variables:
+#     TIME = 'SHORT'  # ~2 minutes on hatch
+#     TEST_CATEGORY = 'Functional'
+
 NAME = 'bluetooth_AdapterAdvHealth.adv_broadcast_test.floss'
-PURPOSE = 'Test broadcast advertising capabilities.'
-CRITERIA = 'Adapter should advertise with correct parameters.'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Adapter should advertise with correct parameters.',
+    'hw_agnostic': False,
+}
+
 ATTRIBUTES = 'suite:bluetooth_floss'
-TIME = 'SHORT'  # ~2 minutes on hatch
 MAX_RESULT_SIZE_KB = 128000
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'
-PY_VERSION = 3
 
-DOC = """
-Validate that we can register an advertisement that uses the 'broadcast' mode,
-which may configure alternate advertising intervals, and uses a random
-address.
-"""
 
 def run(machine):
     host = hosts.create_host(machine)

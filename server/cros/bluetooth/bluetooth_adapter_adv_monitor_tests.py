@@ -1972,6 +1972,7 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_is_adv_monitoring_supported()
 
         device = self.devices['BLE_MOUSE'][0]
+        device_rssi = self.get_device_sample_rssi(device)
         self.test_stop_peer_device_adv(device)
 
         device_addrs = []
@@ -1981,7 +1982,6 @@ class BluetoothAdapterAdvMonitorTests(
                 device_addrs.append('C4:05:C4:05:{:02x}:{:02x}'.format(ci, di))
                 device_names.append('COND{}_DEV{}'.format(ci, di))
 
-        device_rssi = self.get_device_sample_rssi(device)
         high_rssi = max(device_rssi - self.HIGH_RSSI_THRESHOLD_TOLERANCE, -126)
         low_rssi = max(device_rssi - self.LOW_RSSI_THRESHOLD_TOLERANCE, -127)
 

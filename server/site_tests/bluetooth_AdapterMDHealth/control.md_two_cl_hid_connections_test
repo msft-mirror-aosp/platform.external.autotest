@@ -2,24 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# This test is to verify that DUT can connect classic keyboard and
+# classic mouse at the same time.
+#
+# Purpose: Verify DUT can connect to both devices
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterMDHealth.md_two_cl_hid_connections_test'
-PURPOSE = ('Verify DUT can connect to both devices')
-CRITERIA = 'DUT can connect to both devices'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'DUT can connect to both devices',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
-TIME = 'SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
-PY_VERSION = 3
 
-DOC = """
-    This test is to verify that DUT can connect classic keyboard and
-    classic mouse at the same time.
-    """
 
 args_dict = utils.args_to_dict(args)
 

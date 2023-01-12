@@ -665,14 +665,20 @@ def get_authkey(is_public):
     return CONFIG['AUTHKEY']
 
 
-def _format_collect_cmd(is_public, abi_to_run, retry, is_hardware=False):
+def _format_collect_cmd(is_public,
+                        abi_to_run,
+                        retry,
+                        is_hardware=False,
+                        is_camera=False):
     """Returns a list specifying tokens for tradefed to list all tests."""
     if retry:
         return None
     cmd = ['run', 'commandAndExit', 'collect-tests-only']
     if CONFIG['TRADEFED_DISABLE_REBOOT_ON_COLLECTION']:
         cmd += ['--disable-reboot']
-    if is_hardware:
+    if is_camera:
+        cmd += ['--module', 'CtsCameraTestCases']
+    elif is_hardware:
         cmd.append('--subplan')
         cmd.append('cts-hardware')
     for m in CONFIG['MEDIA_MODULES']:
@@ -807,13 +813,21 @@ def get_run_template(modules,
                      whole_module_set=None,
                      is_hardware=False):
     """Command to run the modules specified by a control file."""
-    no_intersection = not modules.intersection(get_collect_modules(is_public,
-                          is_hardware))
-    collect_present = (_COLLECT in modules or _PUBLIC_COLLECT in modules or
-                       _CTSHARDWARE_COLLECT in modules or
-                       _PUBLIC_CTSHARDWARE_COLLECT in modules)
-    all_present = _ALL in modules
-    if no_intersection or (all_present and not collect_present):
+    # TODO(kinaba): `_ALL` phony module is no longer used anywhere.
+    # Clean it up together with all the other occurrences.
+    is_all = _ALL in modules
+    is_collect = (len(modules) == 1
+                  and list(modules)[0] in get_collect_modules(
+                          is_public, is_hardware))
+    if is_all:
+        return None
+    elif is_collect:
+        return _format_collect_cmd(is_public,
+                                   abi_to_run,
+                                   retry=retry,
+                                   is_hardware=is_hardware,
+                                   is_camera='camerabox' in list(modules)[0])
+    else:
         return _format_modules_cmd(is_public,
                                    abi_to_run,
                                    shard,
@@ -821,10 +835,6 @@ def get_run_template(modules,
                                    retry=retry,
                                    whole_module_set=whole_module_set,
                                    is_hardware=is_hardware)
-    elif collect_present:
-        return _format_collect_cmd(is_public, abi_to_run, retry=retry,
-                   is_hardware=is_hardware)
-    return None
 
 def get_retry_template(modules, is_public):
     """Command to retry the failed modules as specified by a control file."""
@@ -1180,9 +1190,12 @@ def get_collect_modules(is_public, is_hardware=False):
             return set([_PUBLIC_CTSHARDWARE_COLLECT])
         return set([_PUBLIC_COLLECT])
     else:
+        suffices = ['']
+        if CONFIG.get('CONTROLFILE_WRITE_CAMERA', False):
+            suffices.extend([".camerabox.front", ".camerabox.back"])
         if is_hardware:
-            return set([_CTSHARDWARE_COLLECT])
-        return set([_COLLECT])
+            return set(_CTSHARDWARE_COLLECT + suffix for suffix in suffices)
+        return set(_COLLECT + suffix for suffix in suffices)
 
 
 @contextlib.contextmanager

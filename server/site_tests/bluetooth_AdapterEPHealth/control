@@ -2,40 +2,47 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Server side bluetooth tests about Enterprise Policy Health tests.
+#
+# Specifically, this test suite includes the following tests
+# - ep_check_set_allowlist
+# - ep_outgoing_service_in_allowlist
+# - ep_outgoing_service_not_in_allowlist
+# - ep_outgoing_empty_allowlist
+# - ep_incoming_service_in_allowlist
+# - ep_incoming_service_not_in_allowlist
+# - ep_gatt_services_in_allowlist
+# - ep_gatt_services_not_in_allowlist
+# - ep_gatt_empty_allowlist
+# - ep_combo_set_allowlist_and_disconnect
+# - ep_combo_successive_allowlists
+# - ep_combo_hid_persists_adapter_reset
+# - ep_combo_non_hid_persists_adapter_reset
+# - ep_combo_hid_persists_bluetoothd_restart
+# - ep_combo_non_hid_persists_bluetoothd_restart
+#
+# Purpose: Batch of Bluetooth enterprise policy health tests
+
+# Deprecated variables:
+#     TIME = 'MEDIUM'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterEPHealth'
-PURPOSE = ('Batch of Bluetooth enterprise policy health tests')
-CRITERIA = 'Pass all health test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all health test',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = ''
-TIME = 'MEDIUM'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-    Server side bluetooth tests about Enterprise Policy Health tests.
-
-    Specifically, this test suite includes the following tests
-    - ep_check_set_allowlist
-    - ep_outgoing_service_in_allowlist
-    - ep_outgoing_service_not_in_allowlist
-    - ep_outgoing_empty_allowlist
-    - ep_incoming_service_in_allowlist
-    - ep_incoming_service_not_in_allowlist
-    - ep_gatt_services_in_allowlist
-    - ep_gatt_services_not_in_allowlist
-    - ep_gatt_empty_allowlist
-    - ep_combo_set_allowlist_and_disconnect
-    - ep_combo_successive_allowlists
-    - ep_combo_hid_persists_adapter_reset
-    - ep_combo_non_hid_persists_adapter_reset
-    - ep_combo_hid_persists_bluetoothd_restart
-    - ep_combo_non_hid_persists_bluetoothd_restart
-    """
 
 args_dict = utils.args_to_dict(args)
 

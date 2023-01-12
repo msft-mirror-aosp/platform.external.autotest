@@ -2,24 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Server side bluetooth test with service in allowlist for
+# incoming reconnection from device.
+#
+# Purpose: Batch of Bluetooth enterprise policy health tests
+
+# Deprecated variables:
+#     TIME = 'MEDIUM'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'Saba Sarabta <saba.sarabta@exalt.ps>'
 NAME = 'bluetooth_AdapterEPHealth.ep_incoming_hid_service_in_allowlist.floss'
-PURPOSE = 'Batch of Bluetooth enterprise policy health tests'
-CRITERIA = 'Pass the health test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass the health test',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_floss'
-TIME = 'MEDIUM'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-Server side bluetooth test with service in allowlist for
-incoming reconnection from device.
-"""
 
 args_dict = utils.args_to_dict(args)
 

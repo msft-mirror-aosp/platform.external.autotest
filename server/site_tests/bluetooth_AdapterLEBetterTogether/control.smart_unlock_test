@@ -2,26 +2,34 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# The test is to verify the Bluetooth features used by Smart Unlock feature of
+# Better Together. It sends similar Bluetooth requests as the Smart Unlock
+# feature does and verifies that the Bluetooth stack can handle the requests in
+# a timely manner.
+#
+#
+# Purpose: Better together smart unlock test
+
+# Deprecated variables:
+#     TIME = 'MEDIUM'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterLEBetterTogether.smart_unlock_test'
-PURPOSE = ('Better together smart unlock test')
-CRITERIA = 'Pass the test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass the test',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e, suite:bluetooth_e2e_cq'
-TIME = 'MEDIUM'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-	The test is to verify the Bluetooth features used by Smat Unlock feature of
-	Better Together. It sends similar Bluetooth requests as the Smart Unlock
-	feature does and verifies that the Bluetooth stack can handle the requests in
-	a timely manner.
-      """
 
 args_dict = utils.args_to_dict(args)
 

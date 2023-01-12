@@ -2,21 +2,30 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+#  Toggle adapter power and verify peer devices can reconnect.
+#
+# Purpose: Batch of Bluetooth LE health tests
+
+# Deprecated variables:
+#     TIME = 'MEDIUM'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'Rajaa Abdallah <rajaa.abdallah@exalt.ps>'
 NAME = 'bluetooth_AdapterLEHealth.le_power_toggle_connect_loop.floss'
-PURPOSE = ('Batch of Bluetooth LE health tests')
-CRITERIA = 'Pass all health test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all health test',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
-TIME = 'MEDIUM'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """ Toggle adapter power and verify peer devices can reconnect. """
 
 args_dict = utils.args_to_dict(args)
 

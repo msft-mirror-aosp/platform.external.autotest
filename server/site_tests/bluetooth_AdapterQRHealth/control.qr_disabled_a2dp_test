@@ -2,24 +2,32 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Enables then disables Quality function, starts the A2DP streaming
+# and sees if the Quality function was disabled successfully.
+#
+#
+# Purpose: Check Quality function disabled properly with A2DP streaming
+
+# Deprecated variables:
+#     TIME = 'SHORT'  # Approximately 2 mins
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterQRHealth.qr_disabled_a2dp_test'
-PURPOSE = ('Check Quality function disabled properly with A2DP streaming')
-CRITERIA = 'Pass all the Bluetooth log checking'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all the Bluetooth log checking',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_flaky'
-TIME = 'SHORT'  # Approximately 2 mins
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-        Enables then disables Quality function, starts the A2DP streaming
-        and sees if the Quality function was disabled successfully.
-    """
 
 args_dict = utils.args_to_dict(args)
 

@@ -2,24 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Checking if the Quality Report is enabled and disabled correctly in
+# different scenarios.
+#
+# Purpose: Check Quality Report is enabled or disabled in various scenarios
+
+# Deprecated variables:
+#     TIME = 'SHORT'  # Approximately 4 mins on trogdor/lazor
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterQRHealth.qr_check_states_test'
-PURPOSE = 'Check Quality Report is enabled or disabled in various scenarios'
-CRITERIA = 'Pass all the btmon log checking'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all the btmon log checking',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
-TIME = 'SHORT'  # Approximately 4 mins on trogdor/lazor
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'  # This test does not need btpeer devices.
-PY_VERSION = 3
 
-DOC = """
-        Checking if the Quality Report is enabled and disabled correctly in
-        different scenarios.
-"""
 
 args_dict = utils.args_to_dict(args)
 

@@ -2,22 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Test the speed of a HID device reconnect to DUT
+#
+# Purpose: Test the speed of a HID device reconnect to DUT.
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterCLHealth.cl_HID_reconnect_speed_test.floss'
-PURPOSE = 'Test the speed of a HID device reconnect to DUT.'
-CRITERIA = 'HID device should reconnect fast.'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'HID device should reconnect fast.',
+    'hw_agnostic': False,
+}
+
+
 # TODO: Remove ['Quick Health'] flag from AdapterCLHealth when moving to stable.
 ATTRIBUTES = 'suite:bluetooth_floss'
-TIME = 'SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """Test the speed of a HID device reconnect to DUT"""
 
 args_dict = utils.args_to_dict(args)
 

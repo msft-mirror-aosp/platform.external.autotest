@@ -2,23 +2,30 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterCLHealth.cl_adapter_discoverable_test.floss'
-ATTRIBUTES = 'suite:bluetooth_floss'
-TIME = 'SHORT'
-TEST_CLASS = 'bluetooth'
-TEST_TYPE = 'Server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
+# Verify that the device can be discovered from another Bluetooth device.
+#
+# This is a useful health check because it tests basic functionality of the
+# radio and host subsystem.
 
-DOC = """
-Verify that the device can be discovered from another Bluetooth device.
-
-This is a useful health check because it tests basic functionality of the
-radio and host subsystem.
-"""
+# Deprecated variables:
+#     TIME = 'SHORT'
 
 from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterCLHealth.cl_adapter_discoverable_test.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': '',
+    'hw_agnostic': False,
+}
+
+ATTRIBUTES = 'suite:bluetooth_floss'
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+
 
 args_dict = utils.args_to_dict(args)
 

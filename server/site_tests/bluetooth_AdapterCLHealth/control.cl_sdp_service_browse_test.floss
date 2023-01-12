@@ -2,26 +2,33 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterCLHealth.cl_sdp_service_browse_test.floss'
-ATTRIBUTES = 'suite:bluetooth_floss'
-TIME = 'SHORT'
-TEST_CLASS = 'bluetooth'
-TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
+# Verify that the DUT behave correct during Service Browse procedure.
+#
+# Two tests use different requests to execute Service Browse procedure:
+# one uses Service Search Request and Service Attribute Request,
+# the other one uses Service Search Attribute Request.
+#
+#
 
-DOC = """
-Verify that the DUT behave correct during Service Browse procedure.
-
-Two tests use different requests to execute Service Browse procedure:
-one uses Service Search Request and Service Attribute Request,
-the other one uses Service Search Attribute Request.
-
-
-"""
+# Deprecated variables:
+#     TIME = 'SHORT'
 
 from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterCLHealth.cl_sdp_service_browse_test.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': '',
+    'hw_agnostic': False,
+}
+
+ATTRIBUTES = 'suite:bluetooth_floss'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+
 
 args_dict = utils.args_to_dict(args)
 

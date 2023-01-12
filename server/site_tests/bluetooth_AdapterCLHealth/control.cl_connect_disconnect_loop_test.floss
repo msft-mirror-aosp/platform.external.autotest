@@ -2,24 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Verify that the bluetooth adapter of the DUT could pair and connect
+# to a bluetooth device.
+#
+# Purpose: Test bluetooth adapter connect to HID after disconnecting
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterCLHealth.cl_connect_disconnect_loop_test.floss'
-PURPOSE = 'Test bluetooth adapter connect to HID after disconnecting'
-CRITERIA = 'Adapter should work in correct states.'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Adapter should work in correct states.',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_floss'
-TIME = 'SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-Verify that the bluetooth adapter of the DUT could pair and connect
-to a bluetooth device.
-"""
 
 args_dict = utils.args_to_dict(args)
 

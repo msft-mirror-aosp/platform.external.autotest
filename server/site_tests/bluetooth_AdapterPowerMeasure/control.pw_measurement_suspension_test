@@ -2,29 +2,36 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# This test case verifies that the Bluetooth chip of the DUT does
+# not consume power more than specified during system suspension.
+#
+# This autotest include the following test cases:
+#      self.test_case_suspend_power_measurement()
+#
+# Purpose: Test power consumption of Bluetooth chip during system suspension.
+
+# Deprecated variables:
+#     TIME = 'SHORT'   # Takes about 2 mins
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-
-AUTHOR = 'ChromeOS Team'
 NAME = 'bluetooth_AdapterPowerMeasure.pw_measurement_suspension_test'
-PURPOSE = 'Test power consumption of Bluetooth chip during system suspension.'
-CRITERIA = 'Bluetooth chip should consume power less than specified.'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Bluetooth chip should consume power less than specified.',
+    'hw_agnostic': False,
+}
+
+
+
 # Remove this test from the lab before it is fixed.
 ATTRIBUTES = ''
-TIME = 'SHORT'   # Takes about 2 mins
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1, servo'
-PY_VERSION = 3
 
-DOC = """
-This test case verifies that the Bluetooth chip of the DUT does
-not consume power more than specified during system suspension.
-
-This autotest include the following test cases:
-     self.test_case_suspend_power_measurement()
-"""
 
 args_dict = utils.args_to_dict(args)
 

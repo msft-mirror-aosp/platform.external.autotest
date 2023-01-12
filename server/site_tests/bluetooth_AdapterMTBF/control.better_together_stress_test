@@ -2,25 +2,33 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# The test is to stress the better together test and measure the Mean
+# Time Between Failures (MTBF).
+#
+#
+# Purpose: Bluetooth adapter MTBF test
+
+# Deprecated variables:
+#     TIME = 'LONG'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterMTBF.better_together_stress_test'
-PURPOSE = ('Bluetooth adapter MTBF test')
-CRITERIA = 'Pass the test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass the test',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = ''
-TIME = 'LONG'
 MAX_RESULT_SIZE_KB = 512000
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-	The test is to stress the better together test and measure the Mean
-	Time Between Failures (MTBF).
-      """
 
 args_dict = utils.args_to_dict(args)
 

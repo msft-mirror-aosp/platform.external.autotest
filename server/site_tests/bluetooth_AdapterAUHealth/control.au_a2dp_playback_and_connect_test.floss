@@ -2,28 +2,35 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# To run the A2DP playback and connect test.
+#
+# This test first plays the audio stream and then selects the BT device as
+# output node, checking if the stream has routed to the BT device. After
+# that, disconnect the BT device and also check whether the stream closes
+# on it gracefully.
+#
+# Purpose: Run the A2DP playback and connect test
+
+# Deprecated variables:
+#     TIME = 'SHORT'  # Approximately 3 mins
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'Manal Lubbadeh <manal.lubbadeh@exalt.ps>'
 NAME = 'bluetooth_AdapterAUHealth.au_a2dp_playback_and_connect_test.floss'
-PURPOSE = 'Run the A2DP playback and connect test'
-CRITERIA = 'Pass audio chunk testing before and after the BT device connects'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass audio chunk testing before and after the BT device connects',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_floss'
-TIME = 'SHORT'  # Approximately 3 mins
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-    To run the A2DP playback and connect test.
-
-    This test first plays the audio stream and then selects the BT device as
-    output node, checking if the stream has routed to the BT device. After
-    that, disconnect the BT device and also check whether the stream closes
-    on it gracefully.
-    """
 
 args_dict = utils.args_to_dict(args)
 

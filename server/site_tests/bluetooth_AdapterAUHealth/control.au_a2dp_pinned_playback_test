@@ -2,27 +2,34 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# To run the A2DP pinned playback test.
+#
+# A2DP profile is used. This test does not choose Bluetooth as the output
+# node but directly plays the sound that is pinned to the Bluetooth device
+# and check whether it receives the audio stream correctly.
+#
+# Purpose: Run the A2DP pinned playback test
+
+# Deprecated variables:
+#     TIME = 'SHORT'  # Approximately 3 mins
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterAUHealth.au_a2dp_pinned_playback_test'
-PURPOSE = ('Run the A2DP pinned playback test')
-CRITERIA = 'Pass all audio chunk checking'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all audio chunk checking',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
-TIME = 'SHORT'  # Approximately 3 mins
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-    To run the A2DP pinned playback test.
-
-    A2DP profile is used. This test does not choose Bluetooth as the output
-    node but directly plays the sound that is pinned to the Bluetooth device
-    and check whether it receives the audio stream correctly.
-    """
 
 args_dict = utils.args_to_dict(args)
 

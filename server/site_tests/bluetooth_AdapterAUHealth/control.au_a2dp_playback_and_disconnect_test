@@ -2,27 +2,34 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# To run the A2DP playback and disconnect test.
+#
+# This test will keep the stream playing and then disconnect the Bluetooth
+# device. The goal is to check the stream is still alive after the Bluetooth
+# device disconnected.
+#
+# Purpose: Run the A2DP playback and disconnect test
+
+# Deprecated variables:
+#     TIME = 'SHORT'  # Approximately 3 mins
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterAUHealth.au_a2dp_playback_and_disconnect_test'
-PURPOSE = ('Run the A2DP playback and disconnect test')
-CRITERIA = 'Audio stream is alive after BT device disconnected'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Audio stream is alive after BT device disconnected',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
-TIME = 'SHORT'  # Approximately 3 mins
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-    To run the A2DP playback and disconnect test.
-
-    This test will keep the stream playing and then disconnect the Bluetooth
-    device. The goal is to check the stream is still alive after the Bluetooth
-    device disconnected.
-    """
 
 args_dict = utils.args_to_dict(args)
 

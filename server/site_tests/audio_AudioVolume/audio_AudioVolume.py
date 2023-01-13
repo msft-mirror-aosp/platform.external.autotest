@@ -77,7 +77,7 @@ class audio_AudioVolume(audio_test.AudioTest):
             return audio_test_data.GenerateAudioTestData(
                     path=os.path.join(self.bindir, 'fix_2k_16.raw'),
                     duration_secs=10,
-                    frequencies=[2000, 1000])
+                    frequencies=[2000, 2000])
 
         if (source_id == chameleon_audio_ids.CrosIds.SPEAKER
                     and not audio_test_utils.has_internal_speaker(self.host)):

@@ -495,7 +495,7 @@ class Cr50Test(FirmwareTest):
         """
         image = image if image else self.get_saved_cr50_original_path()
         self.run_update_to_eraseflashinfo()
-        self._retry_gsc_update_with_ccd_and_ap(image)
+        self._retry_gsc_update_with_ccd_and_ap(image, 3, False)
 
     def update_cr50_image_and_board_id(self, image_path, bid):
         """Set the chip board id and updating the cr50 image.

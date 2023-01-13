@@ -41,7 +41,6 @@ FAKE_MOBLAB_ID_FILE = "fake_moblab_id_do_not_delete.txt"
 GIT_HASH_FILE = "git_hash.txt"
 GIT_COMMAND = ("git log --pretty=format:'%h -%d %s (%ci) <%an>'"
                " --abbrev-commit -20")
-DEFAULT_UPLOADER = os.getenv("USER")
 AUTOTEST_DIR = "/mnt/host/source/src/third_party/autotest/files/"
 if "AUTOTEST_REPO_ROOT" in os.environ:
     AUTOTEST_DIR = os.environ["AUTOTEST_REPO_ROOT"]
@@ -157,13 +156,6 @@ def parse_arguments(argv):
             help="The suite is used to identify the type of test results,"
             "e.g. 'power' for platform power team. If not specific, the "
             "default value is 'default_suite'.")
-    upload_parser.add_argument("-u",
-                               "--uploader",
-                               type=str,
-                               required=False,
-                               default=DEFAULT_UPLOADER,
-                               help="Uploader/User. Default: " +
-                               DEFAULT_UPLOADER)
 
     # checkacls subcommand to verify service account has proper acls to upload results to bucket
     subparsers.add_parser(name="checkacls", help='check ACLs of configured service account')
@@ -813,8 +805,6 @@ def main(args):
     file_handler.setFormatter(fmt)
     file_handler.setLevel(log.DEBUG)
     logging.addHandler(file_handler)
-
-    logging.info("uploaded by %s", parsed_args.uploader)
 
     if parsed_args.subcommand == "config":
         _configure_environment(parsed_args.bucket, parsed_args.force)

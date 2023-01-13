@@ -535,6 +535,10 @@ class Cr50Test(FirmwareTest):
             self.gsc.set_board_id(chip_bid, chip_flags)
 
         self._retry_gsc_update_with_ccd_and_ap(image_path, 3, True)
+        # Flash the release image into the second slot. If the DBG image
+        # stays in the inactive slot, the rollback counter could get cleared
+        # and gsc will switch to the DBG image.
+        self._retry_gsc_update_with_ccd_and_ap(image_path, 3, False)
 
     def _discharging_factory_mode_cleanup(self):
         """Try to get the dut back into charging mode.

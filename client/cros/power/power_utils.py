@@ -2,7 +2,6 @@
 # Copyright 2012 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-import dbus
 import glob
 import logging
 import os
@@ -13,7 +12,6 @@ import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input.input_device import InputDevice
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.cros import dbus_util
 from autotest_lib.client.cros import upstart
 from six.moves import range
 
@@ -692,6 +690,14 @@ class PowerPrefChanger(object):
 
     @classmethod
     def _restart_powerd(cls):
+        try:
+            import dbus
+            from autotest_lib.client.cros import dbus_util
+        except ImportError as e:
+            logging.exception(
+                    'Cannot import dbus libraries: %s. This method should only '
+                    'be called on a Cros device.', e)
+            raise
         upstart.restart_job('powerd')
         # Wait for the DBus session to start
         bus = dbus.SystemBus()

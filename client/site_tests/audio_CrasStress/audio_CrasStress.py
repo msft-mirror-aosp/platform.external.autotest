@@ -9,7 +9,6 @@ import random
 import re
 import subprocess
 import time
-import datetime
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
@@ -26,6 +25,8 @@ class audio_CrasStress(test.test):
     _LOOP_COUNT = 300
     _INPUT_BUFFER_LEVEL = '.*?READ_AUDIO.*?hw_level.*?(\d+).*?'
     _OUTPUT_BUFFER_LEVEL = '.*?FILL_AUDIO.*?hw_level.*?(\d+).*?'
+    _ODEV_NO_STREAMS = '.*?ODEV_NO_STREAMS.*?dev.*?(\d+).*?'
+    _ODEV_LEAVE_NO_STREAMS = '.*?ODEV_LEAVE_NO_STREAMS.*?dev.*?(\d+).*?'
     _AUDIO_LOG_TIME_FMT = '%Y-%m-%dT%H:%M:%S.%f'
     _CHECK_PERIOD_TIME_SECS = 1 # Check buffer level every second.
 
@@ -43,7 +44,10 @@ class audio_CrasStress(test.test):
 
     def initialize(self):
         """Initialize the test"""
-        upstart.stop_job('ui')
+        try:
+            upstart.stop_job('ui')
+        except:
+            pass
 
     def _new_stream(self, stream_type):
         """Runs new stream by cras_test_client."""
@@ -57,9 +61,9 @@ class audio_CrasStress(test.test):
 
         return subprocess.Popen(cmd)
 
-    def _check_buffer_level(self, stream_type):
+    def _check_buffer_level(self, stream_type, audio_thread_log):
 
-        buffer_level = self._get_buffer_level(stream_type)
+        buffer_level = self._get_buffer_level(stream_type, audio_thread_log)
 
         if stream_type == _STREAM_TYPE_INPUT:
             logging.debug("Max input buffer level: %d", buffer_level)
@@ -96,12 +100,20 @@ class audio_CrasStress(test.test):
         if not input_stream and not output_stream:
             raise error.TestError('Not supported mode.')
 
+        upstart.restart_job('cras')
+        time.sleep(3)
+
         self._streams = []
 
         loop_count = 0
-        past_time = time.time()
-        while loop_count < self._LOOP_COUNT:
+        proc = subprocess.Popen(['cras_test_client', '--follow_atlog'],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                universal_newlines=True,
+                                encoding='utf-8',
+                                bufsize=1)
 
+        while loop_count < self._LOOP_COUNT:
             # 1 for adding stream, 0 for removing stream.
             add = random.randint(0, 1)
             if not self._streams:
@@ -122,55 +134,50 @@ class audio_CrasStress(test.test):
                 self._streams[0].kill()
                 self._streams.remove(self._streams[0])
                 time.sleep(0.1)
-
-            now = time.time()
-
-            # Check buffer level.
-            if now - past_time > self._CHECK_PERIOD_TIME_SECS:
-                past_time = now
-                if input_stream:
-                    self._check_buffer_level(_STREAM_TYPE_INPUT)
-                if output_stream:
-                    self._check_buffer_level(_STREAM_TYPE_OUTPUT)
-
             loop_count += 1
-    def _get_timestamp(self, s):
-        """
-        Parse timespec from the audio log. The format is like
-        2020-07-16T00:36:40.819094632 cras ...
 
-        Args:
-            s: A string to parse.
+        proc.terminate()
+        stdout, _ = proc.communicate()
 
-        Returns:
-            The timestamp created from the given string.
-        """
-        return datetime.datetime.timestamp(
-                    datetime.datetime.strptime(
-                        s.split(' ')[0][:-3], self._AUDIO_LOG_TIME_FMT))
-    def _get_buffer_level(self, stream_type):
+        with open(os.path.join(self.resultsdir, "follow_atlog.txt"), 'w') as f:
+            f.write(stdout)
+
+        # Check buffer level.
+        if input_stream:
+            self._check_buffer_level(_STREAM_TYPE_INPUT, stdout)
+        if output_stream:
+            self._check_buffer_level(_STREAM_TYPE_OUTPUT, stdout)
+
+    def _get_buffer_level(self, stream_type, audio_thread_log):
         """Gets a rough number about current buffer level.
 
         @returns: The current buffer level.
 
         """
-        select_time_start = time.time() - self._CHECK_PERIOD_TIME_SECS
-
         if stream_type == _STREAM_TYPE_INPUT:
             match_str = self._INPUT_BUFFER_LEVEL
         else:
             match_str = self._OUTPUT_BUFFER_LEVEL
 
-        proc = subprocess.Popen(['cras_test_client', '--dump_a'],
-                                stdout=subprocess.PIPE)
-        output, err = proc.communicate()
         buffer_level = 0
-        for line in output.decode().split('\n'):
+        skip = False
+        for line in audio_thread_log.splitlines():
+            no_stream = re.match(self._ODEV_NO_STREAMS, line)
+            leave_no_stream = re.match(self._ODEV_LEAVE_NO_STREAMS, line)
+
+            if no_stream:
+                skip = True
+
+            if leave_no_stream:
+                skip = False
+
+            if skip:
+                continue
+
             search = re.match(match_str, line)
             if search:
-                if self._get_timestamp(line) < select_time_start:
-                    continue
                 tmp = int(search.group(1))
                 if tmp > buffer_level:
                     buffer_level = tmp
+
         return buffer_level

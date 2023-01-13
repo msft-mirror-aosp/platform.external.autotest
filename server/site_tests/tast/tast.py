@@ -80,25 +80,35 @@ def _encode_json(j):
     return j
 
 
+def _server_arg(command_args, server_str):
+    """Return server arg out of command_args if found."""
+    server_arg = None
+    server = None
+    for arg in command_args:
+        if f'{server_str}=' in arg:
+            server_arg = arg
+            break
+    if not server_arg:
+        return
+    server = server_arg.split('=')[1]
+
+    # In case servers are passed...
+    # e.g.: f"{server_str}=localhost:1343,localhost:5678"
+    if ',' in server:
+        # Currently only support the first
+        server = server.split(',')[0]
+
+    return server
+
+
 def _dut_server_arg(command_args):
     """Return dut_server arg out of command_args if found."""
-    dut_server_arg = None
-    dut_server = None
-    for arg in command_args:
-        if 'dut_servers=' in arg:
-            dut_server_arg = arg
-            break
-    if not dut_server_arg:
-        return
-    dut_server = dut_server_arg.split('=')[1]
+    return _server_arg(command_args, 'dut_servers')
 
-    # In case multiple dutservers are passed...
-    # e.g.: "dut_servers=localhost:1343,localhost:5678"
-    if ',' in dut_server:
-        # Currently only support the first, until we map dut:dut_server
-        dut_server = dut_server.split(',')[0]
 
-    return dut_server
+def _cache_server_arg(command_args):
+    """Return cache_server arg out of command_args if found."""
+    return _server_arg(command_args, 'cache_endpoint')
 
 
 class TastConfigError(error.AutotestError):
@@ -316,16 +326,13 @@ class tast(test.test):
 
         # Need to pass in dut_servers for every test in CFT.
         # But only add it if not already in varslist.
-        dut_serversFound = False
-        if not any(
-                [True if 'dut.servers' in arg else False for arg in varslist]):
-            dut_server = _dut_server_arg(command_args)
-            if dut_server:
-                self._varslist.append('servers.dut=:%s' % dut_server)
-                dut_serversFound = True
+        self._cache_server = _cache_server_arg(command_args)
+        dut_serversFound = self._find_dutservers(command_args)
 
-        # Without dut_servers, trying to download private will to fail in CFT.
-        if self._f20_container and not dut_serversFound:
+        # Without dut_servers or cache_server,
+        # trying to download private will to fail in CFT.
+        if self._f20_container and (
+                not dut_serversFound and not self._cache_server):
             self._run_private_tests = False
 
         # List of JSON objects describing tests that will be run. See Test in
@@ -354,7 +361,10 @@ class tast(test.test):
             tpm_utils.ClearTPMOwnerRequest(self._host, wait_for_ready=True)
 
         self._log_version()
-        if not self._f20_container:
+        if self._f20_container and self._cache_server:
+            # CFT, use cacheservers.
+            self._find_cachesevers()
+        else:
             self._find_devservers()
 
         # Shortcut if no test belongs to the specified test_exprs.
@@ -393,6 +403,20 @@ class tast(test.test):
             self._read_run_error()
             # Parse partial results even if the tast command didn't finish.
             self._parse_results(run_failed, run_failed_msg)
+
+    def _find_dutservers(self, command_args):
+        """Find Dutsever if there is no cache-server and in CFT.
+
+        Results is saved in self._varlists.
+
+        Returns bool if the dutserver is found or not.
+        """
+        if self._f20_container and not self._cache_server:
+            dut_server = _dut_server_arg(command_args)
+            if dut_server:
+                self._varslist.append('servers.dut=:%s' % dut_server)
+                return True
+        return False
 
     def set_fake_now_for_testing(self, now):
         """Sets a fake timestamp to use in place of time.time() for unit tests.
@@ -689,6 +713,21 @@ class tast(test.test):
             self._devserver_args.append('-ephemeraldevserver=%s' %
                                         self._ephemeraldevserver)
 
+    def _find_cachesevers(self):
+        """Finds available cacheserver to act as the devserver.
+
+        The result is saved as self._devserver_args.
+        """
+        if not self._cache_server:
+            return
+        if not self._cache_server.startswith('http://'):
+            self._cache_server = f'http://{self._cache_server}'
+        logging.info('Using devserver: %s', self._cache_server)
+        self._devserver_args = ['-devservers=%s' % self._cache_server]
+        if self._ephemeraldevserver is not None:
+            self._devserver_args.append('-ephemeraldevserver=%s' %
+                                        self._ephemeraldevserver)
+
     def _log_version(self):
         """Runs the tast command locally to log its version."""
         try:
@@ -776,6 +815,8 @@ class tast(test.test):
             if self._run_private_tests:
                 cmd.append('-downloadprivatebundles=true')
         if not self._f20_container:
+            cmd.extend(self._devserver_args)
+        elif self._f20_container and self._cache_server:
             cmd.extend(self._devserver_args)
         cmd.extend(extra_subcommand_args)
         cmd.append(self._tast_target())

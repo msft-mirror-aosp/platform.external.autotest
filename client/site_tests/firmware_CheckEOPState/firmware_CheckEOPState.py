@@ -101,7 +101,7 @@ class firmware_CheckEOPState(test.test):
         """Fail unless ME returns Post-Boot State"""
         self.use_boot_state_cmd = EOP_CMD.GEN_GET_BOOT_STATE
         cpu_family = utils.get_cpu_soc_family()
-        if cpu_family not in ('x86_64', 'i386'):
+        if cpu_family not in ('intel',):
             raise error.TestNAError(
                     'This test is not applicable, '
                     'because a non-Intel device has been detected. '

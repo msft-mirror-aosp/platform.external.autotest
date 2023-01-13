@@ -144,3 +144,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
             channel_mask=0x1):
         """Ti50 console does not support chan command"""
         return self.send_command_get_output(command, regexp_list)
+
+    def rolledback(self):
+        """Raise an error until there's a way to check rollback."""
+        # TODO(b/263579376): add support to check rollback on ti50.
+        raise error.TestError('No way to check rollback on ti50')

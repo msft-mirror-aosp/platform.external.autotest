@@ -54,6 +54,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CCD_PASSWORD_RATE_LIMIT = 3
     IDLE_COUNT = 'count: (\d+)\s'
     SHORT_WAIT = 3
+    BID_RE = r'Board ID: (\S{8}):?(|\S{8}), flags (\S{8})\s'
     # The version has four groups: the partition, the header version, debug
     # descriptor and then version string.
     # There are two partitions A and B. The active partition is marked with a
@@ -689,9 +690,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         @returns a tuple (A string of bid_type:bid_type_inv:bid_flags,
                           True if board id is erased)
         """
-        bid = self.send_command_retry_get_output('bid',
-                    ['Board ID: (\S{8}):?(|\S{8}), flags (\S{8})\s'],
-                    safe=True)[0][1:]
+        bid = self.send_command_retry_get_output('bid', [self.BID_RE],
+                                                 safe=True)[0][1:]
         bid_str = ':'.join(bid)
         bid_is_erased =  set(bid).issubset({'', 'ffffffff'})
         logging.info('chip board id: %s', bid_str)

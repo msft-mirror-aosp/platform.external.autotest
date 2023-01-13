@@ -1,20 +1,20 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS SW Engprod Team"
-NAME = "nearby-share-arc"
+AUTHOR = "ARC App Experience Team"
+NAME = "nearby-share-arc_fusebox"
 METADATA = {
-        "contacts": ["chromeos-sw-engprod@google.com", "arc-app-dev@google.com"],
+        "contacts": ["arc-app-dev@google.com", "alanding@chromium.org"],
         "bug_component": "b:537221", # ChromeOS > Software > ARC++ > Framework > Chrome Integration
-        "criteria": "Run Tast tests for ARC++ Nearby Share"
+        "criteria": "Run Tast tests for ARC++ Nearby Share with FuseBox"
 }
-PURPOSE = "Suite to run ARC++ Nearby Share tests on ChromeOS devices."
+PURPOSE = "Suite to run ARC++ Nearby Share with FuseBox tests on ChromeOS devices."
 TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"
-DOC = """ This suite runs ARC++ Nearby Share tests. """
+DOC = """ This suite runs ARC++ Nearby Share with FuseBox tests. """
 
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite

@@ -482,6 +482,7 @@ suite:nbr-wifi
 suite:nearby-share
 suite:nearby-share-android
 suite:nearby-share-arc
+suite:nearby-share-arc_fusebox
 suite:nearby-share-dev
 suite:nearby-share-floss
 suite:nearby-share-prod

@@ -1,24 +1,24 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 #
-AUTHOR = 'ChromeOS SW Engprod Team'
-NAME = 'tast.nearby-share-arc'
+AUTHOR = 'ARC App Experience Team'
+NAME = 'tast.nearby-share-arc_fusebox'
 METADATA = {
-        "contacts": ["chromeos-sw-engprod@google.com", "arc-app-dev@google.com"],
+        "contacts": ["arc-app-dev@google.com", "alanding@chromium.org"],
         "bug_component": "b:537221", # ChromeOS > Software > ARC++ > Framework > Chrome Integration
-        "criteria": "Run Tast tests for ARC++ Nearby Share"
+        "criteria": "Run Tast tests for ARC++ Nearby Share with FuseBox"
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:nearby-share-arc'
+ATTRIBUTES = 'suite:nearby-share-arc_fusebox'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
-DOC = '''Run the ARC++ Nearby Share test suite.'''
+DOC = '''Run the ARC++ Nearby Share with FuseBox test suite.'''
 
 from autotest_lib.server.cros.crossdevice import cross_device_util
 
@@ -39,10 +39,13 @@ def run(machine):
     # Pass the phones adb-over-tcp "serial" (e.g 192.168.0.30:5555) to Tast as a global var.
     ip_address_arg = 'crossdevice.PhoneIP=%s:5555' % ip_address
 
+    # Pass the Chrome --enable-features flag with FuseBox feature name.
+    fusebox_feature_arg = 'nearbyshare.EnableFeatures=ArcNearbyShareFuseBox'
+
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:nearby-share-arc" && !"nearby-share-arc_fusebox")'],
+                 test_exprs=['("group:nearby-share-arc" && "nearby-share-arc_fusebox")'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=args,
-                 varslist=[ip_address_arg])
+                 varslist=[ip_address_arg, fusebox_feature_arg])
 parallel_simple(run, machines)

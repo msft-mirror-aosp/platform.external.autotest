@@ -150,3 +150,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         """Raise an error until there's a way to check rollback."""
         # TODO(b/263579376): add support to check rollback on ti50.
         raise error.TestError('No way to check rollback on ti50')
+
+    def set_board_id(self, chip_bid, chip_flags):
+        """Set the chip board id type and flags."""
+        # Ti50 doesn't use '0x' at the start of the bid args.
+        self.send_command('bid %x %x' % (chip_bid, chip_flags))

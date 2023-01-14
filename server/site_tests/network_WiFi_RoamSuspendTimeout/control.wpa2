@@ -17,7 +17,8 @@ traffic on this network is encrypted under AES.
 """
 
 METADATA = {
-    'requirements': ['wifi-sec-0005-v01']
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    'requirements': ['wifi-sec-0005-v01', 'wifi-proc-0009-v01', 'wifi-proc-0012-v01', 'wifi-proc-0013-v01', 'wifi-proc-0014-v01', 'wifi-proc-0018-v01']
 }
 
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes

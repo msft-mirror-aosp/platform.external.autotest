@@ -1021,5 +1021,49 @@ class DevServerTest(unittest.TestCase):
                     (crash_servers, False))
 
 
+    def testGetAvailableDevserversForImageServer(self):
+        """Test method get_available_devservers for ImageServer."""
+        unrestricted_host = '100.0.0.99'
+        unrestricted_servers = ['http://100.0.0.10:8080',
+                                'http://128.0.0.10:8080']
+        same_subnet_unrestricted_servers = ['http://100.0.0.10:8080']
+        restricted_host = '127.0.0.99'
+        restricted_servers = ['http://127.0.0.10:8080']
+        all_servers = unrestricted_servers + restricted_servers
+        # Set restricted subnets
+        restricted_subnets = [('127.0.0.0', 24)]
+
+        with patch.object(dev_server.ImageServerBase, 'servers'):
+            dev_server.ImageServerBase.servers.return_value = (all_servers)
+
+            # dut in unrestricted subnet shall be offered devserver in the same
+            # subnet first, and allow retry.
+            self.assertEqual(
+                    dev_server.ImageServer.get_available_devservers(
+                            unrestricted_host, True, restricted_subnets),
+                    (same_subnet_unrestricted_servers, True))
+
+            # crbug.com/1027277: If prefer_local_devserver is set to False,
+            # allow any devserver, and retry is not allowed.
+            self.assertEqual(
+                    dev_server.ImageServer.get_available_devservers(
+                            unrestricted_host, False, restricted_subnets),
+                    (all_servers, False))
+
+            # crbug.com/1027277: When no hostname is specified, all devservers
+            # should be considered, and retry is not allowed.
+            self.assertEqual(
+                    dev_server.ImageServer.get_available_devservers(
+                            None, True, restricted_subnets),
+                    (all_servers, False))
+
+            # dut in restricted subnet should only be offered devserver in the
+            # same restricted subnet, and retry is not allowed.
+            self.assertEqual(
+                    dev_server.ImageServer.get_available_devservers(
+                            restricted_host, True, restricted_subnets),
+                    (restricted_servers, False))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -13,7 +13,7 @@ METADATA = {
     'criteria': 'Measure and verify the maximal receiving and transmitting throughput on a DUT',
     'hw_agnostic': False,
 }
-ATTRIBUTES = 'suite:wifi_perf'
+ATTRIBUTES = 'suite:wifi_perf, suite:wifi_perf_openwrt'
 TIME = 'SHORT'
 MAX_RESULT_SIZE_KB = 512000
 TEST_TYPE = 'Server'

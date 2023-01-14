@@ -1,25 +1,24 @@
-# Copyright 2013 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_Perf.ht40'
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    'requirements': ['wifi-proc-0009-v01', 'wifi-proc-0012-v01', 'wifi-proc-0013-v01', 'wifi-proc-0016-v01', 'wifi-proc-0020-v01'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    # iperf and netperf are used to measure the throughput.
+    # Network: open HT40 802.11n
+    'criteria': 'Measure and verify the maximal receiving and transmitting throughput on a DUT',
+    'hw_agnostic': False,
+}
 ATTRIBUTES = 'suite:wifi_perf'
 TIME = 'SHORT'
 MAX_RESULT_SIZE_KB = 512000
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
 
-DOC = """
-This test uses netperf to measure and verify the maximal receiving and
-transmitting throughput on a DUT with an open HT40 802.11n network.
-"""
-
-METADATA = {
-    'contacts': ['chromeos-wifi-champs@google.com'],
-    'requirements': ['wifi-proc-0009-v01', 'wifi-proc-0012-v01', 'wifi-proc-0013-v01', 'wifi-proc-0016-v01', 'wifi-proc-0020-v01']
-}
 
 from autotest_lib.server.cros.network import hostap_config
 

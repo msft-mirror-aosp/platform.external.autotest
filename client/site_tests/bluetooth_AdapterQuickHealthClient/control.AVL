@@ -2,20 +2,26 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterQuickHealthClient.AVL'
-PURPOSE = ('Package of Bluetooth quick health client side tests')
-CRITERIA = 'Pass all health test'
-ATTRIBUTES = ''
-TIME = 'SHORT' # Takes ~1 minute on zork
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
-TEST_TYPE = 'client'
-PY_VERSION = 3
+# The AVL test run a subset of tests in quick health.
+# Tests included here should be very robust and stable.
+#
+# Purpose: Package of Bluetooth quick health client side tests
 
-DOC = """
-    The AVL test run a subset of tests in quick health.
-    Tests included here should be very robust and stable.
-    """
+# Deprecated variables:
+#     TIME = 'SHORT' # Takes ~1 minute on zork
+#     TEST_CATEGORY = 'Functional'
+
+NAME = 'bluetooth_AdapterQuickHealthClient.AVL'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all health test',
+    'hw_agnostic': False,
+}
+
+ATTRIBUTES = ''
+TEST_TYPE = 'client'
+
 
 job.run_test('bluetooth_AdapterQuickHealthClient', flag='AVL')

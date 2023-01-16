@@ -2,25 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'chromeos-bluetooth'
-NAME = 'bluetooth_AdapterQuickHealthClient.quick_health'
-PURPOSE = ('Package of Bluetooth quick health client side tests')
-CRITERIA = 'Pass all health test'
-ATTRIBUTES = 'suite:bluetooth_health'
-TIME = 'SHORT' # Takes ~1 minute on zork
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
-TEST_TYPE = 'client'
-PY_VERSION = 3
+# This test runs a client side Bluetooth quick health package.
+# The package is running several sub batches of tests.
+# A batch is defined as a set of tests, preferably with a common subject, e.g
+# 'AVLHCI' batch, or the 'AVLDriver' batch.
+# The quick health test package is improving test time by doing the minimal
+# cleanups between each test and test batches, saving the auto-test ramp up
+# time of about 90-120 second per test.
+#
+# Purpose: Package of Bluetooth quick health client side tests
 
-DOC = """
-    This test runs a client side Bluetooth quick health package.
-    The package is running several sub batches of tests.
-    A batch is defined as a set of tests, preferably with a common subject, e.g
-    'AVLHCI' batch, or the 'AVLDriver' batch.
-    The quick health test package is improving test time by doing the minimal
-    cleanups between each test and test batches, saving the auto-test ramp up
-    time of about 90-120 second per test.
-    """
+# Deprecated variables:
+#     TIME = 'SHORT' # Takes ~1 minute on zork
+#     TEST_CATEGORY = 'Functional'
+
+NAME = 'bluetooth_AdapterQuickHealthClient.quick_health'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all health test',
+    'hw_agnostic': False,
+}
+
+ATTRIBUTES = ''
+TEST_TYPE = 'client'
+
 
 job.run_test('bluetooth_AdapterQuickHealthClient', flag='Quick Health')

@@ -2,30 +2,37 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Verify that PairableTimeout Property works as expected
+#
+# - Set and Read back PairableTimeout and make sure the values match
+# - Set pairable
+# - Check that adapter is pairable till PairableTimeout and then it
+#   is not pairable
+# - Set PairableTimeout to default value at the end of the test.
+#
+#
+# Purpose: Test PairableTimout Property
+
+# Deprecated variables:
+#     TIME = 'MEDIUM'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSAHealth.sa_adapter_pairable_timeout_test'
-PURPOSE = 'Test PairableTimout Property'
-CRITERIA = 'Controller should become not pairable after timeout'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Controller should become not pairable after timeout',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_sa'
-TIME = 'MEDIUM'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'
-PY_VERSION = 3
 
-DOC = """
-    Verify that PairableTimeout Property works as expected
-
-    - Set and Read back PairableTimeout and make sure the values match
-    - Set pairable
-    - Check that adapter is pairable till PairableTimeout and then it
-      is not pairable
-    - Set PairableTimeout to default value at the end of the test.
-
-    """
 
 args_dict = utils.args_to_dict(args)
 

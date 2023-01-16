@@ -2,29 +2,37 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Server side bluetooth adapter stress tests involving reboot.
+# First we test powering on the adapter, reboot the DUT, and make sure
+# the adapter is still powered on and in a working state.
+#
+# Next we test powering off the adapter, reboot, and verify the adapter
+# is still powered off.
+#
+# Purpose: Reboot device and ensure Bluetooth adapter is up
+
+# Deprecated variables:
+#     TIME = 'MEDIUM'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSAHealth.sa_adapter_reboot_test'
-PURPOSE = ('Reboot device and ensure Bluetooth adapter is up')
-CRITERIA = 'Pass all health test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all health test',
+    'hw_agnostic': False,
+}
+
+
 # TODO(b/173146480) re-enable this test once BT state persists properly around
 # reboots
 ATTRIBUTES = ''
-TIME = 'MEDIUM'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'
-PY_VERSION = 3
 
-DOC = """Server side bluetooth adapter stress tests involving reboot.
-    First we test powering on the adapter, reboot the DUT, and make sure
-    the adapter is still powered on and in a working state.
-
-    Next we test powering off the adapter, reboot, and verify the adapter
-    is still powered off.
-    """
 
 args_dict = utils.args_to_dict(args)
 

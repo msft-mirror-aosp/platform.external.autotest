@@ -2,24 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# This test tries to verify that the bluetooth adapter has correct default
+# state.
+#
+# Purpose: batch of Bluetooth DBus API tests
+
+# Deprecated variables:
+#     TIME = 'MEDIUM'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSAHealth.sa_dbus_api_tests'
-PURPOSE = ('batch of Bluetooth DBus API tests')
-CRITERIA = ''
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': '',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_standalone_cq, suite:infra_qual'
-TIME = 'MEDIUM'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'
-PY_VERSION = 3
 
-DOC = """
-    This test tries to verify that the bluetooth adapter has correct default
-    state.
-    """
 
 args_dict = utils.args_to_dict(args)
 

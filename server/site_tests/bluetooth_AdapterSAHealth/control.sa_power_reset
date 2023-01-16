@@ -2,24 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# This is a test about repeated Bluetooth adapter power reset.
+# It is supposed to be completed in a very short time likely in 2 mins.
+#
+# Purpose: Repeated adapter power reset test
+
+# Deprecated variables:
+#     TIME = 'SHORT'  # less than 2 mins on zork
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSAHealth.sa_power_reset'
-PURPOSE = ('Repeated adapter power reset test')
-CRITERIA = 'Pass the repeated power reset test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass the repeated power reset test',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_flaky'
-TIME = 'SHORT'  # less than 2 mins on zork
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL'
-PY_VERSION = 3
 
-DOC = """
-    This is a test about repeated Bluetooth adapter power reset.
-    It is supposed to be completed in a very short time likely in 2 mins.
-    """
 
 args_dict = utils.args_to_dict(args)
 

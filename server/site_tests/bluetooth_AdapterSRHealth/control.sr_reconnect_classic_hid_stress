@@ -2,25 +2,32 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Stress run sr_reconnect_classic_hid for 50 iterations.
+#
+# Make sure that a classic HID device can wake up the system every time.
+#
+# Purpose: 50 iteration of sr_reconnect_classic_hid test
+
+# Deprecated variables:
+#     TIME = 'LONG' # 40 Minutes
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'chromeos-bluetooth'
 NAME = 'bluetooth_AdapterSRHealth.sr_reconnect_classic_hid_stress'
-PURPOSE = '50 iteration of sr_reconnect_classic_hid test'
-CRITERIA = 'Pass test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass test',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_stress'
-TIME = 'LONG' # 40 Minutes
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-Stress run sr_reconnect_classic_hid for 50 iterations.
-
-Make sure that a classic HID device can wake up the system every time.
-"""
 
 args_dict = utils.args_to_dict(args)
 

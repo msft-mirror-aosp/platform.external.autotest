@@ -2,42 +2,47 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Verify the DUT's discoverable behavior during suspend and after resume
+# with and without setting a discovery filter.
+#
+# Test Discovery without setting discovery filter:
+# 1. Get current time to use it in the resume as start time
+# 2. Start discovering
+# 3. Suspend the DUT.
+# 4. Resume the DUT.
+# 5. Expect discovering to restore after suspend/resume
+#
+# Test discovery with discovery filter set:
+# 1. Get current time to use it in the resume as start time
+# 2. Set discovery filter (Transport:Auto)
+# 3. Start discovering
+# 4. Suspend the DUT
+# 5. Resume the DUT
+# 6. Expect discovering to restore after suspend/resume
+#
+# Purpose: Verify discovering is restored after suspend/resume with and without
+# setting discovery filter
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
 from autotest_lib.server import utils
 
-AUTHOR = 'Manal Lubbadeh <manal.lubbadeh@exalt.ps>'
 NAME = 'bluetooth_AdapterSRHealth.sr_while_discovering.floss'
-PURPOSE = (
-    'Verify discovering is restored after suspend/resume '
-    'with and without setting discovery filter'
-)
-CRITERIA = 'Pass test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass test',
+    'hw_agnostic': False,
+}
+
+
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
-TIME = 'SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
-PY_VERSION = 3
 
-DOC = """
-Verify the DUT's discoverable behavior during suspend and after resume
-with and without setting a discovery filter.
-
-Test Discovery without setting discovery filter:
-1. Get current time to use it in the resume as start time
-2. Start discovering
-3. Suspend the DUT.
-4. Resume the DUT.
-5. Expect discovering to restore after suspend/resume
-
-Test discovery with discovery filter set:
-1. Get current time to use it in the resume as start time
-2. Set discovery filter (Transport:Auto)
-3. Start discovering
-4. Suspend the DUT
-5. Resume the DUT
-6. Expect discovering to restore after suspend/resume
-"""
 
 args_dict = utils.args_to_dict(args)
 

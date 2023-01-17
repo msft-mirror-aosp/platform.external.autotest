@@ -2,22 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'bfreed'
 NAME = 'network_WiFi_BluetoothStreamPerf.11b'
+METADATA = {
+    'requirements': ['wifi-coex-0001-v01'],
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    # netperf is used for measuring the throughput.
+    # Network: Open 802.11b, Channel 6.
+    'criteria': 'Measure the maximal receiving and transmitting throughput on a DUT while operating bluetooth',
+    'hw_agnostic': False,
+}
 ATTRIBUTES = ''
-TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell, working_bluetooth_btpeer:1'
-PY_VERSION = 3
-
-DOC = """
-This test uses netperf to measure the maximal receiving and transmitting
-throughput on a DUT with an open 802.11b network while operating bluetooth.
-"""
-
-METADATA = {
-    'requirements': ['wifi-coex-0001-v01']
-}
 
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config

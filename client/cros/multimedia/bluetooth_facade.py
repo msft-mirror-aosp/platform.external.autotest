@@ -326,6 +326,7 @@ class BluetoothBaseFacadeLocal(object):
                             (('0x8086', '0x4df0'), 'USB'),
                             (('0x8086', '0xa0f0'), 'USB')],  # HrP2
             'Intel-AX211': [(('0x8086', '0x51f0'), 'USB'),
+                            (('0x8086', '0x51f1'), 'USB'),
                             (('0x8086', '0x54f0'), 'USB')],  # GfP2
 
             # Realtek chipsets

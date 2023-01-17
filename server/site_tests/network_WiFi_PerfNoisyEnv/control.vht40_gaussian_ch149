@@ -2,21 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'rmekonnen'
 NAME = 'network_WiFi_PerfNoisyEnv.vht40_gaussian_ch149'
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    # Network: Open VHT40 802.11ac, Channel 149.
+    'criteria': 'Measure the maximal receiving and transmitting throughput and point of disconnection on a DUT while broadcasting gaussian noise at multiple gain values',
+    'hw_agnostic': False,
+}
 ATTRIBUTES = ''
-TIME = 'SHORT'
 MAX_RESULT_SIZE_KB = 512000
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
-
-DOC = """
-This test will measure and record the maximal receiving and transmitting
-throughput and point of disconneciton on a DUT with an open HT40 802.11ac
-network while gaussian noise is being broadcasted at multiple gain values.
-"""
-
 
 from autotest_lib.server.cros.network import hostap_config
 

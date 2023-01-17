@@ -3,29 +3,33 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'chharry@google.com'
+# A Batch of bluetooth_AVLDriver tests. This test is written as a batch of
+# tests in order to reduce test time.
+#
+# This class can be called to run the entire test batch or to run a specific
+# test only.
+#
+# Currently, the batch contains the following tests:
+# - driver_support_test
+#
+#
+# Purpose: Batch of bluetooth AVL driver requirements tests
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
 NAME = 'bluetooth_AVLDriver'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'all tests passed',
+    'hw_agnostic': False,
+}
+
 ATTRIBUTES = ''
-PURPOSE = (
-    'Batch of bluetooth AVL driver requirements tests'
-)
-CRITERIA = 'all tests passed'
-TIME = 'SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = "bluetooth"
 TEST_TYPE = 'client'
-PY_VERSION = 3
 
-DOC = """
-    A Batch of bluetooth_AVLDriver tests. This test is written as a batch of
-    tests in order to reduce test time.
-
-    This class can be called to run the entire test batch or to run a specific
-    test only.
-
-    Currently, the batch contains the following tests:
-    - driver_support_test
-
-    """
 
 job.run_test('bluetooth_AVLDriver')

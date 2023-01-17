@@ -2,16 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'kirtika'
 NAME = 'network_WiFiResume'
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    'criteria': 'Ensure wifi interface is found after suspend-resume',
+    'hw_agnostic': False,
+}
 ATTRIBUTES = ('suite:network_nightly, suite:bvt-perbuild')
-TIME = 'SHORT'
 TEST_TYPE = 'client'
-PY_VERSION = 3
-
-DOC = """
-Ensure wifi interface is found after suspend-resume.
-"""
 
 
 job.run_test('network_WiFiResume')

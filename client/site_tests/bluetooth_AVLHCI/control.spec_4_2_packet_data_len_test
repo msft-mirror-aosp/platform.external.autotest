@@ -3,27 +3,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'Rajaa Abdallah <rajaa.abdallah@exalt.ps>'
+# This class can be called to run
+# bluetooth_AVLHCI.spec_4_2_packet_data_len_test
+#
+# This test contains these subtests:
+#     test_packet_data_length()
+#
+#
+# Purpose: Tests the Bluetooth v4.2 packet data length featureof Bluetooth AVL
+# requirements
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
 NAME = 'bluetooth_AVLHCI.spec_4_2_packet_data_len_test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'all subtests passed',
+    'hw_agnostic': False,
+}
+
 ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_fw'
-PURPOSE = (
-'Tests the Bluetooth v4.2 packet data length feature'
-'of Bluetooth AVL requirements'
-)
-CRITERIA = 'all subtests passed'
-TIME = 'SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'bluetooth'
 TEST_TYPE = 'client'
-PY_VERSION = 3
 
-DOC = """
-    This class can be called to run
-    bluetooth_AVLHCI.spec_4_2_packet_data_len_test
-
-    This test contains these subtests:
-        test_packet_data_length()
-
-    """
 
 job.run_test('bluetooth_AVLHCI', test_name=NAME.split('.')[1])

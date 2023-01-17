@@ -3,25 +3,29 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'chromeos-bluetooth'
+# This class can be called to run bluetooth_AVLHCI.voice_path_test
+#
+# This test contains these subtests:
+#     test_au_nbs_cvsd()
+#
+#
+# Purpose: Tests the voice path features of bluetooth AVL requirements
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
 NAME = 'bluetooth_AVLHCI.voice_path_test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'all subtests passed',
+    'hw_agnostic': False,
+}
+
 ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_fw'
-PURPOSE = (
-    'Tests the voice path features of bluetooth AVL requirements'
-)
-CRITERIA = 'all subtests passed'
-TIME = 'SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = "bluetooth"
 TEST_TYPE = 'client'
-PY_VERSION = 3
 
-DOC = """
-    This class can be called to run bluetooth_AVLHCI.voice_path_test
-
-    This test contains these subtests:
-        test_au_nbs_cvsd()
-
-    """
 
 job.run_test('bluetooth_AVLHCI', test_name=NAME.split('.')[1])

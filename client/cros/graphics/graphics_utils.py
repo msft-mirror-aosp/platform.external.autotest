@@ -23,7 +23,6 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.input_playback import input_playback
-from autotest_lib.client.cros.power import power_utils
 from functools import wraps
 
 # The uinput module might not be available at SDK test time.
@@ -295,13 +294,6 @@ class GraphicsTest(test.test):
 def screen_disable_blanking():
     """ Called from power_Backlight to disable screen blanking. """
     # We don't have to worry about unexpected screensavers or DPMS here.
-    return
-
-
-def screen_disable_energy_saving():
-    """ Called from power_Consumption to immediately disable energy saving. """
-    # All we need to do here is enable displays via Chrome.
-    power_utils.set_display_power(power_utils.DISPLAY_POWER_ALL_ON)
     return
 
 

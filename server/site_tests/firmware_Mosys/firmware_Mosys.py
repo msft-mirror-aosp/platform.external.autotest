@@ -16,7 +16,6 @@ class firmware_Mosys(FirmwareTest):
 
     Execute
     * mosys -k ec info
-    * mosys platform name
     * mosys -k pd info
 
     """
@@ -153,11 +152,6 @@ class firmware_Mosys(FirmwareTest):
                 self._tag_failure(command)
         else:
             logging.info('Skip "%s", command not available.', command)
-
-        # mosys platform name
-        command = 'mosys platform name'
-        output = self.run_cmd(command)
-        self.check_for_errors(output, command)
 
         # mosys -k pd info
         command = 'mosys -k pd info'

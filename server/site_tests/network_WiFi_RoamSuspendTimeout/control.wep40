@@ -2,20 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_RoamSuspendTimeout.wep40'
-TIME = 'SHORT'
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    # Network: WEP open system, Channel 6.
+    'criteria': 'Verify reconnection to an AP after deauthentication while the DUT is suspended.',
+    'hw_agnostic': False,
+}
 TEST_TYPE = 'Server'
 ATTRIBUTES = "suite:wifi_flaky"
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
-
-DOC = """
-This test case verifies that the DUT can reconnect to an AP using
-WEP open system authentication after deauthentication while the DUT is
-suspended.
-"""
-
 
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types

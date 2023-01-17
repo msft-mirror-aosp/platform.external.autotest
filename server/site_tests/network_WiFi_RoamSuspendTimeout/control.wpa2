@@ -2,24 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'wiley, pstew, quiche'
 NAME = 'network_WiFi_RoamSuspendTimeout.wpa2'
-TIME = 'SHORT'
+METADATA = {
+    'requirements': ['wifi-sec-0005-v01', 'wifi-proc-0009-v01', 'wifi-proc-0012-v01', 'wifi-proc-0013-v01', 'wifi-proc-0014-v01', 'wifi-proc-0018-v01'],
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    # Network: WPA2 (aka RSN) (traffic encrypted under AES), Channel 1.
+    'criteria': 'Verify reconnection to an AP after deauthentication while the DUT is suspended.',
+    'hw_agnostic': False,
+}
 TEST_TYPE = 'Server'
 ATTRIBUTES = "suite:wifi_matfunc"
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
-
-DOC = """
-This tests verifies that we can reconnect to an AP broadcasting a WPA2 (aka
-RSN) network after deauthentication while the DUT is suspended.  By definition,
-traffic on this network is encrypted under AES.
-"""
-
-METADATA = {
-    'contacts': ['chromeos-wifi-champs@google.com'],
-    'requirements': ['wifi-sec-0005-v01', 'wifi-proc-0009-v01', 'wifi-proc-0012-v01', 'wifi-proc-0013-v01', 'wifi-proc-0014-v01', 'wifi-proc-0018-v01']
-}
 
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types

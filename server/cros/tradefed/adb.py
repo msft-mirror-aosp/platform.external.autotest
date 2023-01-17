@@ -14,6 +14,7 @@ import re
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
+from autotest_lib.server.cros.tradefed import tradefed_constants as constants
 
 # The default ADB port.
 _DEFAULT_ADB_PORT = 5037
@@ -26,7 +27,10 @@ class Adb:
         self._install_paths = set()
         self._port = _DEFAULT_ADB_PORT
 
-    def pick_random_port(self, max_retries=3, start_timeout=3):
+    def pick_random_port(
+            self,
+            max_retries=3,
+            start_timeout=constants.ADB_SERVER_COMMAND_TIMEOUT_SECONDS):
         """Picks a random ADB server port for subsequent ADB commands.
 
         This is required by CFT where test containers share the same host

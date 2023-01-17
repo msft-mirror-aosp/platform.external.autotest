@@ -327,15 +327,16 @@ class TradefedTest(test.test):
             self._adb.run(None,
                           verbose=True,
                           args=('kill-server', ),
-                          timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+                          timeout=constants.
+                          ADB_SERVER_COMMAND_TIMEOUT_SECONDS)
         except error.CmdTimeoutError as e:
             logging.warn(e)
             # `adb kill-server` sometimes hangs up. Kill it more brutally.
             try:
                 client_utils.system(
-                    'killall adb',
-                    ignore_status=True,
-                    timeout=constants.ADB_KILL_SERVER_TIMEOUT_SECONDS)
+                        'killall adb',
+                        ignore_status=True,
+                        timeout=constants.ADB_SERVER_COMMAND_TIMEOUT_SECONDS)
             except error.CmdTimeoutError as e:
                 # The timeout is ignored, since the only known failure pattern
                 # b/142828365 is due to a zombie process that does not prevent

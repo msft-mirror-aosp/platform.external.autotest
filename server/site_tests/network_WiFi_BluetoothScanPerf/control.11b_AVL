@@ -5,22 +5,20 @@
 from autotest_lib.server.cros.connectivity_common.connectivity_test_version_control\
         import test_version_setup
 
-AUTHOR = 'billyzhao'
 NAME = 'network_WiFi_BluetoothScanPerf.11b_AVL'
+METADATA = {
+    'requirements': ['wifi-coex-0001-v01'],
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+     # netperf is used for measuring the throughput.
+     # Network: Open 802.11b, Channel 6.
+    'criteria': 'Measure the maximal receiving and transmitting throughput on a DUT while scanning bluetooth',
+    'hw_agnostic': False,
+}
 ATTRIBUTES = ''
-TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
-
-DOC = """
-This test uses netperf to measure the maximal receiving and transmitting
-throughput on a DUT with an open 802.11b network while scanning bluetooth.
-"""
-
-METADATA = {
-    'requirements': ['wifi-coex-0001-v01']
-}
 
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config

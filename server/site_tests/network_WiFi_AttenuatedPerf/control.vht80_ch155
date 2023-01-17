@@ -2,20 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'arowa'
 NAME = 'network_WiFi_AttenuatedPerf.vht80_ch155'
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    # netperf is used for measuring the throughout.
+    # Network: Open VHT80 802.11ac, Channel 115.
+    'criteria': 'Measure the maximal receiving and transmitting throughput on a DUT across multiple attenuation levels',
+    'hw_agnostic': False,
+}
 ATTRIBUTES = "suite:wifi_atten_perf"
-TIME = 'SHORT'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
-
-DOC = """
-This test uses netperf to measure the maximal receiving and transmitting
-throughput on a DUT with an open VHT80 802.11ac network across multiple
-attenuation levels.
-"""
-
 
 from autotest_lib.server.cros.network import hostap_config
 

@@ -14,7 +14,8 @@ METADATA = {
     'criteria': 'Batch of Bluetooth Advertisement Monitor tests',
     'hw_agnostic': False,
     'requirements': ['bt-hciExt-0006-v01', 'bt-hciExt-0007-v01',
-                    'bt-hciExt-0008-v01', 'bt-hciExt-0009-v01']
+                    'bt-hciExt-0008-v01', 'bt-hciExt-0009-v01',
+                    'bt-drv-0011-v01', 'bt-drv-0013-v01']
 }
 ATTRIBUTES = ''
 TEST_TYPE = 'server'

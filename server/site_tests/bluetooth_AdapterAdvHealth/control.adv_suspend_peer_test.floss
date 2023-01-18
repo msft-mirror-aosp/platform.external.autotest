@@ -15,7 +15,8 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Tests advertising during suspend/resume',
-    'hw_agnostic': False
+    'hw_agnostic': False,
+    'requirements': ['bt-drv-0011-v01', 'bt-drv-0013-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'

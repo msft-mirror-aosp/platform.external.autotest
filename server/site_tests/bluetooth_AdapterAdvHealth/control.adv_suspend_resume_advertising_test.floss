@@ -30,7 +30,8 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Test bluetooth adapter advertising across suspend/resume',
-    'hw_agnostic': True
+    'hw_agnostic': True,
+    'requirements': ['bt-drv-0013-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'

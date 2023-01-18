@@ -39,6 +39,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Adapter should advertise with correct parameters.',
     'hw_agnostic': False,
+    'requirements': ['bt-drv-0013-v01']
 }
 
 ATTRIBUTES = 'suite:bluetooth_sa'

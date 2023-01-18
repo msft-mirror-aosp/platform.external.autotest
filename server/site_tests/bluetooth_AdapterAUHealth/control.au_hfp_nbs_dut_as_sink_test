@@ -28,6 +28,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass the HFP NBS test',
     'hw_agnostic': False,
+    'requirements': ['bt-audPath-0001-v01', 'bt-audPath-0002-v01']
 }
 
 

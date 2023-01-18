@@ -22,6 +22,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass all audio chunk checking',
     'hw_agnostic': False,
+    'requirements': ['bt-audPath-0006-v01']
 }
 
 

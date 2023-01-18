@@ -29,6 +29,7 @@ METADATA = {
     'criteria': (
     'All test files pass minimum score required for HFP NBS VISQOL test'),
     'hw_agnostic': False,
+    'requirements': ['bt-audPath-0001-v01', 'bt-audPath-0002-v01']
 }
 
 

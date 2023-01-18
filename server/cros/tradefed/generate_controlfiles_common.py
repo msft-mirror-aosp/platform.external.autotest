@@ -425,11 +425,11 @@ def get_suites(modules, abi, is_public, camera_facing=None,
 
     # For group with stalbe VM test only, remove it from HW suite, and add to
     # stable VM suite.
-    if vm_modules and not nonvm_modules and not has_unstable_vm_modules:
-        for suite_to_skip in CONFIG.get('VM_SKIP_SUITES'):
-            suites.remove(suite_to_skip)
-        if 'STABLE_VM_SUITE_NAME' in CONFIG:
-            suites.add(CONFIG['STABLE_VM_SUITE_NAME'])
+    if suites.intersection(set(CONFIG.get('VM_SKIP_SUITES', []))):
+        if vm_modules and not nonvm_modules and not has_unstable_vm_modules:
+            suites = suites - set(CONFIG.get('VM_SKIP_SUITES', []))
+            if 'STABLE_VM_SUITE_NAME' in CONFIG:
+                suites.add(CONFIG['STABLE_VM_SUITE_NAME'])
 
     return sorted(list(suites))
 

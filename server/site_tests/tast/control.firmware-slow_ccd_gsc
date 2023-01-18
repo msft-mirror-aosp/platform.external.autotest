@@ -6,13 +6,17 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'ChromiumOS Firmware EngProd team'
-NAME = 'tast.firmware-slow_ccd_ti50'
+NAME = 'tast.firmware-slow_ccd_gsc'
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Run Tast tests for firmware"
+}
 TIME = 'LENGTHY'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_gsc'
 ATTRIBUTES = 'suite:faft_ec, suite:faft_ec_fw_qual'
 MAX_RESULT_SIZE_KB = 1024 * 1024
-PY_VERSION = 3
 JOB_RETRIES = 0
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

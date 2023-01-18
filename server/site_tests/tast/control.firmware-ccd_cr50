@@ -1,4 +1,4 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2021 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,13 +6,17 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'ChromiumOS Firmware EngProd team'
-NAME = 'tast.firmware-ccd_ti50'
+NAME = 'tast.firmware-ccd_cr50'
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Run Tast tests for firmware that require ccd"
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_gsc'
+DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_cr50'
 ATTRIBUTES = 'suite:faft_ec, suite:faft_ec_fw_qual'
 MAX_RESULT_SIZE_KB = 1024 * 1024
-PY_VERSION = 3
 JOB_RETRIES = 0
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
@@ -28,7 +32,7 @@ The tests are part of 'group:firmware'. The 'firmware_ec' and
 command_args, varslist = tast.split_arguments(args)
 args_dict = utils.args_to_dict(command_args)
 assert 'servo_state:WORKING' in DEPENDENCIES
-assert 'servo_component:ccd_gsc' in DEPENDENCIES
+assert 'servo_component:ccd_cr50' in DEPENDENCIES
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):

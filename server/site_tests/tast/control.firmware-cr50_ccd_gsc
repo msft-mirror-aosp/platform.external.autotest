@@ -1,4 +1,4 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,16 +6,16 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'The ChromiumOS Authors'
-NAME = 'tast.firmware-gsc_ccd'
+NAME = 'tast.firmware-cr50_ccd_gsc'
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Run Tast tests for firmware that require ccd"
+        "criteria": "Run Tast tests for firmware"
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_gsc'
-ATTRIBUTES = 'suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt, suite:faft_ti50_qual'
+ATTRIBUTES = 'suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 0
 
@@ -23,7 +23,7 @@ JOB_RETRIES = 0
 REQUIRE_SSP = True
 
 DOC = '''
-Run the Tast tests for Google Security Chip firmware.
+Run the Tast tests for Google Security Chip firmware (Cr50).
 
 The tests are part of 'group:firmware', and the 'firmware_cr50' sub-attribute
 limits it to those that cover the Google Security Chip. Additionally the

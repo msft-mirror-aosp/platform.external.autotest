@@ -624,7 +624,6 @@ suite:wifi_atten_roam_perf
 suite:wifi_cross_device_p2p
 suite:wifi_cross_device_p2p_flaky
 suite:wifi_cross_device_sap
-suite:wifi_cross_device_tdls
 suite:wifi_cross_device_tdls_flaky
 suite:wifi_endtoend
 suite:wifi_endtoend_flaky

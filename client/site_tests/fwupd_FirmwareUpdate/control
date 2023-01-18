@@ -1,0 +1,29 @@
+# Copyright (c) 2023 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "Ricardo Canuelo <ricardo.canuelo@collabora.com>"
+NAME = "fwupd_FirmwareUpdate"
+METADATA = {
+    "contacts": ["ricardo.canuelo@collabora.com"],
+    "author": "Ricardo Canuelo <ricardo.canuelo@collabora.com>",
+    "criteria": "Make sure that a device firmware can be upgraded with fwupd."
+}
+PURPOSE = "Updates the firmware of a device to the latest version."
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "fwupd"
+TEST_TYPE = "client"
+PY_VERSION = 3
+
+DOC = """
+Updates the firmware of a device to the latest version. The device is
+supposed to be working and updatable, and fwupd is expected to work
+normally. Exceptional cases are treated as test errors.
+"""
+
+# Argument 'device_id' is mandatory. It can be the fwupd instance id of
+# the device or any of its GUIDs
+args_dict = utils.args_to_dict(args)
+device_id = args_dict.get('device_id', '')
+job.run_test('fwupd_FirmwareUpdate', device_id=device_id)

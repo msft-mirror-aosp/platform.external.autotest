@@ -86,11 +86,12 @@ def _wait_for_process(host, pid, timeout=-1):
 # to have a short list that is as representative as possible and takes a
 # short time to execute. At this point the list of benchmarks is in flux.
 TELEMETRY_AFDO_BENCHMARKS = (
-        {
-            'name': 'loading.desktop',
-            'args': ('--pageset-repeat=1', '--story-tag-filter=typical'),
-            'archs': ('amd64',)
-        },
+        # TODO(b:264935549): Replace loading.desktop.
+        # {
+        #     'name': 'loading.desktop',
+        #     'args': ('--pageset-repeat=1', '--story-tag-filter=typical'),
+        #     'archs': ('amd64',)
+        # },
         # TODO(b:203556061): Replace loading.desktop on arm.
         # {
         #     'name': 'loading.desktop',
@@ -99,25 +100,30 @@ TELEMETRY_AFDO_BENCHMARKS = (
         #     'archs': ('arm',)
         # },
         {
-            'name': 'tab_switching.typical_25',
-            'archs': ('arm',)
+                'name': 'tab_switching.typical_25',
+                'archs': (
+                        'amd64',
+                        'arm',
+                )
+        },
+        # TODO(b:264935549): Replace loading.desktop.
+        # {
+        #         'name': 'rendering.desktop',
+        #         'args':
+        #         ('--pageset-repeat=1', '--story-tag-filter=tough_canvas'),
+        #         'archs': ('amd64', )
+        # },
+        {
+                'name': 'octane',
+                'archs': ('amd64', 'arm')
         },
         {
-            'name': 'rendering.desktop',
-            'args': ('--pageset-repeat=1', '--story-tag-filter=tough_canvas'),
-            'archs': ('amd64',)
+                'name': 'kraken',
+                'archs': ('amd64', 'arm')
         },
         {
-            'name': 'octane',
-            'archs': ('amd64', 'arm')
-        },
-        {
-            'name': 'kraken',
-            'archs': ('amd64', 'arm')
-        },
-        {
-            'name': 'speedometer2',
-            'archs': ('amd64', 'arm')
+                'name': 'speedometer2',
+                'archs': ('amd64', 'arm')
         },
 )
 

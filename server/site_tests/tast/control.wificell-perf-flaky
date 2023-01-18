@@ -1,17 +1,17 @@
-# Copyright 2020 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = 'The ChromiumOS Authors'
-NAME = 'tast.wificell-perf-unstable'
+NAME = 'tast.wificell-perf-flaky'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:wifi_func_tast'
+ATTRIBUTES = 'suite:wifi_perf_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 
 DOC = '''
-Run the unstable Tast tests which measure WiFi performance.
+Run the flaky Tast tests which measure WiFi performance.
 
 "group:wificell" indicates that the test runs on a wificell fixture. Its
 sub-attributes:

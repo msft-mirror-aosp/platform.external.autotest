@@ -606,8 +606,10 @@ suite:vmtest-informational3
 suite:wifi_atten_perf
 suite:wifi_atten_roam_perf
 suite:wifi_cross_device_p2p
+suite:wifi_cross_device_p2p_flaky
 suite:wifi_cross_device_sap
 suite:wifi_cross_device_tdls
+suite:wifi_cross_device_tdls_flaky
 suite:wifi_endtoend
 suite:wifi_endtoend_flaky
 suite:wifi_flaky
@@ -619,6 +621,7 @@ suite:wifi_lucidsleep
 suite:wifi_matfunc
 suite:wifi_matfunc_openwrt
 suite:wifi_perf
+suite:wifi_perf_flaky
 suite:wifi_release
 suite:wifi_stress
 suite:wifi_tdls_cast

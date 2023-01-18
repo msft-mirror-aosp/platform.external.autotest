@@ -1,12 +1,12 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors.  All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = 'chromeos-kernel-wifi@google.com'
-NAME = 'tast.wificell-coss-device-tdls-unstable'
+NAME = 'tast.wificell-cross-device-tdls-flaky'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:wifi_cross_device_tdls'
+ATTRIBUTES = 'suite:wifi_cross_device_tdls_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

@@ -7,12 +7,18 @@ TIME = 'SHORT'
 NAME = 'network_WiFi_ChromeEndToEnd'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
 
 DOC = """
 WiFi_ChromeEndToEnd test configures two APs and runs the client side
 network_ChromeWifiEndToEnd test which uses these APs to test the UI.
 """
+
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'Test autoconnect to previously connected WiFi network',
+    'hw_agnostic': False
+}
 
 def run(machine):
     host = hosts.create_host(machine)

@@ -8,13 +8,19 @@ NAME = 'network_WiFi_ChromeEndToEnd.enableDisableWiFi'
 TEST_TYPE = 'Server'
 ATTRIBUTES = ('suite:wifi_endtoend, suite:wifi_release')
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
 
 DOC = """
 WiFi_ChromeEndToEnd test configures two APs and runs the client side
 network_ChromeWifiEndToEnd test to check that enabling and disabling of wifi
 works as expected via Chrome.
 """
+
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'Test enabling/disabling WiFi via Chrome',
+    'hw_agnostic': False
+}
 
 def run(machine):
     host = hosts.create_host(machine)

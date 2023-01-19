@@ -8,12 +8,18 @@ NAME = 'network_WiFi_ChromeEndToEnd.autoconnectWiFi'
 TEST_TYPE = 'Server'
 ATTRIBUTES = ('suite:wifi_endtoend, suite:wifi_release')
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
 
 DOC = """
 Configures wifi APs and tests that the DUT autoconnects to a previously
 connected wifi network.
 """
+
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'Test autoconnect to previously connected WiFi network',
+    'hw_agnostic': False
+}
 
 def run(machine):
     host = hosts.create_host(machine)

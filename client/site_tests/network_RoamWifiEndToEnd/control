@@ -6,7 +6,7 @@ AUTHOR = 'bmahadev, harpreet, krisr'
 NAME = 'network_RoamWifiEndToEnd'
 TIME = 'SHORT'
 TEST_TYPE = 'client'
-PY_VERSION = 3
+
 
 DOC = """
   Client side of the network_WiFi_RoamEndToEnd server test that sets up the
@@ -18,6 +18,14 @@ DOC = """
     down one AP.
   * Successfully connect to the other AP.
 """
+
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'Client test for WiFi roaming between two Open Networks',
+    'hw_agnostic': False
+}
+
 
 job.run_test('network_RoamWifiEndToEnd',
              ssid='ssid',

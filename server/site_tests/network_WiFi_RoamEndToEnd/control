@@ -8,13 +8,19 @@ NAME = 'network_WiFi_RoamEndToEnd'
 TEST_TYPE = 'Server'
 ATTRIBUTES = ('suite:wifi_endtoend, suite:wifi_release')
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
 
 DOC = """
 WiFi_RoamEndToEnd test configures two APs with the same ssid and runs the
 client side network_RoamWifiEndToEnd test which uses these APs to test
 WiFi roaming between two Open Networks.
 """
+
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'Test WiFi roaming between two Open Networks',
+    'hw_agnostic': False
+}
 
 def run(machine):
     host = hosts.create_host(machine)

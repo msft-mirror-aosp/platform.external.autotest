@@ -8,13 +8,19 @@ NAME = 'network_WiFi_ChromeEndToEnd.findVerifyWiFiNetworks'
 TEST_TYPE = 'Server'
 ATTRIBUTES = ('suite:wifi_endtoend, suite:wifi_release, suite:infra_qual_wifi')
 DEPENDENCIES = 'wificell'
-PY_VERSION = 3
 
 DOC = """
 WiFi_ChromeEndToEnd test configures two APs and runs the client side
 network_ChromeWifiEndToEnd test to find and validate wifi networks
 in range via Chrome.
 """
+
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'Find and validate WiFi network in range via Chrome',
+    'hw_agnostic': False
+}
 
 def run(machine):
     host = hosts.create_host(machine)

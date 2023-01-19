@@ -16,6 +16,13 @@ client side network_RoamWifiEndToEnd test which uses these APs to test
 WiFi roaming between two Open Networks after a Suspend/Resume.
 """
 
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'Test WiFi roaming between two Open Networks after suspend/resume',
+    'hw_agnostic': False
+}
+
 from autotest_lib.server import utils
 
 args_dict = utils.args_to_dict(args)

@@ -6,7 +6,6 @@ AUTHOR = 'harpreet, krisr, wiley'
 NAME = 'network_ChromeWifiEndToEnd'
 TIME = 'SHORT'
 TEST_TYPE = 'client'
-PY_VERSION = 3
 
 DOC = """
   Client side of the end to end WiFi test which is called by the
@@ -18,6 +17,13 @@ DOC = """
   * Transition to a different, currently unconnected, network.
   * Disable / Enable wifi.
 """
+
+METADATA = {
+    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:978946',
+    'criteria': 'Client test for testing transition from one WiFi network to another',
+    'hw_agnostic': False
+}
 
 job.run_test('network_ChromeWifiEndToEnd',
              ssid_1='ssid1',

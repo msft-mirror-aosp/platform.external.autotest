@@ -12,7 +12,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:chameleon_audio_unstable"
-DEPENDENCIES = "chameleon, audio_board, test_audiojack"
+DEPENDENCIES = "chameleon, test_audiojack"
 
 """
 This test remotely tests audio quality over headphone.

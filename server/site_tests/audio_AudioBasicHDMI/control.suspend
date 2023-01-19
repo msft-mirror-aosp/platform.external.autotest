@@ -14,7 +14,7 @@ METADATA = {
 # Disable this test until it can be fixed: http://b/154646216
 # ATTRIBUTES = "suite:audio_advanced"
 TEST_TYPE = "server"
-DEPENDENCIES = 'chameleon:hdmi, audio_board, test_hdmiaudio'
+DEPENDENCIES = 'chameleon:hdmi, test_hdmiaudio'
 JOB_RETRIES = 1
 
 args_dict = utils.args_to_dict(args)

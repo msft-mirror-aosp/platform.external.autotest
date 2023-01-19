@@ -14,7 +14,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:audio_advanced"
-DEPENDENCIES = "chameleon, audio_board, test_bluetooth"
+DEPENDENCIES = "chameleon, test_bluetooth"
 JOB_RETRIES = 1
 
 args_dict = utils.args_to_dict(args)

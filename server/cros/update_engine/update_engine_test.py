@@ -95,7 +95,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     _CACHE_SERVER_URL_PATTERN = 'http://%s:8082'
     _CACHE_SERVER_HEALTH_CHECK_PATTERN = f'{_CACHE_SERVER_URL_PATTERN}/check_health'
 
-    def initialize(self, host=None):
+    def initialize(self, host=None, **kwargs):
         """
         Sets default variables for the test.
 
@@ -121,7 +121,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._should_restore_stateful = False
 
         # Cache server URL to use for the test, if running on a lab DUT.
-        self._cache_server_url = self._get_cache_server_url()
+        cache_endpoint = kwargs.get('cache_endpoint')
+        logging.info('cache_endpoint received: %s', cache_endpoint)
+        self._cache_server_url = cache_endpoint or self._get_cache_server_url()
 
     def cleanup(self):
         """Clean up update_engine autotests."""

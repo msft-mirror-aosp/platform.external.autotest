@@ -834,7 +834,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         """
         cmd = [
-                'curl', '--silent', '--show-error', '--max-time', '600',
+                'curl', '--silent', '--show-error', '--max-time', '1200',
                 stateful_url, '|', '/bin/tar', '--ignore-command-error',
                 '--overwrite', '--directory', destination, '--selinux', '-xz'
         ]

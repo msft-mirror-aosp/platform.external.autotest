@@ -4,10 +4,14 @@
 
 AUTHOR = "kyleshima, ChromiumOS"
 NAME = "rlz_CheckPing.should_not_send_ping"
-PURPOSE = "Test rlz related vpd setting: should_send_rlz_ping."
+METADATA = {
+  "contacts": [
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "crbug:Internals>Metrics>RLZ",
+  "criteria": "Test rlz related vpd setting: should_send_rlz_ping."
+}
 TIME = "Short"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:rlz"
 PY_VERSION = 3

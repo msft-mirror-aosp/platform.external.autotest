@@ -4,10 +4,14 @@
 
 AUTHOR = "kyleshima, ChromiumOS"
 NAME = "rlz_CheckPing.second_user_sends_ping"
-PURPOSE = "Tests that CAF RLZ ping can be sent by a second user."
+METADATA = {
+  "contacts": [
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "crbug:Internals>Metrics>RLZ",
+  "criteria": "Tests that CAF RLZ ping can be sent by a second user."
+}
 TIME = "Short"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:rlz"
 PY_VERSION = 3

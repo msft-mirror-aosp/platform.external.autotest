@@ -4,10 +4,14 @@
 
 AUTHOR = "dhaddock, kyleshima, ChromiumOS"
 NAME = "rlz_CheckPing.guest"
-PURPOSE = "Tests that CAI and CAF RLZ pings are sent in guest mode."
+METADATA = {
+  "contacts": [
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "crbug:Internals>Metrics>RLZ",
+  "criteria": "Tests that CAI and CAF RLZ pings are sent in guest mode."
+}
 TIME = "Short"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
 TEST_TYPE = "server"
 # Disabled due to 0% pass rate over 30 days. See b/241833063
 # ATTRIBUTES = "suite:rlz"

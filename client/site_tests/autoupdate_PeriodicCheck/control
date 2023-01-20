@@ -4,12 +4,17 @@
 
 TIME='Short'
 AUTHOR = 'The ChromiumOS Authors'
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Client side test for testing periodic update checks."
+}
 DOC = """Client side test for testing periodic update checks."""
 
 NAME = 'autoupdate_PeriodicCheck'
-PURPOSE = 'Client side test for testing periodic update checks.'
-TEST_CLASS = 'platform'
-TEST_CATEGORY = 'Functional'
 TEST_TYPE = 'client'
 PY_VERSION = 3
 

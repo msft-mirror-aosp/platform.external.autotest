@@ -4,17 +4,21 @@
 
 TIME='MEDIUM'
 AUTHOR = 'The ChromiumOS Authors'
-
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Update client with a canned Omaha response."
+}
 DOC = """
 Client-side mechanism to update a DUT with a given image. It is used
 in server-side tests such as autoupdate_CatchBadSignatures.
 """
 
 NAME = 'autoupdate_CannedOmahaUpdate'
-PURPOSE = 'Update client with a canned Omaha response.'
 CRITERIA = 'Do not run this test. See autoupdate_CatchBadSignatures.'
-TEST_CLASS = 'platform'
-TEST_CATEGORY = 'Functional'
 TEST_TYPE = 'client'
 PY_VERSION = 3
 

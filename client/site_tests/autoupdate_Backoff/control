@@ -4,15 +4,20 @@
 
 TIME='Short'
 AUTHOR = 'The ChromiumOS Authors'
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Client side test of the update_engine backoff mechanism."
+}
 DOC = """
 Client side test of the update_engine backoff mechanism.
 This will be called from the server tests: autoupdate_OmahaResponse.backoff*
 """
 
 NAME = 'autoupdate_Backoff'
-PURPOSE = 'Client side test of the update_engine backoff mechanism.'
-TEST_CLASS = 'platform'
-TEST_CATEGORY = 'Functional'
 TEST_TYPE = 'client'
 PY_VERSION = 3
 

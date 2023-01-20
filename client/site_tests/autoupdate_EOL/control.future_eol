@@ -4,11 +4,16 @@
 
 AUTHOR = "dhaddock, The ChromiumOS Authors"
 NAME = "autoupdate_EOL.future_eol"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests End of Life (EOL) / Autoupdate Expiration (AUE)"
+}
 TEST_TYPE = "client"
 ATTRIBUTES = "suite:au-perbuild"
-PURPOSE = "Tests Approaching End of Life (EOL) / Autoupdate Expiration (AUE)"
 TIME = "SHORT"
 PY_VERSION = 3
 

@@ -4,10 +4,15 @@
 
 AUTHOR = "kyleshima, The ChromiumOS Authors"
 NAME = "autoupdate_UpdateFromUI"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests triggering an update from the UI."
+}
 TEST_TYPE = "client"
-PURPOSE = "Tests triggering an update from the UI."
 TIME = "SHORT"
 PY_VERSION = 3
 DOC = """ Tests triggering an update from the UI. """

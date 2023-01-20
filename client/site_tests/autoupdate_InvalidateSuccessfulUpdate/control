@@ -4,10 +4,15 @@
 
 AUTHOR = "hbarnor, The ChromiumOS Authors"
 NAME = "autoupdate_InvalidateSuccessfulUpdate"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests installing an update and invalidating it before it is booted."
+}
 TEST_TYPE = "client"
-PURPOSE = "Tests installing an update and invalidating it before it is booted."
 TIME = "SHORT"
 PY_VERSION = 3
 

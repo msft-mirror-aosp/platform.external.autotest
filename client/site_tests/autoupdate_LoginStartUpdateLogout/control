@@ -4,10 +4,15 @@
 
 AUTHOR = "dhaddock, The ChromiumOS Authors"
 NAME = "autoupdate_LoginStartUpdateLogout"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests logging in and out during an update."
+}
 TEST_TYPE = "client"
-PURPOSE = "Tests logging in and out during an update."
 TIME = "SHORT"
 PY_VERSION = 3
 DOC = """ Tests logging in and out during an update. """

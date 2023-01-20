@@ -3,46 +3,44 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from autotest_lib.server import utils
+# Description
+# This wrapper test automates the process of power measurement with a pacman
+# debugger while running a client test. Please check the client test's control
+# file for any hardware requirement, e.g. no AC power, no Ethernet.
 
-AUTHOR = "klug"
+# This test makes the following assumptions:
+# 1. Pacman Debugger is connected to the DUT and can be run manually.
+
+# 2. The workstation (or where the autotest is kicked off from) should be in same
+# timezone with the DUT.
+
+# 3. pacman.py is in path and discoverable using shutil.which('pacman.py')
+
+# Installation:
+# wget https://bootstrap.pypa.io/pip/3.6/get-pip.py
+# sudo python ./get-pip.py
+# pip3 install pandas plotly pyftdi
+
+# Sample usage:
+# test_that <ip address of DUT> power_PacWrapper --args \
+# 'test=power_LoadTest.fast config=./boards/skyrim/skyrim_r1.py'
+
+# What are the parameters:
+# test: the client test to run in wrapper test; DUT power is measured during this
+#       client test; required.
+# note: User supplied note to tag the specific test; optional.
+
 NAME = "power_PacWrapper"
-PURPOSE = "Measure power with a pacman debugger while running a client test."
-CRITERIA = "This test is a wrapper for a client test."
-TIME = "LONG"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["klug"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a wrapper for a client test.",
+    "hw_agnostic": False
+}
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
-DOC = """
-This wrapper test automates the process of power measurement with a pacman
-debugger while running a client test. Please check the client test's control
-file for any hardware requirement, e.g. no AC power, no Ethernet.
-
-This test makes the following assumptions:
-1. Pacman Debugger is connected to the DUT and can be run manually.
-
-2. The workstation (or where the autotest is kicked off from) should be in same
-timezone with the DUT.
-
-3. pacman.py is in path and discoverable using shutil.which('pacman.py')
-
-Installation:
-wget https://bootstrap.pypa.io/pip/3.6/get-pip.py
-sudo python ./get-pip.py
-pip3 install pandas plotly pyftdi
-
-Sample usage:
-test_that <ip address of DUT> power_PacWrapper --args \
-'test=power_LoadTest.fast config=./boards/skyrim/skyrim_r1.py'
-
-What are the parameters:
-test: the client test to run in wrapper test; DUT power is measured during this
-      client test; required.
-note: User supplied note to tag the specific test; optional.
-"""
+from autotest_lib.server import utils
 
 # Workaround to make it compatible with moblab autotest UI.
 global args_dict

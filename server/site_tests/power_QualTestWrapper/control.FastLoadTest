@@ -2,28 +2,27 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS PVS Team"
+# Description
+# This is a power_QualTestWrapped example, which uses the QualTestWrapper
+# implementation to call a power test, after first calling the standard
+# prefix tests for the power_qual sequence. QualTestWrapper inherits from
+# pvs.test_with_pass_criteria, which uses either pass criteria passed
+# on the command line or the default pass criteria below to pass/fail tests
+# based on their key value results written to the results directory.
+
+# To create new wrapped Qual Tests, please copy this example file, and
+# fill out the TEST_NAME you intend to call, as well as the TEST_ARGS
+# dict to be passed to that test.
+
 NAME = "power_FastLoadTest"
-PURPOSE = "power_Dummy orchestrated with wrappers for qualification"
-CRITERIA = "This test is a benchmark."
-TIME = "SHORT"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["ChromeOS PVS Team"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": False
+}
 TEST_TYPE = "server"
 ATTRIBUTES = ""
-PY_VERSION = 3
-DOC = """
-This is a power_QualTestWrapped example, which uses the QualTestWrapper
-implementation to call a power test, after first calling the standard
-prefix tests for the power_qual sequence. QualTestWrapper inherits from
-pvs.test_with_pass_criteria, which uses either pass criteria passed
-on the command line or the default pass criteria below to pass/fail tests
-based on their key value results written to the results directory.
-
-To create new wrapped Qual Tests, please copy this example file, and
-fill out the TEST_NAME you intend to call, as well as the TEST_ARGS
-dict to be passed to that test.
-"""
 
 from autotest_lib.server import utils
 from autotest_lib.server.cros.pvs import wrapper_job_with_name

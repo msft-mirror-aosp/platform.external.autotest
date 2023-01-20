@@ -2,21 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from autotest_lib.server import utils
+# Description
+# Stress test Servo changing PD role.
 
-AUTHOR = "mqg"
 NAME = "power_ServoChargeStress.100loops"
-PURPOSE = "Stress test Servo changing PD role"
-TIME = "LONG"
-TEST_CATEGORY = "Benchmark"
-TEST_CLASS = "power"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com", "mqg"],
+    "bug_component": "b:167191",
+    "criteria": "",
+    "hw_agnostic": False
+}
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
-DOC = """
-Stress test Servo changing PD role.
-"""
+from autotest_lib.server import utils
 
 # Workaround to make it compatible with moblab autotest UI.
 global args_dict

@@ -4,7 +4,8 @@
 
 NAME = "power_KeyboardBacklight.10percent"
 METADATA = {
-  "Contacts": ["chromeos-platform-power@google.com"],
+  "contacts": ["chromeos-platform-power@google.com"],
+  "author": "mqg",
   "bug_component": "b:167191",
   "criteria": "This test is a benchmark.",
   "hw_agnostic": False

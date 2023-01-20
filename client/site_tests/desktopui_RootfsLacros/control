@@ -4,10 +4,15 @@
 
 AUTHOR = "dhaddock, The ChromiumOS Authors"
 NAME = "desktopui_RootfsLacros"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
+METADATA = {
+  "contacts": [
+    "chromeos-sw-engprod@google.com",
+    "lacros-team@google.com"
+  ],
+  "bug_component": "crbug:OS>LaCrOS",
+  "criteria": "Tests launching rootfs-lacros and checking version number."
+}
 TEST_TYPE = "client"
-PURPOSE = "Get rootfs-lacros version."
 TIME = "SHORT"
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 PY_VERSION = 3

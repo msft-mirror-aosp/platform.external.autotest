@@ -1,4 +1,4 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,6 +6,10 @@
 
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.cellular_ota-ee-dut_check'
+METADATA = {
+    "contacts": ["chromeos-cellular-team@google.com"],
+    "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
+    }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota'
@@ -38,7 +42,7 @@ def run(machine):
         job.run_test('tast',
                     host=host,
                     clear_tpm = False,
-                    test_exprs=['cellular.Identifiers','cellular.IsConnected','cellular.Smoke'],
+                    test_exprs=['cellular.Identifiers.ee','cellular.IsConnected.ee','cellular.Smoke.ee'],
                     ignore_test_failures=True, max_run_sec=10800,
                     command_args=args,
                     varsfiles=[temp_file.name]

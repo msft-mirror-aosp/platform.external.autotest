@@ -1,4 +1,4 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,6 +6,10 @@
 
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.cellular_ota_flaky-kddi-e2e'
+METADATA = {
+    "contacts": ["chromeos-cellular-team@google.com"],
+    "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
+    }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota_flaky'

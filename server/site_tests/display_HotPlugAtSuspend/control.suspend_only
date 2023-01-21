@@ -4,22 +4,20 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "display_HotPlugAtSuspend.suspend_only"
-PURPOSE = "Control group of only doing suspend/resume."
-CRITERIA = "This test will fail if DUT doesn't suspend/resume on time."
+METADATA = {
+    "contacts": ["chromeos-gfx-display@google.com"],
+    "bug_component": "b:188154",
+    "criteria": "Fails if the checks after suspend-resume fail."
+}
 ATTRIBUTES = "suite:chameleon_hdmi_unstable"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "display"
 TEST_TYPE = "server"
 DEPENDENCIES = "chameleon"
 JOB_RETRIES = 1
-PY_VERSION = 3
 
-DOC = """
+'''
 This is a control group of only doing suspend/resume without display hot-plug.
-"""
+'''
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

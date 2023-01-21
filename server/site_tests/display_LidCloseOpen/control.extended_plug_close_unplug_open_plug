@@ -4,20 +4,18 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "display_LidCloseOpen.extended_plug_close_unplug_open_plug"
-PURPOSE = "Remotely controlled close and open lid test."
-CRITERIA = "This test will fail if checks mentioned below fail."
+METADATA = {
+    "contacts": ["chromeos-gfx-display@google.com"],
+    "bug_component": "b:188154",
+    "criteria": "Fails if the checks mentioned below fail."
+}
 #ATTRIBUTES = "suite:chameleon_hdmi_unstable"
-TIME = "LONG"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "display"
 TEST_TYPE = "server"
 DEPENDENCIES = 'chameleon, servo_state:WORKING'
 JOB_RETRIES = 1
-PY_VERSION = 3
 
-DOC = """
+'''
 This test remotely emulates external display lid close/open scenario.
 This test will fail if DUT doesn't
  - go to docked mode
@@ -25,7 +23,7 @@ This test will fail if DUT doesn't
  - suspend after unplug in docked mode
  - resume after open
  - pass image test
-"""
+'''
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

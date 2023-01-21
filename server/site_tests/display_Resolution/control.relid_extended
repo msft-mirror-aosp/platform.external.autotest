@@ -4,24 +4,22 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "chromeos-chameleon"
 NAME = "display_Resolution.relid_extended"
-PURPOSE = "Remotely controlled display resolution test."
-CRITERIA = "This test will fail if the screens mismatch."
+METADATA = {
+    "contacts": ["chromeos-gfx-display@google.com"],
+    "bug_component": "b:188154",
+    "criteria": "Fails if the screens mismatches."
+}
 ATTRIBUTES = "suite:chameleon_hdmi_unstable"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "display"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, chameleon"
 JOB_RETRIES = 1
-PY_VERSION = 3
 
-DOC = """
+'''
 This test remotely tests display resolution functions, by switching EDIDs
 in extended mode while performing lid close, and then lid open. DUT is
 expected to detect a new resolution after lid open.
-"""
+'''
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

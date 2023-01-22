@@ -28,6 +28,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass test',
     'hw_agnostic': False,
+    'requirements': ['bt-phy-0010-v01']
 }
 
 

@@ -1039,7 +1039,7 @@ class TradefedTest(test.test):
         return self._feature_list
 
     def _has_back_camera(self):
-        return 'android.hardware.camera.back' in self._get_feature_list()
+        return 'android.hardware.camera' in self._get_feature_list()
 
     def _is_back_camera_collect_test(self, test_name):
         return 'camerabox.back' in test_name and 'collect-tests' in test_name

@@ -5,6 +5,7 @@
 AUTHOR = "ChromeOS Team"
 NAME = "AFDO_record"
 PURPOSE = "Exercise Chrome, record profiling data using AFDO."
+METADATA = { 'contacts': [ "chromeos-toolchain@google.com" ] }
 
 TIME = "LONG"
 TEST_CATEGORY = "General"
@@ -45,8 +46,7 @@ _BUG_TEMPLATE = {
     'status': None,
     'summary': None,
     'title': None,
-    'cc': ['ajkelly@google.com',
-    	   'chromeos-toolchain-oncall1@google.com']
+    'cc': ['chromeos-toolchain-oncall1@google.com'],
 }
 
 args_dict['job'] = job

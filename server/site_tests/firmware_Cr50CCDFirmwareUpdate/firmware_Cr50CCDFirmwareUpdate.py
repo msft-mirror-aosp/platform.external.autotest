@@ -140,6 +140,15 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         self.fast_ccd_open(enable_testlab=True)
         if not self.servo.enable_ccd_servo_device():
             raise error.TestNAError('Cannot make ccd active')
+        # If it is ITE EC, then ccd reset factory.
+        if self.servo.get('ec_chip') == 'it83xx':
+            self.gsc.set_cap('I2C', 'Always')
+
+        # Make sure to use the GSC ec_reset command for cold reset snce that's
+        # what normal ccd devices will use.
+        if (self.servo.has_control('cold_reset_select')
+                    and self.servo.has_control('gsc_ec_reset')):
+            self.servo.set('cold_reset_select', 'gsc_ec_reset')
         # TODO(b/196824029): remove when servod supports using the power state
         # controller with the ccd device.
         try:
@@ -149,9 +158,13 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
             raise error.TestNAError('Unable to do power state reset with '
                                     'active ccd device')
 
-        # If it is ITE EC, then ccd reset factory.
-        if self.servo.get('ec_chip') == 'it83xx':
-            self.gsc.set_cap('I2C', 'Always')
+        # Flashing the dut involves running power_state:reset. If this locks
+        # ccd, flashing won't work. Raise an error to fix cold_reset.
+        if self.gsc.get_ccd_level() != self.gsc.OPEN:
+            raise error.TestError(
+                    'Resetting the dut locked ccd. Flashing with '
+                    'CCD will not work. Switch cold_reset to '
+                    'gsc_ec_reset')
 
         self.should_restore_fw = True
         try:

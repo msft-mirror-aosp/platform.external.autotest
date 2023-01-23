@@ -289,21 +289,115 @@ def remove_all_vaults():
             shutil.rmtree(abs_item)
 
 
-def mount_vault(user, password, create=False, key_label=None):
+def start_auth_session(user):
+    """Starts an auth session for the user"""
+    args = [CRYPTOHOME_CMD, '--action=start_auth_session', '--user=%s' % user]
+
+    output = run_cmd(' '.join(args))
+    if output.find('Auth session start succeeded.') == -1:
+        logging.info(output)
+        raise ChromiumOSError('AuthSession could not be started.')
+
+    auth_session_line_index = output.find('auth_session_id')
+    if auth_session_line_index == -1:
+        logging.info(output)
+        raise ChromiumOSError('AuthSessionId line could not be found.')
+
+    auth_session_id_index = output.find(' ', auth_session_line_index) + 1
+    if auth_session_id_index == -1:
+        logging.info(output)
+        raise ChromiumOSError('AuthSessionId could not be found.')
+
+    auth_session_id_end_of_line_index = output.find('\n',
+                                                    auth_session_id_index)
+    if auth_session_id_end_of_line_index == -1:
+        logging.info(output)
+        raise ChromiumOSError('AuthSessionId could not be found.')
+
+    auth_session_id = output[auth_session_id_index:
+                             auth_session_id_end_of_line_index]
+
+    return auth_session_id
+
+
+def create_persistent_user(auth_session_id):
+    """ Creates the persistent user for which the auth session was created """
+    args = [
+            CRYPTOHOME_CMD, '--action=create_persistent_user',
+            '--auth_session_id=%s' % auth_session_id
+    ]
+
+    output = run_cmd(' '.join(args))
+    if output.find('Created persistent user.') == -1:
+        logging.info(output)
+        raise ChromiumOSError('Could not create a persistent user.')
+
+
+def add_auth_factor(auth_session_id, key_label, password):
+    """ Adds the auth factor with the provided label and password for the user with the corresponding auth_session_id """
+    args = [
+            CRYPTOHOME_CMD, '--action=add_auth_factor',
+            '--auth_session_id=%s' % auth_session_id,
+            '--key_label=%s' % key_label,
+            '--password=%s' % password
+    ]
+    output = run_cmd(' '.join(args))
+    if output.find('AuthFactor added.') == -1:
+        logging.info(output)
+        raise ChromiumOSError('Could not add an auth factor.')
+
+
+def authenticate_auth_factor(auth_session_id, key_label, password):
+    """ Performs an authentication for the user with the corresponding auth_session_id """
+    args = [
+            CRYPTOHOME_CMD, '--action=authenticate_auth_factor',
+            '--auth_session_id=%s' % auth_session_id,
+            '--key_label=%s' % key_label,
+            '--password=%s' % password
+    ]
+
+    output = run_cmd(' '.join(args))
+    if output.find('AuthFactor authenticated.') == -1:
+        logging.info(output)
+        raise ChromiumOSError('Could not authenticate the auth factor.')
+
+
+def prepare_persistent_vault(auth_session_id):
+    """ Will prepare the vault for the user associated with the auth_session_id.
+    This requires the user to have authenticated or added the auth factor in the same session."""
+    args = [
+            CRYPTOHOME_CMD, '--action=prepare_persistent_vault',
+            '--auth_session_id=%s' % auth_session_id
+    ]
+
+    output = run_cmd(' '.join(args))
+    if output.find('Prepared persistent vault.') == -1:
+        logging.info(output)
+        raise ChromiumOSError('Could not create a persistent vault.')
+
+
+def mount_vault_with_auth_factor(user, password, key_label, create=False):
+    """Mount the given user using auth factor APIs with the provided credentials.
+    If the create flag is true the user is created."""
+    auth_session_id = start_auth_session(user)
+
+    if create:
+        create_persistent_user(auth_session_id)
+        add_auth_factor(auth_session_id, key_label, password)
+    else:
+        authenticate_auth_factor(auth_session_id, key_label, password)
+
+    prepare_persistent_vault(auth_session_id)
+
+
+def mount_vault(user, password, create=False, key_label='bar'):
     """Mount the given user's vault. Mounts should be created by calling this
     function with create=True, and can be used afterwards with create=False.
     Only try to mount existing vaults created with this function.
 
     """
-    args = [CRYPTOHOME_CMD, '--action=mount_ex', '--user=%s' % user,
-            '--password=%s' % password, '--async']
-    if create:
-        args += ['--create']
-        if key_label is None:
-            key_label = 'bar'
-    if key_label is not None:
-        args += ['--key_label=%s' % key_label]
-    logging.info(run_cmd(' '.join(args)))
+    mount_vault_with_auth_factor(user, password, key_label, create)
+
     # Ensure that the vault exists in the shadow directory.
     user_hash = get_user_hash(user)
     if not os.path.exists(os.path.join(constants.SHADOW_ROOT, user_hash)):
@@ -312,7 +406,7 @@ def mount_vault(user, password, create=False, key_label=None):
         while retry < MOUNT_RETRY_COUNT and not mounted:
             time.sleep(1)
             logging.info("Retry %s", str(retry + 1))
-            run_cmd(' '.join(args))
+            mount_vault_with_auth_factor(user, password, key_label, create)
             # TODO: Remove this additional call to get_user_hash(user) when
             # crbug.com/690994 is fixed
             user_hash = get_user_hash(user)
@@ -324,41 +418,6 @@ def mount_vault(user, password, create=False, key_label=None):
     # Ensure that the vault is mounted.
     if not is_permanent_vault_mounted(user=user, allow_fail=True):
         raise ChromiumOSError('Cryptohome created a vault but did not mount.')
-
-
-def mount_guest():
-    """Mount the guest vault."""
-    args = [CRYPTOHOME_CMD, '--action=mount_guest_ex']
-    logging.info(run_cmd(' '.join(args)))
-    # Ensure that the guest vault is mounted.
-    if not is_guest_vault_mounted(allow_fail=True):
-        raise ChromiumOSError('Cryptohome did not mount guest vault.')
-
-
-def test_auth(user, password):
-    """Test key auth."""
-    cmd = [CRYPTOHOME_CMD, '--action=check_key_ex', '--user=%s' % user,
-           '--password=%s' % password, '--async']
-    out = run_cmd(' '.join(cmd))
-    logging.info(out)
-    return 'Key authenticated.' in out
-
-
-def add_le_key(user, password, new_password, new_key_label):
-    """Add low entropy key."""
-    args = [CRYPTOHOME_CMD, '--action=add_key_ex', '--key_policy=le',
-            '--user=%s' % user, '--password=%s' % password,
-            '--new_key_label=%s' % new_key_label,
-            '--new_password=%s' % new_password]
-    logging.info(run_cmd(' '.join(args)))
-
-
-def remove_key(user, password, remove_key_label):
-    """Remove a key."""
-    args = [CRYPTOHOME_CMD, '--action=remove_key_ex', '--user=%s' % user,
-            '--password=%s' % password,
-            '--remove_key_label=%s' % remove_key_label]
-    logging.info(run_cmd(' '.join(args)))
 
 
 def get_supported_key_policies(host=None):
@@ -407,8 +466,8 @@ def __get_mount_info(mount_point, allow_fail=False):
     # Only check for these mounts if the mounter executable is running.
     if status == 0:
         try:
-            logging.debug('Active %s mounts:\n' % mounter_exe +
-                          utils.system_output('cat %s' % mounter_path))
+            logging.debug('Active %s mounts:\n', mounter_exe)
+            logging.debug(utils.system_output('cat %s' % mounter_path))
             ns_mount_line = utils.system_output(
                 'grep %s %s' % (mount_point, mounter_path),
                 ignore_status=allow_fail)
@@ -626,17 +685,3 @@ def do_dircrypto_migration(user, password, timeout=600):
         timeout=timeout,
         exception=error.TestError(
                 'Timeout waiting for dircrypto migration to finish'))
-
-
-def change_password(user, password, new_password):
-    """Change user password."""
-    args = [
-            CRYPTOHOME_CMD,
-            '--action=migrate_key_ex',
-            '--user=%s' % user,
-            '--old_password=%s' % password,
-            '--password=%s' % new_password]
-    out = run_cmd(' '.join(args))
-    logging.info(out)
-    if 'Key migration succeeded.' not in out:
-        raise ChromiumOSError('Key migration failed.')

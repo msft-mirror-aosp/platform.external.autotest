@@ -55,7 +55,7 @@ METADATA = {
     'hw_agnostic': False,
 }
 
-ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_core'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 

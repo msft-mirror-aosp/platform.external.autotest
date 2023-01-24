@@ -38,7 +38,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_e2e, suite:bluetooth_e2e_cq, suite:bluetooth_floss_cq'
+ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_core, suite:bluetooth_e2e_cq, suite:bluetooth_floss_cq'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 

@@ -140,8 +140,8 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         self.fast_ccd_open(enable_testlab=True)
         if not self.servo.enable_ccd_servo_device():
             raise error.TestNAError('Cannot make ccd active')
-        # If it is ITE EC, then ccd reset factory.
-        if self.servo.get('ec_chip') == 'it83xx':
+        # If it is ITE EC, then allow CCD I2C access for flashing EC.
+        if self.servo.get('ec_chip').startswith('it8'):
             self.gsc.set_cap('I2C', 'Always')
 
         # Make sure to use the GSC ec_reset command for cold reset snce that's

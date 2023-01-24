@@ -27,6 +27,7 @@ from autotest_lib.server import installable_object
 from autotest_lib.server import utils
 from autotest_lib.server import utils as server_utils
 from autotest_lib.server.cros.dynamic_suite.constants import JOB_REPO_URL
+from autotest_lib.server import crashcollect
 import six
 from six.moves import map
 
@@ -96,6 +97,10 @@ class AutotestDeviceNotSSHable(AutotestDeviceError):
 
 class AutotestDeviceRebooted(AutotestDeviceError):
     """Error for when a DUT rebooted unexpectedly."""
+
+
+class AutotestDevicePythonAccessibility(AutotestDeviceError):
+    """Error when python is not accessible on the host"""
 
 
 class Autotest(installable_object.InstallableObject):
@@ -582,9 +587,12 @@ class Autotest(installable_object.InstallableObject):
         if os.path.abspath(tmppath) != os.path.abspath(control_file):
             os.remove(tmppath)
 
-        atrun.execute_control(
-                timeout=timeout,
-                client_disconnect_timeout=client_disconnect_timeout)
+        try:
+            atrun.execute_control(
+                    timeout=timeout,
+                    client_disconnect_timeout=client_disconnect_timeout)
+        except AutotestDevicePythonAccessibility as e:
+            crashcollect.get_crashinfo(host, None)
 
 
     @staticmethod
@@ -942,7 +950,6 @@ class _Run(object):
         if utils.ping(self.host.hostname, tries=1, deadline=1) != 0:
             msg += 'DUT is no longer pingable, it may have rebooted or hung.\n'
             raise AutotestDeviceNotPingable(msg)
-
         if old_boot_id:
             try:
                 new_boot_id = self.host.get_boot_id(timeout=60)
@@ -954,6 +961,11 @@ class _Run(object):
                 if new_boot_id != old_boot_id:
                     msg += self._diagnose_reboot()
                     raise AutotestDeviceRebooted(msg)
+            try:
+                self.host.run("python --version")
+            except error.AutoservRunError as e:
+                msg += ('DUT could not execute python: %s\n' % str(e))
+                raise AutotestDevicePythonAccessibility(msg)
 
             msg += ('DUT is pingable, SSHable and did NOT restart '
                     'un-expectedly. We probably lost connectivity during the '
@@ -1209,6 +1221,16 @@ class _Run(object):
                 # healthy, we give up and abort.
                 try:
                     self._diagnose_dut(boot_id)
+                except AutotestDevicePythonAccessibility as e:
+                    self.host.job.record('FAIL', None, None, str(e))
+                    self.host.job.record('END FAIL', None, None)
+                    self.host.job.record('END GOOD', None, None)
+                    self.host.job.failed_with_device_error = True
+                    msg = ("Aborting - Python interpreter not accessible on "
+                           "client %s\n") % self.host.hostname
+                    logging.info(msg)
+                    raise e
+
                 except AutotestDeviceError as e:
                     # The status lines of the test are pretty much tailed to
                     # our log, with indentation, from the client job on the DUT.

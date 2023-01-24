@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Distributed Fleet Platform"
-NAME = "distributed_lab_qual_cts_shard1"
+NAME = "distributed_arc_qual_cts_shard1"
 PURPOSE = "Optimized test suite for distributed satlab tests"
 
 TEST_CATEGORY = "General"

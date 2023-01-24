@@ -41,6 +41,9 @@ CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts', 'suite:arc-cts-unibuild']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 
+# Suite for distributed fleetland shards for automation purposes
+CONFIG['DISTRIBUTED_QUAL_SUITE'] = 'suite:distributed_arc_qual_cts_shard'
+
 # Suite for rerunning failing camera test during qual
 CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-dut'
 
@@ -175,6 +178,16 @@ CONFIG['CAMERA_MODULES'] = [
        # CONTAINS ONLY CAMERA TESTS
        'CtsCameraTestCases',
 ]
+
+#sharding arc-cts-qual for automation
+CONFIG['DISTRIBUTED_QUAL_SHARD'] = dict({
+        'CtsActivityManagerDeviceSdk25TestCases':
+        1,
+        'CtsAdminPackageInstallerTestCases':
+        1,
+        'CtsCarTestCases':
+        1,
+})
 
 # The suite is divided based on the run-time hint in the *.config file.
 CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()
@@ -816,4 +829,5 @@ CONFIG['PREREQUISITES'] = {
 from generate_controlfiles_common import main
 
 if __name__ == '__main__':
+
     main(CONFIG)

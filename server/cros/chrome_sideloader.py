@@ -433,7 +433,8 @@ def _lookup_lacros_latest_version(channel, platform):
 def deploy_lacros(host,
                   channel=None,
                   gs_path=None,
-                  lacros_dir='/usr/local/lacros-chrome'):
+                  lacros_dir='/usr/local/lacros-chrome',
+                  args_dict={}):
     """
     Deploys Lacros to DUT.
 
@@ -442,6 +443,7 @@ def deploy_lacros(host,
     @param channel: The Lacros channel. e.g. 'stable','beta','dev'
     @param gs_path: The GCS path of the Lacros artifacts.
     @param lacros_dir: The directory for Lacros artifacts.
+    @param args_dict: Additional argument dictionary.
     """
     if not lacros_dir:
         raise Exception('Failed to specify Lacros directory.')
@@ -472,8 +474,16 @@ def deploy_lacros(host,
             'Please specify either channel or gs_path to locate Lacros artifacts.')
 
     # Stage Lacros artifact onto Cache Server
-    try:
+    cache_endpoint = args_dict.get('cache_endpoint')
+    logging.info('cache_endpoint: %s', cache_endpoint)
+    if cache_endpoint:
+        # CFT handles the Cache Server lookup outside of Tauto.
+        ds = dev_server.ImageServer('http://%s' % cache_endpoint)
+    else:
+        # For Non-CFT, Tauto handles Cache Server lookup.
         ds = dev_server.ImageServer.resolve(image, host.hostname)
+    logging.info('Cache Server: %s', ds)
+    try:
         ds.stage_artifacts(image=image,
                            archive_url=archive_url,
                            files=[zip_name])

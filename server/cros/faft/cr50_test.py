@@ -800,6 +800,15 @@ class Cr50Test(FirmwareTest):
         except Exception as e:
             logging.warning('Ignored exception enabling ccd %r', str(e))
         self.gsc.send_command('ccd testlab open')
+        self.gsc.send_command('ccd open')
+
+        # Try to enable testlab mode before resetting ccd.
+        try:
+            if self.gsc.get_ccd_level() == self.gsc.OPEN:
+                self.gsc.set_ccd_testlab('on')
+        except Exception as e:
+            logging.warning('Unable to enable testlab mode %r', e)
+
         self.gsc.send_command('rddkeepalive disable')
         self.gsc.ccd_reset()
         self.gsc.send_command('wp follow_batt_pres atboot')

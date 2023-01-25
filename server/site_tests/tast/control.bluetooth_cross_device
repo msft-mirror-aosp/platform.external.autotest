@@ -1,0 +1,50 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server.site_tests.tast import tast
+import autotest_lib.server.cros.bluetooth.bluetooth_control_file_utils as bt_control_utils
+
+AUTHOR = 'ChromiumOS team'
+NAME = 'tast.bluetooth_cross_device'
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:bluetooth_cross_device'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com',"chromeos-cross-device-eng@google.com",'chromeos-connectivity-engprod@google.com'],
+    'bug_component': 'b:167317',
+    'criteria': ('Bluetooth tests that need multi-dut test beds'),
+    'hw_agnostic': False,
+}
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''Run the Tast Cross Device Bluetooth test suite.'''
+
+#
+# Currently only Fast pair test are present in this suite and these
+# tests do not use the Android phone in the testbed, only the DUTs and
+# the btpeer
+#
+
+command_args, varslist = tast.split_arguments(args)
+
+def run(machine):
+
+    host = hosts.create_host(machine)
+    working_bluetooth_btpeers = bt_control_utils.get_working_bluetooth_btpeer(host)
+    btpeer_count_attribute_expression = bt_control_utils.build_tast_btpeer_count_attribute_test_expression(working_bluetooth_btpeers)
+    tast_test_expr = '("group:bluetooth" && bluetooth_cross_device_fastpair_multidut  && %s)' % btpeer_count_attribute_expression
+
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=[tast_test_expr],
+                 ignore_test_failures=True,
+                 max_run_sec=10800,
+                 command_args=args,
+                 varslist=varslist)
+parallel_simple(run, machines)

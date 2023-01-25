@@ -11,7 +11,7 @@ METADATA = {
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Validate PinWeaver functionality on Cr50"
 }
-ATTRIBUTES = "suite:faft_gsc_nightly, suite:experimental, suite:faft_cr50_pvt, suite:faft_cr50_prepvt, suite:distributed_lab_qual_faft, suite:faft_ti50_qual"
+ATTRIBUTES = "suite:faft_gsc_nightly, suite:experimental, suite:faft_cr50_pvt, suite:faft_cr50_prepvt, suite:distributed_lab_qual_faft"
 TIME = "SHORT"
 TEST_TYPE = "server"
 

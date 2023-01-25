@@ -461,15 +461,9 @@ class EcServicer(object):
 
         # This attribute is accessed via a property, so it can load lazily
         # when actually used by the test.
-        self._real_ec_handler = None
-        ec_status = self._os_if.run_shell_command_get_status('mosys ec info')
-        if ec_status == 0:
-            self._real_ec_handler = flashrom_handler.FlashromHandler(
-                    self._os_if, 'ec_root_key.vpubk',
-                    '/usr/share/vboot/devkeys', 'ec')
-
-        else:
-            logging.info('No EC is reported by mosys (rc=%s).', ec_status)
+        self._real_ec_handler = flashrom_handler.FlashromHandler(
+                self._os_if, 'ec_root_key.vpubk', '/usr/share/vboot/devkeys',
+                'ec')
 
     @property
     def _ec_handler(self):

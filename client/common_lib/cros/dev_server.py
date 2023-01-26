@@ -269,7 +269,7 @@ def _get_hostname_addr_map():
 
 
 def _get_dev_server_list():
-    return ['http://%(name)s:%(port)d' % s for s in utils.ALL_CACHE_SERVERS]
+    return CONFIG.get_config_value('CROS', 'dev_server', type=list, default=[])
 
 
 def _get_crash_server_list():
@@ -744,13 +744,6 @@ class DevServer(object):
                     'No hostname specified. Will pick a random cache server.')
             return cls.servers(), False
 
-        logging.debug('Try select cache servers using UFS zone.')
-        servers = _select_servers_using_ufs_zone(hostname,
-                                                 utils.ALL_CACHE_SERVERS)
-        if servers:
-            return servers, False
-
-        logging.debug('Try select cache servers using subnet.')
         host_ip = bin_utils.get_ip_address(hostname)
         if not host_ip:
             logging.error(
@@ -858,48 +851,6 @@ class DevServer(object):
         pseudo build name to `resolve `method.
         """
         return cls.resolve(build=str(time.time()))
-
-
-def _select_servers_using_ufs_zone(hostname, all_cache_servers):
-    """Select cache servers using host's UFS zone."""
-    # The host can be a scheduling unit or a lab server. Shivas has different
-    # output format (i.e. json path) for them.
-    zone = ''
-    ops = [('dut', lambda x: x['zone']),
-           ('machine', lambda x: x['location']['zone'])]
-    for kind, op in ops:
-        cmd = [
-                '/opt/infra-tools/shivas', 'get', kind, '-namespace', 'os',
-                '-service-account-json',
-                '/creds/service_accounts/skylab-drone.json', '-json', hostname
-        ]
-        try:
-            out = subprocess.check_output(cmd)
-        except FileNotFoundError as err:
-            logging.debug('Run shivas command failed: %s', err)
-            return []
-
-        try:
-            j = json.loads(out)
-        except json.decoder.JSONDecodeError as err:
-            logging.debug('Shivas output "%s" decode error: %s', out, err)
-            return []
-
-        if not j:
-            logging.debug('No output of "%s"', ' '.join(cmd))
-            continue
-        # The output of shivas is a list, so get the first element.
-        zone = op(j[0])
-        break
-
-    if not zone:
-        return []
-
-    logging.debug('The UFS zone of %s is %s', hostname, zone)
-    return sorted([
-            "http://%(name)s:%(port)d" % (s) for s in all_cache_servers
-            if zone in s['zones']
-    ])
 
 
 class CrashServer(DevServer):

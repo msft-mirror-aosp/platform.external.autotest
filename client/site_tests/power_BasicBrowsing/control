@@ -1,0 +1,16 @@
+# Description
+# This tests is used for web content repeatability experiment
+# for power test gen2. This will get deleted once Tast power
+# library is ready.
+
+NAME = "power_BasicBrowsing"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": False
+}
+ATTRIBUTES = "suite:power_daily"
+TEST_TYPE = "client"
+
+job.run_test('power_BasicBrowsing', force_discharge='optional')

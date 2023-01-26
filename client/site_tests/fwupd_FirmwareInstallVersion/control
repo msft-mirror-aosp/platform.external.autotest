@@ -1,0 +1,33 @@
+# Copyright (c) 2023 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "Ricardo Canuelo <ricardo.canuelo@collabora.com>"
+NAME = "fwupd_FirmwareInstallVersion"
+METADATA = {
+    "contacts": ["ricardo.canuelo@collabora.com"],
+    "author": "Ricardo Canuelo <ricardo.canuelo@collabora.com>",
+    "criteria": "Test that the FW of a device can be flashed to a specific version using fwupd."
+}
+PURPOSE = "Flashes the firmware of a device to a specific version using fwupd."
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "fwupd"
+TEST_TYPE = "client"
+PY_VERSION = 3
+ATTRIBUTES = "suite:fwupd_install_version"
+
+DOC = """
+Installs a specific firmware version in a selected device. The device is
+supposed to be working and updatable, the firmware version is expected
+to be available in the default fwupd remotes and fwupd is expected to
+work normally. Exceptional cases are treated as test errors.
+"""
+
+# Arguments 'device_id' and 'version' are mandatory. 'device_id' can be
+# the fwupd instance id of the device or any of its GUIDs, 'version' is
+# the FW version string as defined by the FW release
+args_dict = utils.args_to_dict(args)
+device_id = args_dict.get('device_id', '')
+version = args_dict.get('version', '')
+job.run_test('fwupd_FirmwareInstallVersion', device_id=device_id, version=version)

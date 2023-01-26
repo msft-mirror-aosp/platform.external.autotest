@@ -1,0 +1,40 @@
+# Copyright 2023 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+AUTHOR = "Ricardo Canuelo <ricardo.canuelo@collabora.com>"
+NAME = "fwupd_install_version"
+METADATA = {
+    "contacts": ["ricardo.canuelo@collabora.com"],
+    "author": "Ricardo Canuelo <ricardo.canuelo@collabora.com>",
+}
+PURPOSE = "Run the fwupd firmware install test specifying the fw version."
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite runs the fwupd firmware install test to verify the fw update
+capability of a device specifying a concrete fw release version.
+
+@param build: The name of the image to test.
+              Ex: x86-mario-release/R17-1412.33.0-a1-b29
+@param board: The board to test on. Ex: x86-mario
+@param pool: The pool of machines to utilize for scheduling. If pool=None
+             board is used.
+@param check_hosts: require appropriate live hosts to exist in the lab.
+@param SKIP_IMAGE: (optional) If present and True, don't re-imagedevices.
+@param device_id: device to test, it can be the fwupd instance id of
+                  the device or any of its GUIDs
+@param version: firmware version as defined by the firmware release
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['job'] = job
+args_dict['device_id'] = device_id
+args_dict['version'] = version
+
+dynamic_suite.reimage_and_run(**args_dict)

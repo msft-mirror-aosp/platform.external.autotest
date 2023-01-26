@@ -3,23 +3,23 @@
 # found in the LICENSE file.
 
 AUTHOR = "Ricardo Canuelo <ricardo.canuelo@collabora.com>"
-NAME = "fwupd_FirmwareUpdate"
+NAME = "fwupd_FirmwareDowngrade"
 METADATA = {
     "contacts": ["ricardo.canuelo@collabora.com"],
     "author": "Ricardo Canuelo <ricardo.canuelo@collabora.com>",
-    "criteria": "Make sure that a device firmware can be upgraded with fwupd."
+    "criteria": "Make sure that a device firmware can be downgraded with fwupd."
 }
-PURPOSE = "Updates the firmware of a device to the latest version."
+PURPOSE = "Downgrades the firmware of a device to the previous version."
 TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "fwupd"
 TEST_TYPE = "client"
 PY_VERSION = 3
-ATTRIBUTES = "suite:fwupd_update"
+ATTRIBUTES = "suite:fwupd_downgrade"
 
 DOC = """
-Updates the firmware of a device to the latest version. The device is
-supposed to be working and updatable, and fwupd is expected to work
+Downgrades the firmware of a device to the previous version. The device
+is supposed to be working and updatable, and fwupd is expected to work
 normally. Exceptional cases are treated as test errors.
 """
 
@@ -27,4 +27,4 @@ normally. Exceptional cases are treated as test errors.
 # the device or any of its GUIDs
 args_dict = utils.args_to_dict(args)
 device_id = args_dict.get('device_id', '')
-job.run_test('fwupd_FirmwareUpdate', device_id=device_id)
+job.run_test('fwupd_FirmwareDowngrade', device_id=device_id)

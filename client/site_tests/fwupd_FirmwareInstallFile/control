@@ -1,0 +1,34 @@
+# Copyright (c) 2023 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "Ricardo Canuelo <ricardo.canuelo@collabora.com>"
+NAME = "fwupd_FirmwareInstallFile"
+METADATA = {
+    "contacts": ["ricardo.canuelo@collabora.com"],
+    "author": "Ricardo Canuelo <ricardo.canuelo@collabora.com>",
+    "criteria": "Test that the FW of a device can be flashed with a specific file using fwupd."
+}
+PURPOSE = "Flashes a firmware file on a specific device using fwupd."
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "fwupd"
+TEST_TYPE = "client"
+PY_VERSION = 3
+ATTRIBUTES = "suite:fwupd_install_file"
+
+DOC = """
+Installs a specific firmware file in a selected device. The device is
+supposed to be working and updatable, the firmware file is expected to
+be available either in the specified URL or in the /tmp directory of the
+DUT and fwupd is expected to work normally. Exceptional cases are
+treated as test errors.
+"""
+
+# Arguments 'device_id' and 'file' are mandatory. 'device_id' can be
+# the fwupd instance id of the device or any of its GUIDs, 'file' is
+# the URL of the firmware binary
+args_dict = utils.args_to_dict(args)
+device_id = args_dict.get('device_id', '')
+fwfile = args_dict.get('fwfile', '')
+job.run_test('fwupd_FirmwareInstallFile', device_id=device_id, fwfile=fwfile)

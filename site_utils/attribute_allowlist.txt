@@ -436,6 +436,10 @@ suite:fingerprint-mcu-dragonclaw
 suite:fleet_firmware_update
 suite:flashrom
 suite:flex-perbuild
+suite:fwupd_downgrade
+suite:fwupd_install_file
+suite:fwupd_install_version
+suite:fwupd_update
 suite:golden-tier
 suite:graphics
 suite:graphics_browser

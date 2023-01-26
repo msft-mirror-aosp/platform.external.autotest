@@ -7,7 +7,6 @@ from autotest_lib.server.cros.connectivity_common.connectivity_test_version_cont
 
 NAME = 'network_WiFi_BluetoothScanPerf.11b_AVL'
 METADATA = {
-    'requirements': ['wifi-coex-0001-v01'],
     'contacts': ['chromeos-wifi-champs@google.com'],
     # ChromeOS > Platform > Connectivity > WiFi
     'bug_component': 'b:893827',

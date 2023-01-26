@@ -1,14 +1,21 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Do not edit manually. Generated using ~/chromiumos/src/platform/dev/net/gen_control_files.py
+
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.cellular_ota-is_modem_up'
+NAME = 'tast.cellular_ota-ee-is_modem_up'
+METADATA = {
+    "contacts": ["chromeos-cellular-team@google.com"],
+    "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
+    }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
+DEPENDENCIES = "carrier:ee"
 
 DOC = '''
 

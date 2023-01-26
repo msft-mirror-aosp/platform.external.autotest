@@ -12,7 +12,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:chameleon_audio_unstable"
-DEPENDENCIES = "audio_box"
+DEPENDENCIES = "audio_box, chameleon_state:WORKING"
 JOB_RETRIES = 1
 
 """

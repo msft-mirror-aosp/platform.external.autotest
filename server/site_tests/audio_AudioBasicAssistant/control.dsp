@@ -16,7 +16,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:audio_advanced"
-DEPENDENCIES = "audio_box"
+DEPENDENCIES = "audio_box, chameleon_state:WORKING"
 
 args_dict = utils.args_to_dict(args)
 chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)

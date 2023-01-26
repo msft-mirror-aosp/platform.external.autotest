@@ -14,7 +14,7 @@ METADATA = {
 }
 ATTRIBUTES = "suite:audio_advanced"
 TEST_TYPE = "server"
-DEPENDENCIES = 'chameleon, test_usbaudio'
+DEPENDENCIES = 'test_usbaudio, chameleon_state:WORKING'
 JOB_RETRIES = 1
 
 args_dict = utils.args_to_dict(args)

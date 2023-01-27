@@ -6,6 +6,9 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.critical-crostini-slow-shard-0'
+METADATA = {
+  "contacts": ["ashpakov@google.com"],
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'

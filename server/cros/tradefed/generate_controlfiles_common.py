@@ -345,6 +345,18 @@ def get_controlfile_name(module,
 def get_sync_count(_modules, _abi, _is_public):
     return 1
 
+def get_cts_hardware_modules(is_public):
+    """Determines set of hardware modules based on is_public flag.
+
+    Args:
+        is_public: flag that is passed on command line when generating control files.
+    Returns:
+      set corresponding set of modules.
+    """
+    if is_public:
+        return set(CONFIG.get('PUBLIC_HARDWARE_MODULES', []))
+    else:
+        return set(CONFIG.get('HARDWARE_MODULES', []))
 
 def get_suites(modules, abi, is_public, camera_facing=None,
                hardware_suite=False):
@@ -355,7 +367,7 @@ def get_suites(modules, abi, is_public, camera_facing=None,
     # TODO(ihf): Make this work with the "all" and "collect" generation,
     # which currently bypass this function.
     """
-    cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES', []))
+    cts_hardware_modules = get_cts_hardware_modules(is_public)
 
     if is_public:
         suites = set([CONFIG['MOBLAB_SUITE_NAME']])
@@ -1543,7 +1555,7 @@ def write_extra_controlfiles(_modules, abi, revision, build, uri, source_type):
 def write_hardwaresuite_controlfiles(abi, revision, build, uri, source_type):
     """Control files for Build variant hardware only tests."""
     is_public = (source_type == SourceType.MOBLAB)
-    cts_hardware_modules = set(CONFIG.get('HARDWARE_MODULES', []))
+    cts_hardware_modules = get_cts_hardware_modules(is_public)
     for module in cts_hardware_modules:
         write_controlfile(module, set([module]), abi, revision, build, uri, None,
                           source_type=source_type, hardware_suite=True)

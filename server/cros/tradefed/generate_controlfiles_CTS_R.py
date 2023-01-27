@@ -411,11 +411,10 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
 ])
 
 # This list of modules will be used for reduced set of testing for build
-# variant process. Suites: cts_hardware & arc-cts-hardware.
+# variant process. Suites: cts_hardware & arc-cts-hardware. that is run in camerabox infra
 CONFIG['HARDWARE_MODULES'] = [
         'CtsPerfettoTestCases',
         'CtsSustainedPerformanceHostTestCases',
-        'CtsCameraTestCases',
         'CtsViewTestCases',
         'CtsMediaTestCases',
         'CtsNativeMediaAAudioTestCases',
@@ -424,6 +423,10 @@ CONFIG['HARDWARE_MODULES'] = [
         'CtsUsageStatsTestCases',
         'CtsSensorTestCases',
 ]
+# This list of modules will be used for reduced set of testing for build
+# variant process. Suites: cts_hardware & arc-cts-hardware that is run in moblab
+CONFIG['PUBLIC_HARDWARE_MODULES'] =  CONFIG['HARDWARE_MODULES']+['CtsCameraTestCases']
+
 
 R_SUITES = ['suite:arc-cts-r']
 R_QUAL_SUITES = R_SUITES + ['suite:arc-cts-qual']

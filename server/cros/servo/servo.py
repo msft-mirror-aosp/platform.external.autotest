@@ -1472,7 +1472,8 @@ class Servo(object):
         get restricted with ccd capabilities. This returns true if some of
         the servo functionality will be disabled if ccd is restricted.
         """
-        return self.get_main_servo_device() in self.GSC_DRV_SERVOS
+        return (self.get_main_servo_device() in self.GSC_DRV_SERVOS
+                or self.has_control('cold_reset_gsc'))
 
     def _initialize_programmer(self, rw_only=False):
         """Initialize the firmware programmer.

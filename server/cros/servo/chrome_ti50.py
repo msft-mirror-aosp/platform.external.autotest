@@ -22,6 +22,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     START_STR = ['ti50_common']
     NAME = CHIP_NAME
     BID_RE = r'Board ID: (\S{8}):?(|\S{8}), flags: (\S{8})\s'
+    CCD_PW_DENIED = 'failed: ParamCount'
 
     # Ti50 only supports v2
     AP_RO_VERSIONS = [2]

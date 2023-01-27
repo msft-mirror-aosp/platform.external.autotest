@@ -54,6 +54,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CCD_PASSWORD_RATE_LIMIT = 3
     IDLE_COUNT = 'count: (\d+)\s'
     SHORT_WAIT = 3
+    ACCESS_DENIED = 'Access Denied'
+    CCD_PW_DENIED = ACCESS_DENIED
     BID_RE = r'Board ID: (\S{8}):?(|\S{8}), flags (\S{8})\s'
     # The version has four groups: the partition, the header version, debug
     # descriptor and then version string.
@@ -349,6 +351,15 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 is_reset = False
         return in_factory_mode, is_reset
 
+
+    def set_password(self, password):
+        """Try to set the password. Should return Access Denied on prod images"""
+        time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
+        rv = self.send_command_get_output('ccd password %s' % password,
+                                          ['ccd.*>'])
+        if self.CCD_PW_DENIED not in rv[0]:
+            raise error.TestFail('%s not found in password response %r' %
+                                 (self.CCD_PW_DENIED, rv))
 
     def password_is_reset(self):
         """Returns True if the password is cleared"""

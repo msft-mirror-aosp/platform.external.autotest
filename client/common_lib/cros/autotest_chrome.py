@@ -193,7 +193,7 @@ class Chrome(object):
                                                    'autotest_private_ext')
             extension_paths.append(self._autotest_ext_path)
             finder_options.browser_options.AppendExtraBrowserArgs(
-                ['--whitelisted-extension-id=%s' % self.AUTOTEST_EXT_ID])
+                    ['--allowlisted-extension-id=%s' % self.AUTOTEST_EXT_ID])
 
         self._browser_type = (self.BROWSER_TYPE_LOGIN
                               if logged_in else self.BROWSER_TYPE_GUEST)
@@ -399,7 +399,7 @@ class Chrome(object):
             if utils.is_arc_available():
                 arc_util.pre_processing_before_close(self)
         finally:
-            # Calling platform.StopAllLocalServers() to tear down the 
+            # Calling platform.StopAllLocalServers() to tear down the
             # autotestChrome server processes such as the one started by
             # platform.SetHTTPServerDirectories().  Not calling this function
             # will leak the process and may affect test results.

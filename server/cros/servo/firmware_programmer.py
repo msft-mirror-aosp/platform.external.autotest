@@ -339,6 +339,14 @@ class FlashGSCCCDProgrammer(_BaseProgrammer):
         logging.info('Installed %s image at %s', rw_ver, image)
         return image, rw_ver
 
+    def run(self, cmd, ignore_status=False):
+        """Run the command on the servo host."""
+        return self._servo_host.run_output(cmd, ignore_status=ignore_status)
+
+    def get_ccd_gsctool_cmd(self, cmd):
+        """Get the gsctool command for the servo host."""
+        return '%s -n %s %s' % (self._gsctool, self._ccd_serialname, cmd)
+
     def program(self):
         """Program the firmware. Handle gsctool errors."""
         self._set_servo_state()

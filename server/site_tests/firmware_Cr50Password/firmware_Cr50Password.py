@@ -22,11 +22,32 @@ class firmware_Cr50Password(Cr50Test):
         password.
         """
         start_pw_state = self.gsc.password_is_reset()
+        start_level = self.gsc.get_ccd_level()
+        logging.info('Password is %s', 'cleared' if start_pw_state else 'set')
+        time.sleep(self.gsc.CCD_PASSWORD_RATE_LIMIT)
         # CCD password from the console should always be inaccessible.
         self.gsc.set_password(password)
+        time.sleep(self.gsc.CCD_PASSWORD_RATE_LIMIT)
         if start_pw_state != self.gsc.password_is_reset():
             raise error.TestFail('changed password from console')
-        # TODO: check ccd password vendor command can't change the password.
+        if start_level != self.gsc.get_ccd_level():
+            raise error.TestFail(
+                    'changed ccd level with set password console command')
+        if self.ccd_programmer_connected_to_servo_host():
+            time.sleep(self.gsc.CCD_PASSWORD_RATE_LIMIT)
+            cmd = self._ccd_programmer.get_ccd_gsctool_cmd('-P')
+            full_cmd = "echo -e '%s\n%s\n' | %s" % (password, password, cmd)
+            logging.info('ccd password command: %r', full_cmd)
+            result = self._ccd_programmer.run(full_cmd, ignore_status=True)
+            logging.info('CCD password result: %r', result)
+            time.sleep(self.gsc.CCD_PASSWORD_RATE_LIMIT)
+            if start_pw_state != self.gsc.password_is_reset():
+                raise error.TestFail('changed password with ccd')
+            if start_level != self.gsc.get_ccd_level():
+                raise error.TestFail('changed ccd level with ccd')
+
+        logging.info('After ccd commands, password is %s',
+                     'cleared' if self.gsc.password_is_reset() else 'set')
 
     def try_wrong_password(self, wrong_password):
         """Try to open ccd with the wrong password.

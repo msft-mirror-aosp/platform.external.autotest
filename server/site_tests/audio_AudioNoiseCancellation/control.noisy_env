@@ -21,7 +21,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:audio_advanced"
-DEPENDENCIES = "board:volteer, audio_box, chameleon_state:WORKING"
+DEPENDENCIES = "board:volteer, audio_box"
 JOB_RETRIES = 1
 
 

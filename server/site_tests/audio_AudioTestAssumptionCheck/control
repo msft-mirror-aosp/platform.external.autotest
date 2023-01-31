@@ -13,7 +13,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:audio_essential"
-DEPENDENCIES = "chameleon_state:WORKING"
+DEPENDENCIES = "chameleon"
 JOB_RETRIES = 1
 
 def run(machine):

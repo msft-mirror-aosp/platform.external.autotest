@@ -15,7 +15,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:audio_advanced"
-DEPENDENCIES = "audio_box, test_audio_jack_usb_hdmi, chameleon_state:WORKING"
+DEPENDENCIES = "audio_box, test_audio_jack_usb_hdmi"
 PY_VERSION = 3
 
 DOC = """

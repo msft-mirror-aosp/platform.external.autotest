@@ -15,7 +15,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:audio_basic"
-DEPENDENCIES = "audio_box, chameleon_state:WORKING"
+DEPENDENCIES = "audio_box"
 JOB_RETRIES = 1
 
 args_dict = utils.args_to_dict(args)

@@ -13,7 +13,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:audio_advanced"
-DEPENDENCIES = "test_bluetooth, chameleon_state:WORKING"
+DEPENDENCIES = "chameleon, test_bluetooth"
 JOB_RETRIES = 1
 PY_VERSION = 3
 

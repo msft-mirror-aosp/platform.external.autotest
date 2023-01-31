@@ -17,6 +17,14 @@ REQUIRE_SSP = True
 DOC = """
 This test runs a game trace replay on repeat for X minutes and measures system/proc status
 """
+METADATA = {
+  "contacts": [
+    "chromeos-gfx@google.com",
+    "ihf@google.com"
+  ],
+  "bug_component": "b:885255",
+  "criteria": "Briefly play glxgears while measuring power."
+}
 
 def run(machine):
     host = hosts.create_host(machine)

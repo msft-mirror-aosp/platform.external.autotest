@@ -9,6 +9,14 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "graphics"
 TEST_TYPE = "client"
+METADATA = {
+  "contacts": [
+    "chromeos-gfx@google.com"
+  ],
+  "bug_component": "b:885255",
+  "criteria": "Chrome unittests should pass."
+}
+
 
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 

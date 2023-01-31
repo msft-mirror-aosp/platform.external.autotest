@@ -94,6 +94,14 @@ EXTENDED_TIMEOUT = 86400
 DOC = \"\"\"
 This test runs the drawElements Quality Program test suite.
 \"\"\"
+METADATA = {
+  "contacts": [
+    "chromeos-gfx-gpu@google.com",
+    "ihf@google.com"
+  ],
+  "bug_component": "b:995569",
+  "criteria": "Pass the drawElements Quality Program test suite."
+}
 job.run_test('graphics_parallel_dEQP',{% if tag != None %}
              tag = '{{tag}}',{% endif %}
              opts = args + [

@@ -19,5 +19,13 @@ This shouldn't be included in any suites, and should only be run with:
 test_that --board $BOARD $DUT graphics_Power.dev
 """
 
+METADATA = {
+  "contacts": [
+    "chromeos-gfx@google.com"
+  ],
+  "bug_component": "b:885255",
+  "criteria": "Execute the graphics_Power system logger for development/testing."
+}
+
 job.run_test(
     "graphics_Power", max_duration_minutes=1.0, sample_rate_seconds=1.0)

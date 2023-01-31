@@ -21,6 +21,13 @@ ATTRIBUTES = "suite:bvt-perbuild, suite:graphics, suite:graphics_per-day, suite:
 BUG_TEMPLATE = {
     'components': ['OS>Kernel>Graphics'],
 }
+METADATA = {
+  "contacts": [
+    "chromeos-gfx@google.com"
+  ],
+  "bug_component": "b:885255",
+  "criteria": "Verify that kernel exports graphics memory info through sysfs."
+}
 
 DOC = """
 Verifies kernel gem objects and memory info values can be read from sysfs.

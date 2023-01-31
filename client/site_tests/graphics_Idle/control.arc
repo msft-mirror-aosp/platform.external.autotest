@@ -21,7 +21,13 @@ BUG_TEMPLATE = {
     'labels': ['Cr-OS-Kernel-Graphics'],
 }
 ARC_MODE = "enabled"
-
+METADATA = {
+  "contacts": [
+    "chromeos-gfx@google.com"
+  ],
+  "bug_component": "b:885255",
+  "criteria": "Chrome should calm down and the GPU should be idle."
+}
 DOC = """
 This test checks that the GPU is in the proper state when idle (RC6, panel,
 clocks...)

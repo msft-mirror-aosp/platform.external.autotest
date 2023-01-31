@@ -17,6 +17,15 @@ TEST_CLASS = "video"
 TEST_TYPE = "client"
 JOB_RETRIES = 0
 
+METADATA = {
+  "contacts": [
+    "chromeos-gfx@google.com",
+    "ihf@google.com"
+  ],
+  "bug_component": "b:885255",
+  "criteria": "Run video capture of video in the AV lab."
+}
+
 DOC = """
 This test plays a bar-coded video file on DUT so it can be recorded.
 """

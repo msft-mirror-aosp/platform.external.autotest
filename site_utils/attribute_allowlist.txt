@@ -554,6 +554,7 @@ suite:pvs-tast-cq
 suite:pvs-video
 suite:py3-beta
 suite:reboot_stress
+suite:graphics_satlab_redrix_stress_b246324780
 suite:regression
 suite:rlz
 suite:runtime_probe_perbuild

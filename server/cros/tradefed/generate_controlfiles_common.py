@@ -117,6 +117,9 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- if enable_default_apps %}
             enable_default_apps=True,
     {%- endif %}
+    {%- if vm_force_max_resolution %}
+            vm_force_max_resolution=True,
+    {%- endif %}
     {%- if needs_push_media %}
             needs_push_media={{needs_push_media}},
     {%- endif %}
@@ -254,7 +257,8 @@ def get_extension(module,
                   camera_facing=None,
                   hardware_suite=False,
                   abi_bits=None,
-                  shard=(0, 1)):
+                  shard=(0, 1),
+                  vm_force_max_resolution=False):
     """Defines a unique string.
 
     Notice we chose module revision first, then abi, as the module revision
@@ -269,7 +273,9 @@ def get_extension(module,
                           for specific camera facing or not.
     @param abi_bits: 32 or 64 or None indicate the bitwidth for the specific
                      abi to run.
-    @param shard: tuple of intergers representing the shard index.
+    @param shard: tuple of integers representing the shard index.
+    @param vm_force_max_resolution: boolean variable indicating whether max
+                                    resolution is enforced on VM display.
     @return string: unique string for specific tests. If public=True then the
                     string is "<abi>.<module>", otherwise, the unique string is
                     "internal.<abi>.<module>" for internal. Note that if abi is empty,
@@ -291,6 +297,8 @@ def get_extension(module,
     if hardware_suite and module not in get_collect_modules(
             is_public, hardware_suite):
         ext_parts += ['ctshardware']
+    if vm_force_max_resolution:
+        ext_parts += ['vmhires']
     if not CONFIG.get('SINGLE_CONTROL_FILE') and abi and abi_bits:
         ext_parts += [str(abi_bits)]
     if shard != (0, 1):
@@ -318,7 +326,8 @@ def get_controlfile_name(module,
                          camera_facing=None,
                          abi_bits=None,
                          shard=(0, 1),
-                         hardware_suite=False):
+                         hardware_suite=False,
+                         vm_force_max_resolution=False):
     """Defines the control file name.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -332,14 +341,16 @@ def get_controlfile_name(module,
     @param abi_bits: 32 or 64 or None indicate the bitwidth for the specific
                      abi to run.
     @param shard: tuple of integers representing the shard index.
+    @param vm_force_max_resolution: boolean variable indicating whether max
+                                    resolution is enforced on VM display.
     @return string: control file for specific tests. If public=True or
                     module=all, then the name will be "control.<abi>.<module>",
                     otherwise, the name will be
                     "control.<revision>.<abi>.<module>".
     """
-    return 'control.%s' % get_extension(module, abi, revision, is_public,
-                                        led_provision, camera_facing,
-                                        hardware_suite, abi_bits, shard)
+    return 'control.%s' % get_extension(
+            module, abi, revision, is_public, led_provision, camera_facing,
+            hardware_suite, abi_bits, shard, vm_force_max_resolution)
 
 
 def get_sync_count(_modules, _abi, _is_public):
@@ -358,8 +369,13 @@ def get_cts_hardware_modules(is_public):
     else:
         return set(CONFIG.get('HARDWARE_MODULES', []))
 
-def get_suites(modules, abi, is_public, camera_facing=None,
-               hardware_suite=False):
+
+def get_suites(modules,
+               abi,
+               is_public,
+               camera_facing=None,
+               hardware_suite=False,
+               vm_force_max_resolution=False):
     """Defines the suites associated with a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -395,6 +411,9 @@ def get_suites(modules, abi, is_public, camera_facing=None,
         if module in CONFIG['HARDWARE_DEPENDENT_MODULES']:
             # CTS modules to be run on all unibuild models.
             suites.add('suite:arc-cts-unibuild-hw')
+        # We don't want to include max resolution tests in non-VM suites.
+        if vm_force_max_resolution:
+            suites.clear()
         if is_vm_modules(module) and 'VM_SUITE_NAME' in CONFIG:
             # This logic put the whole control group (if combined) into
             # VM_SUITE_NAME if any module is listed in get_vm_modules(). We
@@ -1012,7 +1031,8 @@ def get_controlfile_content(combined,
                             led_provision=None,
                             camera_facing=None,
                             hardware_suite=False,
-                            whole_module_set=None):
+                            whole_module_set=None,
+                            vm_force_max_resolution=False):
     """Returns the text inside of a control file.
 
     @param combined: name to use for this combination of modules.
@@ -1025,13 +1045,14 @@ def get_controlfile_content(combined,
     # the revision. This fits stainless/ better.
     tag = '%s' % get_extension(combined, abi, revision, is_public,
                                led_provision, camera_facing, hardware_suite,
-                               abi_bits, shard)
+                               abi_bits, shard, vm_force_max_resolution)
     # For test_that the NAME should be the same as for the control file name.
     # We could try some trickery here to get shorter extensions for a default
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
     name = '%s.%s' % (CONFIG['TEST_NAME'], tag)
     if not suites:
-        suites = get_suites(modules, abi, is_public, camera_facing, hardware_suite)
+        suites = get_suites(modules, abi, is_public, camera_facing,
+                            hardware_suite, vm_force_max_resolution)
     # while creating the control files, check if this is meant for qualification suite. i.e. arc-cts-qual
     # if it is meant for qualification suite, also add new suite ar-cts-camera-dut which is meant for
     # qualification purposes when cameraboxes fail.
@@ -1096,6 +1117,7 @@ def get_controlfile_content(combined,
             needs_push_media=needs_push_media(modules),
             needs_cts_helpers=needs_cts_helpers(modules),
             enable_default_apps=enable_default_apps(modules),
+            vm_force_max_resolution=vm_force_max_resolution,
             tag=tag,
             uri=uri,
             servo_support_needed=servo_support_needed(modules, is_public),
@@ -1377,31 +1399,38 @@ def write_controlfile(name,
     shard_count_map = CONFIG.get(
             'PUBLIC_SHARD_COUNT' if is_public else 'SHARD_COUNT', dict())
     shard_count = max(shard_count_map.get(m, 1) for m in modules)
+    vm_force_max_resolution_list = [False]
+    if modules & set(CONFIG.get('SPLIT_BY_VM_FORCE_MAX_RESOLUTION', [])):
+        vm_force_max_resolution_list.append(True)
 
     for abi, abi_bits in abi_bits_list:
         for shard_index in range(shard_count):
-            filename = get_controlfile_name(name,
-                                            abi,
-                                            revision,
-                                            is_public,
-                                            hardware_suite=hardware_suite,
-                                            abi_bits=abi_bits,
-                                            shard=(shard_index, shard_count))
-            content = get_controlfile_content(
-                    name,
-                    modules,
-                    abi,
-                    revision,
-                    build,
-                    uri,
-                    suites,
-                    source_type,
-                    hardware_suite=hardware_suite,
-                    whole_module_set=whole_module_set,
-                    abi_bits=abi_bits,
-                    shard=(shard_index, shard_count))
-            with open(filename, 'w') as f:
-                f.write(content)
+            for vm_force_max_resolution in vm_force_max_resolution_list:
+                filename = get_controlfile_name(
+                        name,
+                        abi,
+                        revision,
+                        is_public,
+                        hardware_suite=hardware_suite,
+                        abi_bits=abi_bits,
+                        shard=(shard_index, shard_count),
+                        vm_force_max_resolution=vm_force_max_resolution)
+                content = get_controlfile_content(
+                        name,
+                        modules,
+                        abi,
+                        revision,
+                        build,
+                        uri,
+                        suites,
+                        source_type,
+                        hardware_suite=hardware_suite,
+                        whole_module_set=whole_module_set,
+                        abi_bits=abi_bits,
+                        shard=(shard_index, shard_count),
+                        vm_force_max_resolution=vm_force_max_resolution)
+                with open(filename, 'w') as f:
+                    f.write(content)
 
 
 def write_moblab_controlfiles(modules, abi, revision, build, uri):

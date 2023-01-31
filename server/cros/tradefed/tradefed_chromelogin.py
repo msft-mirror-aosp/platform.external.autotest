@@ -28,6 +28,7 @@ class ChromeLogin(object):
                  dont_override_profile=False,
                  enable_default_apps=False,
                  toggle_ndk=False,
+                 vm_force_max_resolution=False,
                  log_dir=None):
         """Initializes the ChromeLogin object.
 
@@ -47,6 +48,7 @@ class ChromeLogin(object):
         self._need_reboot = False
         self._hard_reboot_on_failure = False
         self._toggle_ndk = toggle_ndk
+        self._vm_force_max_resolution = vm_force_max_resolution
         self._log_dir = log_dir
 
     def _cmd_builder(self, verbose=False):
@@ -74,6 +76,8 @@ class ChromeLogin(object):
         if self._enable_default_apps:
             logging.info('Using --enable_default_apps to start Chrome.')
             cmd += ' --enable_default_apps'
+        if self._vm_force_max_resolution:
+            cmd += ' --vm_force_max_resolution'
         if not verbose:
             cmd += ' > /dev/null 2>&1'
         return cmd

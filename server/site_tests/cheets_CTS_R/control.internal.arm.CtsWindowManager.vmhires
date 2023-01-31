@@ -1,0 +1,40 @@
+# Copyright 2020 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_R.internal.arm.CtsWindowManager.vmhires'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-vm'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_R',
+        hosts=host_list,
+        iterations=1,
+        max_retry=10,
+        vm_force_max_resolution=True,
+        tag='internal.arm.CtsWindowManager.vmhires',
+        test_name='cheets_CTS_R.internal.arm.CtsWindowManager.vmhires',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsWindowManagerDeviceTestCases', '--include-filter', 'CtsWindowManagerDeviceTestCases[secondary_user]', '--include-filter', 'CtsWindowManagerJetpackTestCases', '--include-filter', 'CtsWindowManagerJetpackTestCases[secondary_user]', '--include-filter', 'CtsWindowManagerSdk25TestCases', '--include-filter', 'CtsWindowManagerSdk25TestCases[secondary_user]', '--include-filter', 'CtsWindowManagerSdk28TestCases', '--include-filter', 'CtsWindowManagerSdk28TestCases[secondary_user]', '--include-filter', 'CtsWindowManagerSdk29TestCases', '--include-filter', 'CtsWindowManagerSdk29TestCases[secondary_user]', '--logcat-on-failure'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='CtsWindowManager',
+        target_plan=None,
+        bundle='arm',
+        uri='DEV',
+        timeout=19800)
+
+parallel_simple(run_TS, machines)

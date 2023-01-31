@@ -1473,6 +1473,7 @@ class TradefedTest(test.test):
                                    timeout,
                                    media_asset=None,
                                    enable_default_apps=False,
+                                   vm_force_max_resolution=False,
                                    target_module=None,
                                    target_plan=None,
                                    executable_test_count=None,
@@ -1523,11 +1524,13 @@ class TradefedTest(test.test):
             session_log_dir = os.path.join(self.resultsdir,
                                            'login_session_log',
                                            'step%02d' % steps)
-            with login.login_chrome(hosts=self._hosts,
-                                    board=board,
-                                    dont_override_profile=keep_media,
-                                    enable_default_apps=enable_default_apps,
-                                    log_dir=session_log_dir) as current_logins:
+            with login.login_chrome(
+                    hosts=self._hosts,
+                    board=board,
+                    dont_override_profile=keep_media,
+                    enable_default_apps=enable_default_apps,
+                    vm_force_max_resolution=vm_force_max_resolution,
+                    log_dir=session_log_dir) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation

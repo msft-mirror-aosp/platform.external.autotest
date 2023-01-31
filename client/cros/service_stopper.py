@@ -45,12 +45,11 @@ class ServiceStopper(object):
       _services_stopped: list of services that were successfully stopped
     """
     # List of power draw services that should be disabled.
-    # - fwupd - this would restart powerd
     # - powerd - to stop ALS panel brightness adjustment
     # - update-engine
     # - vnc
     # - avahi - to stop network multicast
-    POWER_DRAW_SERVICES = ['fwupd', 'powerd', 'update-engine', 'vnc', 'avahi']
+    POWER_DRAW_SERVICES = ['powerd', 'update-engine', 'vnc', 'avahi']
 
     # List of thermal throttling services that should be disabled.
     # - temp_metrics for link.

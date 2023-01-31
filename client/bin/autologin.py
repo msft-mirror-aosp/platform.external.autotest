@@ -38,6 +38,9 @@ def main(args):
                         help='Prevent startup window from opening (no doodle).')
     parser.add_argument('--no-arc-syncs', action='store_true',
                         help='Prevent ARC sync behavior as much as possible.')
+    parser.add_argument('--no-popup-notification',
+                        action='store_true',
+                        help='Prevent showing notification popups.')
     parser.add_argument('--toggle_ndk',
                         action='append_const',
                         dest='feature',
@@ -56,6 +59,8 @@ def main(args):
         password = getpass.getpass()
 
     browser_args = []
+    if args.no_popup_notification:
+        browser_args.append('--suppress-message-center-popups')
     if args.no_startup_window:
         browser_args.append('--no-startup-window')
     if args.feature:

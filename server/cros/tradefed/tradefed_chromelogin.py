@@ -61,6 +61,8 @@ class ChromeLogin(object):
         cmd += ' --no-startup-window'
         # Disable several forms of auto-installation to stablize the tests.
         cmd += ' --no-arc-syncs'
+        # Disable popup notifications to stabilize the tests.
+        cmd += ' --no-popup-notification'
         # Toggle the translation from houdini to ndk
         if self._toggle_ndk:
             cmd += ' --toggle_ndk'

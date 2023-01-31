@@ -376,6 +376,7 @@ suite:distributed_lab_qual_bvt_shard2
 suite:distributed_arc_qual_cts_shard1
 suite:distributed_arc_qual_cts_shard2
 suite:distributed_arc_qual_cts_shard3
+suite:distributed_arc_qual_cts_shard4
 suite:distributed_lab_qual_faft
 suite:dmserver-enrollment-daily
 suite:dmserver-zteenrollment-daily

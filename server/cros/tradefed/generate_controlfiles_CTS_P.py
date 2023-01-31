@@ -197,6 +197,8 @@ CONFIG['DISTRIBUTED_QUAL_SHARD'] = dict({
         3,
         'tradefed-run-collect-tests-only-internal':
         3,
+        'CtsMediaTestCases':
+        4,
 })
 
 # The suite is divided based on the run-time hint in the *.config file.

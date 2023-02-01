@@ -36,16 +36,6 @@ KEYMATRIX = {'`': (3, 1), '1': (6, 1), '2': (6, 4), '3': (6, 2), '4': (6, 3),
              '<left>': (7, 12)}
 
 
-def has_ectool():
-    """Determine if ectool shell command is present.
-
-    Returns:
-        boolean true if avail, false otherwise.
-    """
-    cmd = 'which ectool'
-    return (utils.system(cmd, ignore_status=True) == 0)
-
-
 def has_cros_ec():
     """Check whether DUT has chromium ec or not.
 
@@ -73,12 +63,6 @@ class EC_Common(object):
 
         @param target: target name of ec to communicate with.
         """
-        if not has_ectool():
-            ec_info = utils.system_output("mosys ec info",
-                                          ignore_status=True)
-            logging.warning("Ectool absent on this platform ( %s )",
-                         ec_info)
-            raise error.TestNAError("Platform doesn't support ectool")
         self._target = target
 
     def ec_command(self, cmd, **kwargs):

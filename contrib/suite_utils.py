@@ -8,11 +8,19 @@ import argparse
 import ast
 from functools import partial
 import os
+import re
 import subprocess
 import common
 
 from server.cros.dynamic_suite.control_file_getter import FileSystemGetter
 from server.cros.dynamic_suite.suite_common import retrieve_for_suite
+from autotest_lib.client.common_lib import control_data
+from chromiumos.test.api import test_case_metadata_pb2 as tc_metadata_pb
+
+
+def make_chroot_path_relative(path):
+    return re.sub("^.*?/src/", "~/chromiumos/src/", path)
+
 
 class TestSuite(object):
     def __init__(self, cf_object, name, file_path):
@@ -24,7 +32,7 @@ class TestSuite(object):
     def relative_path(self):
         # allows user to have filepath which works in/out of chroot
         norm = os.path.normpath(self.file_path)
-        return norm.replace('/mnt/host/source', '~/chromiumos')
+        return make_chroot_path_relative(norm)
 
     def add_test(self, test_object):
         self.tests.append(test_object)
@@ -128,6 +136,18 @@ class TestObject(object):
 
     def describe(self):
         return 'test named ' + self.name + ' of type ' + self.type
+
+    def mapped_requirements(self):
+        # if self.is_tast():
+        #     raise Exception("error should n ot ")
+        # TODO print error for tast autotest wrappers mapped to requirements
+        with open(self.file_path, 'r') as cf:
+            contents = cf.read()
+            test = control_data.parse_control_string(contents,
+                                                     raise_warnings=True,
+                                                     path=self.file_path)
+            return test.metadata.get('requirements', [])
+        return []
 
 
 class TestParser(object):
@@ -297,6 +317,76 @@ class TestManager(object):
         return res
 
 
+class TastManager(object):
+    def __init__(self):
+        # hack to get metadata including local changes to tast files
+        # use fastbuild and then export to proto and parse the proto
+        basepath = os.path.dirname(os.path.abspath(__file__))
+        tast_path = os.path.normpath(
+                os.path.join(basepath, '../../../../platform/tast'))
+        cwd = os.getcwd()
+        os.chdir(tast_path)
+        if os.system(
+                './fast_build.sh -b chromiumos/tast/local/bundles/cros -o local-tests'
+        ):
+            raise Exception(
+                    "cannot build tast local bundle for tast metadata reading")
+        if os.system(
+                './fast_build.sh -b chromiumos/tast/remote/bundles/cros -o remote-tests'
+        ):
+            raise Exception(
+                    "cannot build tast remote bundle for tast metadata reading"
+            )
+        data = subprocess.check_output(['./local-tests', '-exportmetadata'])
+        self.metadata = tc_metadata_pb.TestCaseMetadataList()
+        self.metadata.ParseFromString(data)
+        data = subprocess.check_output(['./remote-tests', '-exportmetadata'])
+        self.metadata.MergeFromString(data)
+        os.chdir(cwd)
+
+    def find_test_named(self, name):
+        for metadata in self.metadata.values:
+            if metadata.test_case.id.value == name:
+                return TastTest(name, metadata)
+        return None
+
+
+class TastTest(object):
+    def __init__(self, name, metadata):
+        self.name = name
+        self.metadata = metadata
+
+    def mapped_requirements(self):
+        ret = []
+        for req in self.metadata.test_case_info.requirements:
+            ret.append(req.value)
+        return ret
+
+    def relative_path(self):
+        # use grep to find a tast source based on test name
+        basepath = os.path.dirname(os.path.abspath(__file__))
+        tast_src = os.path.normpath(
+                os.path.join(
+                        basepath,
+                        '../../../../platform/tast-tests/src/chromiumos/tast'))
+        parts = self.name.split('.')[1:]
+        for i in range(len(parts) - 1, 0, -1):
+            for subdir in ['remote', 'local']:
+                search_dir = os.path.join(tast_src, subdir, 'bundles', 'cros',
+                                          *parts[0:i])
+                regex = 'Func: *%s,' % (parts[i])
+                try:
+                    out = subprocess.check_output(
+                            ['grep', '-IRl', regex, search_dir],
+                            stderr=subprocess.DEVNULL)
+                    path = out.decode('utf-8').strip('\n')
+                    return make_chroot_path_relative(path)
+                except subprocess.CalledProcessError:
+                    pass
+            # os.system('grep -IR "Func: *%s" %s,' % (part, tast_src))
+        return "Unknown path for tast test"
+
+
 def main(args):
     tests = TestManager()
 
@@ -335,6 +425,27 @@ def main(args):
     if args.gs_dashboard is not None:
         link = tests.gs_query_link(args.gs_dashboard)
         tests.log(link)
+    if args.check_requirements:
+        tast_tests = TastManager()
+        suite = args.check_requirements[0]
+        req_id = None
+        if len(args.check_requirements) > 1:
+            req_id = args.check_requirements[1]
+        for test_name in tests.list_suite_named(suite):
+            manager = tests
+            if test_name.startswith('tast.'):
+                manager = tast_tests
+            test = manager.find_test_named(test_name)
+            if test is None:
+                print('error could not find any info on test: %s', test_name)
+                continue
+            if req_id is None and len(test.mapped_requirements()) == 0:
+                print('%s: is not mapped to any requirements, source: %s' %
+                      (test.name, test.relative_path()))
+            elif req_id is not None and req_id not in test.mapped_requirements(
+            ):
+                print('%s: is not mapped to requirement %s, source: %s' %
+                      (test.name, req_id, test.relative_path()))
 
 
 if __name__ == '__main__':
@@ -367,6 +478,12 @@ if __name__ == '__main__':
     parser.add_argument(
             '--gs_dashboard',
             help='generate green stainless dashboard for suite_name')
+    parser.add_argument(
+            '--check-requirements',
+            nargs='*',
+            help=
+            'check if there are requirements mapped to all tests in the suite takes a suite_name and an optional requirement ID'
+    )
     parsed_args = parser.parse_args()
 
     main(parsed_args)

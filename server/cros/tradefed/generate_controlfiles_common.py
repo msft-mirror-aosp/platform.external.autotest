@@ -1039,6 +1039,8 @@ def get_controlfile_content(combined,
     if (set(CONFIG.get('QUAL_SUITE_NAMES',[])) & set(suites)) and (set(get_camera_modules()) & set(modules)):
         suites = suites.copy()
         suites.append(CONFIG.get('CAMERA_DUT_SUITE_NAME'))
+        for qual_suite in CONFIG.get('QUAL_SUITE_NAMES', []):
+            suites.remove(qual_suite)
     attributes = ', '.join(suites)
 
     #Adding shards to arc-cts-qual for automation purposes.

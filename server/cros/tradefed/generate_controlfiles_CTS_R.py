@@ -151,17 +151,16 @@ CONFIG['NEEDS_POWER_CYCLE'] = [
         'CtsSensorTestCases',
 ]
 
-CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
-        'CtsSensorTestCases',
-        'CtsCameraTestCases',
-        'CtsBluetoothTestCases',
-]
-
-
 CONFIG['CAMERA_MODULES'] = [
        # CONTAINS ONLY CAMERA TESTS
        'CtsCameraTestCases',
 ]
+
+CONFIG['HARDWARE_DEPENDENT_MODULES'] = CONFIG['CAMERA_MODULES'] + [
+        'CtsSensorTestCases', 'CtsBluetoothTestCases'
+]
+
+
 
 # Syntax:
 # - First character is either '+' (include) or '-' (exclude).

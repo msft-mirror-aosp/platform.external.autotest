@@ -7,9 +7,11 @@
 import argparse
 import ast
 from functools import partial
+import logging
 import os
 import re
 import subprocess
+import sys
 import common
 
 from server.cros.dynamic_suite.control_file_getter import FileSystemGetter
@@ -91,8 +93,9 @@ class TestObject(object):
                                     test_exprs.append(elem.s)
                                     regex_list = ('(' in elem.s or regex_list)
                                 except AttributeError:
-                                    print('WARNING: Non-standard test found, check '
-                                          + self.relative_path() + ' manually')
+                                    logging.warning(
+                                            'Non-standard test found, check %s manually',
+                                            self.relative_path())
                                     break
                             if regex_list:
                                 self.tast_string = ' '.join(test_exprs)
@@ -106,13 +109,17 @@ class TestObject(object):
         try:
             self.tast_exprs = self.tast_string.split(', ')
         except AttributeError:
-            print('WARNING: Non-standard test found, check' +
-                  self.relative_path() + ' manually')
+            logging.warning('Non-standard test found, check %s manually',
+                            self.relative_path())
+        if len(self.mapped_requirements()) > 0:
+            logging.error(
+                    '%s mapped to a requirement, autotest tast wrappers cannot be mapped to requiremnts, please mapp directly to the tast tests themselves',
+                    self.name)
 
     def enumerate_tests_from_tast_exprs(self, dut):
         tests = []
-        print('Enumerating tast tests from test %s: expression: %s' %
-              (self.name, self.tast_exprs))
+        logging.info('Enumerating tast tests from test %s: expression: %s' %
+                     (self.name, self.tast_exprs))
         for expr in self.tast_exprs:
             en = subprocess.check_output(
                     ['tast', 'list', str(dut),
@@ -138,9 +145,6 @@ class TestObject(object):
         return 'test named ' + self.name + ' of type ' + self.type
 
     def mapped_requirements(self):
-        # if self.is_tast():
-        #     raise Exception("error should n ot ")
-        # TODO print error for tast autotest wrappers mapped to requirements
         with open(self.file_path, 'r') as cf:
             contents = cf.read()
             test = control_data.parse_control_string(contents,
@@ -388,6 +392,12 @@ class TastTest(object):
 
 
 def main(args):
+    if args.q:
+        args.log = 'ERROR'
+    root = logging.getLogger()
+    root.setLevel(args.log.upper())
+    root_handler = root.handlers[0]
+    root_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
     tests = TestManager()
 
     basepath = os.path.dirname(os.path.abspath(__file__))
@@ -437,7 +447,8 @@ def main(args):
                 manager = tast_tests
             test = manager.find_test_named(test_name)
             if test is None:
-                print('error could not find any info on test: %s', test_name)
+                logging.error('error could not find any info on test: %s',
+                              test_name)
                 continue
             if req_id is None and len(test.mapped_requirements()) == 0:
                 print('%s: is not mapped to any requirements, source: %s' %
@@ -484,6 +495,15 @@ if __name__ == '__main__':
             help=
             'check if there are requirements mapped to all tests in the suite takes a suite_name and an optional requirement ID'
     )
+    parser.add_argument('-q',
+                        action='store_true',
+                        help='quiet mode (same as --log error)',
+                        default=False)
+    parser.add_argument(
+            "--log",
+            help=
+            "Provide logging level. Example --log debug (debug,info,warn,error)'",
+            default='info')
     parsed_args = parser.parse_args()
 
     main(parsed_args)

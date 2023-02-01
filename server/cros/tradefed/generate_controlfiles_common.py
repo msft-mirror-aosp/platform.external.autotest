@@ -379,6 +379,7 @@ def get_suites(modules, abi, is_public, camera_facing=None,
 
     vm_modules = []
     nonvm_modules = []
+    can_skip_x86 = True
     has_unstable_vm_modules = False
     for module in modules:
         if module in get_collect_modules(is_public, hardware_suite):
@@ -404,6 +405,8 @@ def get_suites(modules, abi, is_public, camera_facing=None,
                 has_unstable_vm_modules = True
         else:
             nonvm_modules.append(module)
+        if not is_skip_x86_modules(module):
+            can_skip_x86 = False
         if abi == 'x86':
             # Handle a special builder for running all of CTS in a betty VM.
             # TODO(ihf): figure out if this builder is still alive/needed.
@@ -442,6 +445,11 @@ def get_suites(modules, abi, is_public, camera_facing=None,
             suites = suites - set(CONFIG.get('VM_SKIP_SUITES', []))
             if 'STABLE_VM_SUITE_NAME' in CONFIG:
                 suites.add(CONFIG['STABLE_VM_SUITE_NAME'])
+
+    # For group without modules for both archs, skip from given suites.
+    if suites.intersection(set(CONFIG.get('X86_SKIP_SUITES', []))):
+        if abi == 'x86' and can_skip_x86:
+            suites = suites - set(CONFIG.get('X86_SKIP_SUITES', []))
 
     return sorted(list(suites))
 
@@ -873,13 +881,12 @@ def get_extra_hardware_modules_dict(is_public, abi):
     return CONFIG.get('HARDWAREONLY_EXTRA_MODULES', {})
 
 
-# TODO(fqj): come up a better way for vm modules generation.
-def is_in_vm_rule(module, rule):
+def is_in_rule(module, rule):
     """Checks if module in given rule of VM rule syntax"""
-    for vm_module_pattern in rule:
-        assert vm_module_pattern[0] in '+-'
-        if re.match(vm_module_pattern[1:], module):
-            return True if vm_module_pattern[0] == '+' else False
+    for pattern in rule:
+        assert pattern[0] in '+-'
+        if re.match(pattern[1:], module):
+            return True if pattern[0] == '+' else False
 
     return False
 
@@ -897,12 +904,17 @@ def get_distributed_qual_modules():
 
 def is_vm_modules(module):
     """Checks if module eligible for VM."""
-    return is_in_vm_rule(module, CONFIG.get('VM_MODULES_RULES', []))
+    return is_in_rule(module, CONFIG.get('VM_MODULES_RULES', []))
 
 
 def is_unstable_vm_modules(module):
     """Checks if module is still unstable for VM."""
-    return is_in_vm_rule(module, CONFIG.get('VM_UNSTABLE_MODULES_RULES', []))
+    return is_in_rule(module, CONFIG.get('VM_UNSTABLE_MODULES_RULES', []))
+
+
+def is_skip_x86_modules(module):
+    """Checks if module can skip x86 runs."""
+    return is_in_rule(module, CONFIG.get('SKIP_X86_MODULE_RULES', []))
 
 
 def get_extra_artifacts(modules):

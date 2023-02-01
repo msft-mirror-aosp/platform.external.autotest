@@ -273,6 +273,14 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
 # List of suite that stable VM modules will skip.
 CONFIG['VM_SKIP_SUITES'] = ['suite:arc-cts']
 
+# List of modules that skip x86 runs.
+CONFIG['SKIP_X86_MODULE_RULES'] = [
+        '+.*',
+]
+
+# List of suite that skips x86 runs.
+CONFIG['X86_SKIP_SUITES'] = ['suite:arc-cts-vm']
+
 # The suite is divided based on the run-time hint in the *.config file.
 CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()
 

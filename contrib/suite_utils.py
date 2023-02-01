@@ -9,7 +9,6 @@ import ast
 from functools import partial
 import os
 import subprocess
-import graphviz
 import common
 
 from server.cros.dynamic_suite.control_file_getter import FileSystemGetter
@@ -21,6 +20,11 @@ class TestSuite(object):
         self.cf_object = cf_object
         self.tests = []
         self.file_path = file_path
+
+    def relative_path(self):
+        # allows user to have filepath which works in/out of chroot
+        norm = os.path.normpath(self.file_path)
+        return norm.replace('/mnt/host/source', '~/chromiumos')
 
     def add_test(self, test_object):
         self.tests.append(test_object)
@@ -40,6 +44,11 @@ class TestObject(object):
 
     def get_attributes(self):
         return self.cf_object.attributes
+
+    def relative_path(self):
+        # allows user to have filepath which works in/out of chroot
+        norm = os.path.normpath(self.file_path)
+        return norm.replace('/mnt/host/source', '~/chromiumos')
 
     def is_tast(self):
         return self.type == 'tast'
@@ -75,7 +84,7 @@ class TestObject(object):
                                     regex_list = ('(' in elem.s or regex_list)
                                 except AttributeError:
                                     print('WARNING: Non-standard test found, check '
-                                          + self.file_path + ' manually')
+                                          + self.relative_path() + ' manually')
                                     break
                             if regex_list:
                                 self.tast_string = ' '.join(test_exprs)
@@ -89,12 +98,13 @@ class TestObject(object):
         try:
             self.tast_exprs = self.tast_string.split(', ')
         except AttributeError:
-            print('WARNING: Non-standard test found, check' + self.file_path +
-                  ' manually')
+            print('WARNING: Non-standard test found, check' +
+                  self.relative_path() + ' manually')
 
     def enumerate_tests_from_tast_exprs(self, dut):
         tests = []
-        print(self.tast_exprs)
+        print('Enumerating tast tests from test %s: expression: %s' %
+              (self.name, self.tast_exprs))
         for expr in self.tast_exprs:
             en = subprocess.check_output(
                     ['tast', 'list', str(dut),
@@ -245,6 +255,9 @@ class TestManager(object):
         return query
 
     def graph_suite_named(self, suite_name, dot_graph=None):
+        # import here to allow running other functionality without needing PIP
+        # in chroot
+        import graphviz
         suite_tests = self.list_suite_named(suite_name)
         nodes_at_rank = 0
 
@@ -300,13 +313,13 @@ def main(args):
     if args.find_test is not None:
         test = tests.find_test_named(args.find_test)
         if test is not None:
-            tests.log(test.file_path)
+            tests.log(test.relative_path())
         else:
             tests.log('Queried test not found')
     if args.find_suite is not None:
         suite = tests.find_suite_named(args.find_suite)
         if suite is not None:
-            tests.log(suite.file_path)
+            tests.log(suite.relative_path())
         else:
             tests.log('Queried suite not found')
     if args.list_suite is not None:

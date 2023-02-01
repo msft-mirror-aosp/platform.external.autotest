@@ -4,6 +4,12 @@
 
 AUTHOR = "The ChromiumOS Authors"
 NAME = "logging_CrashServices"
+METADATA = {
+  'contacts': ['cros-telemetry@google.com'],
+   # ChromeOS > Data > Engineering > Crash Reporting
+  'bug_component': 'b:1032705',
+  'criteria': 'Verify that a number of system services create *.dmp files',
+}
 PURPOSE = "Verify that all processes create *.dmp files."
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"

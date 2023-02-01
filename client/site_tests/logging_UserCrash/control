@@ -4,21 +4,19 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "logging_UserCrash"
+METADATA = {
+  'contacts': ['cros-telemetry@google.com'],
+   # ChromeOS > Data > Engineering > Crash Reporting
+  'bug_component': 'b:1032705',
+  'criteria': 'Verify crash reporter initialization and metadata production',
+}
 PURPOSE = "Verify user space crashes are handled appropriately."
-CRITERIA = """
-Fails if any of the following conditions occur:
-  - expected core pattern is not output
-  - user space crash handling is not running
-  - forced crash does not occur
-  - forced segv message is not found
-  - core pattern is not recognized as as 'core'
-  - crash is sent without user consent
-"""
 ATTRIBUTES = "suite:bvt-cq, suite:smoke, suite:satlab-qual-bvt-cq, suite:distributed_lab_qual_bvt_shard1"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "logging"
 TEST_TYPE = "client"
+JOB_RETRIES = 2  # Per CheckRetry check this is recommended
 # Reboot in the lab after the test ends. Since we lock the core_pattern
 # at the end of the test, we should reboot to restore the state of the
 # device.

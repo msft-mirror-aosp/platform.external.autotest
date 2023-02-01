@@ -53,7 +53,18 @@ class BluetoothAdapterRvRTests(BluetoothAdapterTests):
                             'This is expected if RSSI is too low', str(e))
                     self.fails = []
                     break
+
+                # get_device_sample_rssi may not raise an error and instead simply return None
+                if self.fails:
+                    logging.debug(
+                            'get_device_sample rssi failed with %s.'
+                            'This is expected if RSSI is too low',
+                            str(self.fails))
+                    self.fails = []
+
                 logging.info('Total attenuation is %s RSSI is %s', attn, rssi)
+                if rssi is None:
+                    break
                 rssi_dict[attn] = rssi
             return rssi_dict
         except Exception as e:

@@ -11,13 +11,13 @@ class Attenuator(object):
     """Represents a minicircuits telnet-controlled 4-channel variable
     attenuator."""
 
-    def __init__(self, host, num_atten=0):
-        self._tnhelper = telnet_helper.TelnetHelper(
-                tx_cmd_separator="\r\n", rx_cmd_separator="\r\n", prompt="")
+    def __init__(self, host, num_atten=0, port=22):
+        self._tnhelper = telnet_helper.TelnetHelper(tx_cmd_separator="\r\n",
+                                                    rx_cmd_separator="\r\n",
+                                                    prompt="")
         self.host = host
         self.num_atten = num_atten
-        self.open(host)
-
+        self.open(host, port=port)
 
     def __del__(self):
         if self.is_open():
@@ -41,8 +41,10 @@ class Attenuator(object):
         if config_str.startswith("MN="):
             config_str = config_str[len("MN="):]
 
-        self.properties = dict(list(zip(['model', 'max_freq', 'max_atten'],
-                                   config_str.split("-", 2))))
+        self.properties = dict(
+                list(
+                        zip(['model', 'max_freq', 'max_atten'],
+                            config_str.split("-", 2))))
         self.max_atten = float(self.properties['max_atten'])
         self.min_atten = 0
 
@@ -79,7 +81,7 @@ class Attenuator(object):
                                   (value, self.min_atten, self.max_atten))
         # The actual device uses one-based channel for channel numbers.
         if (int(self._tnhelper.cmd("CHAN:%d:SETATT:%d" %
-                                  (channel + 1, value))) != 1):
+                                   (channel + 1, value))) != 1):
             raise error.TestError("Error while setting attenuation on %d" %
                                   channel)
 

@@ -8,12 +8,24 @@
 # This map represents the fixed loss overhead on a given antenna line.
 # The map maps from:
 #     attenuator hostname -> attenuator number -> frequency -> loss in dB.
+# yapf: disable
 HOST_FIXED_ATTENUATIONS = {
         'fake-atten-host': {
                 0: {2437: 0, 5220: 0, 5765: 0},
                 1: {2437: 0, 5220: 0, 5765: 0},
                 2: {2437: 0, 5220: 0, 5765: 0},
                 3: {2437: 0, 5220: 0, 5765: 0}},
+        # localhost is the default attenuator configuration used when running
+        # attenuator tests remotely and does not correspond to a single host.
+        'localhost' : {
+                0: {2437: 55, 5220: 60, 5765: 58},
+                1: {2437: 59, 5220: 58, 5765: 61},
+                2: {2437: 56, 5220: 60, 5765: 57},
+                3: {2437: 59, 5220: 58, 5765: 60},
+                4: {2450: 37},
+                5: {2450: 37},
+                6: {2450: 37},
+                7: {2450: 37}},
         'chromeos1-dev-host4-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 56, 5220: 56, 5765: 56},

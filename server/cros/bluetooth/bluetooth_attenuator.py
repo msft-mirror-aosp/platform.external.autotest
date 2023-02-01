@@ -47,23 +47,26 @@ def init_btattenuator(host, args_dict):
         # else try to derive attenuator hostname from DUT hostname
         btattenuator_args = host.get_btattenuator_arguments(
                 args_dict) if args_dict is not None else {}
-        btatten_addr = btattenuator_args.get('btatten_addr')
-        btatten_addr = dnsname_mangler.get_btattenuator_addr(
-                host.hostname, btatten_addr, True)
-        logging.debug('Bluetooth attentuator address is %s', btatten_addr)
+        btatten_host = btattenuator_args.get('btatten_host')
+        btatten_host = dnsname_mangler.get_btattenuator_addr(
+                host.hostname, btatten_host, True)
+        btatten_port = btattenuator_args.get('btatten_port', 22)
+        logging.info('Bluetooth attentuator address is %s:%d', btatten_host,
+                     btatten_port)
 
-        if not btatten_addr:
+        if not btatten_host:
             logging.debug('Bluetooth attenuator not present')
             return None
         # Attenuator retains previous attenuation set even if it powered down
         # Do not proceed if attenutator is not accessible
-        if not ping_runner.PingRunner().simple_ping(btatten_addr):
+        if not ping_runner.PingRunner().simple_ping(btatten_host):
             logging.debug('Bluetooth attenuator not accessible')
             return None
 
         # Init also sets attenutation to zero
         logging.debug('Initializing bluetooth attenuator')
-        return attenuator_controller.AttenuatorController(btatten_addr)
+        return attenuator_controller.AttenuatorController(
+                btatten_host, btatten_port)
     except error.TestError:
         raise
     except Exception as e:

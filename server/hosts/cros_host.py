@@ -249,12 +249,24 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
           arguments.
         """
         logging.debug("args dict in croshost is  %s", args_dict)
-        btattenuator_args = {
-                key: args_dict[key]
-                for key in ('btatten_addr', ) if key in args_dict
-        }
+        if 'btatten_addr' in args_dict:
+            attenuator = args_dict['btatten_addr']
+            # split address into host:port, taken from get_bt_arguments
+            delimiter = ']:' if re.search(r':.*:', attenuator) else ':'
+            split = attenuator.strip('[]').split(delimiter)
+            args_dict = {
+                    key: value
+                    for key, value in zip(('btatten_host',
+                                           'btatten_port'), split)
+            }
 
-        return btattenuator_args
+        btatten_args = {}
+        if 'btatten_host' in args_dict:
+            btatten_args['btatten_host'] = args_dict['btatten_host']
+        if 'btatten_port' in args_dict:
+            btatten_args['btatten_port'] = int(args_dict['btatten_port'])
+
+        return btatten_args
 
     @staticmethod
     def get_btpeer_arguments(args_dict):

@@ -265,16 +265,18 @@ def _setup_autotest_lib(autotest_lib_path, autotest_lib_name):
     sys.path.insert(0, autotest_lib_path)
 
     try:
-    # This is a symlink back to the autotest directory
+        # This is a symlink back to the autotest directory
         importlib.import_module(autotest_lib_name)
     except ImportError:
         sys.stderr.write('process pid: %s\n' % str(os.getpid()))
         sys.stderr.write('autotest_lib_path: %s\n' % autotest_lib_path)
         sys.stderr.write('autotest_lib_name: %s\n' % autotest_lib_name)
-        sys.stderr.write(f'Autotest - dirname(autotest_lib_path) directory listing {os.path.dirname(autotest_lib_path)}- BEGIN \n')
+        sys.stderr.write(
+                f'Autotest - directory listing {autotest_lib_path}- BEGIN \n')
         sys.stderr.write('\t')
-        sys.stderr.write('\n\t'.join(os.listdir(os.path.dirname(autotest_lib_path))))
-        sys.stderr.write(f'Autotest - dirname(autotest_lib_path) directory listing {os.path.dirname(autotest_lib_path)}- END \n')
+        sys.stderr.write('\n\t'.join(os.listdir(autotest_lib_path)))
+        sys.stderr.write(
+                f'\nAutotest - directory listing {autotest_lib_path}- END \n')
         raise
 
     # Setup toplevel 'autotest_lib' module name

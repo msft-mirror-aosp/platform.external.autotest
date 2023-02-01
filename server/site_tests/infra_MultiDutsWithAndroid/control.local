@@ -4,14 +4,15 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = 'xianuowang'
 NAME = 'infra_MultiDutsWithAndroid.local'
-TIME = 'SHORT'
-TEST_CATEGORY = 'General'
-TEST_CLASS = 'stub'
+METADATA = {
+    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "bug_component": "b:1121531",
+    "criteria": "Sample test for cross device tests with Android devices.",
+}
 TEST_TYPE = 'server'
-PY_VERSION = 3
-DOC = """
+
+"""
 The local version of infra_MultiDutsWithAndroid. Local in this context means
 run from a local autotest checkout(e.g. test_that), where the autoserv doesn't
 have access to host_info_store data read from fleet inventory.

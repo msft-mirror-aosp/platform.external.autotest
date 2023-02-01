@@ -2,20 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "Chrome Fleet Software team"
 NAME = "fleet_FirmwareUpdate"
-PURPOSE = "Update OS bundled firmware and verify DUT is good"
+METADATA = {
+    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "bug_component": "b:916058",
+    "criteria": "Check if regular firmware update workflow works correctly.",
+}
 ATTRIBUTES = "suite:fleet_firmware_update"
-CRITERIA = "This test will fail if the device failed to boot after update firmware"
-TIME = "SHORT"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "firmware"
 TEST_TYPE = "server"
-JOB_RETRIES = 0
-PY_VERSION = 3
 
-
-DOC = """
+"""
 This test is designed to simulate the same firmware update behavior that
 a ChromeOS user would have. We don't need OS update since it should be handled
 by prejob(provision) already. And this test will update OS bundled firmware(RW only)

@@ -286,3 +286,24 @@ class TestUtils(unittest.TestCase):
                     }
             }
             self.assertEqual(expected_obj, utils.bytes_to_str_recursive(obj))
+
+    def test_ec_version_from_chardev_contents_ro(self):
+        contents = "1.0.0\nRO_VERSION\nRW_VERSION\nread-only\n"
+        self.assertEqual(
+            utils.get_ec_version_from_chardev_contents(contents),
+            "RO_VERSION",
+        )
+
+    def test_ec_version_from_chardev_contents_rw(self):
+        contents = "1.0.0\nRO_VERSION\nRW_VERSION\nread-write\n"
+        self.assertEqual(
+            utils.get_ec_version_from_chardev_contents(contents),
+            "RW_VERSION",
+        )
+
+    def test_ec_version_from_chardev_contents_garbage(self):
+        contents = "garbage\n"
+        self.assertEqual(
+            utils.get_ec_version_from_chardev_contents(contents),
+            "",
+        )

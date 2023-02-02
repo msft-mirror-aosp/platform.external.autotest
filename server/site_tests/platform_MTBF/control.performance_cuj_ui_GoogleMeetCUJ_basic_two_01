@@ -2,12 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'abergman, chromeos-engprod-platform-syd'
+AUTHOR = 'n/a'
 NAME = 'ui_GoogleMeetCUJ_basic_two_01'
+METADATA = {
+    "contacts": ["chromeos-perf-reliability-eng@google.com", "abergman@google.com"],
+    "bug_component": "b:1025042",
+    "criteria": "Tauto wrapper for SPERA v1 Tast test.",
+    "hw_agnostic": True
+}
 ATTRIBUTES = 'suite:performance_cuj'
 TIME = 'long'
-TEST_CATEGORY = 'Stress'
-TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
 PRIORITY = 5000
 MAX_RESULT_SIZE_KB = 1024 * 1024
@@ -44,7 +48,9 @@ test_args['test_version'] = 1
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
   labels['test'] = 'ui.GoogleMeetCUJ.basic_two'
+  labels['test_version'] = 1
   labels['test_iteration'] = '1'
+  labels['total_tests_to_run'] = 190
   utils.write_keyval(job.resultdir, labels)
   # Try to retrieve and report DUT HWID and serial number.
   try:

@@ -112,9 +112,6 @@ class cheets_CTS_P(tradefed_test.TradefedTest):
             dut.log_camera_scene()
             dut.initialize()
 
-        for host in self._hosts:
-            host.run('cras_test_client --mute 1')
-
     def initialize(self,
                    camera_facing=None,
                    bundle=None,

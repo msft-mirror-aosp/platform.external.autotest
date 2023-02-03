@@ -7,7 +7,8 @@ AUTHOR = "The ChromiumOS Authors"
 PURPOSE = "Ensure crossystem works"
 CRITERIA = "Fails if any basic functionality of crossystem is missing"
 # TODO(semenzato) promote to bvt-inline after testing
-ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
+# b/267781699: Disable unclaimed Tauto tests
+# ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "platform"

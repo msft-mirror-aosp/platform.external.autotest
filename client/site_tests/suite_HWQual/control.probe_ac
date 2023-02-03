@@ -4,7 +4,8 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "suite_HWQual.probe_ac"
-ATTRIBUTES = "suite:power_build"
+# b/267781699: Disable unclaimed Tauto tests
+# ATTRIBUTES = "suite:power_build"
 PURPOSE = "Confirm that AC driver is loaded and functioning."
 CRITERIA = """\
 Plug AC before run this test.

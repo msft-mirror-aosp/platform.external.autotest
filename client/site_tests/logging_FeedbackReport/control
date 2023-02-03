@@ -9,7 +9,8 @@ TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "logging"
 TEST_TYPE = "client"
-ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
+# b/267781699: Disable unclaimed Tauto tests
+# ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 PY_VERSION = 3
 
 DOC = """

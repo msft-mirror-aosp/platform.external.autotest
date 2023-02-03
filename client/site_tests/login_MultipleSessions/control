@@ -4,7 +4,8 @@
 
 AUTHOR = "cmasone, joaodasilva"
 NAME = "login_MultipleSessions"
-ATTRIBUTES = "suite:bvt-perbuild"
+# b/267781699: Disable unclaimed Tauto tests
+# ATTRIBUTES = "suite:bvt-perbuild"
 TIME = "SHORT"
 TEST_CLASS = "login"
 TEST_TYPE = "client"

@@ -49,8 +49,22 @@ def parse_options():
     parser.add_option('-l', '--listall',
                       action='store_true', default=False,
                       help='Print a listing of all suites. Ignores all args.')
+    parser.add_option(
+            '--tsv',
+            action='store_true',
+            default=False,
+            help='Output a TSV file with path test name and TAST expressions.')
     options, args = parser.parse_args()
     return parser, options, args
+
+
+def print_test(options, test):
+    """Prints one test to stdout."""
+    if options.tsv:
+        print(f"{test.path}\t{getattr(test, 'name', '')}\t{getattr(test, 'tast_test_exprs', '')}"
+              )
+    else:
+        print(test.path)
 
 
 def main():
@@ -73,16 +87,18 @@ def main():
 
     suite = suite_lib.Suite.create_from_name(args[0], {}, '', devserver,
                                              fs_getter)
+    if options.tsv:
+        print("Path\tTest Name\tTAST expressions")
     # If in test list, print firmware_FAFTSetup before other tests
     # NOTE: the test.name value can be *different* from the directory
     # name that appears in test.path
     PRETEST_LIST = ['firmware_FAFTSetup',]
     for test in [test for test in suite.tests if test.name in
                  PRETEST_LIST]:
-        print(test.path)
+        print_test(options, test)
     for test in [test for test in suite.tests if test.name not in
                  PRETEST_LIST]:
-        print(test.path)
+        print_test(options, test)
 
     # Check if test_suites/control.suite_name exists.
     control_path = os.path.join(options.autotest_dir, 'test_suites',

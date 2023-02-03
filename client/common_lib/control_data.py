@@ -8,6 +8,7 @@ from __future__ import print_function
 
 import ast
 import logging
+import shlex
 import textwrap
 import re
 import six
@@ -258,6 +259,11 @@ class ControlData(object):
         self._set_string('suite', val)
 
 
+    def set_tast_test_exprs(self, val):
+        if type(val) == list:
+            self._set_string('tast_test_exprs',
+                             " ".join([shlex.quote(v) for v in val]))
+
     def set_time(self, val):
         self._set_option('time', val, ControlData.TEST_TIME_LIST)
 
@@ -452,24 +458,116 @@ def _try_extract_assignment(node, variables):
         pass
 
 
+def is_job_run_test_call(call_node):
+    class visitor(ast.NodeVisitor):
+        def __init__(self):
+            super().__init__()
+            self.name = None
+            self.attr = None
+
+        def visit_Name(self, node):
+            self.name = node.id
+
+        def visit_Attribute(self, node):
+            self.attr = node.attr
+            ast.NodeVisitor.generic_visit(self, node)
+
+    v = visitor()
+    v.visit(call_node)
+    return v.name == "job" and v.attr == "run_test"
+
+
+def extract_tast_test_exprs(call_node):
+    class visitor(ast.NodeVisitor):
+        def __init__(self):
+            super().__init__()
+            self.name = None
+            self.attr = None
+
+        def generic_visit(self, node):
+            return ast.NodeVisitor.generic_visit(self, node)
+
+        def visit_Name(self, node):
+            return "SEE " + node.id
+
+        def visit_Str(self, node):
+            return node.s
+
+        def visit_Constant(self, node):
+            return node.value
+
+        def visit_keyword(self, node):
+            if node.arg == "test_exprs":
+                return self.visit(node.value)
+            return None
+
+        def visit_List(self, node):
+            result = []
+            for i in node.elts:
+                val = self.visit(i)
+                if val is None:
+                    raise Exception("Could not convert %s to str" % i)
+                result.append(val)
+            return result
+
+    v = visitor()
+    if len(call_node.args) > 0 and v.visit(call_node.args[0]) == 'tast':
+        for k in call_node.keywords:
+            rc = v.visit(k)
+            if rc is not None:
+                return rc
+    return None
+
+
 def finish_parse(mod, path, raise_warnings):
     assert (mod.__class__ == ast.Module)
     assert (mod.body.__class__ == list)
 
     variables = {}
     injection_variables = {}
-    for n in mod.body:
-        if (n.__class__ == ast.FunctionDef and re.match('step\d+', n.name)):
-            vars_in_step = {}
-            for sub_node in n.body:
-                _try_extract_assignment(sub_node, vars_in_step)
-            if vars_in_step:
-                # Empty the vars collection so assignments from multiple steps
-                # won't be mixed.
-                variables.clear()
-                variables.update(vars_in_step)
-        else:
-            _try_extract_assignment(n, injection_variables)
+    tast_test_exprs = None
+
+    class runVisitor(ast.NodeVisitor):
+        def generic_visit(self, node):
+            ast.NodeVisitor.generic_visit(self, node)
+
+        def visit_Call(self, node):
+            if is_job_run_test_call(node.func):
+                nonlocal tast_test_exprs
+                tast_test_exprs = extract_tast_test_exprs(node)
+
+    class visitor(ast.NodeVisitor):
+        def generic_visit(self, node):
+            pass
+
+        def visit_Module(self, node):
+            ast.NodeVisitor.generic_visit(self, node)
+
+        def visit_Expr(self, node):
+            ast.NodeVisitor.generic_visit(self, node)
+
+        def visit_Assign(self, node):
+            _try_extract_assignment(node, injection_variables)
+
+        def visit_FunctionDef(self, node):
+            if re.match(r'step\d+', node.name):
+                vars_in_step = {}
+                for sub_node in node.body:
+                    _try_extract_assignment(sub_node, vars_in_step)
+                if vars_in_step:
+                    # Empty the vars collection so assignments from multiple steps
+                    # won't be mixed.
+                    variables.clear()
+                    variables.update(vars_in_step)
+            elif node.name == 'run':
+                v = runVisitor()
+                for sub_node in node.body:
+                    v.visit(sub_node)
+
+    v = visitor()
+    v.visit(mod)
+    if tast_test_exprs is not None:
+        variables['tast_test_exprs'] = tast_test_exprs
 
     variables.update(injection_variables)
     return ControlData(variables, path, raise_warnings)

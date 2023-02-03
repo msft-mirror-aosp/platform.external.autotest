@@ -4,16 +4,16 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "ChromeOS Team"
 NAME = "platform_ExternalUsbPeripherals"
-PURPOSE = "Servo based USB boot stress test"
-CRITERIA = "This test will fail if any of the actions or checks fail."
-TIME = "LONG"
-TEST_CATEGORY = "Functional"
-TEST_CLASS = "platform"
+METADATA = {
+    "contacts": ["chromeos-platform-usb@google.com"],
+    "bug_component": "b:958036",
+    "criteria": "Test fails if USB enumeration check fails.",
+    "hw_agnostic": False,
+    "doc" : "Control file for running in USB HTL lab.",
+}
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-PY_VERSION = 3
 
 DOC = """
 This test uses servo to connect/disconnect servo USB hub before and

@@ -1,4 +1,4 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -30,7 +30,11 @@ more information.
 See http://go/tast-failures for information about investigating failures.
 '''
 
+import common
+import logging
+
 from autotest_lib.client.common_lib import utils
+from autotest_lib.site_utils.deployment.prepare import dut
 from autotest_lib.utils import labellib
 
 def report_host_info(host):

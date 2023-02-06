@@ -9,7 +9,8 @@ NAME = "firmware_ECCbiEeprom"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Servo-based CBI EEPRROM functionality test"
+        "criteria": "Servo-based CBI EEPRROM functionality test",
+        "requirements": ["sys-eeprom-0001-v02", "sys-eeprom-0002-v01"]
 }
 ATTRIBUTES = "suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot"
 TIME = "SHORT"

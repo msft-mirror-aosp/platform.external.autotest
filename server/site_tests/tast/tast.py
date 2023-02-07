@@ -703,8 +703,7 @@ class tast(test.test):
                      ', '.join(dev_server.ImageServer.servers()))
         devservers, can_retry = dev_server.ImageServer.get_available_devservers(
                 self._host.hostname, prefer_local_devserver=True)
-        if not devservers and can_retry and (self._host.is_satlab()
-                                             or 'MOBLAB' in os.environ):
+        if not devservers and can_retry:
             devservers, can_retry = dev_server.ImageServer.get_available_devservers(
                     self._host.hostname, prefer_local_devserver=False)
         logging.info('Using devservers: %s', ', '.join(devservers))

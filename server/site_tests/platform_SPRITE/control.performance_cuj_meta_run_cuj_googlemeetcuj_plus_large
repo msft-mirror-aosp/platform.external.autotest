@@ -2,8 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'asadrieh, chromeos-engprod-platform-syd'
+AUTHOR = 'n/a'
 NAME = 'googlemeetcuj_plus_large'
+METADATA = {
+    "contacts": ["chromeos-perf-reliability-eng@google.com", "asadrieh@google.com"],
+    "bug_component": "b:1025042",
+    "criteria": "Tauto wrapper for SPRITE` v1 Tast test.",
+    "hw_agnostic": True
+}
 ATTRIBUTES = 'suite:performance_cuj_sprite'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'

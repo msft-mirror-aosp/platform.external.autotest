@@ -381,6 +381,7 @@ suite:distributed_arc_qual_cts_shard4
 suite:distributed_arc_qual_cts_shard5
 suite:distributed_arc_qual_cts_shard6
 suite:distributed_arc_qual_cts_shard7
+suite:distributed_arc_qual_cts_shard8
 suite:distributed_lab_qual_faft
 suite:dmserver-enrollment-daily
 suite:dmserver-zteenrollment-daily

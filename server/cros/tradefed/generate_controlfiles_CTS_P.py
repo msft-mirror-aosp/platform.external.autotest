@@ -221,6 +221,10 @@ CONFIG['DISTRIBUTED_QUAL_SHARD'] = dict({
         7,
         'CtsSensorTestCases':
         7,
+        'CtsVmTestCases':
+        8,
+        'CtsDeqpTestCases':
+        8,
 })
 
 # The suite is divided based on the run-time hint in the *.config file.

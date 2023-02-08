@@ -1,14 +1,15 @@
-NAME = 'stub_FailServer'
-AUTHOR = 'scottz'
-TIME = 'SHORT'
-TEST_CATEGORY = 'Functional'
-TEST_CLASS = 'General'
-TEST_TYPE = 'server'
-PY_VERSION = 3
+# Copyright 2013 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
 
-DOC = """
-Test that always fails.
-"""
+NAME = 'stub_FailServer'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': "b:1284375", # ChromeOS > Test > Harness > Tauto > Examples
+    'criteria': 'Test that always fails'
+}
+TEST_TYPE = 'server'
+
 
 def run(machine):
     host = hosts.create_host(machine)

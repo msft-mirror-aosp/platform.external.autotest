@@ -2,20 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# This is a helper test that will succeed and force to use server-side packaging.
 NAME = "stub_PassServer.ssp"
-PURPOSE = "Demonstrate success methods of autotests."
-CRITERIA = "This test will always succeed when running in a container."
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': "b:1284375", # ChromeOS > Test > Harness > Tauto > Examples
+    'criteria': 'This test will always succeed when running in a container'
+}
 ATTRIBUTES = "suite:dummy_server, suite:push_to_prod, suite:skylab_staging_test, suite:dev_drone_image_test, suite:infra_qual"
 TIME = "SHORT"
-TEST_CATEGORY = "General"
-TEST_CLASS = "stub"
 TEST_TYPE = "server"
-PY_VERSION = 3
 
-DOC = """
-This is a helper test that will succeed and force to use server-side packaging.
-"""
 
 def run(machine):
     job.run_test('stub_PassServer', host=hosts.create_host(machine),

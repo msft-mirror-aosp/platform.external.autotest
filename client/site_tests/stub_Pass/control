@@ -2,29 +2,22 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Team"
+# This is a helper test that will succeed.
 NAME = "stub_Pass"
-PURPOSE = "Demonstrate success methods of autotests."
-CRITERIA = "This test will always succeed."
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': "b:1284375", # ChromeOS > Test > Harness > Tauto > Examples
+    'criteria': 'This test will always succeed',
+    'hw_agnostic': True
+}
 ATTRIBUTES = (
         "suite:stub, suite:stubclientretries, suite:push_to_prod,"
         " suite:skylab_staging_test, suite:something_else,"
         " suite:dev_drone_image_test, suite:infra_qual,"
         " suite:cft-nightly"
 )
-TIME = "SHORT"
-TEST_CATEGORY = "General"
-TEST_CLASS = "stub"
 TEST_TYPE = "client"
 MAX_RESULT_SIZE_KB = 5000
-PY_VERSION = 3
 
-DOC = """
-This is a helper test that will succeed.
-"""
-
-METADATA = {
-   'hw_agnostic': True
-}
 
 job.run_test('stub_Pass')

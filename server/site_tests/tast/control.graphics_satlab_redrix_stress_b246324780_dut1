@@ -27,7 +27,8 @@ This suite is used to run CUJ tast tests for b/246324780 against a remote DUT.
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:graphics_satlab_redrix_stress_b246324780")'],
+                 test_exprs=['("name:ui.MeetCUJ.4p_notes_effects" || "group:graphics_satlab_redrix_stress_b246324780")'],
+                 varslist=['cuj.isLocal=true', 'cujrecorder.skipPowerTest=true'],
                  ignore_test_failures=True,
                  max_run_sec=21600,  # 6 hours.
                  command_args=args)

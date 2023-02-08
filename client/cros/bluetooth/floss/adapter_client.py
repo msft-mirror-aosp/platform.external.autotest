@@ -282,11 +282,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         del self.callbacks
         del self.connection_callbacks
 
-    def _make_device(self,
-                     address,
-                     name,
-                     bond_state=BondState.NOT_BONDED,
-                     connected=False):
+    def _make_device(self, address, name, bond_state=None, connected=None):
         """Make a device dict."""
         return {
                 'address': address,
@@ -324,7 +320,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             self.known_devices = {
                     key: value
                     for key, value in self.known_devices.items()
-                    if value.get('bond_state', 0) > 0
+                    if value.get('bond_state', 0)
                     or value.get('connected', False)
             }
 
@@ -458,23 +454,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         # Generate a random number between 1-1000
         rnumber = math.floor(random.random() * 1000 + 1)
 
-        # Reset known devices to just bonded devices and their connection
-        # states.
+        # Reset known devices
         self.known_devices.clear()
-        bonded_devices = self.proxy().GetBondedDevices()
-        for device in bonded_devices:
-            (success, devtuple) = FlossAdapterClient.parse_dbus_device(device)
-            if success:
-                (address, name) = devtuple
-                cstate = self.proxy().GetConnectionState(
-                        self._make_dbus_device(address, name))
-                logging.info('[%s:%s] initially bonded. Connected = %d',
-                             address, name, cstate)
-                self.known_devices[address] = self._make_device(
-                        address,
-                        name,
-                        bond_state=BondState.BONDED,
-                        connected=bool(cstate > 0))
 
         if not self.callbacks:
             # Create and publish callbacks
@@ -495,6 +476,31 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             self.bus.register_object(objpath, self.connection_callbacks, None)
 
             self.proxy().RegisterConnectionCallback(objpath)
+
+        # Add bonded devices as known devices and set their initial connection
+        # state
+        bonded_devices = self.proxy().GetBondedDevices()
+        for device in bonded_devices:
+            (success, devtuple) = FlossAdapterClient.parse_dbus_device(device)
+            if success:
+                (address, name) = devtuple
+                dev = self.known_devices.get(
+                        address,
+                        self._make_device(address,
+                                          name,
+                                          bond_state=BondState.BONDED))
+                if dev['bond_state'] is None:
+                    dev['bond_state'] = BondState.BONDED
+                    logging.info('[%s:%s] initially bonded.', address, name)
+
+                if dev['connected'] is None:
+                    cstate = self.proxy().GetConnectionState(
+                            self._make_dbus_device(address, name))
+                    dev['connected'] = bool(cstate > 0)
+                    logging.info('[%s:%s] initially connection state: %d.',
+                                 address, name, cstate)
+
+                self.known_devices[address] = dev
 
         return True
 

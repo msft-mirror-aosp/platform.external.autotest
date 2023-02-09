@@ -36,9 +36,9 @@ command_args, varslist = tast.split_arguments(args)
 def run(machine):
 
     host = hosts.create_host(machine)
-    working_bluetooth_btpeers = bt_control_utils.get_working_bluetooth_btpeer(host)
-    btpeer_count_attribute_expression = bt_control_utils.build_tast_btpeer_count_attribute_test_expression(working_bluetooth_btpeers)
-    tast_test_expr = '("group:bluetooth" && bluetooth_cross_device_fastpair_multidut  && %s)' % btpeer_count_attribute_expression
+    # Currently the bluetooth peer in multi-dut testbeds are not added to UFS, hence
+    # there is no need to add number of peer to the expression.
+    tast_test_expr = '("group:bluetooth" && bluetooth_cross_device_fastpair_multidut)'
 
     job.run_test('tast',
                  host=host,

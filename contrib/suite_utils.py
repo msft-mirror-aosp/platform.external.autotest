@@ -58,7 +58,7 @@ class TestObject(object):
     def relative_path(self):
         # allows user to have filepath which works in/out of chroot
         norm = os.path.normpath(self.file_path)
-        return norm.replace('/mnt/host/source', '~/chromiumos')
+        return make_chroot_path_relative(norm)
 
     def is_tast(self):
         return self.type == 'tast'
@@ -162,7 +162,12 @@ class TestParser(object):
         cf_getter = FileSystemGetter(locations)
         for (file_path, cf_object) in retrieve_for_suite(cf_getter,
                                                          '').items():
-            if cf_object.test_class == 'suite':
+            if cf_object.test_class == 'suite' or self.in_suites_dir(
+                    file_path):
+                if cf_object.test_class != 'suite':
+                    logging.warn(
+                            'Treating unmarked suite %s as a suite based on control file path, expected TEST_CLASS = \'suite\' in the control file',
+                            cf_object.name)
                 suites[cf_object.name] = (TestSuite(cf_object, cf_object.name,
                                                     file_path))
             else:
@@ -171,6 +176,11 @@ class TestParser(object):
                     tests[cf_object.name].enumerate_tast_from_test_expr()
 
         return tests, suites
+
+    def in_suites_dir(self, file_path):
+        split = os.path.split(file_path)
+        split = os.path.split(split[0])
+        return len(split) > 0 and split[1] == 'test_suites'
 
 
 class TestManager(object):

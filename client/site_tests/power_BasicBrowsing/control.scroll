@@ -3,7 +3,7 @@
 # for power test gen2. This will get deleted once Tast power
 # library is ready.
 
-NAME = "power_BasicBrowsing"
+NAME = "power_BasicBrowsing.scroll"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "bug_component": "b:167191",
@@ -13,4 +13,5 @@ METADATA = {
 ATTRIBUTES = "suite:power_daily"
 TEST_TYPE = "client"
 
-job.run_test('power_BasicBrowsing', force_discharge='optional')
+job.run_test('power_BasicBrowsing', force_discharge='optional',
+             tag=NAME.split('.')[1])

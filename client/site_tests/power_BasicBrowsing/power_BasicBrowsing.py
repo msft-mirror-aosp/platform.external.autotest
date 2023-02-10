@@ -69,15 +69,31 @@ class power_BasicBrowsing(power_test.power_Test):
             self.start_measurements()
 
             task_count = 0
+            secs_per_scroll = 20
             for loop in range(loop_count):
                 for i, url in enumerate(urls):
+                    start_time = time.time()
                     logging.info('Navigating to url: %s', url)
                     tab.Navigate(url)
                     tab.WaitForDocumentReadyStateToBeComplete()
 
                     tagname = '%s_%s' % (self.SITES[i], loop)
+                    scroll_amount = 600
+                    for sec in range(secs_per_scroll, secs_per_url,
+                                     secs_per_scroll):
+                        end_time = start_time + sec
+                        sleep_time = end_time - time.time()
+                        if sleep_time < 0:
+                            logging.warn(
+                                    'Skip scrolling at %s because load time'
+                                    'is too long at %d secs', url, sec)
+                            continue
+                        time.sleep(sleep_time)
+                        js = 'window.scrollBy(0, %d)' % scroll_amount
+                        tab.EvaluateJavaScript(js)
+                        scroll_amount = -scroll_amount
                     self.loop_sleep(task_count, secs_per_url)
-                    self.checkpoint_measurements(tagname, task_count)
+                    self.checkpoint_measurements(tagname, start_time)
                     task_count += 1
 
             # Re-enable multicast here instead of in the cleanup because Chrome

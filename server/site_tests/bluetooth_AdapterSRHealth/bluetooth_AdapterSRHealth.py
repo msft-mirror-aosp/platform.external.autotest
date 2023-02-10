@@ -256,7 +256,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('Reconnect A2DP',
                   devices={'BLUETOOTH_AUDIO': 1},
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
     def sr_reconnect_a2dp(self):
         """ Reconnects an A2DP device after suspend/resume. """
         device_type = 'BLUETOOTH_AUDIO'

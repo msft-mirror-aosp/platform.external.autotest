@@ -1,0 +1,44 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This test verifies that the DUT reconnects to the A2DP device after
+# suspend/resume.
+#
+# Steps:
+# 1. The DUT pairs and connects to an A2DP device.
+# 2. Suspend the DUT then resume it.
+# 3. Expect the DUT reconnects to the A2DP device.
+#
+# Purpose: Verify that the DUT reconnects to the A2DP device after
+# suspend/resume
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterSRHealth.sr_reconnect_a2dp.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass test',
+    'hw_agnostic': False,
+}
+
+
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterSRHealth', host=host, num_iterations=1,
+                 args_dict=args_dict, test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

@@ -56,13 +56,11 @@ suite:av-analysis_trace_per-week
 suite:bluestreak-partners
 suite:bluestreak-pre-cq
 suite:bluetooth
-suite:bluetooth_avl
 suite:bluetooth_core
 suite:bluetooth_core_cq
 suite:bluetooth_cross_device
 suite:bluetooth_cuj
 suite:bluetooth_dep_feature
-suite:bluetooth_e2e
 suite:bluetooth_e2e_cq
 suite:bluetooth_flaky
 suite:bluetooth_floss
@@ -74,7 +72,6 @@ suite:bluetooth_manual
 suite:bluetooth_mtbf
 suite:bluetooth_perf
 suite:bluetooth_sa
-suite:bluetooth_standalone
 suite:bluetooth_standalone_cq
 suite:bluetooth_stress
 suite:bluetooth_wifi_coex

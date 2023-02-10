@@ -15,12 +15,19 @@ DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'All bluetooth stable tests that is ported over to Floss',
+    'hw_agnostic': False,
+}
 DOC = '''
 Run the stable Tast tests part of the the bluetooth_floss suite.
 
 Tast tests for this suite are identified by the 'bluetooth_floss' attribute.
 
-This suite consists of test cases from bluetooth_e2e and bluetooth_standalone
+This suite consists of test cases from bluetooth and bluetooth_sa
 which is modified run on Floss stack.
 
 More documentation available at

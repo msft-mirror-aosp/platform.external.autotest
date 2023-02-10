@@ -14,9 +14,17 @@ DEPENDENCIES = 'bluetooth'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'All bluetooth stable tests that needs a peer device',
+    'hw_agnostic': False,
+}
+
 DOC = '''
-Run the stable Tast tests part of the the bluetooth_sa suite, also known as
-the bluetooth_standalone suite. This suite does not require btpeers.
+Run the stable Tast tests part of the the bluetooth_sa suite. This suite consists of 'standalone' tests
+that does not require btpeers.
 
 Tast tests for this suite are identified by the 'bluetooth_sa' attribute.
 

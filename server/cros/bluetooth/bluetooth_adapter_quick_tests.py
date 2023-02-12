@@ -275,7 +275,8 @@ class BluetoothAdapterQuickTests(
                                   skip_chipsets=[],
                                   skip_common_errors=False,
                                   supports_floss=False,
-                                  use_all_peers=False):
+                                  use_all_peers=False,
+                                  eir_inq_mode=True):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
@@ -311,6 +312,7 @@ class BluetoothAdapterQuickTests(
                                  like bluetooth_PeerVerify which uses all
                                  available peers. Specify only one device type
                                  if this is set to true
+           @param eir_inq_mode: Extended inquiry response mode.
         """
 
         base_class = bluetooth_quick_tests_base.BluetoothQuickTestsBase
@@ -318,8 +320,10 @@ class BluetoothAdapterQuickTests(
                 test_name,
                 flags=flags,
                 pretest_func=lambda self: self.quick_test_test_pretest(
-                        test_name, devices, use_all_peers, supports_floss),
-                posttest_func=lambda self: self.quick_test_test_posttest(),
+                        test_name, devices, use_all_peers, supports_floss,
+                        eir_inq_mode),
+                posttest_func=lambda self: self.quick_test_test_posttest(
+                        eir_inq_mode),
                 model_testNA=model_testNA,
                 model_testWarn=model_testWarn,
                 skip_models=skip_models,
@@ -330,7 +334,8 @@ class BluetoothAdapterQuickTests(
                                 test_name=None,
                                 devices={},
                                 use_all_peers=False,
-                                supports_floss=False):
+                                supports_floss=False,
+                                eir_inq_mode=True):
         """Runs pretest checks and resets DUT's adapter and peer devices.
 
            @param test_name: the name of the test to log.
@@ -343,6 +348,7 @@ class BluetoothAdapterQuickTests(
                                  available peers. Specify only one device type
                                  if this is set to true
            @param supports_floss: Does this test support running on Floss?
+           @param eir_inq_mode: Extended inquiry response mode.
         """
 
         def _is_enough_peers_present(self):
@@ -418,12 +424,22 @@ class BluetoothAdapterQuickTests(
         # Start and peer HID devices
         self.start_peers(devices)
 
+        # Change the inquiry mode to 'Standard' for classic HID devices.
+        if not eir_inq_mode and all(device in ['MOUSE', 'KEYBOARD']
+                                    for device in devices.keys()):
+            for btpeer in self.host.btpeer_list:
+                bluetooth_peer_update.run_cmd(btpeer,
+                                              "hciconfig hci0 inqmode 0")
+
         time.sleep(self.TEST_SLEEP_SECS)
         self.log_message('Starting test: %s' % test_name)
 
 
-    def quick_test_test_posttest(self):
-        """Runs posttest cleanups."""
+    def quick_test_test_posttest(self, eir_inq_mode=True):
+        """Runs posttest cleanups.
+
+           @param eir_inq_mode: Extended inquiry response mode.
+        """
 
         logging.info('Cleanning up and restarting towards next test...')
         self.log_message(self.bat_tests_results[-1])
@@ -463,6 +479,20 @@ class BluetoothAdapterQuickTests(
             dut_adapter_address = self.bluetooth_facade.address
         elif hasattr(self, '_dut_address_cache'):
             dut_adapter_address = self._dut_address_cache
+
+        # Change the inquiry mode to 'EIR' for classic HID devices after
+        # changing their inquiry mode to 'Standard' in the pretest method.
+        if not eir_inq_mode:
+            for btpeer in self.host.btpeer_list:
+                # Read inquiry mode.
+                status, inquiry_mode = bluetooth_peer_update.run_cmd(
+                        btpeer, "hciconfig hci0 inqmode")
+                if not status:
+                    logging.info('Read inquiry mode command execution failed')
+
+                if status and 'Standard' in inquiry_mode:
+                    bluetooth_peer_update.run_cmd(btpeer,
+                                                  "hciconfig hci0 inqmode 2")
 
         # Disconnect devices used in the test, and remove the pairing.
         for device_list in self.devices.values():

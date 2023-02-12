@@ -1,0 +1,53 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Verify that the bluetooth adapter of the DUT could pair and connect
+# to a bluetooth device.
+#
+# Specifically, the following subtests are executed in this autotest.
+#     - test_reset_on_adapter
+#     - test_pairable
+#     - test_discover_device
+#     - test_stop_discovery
+#     - test_device_name
+#     - test_device_class_of_service
+#     - test_device_class_of_device
+#     - test_pairing
+#     - test_connection_by_adapter
+#     - test_disconnection_by_adapter
+#     - test_connection_by_device
+#     - test_disconnection_by_device
+#     - test_remove_pairing
+#
+# Purpose: Test bluetooth adapter pairing and connecting to a bluetooth device.
+
+# Deprecated variables:
+#     TIME = 'SHORT'  # ~3 minutes on octopus
+#     TEST_CATEGORY = 'Functional'
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterCLHealth.cl_adapter_keyboard_pairing_in_standard_inq_mode_test'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Adapter should work in correct states.',
+    'hw_agnostic': False
+}
+ATTRIBUTES = 'suite:bluetooth_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterCLHealth',
+                 host=host,
+                 num_iterations=1,
+                 args_dict=args_dict,
+                 test_name=NAME.split('.')[1])
+
+parallel_simple(run, machines)

@@ -61,6 +61,16 @@ CONFIG['DISTRIBUTED_QUAL_SHARD'] = dict({
         2,
         'CtsJvmtiAttachingHostTestCases':
         2,
+        'CtsFileSystemTestCases':
+        3,
+        'tradefed-run-collect-tests-only-internal':
+        3,
+        'CtsMediaTestCases':
+        4,
+        'CtsMediaStressTestCases':
+        5,
+        'CtsAccessibilityServiceTestCases':
+        6,
 })
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'

@@ -558,6 +558,13 @@ class ChameleonBoard(object):
         """
         return self._chameleond_proxy.get_platform()
 
+    def set_bluetooth_link_mode(self, mode):
+        """Set the Bluetooth link mode
+
+        @param mode: a param string for setting hci0 link mode.
+        """
+        self.host.run('hciconfig hci0 lm %s' % mode)
+
 
 class ChameleonPort(object):
     """ChameleonPort is an abstraction of a general port of a Chameleon board.

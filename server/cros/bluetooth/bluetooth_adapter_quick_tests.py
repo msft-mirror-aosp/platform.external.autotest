@@ -119,8 +119,14 @@ class BluetoothAdapterQuickTests(
                         args_dict=None,
                         start_browser=False,
                         floss=False,
-                        llprivacy=False):
-        """Inits the test batch"""
+                        llprivacy=False,
+                        floss_lm_quirk=False):
+        """Inits the test batch
+
+        @param floss_lm_quirk True to enable the quirk for b/260539322 to
+                mitigate the interoperability issue between Intel and Cypress.
+                TODO(b/260539322): remove the flag once the issue is solved.
+        """
 
         super().quick_test_init(flag)
 
@@ -130,6 +136,7 @@ class BluetoothAdapterQuickTests(
         self.floss = floss
         self.local_host_ip = None
         self.llprivacy = llprivacy
+        self.floss_lm_quirk = floss_lm_quirk
 
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
@@ -198,7 +205,16 @@ class BluetoothAdapterQuickTests(
 
             for btpeer in self.host.btpeer_list:
                 btpeer.register_raspPi_log(self.outputdir)
-
+                # TODO(b/260539322) Remove the quirk after fixing the
+                # interoperability issue between Intel and Cypress. This quirk
+                # used the hciconfig tool to force the Raspberry Pi to use
+                # CENTRAL link mode rather than PERIPHERAL. The additional role
+                # negotiation/switching helped mitigate the interoperability
+                # mentioned above issue.
+                if self.floss and self.floss_lm_quirk:
+                    btpeer.set_bluetooth_link_mode("MASTER")
+                else:
+                    btpeer.set_bluetooth_link_mode("SLAVE,ACCEPT")
             self.btpeer_group = dict()
             # Create copy of btpeer_group
             self.btpeer_group_copy = dict()

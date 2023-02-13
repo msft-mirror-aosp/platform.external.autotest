@@ -33,7 +33,8 @@ def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterCLHealth', host=host,
                  num_iterations=1, args_dict=args_dict,
-                 test_name=NAME.split('.')[1], floss=True)
+                 test_name=NAME.split('.')[1], floss=True,
+                 floss_lm_quirk=True)
 
 parallel_simple(run, machines)
 

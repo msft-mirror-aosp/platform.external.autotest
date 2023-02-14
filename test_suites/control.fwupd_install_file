@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 AUTHOR = "Ricardo Canuelo <ricardo.canuelo@collabora.com>"
-NAME = "fwupd_install_version"
+NAME = "fwupd_install_file"
 METADATA = {
     "contacts": ["ricardo.canuelo@collabora.com"],
     "author": "Ricardo Canuelo <ricardo.canuelo@collabora.com>",

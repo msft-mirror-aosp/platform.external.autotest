@@ -191,7 +191,8 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
 
         @params flags: integer value to set the gbb flags to.
         """
-        self.host.run('/usr/share/vboot/bin/set_gbb_flags.sh 0x%x' % flags)
+        self.host.run('/usr/bin/futility gbb --set --flash --flags=0x%x' %
+                      flags)
         logging.info('Set GBB: %x', self.faft_client.bios.get_gbb_flags())
 
     def set_factory_gbb_flags(self):

@@ -71,6 +71,20 @@ CONFIG['DISTRIBUTED_QUAL_SHARD'] = dict({
         5,
         'CtsAccessibilityServiceTestCases':
         6,
+        'CtsViewTestCases':
+        7,
+        'CtsDeviceIdleHostTestCases':
+        7,
+        'CtsSecurityHostTestCases':
+        7,
+        'CtsSecurityTestCases':
+        7,
+        'CtsAbiOverrideHostTestCases':
+        7,
+        'CtsSensorTestCases':
+        7,
+        'CtsDeqpTestCases':
+        8,
 })
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'

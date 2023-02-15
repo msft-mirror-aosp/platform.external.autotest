@@ -62,7 +62,8 @@ class fwupd_FirmwareInstallFile(test.test):
         else:
             cmd = 'install'
         try:
-            output = utils.system_output(f"fwupdmgr {cmd} --json "
+            output = utils.system_output("CACHE_DIRECTORY='/var/cache/fwupd' "
+                                         f"fwupdmgr {cmd} --json "
                                          "--allow-older --allow-reinstall "
                                          f"{fwfile} {dev['DeviceId']}")
         except error.CmdError as e:

@@ -561,9 +561,19 @@ class ChameleonBoard(object):
     def set_bluetooth_link_mode(self, mode):
         """Set the Bluetooth link mode
 
+        The mode is set on a best-effort basis. It is observed that BlueZ may
+        sometimes reject the setting with the error: "Can't set default link
+        mode on hci0: Operation not supported (95) ". However, the error can
+        usually be overcome with the successful execution of a test flow; hence
+        no additional effort is trying here.
+
         @param mode: a param string for setting hci0 link mode.
         """
-        self.host.run('hciconfig hci0 lm %s' % mode)
+        if mode not in self.host.run('hciconfig hci0 lm').stdout:
+            try:
+                self.host.run('hciconfig hci0 lm %s' % mode)
+            except:
+                pass
 
 
 class ChameleonPort(object):

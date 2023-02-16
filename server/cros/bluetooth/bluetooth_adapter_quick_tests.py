@@ -213,8 +213,7 @@ class BluetoothAdapterQuickTests(
                 # mentioned above issue.
                 if self.floss and self.floss_lm_quirk:
                     btpeer.set_bluetooth_link_mode("MASTER")
-                else:
-                    btpeer.set_bluetooth_link_mode("SLAVE,ACCEPT")
+
             self.btpeer_group = dict()
             # Create copy of btpeer_group
             self.btpeer_group_copy = dict()
@@ -517,6 +516,14 @@ class BluetoothAdapterQuickTests(
         for device_list in self.active_test_devices.values():
             for device in device_list:
                 if device is not None:
+                    # TODO(b/260539322) Remove the quirk after fixing the
+                    # interoperability issue between Intel and Cypress. This
+                    # quirk used the hciconfig tool to force the Raspberry Pi
+                    # to use CENTRAL link mode rather than PERIPHERAL. The
+                    # additional role negotiation/switching helped mitigate the
+                    # interoperability mentioned above issue.
+                    if self.floss and self.floss_lm_quirk:
+                        btpeer.set_bluetooth_link_mode("ACCEPT")
                     self.clear_raspi_device(device)
                     self.device_set_powered(device, False)
 

@@ -4,12 +4,17 @@
 #
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
 NAME = 'tast.assistant-audiobox'
-TIME = 'MEDIUM'
+METADATA = {
+    'contacts': ['chromeos-sw-engprod@google.com', 'jonfan@google.com', 'yawano@google.com'],
+    'bug_component': 'b:905229', # ChromeOS > Software > Assistive
+    'criteria': 'Run Assistant audio tests in Audiobox.',
+    'hw_agnostic': False
+}
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:assistant-audiobox'
 JOB_RETRIES = 2
 MAX_RESULT_SIZE_KB = 1024 * 1024
-PY_VERSION = 3
+DEPENDENCIES = 'audio_box'
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True

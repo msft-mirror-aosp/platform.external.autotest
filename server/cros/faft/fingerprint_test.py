@@ -480,7 +480,7 @@ class FingerprintTest(test.test):
 
     def is_uart_device(self) -> bool:
         """Returns True if the boards transpot device is UART"""
-        uart_devices = ['zork', 'guybrush']
+        uart_devices = ['zork', 'guybrush', 'skyrim']
         return self.get_host_board() in uart_devices
 
     def get_host_board(self):

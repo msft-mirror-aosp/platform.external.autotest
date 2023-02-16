@@ -1400,7 +1400,8 @@ def write_controlfile(name,
             'PUBLIC_SHARD_COUNT' if is_public else 'SHARD_COUNT', dict())
     shard_count = max(shard_count_map.get(m, 1) for m in modules)
     vm_force_max_resolution_list = [False]
-    if modules & set(CONFIG.get('SPLIT_BY_VM_FORCE_MAX_RESOLUTION', [])):
+    if (source_type == SourceType.DEV and modules
+                & set(CONFIG.get('SPLIT_BY_VM_FORCE_MAX_RESOLUTION', []))):
         vm_force_max_resolution_list.append(True)
 
     for abi, abi_bits in abi_bits_list:

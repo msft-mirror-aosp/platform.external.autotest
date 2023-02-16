@@ -49,13 +49,6 @@ class autoupdate_StartOOBEUpdate(update_engine_test.UpdateEngineTest):
             self._oobe.ExecuteJavaScript(
                     "OobeAPI.screens.NetworkScreen.clickNext()")
 
-        if not self._oobe.EvaluateJavaScript(
-                "OobeAPI.screens.EulaScreen.shouldSkip()"):
-            self._oobe.WaitForJavaScriptCondition(
-                    "OobeAPI.screens.EulaScreen.isReadyForTesting()", timeout=timeout)
-            self._oobe.ExecuteJavaScript(
-                    "OobeAPI.screens.EulaScreen.clickNext()")
-
         if critical_update:
             self._oobe.WaitForJavaScriptCondition(
                     "OobeAPI.screens.UpdateScreen.isVisible()",

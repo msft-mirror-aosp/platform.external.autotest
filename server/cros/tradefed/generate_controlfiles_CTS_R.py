@@ -59,6 +59,8 @@ CONFIG['DISTRIBUTED_QUAL_SHARD'] = dict({
         1,
         'CtsShortcutHostTestCases':
         2,
+        'CtsMidiTestCases':
+        2,
         'CtsJvmtiAttachingHostTestCases':
         2,
         'CtsFileSystemTestCases':

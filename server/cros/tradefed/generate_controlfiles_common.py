@@ -1062,6 +1062,11 @@ def get_controlfile_content(combined,
         suites.append(CONFIG.get('CAMERA_DUT_SUITE_NAME'))
         for qual_suite in CONFIG.get('QUAL_SUITE_NAMES', []):
             suites.remove(qual_suite)
+    if (set(CONFIG.get('INTERNAL_SUITE_NAMES', []))
+                & set(suites)) and (set(get_camera_modules()) & set(modules)):
+        suites = suites.copy()
+        for regression_suite in CONFIG.get('INTERNAL_SUITE_NAMES', []):
+            suites.remove(regression_suite)
     attributes = ', '.join(suites)
 
     #Adding shards to arc-cts-qual for automation purposes.
@@ -1324,7 +1329,7 @@ def combine_modules_by_common_word(modules):
         # Beautification: CtsMedia files run very long and are unstable. Give
         # each module its own control file, even though this heuristic would
         # lump them together.
-        if prefix.startswith('CtsMedia'):
+        if prefix.startswith('CtsMedia') or prefix.startswith('CtsCamera'):
             # Separate each CtsMedia* modules, but group extra modules with
             # optional parametrization (ex: secondary_user, instant) together.
             prev = ' '

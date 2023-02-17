@@ -92,6 +92,7 @@ class power_WakeSources(test.test):
 
         @return: Boolean, whether _before_suspend action is successful.
         """
+        usb_count = self._get_usb_count()
         if wake_source == 'BASE_ATTACH':
             # Force detach before suspend so that attach won't be ignored.
             self._force_base_state(BASE_STATE.DETACH)
@@ -114,6 +115,12 @@ class power_WakeSources(test.test):
             self._chg_manager.stop_charging()
         elif wake_source == 'AC_DISCONNECTED':
             self._chg_manager.start_charging()
+        # Servo PD role change may cause Servo's USB devices reset
+        # Ensure all USB devices have been connected to avoid interrupting
+        # the following suspension
+        # Note that Servo's USB_KB is already on and connected during
+        # _is_valid_wake_source so the usb_count is unchanged
+        self._wait_until_usb_count_match(usb_count)
         return True
 
     def _force_tablet_mode(self, mode):
@@ -190,6 +197,18 @@ class power_WakeSources(test.test):
                     ' exception: %s', str(e))
 
         return 0
+
+    def _get_usb_count(self):
+        return int(self._host.run('lsusb | wc -l').stdout)
+
+    def _wait_until_usb_count_match(self, expected_usb_count, timeout=5):
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            usb_count = self._get_usb_count()
+            if usb_count == expected_usb_count:
+                return
+            time.sleep(1)
+        logging.warn('Timeout waiting for USB probing.')
 
     def _is_valid_wake_source(self, wake_source):
         """Check if |wake_source| is valid for DUT.
@@ -326,6 +345,9 @@ class power_WakeSources(test.test):
             elif is_success:
                 logging.info('%s caused a dark resume.', wake_source)
 
+        # Press power button to ensure a full resume instead of dark resume
+        self._trigger_wake('PWR_BTN')
+
         self._after_resume(wake_source)
         if not is_success:
             raise error.TestFail(fail_msg)
@@ -381,6 +403,7 @@ class power_WakeSources(test.test):
                 self._faft_client.system.get_platform_name(),
                 self._faft_client.system.get_model_name())
         self._kstr = host.get_kernel_version()
+        usb_count = self._get_usb_count()
         # TODO(b/168939843) : Look at implementing AC plug/unplug w/ non-PD RPMs
         # in the lab.
         try:
@@ -389,6 +412,9 @@ class power_WakeSources(test.test):
         except error.TestNAError:
             logging.warning('Servo does not support AC switching.')
             self._chg_manager = None
+        # Servo PD role change may cause Servo's USB devices reset
+        # Ensure all USB devices have been connected before start
+        self._wait_until_usb_count_match(usb_count)
 
     def run_once(self):
         """Body of the test."""

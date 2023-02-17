@@ -32,7 +32,7 @@
 
 NAME = "power_PacWrapper"
 METADATA = {
-    "contacts": ["klug"],
+    "contacts": ["chromeos-platform-power@google.com", "klug@google.com"],
     "bug_component": "b:167191",
     "criteria": "This test is a wrapper for a client test.",
     "hw_agnostic": False

@@ -8,11 +8,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import math
-import random
-
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
-from autotest_lib.client.cros.bluetooth.floss.utils import glib_call, glib_callback
+from autotest_lib.client.cros.bluetooth.floss.utils import (
+        generate_dbus_cb_objpath, glib_call, glib_callback)
 
 
 class ManagerCallbacks:
@@ -47,7 +45,7 @@ class FlossManagerClient(ManagerCallbacks):
 
     # Exported callback interface and objects
     CB_EXPORTED_INTF = 'org.chromium.bluetooth.ManagerCallback'
-    CB_EXPORTED_OBJ = '/org/chromium/bluetooth/test_manager_client{}'
+    CB_EXPORTED_OBJ_NAME = 'test_manager_client'
 
     class AdaptersNotParseable(Exception):
         """An entry in the result of GetAvailableAdapters was not parseable."""
@@ -119,13 +117,10 @@ class FlossManagerClient(ManagerCallbacks):
         if self.callbacks:
             return True
 
-        # Generate a random number between 1-1000
-        rnumber = math.floor(random.random() * 1000 + 1)
-
         # Create and publish callbacks
         self.callbacks = self.ExportedManagerCallbacks()
         self.callbacks.add_observer('manager_client', self)
-        objpath = self.CB_EXPORTED_OBJ.format(rnumber)
+        objpath = generate_dbus_cb_objpath(self.CB_EXPORTED_OBJ_NAME)
         self.bus.register_object(objpath, self.callbacks, None)
 
         # Register published callbacks with manager daemon

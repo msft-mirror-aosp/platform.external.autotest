@@ -6,12 +6,11 @@
 
 from gi.repository import GLib
 import logging
-import math
-import random
 
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
-from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
-                                                            glib_callback)
+from autotest_lib.client.cros.bluetooth.floss.utils import (
+        generate_dbus_cb_objpath, glib_call, glib_callback)
+
 
 class BluetoothMediaCallbacks:
     """Callbacks for the media interface.
@@ -73,7 +72,7 @@ class FlossMediaClient(BluetoothMediaCallbacks):
     MEDIA_OBJECT_PATTERN = '/org/chromium/bluetooth/hci{}/media'
 
     MEDIA_CB_INTF = 'org.chromium.bluetooth.BluetoothMediaCallback'
-    MEDIA_CB_OBJ_PATTERN = '/org/chromium/bluetooth/hci{}/test_media_client{}'
+    MEDIA_CB_OBJ_NAME = 'test_media_client'
 
     class ExportedMediaCallbacks(ObserverBase):
         """
@@ -260,14 +259,10 @@ class FlossMediaClient(BluetoothMediaCallbacks):
         if self.callbacks:
             return True
 
-        # Generate a random number between 1-1000
-        rnumber = math.floor(random.random() * 1000 + 1)
-
         # Create and publish callbacks
         self.callbacks = self.ExportedMediaCallbacks()
-
         self.callbacks.add_observer('media_client', self)
-        objpath = self.MEDIA_CB_OBJ_PATTERN.format(self.hci, rnumber)
+        objpath = generate_dbus_cb_objpath(self.MEDIA_CB_OBJ_NAME, self.hci)
         self.bus.register_object(objpath, self.callbacks, None)
 
         # Register published callbacks with media daemon

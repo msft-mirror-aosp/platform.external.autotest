@@ -8,13 +8,11 @@ from enum import IntEnum
 from gi.repository import GLib
 from uuid import UUID
 import logging
-import math
-import random
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
-from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
-                                                            glib_callback)
+from autotest_lib.client.cros.bluetooth.floss.utils import (
+        generate_dbus_cb_objpath, glib_call, glib_callback)
 
 
 class BtStatus(IntEnum):
@@ -201,8 +199,7 @@ class FlossScannerClient(BluetoothScannerCallbacks):
     SCANNER_OBJECT_PATTERN = '/org/chromium/bluetooth/hci{}/gatt'
 
     SCANNER_CB_INTF = 'org.chromium.bluetooth.ScannerCallback'
-    SCANNER_CB_OBJ_PATTERN = (
-        '/org/chromium/bluetooth/hci{}/test_scanner_client{}')
+    SCANNER_CB_OBJ_NAME = 'test_scanner_client'
     FLOSS_RESPONSE_LATENCY_SECS = 3
 
     class ExportedScannerCallbacks(ObserverBase):
@@ -412,14 +409,10 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         if self.callbacks:
             return True
 
-        # Generate a random number between 1-1000
-        rnumber = math.floor(random.random() * 1000 + 1)
-
         # Create and publish callbacks
         self.callbacks = self.ExportedScannerCallbacks()
-
         self.callbacks.add_observer('scanner_client', self)
-        objpath = self.SCANNER_CB_OBJ_PATTERN.format(self.hci, rnumber)
+        objpath = generate_dbus_cb_objpath(self.SCANNER_CB_OBJ_NAME, self.hci)
         self.bus.register_object(objpath, self.callbacks, None)
 
         # Register published callbacks with scanner daemon

@@ -12,13 +12,10 @@ from enum import IntEnum
 from gi.repository import GLib
 from uuid import UUID
 import logging
-import math
-import random
 
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
-from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
-                                                            glib_callback,
-                                                            PropertySet)
+from autotest_lib.client.cros.bluetooth.floss.utils import (
+        generate_dbus_cb_objpath, glib_call, glib_callback, PropertySet)
 
 
 class BondState(IntEnum):
@@ -118,9 +115,9 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
     ADAPTER_INTERFACE = 'org.chromium.bluetooth.Bluetooth'
     ADAPTER_OBJECT_PATTERN = '/org/chromium/bluetooth/hci{}/adapter'
     ADAPTER_CB_INTF = 'org.chromium.bluetooth.BluetoothCallback'
-    ADAPTER_CB_OBJ_PATTERN = '/org/chromium/bluetooth/hci{}/test_adapter_client{}'
+    ADAPTER_CB_OBJ_NAME = 'test_adapter_client'
     ADAPTER_CONN_CB_INTF = 'org.chromium.bluetooth.BluetoothConnectionCallback'
-    ADAPTER_CONN_CB_OBJ_PATTERN = '/org/chromium/bluetooth/hci{}/test_connection_client{}'
+    ADAPTER_CONN_CB_OBJ_NAME = 'test_connection_client'
 
     @staticmethod
     def parse_dbus_device(remote_device_dbus):
@@ -451,9 +448,6 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         if self.callbacks and self.connection_callbacks:
             return True
 
-        # Generate a random number between 1-1000
-        rnumber = math.floor(random.random() * 1000 + 1)
-
         # Reset known devices
         self.known_devices.clear()
 
@@ -461,7 +455,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             # Create and publish callbacks
             self.callbacks = self.ExportedAdapterCallbacks()
             self.callbacks.add_observer('adapter_client', self)
-            objpath = self.ADAPTER_CB_OBJ_PATTERN.format(self.hci, rnumber)
+            objpath = generate_dbus_cb_objpath(self.ADAPTER_CB_OBJ_NAME,
+                                               self.hci)
             self.bus.register_object(objpath, self.callbacks, None)
 
             # Register published callback with adapter daemon
@@ -471,8 +466,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             self.connection_callbacks = self.ExportedConnectionCallbacks(
                     self.bus, objpath)
             self.connection_callbacks.add_observer('adapter_client', self)
-            objpath = self.ADAPTER_CONN_CB_OBJ_PATTERN.format(
-                    self.hci, rnumber)
+            objpath = generate_dbus_cb_objpath(self.ADAPTER_CONN_CB_OBJ_NAME,
+                                               self.hci)
             self.bus.register_object(objpath, self.connection_callbacks, None)
 
             self.proxy().RegisterConnectionCallback(objpath)

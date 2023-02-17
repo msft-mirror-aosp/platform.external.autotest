@@ -7,12 +7,10 @@
 from gi.repository import GLib
 from uuid import UUID
 import logging
-import math
-import random
 
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
-from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
-                                                            glib_callback)
+from autotest_lib.client.cros.bluetooth.floss.utils import (
+        generate_dbus_cb_objpath, glib_call, glib_callback)
 
 
 class BluetoothAdminPolicyCallbacks:
@@ -45,7 +43,7 @@ class FlossAdminClient(BluetoothAdminPolicyCallbacks):
     ADMIN_INTERFACE = 'org.chromium.bluetooth.BluetoothAdmin'
     ADMIN_OBJECT_PATTERN = '/org/chromium/bluetooth/hci{}/admin'
     ADMIN_CB_INTF = 'org.chromium.bluetooth.AdminPolicyCallback'
-    ADMIN_CB_OBJ_PATTERN = '/org/chromium/bluetooth/hci{}/test_admin_client{}'
+    ADMIN_CB_OBJ_NAME = 'test_admin_client'
 
     @staticmethod
     def parse_dbus_device(device_dbus):
@@ -214,14 +212,10 @@ class FlossAdminClient(BluetoothAdminPolicyCallbacks):
         if self.callbacks:
             return True
 
-        # Generate a random number between 1-1000
-        rnumber = math.floor(random.random() * 1000 + 1)
-
         # Create and publish callbacks
         self.callbacks = self.ExportedAdminPolicyCallbacks()
-
         self.callbacks.add_observer('admin_client', self)
-        objpath = self.ADMIN_CB_OBJ_PATTERN.format(self.hci, rnumber)
+        objpath = generate_dbus_cb_objpath(self.ADMIN_CB_OBJ_NAME, self.hci)
         self.bus.register_object(objpath, self.callbacks, None)
 
         # Register published callbacks with admin daemon

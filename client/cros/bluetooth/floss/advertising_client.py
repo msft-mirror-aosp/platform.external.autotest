@@ -7,14 +7,12 @@
 from enum import IntEnum
 from gi.repository import GLib
 import logging
-import math
-import random
 import uuid
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
-from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
-                                                            glib_callback)
+from autotest_lib.client.cros.bluetooth.floss.utils import (
+        generate_dbus_cb_objpath, glib_call, glib_callback)
 
 
 class GattStatus(IntEnum):
@@ -165,7 +163,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
     ADVERTISING_OBJECT_PATTERN = '/org/chromium/bluetooth/hci{}/gatt'
 
     ADVERTISING_CB_INTF = 'org.chromium.bluetooth.AdvertisingSetCallback'
-    ADVERTISING_CB_OBJ_PATTERN = '/org/chromium/bluetooth/hci{}/test_advertising_client{}'
+    ADVERTISING_CB_OBJ_NAME = 'test_advertising_client'
 
     FLOSS_RESPONSE_LATENCY_SECS = 3
 
@@ -544,14 +542,11 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         if self.callbacks:
             return True
 
-        # Generate a random number between 1-1000
-        rnumber = math.floor(random.random() * 1000 + 1)
-
         # Create and publish callbacks
         self.callbacks = self.ExportedAdvertisingCallbacks()
-
         self.callbacks.add_observer('advertising_client', self)
-        objpath = self.ADVERTISING_CB_OBJ_PATTERN.format(self.hci, rnumber)
+        objpath = generate_dbus_cb_objpath(self.ADVERTISING_CB_OBJ_NAME,
+                                           self.hci)
         self.bus.register_object(objpath, self.callbacks, None)
 
         # Register published callbacks with manager daemon

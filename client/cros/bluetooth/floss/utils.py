@@ -12,12 +12,27 @@ import functools
 from gi.repository import GLib
 import logging
 import threading
+import time
 
 # All GLIB method calls should wait this many seconds by default
 GLIB_METHOD_CALL_TIMEOUT = 2
 
 # GLib thread name that will run the mainloop.
 GLIB_THREAD_NAME = 'glib'
+
+
+def generate_dbus_cb_objpath(name, hci=None):
+    """Generates a DBus callbacks object path with a suffix that won't conflict.
+
+    @param name: The last component of the path.
+                 Note that the suffix is appended right after this.
+    @param hci: The hci number. If specified, an additional 'hciX' component
+                is added before @name.
+    """
+    time_ms = int(time.time() * 1000)
+    if hci is None:
+        return '/org/chromium/bluetooth/{}{}'.format(name, time_ms)
+    return '/org/chromium/bluetooth/hci{}/{}{}'.format(hci, name, time_ms)
 
 
 def dbus_optional_value(value_format, value):

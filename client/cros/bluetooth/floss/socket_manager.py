@@ -7,13 +7,11 @@
 from enum import IntEnum
 from gi.repository import GLib
 import logging
-import math
-import random
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
-from autotest_lib.client.cros.bluetooth.floss.utils import (glib_call,
-                                                            glib_callback)
+from autotest_lib.client.cros.bluetooth.floss.utils import (
+        generate_dbus_cb_objpath, glib_call, glib_callback)
 
 
 class BtStatus(IntEnum):
@@ -94,7 +92,7 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
     ADAPTER_SERVICE = 'org.chromium.bluetooth'
     SOCKET_MANAGER_INTERFACE = 'org.chromium.bluetooth.SocketManager'
     ADAPTER_OBJECT_PATTERN = '/org/chromium/bluetooth/hci{}/adapter'
-    SOCKET_CB_OBJ_PATTERN = '/org/chromium/bluetooth/hci{}/test_socket_client{}'
+    SOCKET_CB_OBJ_NAME = 'test_socket_client'
     CB_EXPORTED_INTF = 'org.chromium.bluetooth.SocketManagerCallback'
     FLOSS_RESPONSE_LATENCY_SECS = 3
 
@@ -227,14 +225,10 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         if self.callbacks:
             return True
 
-        # Generate a random number between 1-1000
-        rnumber = math.floor(random.random() * 1000 + 1)
-
         # Create and publish callbacks
         self.callbacks = self.ExportedSocketManagerCallbacks()
         self.callbacks.add_observer('socket_client', self)
-        objpath = self.SOCKET_CB_OBJ_PATTERN.format(self.hci, rnumber)
-
+        objpath = generate_dbus_cb_objpath(self.SOCKET_CB_OBJ_NAME, self.hci)
         self.bus.register_object(objpath, self.callbacks, None)
 
         # Register published callbacks with adapter daemon

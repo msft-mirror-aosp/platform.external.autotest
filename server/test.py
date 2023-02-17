@@ -12,6 +12,7 @@
 import logging
 import os
 import tempfile
+import re
 
 from autotest_lib.client.common_lib import log
 from autotest_lib.client.common_lib import test as common_test
@@ -186,6 +187,34 @@ class _sysinfo_logger(object):
         mytest.write_test_keyval(keyval)
 
 
+    def _lsb_release_keyval(self, host, outputdir, mytest):
+        fd, path = tempfile.mkstemp(dir=self.job.tmpdir)
+        os.close(fd)
+        keyval = utils.read_keyval(path)
+        hostLsb = host.run_output('cat /etc/lsb-release')
+        keyval.update(self._temp_keyval_reader(hostLsb))
+        mytest.write_test_keyval(keyval)
+
+    def _temp_keyval_reader(self, keyvalinfo):
+        pattern = r'^([-@\.\w]+)=(.*)$'
+        keyval = {}
+        for line in keyvalinfo.split('\n'):
+            line = re.sub('#.*', '', line).rstrip()
+            if not line:
+                continue
+            match = re.match(pattern, line)
+            if match:
+                key = match.group(1)
+                value = match.group(2)
+                if re.search('^\d+$', value):
+                    value = int(value)
+                elif re.search('^(\d+\.)?\d+$', value):
+                    value = float(value)
+                keyval[key] = value
+            else:
+                raise ValueError('Invalid format line: %s' % line)
+        return keyval
+
     @log.log_and_ignore_errors("pre-test server sysinfo error:")
     @install_autotest_and_run
     def before_hook(self, mytest, host, at, outputdir):
@@ -264,6 +293,9 @@ class _sysinfo_logger(object):
         crossystem_output = self.host.run_output('crossystem')
         with open('%s/crossystem' % output_path, 'w') as f:
             f.write(crossystem_output)
+        # ensure we pull version info from host to keyval which is used
+        # by tko results processing pipeline
+        self._lsb_release_keyval(self.host, mytest.outputdir, mytest)
 
     def cleanup(self, host_close=True):
         if self.host and self.autotest:

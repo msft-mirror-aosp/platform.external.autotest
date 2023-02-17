@@ -8,7 +8,6 @@ import datetime
 import json
 import logging
 import os
-import socket
 import tempfile
 from collections import OrderedDict
 
@@ -552,34 +551,6 @@ class tast(test.test):
         """
         return os.path.join(self._install_root, os.path.relpath(path, '/'))
 
-    def _get_camerabox_args(self):
-        """Gets camerabox-related arguments to pass to "tast run".
-
-        @returns List of command-line flag strings that should be inserted in
-            the command line after "tast run".
-        """
-        args = []
-        if self._use_camera_box:
-            host_name = self._host.hostname
-
-            # If host name is "FOO.BAR.BAR2", the chart host name should be
-            # "FOO-tablet.BAR.BAR2"
-            domains = host_name.split('.', 1)
-            domains[0] += '-tablet'
-            chart_host_name = '.'.join(domains)
-            try:
-                chart_ip = socket.gethostbyname(chart_host_name)
-
-                # Check if the IP is pingable.
-                if os.system("ping -c 1 " + chart_ip) != 0:
-                    logging.error('Failed to ping IP: %s.', chart_ip)
-
-                args += ['-var=chart=' + chart_ip]
-            except socket.gaierror:
-                logging.exception('Failed to get IP: %s.', chart_host_name)
-        logging.info('Camerabox args: %s', args)
-        return args
-
     def _get_servo_args(self):
         """Gets servo-related arguments to pass to "tast run".
 
@@ -932,7 +903,6 @@ class tast(test.test):
         args.extend(self._get_wificell_args())
         args.extend(self._get_cloud_storage_info())
         args.extend(self._get_firmware_args())
-        args.extend(self._get_camerabox_args())
         if self._retries:
             args.append('-retries=%d' % self._retries)
 

@@ -363,6 +363,7 @@ CONFIG['ENABLE_DEFAULT_APPS'] = [
 # Modules that need to be tested at higher display resolution in VM.
 CONFIG['SPLIT_BY_VM_FORCE_MAX_RESOLUTION'] = [
         'CtsWindowManagerDeviceTestCases',
+        'CtsAccessibilityServiceTestCases',
 ]
 
 # Run `eject` for (and only for) each device with RM=1 in lsblk output.

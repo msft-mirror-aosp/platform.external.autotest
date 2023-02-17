@@ -1,0 +1,39 @@
+# Copyright 2020 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_R.internal.x86.CtsAccessibility.vmhires'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = ''
+DEPENDENCIES = 'arc, cts_abi_x86'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_R',
+        hosts=host_list,
+        iterations=1,
+        vm_force_max_resolution=True,
+        tag='internal.x86.CtsAccessibility.vmhires',
+        test_name='cheets_CTS_R.internal.x86.CtsAccessibility.vmhires',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsAccessibilityServiceSdk29TestCases', '--include-filter', 'CtsAccessibilityServiceSdk29TestCases[instant]', '--include-filter', 'CtsAccessibilityServiceSdk29TestCases[secondary_user]', '--include-filter', 'CtsAccessibilityServiceTestCases', '--include-filter', 'CtsAccessibilityServiceTestCases[instant]', '--include-filter', 'CtsAccessibilityTestCases', '--include-filter', 'CtsAccessibilityTestCases[instant]', '--include-filter', 'CtsAccessibilityTestCases[secondary_user]', '--logcat-on-failure'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='CtsAccessibility',
+        target_plan=None,
+        bundle='x86',
+        uri='DEV',
+        timeout=16200)
+
+parallel_simple(run_TS, machines)

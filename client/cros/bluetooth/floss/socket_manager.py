@@ -329,8 +329,8 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         socket_id = socket_result['id']
         server_socket, status = self.wait_for_incoming_socket_ready(socket_id)
         if BtStatus(status) != BtStatus.SUCCESS:
-            logging.error('Failed to start socket with id: %s, '
-                          'status = %s' % (socket_id, status))
+            logging.error('Failed to start socket with id: %s, status = %s',
+                          socket_id, status)
             return None
         return socket_result
 
@@ -408,8 +408,8 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         """
         status = self.proxy().Close(self.callback_id, socket_id)
         if BtStatus(status) != BtStatus.SUCCESS:
-            logging.error('Failed to close socket with id: %s, '
-                          'status = %s' % (socket_id, status))
+            logging.error('Failed to close socket with id: %s, status = %s',
+                          socket_id, status)
         return BtStatus(status) == BtStatus.SUCCESS
 
     def wait_for_incoming_socket_closed(self, socket_id):
@@ -455,7 +455,7 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
                 failed_socket_ids.append(i)
 
         if failed_socket_ids:
-            logging.error('Failed to close sockets with ids: %s' %
+            logging.error('Failed to close sockets with ids: %s',
                           ','.join(failed_socket_ids))
             return False
         return True

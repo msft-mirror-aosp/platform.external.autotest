@@ -417,7 +417,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         if missing_periodic_parameters:
             logging.error(
                     'Missing periodic advertisement parameters data with '
-                    'keys: %s' % ','.join(missing_periodic_parameters))
+                    'keys: %s', ','.join(missing_periodic_parameters))
             return {}
 
         return {
@@ -446,7 +446,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         } - set(adv_set_parameters.keys())
 
         if missing_parameters:
-            logging.error('Missing advertisement parameters with keys: %s' %
+            logging.error('Missing advertisement parameters with keys: %s',
                           ','.join(missing_parameters))
             return {}
 
@@ -492,7 +492,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
         } - set(adv_data.keys())
 
         if missing_data:
-            logging.error('Missing advertisement data with keys: %s' %
+            logging.error('Missing advertisement data with keys: %s',
                           ','.join(missing_data))
             return {}
 
@@ -806,8 +806,9 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
 
         advertise_id, status = self.wait_for_adv_started(reg_id)
         if GattStatus(status) != GattStatus.SUCCESS:
-            logging.error('Failed to start advertisement with id: %s, '
-                          'status = %s' % (advertise_id, status))
+            logging.error(
+                    'Failed to start advertisement with id: %s, status = %s',
+                    advertise_id, status)
             return None
         return advertise_id
 
@@ -834,7 +835,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                 failed_adv_ids.append(i)
 
         if len(failed_adv_ids) > 0:
-            logging.error('Failed to reset advertisement sets with ids: %s' %
+            logging.error('Failed to reset advertisement sets with ids: %s',
                           ','.join(failed_adv_ids))
             return False
         return True

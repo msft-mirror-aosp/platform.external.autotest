@@ -4,7 +4,6 @@
 # found in the LICENSE file.
 """Client class to access the Floss media interface."""
 
-from enum import Enum
 from gi.repository import GLib
 import logging
 import math

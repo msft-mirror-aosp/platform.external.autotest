@@ -482,8 +482,9 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         scanner_id, status = self.wait_for_on_scanner_registered(uuid)
 
         if GattStatus(status) != GattStatus.SUCCESS:
-            logging.error('Failed to register the scanner with id: %s, '
-                          'status = %s' % (scanner_id, status))
+            logging.error(
+                    'Failed to register the scanner with id: %s, status = %s',
+                    scanner_id, status)
             return None
         return scanner_id
 
@@ -511,8 +512,9 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         status = self.proxy().StartScan(scanner_id, settings, filter)
 
         if BtStatus(status) != BtStatus.SUCCESS:
-            logging.error('Failed to start the scanner with id: %s, '
-                          'status = %s' % (scanner_id, status))
+            logging.error(
+                    'Failed to start the scanner with id: %s, status = %s',
+                    scanner_id, status)
             return False
         return True
 

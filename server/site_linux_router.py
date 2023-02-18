@@ -36,6 +36,8 @@ HostapdInstance = collections.namedtuple('HostapdInstance',
                                           'interface', 'config_dict',
                                           'stderr_log_file',
                                           'scenario_name'])
+IPTablesRule = collections.namedtuple('IPTablesRule',
+                                      ['chain', 'rule', 'table'])
 
 # Send magic packets here, so they can wake up the system but are otherwise
 # dropped.
@@ -120,6 +122,22 @@ class LinuxRouter(site_linux_system.LinuxSystem):
     _RNG_AVAILABLE = '/sys/class/misc/hw_random/rng_available'
     _RNG_CURRENT = '/sys/class/misc/hw_random/rng_current'
 
+    _IPTABLES_CMD = '/sbin/iptables'
+    _ENABLE_WAN_IPTABLE_RULES = [
+            IPTablesRule(chain='POSTROUTING',
+                         rule='-o {wan_if} -j MASQUERADE',
+                         table='nat'),
+            IPTablesRule(
+                    chain='INPUT',
+                    rule='-i {wan_if} -m state --state ESTABLISHED,RELATED'
+                    ' -j ACCEPT',
+                    table=None),
+            IPTablesRule(chain='OUTPUT', rule='-j ACCEPT', table=None),
+            IPTablesRule(chain='INPUT',
+                         rule='-i {wap_if} -j ACCEPT',
+                         table=None)
+    ]
+
     def get_capabilities(self):
         """@return iterable object of AP capabilities for this system."""
         caps = set()
@@ -168,6 +186,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         super(LinuxRouter, self).__init__(host, role)
         self._ssid_prefix = test_name
         self._enable_avahi = enable_avahi
+        self._enable_wan = False
         self.__setup()
 
 
@@ -433,15 +452,22 @@ class LinuxRouter(site_linux_system.LinuxSystem):
             self.host.run('echo -n "%s" > %s' % (want_rng, self._RNG_CURRENT))
 
 
-    def hostap_configure(self, configuration, multi_interface=None):
+    def hostap_configure(self,
+                         configuration,
+                         multi_interface=None,
+                         enable_wan_access=False):
         """Build up a hostapd configuration file and start hostapd.
 
         Also setup a local server if this router supports them.
 
         @param configuration HosetapConfig object.
         @param multi_interface bool True iff multiple interfaces allowed.
-
+        @param enable_wan_access True iff traffic to the WAN is allowed.
         """
+        if multi_interface and enable_wan_access:
+            raise error.TestFail(
+                    'Enable wan access is currently not supported '
+                    'for multiple APs.')
         if multi_interface is None and (self.hostapd_instances or
                                         self.station_instances):
             self.deconfig()
@@ -454,6 +480,8 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         interface = self.hostapd_instances[-1].interface
         self.iw_runner.set_tx_power(interface, 'auto')
         self.start_local_server(interface, bridge=configuration.bridge)
+        if enable_wan_access:
+            self.enable_wan_access(interface)
         logging.info('AP configured.')
 
 
@@ -806,6 +834,8 @@ class LinuxRouter(site_linux_system.LinuxSystem):
                     # hostapd uses to send beacon and DEAUTH packets.
                     self.remove_interface(instance.interface)
 
+                if self._enable_wan:
+                    self.disable_wan_access(instance.interface)
                 self.kill_hostapd_instance(instance)
                 self.release_interface(instance.interface)
         if self.station_instances:
@@ -1107,3 +1137,72 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         # interface name, and interface_alias[1] (if exists) is the alias name
         interface_alias = interface_with_possible_alias.split("@")
         return interface_alias[0]
+
+    def _add_iptable_rule(self, chain, rule, table=None):
+        """Add an iptable rule to a chain.
+
+        Will not add the rule if it already exists.
+
+        @param chain The name of the chain to add the rule to.
+        @param rule The iptable rule to be added.
+        @param table The table to manipulate iff not the default.
+        """
+        cmd = self._IPTABLES_CMD
+        if table:
+            cmd = cmd + ' -t %s' % (table)
+        cmd = '%s -C %s %s || %s -A %s %s' % (cmd, chain, rule, cmd, chain,
+                                              rule)
+        self.host.run(cmd)
+
+    def _drop_iptable_rule(self, chain, rule, table=None):
+        """Remove an iptable rule from a chain.
+
+        Will drop all instances of the rule on the chain if any.
+
+        @param chain The name of the chain to remove the rule from.
+        @param rule The iptable rule to be removed.
+        @param table The table to manipulate iff not the default.
+        """
+        cmd = self._IPTABLES_CMD
+        if table:
+            cmd = cmd + ' -t %s' % (table)
+        cmd = '%s -D %s %s' % (cmd, chain, rule)
+        self.host.run(cmd, ignore_status=True)
+
+    def enable_wan_access(self, wap_if, wan_if='eth0'):
+        """Enable WAN access via NAT.
+
+        Add iptable rules to NAT AP traffic onto the `wan_if`.
+
+        @param wap_if Interface of AP on which to disable WAN access.
+        @param wan_if Name of the interface connected to the WAN.
+        """
+        if len(self.hostapd_instances) > 1:
+            raise error.TestFail(
+                    'Enable wan access is currently not supported '
+                    'for multiple APs.')
+        logging.info('Enable wan access on interface: %s', wap_if)
+        for instance in self._ENABLE_WAN_IPTABLE_RULES:
+            self._add_iptable_rule(
+                    instance.chain,
+                    instance.rule.format(wap_if=wap_if, wan_if=wan_if),
+                    instance.table)
+        self.host.run('echo 1 > /proc/sys/net/ipv4/ip_forward')
+        self._enable_wan = True
+
+    def disable_wan_access(self, wap_if, wan_if='eth0'):
+        """Disable WAN access.
+
+        Remove iptable rules that NAT AP traffic onto the `wan_if`.
+
+        @param wap_if Interface of AP on which to disable WAN access.
+        @param wan_if Name of the interface connected to the WAN.
+        """
+        logging.info('Disable wan access on interface: %s', wap_if)
+        self.host.run('echo 0 > /proc/sys/net/ipv4/ip_forward')
+        for instance in reversed(self._ENABLE_WAN_IPTABLE_RULES):
+            self._drop_iptable_rule(
+                    instance.chain,
+                    instance.rule.format(wap_if=wap_if, wan_if=wan_if),
+                    instance.table)
+        self._enable_wan = False

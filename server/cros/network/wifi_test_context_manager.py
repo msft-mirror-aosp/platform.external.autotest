@@ -157,8 +157,12 @@ class WiFiTestContextManager(object):
         return self.router.host
 
 
-    def configure(self, ap_config, multi_interface=None, is_ibss=None,
-                  configure_pcap=False):
+    def configure(self,
+                  ap_config,
+                  multi_interface=None,
+                  is_ibss=None,
+                  configure_pcap=False,
+                  enable_wan_access=False):
         """Configure a router with the given config.
 
         Configures an AP according to the specified config and
@@ -172,6 +176,8 @@ class WiFiTestContextManager(object):
         @param configure_pcap True iff pcap_host should be configured for this
                 configure call. Raises a TestNAError if |self._pcap_as_router|
                 is False.
+        @param enable_wan_access True iff router should be configured to NAT
+                traffic to the WAN.
         """
         if configure_pcap and not self._pcap_as_router:
             raise error.TestNAError('pcap was not configured as router.')
@@ -194,7 +200,9 @@ class WiFiTestContextManager(object):
                 raise error.TestNAError('DUT does not support IBSS mode')
             router.ibss_configure(ap_config)
         else:
-            router.hostap_configure(ap_config, multi_interface=multi_interface)
+            router.hostap_configure(ap_config,
+                                    multi_interface=multi_interface,
+                                    enable_wan_access=enable_wan_access)
         if self._enable_client_packet_captures:
             self.client.start_capture(ap_config.frequency,
                                       snaplen=self._packet_capture_snaplen)
@@ -450,3 +458,17 @@ class WiFiTestContextManager(object):
                                                ping_ip=wifi_ip,
                                                desired_subnet=desired_subnet,
                                                source_iface=wifi_if)
+
+    def enable_wan_access(self, ap_num=0):
+        """Enable WAN access.
+
+        @param ap_num int AP on which to enable WAN access.
+        """
+        return self.router.enable_wan_access(self.get_wifi_if(ap_num))
+
+    def disable_wan_access(self, ap_num=0):
+        """Disable WAN access.
+
+        @param ap_num int AP on which to disable WAN access.
+        """
+        return self.router.disable_wan_access(self.get_wifi_if(ap_num))

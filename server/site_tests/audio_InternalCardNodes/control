@@ -29,6 +29,9 @@ def run(machine):
                  blocked_boards=['lars',    # Pending fix for b/147647051
                                  'lars-kernelnext',    # Also b/147647051
                                  'strongbad',    # Device with no audiojack port
+                                 'brask',    # Pending fix for b/268744440
+                                 'corsola',    # Pending fix for b/268744440
+                                 'nissa',    # Pending fix for b/268744440
                                 ])
 
 parallel_simple(run, machines)

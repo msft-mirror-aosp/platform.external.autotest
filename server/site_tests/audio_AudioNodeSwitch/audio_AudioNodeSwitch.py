@@ -39,6 +39,8 @@ class audio_AudioNodeSwitch(audio_test.AudioTest):
 
     def check_default_nodes(self):
         """Checks default audio nodes for devices with onboard audio support."""
+        if self.host.get_board().split(':')[1] in blocked_boards:
+            raise error.TestNAError('Board not applicable to test!')
         if audio_test_utils.has_internal_microphone(self.host):
             audio_test_utils.check_audio_nodes(self.facade,
                                                (None, ['INTERNAL_MIC']))

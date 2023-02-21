@@ -473,11 +473,11 @@ def get_cpu_cache_size():
         return 0
     res = ret.stdout.strip()
     if 'K' in res:
-      return int(res.split('K')[0])
+        return int(res.split('K')[0])
     elif 'M' in res:
-      return int(res.split('M')[0])*1000
+        return int(res.split('M')[0])*1000
     else:
-      return 0
+        return 0
 
 
 def cpu_online_map():
@@ -520,7 +520,7 @@ def get_memory_frequency():
         return 0
     res = ret.stdout.strip().split('MT')[0]
     if res and res.isdigit():
-      return int(res)
+        return int(res)
     return 0
 
 # Returns total memory in kb

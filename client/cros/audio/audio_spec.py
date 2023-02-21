@@ -134,6 +134,10 @@ BOARDS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('zork', 'vilboz360', '1518534662'),
         BoardInfo('keeby', 'lalala', ''),
         BoardInfo('dedede', 'drawcia', ''),
+        BoardInfo('nissa', 'craask', ''),
+        BoardInfo('nissa', 'craaskbowl', ''),
+        BoardInfo('nissa', 'xivu', ''),
+        BoardInfo('nissa', 'xivu360', ''),
 ]
 
 

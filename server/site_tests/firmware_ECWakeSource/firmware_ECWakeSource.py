@@ -182,10 +182,10 @@ class firmware_ECWakeSource(FirmwareTest):
                                                       'press'))
             except ConnectionError:
                 raise error.TestFail(
-                        'USB HID suspend/resume fails. Maybe try to '
-                        'update firmware for Atmel USB KB emulator by running '
-                        'firmware_FlashServoKeyboardMap test and then try again?'
-                )
+                        'USB HID suspend/resume fails. See '
+                        'https://chromium.googlesource.com/chromiumos/'
+                        'third_party/hdctools/+/HEAD/docs/servo_v4p1_cf.md'
+                        '#programming-the-atmel-atmega32u4')
             self.check_boot_id(host, original_boot_id, wake_src)
 
             logging.debug('Turning off HID keyboard emulator.')

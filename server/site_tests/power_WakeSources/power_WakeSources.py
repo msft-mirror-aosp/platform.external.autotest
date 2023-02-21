@@ -217,9 +217,11 @@ class power_WakeSources(test.test):
                     return True
                 else:
                     logging.warning(
-                        'Atmel USB keyboard does not have wake capability.'
-                        ' Please run firmware_FlashServoKeyboardMap Autotest '
-                        'to update the Atmel firmware.')
+                            'Atmel USB keyboard does not have wake capability.'
+                            ' See '
+                            'https://chromium.googlesource.com/chromiumos/'
+                            'third_party/hdctools/+/HEAD/docs/servo_v4p1_cf.md'
+                            '#programming-the-atmel-atmega32u4')
                     return False
             else:
                 logging.warning(

@@ -19,14 +19,14 @@ be similar for other Servos too.
 
 1.  Make sure that servo has the latest firmware.
     *   `$ sudo servo_updater`
-2.  This test depends on the Servo's USB HID emulator capability. Please run
-    [firmware_FlashServoKeyboardMap] Autotest to install the latest
-    [keyboard.hex] onto Servo.
-3.  Make sure that the USBC charger is plugged into Servo before running the
+1.  This test depends on the Servo's USB HID emulator capability. See
+    https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/HEAD/docs/servo_v4p1_cf.md#programming-the-atmel-atmega32u4
+    if your servo's atmel keyboard emulator isn't flashed (uncommon).
+1.  Make sure that the USBC charger is plugged into Servo before running the
     test.
-3.  Run the test.
+1.  Run the test.
     *   `$ test_that ${DUT_ipaddr} power_WakeSources`
-4.  Once run, the test publishes a keyval with test results similar to the list
+1.  Once run, the test publishes a keyval with test results similar to the list
     below.
 
 ```python
@@ -67,5 +67,4 @@ The steps below describe how to test wake sources manually.
 \[Dark Resume\]: https://chromium.googlesource.com/chromiumos/platform2/+/main/power_manager/docs/dark_resume.md <br>
 \[dark resume is disabled\]: https://chromium.googlesource.com/chromiumos/platform2/+/main/power_manager/docs/dark_resume.md#Disabling-Dark-Resume <br>
 \[keyboard.hex\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/servo/firmware/usbkm/KeyboardSerial/Keyboard.hex <br>
-\[firmware_FlashServoKeyboardMap\]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/server/site_tests/firmware_FlashServoKeyboardMap/ <br>
 \[chromeos-platform-power\]: chromeos-platform-power@google.com <br>

@@ -1,0 +1,33 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = "power_LW.power_LoadTest"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com", "dbasehore"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a power benchmark test.",
+    "hw_agnostic": False,
+    "doc" : "Control file for running power_LoadTest in power lab.",
+}
+TEST_TYPE = "server"
+
+from autotest_lib.client.common_lib import utils
+
+args_dict = utils.args_to_dict(args)
+test = 'power_LoadTest'
+args = {
+    'pdash_note': args_dict.get('pdash_note', ''),
+    'tag' : 'PLW',
+    'loop_time' : 3600,
+    'loop_count' : 16,
+    'test_low_batt_p' : 5,
+    'tast_bundle_path': args_dict.get('tast_bundle_path'),
+}
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test("power_LW", host=host, test=test, args=args,
+                 machine=machine, tag=NAME.split('.')[1])
+
+parallel_simple(run, machines)

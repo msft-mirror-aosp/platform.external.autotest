@@ -531,12 +531,18 @@ def get_job_retries(modules, is_public, suites):
     return retries
 
 
-def get_max_retries(modules, abi, suites, is_public):
+def get_max_retries(modules, abi, suites, is_public, shard):
     """Partners experiance issues where some modules are flaky and require more
 
        retries.  Calculate the retry number per module on moblab.
     @param module: CTS module which will be tested in the control file.
+    @param shard: an integer tuple representing the shard index.
     """
+    # Disable retries for sharded jobs for now, to avoid the
+    # awkward retry behavior (see b/243725038).
+    if shard != (0, 1):
+        return 0
+
     retry = -1
     if is_public:
         if _ALL in CONFIG['PUBLIC_MODULE_RETRY_COUNT']:
@@ -1129,7 +1135,8 @@ def get_controlfile_content(combined,
             wifi_info_needed=wifi_info_needed(modules, is_public),
             has_precondition_escape=has_precondition_escape(
                     modules, is_public),
-            max_retries=get_max_retries(modules, abi, suites, is_public),
+            max_retries=get_max_retries(modules, abi, suites, is_public,
+                                        shard),
             timeout=calculate_timeout(modules, suites),
             run_template=get_run_template(modules,
                                           is_public,

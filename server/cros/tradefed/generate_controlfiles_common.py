@@ -105,7 +105,7 @@ _CONTROLFILE_TEMPLATE = Template(
     {%- endif %}
         job.run_test(
             '{{base_name}}',
-    {%- if camera_facing %}
+    {%- if camera_facing and camera_facing != 'nocamera' %}
             camera_facing='{{camera_facing}}',
             cmdline_args=args,
     {%- endif %}
@@ -1630,7 +1630,7 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, source_type):
     """Control files for CtsCameraTestCases.camerabox.*"""
     module = 'CtsCameraTestCases'
     is_public = (source_type == SourceType.MOBLAB)
-    for facing in ['back', 'front']:
+    for facing in ['back', 'front', 'nocamera']:
         led_provision = 'noled'
         name = get_controlfile_name(module, abi, revision, is_public,
                                     led_provision, facing)

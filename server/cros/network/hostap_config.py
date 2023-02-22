@@ -914,10 +914,10 @@ class HostapConfig(object):
 
         if self._hide_ssid:
             conf['ignore_broadcast_ssid'] = 1
-        if self._is_11n or self.is_11ac:
+        if self._is_11n or self.is_11ac or self.is_11ax:
             conf['ieee80211n'] = 1
             conf['ht_capab'] = self._hostapd_ht_capabilities
-        if self.is_11ac:
+        if self.is_11ac or self.is_11ax:
             conf['ieee80211ac'] = 1
             conf['vht_oper_chwidth'] = self._vht_oper_chwidth
             if self._vht_oper_centr_freq_seg0_idx is not None:
@@ -927,6 +927,10 @@ class HostapConfig(object):
         if self.is_11ax:
             conf['ieee80211ax'] = 1
             conf['he_oper_chwidth'] = self._he_oper_chwidth
+            conf['he_default_pe_duration'] = 0  # 0us value in PE (packet extension) field
+            conf['he_basic_mcs_nss_set'] = 2  # Enable MCS index 0-11
+            conf['he_bss_color'] = 42  # Set default bss color
+
             if self._he_oper_centr_freq_seg0_idx is not None:
                 conf['he_oper_centr_freq_seg0_idx'] = \
                         self._he_oper_centr_freq_seg0_idx

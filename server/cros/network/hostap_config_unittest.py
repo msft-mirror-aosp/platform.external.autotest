@@ -19,11 +19,16 @@ class HostapConfigTest(unittest.TestCase):
     _AC_CAPS = [hostap_config.HostapConfig.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7]
     _AX_CAPS = [hostap_config.HostapConfig.AX_CAPABILITY_HE160]
 
-    def _make_hostap_config_11ax(self, mode, he_chwidth, channel=36):
+    def _make_hostap_config_11ax(self,
+                                 mode,
+                                 vht_chwidth,
+                                 he_chwidth,
+                                 channel=36):
         config = hostap_config.HostapConfig(channel=channel,
                                             mode=mode,
                                             n_capabilities=self._N_CAP_HT20,
                                             ac_capabilities=self._AC_CAPS,
+                                            vht_channel_width=vht_chwidth,
                                             ax_capabilities=self._AX_CAPS,
                                             he_channel_width=he_chwidth)
 
@@ -43,6 +48,7 @@ class HostapConfigTest(unittest.TestCase):
         """
         config, hostap_dict = self._make_hostap_config_11ax(
                 hostap_config.HostapConfig.MODE_11AX_PURE,
+                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_160,
                 hostap_config.HostapConfig.HE_CHANNEL_WIDTH_160)
 
         self._assert_11ax(config, hostap_dict)
@@ -55,6 +61,7 @@ class HostapConfigTest(unittest.TestCase):
         """
         config, hostap_dict = self._make_hostap_config_11ax(
                 hostap_config.HostapConfig.MODE_11AX_MIXED,
+                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20,
                 hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20)
 
         self._assert_11ax(config, hostap_dict)
@@ -68,6 +75,7 @@ class HostapConfigTest(unittest.TestCase):
         """
         config, hostap_dict = self._make_hostap_config_11ax(
                 hostap_config.HostapConfig.MODE_11AX_PURE,
+                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40,
                 hostap_config.HostapConfig.HE_CHANNEL_WIDTH_40)
 
         self._assert_11ax(config, hostap_dict)
@@ -80,6 +88,7 @@ class HostapConfigTest(unittest.TestCase):
         """
         config, hostap_dict = self._make_hostap_config_11ax(
                 hostap_config.HostapConfig.MODE_11AX_PURE,
+                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20,
                 hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20,
                 channel=1)
 
@@ -94,5 +103,6 @@ class HostapConfigTest(unittest.TestCase):
         """
         config, hostap_dict = self._make_hostap_config_11ax(
                 hostap_config.HostapConfig.MODE_11AX_PURE,
+                hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80,
                 hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80,
                 channel=1)

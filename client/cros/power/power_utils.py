@@ -496,30 +496,42 @@ class KbdBacklight(object):
 
     Example code:
         kblight = power_utils.KbdBacklight()
-        kblight.set(10)
+        kblight.set_level(10)
         print "kblight % is %.f" % kblight.get_percent()
 
     Public methods:
         set_percent: Sets the keyboard backlight to a percent.
         get_percent: Get current keyboard backlight percentage.
         set_level: Sets the keyboard backlight to a level.
-        get_default_level: Get default keyboard backlight brightness level
+        get_level: Get current keyboard backlight level.
+        get_default_level: Get default keyboard backlight brightness level.
+        get_max_level: Get maximum keyboard backight level.
+        restore: Restore keyboard backlight level to before this object started
+                 controlling it.
+        linear_to_nonlinear: convert linear percentage to nonlinear (UI)
+                             percentage.
+        nonlinear_to_linear: convert nonlinear(UI) percentage to linear
+                             percentage.
 
     Private attributes:
         _default_backlight_level: keboard backlight level set by default
-
+        _original_backlight_level: keyboard backlight level before this object
+                                   started controlling it.
     """
 
     def __init__(self):
         cmd = 'check_powerd_config --keyboard_backlight'
         result = utils.run(cmd, ignore_status=True)
         if result.exit_status:
-            raise KbdBacklightException('Keyboard backlight support' +
-                                        'is not enabled')
+            raise KbdBacklightException(
+                    'Keyboard backlight support is not enabled')
         arg = "--get_initial_brightness --lux=0 2>/dev/null"
         self._default_backlight_level = int(run_kb_backlight_cmd(arg))
-        logging.info("Default keyboard backlight brightness level = %d",
-                        self._default_backlight_level)
+        self._original_backlight_level = self.get_level()
+        logging.info(
+                "Default keyboard backlight brightness level = %d, "
+                "current keyboard backlight brightness level = %d",
+                self._default_backlight_level, self._original_backlight_level)
 
     def get_percent(self):
         """Get current keyboard brightness setting percentage.
@@ -529,6 +541,15 @@ class KbdBacklight(object):
         """
         arg = '--get_brightness_percent'
         return float(run_kb_backlight_cmd(arg))
+
+    def get_level(self):
+        """Get current keyboard brightness setting level.
+
+        Returns:
+            int, level of keyboard brightness.
+        """
+        arg = '--get_brightness'
+        return int(run_kb_backlight_cmd(arg))
 
     def get_default_level(self):
         """
@@ -557,6 +578,21 @@ class KbdBacklight(object):
         """
         arg = '--set_brightness=%d' % level
         run_kb_backlight_cmd(arg)
+
+    def get_max_level(self):
+        """
+        Get maximum keyboard backlight level.
+
+        Returns:
+            int, maximum keyboard backlight level.
+        """
+        return int(run_kb_backlight_cmd('--get_max_brightness'))
+
+    def restore(self):
+        """
+        Set keyboard backlight to original level.
+        """
+        self.set_level(self._original_backlight_level)
 
     def linear_to_nonlinear(self, linear):
         """Convert supplied linear brightness percent to nonlinear.

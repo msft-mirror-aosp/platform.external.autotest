@@ -7,7 +7,6 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import cros_ui
 from autotest_lib.client.cros.power import power_test
-from autotest_lib.client.cros.power import power_utils
 
 class power_KeyboardBacklight(power_test.power_Test):
     """class for power_KeyboardBacklight test.
@@ -33,10 +32,8 @@ class power_KeyboardBacklight(power_test.power_Test):
         @raise KbdBacklightException: unable to control keyboard backlight
                 brightness.
         """
-        try:
-            self._keyboard_backlight = power_utils.KbdBacklight()
-        except power_utils.KbdBacklightException as e:
-            raise error.TestNAError(e)
+        if not self.kbd_backlight:
+            raise error.TestNAError('Keyboard backlight does not exist')
 
         cros_ui.stop(allow_fail=True)
         # Stop services and disable multicast again as Chrome might have
@@ -44,19 +41,20 @@ class power_KeyboardBacklight(power_test.power_Test):
         self._services.stop_services()
         self._multicast_disabler.disable_network_multicast()
 
-        brightnesses = [
-            {'nonlinear': nonlinear,
-             'linear' : self._keyboard_backlight.nonlinear_to_linear(nonlinear)}
-            for nonlinear in range(100, -1, -percent_step_size)
-        ]
+        brightnesses = [{
+                'nonlinear':
+                nonlinear,
+                'linear':
+                self.kbd_backlight.nonlinear_to_linear(nonlinear)
+        } for nonlinear in range(100, -1, -percent_step_size)]
 
-        self._keyboard_backlight.set_percent(brightnesses[0]['linear'])
+        self.kbd_backlight.set_percent(brightnesses[0]['linear'])
         time.sleep(sec_rest)
 
         self.start_measurements()
 
         for loop, brightness in enumerate(brightnesses):
-            self._keyboard_backlight.set_percent(brightness['linear'])
+            self.kbd_backlight.set_percent(brightness['linear'])
             tagname = (
                 f'{self.tagged_testname}_'
                 f'nonlinear_{brightness["nonlinear"]:.2f}_'

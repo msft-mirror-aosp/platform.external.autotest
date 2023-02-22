@@ -60,6 +60,7 @@ class power_Test(test.test):
         @param run_arc: bool, whether to run with ARC (if available)
 
         @var backlight: power_utils.Backlight object.
+        @var kbd_backlight: power_utils.KbdBacklight object.
         @var keyvals: dictionary of result keyvals.
         @var status: power_status.SysStat object.
 
@@ -80,9 +81,6 @@ class power_Test(test.test):
 
         self._force_discharge_success = force_discharge_utils.process(
                 force_discharge, self.status)
-        self.backlight = power_utils.Backlight(
-                force_battery=self._force_discharge_success)
-        self.backlight.set_default()
 
         ifaces = [iface for iface in interface.get_interfaces()
                 if (not iface.is_wifi_device() and
@@ -98,6 +96,17 @@ class power_Test(test.test):
         self._services = service_stopper.ServiceStopper(
                 service_stopper.ServiceStopper.POWER_DRAW_SERVICES)
         self._services.stop_services()
+
+        self.backlight = power_utils.Backlight(
+                force_battery=self._force_discharge_success)
+        self.backlight.set_default()
+        try:
+            self.kbd_backlight = power_utils.KbdBacklight()
+            self.kbd_backlight.set_level(0)
+        except power_utils.KbdBacklightException as e:
+            logging.info('Test will proceed with understanding: %s', e)
+            self.kbd_backlight = None
+
         self._multicast_disabler = multicast_disabler.MulticastDisabler()
         self._multicast_disabler.disable_network_multicast()
         self._stats = power_status.StatoMatic()
@@ -262,6 +271,11 @@ class power_Test(test.test):
         keyvals['level_backlight_max'] = self.backlight.get_max_level()
         keyvals['level_backlight_current'] = self.backlight.get_level()
         keyvals['level_backlight_percent'] = self.backlight.get_percent()
+        if self.kbd_backlight:
+            keyvals['level_kbd_backlight_max'] = \
+                    self.kbd_backlight.get_max_level()
+            keyvals['level_kbd_backlight_current'] = \
+                    self.kbd_backlight.get_level()
 
         # record battery stats if battery exists
         keyvals['b_on_ac'] = int(not self._force_discharge_success
@@ -398,6 +412,8 @@ class power_Test(test.test):
         force_discharge_utils.restore(self._force_discharge_success)
         if self.backlight:
             self.backlight.restore()
+        if self.kbd_backlight:
+            self.kbd_backlight.restore()
         self._multicast_disabler.enable_network_multicast()
         self._services.restore_services()
         super(power_Test, self).cleanup()

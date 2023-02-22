@@ -229,6 +229,19 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
+    def start_discovery(self, register_observer=True):
+        """start discovery.
+
+        @param register_observer: register a dbus observer to conditionally
+                restart discovery when this flag is True.
+
+        @returns True on success, False otherwise.
+
+        """
+        return self._proxy.start_discovery(register_observer)
+
+
+    @proxy_thread_safe
     def start_bluetoothd(self):
         """start bluetoothd.
 

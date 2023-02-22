@@ -390,6 +390,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         device = self.devices['BLE_MOUSE'][0]
         boot_id = self.host.get_boot_id()
 
+        # We don't pair to the peer device because we don't want it in the
+        # allowlist. However, we want an advertising peer in this test
+        # responding to the discovery requests.
         self.test_device_set_discoverable(device, True)
 
         # Test discovery without setting discovery filter
@@ -397,10 +400,10 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         suspend = self.suspend_async(suspend_time=EXPECT_NO_WAKE_SUSPEND_SEC)
         start_time = self.bluetooth_facade.get_device_utc_time()
 
-        # We don't pair to the peer device because we don't want it in the
-        # allowlist. However, we want an advertising peer in this test
-        # responding to the discovery requests.
-        self.test_start_discovery()
+        # Set register_observer to False so that the DiscoveryObserver class in
+        # bluetooth_facade.py would not restart the discovery automatically
+        # when the discovery is stopped by the suspending process.
+        self.test_start_discovery(register_observer=False)
         self.test_suspend_and_wait_for_sleep(suspend,
                                              sleep_timeout=SUSPEND_SEC)
 
@@ -424,7 +427,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         # on BlueZ. It won't be implemented on Floss.
         if not self.floss:
             self.test_set_discovery_filter({'Transport': 'auto'})
-        self.test_start_discovery()
+        self.test_start_discovery(register_observer=False)
         self.test_suspend_and_wait_for_sleep(suspend,
                                              sleep_timeout=SUSPEND_SEC)
 

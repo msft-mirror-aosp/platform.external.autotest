@@ -1893,9 +1893,20 @@ class BluetoothAdapterTests(test.test):
         return self.bluetooth_facade.set_ll_privacy(enable)
 
     @test_retry_and_log
-    def test_start_discovery(self):
+    def test_start_discovery(self, register_observer=True):
         """Test that the adapter could start discovery."""
-        start_discovery, _ = self.bluetooth_facade.start_discovery()
+        # The register_observer is used for floss tests to register a dbus
+        # observer which will restart classic discovery automatically until
+        # DISCOVERY_TIMEOUT_SEC (60 seconds). Refer to class DiscoveryObserver
+        # in bluetooth_facade.py for details.
+        # A few Floss tests, e.g., sr_while_discovering, would set
+        # register_observer=False so that the discovery would not be
+        # restarted automatically by the observer once the discovery is
+        # stopped during a system suspending procedure.
+        # The flag register_observer has no effect in Bluez.
+        start_discovery, _ = self.bluetooth_facade.start_discovery(
+                register_observer=register_observer)
+
         is_discovering = self._wait_for_condition(
                 self.bluetooth_facade.is_discovering, method_name())
 

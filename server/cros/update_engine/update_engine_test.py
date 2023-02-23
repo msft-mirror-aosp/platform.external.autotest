@@ -366,7 +366,9 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         if payload_type is self._PAYLOAD_TYPE.DLC:
             payload_prefix = 'dlc_*_%s_*.bin'
         elif payload_type is self._PAYLOAD_TYPE.MINIOS:
-            payload_prefix = 'minios_*_%s_*.bin'
+            # MiniOS test payloads are signed with the same key, so get any one
+            # of them.
+            payload_prefix = 'minios_*_%s_*.bin-*'
         else:
             payload_prefix = 'chromeos_*_%s_*.bin'
 

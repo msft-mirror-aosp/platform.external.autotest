@@ -5,17 +5,17 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_P.internal.x86.all.CtsCameraTestCases_-_CtsCameraTestCases'
+NAME = 'cheets_CTS_P.internal.x86.tradefed-run-collect-tests-only-hardware-internal.camerabox.front'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-camera-dut'
+ATTRIBUTES = 'suite:arc-cts-hardware'
 DEPENDENCIES = 'arc, cts_abi_x86'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
-TIME = 'LONG'
+TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
 DOC = 'n/a'
 
@@ -25,14 +25,14 @@ def run_TS(machine):
         'cheets_CTS_P',
         hosts=host_list,
         iterations=1,
-        tag='internal.x86.all.CtsCameraTestCases_-_CtsCameraTestCases',
-        test_name='cheets_CTS_P.internal.x86.all.CtsCameraTestCases_-_CtsCameraTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsCameraTestCases', '--logcat-on-failure', '--dynamic-config-url='],
+        tag='internal.x86.tradefed-run-collect-tests-only-hardware-internal.camerabox.front',
+        test_name='cheets_CTS_P.internal.x86.tradefed-run-collect-tests-only-hardware-internal.camerabox.front',
+        run_template=['run', 'commandAndExit', 'collect-tests-only', '--disable-reboot', '--module', 'CtsCameraTestCases', '--module-arg', 'CtsMediaTestCases:skip-media-download:true', '--module-arg', 'CtsMediaStressTestCases:skip-media-download:true', '--module-arg', 'CtsMediaBitstreamsTestCases:skip-media-download:true', '--dynamic-config-url='],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
-        target_module='all.CtsCameraTestCases_-_CtsCameraTestCases',
+        target_module='tradefed-run-collect-tests-only-hardware-internal.camerabox.front',
         target_plan=None,
         bundle='x86',
         uri='LATEST',
-        timeout=7200)
+        timeout=3600)
 
 parallel_simple(run_TS, machines)

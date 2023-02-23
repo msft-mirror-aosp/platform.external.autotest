@@ -384,13 +384,16 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
 CONFIG['HARDWARE_MODULES'] = [
         'CtsPerfettoTestCases',
         'CtsSustainedPerformanceHostTestCases',
-        'CtsCameraTestCases',
         'CtsViewTestCases',
         'CtsMediaTestCases',
         'CtsNativeMediaAAudioTestCases',
         'CtsNetTestCases',
         'CtsUsageStatsTestCases',
         'CtsSensorTestCases',
+]
+
+CONFIG['PUBLIC_HARDWARE_MODULES'] = CONFIG['HARDWARE_MODULES'] + [
+        'CtsCameraTestCases'
 ]
 
 SUITES_DEQP_SUBMODULE = [

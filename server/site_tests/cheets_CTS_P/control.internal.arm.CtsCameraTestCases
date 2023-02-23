@@ -5,14 +5,14 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_P.internal.arm.CtsCameraTestCases.noled.camerabox.back'
+NAME = 'cheets_CTS_P.internal.arm.CtsCameraTestCases'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-camera, suite:arc-cts-unibuild-hw'
-DEPENDENCIES = 'arc, camerabox_light:noled, camerabox_facing:back'
+ATTRIBUTES = 'suite:arc-cts-unibuild-hw'
+DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'LONG'
@@ -23,19 +23,16 @@ def run_TS(machine):
     host_list = [hosts.create_host(machine)]
     job.run_test(
         'cheets_CTS_P',
-        camera_facing='back',
-        cmdline_args=args,
         hosts=host_list,
         iterations=1,
-        tag='internal.arm.CtsCameraTestCases.noled.camerabox.back',
-        test_name='cheets_CTS_P.internal.arm.CtsCameraTestCases.noled.camerabox.back',
+        tag='internal.arm.CtsCameraTestCases',
+        test_name='cheets_CTS_P.internal.arm.CtsCameraTestCases',
         run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsCameraTestCases', '--logcat-on-failure', '--dynamic-config-url='],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
         target_module='CtsCameraTestCases',
         target_plan=None,
         bundle='arm',
         uri='DEV',
-        retry_manual_tests=True,
         timeout=7200)
 
 parallel_simple(run_TS, machines)

@@ -5,17 +5,17 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_P.internal.x86.CtsCamera'
+NAME = 'cheets_CTS_P.internal.x86.CtsCameraApi25TestCases'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-unibuild, suite:arc-cts-unibuild-hw'
+ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-unibuild'
 DEPENDENCIES = 'arc, cts_abi_x86'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
-TIME = 'LONG'
+TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
 DOC = 'n/a'
 
@@ -25,14 +25,14 @@ def run_TS(machine):
         'cheets_CTS_P',
         hosts=host_list,
         iterations=1,
-        tag='internal.x86.CtsCamera',
-        test_name='cheets_CTS_P.internal.x86.CtsCamera',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsCameraApi25TestCases', '--include-filter', 'CtsCameraTestCases', '--logcat-on-failure', '--dynamic-config-url='],
+        tag='internal.x86.CtsCameraApi25TestCases',
+        test_name='cheets_CTS_P.internal.x86.CtsCameraApi25TestCases',
+        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsCameraApi25TestCases', '--logcat-on-failure', '--dynamic-config-url='],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
-        target_module='CtsCamera',
+        target_module='CtsCameraApi25TestCases',
         target_plan=None,
         bundle='x86',
         uri='DEV',
-        timeout=10800)
+        timeout=3600)
 
 parallel_simple(run_TS, machines)

@@ -421,7 +421,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                                        kbd_test_func,
                                        secondary_info=hid_test_device)
 
-    @test_wrapper('LE Secure Connection', devices={'BLE_MOUSE': 1})
+    @test_wrapper('LE Secure Connection',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def le_secure_connection(self):
         """Tests that Secure Connection is used for LE pairing"""
 

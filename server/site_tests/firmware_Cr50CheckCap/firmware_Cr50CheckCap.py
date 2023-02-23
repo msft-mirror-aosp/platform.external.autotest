@@ -27,6 +27,7 @@ class firmware_Cr50CheckCap(Cr50Test):
         else:
             # Testlab mode is enabled, so it's ok to reset ccd without enabling
             # capabilities necessary for ccd.
+            self.fast_ccd_open(True)
             self.gsc.ccd_reset(servo_en=False)
         caps = self.gsc.get_cap_dict()
         logging.info(caps)

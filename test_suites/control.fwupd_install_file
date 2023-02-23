@@ -28,7 +28,8 @@ capability of a device specifying a concrete fw release file.
                   the device or any of its GUIDs
 @param fwfile: firmware file to install, it can be specified as an URL
                if the file is remote or as a file name if the file is
-               deployeed in the /tmp folder of the DUT
+               deployed in an external drive connected to the DUT. In
+               this case the drive must have FWUPDTESTS as its label.
 """
 
 import common

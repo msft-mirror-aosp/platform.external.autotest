@@ -20,14 +20,15 @@ ATTRIBUTES = "suite:fwupd_install_file"
 DOC = """
 Installs a specific firmware file in a selected device. The device is
 supposed to be working and updatable, the firmware file is expected to
-be available either in the specified URL or in the /tmp directory of the
-DUT and fwupd is expected to work normally. Exceptional cases are
-treated as test errors.
+be available either in the specified URL or in an external drive with
+label=FWUPDTESTS connected to the DUT and fwupd is expected to work
+normally. Exceptional cases are treated as test errors.
 """
 
 # Arguments 'device_id' and 'file' are mandatory. 'device_id' can be
 # the fwupd instance id of the device or any of its GUIDs, 'file' is
-# the URL of the firmware binary
+# the URL of the firmware binary or its path in an external drive
+# labeled as FWUPDTESTS
 args_dict = utils.args_to_dict(args)
 device_id = args_dict.get('device_id', '')
 fwfile = args_dict.get('fwfile', '')

@@ -4,6 +4,7 @@
 
 import logging
 import os
+import shutil
 import re
 import requests
 
@@ -14,6 +15,9 @@ from autotest_lib.client.common_lib.cros import fwupd
 from distutils.version import LooseVersion
 
 
+EXTERNAL_DRIVE_LABEL = "FWUPDTESTS"
+TEMP_FW_DIR          = "/tmp/fwupd_fw"
+
 class fwupd_FirmwareInstallFile(test.test):
     """Tests that a device's firmware can be updated with a specific file.
 
@@ -21,6 +25,59 @@ class fwupd_FirmwareInstallFile(test.test):
     firmware file.
     """
     version = 1
+
+    def copy_file_from_external_storage(self, fwfile):
+        """Copies a specified file from an external drive to /tmp.
+
+        The external drive connected to the DUT must have
+        label=<EXTERNAL_DRIVE_LABEL> and must contain a file with
+        name=<fwfile>. This function copies the file to the /tmp folder
+        in the DUT.
+
+        Args:
+          fwfile: name of the firmware file contained in the external drive
+
+        Returns:
+          If successful, the full path of the copied file to be used by
+          fwupdmgr
+
+        Raises:
+          error.TestError if anything failed
+
+        """
+        def _cleanup():
+            utils.system(f'umount {TEMP_FW_DIR}', ignore_status=True)
+            shutil.rmtree(TEMP_FW_DIR)
+
+        cmd = f'lsblk -npo NAME,LABEL | grep {EXTERNAL_DRIVE_LABEL}'
+        out = utils.system_output(cmd, ignore_status=True)
+        # Output is expected to be something like this:
+        # <device_file>            <drive_label>
+        # Capture the device_file in m.group(1)
+        m = re.match(f'([\w/]+)\s+{EXTERNAL_DRIVE_LABEL}', out)
+        if m:
+            # Create a temp mountpoint for the drive, mount it, copy the
+            # fw file to /tmp, unmount and clean up
+            try:
+                os.mkdir(TEMP_FW_DIR)
+            except FileNotFoundError:
+                raise error.TestError(f"Can't create directory {TEMP_FW_DIR}: "
+                                      "Parent directory doesn't exist.")
+            except FileExistsError:
+                _cleanup()
+                os.mkdir(TEMP_FW_DIR)
+            utils.system(f'mount {m.group(1)} {TEMP_FW_DIR}')
+            try:
+                dest = shutil.copy(os.path.join(TEMP_FW_DIR, fwfile),
+                                   os.path.join('/tmp', fwfile))
+            except FileNotFoundError:
+                raise error.TestError(f"File {fwfile} not found in external drive")
+            finally:
+                _cleanup()
+            return dest
+        else:
+            raise error.TestError("No external drive with label = "
+                                  f"{EXTERNAL_DRIVE_LABEL} found.")
 
     def install_firmware(self, device_id, fwfile):
         """Installs a specific firmware file in a device.
@@ -30,7 +87,7 @@ class fwupd_FirmwareInstallFile(test.test):
               an fwupd instance id or a GUID
           fwfile: the URL or file name of the fw to install. If a file
               name is provided instead of a full URL, it's assumed to be
-              located in the /tmp folder of the DUT to test.
+              located in an external drive with label=<EXTERNAL_DRIVE_LABEL>.
 
         Raises:
           error.TestError if the fw file couldn't be found or fetched
@@ -49,12 +106,8 @@ class fwupd_FirmwareInstallFile(test.test):
             except requests.exceptions.RequestException as e:
                 raise error.TestError(e)
         else:
-            # Assume a local file name in /tmp (DUT)
-            fwfile = os.path.join('/tmp', fwfile)
-            try:
-                utils.system(f'ls {fwfile}')
-            except error.CmdError as e:
-                raise error.TestError(f"File {fwfile} not found in DUT")
+            # Assume a local file name in an external drive (DUT)
+            fwfile = self.copy_file_from_external_storage(fwfile)
         # From fwupd version 1.8.0 onwards, the old 'install' command is
         # called 'local-install'
         if LooseVersion(self.fwupd_version) >= LooseVersion('1.8.0'):
@@ -78,7 +131,7 @@ class fwupd_FirmwareInstallFile(test.test):
 
         Args:
           device_id: the instance id of the device or any of its GUIDs (string)
-          fwfile: URL or local path of the firmware file to install.
+          fwfile: URL or path of the firmware file to install.
 
         Fails if fwupd is not working properly.
         """

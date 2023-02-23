@@ -45,7 +45,7 @@ CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 CONFIG['DISTRIBUTED_QUAL_SUITE'] = 'suite:distributed_arc_qual_cts_shard'
 
 # Suite for rerunning failing camera test during qual
-CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-dut'
+CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-opendut'
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False

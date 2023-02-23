@@ -37,7 +37,7 @@ CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 
 # module runs in suite:arc-cts on boards, and each module runs in
 # suite:arc-cts-unibuild on selected models.
-CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts', 'suite:arc-cts-unibuild']
+CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 

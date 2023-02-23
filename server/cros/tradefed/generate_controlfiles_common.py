@@ -917,7 +917,7 @@ def is_in_rule(module, rule):
 
 # Camera modules are static
 def get_camera_modules():
-    """Gets a list of modules for arc-cts-camera-dut."""
+    """Gets a list of modules for arc-cts-camera-opendut."""
     return CONFIG.get('CAMERA_MODULES', [])
 
 
@@ -1060,9 +1060,9 @@ def get_controlfile_content(combined,
         suites = get_suites(modules, abi, is_public, camera_facing,
                             hardware_suite, vm_force_max_resolution)
     # while creating the control files, check if this is meant for qualification suite. i.e. arc-cts-qual
-    # if it is meant for qualification suite, also add new suite ar-cts-camera-dut which is meant for
+    # if it is meant for qualification suite, also add new suite ar-cts-camera-opendut which is meant for
     # qualification purposes when cameraboxes fail.
-    # if suites has arc-cts-qual and module is cameramodule then add arc-cts-camera-dut
+    # if suites has arc-cts-qual and module is cameramodule then add arc-cts-camera-opendut
     if (set(CONFIG.get('QUAL_SUITE_NAMES',[])) & set(suites)) and (set(get_camera_modules()) & set(modules)):
         suites = suites.copy()
         suites.append(CONFIG.get('CAMERA_DUT_SUITE_NAME'))

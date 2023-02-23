@@ -42,7 +42,7 @@ CONFIG['VM_SUITE_NAME'] = 'suite:arc-cts-vm'
 CONFIG['STABLE_VM_SUITE_NAME'] = 'suite:arc-cts-vm-stable'
 
 # Suite for rerunning failing camera test during qual
-CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-dut'
+CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-opendut'
 
 # Suite for distributed fleetland shards for automation purposes
 CONFIG['DISTRIBUTED_QUAL_SUITE'] = 'suite:distributed_arc_qual_cts_shard'

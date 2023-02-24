@@ -37,7 +37,7 @@ class audio_AudioNodeSwitch(audio_test.AudioTest):
                 'HDMI': 60,
                 'USB': 40,}
 
-    def check_default_nodes(self):
+    def check_default_nodes(self, blocked_boards=[]):
         """Checks default audio nodes for devices with onboard audio support."""
         if self.host.get_board().split(':')[1] in blocked_boards:
             raise error.TestNAError('Board not applicable to test!')

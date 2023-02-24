@@ -36,6 +36,7 @@ command_args, varslist = tast.split_arguments(args)
 def run(machine):
 
     host = hosts.create_host(machine)
+    companions = hosts.create_companion_hosts(companion_hosts)
     # Currently the bluetooth peer in multi-dut testbeds are not added to UFS, hence
     # there is no need to add number of peer to the expression.
     tast_test_expr = '("group:bluetooth" && bluetooth_cross_device_fastpair_multidut)'
@@ -45,6 +46,7 @@ def run(machine):
                  test_exprs=[tast_test_expr],
                  ignore_test_failures=True,
                  max_run_sec=10800,
+                 companion_duts={'cd1':companions[0]},
                  command_args=args,
                  varslist=varslist)
 parallel_simple(run, machines)

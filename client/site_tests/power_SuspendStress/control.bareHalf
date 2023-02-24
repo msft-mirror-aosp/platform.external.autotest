@@ -1,0 +1,27 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description
+# Runs 1250 iterations of suspend/resume cycles without additional workload.
+# Follows this by a few short checks to make sure the system is still in a good
+# state (work in progress, feel free to add some more).
+
+NAME = "power_SuspendStress.bareHalf"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "chromeos-power",
+    "bug_component": "b:167191",
+    "criteria": "This test is a functional test",
+    "hw_agnostic": False,
+    "requirements": ["pwr-susp-0001-v01"]
+}
+ATTRIBUTES = ("")
+TEST_TYPE = "client"
+
+job.run_test('power_SuspendStress', duration=None, suspend_iterations=1250,
+             modemfwd_workaround=True, tag='bareHalf')
+
+job.run_test('hardware_EC', tag='power_SuspendStress')
+job.run_test('login_LoginSuccess', tag='power_SuspendStress')
+job.run_test('hardware_TPMCheck', tag='power_SuspendStress')

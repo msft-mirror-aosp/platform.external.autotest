@@ -4,8 +4,13 @@
 
 AUTHOR = "yanghenry@google.org"
 NAME = "shimlessrma_normal_perbuild"
+METADATA = {
+        "contacts": ["chromeos-shimless-eng@google.com", "chenghan@google.com"],
+        "bug_component": "b:1002147", # ChromeOS > Platform > Enablement > Serviceability > Shimless RMA
+        "criteria": "Run Tast tests for Shimless RMA",
+}
 PURPOSE = "Tests for Shimless RMA without node-locked image as dependency"
-TIME = "SHORT"
+TIME = "LONG"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
@@ -26,7 +31,7 @@ import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
 args_dict['add_experimental'] = True
-args_dict['max_runtime_mins'] = 30
+args_dict['max_runtime_mins'] = 150
 args_dict['name'] = NAME
 args_dict['job'] = job
 

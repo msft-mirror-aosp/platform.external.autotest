@@ -6,7 +6,12 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.shimlessrma_normal_perbuild'
-TIME = 'SHORT'
+METADATA = {
+        "contacts": ["chromeos-shimless-eng@google.com", "chenghan@google.com"],
+        "bug_component": "b:1002147", # ChromeOS > Platform > Enablement > Serviceability > Shimless RMA
+        "criteria": "Run Tast tests for Shimless RMA",
+}
+TIME = 'LONG'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
 ATTRIBUTES = 'suite:shimlessrma_normal_perbuild'
@@ -31,7 +36,7 @@ def run(machine):
                  host=hosts.create_host(machine, servo_args=servo_args),
                  test_exprs=['("group:shimless_rma" && shimless_rma_normal)'],
                  ignore_test_failures=True,
-                 max_run_sec=1800,  # 30 Minutes
+                 max_run_sec=9000,  # 150 Minutes
                  command_args=args,
                  ephemeraldevserver='false')  # ephemeral devserver is unavailable from labstation. See http://b/256934444#comment12
 

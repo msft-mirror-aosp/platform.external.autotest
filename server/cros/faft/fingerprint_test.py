@@ -820,13 +820,12 @@ class FingerprintTest(test.test):
     def fp_updater_is_enabled(self):
         """Returns whether the fingerprint firmware updater is disabled."""
         return not self.host.is_file_exists(
-                os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+                os.path.join(self._STATEFUL_PARTITION_DIR,
                              self._DISABLE_FP_UPDATER_FILE))
 
     def disable_fp_updater(self):
         """Disable the fingerprint firmware updater."""
-        filesystem_util.make_rootfs_writable(self.host)
-        touch_cmd = 'touch %s' % os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+        touch_cmd = 'touch %s' % os.path.join(self._STATEFUL_PARTITION_DIR,
                                               self._DISABLE_FP_UPDATER_FILE)
         logging.info('Disabling fp firmware updater')
         result = self.run_cmd(touch_cmd)
@@ -842,8 +841,7 @@ class FingerprintTest(test.test):
         Enable the fingerprint firmware updater. Must be called only after
         disable_fp_updater().
         """
-        filesystem_util.make_rootfs_writable(self.host)
-        rm_cmd = 'rm %s' % os.path.join(self._FINGERPRINT_BUILD_FW_DIR,
+        rm_cmd = 'rm %s' % os.path.join(self._STATEFUL_PARTITION_DIR,
                                         self._DISABLE_FP_UPDATER_FILE)
         logging.info('Enabling fp firmware updater')
         result = self.run_cmd(rm_cmd)

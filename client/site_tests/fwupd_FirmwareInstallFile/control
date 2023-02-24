@@ -30,6 +30,12 @@ normally. Exceptional cases are treated as test errors.
 # the URL of the firmware binary or its path in an external drive
 # labeled as FWUPDTESTS
 args_dict = utils.args_to_dict(args)
-device_id = args_dict.get('device_id', '')
-fwfile = args_dict.get('fwfile', '')
+try:
+    device_id = args_dict.get('device_id', device_id)
+except NameError:
+    device_id = args_dict.get('device_id', '')
+try:
+    fwfile = args_dict.get('fwfile', fwfile)
+except NameError:
+    fwfile = args_dict.get('fwfile', '')
 job.run_test('fwupd_FirmwareInstallFile', device_id=device_id, fwfile=fwfile)

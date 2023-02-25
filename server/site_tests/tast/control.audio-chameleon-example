@@ -18,7 +18,7 @@ PY_VERSION = 3
 # DEPENDENCIES = 'chameleon, test_usbaudio'
 METADATA = {
     "contacts": ["yunjunlee@google.com"],
-    "bug_component": "b:268146349",
+    "bug_component": "b:1280385",
     "criteria": "This test will fail if the chameleon is not in the same network environment as DUT.",
     "doc" : "Include examples to use chameleon in Tast"
 }

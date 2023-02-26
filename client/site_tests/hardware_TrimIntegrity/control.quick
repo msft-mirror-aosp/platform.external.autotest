@@ -8,6 +8,12 @@
 # If the test is not migrated by 1/14/22 it will be deleted.
 
 NAME = 'hardware_TrimIntegrity.quick'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Verifies trim acts as expected.',
+    'hw_agnostic': False
+}
 AUTHOR = 'puthik'
 PURPOSE = 'Perform data integrity trim test on an unmounted partition.'
 TIME = 'SHORT'

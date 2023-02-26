@@ -1,5 +1,11 @@
 AUTHOR = "The ChromiumOS Authors"
 NAME = "platform_CryptohomeStress"
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Benchmark user vault performance.',
+    'hw_agnostic': False
+}
 PURPOSE = "Stress test the encrypted file system in ChromiumOS."
 TIME = "LONG"
 TEST_CATEGORY = "Security"

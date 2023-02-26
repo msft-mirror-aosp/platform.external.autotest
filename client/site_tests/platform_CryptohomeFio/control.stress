@@ -11,6 +11,12 @@ validate writes to the ecryptfs vault. It does not create a login
 session, but mounts a special user dir for the test.
 """
 NAME = 'platform_CryptohomeFio.stress'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Benchmark user vault performance.',
+    'hw_agnostic': False
+}
 TEST_CLASS = 'platform'
 TEST_CATEGORY = 'Stress'
 TEST_TYPE = 'client'

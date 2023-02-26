@@ -1,6 +1,12 @@
 AUTHOR = "kdlucas@chromium.org (Kelly Lucas)"
 DOC = "Verifies large qty of file creation on stateful and tmp partitions."
 NAME = "platform_FileNum"
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Verify a directory can contain a large number of files.',
+    'hw_agnostic': False
+}
 PURPOSE = "Verify a directory can contain a large number of files."
 CRITERIA = """
 Fails if any of the following conditions is not met:

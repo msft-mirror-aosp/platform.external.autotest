@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = "platform_BootDevice.BootDevice"
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Reboot stress.',
+    'hw_agnostic': False
+}
 AUTHOR = "ChromeOS Team"
 ATTRIBUTES = "suite:kernel_daily_regression"
 TIME = "LONG"

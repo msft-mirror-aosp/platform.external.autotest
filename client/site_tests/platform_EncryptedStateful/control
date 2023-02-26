@@ -3,6 +3,12 @@
 # found in the LICENSE file.
 
 NAME = "platform_EncryptedStateful"
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Verify encstateful mount.',
+    'hw_agnostic': False
+}
 AUTHOR = "ChromeOS Team"
 PURPOSE = "Verify mount-encrypted operates as expected"
 CRITERIA = """

@@ -1,6 +1,12 @@
 AUTHOR = "kdlucas@chromium.org, Kelly Lucas"
 DOC = "Verifies large file creation on stateful and tmp partitions."
 NAME = "platform_FileSize"
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Verify that key filesystems support large file sizes.',
+    'hw_agnostic': False
+}
 PURPOSE = "Verify that key filesystems support large file sizes."
 CRITERIA = """
 Fails if any of the following fail:

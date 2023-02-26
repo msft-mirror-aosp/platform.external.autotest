@@ -4,6 +4,12 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'hardware_DiskSize'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Checks the size of the main disk',
+    'hw_agnostic': False
+}
 PURPOSE = 'Ensure the hard disk is large enough.'
 CRITERIA = 'Fails if the main disk is less than gb_main_disk_size.'
 TIME='SHORT'

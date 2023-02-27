@@ -394,6 +394,7 @@ class ChromeEC(ChromeConsole):
         """Get version information from the Chrome EC console.
            Additionally, can be used to verify if EC console is available.
         """
+        self.send_command("chan save")
         self.send_command("chan 0")
         # Use "[ \t]" here and not \s because sometimes the version is blank,
         # i.e. 'RO:   \r\n' which matches RO:\s+
@@ -402,7 +403,7 @@ class ChromeEC(ChromeConsole):
                 "RW_?[AB]?:[ \t]+([^\r\n]*)\r\n", "Build:[ \t]+([^\r\n]*)\r\n"
         ]
         l = self.send_command_get_output("version", expected_output)
-        self.send_command("chan 0xffffffff")
+        self.send_command("chan restore")
         return l
 
     def check_ro_rw(self, img_exp):

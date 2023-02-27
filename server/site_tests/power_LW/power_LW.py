@@ -55,33 +55,25 @@ class power_LW(test.test):
         machine['hostname'] = hostname
         return factory.create_host(machine)
 
-    def _start_servo_usb_and_ethernet(self, host):
-        host.servo.set_eth_power('on')
-        host.servo.set_usb3_power('on')
-        host.servo.set_usb3_mux('on')
-
-    def _stop_servo_usb_and_ethernet(self, host):
-        """Find and unbind servo v4 usb and ethernet."""
+    def _stop_ethernet(self, host):
+        """Find and unbind servo v4 usb ethernet."""
         # Stop check_ethernet.hook to reconnect the usb device
         try:
             host.run('stop recover_duts')
         except:
             logging.warning("Continue if stop recover_duts failed.")
 
-        try:
-            host.servo.set_eth_power('off')
-            host.servo.set_usb3_power('off')
-            host.servo.set_usb3_mux('off')
-        except Exception as e:
-            self._start_servo_usb_and_ethernet(host)
-            raise e
+        eth_usb = host.find_usb_devices(
+            self.SERVO_V4_ETH_VENDOR, self.SERVO_V4_ETH_PRODUCT)
+        if len(eth_usb) == 1 and eth_usb[0] and host.get_wlan_ip():
+            host.unbind_usb_device(eth_usb[0])
 
     def run_once(self, host, test, args, machine):
         """Prepare DUT for power test then run the client test.
 
         The DUT will
         - Switch from ethernet connection to wifi.
-        - Power off Servo v4 USB and ethernet devices.
+        - Unbind Servo v4 USB ethernet device.
         - Set EC to force discharge during the client test.
 
         @param host: CrosHost object representing the DUT.
@@ -91,13 +83,13 @@ class power_LW(test.test):
         """
         wlan_host = self._get_wlan_host(host, machine)
         if wlan_host != host:
-            self._stop_servo_usb_and_ethernet(host)
+            self._stop_ethernet(host)
 
-        try:
-            args['force_discharge'] = True
-            args['tag'] = args.get('tag', 'PLW')
+        args['force_discharge'] = True
+        args['tag'] = args.get('tag', 'PLW')
 
-            autotest_client = autotest.Autotest(wlan_host)
-            autotest_client.run_test(test, **args)
-        finally:
-            self._start_servo_usb_and_ethernet(host)
+        autotest_client = autotest.Autotest(wlan_host)
+        autotest_client.run_test(test, **args)
+
+        # Restore USB ethernet device.
+        wlan_host.reboot()

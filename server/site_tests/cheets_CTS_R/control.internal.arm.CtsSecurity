@@ -27,13 +27,13 @@ def run_TS(machine):
         iterations=1,
         tag='internal.arm.CtsSecurity',
         test_name='cheets_CTS_R.internal.arm.CtsSecurity',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsSecurityBulletinHostTestCases', '--include-filter', 'CtsSecurityBulletinHostTestCases[secondary_user]', '--include-filter', 'CtsSecurityHostTestCases', '--include-filter', 'CtsSecurityHostTestCases[secondary_user]', '--include-filter', 'CtsSecurityTestCases', '--include-filter', 'CtsSecurityTestCases[instant]', '--include-filter', 'CtsSecurityTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsSecurityHostTestCases', '--include-filter', 'CtsSecurityHostTestCases[secondary_user]', '--include-filter', 'CtsSecurityTestCases', '--include-filter', 'CtsSecurityTestCases[instant]', '--include-filter', 'CtsSecurityTestCases[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsSecurity',
         target_plan=None,
         bundle='arm',
         uri='DEV',
         precondition_commands=['echo 3 > /proc/sys/kernel/perf_event_paranoid', 'modprobe configs'],
-        timeout=154800)
+        timeout=151200)
 
 parallel_simple(run_TS, machines)

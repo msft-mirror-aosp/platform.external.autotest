@@ -31,7 +31,11 @@ See go/cros-flex-hw-testing for more information.
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:mainline" && !informational)'],
+                 test_exprs=['('
+		             '"group:mainline" && '
+			     '!"group:hw_agnostic" &&'
+			     '!informational'
+			     ')'],
                  ignore_test_failures=False,
                  totalshards=3,
                  shardindex=2,

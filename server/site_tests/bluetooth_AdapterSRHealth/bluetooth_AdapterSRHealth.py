@@ -363,7 +363,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('Peer wakeup with A2DP should fail',
                   devices={'BLUETOOTH_AUDIO': 1},
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
     def sr_peer_wake_a2dp_should_fail(self):
         """ Use A2DP device to wake from suspend and fail. """
         device_type = 'BLUETOOTH_AUDIO'

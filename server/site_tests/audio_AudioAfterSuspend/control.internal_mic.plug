@@ -15,7 +15,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 #ATTRIBUTES = "suite:audio_advanced"
-DEPENDENCIES = "audio_box"
+DEPENDENCIES = "audio_box, chameleon_state:WORKING"
 
 # Plug unplug sequnce
 # (plugged_before_suspend, plugged_after_suspend, plugged_before_resume,

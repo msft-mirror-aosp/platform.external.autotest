@@ -15,7 +15,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:audio_basic"
-DEPENDENCIES = "test_hdmiaudio"
+DEPENDENCIES = "test_hdmiaudio, chameleon_state:WORKING"
 JOB_RETRIES = 1
 
 args_dict = utils.args_to_dict(args)

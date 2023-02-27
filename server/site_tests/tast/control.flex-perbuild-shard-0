@@ -4,6 +4,14 @@
 
 AUTHOR = 'ChromiumOS team'
 NAME = 'tast.flex-perbuild-shard-0'
+METADATA = {
+  "contacts": [
+    "chromeos-flex-eng@google.com",
+    "josephsussman@google.com"
+  ],
+  "bug_component": "b:998633", # ChromeOS > Platform > Enablement > ChromeOS Flex
+  "hw_agnostic": False
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:flex-perbuild'
@@ -16,13 +24,8 @@ REQUIRE_SSP = True
 DOC = '''
 Run the Tast mainline tests without clearing the TPM.
 
-Tast is an integration-testing framework analagous to the test-running portion
-of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
-more information.
-
-This test runs Tast-based borealis tests against a remote DUT.
-
-See http://go/tast-failures for information about investigating failures.
+ChromeOS Flex DUTs do not support automated TPM reset (b/246592434).
+See go/cros-flex-hw-testing for more information.
 '''
 
 def run(machine):

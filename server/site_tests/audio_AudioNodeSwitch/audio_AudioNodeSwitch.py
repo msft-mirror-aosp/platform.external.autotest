@@ -37,10 +37,8 @@ class audio_AudioNodeSwitch(audio_test.AudioTest):
                 'HDMI': 60,
                 'USB': 40,}
 
-    def check_default_nodes(self, blocked_boards=[]):
+    def check_default_nodes(self):
         """Checks default audio nodes for devices with onboard audio support."""
-        if self.host.get_board().split(':')[1] in blocked_boards:
-            raise error.TestNAError('Board not applicable to test!')
         if audio_test_utils.has_internal_microphone(self.host):
             audio_test_utils.check_audio_nodes(self.facade,
                                                (None, ['INTERNAL_MIC']))
@@ -91,8 +89,11 @@ class audio_AudioNodeSwitch(audio_test.AudioTest):
 
 
     def run_once(self, jack_node=False, hdmi_node=False,
-                 usb_node=False, play_audio=False):
+                 usb_node=False, play_audio=False, blocked_boards=[]):
         """Runs AudioNodeSwitch test."""
+        if self.host.get_board().split(':')[1] in blocked_boards:
+            raise error.TestNAError('Board not applicable to test!')
+
         self.display_facade = self.factory.create_display_facade()
 
         self.check_default_nodes()

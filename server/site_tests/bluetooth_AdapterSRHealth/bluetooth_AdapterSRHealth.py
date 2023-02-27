@@ -308,7 +308,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                   },
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
                   ['bob'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
     def sr_peer_wake_le_hid_reconnect_le_hid(self):
         """ Use LE HID device to wake from suspend. And reconnects a secondary
             LE HID device afterwards
@@ -478,7 +479,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     # Health checks
     # ---------------------------------------------------------------
 
-    @test_wrapper('Suspend while powered off', devices={'MOUSE': 1})
+    @test_wrapper('Suspend while powered off',
+                  devices={'MOUSE': 1},
+                  supports_floss=True)
     def sr_while_powered_off(self):
         """ Suspend while adapter is powered off. """
         device = self.devices['MOUSE'][0]

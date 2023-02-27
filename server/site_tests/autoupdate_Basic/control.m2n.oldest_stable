@@ -12,7 +12,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-m2n"
 JOB_RETRIES = 2
 DOC = """
 Tests an update from the oldest serving stable version in paygen.json.

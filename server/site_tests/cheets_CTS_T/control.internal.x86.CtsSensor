@@ -12,7 +12,7 @@ METADATA = {
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-t, suite:arc-cts-unibuild-hw'
+ATTRIBUTES = 'suite:arc-cts-t'
 DEPENDENCIES = 'arc, cts_abi_x86'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

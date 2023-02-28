@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 # This file has been automatically generated. Do not edit!
+from autotest_lib.server import utils as server_utils
 
 AUTHOR = 'n/a'
 NAME = 'cheets_CTS_R.internal.arm.CtsProvider'
@@ -19,8 +20,17 @@ TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
 DOC = 'n/a'
 
+
+args_dict = server_utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
 def run_TS(machine):
-    host_list = [hosts.create_host(machine)]
+
+    try:
+        host_list = [hosts.create_host(machine, servo_args=servo_args)]
+    except:
+        # Just ignore any servo setup flakiness.
+        host_list = [hosts.create_host(machine)]
     job.run_test(
         'cheets_CTS_R',
         hosts=host_list,
@@ -33,7 +43,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='DEV',
-        login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
         timeout=7200)
 
 parallel_simple(run_TS, machines)

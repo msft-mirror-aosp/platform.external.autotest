@@ -382,6 +382,7 @@ suite:distributed_arc_qual_cts_shard7
 suite:distributed_arc_qual_cts_shard8
 suite:distributed_lab_qual_faft
 suite:dmserver-enrollment-daily
+suite:dmserver-enrollment-live
 suite:dmserver-zteenrollment-daily
 suite:dpanel-end2end_per-build
 suite:drivefs-cq

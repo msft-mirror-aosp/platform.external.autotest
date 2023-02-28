@@ -12,15 +12,17 @@ METADATA = {
 }
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:power_dashboard"
+DEPENDENCIES = "servo_state:WORKING"
 
 from autotest_lib.client.common_lib import utils
 
 args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 test = 'power_Display'
 args = {'pdash_note': args_dict.get('pdash_note', '')}
 
 def run(machine):
-    host = hosts.create_host(machine)
+    host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("power_LW", host=host, test=test, args=args,
                  machine=machine, tag=NAME.split('.')[1])
 

@@ -34,8 +34,4 @@ args_dict['max_runtime_mins'] = 120
 args_dict['name'] = NAME
 args_dict['job'] = job
 
-# Ubiquiti OpenWrt router has only one Ethernet port. So use 2-way setup
-# to run perf
-args_dict['test_args'] = {'use_2way_setup': True}
-
 dynamic_suite.reimage_and_run(**args_dict)

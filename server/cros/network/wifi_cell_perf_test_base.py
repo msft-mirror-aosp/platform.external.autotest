@@ -35,13 +35,18 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         @param commandline_args dict of parsed parameters from the autotest.
 
         """
+        # TODO(b/271162891): Use 2-way topology by default for OpenWrt router.
+        # The usage of metadata and infra triggers to specify topology type is
+        # under discussion.
+        if self.context.get_wifi_host().get_os_type() == 'openwrt':
+            self._use_2way_setup = True
+        else:
+            self._use_2way_setup = False
+
         self._power_save_off = 'power_save_off' in commandline_args
 
         def get_arg_value_or_default(attr, default): return commandline_args[
             attr] if attr in commandline_args else default
-
-        self._use_2way_setup = get_arg_value_or_default(
-                'use_2way_setup', False)
 
         self._router_lan_ip_addr = get_arg_value_or_default(
             'router_lan_ip_addr', self.DEFAULT_ROUTER_LAN_IP_ADDRESS)

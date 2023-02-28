@@ -31,13 +31,13 @@ class firmware_Cr50PartialBoardId(Cr50Test):
 
     def initialize(self, host, cmdline_args, full_args, bid=''):
         """Generate the test flags and verify the device setup."""
+        if host.servo.main_device_is_ccd():
+            raise error.TestNAError('Use a flex cable instead of CCD cable.')
+
         # Restore the original image, rlz code, and board id during cleanup.
         super(firmware_Cr50PartialBoardId, self).initialize(
             host, cmdline_args, full_args, restore_cr50_image=True,
             restore_cr50_board_id=True)
-        if self.servo.main_device_is_ccd():
-            raise error.TestNAError('Use a flex cable instead of CCD cable.')
-
         running_ver = self.get_saved_cr50_original_version()
         logging.info('Cr50 Version: %s', running_ver)
         bid = running_ver[2]

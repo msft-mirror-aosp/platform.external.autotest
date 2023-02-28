@@ -105,16 +105,16 @@ class firmware_Cr50CCDServoCap(Cr50Test):
 
 
     def initialize(self, host, cmdline_args, full_args):
+        """Setup GSC ccd capabilities"""
+        if ('servo_v4' not in host.servo.get_servo_type()
+                    or not host.servo.main_device_is_flex()):
+            raise error.TestNAError('Must use servo v4 with flex(c2d2 or '
+                                    'servo_micro)')
         super(firmware_Cr50CCDServoCap, self).initialize(host, cmdline_args,
                 full_args)
         if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the GSC console')
-
-        if ('servo_v4' not in self.servo.get_servo_type()
-                    or not self.servo.main_device_is_flex()):
-            raise error.TestNAError('Must use servo v4 with flex(c2d2 or '
-                                    'servo_micro)')
 
         if not self.gsc.servo_dts_mode_is_valid():
             raise error.TestNAError('Need working servo v4 DTS control')

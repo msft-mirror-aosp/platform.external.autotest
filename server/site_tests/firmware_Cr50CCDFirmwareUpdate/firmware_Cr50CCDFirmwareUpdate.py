@@ -27,6 +27,9 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
             TestNAError: If the dut is not proper for this test for its RDD
                          recognition problem.
         """
+        servo_type = host.servo.get_servo_version()
+        if 'ccd' not in servo_type:
+            raise error.TestNAError('unsupported servo type: %s' % servo_type)
         super(firmware_Cr50CCDFirmwareUpdate,
               self).initialize(host, cmdline_args, full_args)
 
@@ -36,9 +39,6 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
 
         self.fw_path = fw_path
         self.b_ver = ''
-        servo_type = self.servo.get_servo_version()
-        if 'ccd' not in servo_type:
-            raise error.TestNAError('unsupported servo type: %s' % servo_type)
 
         if eval(full_args.get('backup_fw', 'False')):
             self.backup_firmware()

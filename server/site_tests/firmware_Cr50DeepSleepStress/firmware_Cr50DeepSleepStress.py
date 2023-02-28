@@ -39,14 +39,13 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     def initialize(self, host, cmdline_args, suspend_count, reset_type):
         """Make sure the test is running with access to the GSC console"""
         self.host = host
+        if host.servo.main_device_is_ccd():
+            raise error.TestNAError('deep sleep tests can only be run with a '
+                                    'servo flex')
         super(firmware_Cr50DeepSleepStress, self).initialize(host, cmdline_args)
         if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the GSC console')
-
-        if self.servo.main_device_is_ccd():
-            raise error.TestNAError('deep sleep tests can only be run with a '
-                                    'servo flex')
 
         # Suspend longer than DEEP_SLEEP_DELAY to ensure entering deep sleep.
         self.min_suspend = self.gsc.DEEP_SLEEP_DELAY + 5

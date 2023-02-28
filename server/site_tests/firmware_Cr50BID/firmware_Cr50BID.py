@@ -97,12 +97,12 @@ class firmware_Cr50BID(Cr50Test):
     ]
 
     def initialize(self, host, cmdline_args, basic=False, full_args={}):
+        if not host.servo or host.servo.main_device_is_ccd():
+            raise error.TestNAError('Use a flex cable instead of CCD cable.')
         # Restore the original image and board id during cleanup.
         super(firmware_Cr50BID, self).initialize(host, cmdline_args, full_args,
                                                  restore_cr50_image=True,
                                                  restore_cr50_board_id=True)
-        if self.servo.main_device_is_ccd():
-            raise error.TestNAError('Use a flex cable instead of CCD cable.')
 
         if not self.gsc.has_command('bid'):
             raise error.TestNAError('Cr50 image does not support board id')

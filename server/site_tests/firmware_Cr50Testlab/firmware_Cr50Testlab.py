@@ -18,18 +18,17 @@ class firmware_Cr50Testlab(Cr50Test):
 
     def initialize(self, host, cmdline_args, full_args):
         """Initialize servo. Check that it can access cr50"""
+        if host.servo.main_device_is_ccd():
+            raise error.TestNAError('Use a flex cable instead of CCD cable.')
+        if host.servo.main_device_uses_gsc_drv():
+            raise error.TestNAError('Cannot run with c2d2 until cold_reset '
+                                    'issue is resolved')
         super(firmware_Cr50Testlab, self).initialize(host, cmdline_args,
                 full_args)
 
         if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the GSC console')
-        if self.servo.main_device_is_ccd():
-            raise error.TestNAError('Use a flex cable instead of CCD cable.')
-        if self.servo.main_device_uses_gsc_drv():
-            raise error.TestNAError('Cannot run with c2d2 until cold_reset '
-                                    'issue is resolved')
-
         if isinstance(self.gsc, chrome_ti50.ChromeTi50):
             self.BASIC_ERROR = 'Command \'ccd\' failed'
             self.INVALID_PARAM = 'Param2'

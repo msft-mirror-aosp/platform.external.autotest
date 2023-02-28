@@ -29,17 +29,17 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
     def initialize(self, host, cmdline_args, full_args):
         """Initialize the test"""
         self.changed_dut_state = False
+        # c2d2 uses cr50 for ec reset. The setting doesn't survive deep sleep.
+        # This test needs ec reset to survive deep sleep to keep the AP off.
+        if 'c2d2' in host.servo.get_servo_type():
+            raise error.TestNAError('Cannot rely on ecrst with c2d2')
+
         super(firmware_Cr50OpenWhileAPOff, self).initialize(host, cmdline_args,
                 full_args)
 
         if not hasattr(self, 'gsc'):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the GSC console')
-
-        # c2d2 uses cr50 for ec reset. The setting doesn't survive deep sleep.
-        # This test needs ec reset to survive deep sleep to keep the AP off.
-        if 'c2d2' in self.servo.get_servo_type():
-            raise error.TestNAError('Cannot rely on ecrst with c2d2')
 
         # TODO(mruthven): replace with dependency on servo v4 with servo micro
         # and type c cable.

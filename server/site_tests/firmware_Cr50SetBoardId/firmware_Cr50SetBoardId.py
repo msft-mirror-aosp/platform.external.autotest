@@ -52,12 +52,13 @@ class firmware_Cr50SetBoardId(Cr50Test):
     ERROR_BID_MISMATCH = ['Error 5 while setting board id', 1]
 
     def initialize(self, host, cmdline_args, full_args, bid=''):
+        """Download all GSC images for the test. Verify setup."""
+        if host.servo.main_device_is_ccd():
+            raise error.TestNAError('Use a flex cable instead of CCD cable.')
+
         # Restore the original image, rlz code, and board id during cleanup.
         super(firmware_Cr50SetBoardId, self).initialize(host, cmdline_args,
               full_args, restore_cr50_image=True, restore_cr50_board_id=True)
-        if self.servo.main_device_is_ccd():
-            raise error.TestNAError('Use a flex cable instead of CCD cable.')
-
         result = self.host.run(self.GET_BRAND, ignore_status=True)
         platform_brand = result.stdout.strip()
         if result.exit_status or not platform_brand:

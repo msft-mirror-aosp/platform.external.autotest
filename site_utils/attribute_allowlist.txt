@@ -303,6 +303,7 @@ suite:bvt-tast-cq-cft-wilco
 suite:bvt-tast-cq-cft-wmp
 suite:bvt-tast-cq-wilco
 suite:bvt-tast-cq-wmp
+suite:bvt-tast-criticalstaging
 suite:bvt-tast-informational
 suite:bvt-tast-parallels-cq
 suite:bvt-tast-parallels-informational

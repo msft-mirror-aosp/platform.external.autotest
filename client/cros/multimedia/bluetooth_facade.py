@@ -67,6 +67,7 @@ from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManager
 from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClient
 from autotest_lib.client.cros.bluetooth.floss.scanner_client import FlossScannerClient
 from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketManagerClient
+from autotest_lib.client.cros.bluetooth.floss.battery_manager_client import FlossBatteryManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         GLIB_THREAD_NAME, make_kv_optional_value, GLIB_THREAD_NAME)
 
@@ -4495,6 +4496,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.media_client = FlossMediaClient(self.bus, self.DEFAULT_ADAPTER)
         self.scanner_client = FlossScannerClient(self.bus,
                                                  self.DEFAULT_ADAPTER)
+        self.battery_client = FlossBatteryManagerClient(
+                self.bus, self.DEFAULT_ADAPTER)
         self.is_clean = False
 
         # Discovery needs to last longer than the default 12s. Keep an observer
@@ -4693,6 +4696,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                     self.bus, default_adapter)
             self.admin_client = FlossAdminClient(self.bus, default_adapter)
             self.scanner_client = FlossScannerClient(self.bus, default_adapter)
+            self.battery_client = FlossBatteryManagerClient(
+                    self.bus, default_adapter)
+
             try:
                 utils.poll_for_condition(
                         condition=_is_adapter_ready(self.adapter_client),
@@ -4724,6 +4730,9 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 return False
             if not self.scanner_client.register_scanner_callback():
                 logging.error('scanner_client: Failed to register callbacks')
+                return False
+            if not self.battery_client.register_battery_callback():
+                logging.error('battery_client: Failed to register callbacks')
                 return False
         else:
             self.manager_client.stop(default_adapter)
@@ -5472,3 +5481,18 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @return: True on success, False otherwise.
         """
         return self.scanner_client.stop_scan(scanner_id)
+
+    def get_battery_property(self, address, prop_name):
+        """Read a property from GetBatteryInformation interface.
+
+        @param address: Address of the device to query.
+        @param prop_name: Property to be queried.
+
+        @return: The battery property value, None otherwise.
+        """
+        device = self.has_device(address)
+        if not device:
+            logging.error('Failed to find device %s.', address)
+            return None
+
+        return self.battery_client.get_battery_property(address, prop_name)

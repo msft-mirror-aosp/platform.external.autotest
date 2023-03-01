@@ -438,14 +438,19 @@ def count_cpus():
 
 
 def count_cpu_cores():
-    """number of cores per CPU according to lscpu"""
+    """Number of cores per CPU according to lscpu.
+
+    Note that there could be more than one type of CPU model on the
+    heterogeneous systems, so we should take that into account when parsing
+    the lscpu output.
+    """
     cmds = ["lscpu", "grep 'Core(s)'", "cut -d ':' -f 2"]
     cmd = " | ".join(cmds)
-    cores_per_socket = int(utils.system_output(cmd))
+    cores_per_socket = [int(l) for l in utils.system_output(cmd).splitlines()]
     cmds = ["lscpu", "grep 'Socket(s)'", "cut -d ':' -f 2"]
     cmd = " | ".join(cmds)
-    sockets = int(utils.system_output(cmd))
-    return cores_per_socket * sockets
+    sockets = [int(l) for l in utils.system_output(cmd).splitlines()]
+    return sum(c * s for (c, s) in zip(cores_per_socket, sockets))
 
 
 def count_cpu_threads():

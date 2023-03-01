@@ -6,7 +6,7 @@ AUTHOR = 'ChromiumOS Display team'
 NAME = 'tast.chameleon-igt-daily'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:graphics_per-day, suite:chameleon_igt_daily'
+ATTRIBUTES = 'suite:chameleon_igt_daily'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 DEPENDENCIES = 'chameleon:hdmi'
@@ -28,6 +28,10 @@ different graphics suite.
 
 See http://go/tast-failures for information about investigating failures.
 """
+
+import json
+import tempfile
+import yaml
 
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server import utils as server_utils
@@ -66,16 +70,28 @@ def run(machine):
         varslist.append(f'graphics.chameleon_ssh_port={chameleon_ssh_port}')
 
     logging.info(f'Running IGT with args: {args} and varslist: {varslist}')
-    job.run_test(
-        'tast',
-        host=host,
-        test_exprs=[
-            '("group:graphics" && graphics_nightly && graphics_chameleon_igt)'
-        ],
-        ignore_test_failures=True,
-        max_run_sec=21600,
-        command_args=args,
-        varslist=varslist)
+
+    # TODO(ihf): Remove this hack when CFT can pass labels directly to Tast.
+    # Until then ask autotest for labels and pass them as yaml and vars to
+    # the DUT.
+    with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
+        host_info = host.host_info_store.get()
+        yaml.safe_dump({'autotest_host_info_labels':
+                        json.dumps(host_info.labels)},
+                        stream=temp_file)
+        temp_file.flush()
+
+        job.run_test(
+            'tast',
+            host=host,
+            test_exprs=[
+                '("group:graphics" && graphics_nightly && graphics_chameleon_igt)'
+            ],
+            ignore_test_failures=True,
+            max_run_sec=21600,
+            command_args=args,
+            varslist=varslist,
+            varsfiles=[temp_file.name])
 
 
 parallel_simple(run, machines)

@@ -514,6 +514,8 @@ suite:nearby-share-remote
 suite:nearby-share-remote-floss
 suite:network_endtoend
 suite:network_endtoend_flaky
+suite:network_platform
+suite:network_platform_flaky
 suite:network_nightly
 suite:offloads
 suite:omaha_per-week

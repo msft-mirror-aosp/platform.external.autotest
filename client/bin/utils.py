@@ -2,7 +2,6 @@
 # Copyright 2017 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """
 Convenience functions for use by tests or whomever.
 """
@@ -63,8 +62,8 @@ def cat_file_to_cmd(file, command, ignore_status=0, return_output=False):
     zcat or bzcat if appropriate
     """
     if not os.path.isfile(file):
-        raise NameError('invalid file %s to cat to command %s'
-                % (file, command))
+        raise NameError('invalid file %s to cat to command %s' %
+                        (file, command))
 
     if return_output:
         run_cmd = utils.system_output
@@ -100,8 +99,9 @@ def extract_tarball_to_dir(tarball, dir):
 
 def extract_tarball(tarball):
     """Returns the directory extracted by the tarball."""
-    extracted = cat_file_to_cmd(tarball, 'tar xvf - 2>/dev/null',
-                                    return_output=True).splitlines()
+    extracted = cat_file_to_cmd(tarball,
+                                'tar xvf - 2>/dev/null',
+                                return_output=True).splitlines()
 
     dir = None
 
@@ -113,7 +113,7 @@ def extract_tarball(tarball):
         topdir = line.split('/')[0]
         if os.path.isdir(topdir):
             if dir:
-                assert(dir == topdir), 'tarball must be a a single directory'
+                assert (dir == topdir), 'tarball must be a a single directory'
             else:
                 dir = topdir
     if dir:
@@ -269,67 +269,69 @@ def get_cpu_soc_family():
 # When adding entries here, also add them at the right spot in the
 # INTEL_*_ORDER lists below.
 INTEL_UARCH_TABLE = {
-    '06_9A': 'Alder Lake',
-    '06_BE': 'Alder Lake',
-    '06_4C': 'Airmont',
-    '06_1C': 'Atom',
-    '06_26': 'Atom',
-    '06_27': 'Atom',
-    '06_35': 'Atom',
-    '06_36': 'Atom',
-    '06_3D': 'Broadwell',
-    '06_47': 'Broadwell',
-    '06_4F': 'Broadwell',
-    '06_56': 'Broadwell',
-    '06_A5': 'Comet Lake',
-    '06_A6': 'Comet Lake',
-    '06_0D': 'Dothan',
-    '06_5C': 'Goldmont',
-    '06_7A': 'Goldmont',
-    '06_3C': 'Haswell',
-    '06_45': 'Haswell',
-    '06_46': 'Haswell',
-    '06_3F': 'Haswell-E',
-    '06_7D': 'Ice Lake',
-    '06_7E': 'Ice Lake',
-    '06_3A': 'Ivy Bridge',
-    '06_3E': 'Ivy Bridge-E',
-    '06_8E': 'Kaby Lake',
-    '06_9E': 'Kaby Lake',
-    '06_0F': 'Merom',
-    '06_16': 'Merom',
-    '06_AA': 'Meteor Lake',
-    '06_17': 'Nehalem',
-    '06_1A': 'Nehalem',
-    '06_1D': 'Nehalem',
-    '06_1E': 'Nehalem',
-    '06_1F': 'Nehalem',
-    '06_2E': 'Nehalem',
-    '0F_03': 'Prescott',
-    '0F_04': 'Prescott',
-    '0F_06': 'Presler',
-    '06_BA': 'Raptor Lake',
-    '06_2A': 'Sandy Bridge',
-    '06_2D': 'Sandy Bridge',
-    '06_37': 'Silvermont',
-    '06_4A': 'Silvermont',
-    '06_4D': 'Silvermont',
-    '06_5A': 'Silvermont',
-    '06_5D': 'Silvermont',
-    '06_4E': 'Skylake',
-    '06_5E': 'Skylake',
-    '06_55': 'Skylake',
-    '06_8C': 'Tiger Lake',
-    '06_8D': 'Tiger Lake',
-    '06_86': 'Tremont',
-    '06_96': 'Tremont',
-    '06_9C': 'Tremont',
-    '06_25': 'Westmere',
-    '06_2C': 'Westmere',
-    '06_2F': 'Westmere',
+        '06_9A': 'Alder Lake',
+        '06_BE': 'Alder Lake',
+        '06_4C': 'Airmont',
+        '06_1C': 'Atom',
+        '06_26': 'Atom',
+        '06_27': 'Atom',
+        '06_35': 'Atom',
+        '06_36': 'Atom',
+        '06_3D': 'Broadwell',
+        '06_47': 'Broadwell',
+        '06_4F': 'Broadwell',
+        '06_56': 'Broadwell',
+        '06_A5': 'Comet Lake',
+        '06_A6': 'Comet Lake',
+        '06_0D': 'Dothan',
+        '06_5C': 'Goldmont',
+        '06_7A': 'Goldmont',
+        '06_3C': 'Haswell',
+        '06_45': 'Haswell',
+        '06_46': 'Haswell',
+        '06_3F': 'Haswell-E',
+        '06_7D': 'Ice Lake',
+        '06_7E': 'Ice Lake',
+        '06_3A': 'Ivy Bridge',
+        '06_3E': 'Ivy Bridge-E',
+        '06_8E': 'Kaby Lake',
+        '06_9E': 'Kaby Lake',
+        '06_0F': 'Merom',
+        '06_16': 'Merom',
+        '06_AA': 'Meteor Lake',
+        '06_17': 'Nehalem',
+        '06_1A': 'Nehalem',
+        '06_1D': 'Nehalem',
+        '06_1E': 'Nehalem',
+        '06_1F': 'Nehalem',
+        '06_2E': 'Nehalem',
+        '0F_03': 'Prescott',
+        '0F_04': 'Prescott',
+        '0F_06': 'Presler',
+        '06_BA': 'Raptor Lake',
+        '06_2A': 'Sandy Bridge',
+        '06_2D': 'Sandy Bridge',
+        '06_37': 'Silvermont',
+        '06_4A': 'Silvermont',
+        '06_4D': 'Silvermont',
+        '06_5A': 'Silvermont',
+        '06_5D': 'Silvermont',
+        '06_4E': 'Skylake',
+        '06_5E': 'Skylake',
+        '06_55': 'Skylake',
+        '06_8C': 'Tiger Lake',
+        '06_8D': 'Tiger Lake',
+        '06_86': 'Tremont',
+        '06_96': 'Tremont',
+        '06_9C': 'Tremont',
+        '06_25': 'Westmere',
+        '06_2C': 'Westmere',
+        '06_2F': 'Westmere',
 }
 
-INTEL_ATOM_ORDER = ['Silvermont', 'Airmont', 'Goldmont', 'Tremont', 'Gracemont']
+INTEL_ATOM_ORDER = [
+        'Silvermont', 'Airmont', 'Goldmont', 'Tremont', 'Gracemont'
+]
 
 INTEL_BIGCORE_ORDER = [
         'Prescott', 'Presler', 'Dothan', 'Merom', 'Nehalem', 'Westmere',
@@ -352,8 +354,8 @@ def get_intel_cpu_uarch(numeric=False):
     cpuinfo = get_cpuinfo()[0]
     if cpuinfo['vendor_id'] != 'GenuineIntel':
         return None
-    family_model = '%02X_%02X' % (int(cpuinfo['cpu family']),
-                                  int(cpuinfo['model']))
+    family_model = '%02X_%02X' % (int(
+            cpuinfo['cpu family']), int(cpuinfo['model']))
     if numeric:
         return family_model
     return INTEL_UARCH_TABLE.get(family_model, family_model)
@@ -480,7 +482,7 @@ def get_cpu_cache_size():
     if 'K' in res:
         return int(res.split('K')[0])
     elif 'M' in res:
-        return int(res.split('M')[0])*1000
+        return int(res.split('M')[0]) * 1000
     else:
         return 0
 
@@ -528,6 +530,7 @@ def get_memory_frequency():
         return int(res)
     return 0
 
+
 # Returns total memory in kb
 def read_from_meminfo(key):
     meminfo = utils.system_output('grep %s /proc/meminfo' % key)
@@ -541,12 +544,15 @@ def memtotal():
 def freememtotal():
     return read_from_meminfo('MemFree')
 
+
 def usable_memtotal():
     # Reserved 5% for OS use
     return int(read_from_meminfo('MemFree') * 0.95)
 
+
 def swaptotal():
     return read_from_meminfo('SwapTotal')
+
 
 def rounded_memtotal():
     # Get total of all physical mem, in kbytes
@@ -682,9 +688,8 @@ def append_path(oldpath, newpath):
         return newpath
 
 
-_TIME_OUTPUT_RE = re.compile(
-        r'([\d\.]*)user ([\d\.]*)system '
-        r'(\d*):([\d\.]*)elapsed (\d*)%CPU')
+_TIME_OUTPUT_RE = re.compile(r'([\d\.]*)user ([\d\.]*)system '
+                             r'(\d*):([\d\.]*)elapsed (\d*)%CPU')
 
 
 def to_seconds(time_string):
@@ -739,6 +744,7 @@ def check_glibc_ver(ver):
     if utils.compare_versions(glibc_ver, ver) == -1:
         raise error.TestError("Glibc too old (%s). Glibc >= %s is needed." %
                               (glibc_ver, ver))
+
 
 def check_kernel_ver(ver):
     kernel_ver = utils.system_output('uname -r')
@@ -806,7 +812,7 @@ def get_disk_size_gb(disk_name):
 
     @param disk_name: disk name to find size
     """
-    return int(get_disk_size(disk_name) / (10.0 ** 9) + 0.5)
+    return int(get_disk_size(disk_name) / (10.0**9) + 0.5)
 
 
 def get_disk_model(disk_name):
@@ -918,6 +924,7 @@ def is_disk_harddisk(disk_name):
     # For harddisk rtt > 0
     return rtt and int(rtt) > 0
 
+
 def concat_partition(disk_name, partition_number):
     """
     Return the name of a partition:
@@ -932,6 +939,7 @@ def concat_partition(disk_name, partition_number):
     else:
         sep = ''
     return disk_name + sep + str(partition_number)
+
 
 def verify_hdparm_feature(disk_name, feature):
     """
@@ -949,6 +957,7 @@ def verify_hdparm_feature(disk_name, feature):
     else:
         raise error.TestFail('Error running command %s' % cmd)
 
+
 def get_nvme_id_ns_feature(disk_name, feature):
     """
     Return feature value for NVMe disk using nvme id-ns
@@ -961,8 +970,9 @@ def get_nvme_id_ns_feature(disk_name, feature):
     if not feat:
         return 'None'
     start = feat.find(':')
-    value = feat[start+2:]
+    value = feat[start + 2:]
     return value
+
 
 def get_storage_error_msg(disk_name, reason):
     """
@@ -988,6 +998,7 @@ def get_storage_error_msg(disk_name, reason):
 _IOSTAT_FIELDS = ('transfers_per_s', 'read_kb_per_s', 'written_kb_per_s',
                   'read_kb', 'written_kb')
 _IOSTAT_RE = re.compile('ALL' + len(_IOSTAT_FIELDS) * r'\s+([\d\.]+)')
+
 
 def get_storage_statistics(device=None):
     """
@@ -1106,6 +1117,7 @@ def set_hwclock(time='system',
         cmd += ' --noadjfile'
     return utils.system(cmd, ignore_status=ignore_status)
 
+
 def set_wake_alarm(alarm_time):
     """
     Set the hardware RTC-based wake alarm to 'alarm_time'.
@@ -1122,13 +1134,13 @@ _UI_USE_FLAGS_FILE_PATH = '/etc/ui_use_flags.txt'
 
 # Command to check if a package is installed. If the package is not installed
 # the command shall fail.
-_CHECK_PACKAGE_INSTALLED_COMMAND =(
+_CHECK_PACKAGE_INSTALLED_COMMAND = (
         "dpkg-query -W -f='${Status}\n' %s | head -n1 | awk '{print $3;}' | "
         "grep -q '^installed$'")
 
+
 class Crossystem(object):
     """A wrapper for the crossystem utility."""
-
     def __init__(self, client):
         self.cros_system_data = {}
         self._client = client
@@ -1324,7 +1336,8 @@ def mounts():
         lines = f.readlines()
     for line in lines:
         m = re.match(
-            r'(?P<src>\S+) (?P<dest>\S+) (?P<type>\S+) (?P<opts>\S+).*', line)
+                r'(?P<src>\S+) (?P<dest>\S+) (?P<type>\S+) (?P<opts>\S+).*',
+                line)
         if m:
             ret.append(m.groupdict())
     return ret
@@ -1384,8 +1397,9 @@ def parse_cmd_output(command, run_method=utils.run):
     cmd_result = run_method(command, stdout_tee=None, stderr_tee=None)
     for line in cmd_result.stdout.splitlines():
         # Lines are of the format "<key>     = <value>      # <comment>"
-        key_value = re.match(r'^\s*(?P<key>[^ ]+)\s*=\s*(?P<value>[^ '
-                             r']+)(?:\s*#.*)?$', line)
+        key_value = re.match(
+                r'^\s*(?P<key>[^ ]+)\s*=\s*(?P<value>[^ '
+                r']+)(?:\s*#.*)?$', line)
         if key_value:
             result[key_value.group('key')] = key_value.group('value')
     return result
@@ -1449,6 +1463,7 @@ def get_cpu_usage():
             d[col] = 0
     return d
 
+
 def compute_active_cpu_time(cpu_usage_start, cpu_usage_end):
     """Computes the fraction of CPU time spent non-idling.
 
@@ -1460,10 +1475,13 @@ def compute_active_cpu_time(cpu_usage_start, cpu_usage_end):
     to calculate usage given two /proc/stat snapshots.
     """
     idle_cols = ('idle', 'iowait')  # All other cols are calculated as active.
-    time_active_start = sum([x[1] for x in six.iteritems(cpu_usage_start)
-                             if x[0] not in idle_cols])
-    time_active_end = sum([x[1] for x in six.iteritems(cpu_usage_end)
-                           if x[0] not in idle_cols])
+    time_active_start = sum([
+            x[1] for x in six.iteritems(cpu_usage_start)
+            if x[0] not in idle_cols
+    ])
+    time_active_end = sum([
+            x[1] for x in six.iteritems(cpu_usage_end) if x[0] not in idle_cols
+    ])
     total_time_start = sum(cpu_usage_start.values())
     total_time_end = sum(cpu_usage_end.values())
     # Avoid bogus division which has been observed on Tegra.
@@ -1573,11 +1591,10 @@ def report_temperature(test, keyname):
     """
     temperature = get_current_temperature_max()
     logging.info('%s = %f degree Celsius', keyname, temperature)
-    test.output_perf_value(
-        description=keyname,
-        value=temperature,
-        units='Celsius',
-        higher_is_better=False)
+    test.output_perf_value(description=keyname,
+                           value=temperature,
+                           units='Celsius',
+                           higher_is_better=False)
 
 
 # System paths for machine performance state.
@@ -1587,6 +1604,7 @@ _KERNEL_MAX = '/sys/devices/system/cpu/kernel_max'
 _MEMINFO = '/proc/meminfo'
 _TEMP_SENSOR_RE = 'Reading temperature...([0-9]*)'
 
+
 def _open_file(path):
     """
     Opens a file and returns the file object.
@@ -1595,6 +1613,7 @@ def _open_file(path):
     @return The open file object.
     """
     return open(path)
+
 
 def _get_line_from_file(path, line):
     """
@@ -1651,9 +1670,9 @@ def is_system_thermally_throttled():
         with _open_file(path) as f:
             cdev_type = f.read().strip()
 
-        if not (cdev_type == 'Processor' or
-                cdev_type.startswith('thermal-devfreq') or
-                cdev_type.startswith('thermal-cpufreq')):
+        if not (cdev_type == 'Processor'
+                or cdev_type.startswith('thermal-devfreq')
+                or cdev_type.startswith('thermal-cpufreq')):
             continue
 
         cur_state_path = os.path.join(os.path.dirname(path), 'cur_state')
@@ -1665,6 +1684,7 @@ def is_system_thermally_throttled():
 
 # The paths don't change. Avoid running find all the time.
 _hwmon_paths = {}
+
 
 def _get_hwmon_datas(file_pattern):
     """Returns a list of reading from hwmon."""
@@ -1702,7 +1722,7 @@ def _get_thermal_zone_temperatures():
     for path in glob.glob('/sys/class/thermal/thermal_zone*/temp'):
         try:
             temperatures.append(
-                _get_float_from_file(path, 0, None, None) * 0.001)
+                    _get_float_from_file(path, 0, None, None) * 0.001)
         except IOError:
             # Some devices (e.g. Veyron) may have reserved thermal zones that
             # are not active. Trying to read the temperature value would cause a
@@ -1740,17 +1760,16 @@ def get_current_temperature_max():
     """
     Returns the highest reported board temperature (all sensors) in Celsius.
     """
-    all_temps = (_get_hwmon_temperatures() +
-                 _get_thermal_zone_temperatures() +
+    all_temps = (_get_hwmon_temperatures() + _get_thermal_zone_temperatures() +
                  get_ec_temperatures())
     if all_temps:
         temperature = max(all_temps)
     else:
         temperature = -1
     # Check for real world values.
-    assert ((temperature > 10.0) and
-            (temperature < 150.0)), ('Unreasonable temperature %.1fC.' %
-                                     temperature)
+    assert ((temperature > 10.0)
+            and (temperature < 150.0)), ('Unreasonable temperature %.1fC.' %
+                                         temperature)
     return temperature
 
 
@@ -1772,7 +1791,7 @@ def get_cpu_max_frequency():
         max_frequency = max(frequency, max_frequency)
     # Confidence check.
     assert max_frequency > 1e8, ('Unreasonably low CPU frequency: %.1f' %
-            max_frequency)
+                                 max_frequency)
     return max_frequency
 
 
@@ -1914,7 +1933,7 @@ def get_hardware_revision():
     result = utils.run("crossystem board_id", ignore_status=True)
 
     if result.exit_status == 0:
-        return f"rev{result.stdout.strip()}"
+        return 'rev' + result.stdout.strip()
 
     # TODO(b/187790074): "crossystem board_id" works on M110 and later.
     # Below can be removed after autotest no longer needs to support M109
@@ -1944,7 +1963,6 @@ def get_cpu_name():
     if os.path.exists("/proc/device-tree/compatible"):
         command = "sed -e 's/\\x0/\\n/g' /proc/device-tree/compatible | tail -1"
         return utils.run(command).stdout.strip().replace(',', ' ')
-
 
     # Get cpu name from uname -p
     command = "uname -p"
@@ -2061,6 +2079,7 @@ def get_mem_free():
     mem_free = _get_float_from_file(_MEMINFO, 'MemFree:', 'MemFree:', ' kB')
     return int(mem_free / 1024)
 
+
 def get_mem_free_plus_buffers_and_cached():
     """
     Returns the free memory in MBytes, counting buffers and cached as free.
@@ -2072,10 +2091,11 @@ def get_mem_free_plus_buffers_and_cached():
     See https://www.kernel.org/doc/Documentation/filesystems/tmpfs.txt.
     """
     free_mb = get_mem_free()
-    cached_mb = (_get_float_from_file(
-        _MEMINFO, 'Cached:', 'Cached:', ' kB') / 1024)
-    buffers_mb = (_get_float_from_file(
-        _MEMINFO, 'Buffers:', 'Buffers:', ' kB') / 1024)
+    cached_mb = (_get_float_from_file(_MEMINFO, 'Cached:', 'Cached:', ' kB') /
+                 1024)
+    buffers_mb = (
+            _get_float_from_file(_MEMINFO, 'Buffers:', 'Buffers:', ' kB') /
+            1024)
     return free_mb + buffers_mb + cached_mb
 
 
@@ -2114,18 +2134,21 @@ def has_mali():
     """ @return: True if system has a Mali GPU enabled."""
     return os.path.exists('/dev/mali0')
 
+
 def get_gpu_family():
     """Returns the GPU family name."""
     cmd = '/usr/local/graphics/hardware_probe --gpu-family'
     output = utils.run(cmd, ignore_status=True).stdout
     return output.split(":")[1].strip()
 
+
 # TODO(ihf): Consider using /etc/lsb-release DEVICETYPE != CHROMEBOOK/CHROMEBASE
 # for confidence check, but usage seems a bit inconsistent. See
 # src/third_party/chromiumos-overlay/eclass/appid.eclass
 _BOARDS_WITHOUT_MONITOR = [
-    'anglar', 'mccloud', 'monroe', 'ninja', 'rikku', 'guado', 'jecht', 'tidus',
-    'beltino', 'panther', 'stumpy', 'panther', 'tricky', 'zako', 'veyron_rialto'
+        'anglar', 'mccloud', 'monroe', 'ninja', 'rikku', 'guado', 'jecht',
+        'tidus', 'beltino', 'panther', 'stumpy', 'panther', 'tricky', 'zako',
+        'veyron_rialto'
 ]
 
 
@@ -2143,10 +2166,11 @@ def get_fixed_dst_drive():
     Return device name for internal disk.
     Example: return /dev/sda for falco booted from usb
     """
-    cmd = ' '.join(['. /usr/sbin/write_gpt.sh;',
-                    '. /usr/share/misc/chromeos-common.sh;',
-                    'load_base_vars;',
-                    'get_fixed_dst_drive'])
+    cmd = ' '.join([
+            '. /usr/sbin/write_gpt.sh;',
+            '. /usr/share/misc/chromeos-common.sh;', 'load_base_vars;',
+            'get_fixed_dst_drive'
+    ])
     return utils.system_output(cmd)
 
 
@@ -2169,7 +2193,8 @@ def get_other_device():
     devs = utils.system_output(cmd).splitlines()
 
     for dev in devs[:]:
-        if not re.match(r'/dev/(sd[a-z]|mmcblk[0-9]+|nvme[0-9]+)p?[0-9]*', dev):
+        if not re.match(r'/dev/(sd[a-z]|mmcblk[0-9]+|nvme[0-9]+)p?[0-9]*',
+                        dev):
             devs.remove(dev)
         if dev == get_root_device():
             devs.remove(dev)
@@ -2313,8 +2338,12 @@ def strip_non_printable(s):
     return ''.join(x for x in s if x in string.printable)
 
 
-def recursive_func(obj, func, types, sequence_types=(list, tuple, set),
-                   dict_types=(dict,), fix_num_key=False):
+def recursive_func(obj,
+                   func,
+                   types,
+                   sequence_types=(list, tuple, set),
+                   dict_types=(dict, ),
+                   fix_num_key=False):
     """Apply func to obj recursively.
 
     This function traverses recursively through any sequence-like and
@@ -2346,15 +2375,22 @@ def recursive_func(obj, func, types, sequence_types=(list, tuple, set),
         return any([issubclass(anc, types) for anc in type(obj).__mro__])
 
     if isinstance(obj, sequence_types) or ancestors(obj, sequence_types):
-        result_lst = [recursive_func(elm, func, types, fix_num_key=fix_num_key)
-                      for elm in obj]
+        result_lst = [
+                recursive_func(elm, func, types, fix_num_key=fix_num_key)
+                for elm in obj
+        ]
         # Convert the result list to the object's original sequence type.
         return type(obj)(result_lst)
     elif isinstance(obj, dict_types) or ancestors(obj, dict_types):
-        result_lst = [
-                (recursive_func(key, func, types, fix_num_key=fix_num_key),
-                 recursive_func(value, func, types, fix_num_key=fix_num_key))
-                for (key, value) in obj.items()]
+        result_lst = [(recursive_func(key,
+                                      func,
+                                      types,
+                                      fix_num_key=fix_num_key),
+                       recursive_func(value,
+                                      func,
+                                      types,
+                                      fix_num_key=fix_num_key))
+                      for (key, value) in obj.items()]
         # Convert the result list to the object's original dict type.
         return type(obj)(result_lst)
     # Here are the basic types.
@@ -2473,7 +2509,9 @@ def base64_recursive_decode(obj):
         decode_types = (six.string_types, )
     else:
         decode_types = (bytes, bytearray)
-    return recursive_func(obj, base64.standard_b64decode, decode_types,
+    return recursive_func(obj,
+                          base64.standard_b64decode,
+                          decode_types,
                           fix_num_key=True)
 
 

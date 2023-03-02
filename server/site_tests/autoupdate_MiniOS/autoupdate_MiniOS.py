@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 import logging
+import os
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
@@ -16,7 +17,9 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
     version = 1
 
     _EXCLUSION_PREFS_DIR = "exclusion"
+    _MINIOS_BACKUP = "minios.gz"
     _MINIOS_PREFS_DIR = "minios"
+    _TMP_DIR = "/usr/local/tmp"
 
     def initialize(self, host=None, wifi_configs=None, running_at_desk=None):
         """
@@ -29,23 +32,93 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
             workstation.
 
         """
-        super(autoupdate_MiniOS, self).initialize(
-            host=host, wifi_configs=wifi_configs,
-            running_at_desk=running_at_desk,
-            skip_provisioning='true')
+        super(autoupdate_MiniOS,
+              self).initialize(host=host,
+                               wifi_configs=wifi_configs,
+                               running_at_desk=running_at_desk,
+                               skip_provisioning='true')
         self._remove_minios_update_prefs()
 
     def cleanup(self):
-        super(autoupdate_MiniOS, self).cleanup()
+        try:
+            # Restore active miniOS partition back to the original one.
+            self._restore_minios(self._active_minios['partition'])
+            kernel_utils.set_minios_priority(
+                    host=self._host, partition=self._active_minios['name'])
+        except AttributeError:
+            logging.error("Skip restoring minios priority as the original "
+                          "minios partition is not backed-up.")
+
         self._save_extra_update_engine_logs(number_of_logs=2)
         self._remove_minios_update_prefs()
-        # Set active miniOS partition back to the original one.
-        try:
-            kernel_utils.set_minios_priority(host=self._host,
-                                             partition=self._active_minios)
-        except AttributeError:
-            logging.error("Skip restoring minios priority as the active minios "
-                          "partition is not set.")
+        # Run cleanup from base class and reboot after restoring active miniOS
+        # partition. It is needed for update_engine to get the updated
+        # minios_priority value because crossystem lib caches NVRAM contents.
+        super(autoupdate_MiniOS, self).cleanup()
+
+    def _get_partition_path(self, partition):
+        """Get the device file path of a partition.
+
+        @param partition: The partition number.
+        """
+        rootdev = self._run(['rootdev', '-s', '-d']).stdout.strip()
+        sep = "p" if rootdev[-1].isdigit() else ""
+        return rootdev + sep + str(partition)
+
+    def _md5_hash(self, path):
+        """Get the md5 hash of a file on DUT.
+
+        @param path: The file path.
+        """
+        return self._run(['md5sum', '-b', path],
+                         ignore_status=True).stdout.split()[0]
+
+    def _backup_minios(self, partition):
+        """Backup given miniOS partition and get its hash.
+
+        @param partition: The miniOS partition number.
+        """
+        part = self._get_partition_path(partition)
+        # Get miniOS partition hash.
+        self._minios_hash = self._md5_hash(part)
+        logging.info(
+                "Backing up the original active miniOS partition, md5sum: %s",
+                self._minios_hash)
+        # Backup miniOS partition.
+        backup_src = os.path.join(self._TMP_DIR, self._MINIOS_BACKUP)
+        backup_dst = os.path.join(self.resultsdir, self._MINIOS_BACKUP)
+        self._run(['mkdir', '-p', self._TMP_DIR], ignore_status=True)
+        self._run(['dd', f"if={part}", '|', 'gzip', '>', backup_src],
+                  ignore_status=True)
+        self._get_file(backup_src, backup_dst)
+
+    def _restore_minios(self, partition):
+        """Verify miniOS hash and restore backed-up miniOS if needed.
+
+        @param partition: The miniOS partition number.
+        """
+        restore_src = os.path.join(self.resultsdir, self._MINIOS_BACKUP)
+        if not os.path.exists(restore_src):
+            logging.info("The miniOS partition backup does not exists, "
+                         "skip restoring.")
+            return
+
+        part = self._get_partition_path(partition)
+        # Verify miniOS partition hash.
+        hash = self._md5_hash(part)
+        if hash == self._minios_hash:
+            logging.info("The active miniOS partition is unchanged, "
+                         "leave it as it is.")
+        else:
+            logging.info(
+                    "The active miniOS partition hash is %s, different from "
+                    "the original. Restoring miniOS partition.", hash)
+            # Restore miniOS partition.
+            with open(restore_src, 'r') as f:
+                self._run(['gzip', '-d', '|', 'dd', f"of={part}"],
+                          stdin=f,
+                          ignore_status=True)
+        os.remove(restore_src)
 
     def _remove_minios_update_prefs(self):
         for pref in ((self._EXCLUSION_PREFS_DIR, True),
@@ -183,13 +256,16 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         (self._active_minios,
          self._inactive_minios) = kernel_utils.get_minios_priority(self._host)
 
+        # Backup the original active miniOS partition before test.
+        self._backup_minios(self._active_minios['partition'])
+
         minios_update = with_os and not with_exclusion
         # MiniOS update to be verified.
         self._verifications = [
                 lambda: kernel_utils.verify_minios_priority_after_update(
                         self._host,
-                        expected=self._inactive_minios if minios_update
-                                                       else self._active_minios)
+                        expected=self._inactive_minios['name']
+                        if minios_update else self._active_minios['name'])
         ]
 
         # Get payload URLs and setup tests.

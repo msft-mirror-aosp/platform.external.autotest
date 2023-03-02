@@ -11,8 +11,8 @@ from autotest_lib.client.bin import utils
 
 _KERNEL_A = {'name': 'KERN-A', 'kernel': 2, 'root': 3}
 _KERNEL_B = {'name': 'KERN-B', 'kernel': 4, 'root': 5}
-_MINIOS_A = 'A'
-_MINIOS_B = 'B'
+_MINIOS_A = {'name': 'A', 'partition': 9}
+_MINIOS_B = {'name': 'B', 'partition': 10}
 
 # Time to wait for new kernel to be marked successful after auto update.
 _KERNEL_UPDATE_TIMEOUT = 120
@@ -164,12 +164,12 @@ def verify_boot_expectations(expected_kernel, error_message=_BOOT_ERR_MSG,
     # delaying the process of update-engine (autoupdater) marking the newly
     # booted kernel as "sticky".
     try:
-      utils.poll_for_condition(
-          lambda: (_run(['status', 'ui'], host).stdout.startswith(
-                   'ui start/running')),
-          timeout=_UI_STABILIZE_TIMEOUT, sleep_interval=5)
+        utils.poll_for_condition(lambda: (_run(['status', 'ui'], host).stdout.
+                                          startswith('ui start/running')),
+                                 timeout=_UI_STABILIZE_TIMEOUT,
+                                 sleep_interval=5)
     except Exception:
-      raise Exception('UI failed to stabilize.')
+        raise Exception('UI failed to stabilize.')
 
     # Make sure chromeos-setgoodkernel runs marking the new kernel "sticky".
     try:
@@ -194,9 +194,12 @@ def get_minios_priority(host=None):
 
     """
     active = _run(['crossystem', 'minios_priority'], host).stdout.strip()
-    if active != _MINIOS_A and active != _MINIOS_B:
+    if active == _MINIOS_A['name']:
+        return (_MINIOS_A, _MINIOS_B)
+    elif active == _MINIOS_B['name']:
+        return (_MINIOS_B, _MINIOS_A)
+    else:
         raise Exception('Encountered unknown MiniOS partition: %s' % active)
-    return (active, _MINIOS_B if active == _MINIOS_A else _MINIOS_A)
 
 
 def set_minios_priority(host=None, partition=None):
@@ -207,7 +210,7 @@ def set_minios_priority(host=None, partition=None):
     @param partition: The active partition name, should be either "A" or "B".
 
     """
-    if partition != _MINIOS_A and partition != _MINIOS_B:
+    if partition != _MINIOS_A['name'] and partition != _MINIOS_B['name']:
         raise Exception('Encountered unknown MiniOS partition: %s' % partition)
     _run(['crossystem', 'minios_priority=%s' % partition], host)
 

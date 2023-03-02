@@ -34,6 +34,7 @@ from autotest_lib.server.hosts import host_info
 from autotest_lib.server import autoserv_utils
 from autotest_lib.server import server_logging_config
 from autotest_lib.server import utils
+from autotest_lib.utils.frozen_chromite.lib import remote_access
 
 
 _autoserv_proc = None
@@ -45,9 +46,7 @@ NO_BUILD = 'ad_hoc_build'
 NO_MODEL = 'ad_hoc_model'
 _SUITE_REGEX = r'suite:(.*)'
 
-_TEST_KEY_FILENAME = 'testing_rsa'
-TEST_KEY_PATH = ('/mnt/host/source/src/scripts/mod_for_test_scripts/'
-                  'ssh_keys/%s' % _TEST_KEY_FILENAME)
+TEST_KEY_PATH = remote_access.TEST_PRIVATE_KEY
 
 _LATEST_RESULTS_DIRECTORY = '/tmp/test_that_latest'
 _HOST_INFO_SUBDIR = 'host_info_store'

@@ -5,14 +5,14 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_T.internal.arm.CtsCameraTestCases.noled.camerabox.back'
+NAME = 'cheets_CTS_T.internal.arm.CtsCameraTestCases.camerabox.back'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
 ATTRIBUTES = 'suite:arc-cts-camera, suite:arc-cts-t'
-DEPENDENCIES = 'arc, camerabox_light:noled, camerabox_facing:back'
+DEPENDENCIES = 'arc, camerabox_facing:back'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'LONG'
@@ -27,8 +27,8 @@ def run_TS(machine):
         cmdline_args=args,
         hosts=host_list,
         iterations=1,
-        tag='internal.arm.CtsCameraTestCases.noled.camerabox.back',
-        test_name='cheets_CTS_T.internal.arm.CtsCameraTestCases.noled.camerabox.back',
+        tag='internal.arm.CtsCameraTestCases.camerabox.back',
+        test_name='cheets_CTS_T.internal.arm.CtsCameraTestCases.camerabox.back',
         run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsCameraTestCases', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsCameraTestCases',

@@ -1,18 +1,18 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2018 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_T.internal.x86.CtsCameraTestCases.noled.camerabox.front'
+NAME = 'cheets_CTS_P.internal.x86.CtsCameraTestCases.camerabox.back'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-camera, suite:arc-cts-t'
-DEPENDENCIES = 'arc, cts_abi_x86, camerabox_light:noled, camerabox_facing:front'
+ATTRIBUTES = 'suite:arc-cts-camera'
+DEPENDENCIES = 'arc, cts_abi_x86, camerabox_facing:back'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'LONG'
@@ -22,20 +22,20 @@ DOC = 'n/a'
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
     job.run_test(
-        'cheets_CTS_T',
-        camera_facing='front',
+        'cheets_CTS_P',
+        camera_facing='back',
         cmdline_args=args,
         hosts=host_list,
         iterations=1,
-        tag='internal.x86.CtsCameraTestCases.noled.camerabox.front',
-        test_name='cheets_CTS_T.internal.x86.CtsCameraTestCases.noled.camerabox.front',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsCameraTestCases', '--logcat-on-failure'],
-        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        tag='internal.x86.CtsCameraTestCases.camerabox.back',
+        test_name='cheets_CTS_P.internal.x86.CtsCameraTestCases.camerabox.back',
+        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsCameraTestCases', '--logcat-on-failure', '--dynamic-config-url='],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
         target_module='CtsCameraTestCases',
         target_plan=None,
         bundle='x86',
         uri='DEV',
         retry_manual_tests=True,
-        timeout=5400)
+        timeout=7200)
 
 parallel_simple(run_TS, machines)

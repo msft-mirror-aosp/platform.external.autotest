@@ -253,7 +253,6 @@ def get_extension(module,
                   abi,
                   revision,
                   is_public=False,
-                  led_provision=None,
                   camera_facing=None,
                   hardware_suite=False,
                   abi_bits=None,
@@ -267,8 +266,6 @@ def get_extension(module,
                    is specified, the control file will runs all the tests.
     @param is_public: boolean variable to specify whether or not the bundle is
                    from public source or not.
-    @param led_provision: string or None indicate whether the camerabox has led
-                          light or not.
     @param camera_facing: string or None indicate whether it's camerabox tests
                           for specific camera facing or not.
     @param abi_bits: 32 or 64 or None indicate the bitwidth for the specific
@@ -290,8 +287,6 @@ def get_extension(module,
     if not CONFIG.get('SINGLE_CONTROL_FILE') and abi:
         ext_parts += [abi]
     ext_parts += [module]
-    if led_provision:
-        ext_parts += [led_provision]
     if camera_facing:
         ext_parts += ['camerabox', camera_facing]
     if hardware_suite and module not in get_collect_modules(
@@ -322,7 +317,6 @@ def get_controlfile_name(module,
                          abi,
                          revision,
                          is_public=False,
-                         led_provision=None,
                          camera_facing=None,
                          abi_bits=None,
                          shard=(0, 1),
@@ -336,8 +330,6 @@ def get_controlfile_name(module,
                    public source or not.
     @param camera_facing: string or None indicate whether it's camerabox tests
                           for specific camera facing or not.
-    @param led_provision: string or None indicate whether the camerabox has led
-                          light or not.
     @param abi_bits: 32 or 64 or None indicate the bitwidth for the specific
                      abi to run.
     @param shard: tuple of integers representing the shard index.
@@ -349,8 +341,8 @@ def get_controlfile_name(module,
                     "control.<revision>.<abi>.<module>".
     """
     return 'control.%s' % get_extension(
-            module, abi, revision, is_public, led_provision, camera_facing,
-            hardware_suite, abi_bits, shard, vm_force_max_resolution)
+            module, abi, revision, is_public, camera_facing, hardware_suite,
+            abi_bits, shard, vm_force_max_resolution)
 
 
 def get_sync_count(_modules, _abi, _is_public):
@@ -470,7 +462,7 @@ def get_suites(modules,
     return sorted(list(suites))
 
 
-def get_dependencies(modules, abi, is_public, led_provision, camera_facing):
+def get_dependencies(modules, abi, is_public, camera_facing):
     """Defines lab dependencies needed to schedule a module.
 
     @param module: CTS module which will be tested in the control file. If 'all'
@@ -479,8 +471,6 @@ def get_dependencies(modules, abi, is_public, led_provision, camera_facing):
                 current test.
     @param is_public: boolean variable to specify whether or not the bundle is
                       from public source or not.
-    @param led_provision: specify if led is provisioned in the camerabox setup. 'noled' when
-                          there is no led light in the box and 'led' otherwise.
     @param camera_facing: specify requirement of camerabox setup with target
                           test camera facing. Set to None if it's not camerabox
                           related test.
@@ -488,9 +478,6 @@ def get_dependencies(modules, abi, is_public, led_provision, camera_facing):
     dependencies = ['arc']
     if abi in CONFIG['LAB_DEPENDENCY']:
         dependencies += CONFIG['LAB_DEPENDENCY'][abi]
-
-    if led_provision is not None:
-        dependencies.append('camerabox_light:'+led_provision)
 
     if camera_facing is not None:
         dependencies.append('camerabox_facing:'+camera_facing)
@@ -1031,7 +1018,6 @@ def get_controlfile_content(combined,
                             source_type=None,
                             abi_bits=None,
                             shard=(0, 1),
-                            led_provision=None,
                             camera_facing=None,
                             hardware_suite=False,
                             whole_module_set=None,
@@ -1047,8 +1033,8 @@ def get_controlfile_content(combined,
     # We tag results with full revision now to get result directories containing
     # the revision. This fits stainless/ better.
     tag = '%s' % get_extension(combined, abi, revision, is_public,
-                               led_provision, camera_facing, hardware_suite,
-                               abi_bits, shard, vm_force_max_resolution)
+                               camera_facing, hardware_suite, abi_bits, shard,
+                               vm_force_max_resolution)
     # For test_that the NAME should be the same as for the control file name.
     # We could try some trickery here to get shorter extensions for a default
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
@@ -1114,7 +1100,7 @@ def get_controlfile_content(combined,
             test_func_name=CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'],
             attributes=attributes,
             dependencies=get_dependencies(modules, abi, is_public,
-                                          led_provision, camera_facing),
+                                          camera_facing),
             extra_artifacts=get_extra_artifacts(modules),
             extra_artifacts_host=get_extra_artifacts_host(modules),
             job_retries=get_job_retries(modules, is_public, suites),
@@ -1635,9 +1621,7 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, source_type):
     module = 'CtsCameraTestCases'
     is_public = (source_type == SourceType.MOBLAB)
     for facing in ['back', 'front', 'nocamera']:
-        led_provision = 'noled'
-        name = get_controlfile_name(module, abi, revision, is_public,
-                                    led_provision, facing)
+        name = get_controlfile_name(module, abi, revision, is_public, facing)
         content = get_controlfile_content(module,
                                           set([module]),
                                           abi,
@@ -1646,7 +1630,6 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, source_type):
                                           uri,
                                           None,
                                           source_type,
-                                          led_provision=led_provision,
                                           camera_facing=facing)
         with open(name, 'w') as f:
             f.write(content)

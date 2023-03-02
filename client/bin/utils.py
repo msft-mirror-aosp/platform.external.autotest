@@ -1735,18 +1735,13 @@ def get_ec_temperatures():
     """
     Uses ectool to return a list of all sensor temperatures in Celsius.
 
-    Output from ectool is either '0: 300' or '0: 300 K' (newer ectool
-    includes the unit).
+    Output from ectool is an array of Celsius readings.
     """
     temperatures = []
     try:
-        full_cmd = 'ectool temps all'
-        lines = utils.run(full_cmd, verbose=False).stdout.splitlines()
-        pattern = re.compile('.*: (\d+)')
-        for line in lines:
-            matched = pattern.match(line)
-            temperature = int(matched.group(1)) - 273
-            temperatures.append(temperature)
+        output = utils.run('ectool temps all', verbose=False).stdout
+        temperatures = re.findall('\S+\s+([0-9]+) K', output)
+        temperatures = [int(temp) - 273 for temp in temperatures]
     except Exception as e:
         logging.warning('Unable to read temperature sensors using ectool %s.',
                         e)

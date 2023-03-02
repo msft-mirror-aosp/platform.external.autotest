@@ -329,9 +329,9 @@ class FlossScannerClient(BluetoothScannerCallbacks):
 
         @return: Dictionary of scan filter pattern."""
         return {
-                'start_position': GLib.Variant('q', start_position),
-                'ad_type': GLib.Variant('q', ad_type),
-                'content': GLib.Variant('aq', content)
+                'start_position': GLib.Variant('y', start_position),
+                'ad_type': GLib.Variant('y', ad_type),
+                'content': GLib.Variant('ay', content)
         }
 
     def make_dbus_scan_filter_condition(self, patterns):
@@ -365,13 +365,13 @@ class FlossScannerClient(BluetoothScannerCallbacks):
                                                        c['content']))
         return {
                 'rssi_high_threshold':
-                GLib.Variant('n', rssi_high_threshold),
+                GLib.Variant('y', rssi_high_threshold),
                 'rssi_low_threshold':
-                GLib.Variant('n', rssi_low_threshold),
+                GLib.Variant('y', rssi_low_threshold),
                 'rssi_low_timeout':
-                GLib.Variant('q', rssi_low_timeout),
+                GLib.Variant('y', rssi_low_timeout),
                 'rssi_sampling_period':
-                GLib.Variant('q', rssi_sampling_period),
+                GLib.Variant('y', rssi_sampling_period),
                 'condition':
                 GLib.Variant('a{sv}',
                              self.make_dbus_scan_filter_condition(patterns))

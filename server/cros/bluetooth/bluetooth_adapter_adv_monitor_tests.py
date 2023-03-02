@@ -35,7 +35,7 @@ class TestMonitor():
     # Index of the pattern data in the patterns filter.
     PATTERN_DATA_IDX = 2
 
-    def __init__(self, app_id):
+    def __init__(self, app_id, floss):
         """Construction of a local monitor object.
 
         @param app_id: the app id associated with the monitor.
@@ -43,7 +43,7 @@ class TestMonitor():
         """
         self.type = None
         self.rssi = []
-        self.sampling_period = 256  # unset Sampling Period
+        self.sampling_period = 255 if floss else 256  # unset Sampling Period
         self.patterns = []
         self.monitor_id = None
         self.app_id = app_id
@@ -157,6 +157,10 @@ class BluetoothAdapterAdvMonitorTests(
     UNSET_RSSI = 127
     UNSET_TIMEOUT = 0
     UNSET_SAMPLING_PERIOD = 256
+
+    # Unset sampling period in Floss that follows the value of MSFT HCI
+    # specification.
+    FLOSS_UNSET_SAMPLING_PERIOD = 255
 
     # Non-zero count value is used to indicate the case where multiple
     # DeviceFound/DeviceLost events are expected to occur.
@@ -710,9 +714,10 @@ class BluetoothAdapterAdvMonitorTests(
             checked_release = self.test_monitor_release(
                     monitor, expected_release)
 
-        if self.get_event_count(app_id, monitor_id, 'Release') != 0:
-            self.remove_monitor(app_id, monitor_id)
-            monitor.update_monitor_id(None)
+        if not self.floss:
+            if self.get_event_count(app_id, monitor_id, 'Release') != 0:
+                self.remove_monitor(app_id, monitor_id)
+                monitor.update_monitor_id(None)
 
         if target_devices is None:
             # Set the target devices so that AdvMon ignores Adv from other
@@ -1112,14 +1117,14 @@ class BluetoothAdapterAdvMonitorTests(
         # Create a test app instance.
         app1 = self.create_app()
 
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_rssi([-40, 5, -60, 5])
         monitor1.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
         ])
 
-        monitor2 = TestMonitor(app1)
+        monitor2 = TestMonitor(app1, self.floss)
         monitor2.update_type('or_patterns')
         monitor2.update_rssi([-40, 10, -60, 10])
         monitor2.update_patterns([
@@ -1166,6 +1171,17 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_exit_app(app1)
 
 
+    @property
+    def unset_sampling_period(self):
+        """Gets unset sampling period value.
+
+         @return: unset sampling period.
+         """
+        if self.floss:
+            return self.FLOSS_UNSET_SAMPLING_PERIOD
+        return self.UNSET_SAMPLING_PERIOD
+
+
     def advmon_test_monitor_validity(self):
         """Test case: MONITOR_VALIDITY
 
@@ -1178,14 +1194,14 @@ class BluetoothAdapterAdvMonitorTests(
         # Create a test app instance.
         app1 = self.create_app()
 
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('incorrect_pattern')
         monitor1.update_rssi([-40, 5, -60, 5])
         monitor1.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
         ])
 
-        monitor2 = TestMonitor(app1)
+        monitor2 = TestMonitor(app1, self.floss)
         monitor2.update_type('or_patterns')
         monitor2.update_rssi([-40, 10, -60, 10])
         monitor2.update_patterns([
@@ -1202,13 +1218,13 @@ class BluetoothAdapterAdvMonitorTests(
         monitor2.update_rssi([40, 10, -60, 10])
         self.test_add_monitor(monitor2, expected_release=True)
 
-        monitor2.update_rssi([-140, 10, -60, 10])
+        monitor2.update_rssi([-128, 10, -60, 10])
         self.test_add_monitor(monitor2, expected_release=True)
 
         monitor2.update_rssi([-40, 10, 60, 10])
         self.test_add_monitor(monitor2, expected_release=True)
 
-        monitor2.update_rssi([-40, 10, -160, 10])
+        monitor2.update_rssi([-40, 10, -128, 10])
         self.test_add_monitor(monitor2, expected_release=True)
 
         monitor2.update_rssi([-60, 10, -40, 10])
@@ -1232,12 +1248,13 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_remove_monitor(monitor2)
 
         # Incorrect sampling period, release should get called.
-        monitor2.update_sampling_period(257)
-        self.test_add_monitor(monitor2, expected_release=True)
+        if not self.floss:
+            monitor2.update_sampling_period(257)
+            self.test_add_monitor(monitor2, expected_release=True)
 
         # Partial RSSI filter and sampling period, activate should get called.
         monitor2.update_rssi([-40, 10, self.UNSET_RSSI, self.UNSET_TIMEOUT])
-        monitor2.update_sampling_period(self.UNSET_SAMPLING_PERIOD)
+        monitor2.update_sampling_period(self.unset_sampling_period)
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
@@ -1247,7 +1264,7 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_remove_monitor(monitor2)
 
         monitor2.update_rssi([self.UNSET_RSSI, self.UNSET_TIMEOUT, -60, 10])
-        monitor2.update_sampling_period(self.UNSET_SAMPLING_PERIOD)
+        monitor2.update_sampling_period(self.unset_sampling_period)
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
@@ -1262,7 +1279,7 @@ class BluetoothAdapterAdvMonitorTests(
                 self.UNSET_RSSI,
                 self.UNSET_TIMEOUT
         ])
-        monitor2.update_sampling_period(self.UNSET_SAMPLING_PERIOD)
+        monitor2.update_sampling_period(self.unset_sampling_period)
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
@@ -1334,7 +1351,7 @@ class BluetoothAdapterAdvMonitorTests(
         # Create a test app instance.
         app1 = self.create_app()
 
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
 
@@ -1430,7 +1447,7 @@ class BluetoothAdapterAdvMonitorTests(
         # Create a test app instance.
         app1 = self.create_app()
 
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
@@ -1489,7 +1506,7 @@ class BluetoothAdapterAdvMonitorTests(
         # Create a test app instance.
         app1 = self.create_app()
 
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
@@ -1540,7 +1557,7 @@ class BluetoothAdapterAdvMonitorTests(
         # Create a test app instance.
         app1 = self.create_app()
 
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
@@ -1603,7 +1620,7 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_register_app(app2)
 
         # Monitors with same pattern and RSSI filter values in both apps.
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
@@ -1613,7 +1630,7 @@ class BluetoothAdapterAdvMonitorTests(
                 self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
         ])
 
-        monitor2 = TestMonitor(app2)
+        monitor2 = TestMonitor(app2, self.floss)
         monitor2.update_type('or_patterns')
         monitor2.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
@@ -1637,7 +1654,7 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_remove_monitor(monitor1)
 
         # Monitors with same pattern but different RSSI filter values.
-        monitor3 = TestMonitor(app1)
+        monitor3 = TestMonitor(app1, self.floss)
         monitor3.update_type('or_patterns')
         monitor3.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
@@ -1646,7 +1663,7 @@ class BluetoothAdapterAdvMonitorTests(
                 self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
         ])
 
-        monitor4 = TestMonitor(app2)
+        monitor4 = TestMonitor(app2, self.floss)
         monitor4.update_type('or_patterns')
         monitor4.update_patterns([
                 [0, 0x19, [0xc2, 0x03]],
@@ -1688,7 +1705,7 @@ class BluetoothAdapterAdvMonitorTests(
         # Create a test app instance.
         app1 = self.create_app()
 
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
@@ -1783,28 +1800,28 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_register_app(app2)
 
         # Add monitors in both apps.
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
         monitor1.update_rssi([
                 self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
         ])
 
-        monitor2 = TestMonitor(app1)
+        monitor2 = TestMonitor(app1, self.floss)
         monitor2.update_type('or_patterns')
         monitor2.update_patterns([ [0, 0x19, [0xc2, 0x03]], ])
         monitor2.update_rssi([
                 self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 10,
         ])
 
-        monitor3 = TestMonitor(app2)
+        monitor3 = TestMonitor(app2, self.floss)
         monitor3.update_type('or_patterns')
         monitor3.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
         monitor3.update_rssi([
                 self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
         ])
 
-        monitor4 = TestMonitor(app2)
+        monitor4 = TestMonitor(app2, self.floss)
         monitor4.update_type('or_patterns')
         monitor4.update_patterns([ [0, 0x19, [0xc1, 0x03]], ])
         monitor4.update_rssi([
@@ -1880,7 +1897,7 @@ class BluetoothAdapterAdvMonitorTests(
         # Create a test app instance.
         app1 = self.create_app()
 
-        monitor1 = TestMonitor(app1)
+        monitor1 = TestMonitor(app1, self.floss)
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([
                 [0, 0x03, [0x12, 0x18]],
@@ -1992,7 +2009,7 @@ class BluetoothAdapterAdvMonitorTests(
         # defined in AVL.
         monitors = []
         for i in range(AVL_CONDITION_COUNT):
-            monitor = TestMonitor(app)
+            monitor = TestMonitor(app, self.floss)
             monitor.update_type('or_patterns')
             monitor.update_patterns([[0, 0x09, 'COND{}_'.format(i)]])
             monitor.update_rssi([

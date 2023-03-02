@@ -1782,6 +1782,25 @@ class BluetoothBaseFacadeLocal(object):
         """
         return self.btmon.find(pattern_str)
 
+    def convert_rssi_value_to_unsigned_byte(self, rssi):
+        """Converts the negative RSSI value to unsigned 8-bit value.
+
+        @param rssi: RSSI value.
+
+        @return: Unsigned 8-bit RSSI value.
+        """
+        # Converts the RSSI value that should be between (-128 to 127) to
+        # unsigned byte in range (0 to 255) by checking if the RSSI value is
+        # negative, add the maximum value that can be represented by the
+        # unsigned byte plus one. Else, return the same value.
+        if -128 <= rssi < 0:
+            return rssi + 256
+        elif 0 <= rssi <= 127:
+            return rssi
+        else:
+            raise ValueError('RSSI value is out of the boundary of the signed '
+                             '8-bit range.')
+
 
 class BluezPairingAgent:
     """The agent handling the authentication process of bluetooth pairing.
@@ -5393,12 +5412,17 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         (rssi_high_threshold, _, rssi_low_threshold,
          rssi_low_timeout, rssi_sampling_period) = scanner_data[1]
 
-        filter = self.scanner_client.make_dbus_scan_filter(
+        rssi_high_threshold = self.convert_rssi_value_to_unsigned_byte(
+                rssi_high_threshold)
+
+        rssi_low_threshold = self.convert_rssi_value_to_unsigned_byte(
+                rssi_low_threshold)
+
+        scan_filter = self.scanner_client.make_dbus_scan_filter(
                 rssi_high_threshold, rssi_low_threshold, rssi_low_timeout,
                 rssi_sampling_period, condition)
-
         scan_result = self.scanner_client.start_scan(
-                scanner_id, settings, make_kv_optional_value(filter))
+                scanner_id, settings, make_kv_optional_value(scan_filter))
         if not scan_result:
             return None
         return scanner_id

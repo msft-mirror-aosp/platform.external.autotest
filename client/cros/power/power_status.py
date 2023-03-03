@@ -3126,42 +3126,61 @@ class PCHPowergatingStats(object):
         @returns list of PCH IP block name that need to be powergated for low
                  power consumption S0ix, empty list if none.
         """
-        # PCH IP block that is on for S0ix. Ignore these IP block.
-        S0IX_ALLOWLIST = set([
-                'PMC', 'OPI-DMI', 'SPI / eSPI', 'XHCI', 'xHCI', 'FUSE', 'Fuse',
-                'PCIE0', 'NPKVRC', 'NPKVNN', 'NPK_VNN', 'PSF1', 'PSF2', 'PSF3',
-                'PSF4', 'SBR0', 'SBR1', 'SBR2', 'SBR4', 'SBR5', 'SBR6', 'SBR7'])
+        # PCH IP block that is not S0ix condition. Ignore these IP block.
+        S0IX_ALLOWLIST_REGEX = r'''
+            PMC|                     # Power Management Controller
+            OPI-DMI|                 # On Package-Direct Media Interface
+            SPI([ ]?/[ ]?eSPI)?|     # Enhanced SPI
+            XHCI|                    # USB - Not powergated on PCH
+            FUSE|                    # SoC fuses - always On
+            PCIE0|                   # PCI Express
+            CNVI?|                   # Wifi CNVi
+            NPK_?(AON|VNN|VRC)|      # NorthPeak
+            PSF[0-9]|                # Primary side band fabric
+            SBR[0-9]|                # Side Band Router
+            EMMC|UFS0|               # Storage Controller
+            SP[A-Z]|                 # South PCIe Root Port
+        '''
 
         # PCH IP block that is on/off for S0ix depend on features enabled.
         # Add log when these IPs state are on.
-        S0IX_WARNLIST = set([
-                'HDA-PGD0', 'HDA-PGD1', 'HDA-PGD2', 'HDA-PGD3', 'LPSS',
-                'AVSPGD1', 'AVSPGD4'])
+        S0IX_WARNLIST_REGEX = r'''
+            (AVS|HDA)[-_]?PGD[0-9]|  # Audio - On if WoV
+            LPSS|                    # UART, I2C, SPI - On if console suspend
+            ISH|                     # Integrated Sensor Hub - On if not use CrOS EC
+            EXI|                     # Embedded Debug Interface
+        '''
+        re_flags = re.IGNORECASE | re.VERBOSE
+        allow_matcher = re.compile(S0IX_ALLOWLIST_REGEX, re_flags)
+        warn_matcher = re.compile(S0IX_WARNLIST_REGEX, re_flags)
 
-        # CNV device has 0x31dc as devid .
-        if len(utils.system_output('lspci -d :31dc')) > 0:
-            S0IX_ALLOWLIST.add('CNV')
+        warn_ip = []
+        error_ip = []
+        for i, stat in enumerate(self._stat):
+            # PCH >= 64 is undocument. Ignore this.
+            if i >= 64:
+                break
+            # State is off
+            if not stat['state']:
+                continue
+            ip = stat['name']
+            if allow_matcher.fullmatch(ip):
+                continue
+            if warn_matcher.fullmatch(ip):
+                warn_ip.append(ip)
+            else:
+                error_ip.append(ip)
 
-        # HrP2 device has 0x02f0(CML) or 0x4df0(JSL) as devid.
-        if (len(utils.system_output('lspci -d :02f0')) > 0 or
-            len(utils.system_output('lspci -d :4df0')) > 0):
-            S0IX_ALLOWLIST.update(['CNVI', 'NPK_AON'])
+        if warn_ip:
+            warn_ip = sorted(warn_ip)
+            logging.info('Found PCH IP that may be able to powergate: %s',
+                         ', '.join(warn_ip))
 
-        on_ip = set(ip['name'] for ip in self._stat if ip['state'])
-        on_ip -= S0IX_ALLOWLIST
-
-        if on_ip:
-            on_ip_in_warn_list = on_ip & S0IX_WARNLIST
-            if on_ip_in_warn_list:
-                logging.warning('Found PCH IP that may be able to powergate: %s',
-                             ', '.join(on_ip_in_warn_list))
-            on_ip -= S0IX_WARNLIST
-
-        if on_ip:
-            logging.error('Found PCH IP that need to powergate: %s',
-                          ', '.join(on_ip))
-            return on_ip
-        return []
+        if error_ip:
+            error_ip = sorted(error_ip)
+            logging.info('Found PCH IP that need to powergate: %s',
+                         ', '.join(error_ip))
+        return error_ip
 
     def read_pch_powergating_info(self, sleep_seconds=1):
         """

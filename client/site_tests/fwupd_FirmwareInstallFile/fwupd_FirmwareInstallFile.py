@@ -49,12 +49,12 @@ class fwupd_FirmwareInstallFile(test.test):
             utils.system(f'umount {TEMP_FW_DIR}', ignore_status=True)
             shutil.rmtree(TEMP_FW_DIR)
 
-        cmd = f'lsblk -npo NAME,LABEL | grep {EXTERNAL_DRIVE_LABEL}'
+        cmd = f'lsblk -rnpo NAME,LABEL | grep {EXTERNAL_DRIVE_LABEL}'
         out = utils.system_output(cmd, ignore_status=True)
         # Output is expected to be something like this:
         # <device_file>            <drive_label>
         # Capture the device_file in m.group(1)
-        m = re.match(f'([\w/]+)\s+{EXTERNAL_DRIVE_LABEL}', out)
+        m = re.search(f'([\w/]+)\s+{EXTERNAL_DRIVE_LABEL}', out)
         if m:
             # Create a temp mountpoint for the drive, mount it, copy the
             # fw file to /tmp, unmount and clean up

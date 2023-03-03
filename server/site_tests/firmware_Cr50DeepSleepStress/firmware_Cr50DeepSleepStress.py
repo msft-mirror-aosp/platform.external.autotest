@@ -171,9 +171,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                                                           'dis')
         logging.info(msg)
 
-        # TODO(b/135147658): Raise an error once CCD disable is fixed.
-        logging.info('Resetting DUT')
-        self.host.reset_via_servo()
+        self._try_to_bring_dut_up()
 
         is_sshable = self._dut_is_responsive()
 

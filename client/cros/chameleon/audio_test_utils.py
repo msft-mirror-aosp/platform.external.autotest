@@ -89,6 +89,10 @@ def check_audio_nodes(audio_facade, audio_nodes):
     out_audio_nodes, in_audio_nodes = audio_nodes
     if (in_audio_nodes != None
                 and sorted(curr_in_nodes) != sorted(in_audio_nodes)):
+        # FRONT_MIC is the same INTERNAL_MIC
+        if (in_audio_nodes == ['INTERNAL_MIC']
+                    and curr_in_nodes == ['FRONT_MIC']):
+            return
         raise error.TestFail(
                 'Wrong input node(s) selected: %s '
                 'expected: %s' % (str(curr_in_nodes), str(in_audio_nodes)))

@@ -189,6 +189,8 @@ INTERNAL_MIC_NODE = {
         ('nami', 'sona'): 'FRONT_MIC',
         ('nami', 'syndra'): 'FRONT_MIC',
         ('nami', 'vayne'): 'FRONT_MIC',
+        ('dedede', 'boten'): 'FRONT_MIC',
+        ('nissa', 'craask'): 'FRONT_MIC',
 }
 
 

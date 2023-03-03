@@ -40,8 +40,10 @@ class audio_AudioNodeSwitch(audio_test.AudioTest):
     def check_default_nodes(self):
         """Checks default audio nodes for devices with onboard audio support."""
         if audio_test_utils.has_internal_microphone(self.host):
-            audio_test_utils.check_audio_nodes(self.facade,
-                                               (None, ['INTERNAL_MIC']))
+            audio_test_utils.check_audio_nodes(
+                    self.facade,
+                    (None, [audio_test_utils.get_internal_mic_node(self.host)
+                            ]))
         if audio_test_utils.has_internal_speaker(self.host):
             audio_test_utils.check_audio_nodes(self.facade,
                                                (['INTERNAL_SPEAKER'], None))
@@ -85,6 +87,7 @@ class audio_AudioNodeSwitch(audio_test.AudioTest):
         for node in nodes:
             # Switch nodes and check their volume.
             self.facade.set_chrome_active_node_type(node, None)
+            self.set_active_volume_to_node_volume(node)
             self.check_active_node_volume(node)
 
 

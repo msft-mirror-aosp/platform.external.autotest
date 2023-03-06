@@ -56,8 +56,9 @@ class touch_ScrollDirection(touch_playback_test_base.touch_playback_test_base):
                                              direction)
         else:
             for direction in self._DIRECTIONS:
-                self._check_scroll_direction(self._filepaths[direction],
-                                             self._REVERSES[direction])
+                au_direction=self._REVERSES[direction]
+                self._check_scroll_direction(self._filepaths[au_direction],
+                                             direction)
 
 
     def _is_testable(self):

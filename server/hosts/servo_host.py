@@ -1402,7 +1402,7 @@ class ServoHost(base_servohost.BaseServoHost):
     def send_file(self, source, dest, delete_dest=False,
                   preserve_symlinks=False, excludes=None):
         if self.is_containerized_servod():
-            self.run(f'mkdir -p %s' % dest, ignore_status=True)
+            self.run('mkdir -p %s' % dest, ignore_status=True)
             if isinstance(source, six.string_types):
                 source = [source]
             client = docker_utils.get_docker_client()

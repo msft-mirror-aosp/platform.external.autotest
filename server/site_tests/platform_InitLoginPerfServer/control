@@ -15,7 +15,6 @@ METADATA = {
     "hw_agnostic": False
 }
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:crosbolt_perf_weekly"
 
 NUM_ITERATIONS = 7
 PRE_INIT_DELAY = 10

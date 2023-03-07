@@ -16,6 +16,8 @@ class power_LW(test.test):
     """Wrapper test around a client test for power lab."""
     version = 1
 
+    SERVO_V4_ETH_VENDOR = '0bda'
+    SERVO_V4_ETH_PRODUCT = '8153'
     WIFI_SSID = 'powertest_ap'
     WIFI_PASSWORD = 'chromeos'
 
@@ -53,12 +55,17 @@ class power_LW(test.test):
         machine['hostname'] = hostname
         return factory.create_host(machine)
 
-    def _start_servo_usb_and_ethernet(self, host):
-        host.servo.set_eth_power('on')
+    def _start_servo_usb_and_ethernet(self, host, wlan_host):
+        if host.servo and host.servo.supports_eth_power_control():
+            host.servo.set_eth_power('on')
+        else:
+            # Reboot to restore USB ethernet if it was stopped via unbind.
+            wlan_host.reboot()
+
         host.servo.set_usb3_power('on')
         host.servo.set_usb3_mux('on')
 
-    def _stop_servo_usb_and_ethernet(self, host):
+    def _stop_servo_usb_and_ethernet(self, host, wlan_host):
         """Find and unbind servo v4 usb and ethernet."""
         # Stop check_ethernet.hook to reconnect the usb device
         try:
@@ -67,11 +74,20 @@ class power_LW(test.test):
             logging.warning("Continue if stop recover_duts failed.")
 
         try:
-            host.servo.set_eth_power('off')
+            if host.servo and host.servo.supports_eth_power_control():
+                host.servo.set_eth_power('off')
+            elif host != wlan_host:
+                # Fall back to unbinding the USB device for ethernet if eth
+                # power control isn't supported on the servo.
+                eth_usb = host.find_usb_devices(self.SERVO_V4_ETH_VENDOR,
+                                                self.SERVO_V4_ETH_PRODUCT)
+                if len(eth_usb) == 1 and eth_usb[0] and host.get_wlan_ip():
+                    host.unbind_usb_device(eth_usb[0])
+
             host.servo.set_usb3_power('off')
             host.servo.set_usb3_mux('off')
         except Exception as e:
-            self._start_servo_usb_and_ethernet(host)
+            self._start_servo_usb_and_ethernet(host, wlan_host)
             raise e
 
     def run_once(self, host, test, args, machine):
@@ -88,8 +104,7 @@ class power_LW(test.test):
         @param machine: machine dict of the host.
         """
         wlan_host = self._get_wlan_host(host, machine)
-        if wlan_host != host:
-            self._stop_servo_usb_and_ethernet(host)
+        self._stop_servo_usb_and_ethernet(host, wlan_host)
 
         try:
             args['force_discharge'] = True
@@ -98,4 +113,4 @@ class power_LW(test.test):
             autotest_client = autotest.Autotest(wlan_host)
             autotest_client.run_test(test, **args)
         finally:
-            self._start_servo_usb_and_ethernet(host)
+            self._start_servo_usb_and_ethernet(host, wlan_host)

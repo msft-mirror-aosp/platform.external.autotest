@@ -29,6 +29,7 @@ class firmware_Cr50ECReset(Cr50Test):
 
     def initialize(self, host, cmdline_args, full_args):
         """Verify the setups supports EC reset."""
+        self.ran_test = False
         # TODO(b/186535695): EC hibernate puts cr50 into reset, so the test
         # can't verify cr50 behavior while the EC is hibernate.
         if 'c2d2' in host.servo.get_servo_type():
@@ -44,6 +45,7 @@ class firmware_Cr50ECReset(Cr50Test):
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
 
+        self.ran_test = True
         # Verify the EC can wake from hibernate with a power button press. If it
         # can't, it's a device or servo issue.
         try:
@@ -55,7 +57,7 @@ class firmware_Cr50ECReset(Cr50Test):
     def cleanup(self):
         """Make sure the EC is on, if there is a Chrome EC."""
         try:
-            if self.check_ec_capability():
+            if self.ran_test and self.check_ec_capability():
                 self.guarantee_ec_is_up()
         except Exception as e:
             logging.info('Issue recovering EC: %r', e)

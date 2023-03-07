@@ -12,7 +12,7 @@ METADATA = {
     "hw_agnostic": False
 }
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cros-hwsec_per-week'
+ATTRIBUTES = 'suite:cros-hwsec_per-week, suite:faft_ti50_qual'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

@@ -12,7 +12,7 @@ from autotest_lib.server.cros.faft.firmware_test import ConnectionError
 class firmware_CorruptRecoveryCache(FirmwareTest):
     """
     This test corrupts RECOVERY_MRC_CACHE and makes sure the DUT recreates the
-    cache and boots into recovery. This only applies to intel chips.
+    cache and boots into recovery.
 
     The expected behavior is that if the RECOVERY_MRC_CACHE is corrupted then
     it will be recreated and still boot into recovery mode.
@@ -21,8 +21,11 @@ class firmware_CorruptRecoveryCache(FirmwareTest):
     NEEDS_SERVO_USB = True
 
     REBUILD_CACHE_MSG = "MRC: cache data 'RECOVERY_MRC_CACHE' needs update."
+    REBUILD_CACHE_MSG2 = "APOB RAM hash differs from flash"
     RECOVERY_CACHE_SECTION = 'RECOVERY_MRC_CACHE'
-    FIRMWARE_LOG_CMD = 'cbmem -1' + ' | grep ' + REBUILD_CACHE_MSG[:3]
+    FIRMWARE_LOG_CMD = 'cbmem -1' + ' | grep -e ' + REBUILD_CACHE_MSG[:
+                                                                      3] + ' -e ' + REBUILD_CACHE_MSG2[:
+                                                                                                       4]
 
     def initialize(self, host, cmdline_args, dev_mode=False):
         super(firmware_CorruptRecoveryCache, self).initialize(
@@ -60,8 +63,10 @@ class firmware_CorruptRecoveryCache(FirmwareTest):
         @return True if cache rebuilt otherwise false
         """
         logging.info("Checking if cache was rebuilt.")
-        return self.faft_client.system.run_shell_command_check_output(
+        return (self.faft_client.system.run_shell_command_check_output(
                 self.FIRMWARE_LOG_CMD, self.REBUILD_CACHE_MSG)
+                or self.faft_client.system.run_shell_command_check_output(
+                        self.FIRMWARE_LOG_CMD, self.REBUILD_CACHE_MSG2))
 
     def boot_to_recovery(self):
         """Boots the device into recovery mode."""

@@ -319,7 +319,7 @@ class Suspender(object):
                 early_wakeup = True
         if early_wakeup:
             logging.debug('Early wakeup, dumping eventlog if it exists:\n')
-            elog = utils.system_output('elogtool list | tail -n %d' %
+            elog = utils.system_output('elogtool list --utc | tail -n %d' %
                                        self._RELEVANT_EVENTLOG_LINES,
                                        ignore_status=True)
             wake_elog = (['unknown'] + re.findall(r'Wake Source.*', elog))[-1]

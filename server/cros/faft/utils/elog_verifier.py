@@ -29,7 +29,7 @@ class ElogVerifier:
 
         @raise TestError: Failing to get event log.
         """
-        entries = system.run_shell_command_get_output('elogtool list')
+        entries = system.run_shell_command_get_output('elogtool list --utc')
 
         if not entries:
             raise error.TestError('Failed to retrieve event log by elogtool')

@@ -9,7 +9,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:chameleon_igt_daily'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = 'chameleon:hdmi'
+DEPENDENCIES = 'chameleon'
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True

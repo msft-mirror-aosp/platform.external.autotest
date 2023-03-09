@@ -826,6 +826,17 @@ class TradefedTest(test.test):
             logging.info('Copying %s to instance %s', cache_path,
                          instance_path)
             shutil.copytree(cache_path, instance_path)
+
+        # Hacky workaround for b/271219433 until GTS is fixed.
+        # 'tradefed.jar' needs to be listed before 'tradefed-no-fwk.jar'
+        # regardless of the locale. So here we just rename the latter.
+        try:
+            tools_dir = os.path.join(instance_path,
+                                     self._get_tradefed_base_dir(), 'tools')
+            os.rename(os.path.join(tools_dir, 'tradefed-no-fwk.jar'),
+                      os.path.join(tools_dir, 'zz-tradefed-no-fwk.jar'))
+        except OSError:
+            pass
         return instance_path
 
     def _install_bundle(self, gs_uri, password=''):

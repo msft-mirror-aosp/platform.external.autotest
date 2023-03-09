@@ -29,6 +29,9 @@ args = {
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
+    job.run_test("power_BatteryChargeControl", host=host,
+                 percent_charge_to_add=None, percent_target_charge=70,
+                 tag=NAME.split('.')[1])
     job.run_test("power_LW", host=host, test=test, args=args,
                  machine=machine, tag=NAME.split('.')[1])
 

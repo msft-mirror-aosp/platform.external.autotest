@@ -1273,6 +1273,20 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 with_minios=with_minios,
                 with_firmware=with_firmware).run_provision()
 
+        # Ensure Python is available on the provisioned version. If it is not,
+        # it is likely the stateful partition was wiped. Restore the stateful
+        # partition in that case.
+        try:
+            self._run(['python', '--version'])
+        except error.AutoservRunError as e:
+            logging.warning(
+                    'Python unavailable after provisioning source version. '
+                    'Restoring stateful partition.')
+            target_build = self._build
+            self._build = self._get_release_builder_path()
+            self._restore_stateful(public_bucket=public_bucket)
+            self._build = target_build
+
     def get_current_fw_version(self):
         """
         Gets the current active firmware version on the device.

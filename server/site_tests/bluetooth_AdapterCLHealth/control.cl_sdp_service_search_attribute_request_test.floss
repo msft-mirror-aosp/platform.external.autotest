@@ -25,8 +25,7 @@
 
 from autotest_lib.server import utils
 
-NAME = ('bluetooth_AdapterCLHealth.cl_sdp_service_search_attribute_request_test'
-        '.floss')
+NAME = 'bluetooth_AdapterCLHealth.cl_sdp_service_search_attribute_request_test.floss'
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth

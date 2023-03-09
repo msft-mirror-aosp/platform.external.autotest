@@ -2006,6 +2006,28 @@ class Servo(object):
             logging.info("Trying to reset servo's Ethernet controller, but"
                          "this feature is not supported on used servo setup.")
 
+    def supports_usb_mux_control(self):
+        """True if servo supports disabling the USB connection to the DUT."""
+        return self.has_control('dut_usb_mux_enable')
+
+    def set_usb_mux(self, state):
+        """Set USB mux on servo to state, either 'on' or 'off'.
+
+        Note: this functionality is supported only on servo v4p1.
+
+        @param state: a string of 'on' or 'off'.
+        """
+        if state != 'off' and state != 'on':
+            raise error.TestError('Unknown USB mux state request: %s' % state)
+
+        if not self.supports_usb_mux_control():
+            logging.info(
+                    'Not a supported servo setup. Unable to set USB mux state'
+                    '%s.', state)
+            return
+
+        self.set_nocheck('dut_usb_mux_enable', state)
+
     def supports_usb3_power_control(self):
         """True if servo supports power management of USB3 ports on servo."""
         return self.has_control('usb3_pwr_en')

@@ -62,8 +62,8 @@ class power_LW(test.test):
             # Reboot to restore USB ethernet if it was stopped via unbind.
             wlan_host.reboot()
 
-        host.servo.set_usb3_power('on')
-        host.servo.set_usb3_mux('on')
+        if host.servo and host.servo.supports_usb_mux_control():
+            host.servo.set_usb_mux('on')
 
     def _stop_servo_usb_and_ethernet(self, host, wlan_host):
         """Find and unbind servo v4 usb and ethernet."""
@@ -84,8 +84,8 @@ class power_LW(test.test):
                 if len(eth_usb) == 1 and eth_usb[0] and host.get_wlan_ip():
                     host.unbind_usb_device(eth_usb[0])
 
-            host.servo.set_usb3_power('off')
-            host.servo.set_usb3_mux('off')
+            if host.servo and host.servo.supports_usb_mux_control():
+                host.servo.set_usb_mux('off')
         except Exception as e:
             self._start_servo_usb_and_ethernet(host, wlan_host)
             raise e

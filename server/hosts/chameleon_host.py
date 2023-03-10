@@ -121,23 +121,35 @@ class ChameleonHost(ssh_host.SSHHost):
         return processes
 
 
-    def create_chameleon_board(self):
+    def create_chameleon_board(self, retry=False):
         """Create a ChameleonBoard object with error recovery.
 
-        This function will reboot the chameleon board once and retry if we can't
-        create chameleon board.
+        @param retry: True to reboot the Chameleon when it fails to obtain a
+                      ChameleonBoard object. Default False.
 
         @return A ChameleonBoard object.
         """
         # TODO(waihong): Add verify and repair logic which are required while
         # deploying to Cros Lab.
-        try:
-            chameleon_board = chameleon.ChameleonBoard(
-                    self._chameleon_connection, self)
-            return chameleon_board
-        except Exception as e:
-            raise ChameleonHostError('Can not create chameleon board: %s(%s)' %
-                                     (e.__class__, e))
+
+        while True:
+            try:
+                chameleon_board = chameleon.ChameleonBoard(
+                        self._chameleon_connection, self)
+                return chameleon_board
+            except Exception as e:
+                if retry:
+                    # Try repairing itself by rebooting.
+                    logging.warning(
+                            'Failed to create ChameleonBoard for %s, rebooting',
+                            self.hostname)
+                    self.reboot()
+                    # Only retry once.
+                    retry = False
+                else:
+                    raise ChameleonHostError(
+                            'Can not create chameleon board: %s(%s)' %
+                            (e.__class__, e))
 
 
 def create_chameleon_host(dut, chameleon_args):

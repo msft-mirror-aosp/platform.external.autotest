@@ -527,7 +527,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 if host is None:
                     continue
                 try:
-                    btpeer = host.create_chameleon_board()
+                    btpeer = host.create_chameleon_board(retry=True)
                     self.btpeer_list.append(btpeer)
                 except Exception as e:
                     logging.error('Exception %s while creating chamelon_board in %s',

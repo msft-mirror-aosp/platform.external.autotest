@@ -45,6 +45,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.test_pairing(device.address, device.pin, trusted=True)
         self.test_connection_by_adapter(device.address)
         test_method()
+        self.collect_audio_diagnostics()
         self.test_disconnection_by_adapter(device.address)
         self.cleanup_bluetooth_audio(device, test_profile)
 

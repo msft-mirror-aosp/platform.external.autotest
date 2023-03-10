@@ -267,6 +267,25 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return err is None and bool(capabilities.get('wide band speech'))
 
 
+    def collect_audio_diagnostics(self, filename='audio_diagnostics.txt'):
+        """Collect the audio_diagnostics file for debugging.
+
+        @param filename: the audio diagnostics filename
+
+        """
+        if not self.audio_facade:
+            logging.warn('self.audio_facade does not exist.')
+            return
+
+        audio_diagnostics_file = os.path.join(self.resultsdir, filename)
+        try:
+            self.audio_facade.dump_diagnostics(audio_diagnostics_file)
+            logging.debug('collected audio_diagnostics file in %s',
+                          audio_diagnostics_file)
+        except:
+            logging.warn('failed to call dump_diagnostics()')
+
+
     def initialize_bluetooth_audio(self, device, test_profile):
         """Initialize the Bluetooth audio task.
 

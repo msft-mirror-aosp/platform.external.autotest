@@ -3,16 +3,30 @@
 # Copyright 2021 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+#
+# suite_utils.py will enumerate tests from a suite, it has 2 ways to enumerate
+# tast tests:
+# 1. If --dut arg is given it will use `tast list` to enumerate tests for a
+#    given DUT
+# 2. If --dut arg is absent then it will use cros-test-finder to enumerate tast
+#    tests for a tast expression
+# If using the second method you must have run build_packages to allow
+# fast_build.sh to run and also ensure that you have run
+# `sudo emerge cros-test-finder` so that cros-test-finder is present inside the
+# chroot.  This is not a standard supported use of cros-test-finder and could
+# break in the future.
 
 import argparse
 import ast
 from functools import partial
+import json
 import logging
 import os
 import re
 import subprocess
 import sys
 import common
+import tempfile
 
 from server.cros.dynamic_suite.control_file_getter import FileSystemGetter
 from server.cros.dynamic_suite.suite_common import retrieve_for_suite
@@ -117,6 +131,10 @@ class TestObject(object):
                     self.name)
 
     def enumerate_tests_from_tast_exprs(self, dut):
+        if dut is None:
+            # use cros-test-finder to enumerate tast tests
+            return self.enumerate_tests_from_tast_exprs_ctf()
+        # use dut to eneumerate tast tests
         tests = []
         logging.info('Enumerating tast tests from test %s: expression: %s' %
                      (self.name, self.tast_exprs))
@@ -127,7 +145,7 @@ class TestObject(object):
             for t in en.split('\n'):
                 if t == '':
                     continue
-                tests.append(t)
+                tests.append('tast.' + t)
             en = subprocess.check_output([
                     'tast', 'list', '-buildbundle=crosint',
                     str(dut),
@@ -137,7 +155,57 @@ class TestObject(object):
             for t in en.split('\n'):
                 if t == '':
                     continue
-                tests.append(t)
+                tests.append('tast.' + t)
+
+            return tests
+
+    def enumerate_tests_from_tast_exprs_ctf(self):
+        """
+        Use cros-test-finder to enumerate tests from tast expression
+
+        this allows enumerating tast tests without a DUT and will find all
+        tests that may possibly run, rather than tests which run on a specific
+        DUT.  Requires `sudo emerge cros-test-finder` and that `fast_build.sh`
+        for tast both run to work.
+        """
+        tests = []
+        for expr in self.tast_exprs:
+            logging.debug("Getting tast tests for: %s", expr)
+            includes = []
+            excludes = []
+            for part in expr.lstrip('(').rstrip(')').split('&&'):
+                part = part.strip(' ').strip('"')
+                if part.startswith('!'):
+                    excludes.append(part.strip('!'))
+                else:
+                    includes.append(part)
+            # turn the tast expression into a cros test find request
+            request = {
+                    'test_suites': [{
+                            'testCaseTagCriteria': {
+                                    'tags': includes,
+                                    'tagsExclude': excludes
+                            }
+                    }]
+            }
+            outfile = '/tmp/resp.json'
+            infile = '/tmp/req.json'
+            with open(infile, 'w+t') as req:
+                json.dump(request, req)
+            # call cros-test-finder to get matching tast tests
+            if os.system(
+                    'cros-test-finder -input %s -output %s >/dev/null 2>&1' %
+                    (infile, outfile)) != 0:
+                raise Exception(
+                        "error running cros test finder for %s (please ensure you have run sudo emerge cros-test-finder)",
+                        expr)
+            # parse tast tests that matched from cros-test-finder response
+            with open(outfile, 'r') as fp:
+                resp = json.load(fp)
+                logging.debug("Req = %s, resp = %s", request, resp)
+                for info in resp['testSuites'][0]['testCases'].values():
+                    for testInfo in info:
+                        tests.append(testInfo['id']['value'])
 
         return tests
 
@@ -220,14 +288,6 @@ class TestManager(object):
     def set_dut(self, target):
         self.dut = target
 
-    def get_dut(self):
-        if self.dut is not None:
-            return self.dut
-        else:
-            raise AttributeError(
-                    'DUT Address not set, please use the --dut flag to indicate the ip address of the DUT'
-            )
-
     def find_test_named(self, test_name):
         try:
             queried_test = self.tests[test_name]
@@ -248,7 +308,7 @@ class TestManager(object):
             return None
 
     def list_suite_named(self, suite_name, pretty=False):
-        suite_tests = []
+        suite_tests = set()
         suite = self.find_suite_named(suite_name)
 
         if suite is None:
@@ -259,13 +319,11 @@ class TestManager(object):
         for test in suite.get_tests():
             if self.tests[test].is_tast():
                 found_tests = self.tests[test].enumerate_tests_from_tast_exprs(
-                        self.get_dut())
-                for t in found_tests:
-                    if t == '':
-                        continue
-                    suite_tests.append('tast.' + str(t))
+                        self.dut)
+                for test in found_tests:
+                    suite_tests.add(test)
             else:
-                suite_tests.append(test)
+                suite_tests.add(test)
 
         if pretty:
             out_as_string = ''
@@ -335,28 +393,43 @@ class TastManager(object):
     def __init__(self):
         # hack to get metadata including local changes to tast files
         # use fastbuild and then export to proto and parse the proto
-        basepath = os.path.dirname(os.path.abspath(__file__))
+        tast_private_path = os.path.normpath(
+                os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             '../../../../platform/tast-tests-private'))
+
+        self.metadata = tc_metadata_pb.TestCaseMetadataList()
+        self._gen_metadata("cros", "chromiumos/tast/local/bundles/cros")
+        self._gen_metadata("remote_cros",
+                           "chromiumos/tast/remote/bundles/cros")
+        if os.path.isdir(tast_private_path):
+            # Handle internal crosint tests if the they are checked out
+            self._gen_metadata("remote_crosint",
+                               "chromiumos/tast/local/bundles/crosint")
+
+    def _gen_metadata(self, name, package):
+        """
+        Generate tast metadata using fast_build.sh
+
+        parses the generated metadata into self.metadata and also writes the
+        data out for use by cros-test-finder to /tmp/test/metadata/<name>.pb
+        """
+        cros_test_meta_dir = '/tmp/test/metadata'
+
         tast_path = os.path.normpath(
-                os.path.join(basepath, '../../../../platform/tast'))
+                os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             '../../../../platform/tast'))
         cwd = os.getcwd()
         os.chdir(tast_path)
-        if os.system(
-                './fast_build.sh -b chromiumos/tast/local/bundles/cros -o local-tests'
-        ):
-            raise Exception(
-                    "cannot build tast local bundle for tast metadata reading")
-        if os.system(
-                './fast_build.sh -b chromiumos/tast/remote/bundles/cros -o remote-tests'
-        ):
-            raise Exception(
-                    "cannot build tast remote bundle for tast metadata reading"
-            )
-        data = subprocess.check_output(['./local-tests', '-exportmetadata'])
-        self.metadata = tc_metadata_pb.TestCaseMetadataList()
-        self.metadata.ParseFromString(data)
-        data = subprocess.check_output(['./remote-tests', '-exportmetadata'])
+        if os.system('./fast_build.sh -b %s -o /tmp/tast_bundle' % (package)):
+            raise Exception("cannot build tast bundle for metadata: %s" %
+                            (package))
+        data = subprocess.check_output(['/tmp/tast_bundle', '-exportmetadata'])
         self.metadata.MergeFromString(data)
+        os.makedirs(cros_test_meta_dir, exist_ok=True)
+        with open("%s/%s.pb" % (cros_test_meta_dir, name), "wb") as of:
+            of.write(data)
         os.chdir(cwd)
+        return data
 
     def find_test_named(self, name):
         for metadata in self.metadata.values:
@@ -470,7 +543,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-    # pass in the url for the DUT via ssh
     parser = argparse.ArgumentParser()
     parser.add_argument('--csv',
                         help='supply csv file path for logging output')

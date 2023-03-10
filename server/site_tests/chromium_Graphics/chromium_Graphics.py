@@ -18,8 +18,12 @@ from autotest_lib.server.cros import chrome_sideloader
 MAX_GPU_TELEMETRY_TIMEOUT_SEC = 3600
 
 
-class chromium_GPU(test.test):
-    """Run GPU integration tests for the Chrome built by browser infra."""
+class chromium_Graphics(test.test):
+    """Run graphics tests for the Chrome built by browser infra.
+
+    This is a wrapper class to exeucte run_gpu_integration_test.py
+    on Skylab bot for chrome artifacts built by browser infra.
+    """
     version = 1
 
     # The path where TLS provisioned the lacros image.
@@ -29,7 +33,7 @@ class chromium_GPU(test.test):
     # stage, we may use existing lacros image, which built at src.
     CHROME_BUILD = '/usr/local/lacros-build'
 
-    # GPU integration tests are calling telemetry to manipulate the DUT.
+    # run_gpu_integration_test are calling telemetry to manipulate the DUT.
     # In telemetry the lacros chrome must be stored at below path.
     # See go/lacros_browser_backend.
     LACROS_MOUNT_POINT = '/usr/local/lacros-chrome'
@@ -57,7 +61,7 @@ class chromium_GPU(test.test):
                                   True) in [False, 'False']:
             tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
 
-        # Chromium GPU tests have its own server side packages and can be
+        # Chromium graphics tests have its own server side packages and can be
         # invoked directly on Drone server.
         # We copy it from the DUT, because TLS can not provision server
         # packages. Ideally, this should be built into the test driver
@@ -75,7 +79,7 @@ class chromium_GPU(test.test):
         return any(['--browser=cros-chrome' in x for x in self.test_args])
 
     def run_once(self):
-        """Run a GPU integration test."""
+        """Invoke run_gpu_integration_test."""
         vpython3_spec = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), '.vpython3')
         cmd = [

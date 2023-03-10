@@ -9,7 +9,8 @@ NAME = "firmware_ECPowerButton"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Servo based EC power button functional test"
+        "criteria": "Servo based EC power button functional test",
+        "requirements": ["sys-fw-0022-v01"]
 }
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot, suite:labqual, suite:faft_cr50_pvt, suite:faft_cr50_prepvt"
 TIME = "SHORT"

@@ -9,7 +9,8 @@ NAME = "firmware_ECLidShutdown"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify functionality of DUT with GBB_FLAG_DISABLE_LID_SHUTDOWN"
+        "criteria": "Verify functionality of DUT with GBB_FLAG_DISABLE_LID_SHUTDOWN",
+        "requirements": ["sys-fw-0022-v01"]
 }
 ATTRIBUTES = "suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot"
 TIME = "SHORT"

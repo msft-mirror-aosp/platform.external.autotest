@@ -9,7 +9,8 @@ NAME = "firmware_ECBattery"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Servo based EC battery status report test"
+        "criteria": "Servo based EC battery status report test",
+        "requirements": ["sys-fw-0022-v01"]
 }
 ATTRIBUTES = "suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot, suite:faft_smoke, suite:labqual, suite:distributed_lab_qual_faft"
 TIME = "SHORT"

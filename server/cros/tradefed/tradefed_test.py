@@ -238,8 +238,13 @@ class TradefedTest(test.test):
         # Load expected test failures to exclude them from re-runs.
         self._waivers = set()
         if load_waivers:
-            self._waivers.update(
-                    self._get_expected_failures('expectations', bundle))
+            if uri == 'DEV' or uri == 'DEV_MOBLAB' or uri == 'DEV_WAIVER':
+                self._waivers.update(
+                        self._get_expected_failures('expectations', bundle,
+                                                    True))
+            else:
+                self._waivers.update(
+                        self._get_expected_failures('expectations', bundle))
         if not retry_manual_tests:
             self._waivers.update(
                     self._get_expected_failures('manual_tests', bundle))
@@ -1004,12 +1009,13 @@ class TradefedTest(test.test):
         logging.info('Using cache_root = %s', cache_root)
         return cache_root
 
-    def _get_expected_failures(self, directory, bundle_abi):
+    def _get_expected_failures(self, directory, bundle_abi, is_dev=False):
         """Return a list of expected failures or no test module.
 
         @param directory: A directory with expected no tests or failures files.
         @param bundle_abi: 'arm' or 'x86' if the test is for the particular ABI.
                            None otherwise (like GTS, built for multi-ABI.)
+        @param is_dev: Check if it's DEV runner we only apply default waivers.
         @return: A list of expected failures or no test modules for the current
                  testing device.
         """
@@ -1022,7 +1028,13 @@ class TradefedTest(test.test):
         first_api_level = self._get_first_api_level()
         expected_fail_dir = os.path.join(self.bindir, directory)
         if os.path.exists(expected_fail_dir):
-            expected_fail_files += glob.glob(expected_fail_dir + '/*.yaml')
+            if is_dev:
+                # For DEV runners, it runs the latest source code to detect
+                # failures, so we should stop applying non default waivers.
+                expected_fail_files += glob.glob(expected_fail_dir +
+                                                 '/expected-failures-*.yaml')
+            else:
+                expected_fail_files += glob.glob(expected_fail_dir + '/*.yaml')
 
         waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
             expected_fail_files)

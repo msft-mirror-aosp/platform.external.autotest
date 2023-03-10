@@ -85,8 +85,8 @@ class ChameleonHost(ssh_host.SSHHost):
                         None, proxy_generator=proxy_generator)
 
         except Exception as e:
-            raise ChameleonHostError('Can not connect to Chameleon: %s(%s)',
-                                     e.__class__, e)
+            raise ChameleonHostError('Can not connect to Chameleon: %s(%s)' %
+                                     (e.__class__, e))
 
 
     def _check_if_is_in_lab(self):
@@ -136,8 +136,8 @@ class ChameleonHost(ssh_host.SSHHost):
                     self._chameleon_connection, self)
             return chameleon_board
         except Exception as e:
-            raise ChameleonHostError('Can not create chameleon board: %s(%s)',
-                                     e.__class__, e)
+            raise ChameleonHostError('Can not create chameleon board: %s(%s)' %
+                                     (e.__class__, e))
 
 
 def create_chameleon_host(dut, chameleon_args):

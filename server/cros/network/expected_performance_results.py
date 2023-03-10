@@ -229,6 +229,10 @@ def get_board_max_expectation(test_type, board_name):
     @return integer value for maximum throughput expectation (in Mbps) for the
     given boardand test type, or None if the maximum is not defined.
     """
+
+    # Remove the suffix (-kernelnext, -connectivitynext, etc) from the board name.
+    if "-" in board_name:
+        board_name = board_name.split('-')[0]
     board_maximums = max_throughput_expectation_for_boards.get(board_name)
     if not board_maximums:
         return None

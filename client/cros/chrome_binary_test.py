@@ -122,8 +122,7 @@ class ChromeBinaryTest(test.test):
 
         try:
             if as_chronos:
-                utils.system("su chronos -c '%s'" % cmd,
-                             timeout=timeout)
+                utils.system("sudo -u chronos -- %s" % cmd, timeout=timeout)
             else:
                 utils.system(cmd, timeout=timeout)
         except error.CmdError as e:

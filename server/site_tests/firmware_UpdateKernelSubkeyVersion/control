@@ -10,7 +10,7 @@ METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Servo based firmware update test, and check kernel subkey version",
-        "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01"],
+        "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_dev, suite:faft_lv5, suite:faft_bios_tot"
 DEPENDENCIES = "servo_state:WORKING"

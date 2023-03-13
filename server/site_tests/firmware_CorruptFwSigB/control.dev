@@ -10,7 +10,7 @@ METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Servo based firmware signature B corruption test",
-        "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01"],
+        "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_dev, suite:faft_lv3, suite:faft_bios_tot, suite:distributed_faft_bios_shard2"
 DEPENDENCIES = "servo_state:WORKING"

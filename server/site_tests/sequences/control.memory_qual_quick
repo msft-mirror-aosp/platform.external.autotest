@@ -4,8 +4,14 @@
 
 from autotest_lib.client.common_lib import utils
 
-AUTHOR = "puthik"
 NAME = "MemoryQual.quick"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "puthik",
+    "bug_component": "b:167191",
+    "criteria": "This test is a benchmark test",
+    "hw_agnostic": False,
+}
 ATTRIBUTES = "suite:memory_qual_quick"
 TIME = "MEDIUM"
 TEST_CATEGORY = "Stress"

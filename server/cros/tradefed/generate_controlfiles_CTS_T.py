@@ -80,6 +80,7 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsLibcoreOjTestCases': 2.0,
         'CtsMediaStressTestCases': 5.0,
         'CtsMediaPlayerTestCases': 2.0,
+        'CtsMediaDecoderTestCases': 2.0,
         'CtsNNAPIBenchmarkTestCases': 2.0,
         'CtsPrintTestCases': 1.5,
         'CtsSecurityTestCases': 20.0,

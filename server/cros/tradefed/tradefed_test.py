@@ -251,11 +251,13 @@ class TradefedTest(test.test):
         if self._hosts[0].servo:
             self._hosts[0].servo.switch_usbkey('off')
             logging.info("servo switched usb key off")
-            self._hosts[0].servo.set('aux_usbkey_pwr', 'off')
-            logging.info("servo turning aux off")
-
+            try:
+                self._hosts[0].servo.set('aux_usbkey_pwr', 'off')
+                logging.info('servo turned aux off')
+            except Exception as e:
+                logging.exception('Failed to power off aux_usbkey_pwr')
         else:
-            logging.error("no servo")
+            logging.error('no servo')
 
     def _output_perf(self):
         """Output performance values."""

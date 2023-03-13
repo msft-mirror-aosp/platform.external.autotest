@@ -9,7 +9,8 @@ NAME = "firmware_CorruptMinios.minios_b"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Corrupt one MiniOS kernel, set the priority to that, and ensure that both priority can boot"
+        "criteria": "Corrupt one MiniOS kernel, set the priority to that, and ensure that both priority can boot",
+        "requirements": ["sys-fw-0021-v01"],
 }
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_lv4, suite:faft_bios_tot, suite:dsitributed_faft_bios_shard1"
 DEPENDENCIES = "servo_state:WORKING"

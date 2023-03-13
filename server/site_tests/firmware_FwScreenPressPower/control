@@ -9,7 +9,8 @@ NAME = "firmware_FwScreenPressPower"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Servo based power button triggered shutdown during firmware screens"
+        "criteria": "Servo based power button triggered shutdown during firmware screens",
+        "requirements": ["sys-fw-0021-v01"],
 }
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_dev, suite:faft_lv4, suite:faft_bios_tot, suite:dsitributed_faft_bios_shard1"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"

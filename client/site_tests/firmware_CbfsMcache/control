@@ -7,7 +7,8 @@ NAME = "firmware_CbfsMcache"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Ensure the CBFS metadata cache did not overflow"
+        "criteria": "Ensure the CBFS metadata cache did not overflow",
+        "requirements": ["sys-fw-0021-v01"],
 }
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv4, suite:distributed_faft_bios_shard1"
 TIME = "SHORT"

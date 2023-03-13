@@ -8,6 +8,7 @@ import time
 import re
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server import autotest
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
@@ -105,12 +106,14 @@ class firmware_Cr50DeviceState(Cr50Test):
                                   | CHAN_USBCHARGE)
 
 
-    def initialize(self, host, cmdline_args, full_args):
+    def initialize(self, host, cmdline_args, full_args, fwmp=None):
         super(firmware_Cr50DeviceState, self).initialize(host, cmdline_args,
                                                          full_args)
         # Don't bother if there is no Chrome EC or if EC hibernate doesn't work.
         if not self.check_ec_capability():
             raise error.TestNAError("Nothing needs to be tested on this device")
+
+        self.fwmp = fwmp
 
         self.INT_NAME = self.gsc.IRQ_DICT.copy()
         self.INT_NAME.update(self.GSC_STATUS_DICT)
@@ -411,7 +414,8 @@ class firmware_Cr50DeviceState(Cr50Test):
                 step = '%s step %d %s' % (state, i, self.step_names[i].strip())
                 errors[step] = step_error
 
-        logging.info('DIFF %s IRQ Counts:\n%s', state, '\n'.join(irq_diff))
+        logging.info('DIFF %s IRQ Counts - fwmp %s:\n%s', state, self.fwmp,
+                     '\n'.join(irq_diff))
         if errors:
             logging.info('ERRORS %s IRQ Counts:\n%s', state,
                     pprint.pformat(errors))
@@ -457,6 +461,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         time.sleep(self.ENTER_STATE_WAIT)
         # check state transition
         if not self.wait_power_state(state, self.POWER_STATE_CHECK_TRIES):
+            self._record_uart_capture()
             raise error.TestFail('Platform failed to reach %s state.' % state)
 
     def enter_suspend(self, state):
@@ -527,9 +532,28 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         self.stage_irq_add(self.get_irq_counts(), 'idle in S0')
 
+        # The DUT has already been up for 60 seconds. It should be pingable.
+        if not self.host.ping_wait_up(self.faft_config.delay_reboot_to_ping):
+            raise error.TestFail('Unable to ping dut after %s resume' % state)
+
+        self.print_fwmp('%s resume' % state)
+
         self.steps[-1][self.KEY_TPM_INIT] = self.get_tpm_init_time()
         logging.info('Resume from %s tpm initialized in %dus', state,
                       self.steps[-1][self.KEY_TPM_INIT])
+
+    def print_fwmp(self, desc, initialized=True):
+        """Print FWMP and PCR0 state for debugging."""
+        result = self.host.run(
+                'cryptohome --action=get_firmware_management_parameters',
+                ignore_status=True)
+        logging.info('FWMP %r exp(%s) act: %s', desc, self.fwmp,
+                     result.stdout if result else None)
+        if result.exit_status and self.fwmp and initialized:
+            raise error.TestFail('Error getting FWMP: %r' % result)
+        result = self.host.run('trunks_client --read_pcr --index=0')
+        logging.info('PCR %r: %r', desc, result.stdout if result else None)
+        self._record_uart_capture()
 
     def verify_state(self, state):
         """Verify cr50 behavior while running through the power state"""
@@ -559,7 +583,8 @@ class firmware_Cr50DeviceState(Cr50Test):
         self._try_to_bring_dut_up()
         self.run_errors = {}
         self.ccd_str = 'ccd ' + ('enabled' if self.ccd_enabled else 'disabled')
-        logging.info('Running through states with %s', self.ccd_str)
+        logging.info('Running through states with %s and fwmp(%s)',
+                     self.ccd_str, self.fwmp)
 
         self.gsc.get_ccdstate()
         if not self.gsc.get_sleepmask() and self.ccd_enabled:
@@ -567,9 +592,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             self.all_errors[self.ccd_str] = 'usb is not active with ccd enabled'
             return
 
-        # Login before entering S0ix so cr50 will be able to enter regular sleep
-        client_at = autotest.Autotest(self.host)
-        client_at.run_test('login_LoginSuccess')
+        self.print_fwmp('start %s' % self.ccd_str)
 
         # Enter G3 first. All boards support it and tpm initialization will take
         # place. Entering G3 first ensures the tpm initialization data will be
@@ -583,12 +606,48 @@ class firmware_Cr50DeviceState(Cr50Test):
 
             if self.s3_supported:
                 self.verify_state('S3')
-        finally:
+        except Exception as e:
+            self._try_to_bring_dut_up()
+            logging.info('Caught exception %r', e)
+            self.run_errors['Caught Exception'] = str(e)
+            self.host.reboot()
+        else:
             self.umount_power_config()
 
         if self.run_errors:
             self.all_errors[self.ccd_str] = self.run_errors
 
+
+    def init_fwmp(self):
+        """Create the FWMP."""
+        self.fast_ccd_open(True)
+        self.gsc.send_command('ccd lock')
+        self.clear_fwmp()
+
+        # Clear the TPM owner, so we can set the fwmp.
+        tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
+
+        self.print_fwmp('cleared tpm owner. Not initialized.',
+                        initialized=False)
+        client_at = autotest.Autotest(self.host)
+        if self.fwmp:
+            logging.info('Setting FWMP flags to %s', self.fwmp)
+            client_at.run_test('firmware_SetFWMP',
+                               flags=self.fwmp,
+                               fwmp_cleared=True,
+                               check_client_result=True)
+        else:
+            client_at.run_test('login_LoginSuccess')
+
+        self.print_fwmp('init')
+
+    def cleanup(self):
+        """Clear the fwmp."""
+        try:
+            self._try_to_bring_dut_up()
+            self.clear_fwmp()
+        finally:
+            super(firmware_Cr50DeviceState, self).cleanup()
 
     def run_once(self, host):
         """Go through S0ix, S3, and G3. Verify there are no interrupt storms"""
@@ -609,10 +668,14 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.s3_supported = not self.host.run(
                 'grep -q deep /sys/power/mem_sleep',
                 ignore_status=True).exit_status
+        self.init_fwmp()
 
+        # The sleep times should be sufficient. Don't wait 3 minutes for
+        # commands to timeout.
+        self.host.set_default_run_timeout(60)
         self.run_through_power_states()
 
-        if supports_dts_control:
+        if supports_dts_control and not self.fwmp:
             ccd_was_enabled = self.ccd_enabled
             self.gsc.ccd_enable(raise_error=supports_dts_control)
             self.ccd_enabled = self.gsc.ccd_is_enabled()
@@ -627,8 +690,8 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         self.trigger_s0()
         if self.all_errors:
-            raise error.TestFail('Unexpected Device State: %s' %
-                    self.all_errors)
+            raise error.TestFail('Unexpected Device State (fwmp %r): %s' %
+                                 (self.fwmp, self.all_errors))
         if not supports_dts_control:
             raise error.TestNAError('Verified device state with %s. Please '
                     'run with type c servo v4 to test full device state.' %

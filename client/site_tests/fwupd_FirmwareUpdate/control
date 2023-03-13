@@ -3,23 +3,22 @@
 # found in the LICENSE file.
 
 AUTHOR = "Ricardo Canuelo <ricardo.canuelo@collabora.com>"
-NAME = "fwupd_FirmwareDowngrade"
+NAME = "fwupd_FirmwareUpdate"
 METADATA = {
-    "contacts": ["ricardo.canuelo@collabora.com"],
+    "contacts": ["chromeos-fwupd@google.com", "bleung@google.com", "ricardo.canuelo@collabora.com"],
+    "bug_component": "b:857851", # ChromeOS > Platform > Services > Peripherals > Firmware Update - fwupd
+    "hw_agnostic": True,
     "author": "Ricardo Canuelo <ricardo.canuelo@collabora.com>",
-    "criteria": "Make sure that a device firmware can be downgraded with fwupd."
+    "criteria": "Make sure that a peripheral device firmware can be upgraded with fwupd.",
+    "purpose": "Updates the firmware of a peripheral device to the latest version."
 }
-PURPOSE = "Downgrades the firmware of a device to the previous version."
 TIME = "SHORT"
-TEST_CATEGORY = "General"
-TEST_CLASS = "fwupd"
 TEST_TYPE = "client"
-PY_VERSION = 3
-ATTRIBUTES = "suite:fwupd_downgrade"
+ATTRIBUTES = "suite:fwupd_update"
 
 DOC = """
-Downgrades the firmware of a device to the previous version. The device
-is supposed to be working and updatable, and fwupd is expected to work
+Updates the firmware of a device to the latest version. The device is
+supposed to be working and updatable, and fwupd is expected to work
 normally. Exceptional cases are treated as test errors.
 """
 
@@ -30,4 +29,4 @@ try:
     device_id = args_dict.get('device_id', device_id)
 except NameError:
     device_id = args_dict.get('device_id', '')
-job.run_test('fwupd_FirmwareDowngrade', device_id=device_id)
+job.run_test('fwupd_FirmwareUpdate', device_id=device_id)

@@ -5,16 +5,15 @@
 AUTHOR = "Ricardo Canuelo <ricardo.canuelo@collabora.com>"
 NAME = "fwupd_FirmwareInstallVersion"
 METADATA = {
-    "contacts": ["ricardo.canuelo@collabora.com"],
+    "contacts": ["chromeos-fwupd@google.com", "bleung@google.com", "ricardo.canuelo@collabora.com"],
+    "bug_component": "b:857851", # ChromeOS > Platform > Services > Peripherals > Firmware Update - fwupd
+    "hw_agnostic": True,
     "author": "Ricardo Canuelo <ricardo.canuelo@collabora.com>",
-    "criteria": "Test that the FW of a device can be flashed to a specific version using fwupd."
+    "criteria": "Test that the FW of a device can be flashed to a specific version using fwupd.",
+    "purpose": "Flashes the firmware of a device to a specific version using fwupd."
 }
-PURPOSE = "Flashes the firmware of a device to a specific version using fwupd."
 TIME = "SHORT"
-TEST_CATEGORY = "General"
-TEST_CLASS = "fwupd"
 TEST_TYPE = "client"
-PY_VERSION = 3
 ATTRIBUTES = "suite:fwupd_install_version"
 
 DOC = """

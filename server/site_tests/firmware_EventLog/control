@@ -12,7 +12,7 @@ METADATA = {
         "criteria": "Ensure eventlog is written correctly on boot and suspend/resume",
         "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
-ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv4, suite:faft_normal, suite:faft_bios_tot, suite:dsitributed_faft_bios_shard1"
+ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv4, suite:faft_normal, suite:faft_bios_tot, suite:distributed_faft_bios_shard1"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
 TIME = "SHORT"
 TEST_TYPE = "server"

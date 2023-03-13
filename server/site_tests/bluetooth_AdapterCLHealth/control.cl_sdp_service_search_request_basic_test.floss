@@ -31,7 +31,7 @@ METADATA = {
     'criteria': 'Basic test for SDP service search request',
     'hw_agnostic': False
 }
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 

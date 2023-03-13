@@ -22,7 +22,7 @@ _MINIOS_TRUTHY_VALUES = ('1', 'true', 'yes', 'y')
 def to_bool(value, default_value=False, truthy_values=_MINIOS_TRUTHY_VALUES):
     """
     Converts 'value' to a boolean if it is one of the supported types.
-    Only strings are supported at the moment.
+    Only (bool, strings) are supported at the moment.
 
     @param value: The value to convert to a boolean.
     @param default_value: Boolean to return if 'value' is not a supported type.
@@ -32,7 +32,9 @@ def to_bool(value, default_value=False, truthy_values=_MINIOS_TRUTHY_VALUES):
     @return: True/False or default_value if value is not a supported type.
 
     """
-    if isinstance(value, str):
+    if isinstance(value, bool):
+        return value
+    elif isinstance(value, str):
         return value.lower() in truthy_values
     else:
         return default_value

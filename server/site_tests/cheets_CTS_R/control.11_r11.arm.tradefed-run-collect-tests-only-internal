@@ -11,7 +11,7 @@ METADATA = {
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-r, suite:arc-cts, suite:arc-cts-unibuild, suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard3'
+ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard3'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 0
 TEST_TYPE = 'server'

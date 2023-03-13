@@ -35,7 +35,7 @@ CONFIG['TRADEFED_EXECUTABLE_PATH'] = 'android-cts/tools/cts-tradefed'
 CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 
 # On moblab everything runs in the same suite.
-CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts-r', 'suite:arc-cts']
+CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 CONFIG['VM_SUITE_NAME'] = 'suite:arc-cts-vm'
@@ -482,8 +482,7 @@ CONFIG['HARDWARE_MODULES'] = [
 CONFIG['PUBLIC_HARDWARE_MODULES'] =  CONFIG['HARDWARE_MODULES']+['CtsCameraTestCases']
 
 
-R_SUITES = ['suite:arc-cts-r']
-R_QUAL_SUITES = R_SUITES + ['suite:arc-cts-qual']
+R_QUAL_SUITES = ['suite:arc-cts-qual']
 R_QUAL_AND_REGRESSION_SUITES = R_QUAL_SUITES + ['suite:arc-cts']
 DEQP_SUITES = ['suite:arc-cts-deqp', 'suite:graphics_per-week']
 

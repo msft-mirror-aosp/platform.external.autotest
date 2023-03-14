@@ -55,7 +55,7 @@ class diffable_logdir_test(unittest.TestCase):
 
 
     def tearDown(self):
-        """Clearn up."""
+        """Clean up."""
         self.tempdir.clean()
 
 

@@ -48,3 +48,8 @@ class OpenWrtHost(ssh_host.SSHHost):
 
     def get_os_type(self):
         return OS_TYPE_OPENWRT
+
+    def get_arch(self):
+        # TODO(b/274812850): autotest wifi: OpenWrt to get arch including
+        # SoC and product model at runtime
+        return 'ramips-mt7621-ubnt_unifi-6-lite'

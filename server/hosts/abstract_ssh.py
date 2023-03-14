@@ -1234,6 +1234,13 @@ class AbstractSSHHost(remote.RemoteHost):
         raise NotImplementedError
 
 
+    def get_arch(self):
+        """Returns the host ARCH descriptor (to be implemented in subclasses).
+
+        @return A string describing the ARCH.
+        """
+        raise NotImplementedError
+
     def check_cached_up_status(
             self, expiration_seconds=_DEFAULT_UP_STATUS_EXPIRATION_SECONDS):
         """Check if the DUT responded to ping in the past `expiration_seconds`.

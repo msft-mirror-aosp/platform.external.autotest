@@ -156,7 +156,7 @@ expected_throughput_wifi_legacy = {
 }
 
 expected_throughput_wifi_router_arch = {
-        'openwrt_mips_mt7915e_ubiquiti-6lite': {
+        'openwrt_ramips-mt7621-ubnt_unifi-6-lite': {
                 perf_manager.PerfTestTypes.TEST_TYPE_TCP_BIDIRECTIONAL: {
                         hostap_config.HostapConfig.MODE_11N_PURE: {
                                 hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:

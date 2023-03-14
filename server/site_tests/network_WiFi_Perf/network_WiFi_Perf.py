@@ -146,8 +146,12 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                 raise error.TestFail(
                         'Failed to get the channel width used by the AP and client'
                 )
+            router_arch = None
+            if self.context.get_wifi_host().get_os_type() != 'cros':
+                router_arch = self.context.get_wifi_host().get_os_type(
+                ) + '_' + self.context.get_wifi_host().get_arch()
             expected_throughput = expected_performance_results.get_expected_throughput_wifi(
-                    test_type, ap_config.mode, ch_width)
+                    test_type, ap_config.mode, ch_width, router_arch)
             results = session.run(config)
             if not results:
                 logging.error('Failed to take measurement for %s', test_type)

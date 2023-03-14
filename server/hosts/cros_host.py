@@ -3213,6 +3213,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return 'cros'
 
 
+    def get_arch(self):
+        return None
+
     def get_labels(self):
         """Return the detected labels on the host."""
         return self.labels.get_labels(self)

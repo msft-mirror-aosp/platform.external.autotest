@@ -46,6 +46,12 @@ class tempfile(object):
         self.fo = os.fdopen(self.fd)
 
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.clean()
+
     def clean(self):
         """
         Remove the temporary file that was created.
@@ -103,6 +109,12 @@ class tempdir(object):
         self.name = module_tempfile.mkdtemp(suffix=suffix,
                                             prefix=prefix, dir=dir)
 
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.clean()
 
     def clean(self):
         """

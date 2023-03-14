@@ -83,7 +83,7 @@ class chromium_Graphics(test.test):
         vpython3_spec = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), '.vpython3')
         cmd = [
-                '/opt/infra-tools/vpython3',
+                'vpython3',
                 '-vpython-spec',
                 vpython3_spec,
                 os.path.join(self.server_pkg, 'testing', 'scripts',
@@ -123,7 +123,8 @@ class chromium_Graphics(test.test):
             result = utils.run(cmd,
                                stdout_tee=sys.stdout,
                                stderr_tee=sys.stderr,
-                               timeout=MAX_GPU_TELEMETRY_TIMEOUT_SEC)
+                               timeout=MAX_GPU_TELEMETRY_TIMEOUT_SEC,
+                               extra_paths=['/opt/infra-tools'])
             exit_code = result.exit_status
         except error.CmdError as e:
             logging.debug('Error occurred executing GPU integration tests.')

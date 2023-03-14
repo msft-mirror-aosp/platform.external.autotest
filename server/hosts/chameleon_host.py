@@ -70,6 +70,7 @@ class ChameleonHost(ssh_host.SSHHost):
             if (self._is_in_lab and
                     not ENABLE_SSH_TUNNEL_FOR_CHAMELEON and
                     not os.path.exists(CFT_BREADCRUMB)):
+                logging.debug('ChameleonHost: use defaut proxy')
                 self._chameleon_connection = chameleon.ChameleonConnection(
                         self.hostname, chameleon_port)
             else:
@@ -81,6 +82,17 @@ class ChameleonHost(ssh_host.SSHHost):
                                 None, chameleon_port,
                                 ready_test_name=chameleon.CHAMELEON_READY_TEST,
                                 timeout_seconds=60))
+                reasons = []
+                if not self._is_in_lab:
+                    reasons.append('self._is_in_lab: False')
+                if ENABLE_SSH_TUNNEL_FOR_CHAMELEON:
+                    reasons.append('ENABLE_SSH_TUNNEL_FOR_CHAMELEON: True')
+                if os.path.exists(CFT_BREADCRUMB):
+                    reasons.append('path.exists(%s): True' % CFT_BREADCRUMB)
+                logging.debug(
+                        'ChameleonHost: use rpc_server_tracker.xmlrpc_connect '
+                        'proxy, reason: %s', ' & '.join(reasons))
+
                 self._chameleon_connection = chameleon.ChameleonConnection(
                         None, proxy_generator=proxy_generator)
 

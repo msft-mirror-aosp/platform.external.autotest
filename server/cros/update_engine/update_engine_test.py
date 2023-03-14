@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import base64
+import csv
 import json
 import logging
 import os
@@ -17,6 +18,7 @@ import time
 from six.moves import zip
 from six.moves import zip_longest
 import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from datetime import datetime, timedelta
 from xml.etree import ElementTree
@@ -1166,16 +1168,37 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                - R100-14515.0.0 if release_archive_path is False
 
       """
-        if lsbrelease_utils.is_moblab():
-            raise error.TestNAError("Moblab cannot run M2N tests. See b/193438616.")
         board = self._host.get_board().split(':')[1]
-        # Boards like auron_paine are auron-paine in paygen.json and builders.
+        # Boards like auron_paine are auron-paine in paygen.json/csv and builders.
         if '_' in board:
             board = board.replace('_', '-')
         channel = 'stable-channel'
-        delta_type = 'OMAHA'
-        stable_paygen_data = self._paygen_json_lookup(board, channel,
-                                                      delta_type)
+
+        if lsbrelease_utils.is_moblab():
+            logging.info('Searching the serving builds CSV for Moblab.')
+            with autotemp.tempfile('get_serving_stable_build') as t:
+                six.moves.urllib.request.urlretrieve(
+                        "https://chromiumdash.appspot.com"
+                        "/cros/download_serving_builds_csv?"
+                        "deviceCategory=ChromeOS", t.name)
+                stable_build_idx = None
+                reader = csv.reader(t.fo, delimiter=',')
+                # Parse first row to find index of `cros_stable`.
+                target_build_idx = next(reader).index('cros_stable')
+                for row in reader:
+                    if row[0].startswith(board):
+                        target_build = row[target_build_idx]
+                        break
+
+            if target_build is not None:
+                logging.info('Found stable build: %s', target_build)
+                return os.path.join(channel, board, target_build)
+
+            raise error.TestNAError(
+                    "Moblab could not find stable build to run M2N.")
+
+        stable_paygen_data = self._paygen_json_lookup(board, channel, 'OMAHA')
+
         if not stable_paygen_data:
             # Some unibuild boards can have ALL of their stable serving builds
             # also be an FSI. When this happens we will not find an OMAHA

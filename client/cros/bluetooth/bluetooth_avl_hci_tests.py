@@ -204,7 +204,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
 
     @test_wrapper('spec_5_2_test', skip_chipsets=CHIPSETS_UNSUPPORT_5_2)
     def spec_5_2_test(self):
-        """Checks Bluetooth version 5.0 specification."""
+        """Checks Bluetooth version 5.2 specification."""
         self.test_le_isochronous_channels_feature()
         self.test_le_power_control_feature()
 

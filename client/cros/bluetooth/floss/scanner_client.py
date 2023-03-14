@@ -39,6 +39,22 @@ class BluetoothScannerCallbacks:
         """
         pass
 
+    def on_advertisement_found(self, scanner_id, scan_result):
+        """Called when advertisement found.
+
+        @param scanner_id: The scanner ID for scanner.
+        @param scan_result: The struct of ScanResult.
+        """
+        pass
+
+    def on_advertisement_lost(self, scanner_id, scan_result):
+        """Called when advertisement lost.
+
+        @param scanner_id: The scanner ID for scanner.
+        @param scan_result: The struct of ScanResult.
+        """
+        pass
+
     def on_suspend_mode_change(self, suspend_mode):
         """Called when suspend mode change.
 
@@ -138,6 +154,14 @@ class FlossScannerClient(BluetoothScannerCallbacks):
                 <method name="OnScanResult">
                     <arg type="a{sv}" name="scan_result" direction="in" />
                 </method>
+                <method name="OnAdvertisementFound">
+                    <arg type="y" name="scanner_id" direction="in" />
+                    <arg type="a{sv}" name="scan_result" direction="in" />
+                </method>
+                <method name="OnAdvertisementLost">
+                    <arg type="y" name="scanner_id" direction="in" />
+                    <arg type="a{sv}" name="scan_result" direction="in" />
+                </method>
                 <method name="OnSuspendModeChange">
                     <arg type="u" name="suspend_mode" direction="in" />
                 </method>
@@ -166,6 +190,24 @@ class FlossScannerClient(BluetoothScannerCallbacks):
             """
             for observer in self.observers.values():
                 observer.on_scan_result(scan_result)
+
+        def OnAdvertisementFound(self, scanner_id, scan_result):
+            """Handles advertisement found callback.
+
+            @param scanner_id: The scanner ID for scanner.
+            @param scan_result: The struct of ScanResult.
+            """
+            for observer in self.observers.values():
+                observer.on_advertisement_found(scanner_id, scan_result)
+
+        def OnAdvertisementLost(self, scanner_id, scan_result):
+            """Handles advertisement lost callback.
+
+            @param scanner_id: The scanner ID for scanner.
+            @param scan_result: The struct of ScanResult.
+            """
+            for observer in self.observers.values():
+                observer.on_advertisement_lost(scanner_id, scan_result)
 
         def OnSuspendModeChange(self, suspend_mode):
             """Handles suspend mode change callback.
@@ -229,12 +271,35 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         """
         logging.debug('on_scan_result: scan_result: %s', scan_result)
 
-        # Update DeviceFound if the received address device exists in
-        # the target_device list.
-        for scanner in self.scanners.values():
-            if scan_result['address'] in scanner.target_devices:
-                scanner.add_event_count('DeviceFound')
+    @glib_callback()
+    def on_advertisement_found(self, scanner_id, scan_result):
+        """Handles advertisement found callback.
 
+        @param scanner_id: The scanner ID for scanner.
+        @param scan_result: The struct of ScanResult.
+        """
+        logging.debug('on_advertisement_found: scanner_id: %s, scan_result: %s',
+                      scanner_id, scan_result)
+
+        # Update DeviceFound if the received address device exists in the
+        # target_device list.
+        if scan_result['address'] in self.scanners[scanner_id].target_devices:
+            self.scanners[scanner_id].add_event_count('DeviceFound')
+
+    @glib_callback()
+    def on_advertisement_lost(self, scanner_id, scan_result):
+        """Handles advertisement lost callback.
+
+        @param scanner_id: The scanner ID for scanner.
+        @param scan_result: The struct of ScanResult.
+        """
+        logging.debug('on_advertisement_lost: scanner_id: %s, scan_result: %s',
+                      scanner_id, scan_result)
+
+        # Update DeviceLost if the received address device exists in the
+        # target_device list.
+        if scan_result['address'] in self.scanners[scanner_id].target_devices:
+            self.scanners[scanner_id].add_event_count('DeviceLost')
 
     @glib_callback()
     def on_suspend_mode_change(self, suspend_mode):

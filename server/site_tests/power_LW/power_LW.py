@@ -56,14 +56,11 @@ class power_LW(test.test):
         return factory.create_host(machine)
 
     def _start_servo_usb_and_ethernet(self, host, wlan_host):
-        if host.servo and host.servo.supports_eth_power_control():
-            host.servo.set_eth_power('on')
+        if host.servo and host.servo.supports_usb_mux_control():
+            host.servo.set_usb_mux('on')
         else:
             # Reboot to restore USB ethernet if it was stopped via unbind.
             wlan_host.reboot()
-
-        if host.servo and host.servo.supports_usb_mux_control():
-            host.servo.set_usb_mux('on')
 
     def _stop_servo_usb_and_ethernet(self, host, wlan_host):
         """Find and unbind servo v4 usb and ethernet."""
@@ -74,8 +71,10 @@ class power_LW(test.test):
             logging.warning("Continue if stop recover_duts failed.")
 
         try:
-            if host.servo and host.servo.supports_eth_power_control():
-                host.servo.set_eth_power('off')
+            # Turn off the servo USB connection (which includes ethernet) by
+            # default.
+            if host.servo and host.servo.supports_usb_mux_control():
+                host.servo.set_usb_mux('off')
             elif host != wlan_host:
                 # Fall back to unbinding the USB device for ethernet if eth
                 # power control isn't supported on the servo.
@@ -84,8 +83,6 @@ class power_LW(test.test):
                 if len(eth_usb) == 1 and eth_usb[0] and host.get_wlan_ip():
                     host.unbind_usb_device(eth_usb[0])
 
-            if host.servo and host.servo.supports_usb_mux_control():
-                host.servo.set_usb_mux('off')
         except Exception as e:
             self._start_servo_usb_and_ethernet(host, wlan_host)
             raise e

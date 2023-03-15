@@ -6,7 +6,6 @@
 
 import collections
 import os
-import sys
 
 CONFIG = {}
 
@@ -37,9 +36,7 @@ CONFIG['JAVA_EXECUTABLE_PATH'] = 'android-cts/jdk/bin/java'
 CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 
 # On moblab everything runs in the same suite.
-CONFIG['INTERNAL_SUITE_NAMES'] = [
-        'suite:arc-cts-t',
-]
+CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts','suite:arc-cts-t']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 
@@ -293,43 +290,11 @@ CONFIG['HARDWARE_MODULES'] = [
         'CtsSensorTestCases',
 ]
 
-SUITE_ARC_CTS_R = ['suite:arc-cts-r']
-R_REGRESSION_SUITES = ['suite:arc-cts-r', 'suite:arc-cts']
+
+R_REGRESSION_SUITES = ['suite:arc-cts']
 R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
 
-CONFIG['EXTRA_MODULES'] = {
-    'CtsCameraTestCases': {
-        'CtsCameraTestCases.NativeCameraDeviceTest': R_REGRESSION_AND_QUAL_SUITES,
-    },
-    'CtsDeqpTestCases': {
-        'CtsDeqpTestCases.dEQP-EGL': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-GLES2': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-GLES3': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-GLES31': SUITE_ARC_CTS_R,
-        'CtsDeqpTestCases.dEQP-VK': SUITE_ARC_CTS_R,
-    },
-    'CtsMediaTestCases': {
-        'CtsMediaTestCases.audio': R_REGRESSION_AND_QUAL_SUITES,
-        'CtsMediaTestCases.perf': R_REGRESSION_AND_QUAL_SUITES,
-        'CtsMediaTestCases.video': R_REGRESSION_AND_QUAL_SUITES,
-    },
-    'CtsWindowManagerDeviceTestCases': {
-        'CtsWindowManager.A': R_REGRESSION_SUITES,
-        'CtsWindowManager.C': R_REGRESSION_SUITES,
-        'CtsWindowManager.D': R_REGRESSION_SUITES,
-        'CtsWindowManager.F': R_REGRESSION_SUITES,
-        'CtsWindowManager.L': R_REGRESSION_SUITES,
-        'CtsWindowManager.M': R_REGRESSION_SUITES,
-        'CtsWindowManager.Override': R_REGRESSION_SUITES,
-        'CtsWindowManager.P': R_REGRESSION_SUITES,
-        'CtsWindowManager.R': R_REGRESSION_SUITES,
-        'CtsWindowManager.S': R_REGRESSION_SUITES,
-        'CtsWindowManager.T': R_REGRESSION_SUITES,
-        'CtsWindowManager.Window': R_REGRESSION_SUITES,
-        'CtsWindowManager.intent': R_REGRESSION_SUITES,
-        'CtsWindowManager.lifecycle': R_REGRESSION_SUITES,
-    },
-}
+CONFIG['EXTRA_MODULES'] = { }
 
 # In addition to EXTRA_MODULES, these modules do require separate control files
 # for internal and moblab.

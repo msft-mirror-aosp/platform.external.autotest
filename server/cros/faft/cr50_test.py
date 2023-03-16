@@ -107,36 +107,43 @@ class Cr50Test(FirmwareTest):
 
         self._save_original_state(full_args.get('release_path', ''))
 
+        # TODO(b/143888583): remove qual update during init once new design to
+        # to provision cr50 updates is in place.
+        # Make sure the release image is running before starting the test.
+        is_release_qual = full_args.get('is_release_qual',
+                                        '').lower() == 'true'
         # Try and download all images necessary to restore cr50 state.
         try:
             self._save_dbg_image(full_args.get('cr50_dbg_image_path', ''))
             self._saved_state |= self.DBG_IMAGE
         except Exception as e:
             logging.warning('Error saving DBG image: %s', str(e))
-            if restore_cr50_image:
-                raise error.TestNAError('Need DBG image: %s' % str(e))
+            if restore_cr50_image or is_release_qual:
+                raise error.TestNAError('Need %s DBG image for %s %s: %s' %
+                                        (self.gsc.NAME, self._devid,
+                                         self.servo.get_board(), str(e)))
+
+        if (
+                (restore_cr50_board_id or is_release_qual) and
+                self.gsc.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT')):
+            logging.info('Board cannot boot EFI image.')
+            logging.info('Can only restore images with ccd only')
+            if not self.ccd_programmer_connected_to_servo_host():
+                raise error.TestError('Board cannot boot EFI image. '
+                                      'Connect ccd so test can restore image')
 
         try:
             self._save_eraseflashinfo_image(
                     full_args.get('cr50_eraseflashinfo_image_path', ''))
-            if self.gsc.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT'):
-                logging.info('Board cannot boot EFI image.')
-                logging.info('Can only restore images with ccd only')
-                if not self.ccd_programmer_connected_to_servo_host():
-                    raise error.TestError('Board cannot boot EFI image. '
-                            'Connect ccd so test can restore image')
             self._saved_state |= self.ERASEFLASHINFO_IMAGE
         except Exception as e:
             logging.warning('Error saving eraseflashinfo image: %s', str(e))
-            if restore_cr50_board_id:
+            if restore_cr50_board_id or is_release_qual:
                 raise error.TestNAError(
-                        'Need eraseflashinfo image: %s' % str(e))
+                        'Need %s eraseflashinfo image %s %s: %s' %
+                        (self.gsc.NAME, self._devid, self.servo.get_board(),
+                         str(e)))
 
-        # TODO(b/143888583): remove qual update during init once new design to
-        # to provision cr50 updates is in place.
-        # Make sure the release image is running before starting the test.
-        is_release_qual = full_args.get('is_release_qual',
-                                        '').lower() == 'true'
         if is_release_qual or self.running_cr50_release_suite():
             release_ver_arg = full_args.get('release_ver', '')
             release_path_arg = full_args.get('release_path', '')

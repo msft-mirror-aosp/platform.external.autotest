@@ -83,7 +83,8 @@ class power_LoadTest(arc.ArcTest):
                    gaia_login=None,
                    force_discharge='false',
                    pdash_note='',
-                   run_arc=True):
+                   run_arc=True,
+                   web_caching=False):
         """
         percent_initial_charge_min: min battery charge at start of test
         check_network: check that Ethernet interface is not running
@@ -118,6 +119,7 @@ class power_LoadTest(arc.ArcTest):
             battery.
         pdash_note: note of the current run to send to power dashboard.
         run_arc: enable ARC when available.
+        web_caching: use web_caching for PLT 1.1+.
         """
         self._backlight = None
         self._services = None
@@ -151,6 +153,7 @@ class power_LoadTest(arc.ArcTest):
         self._stats = collections.defaultdict(list)
         self._pdash_note = pdash_note
         self._run_arc = run_arc
+        self._web_caching = web_caching
 
         self._power_status = power_status.get_status()
 
@@ -171,6 +174,7 @@ class power_LoadTest(arc.ArcTest):
                                            and self._power_status.on_ac())
         self._tmp_keyvals['force_discharge'] = int(
                 self._force_discharge_success)
+        self._tmp_keyvals['web_caching'] = int(self._web_caching)
 
         self._gaia_login = gaia_login
         if gaia_login is None:
@@ -396,6 +400,8 @@ class power_LoadTest(arc.ArcTest):
             ))
             extension = conn_tab.ConnTab(conn_service, response.id)
             set_var_script = ''
+            if self._web_caching:
+                set_var_script += 'var tasks = web_caching_tasks;'
             for k, v in params_dict.items():
                 if getattr(self, v) is not '':
                     set_var_script += 'var %s = %s;' % (k, getattr(self, v))
@@ -638,7 +644,7 @@ class power_LoadTest(arc.ArcTest):
         logger = power_dashboard.KeyvalLogger(self._start_time, self._end_time)
         for key in [
                 'b_on_ac', 'force_discharge', 'gaia_login',
-                'percent_usb_suspended_time'
+                'percent_usb_suspended_time', 'web_caching'
         ]:
             logger.add_item(key, keyvals[key], 'point', 'perf')
 

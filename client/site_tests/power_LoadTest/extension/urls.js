@@ -158,3 +158,99 @@ URLS[u_index++] = 'https://www.msn.com';
 URLS[u_index++] = 'https://www.indeed.com/l-Mountain-View-jobs.html';
 URLS[u_index++] = 'https://duckduckgo.com/?q=google';
 URLS[u_index++] = 'https://www.accuweather.com';
+
+// Updated March 16, 2023.
+// For PLT 1.1, use web caching tasks to reduce the variances from PLT.
+// See go/repeatability-in-power-tests.
+var web_caching_tasks = [
+  {
+    // Chrome browser window 1. This window remains open for the entire test.
+    type: 'window',
+    name: 'background',
+    start: 0,
+    duration: minutes(60),
+    focus: false,
+    tabs: [
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=google',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=yahoo',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=live',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=amazon',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=wikipedia',
+    ]
+  },
+  {
+    // Page cycle through popular external websites for 36 minutes
+    type: 'cycle',
+    name: 'web',
+    start: seconds(1),
+    duration: minutes(36),
+    delay: seconds(180), // 3 minutes on each page
+    timeout: seconds(30),
+    focus: true,
+    urls: [
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=google',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=amazon',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=wikipedia',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=yahoo',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=ebay',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=live',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=imdb',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=office',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=microsoft',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=apple',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=stackoverflow',
+     'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/redirect.html?dest=yelp',
+    ]
+  },
+  {
+    // After 36 minutes, actively read e-mail for 12 minutes
+    type: 'cycle',
+    name: 'email',
+    start: minutes(36) + seconds(1),
+    duration: minutes(12) - seconds(1),
+    delay: minutes(5), // 5 minutes between full gmail refresh
+    timeout: seconds(30),
+    focus: true,
+    urls: [
+       'https://gmail.com',
+       'https://mail.google.com'
+    ],
+  },
+  {
+    // After 36 minutes, start streaming audio (background tab), total playtime
+    // 12 minutes
+    type: 'cycle',
+    name: 'audio',
+    start: minutes(36),
+    duration: minutes(12),
+    delay: minutes(12),
+    timeout: seconds(30),
+    focus: false,
+    urls: [RADIO_AUDIO_URL, RADIO_AUDIO_URL],
+  },
+  {
+    // After 48 minutes, play with Google Docs for 6 minutes
+    type: 'cycle',
+    name: 'docs',
+    start: minutes(48),
+    duration: minutes(6),
+    delay: minutes(1), // A minute on each page
+    timeout: seconds(30),
+    focus: true,
+    urls: [
+       ViewGDoc + '1ywpQGu18T9e2lB_QVMlihDqiF0V5hsYkhlXCfu9B8jY',
+       ViewGDoc + '12qBD7L6n9hLW1OFgLgpurx7WSgDM3l01dU6YYU-xdXU'
+    ],
+  },
+  {
+    // After 54 minutes, watch Big Buck Bunny for 6 minutes
+    type: 'window',
+    name: 'video',
+    start: minutes(54),
+    duration: minutes(6),
+    focus: true,
+    tabs: [
+        'https://www.youtube.com/embed/YE7VzlLtp-4?start=236&vq=hd720&autoplay=1'
+    ]
+  },
+]

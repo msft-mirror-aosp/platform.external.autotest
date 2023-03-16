@@ -64,19 +64,23 @@ class firmware_Cr50DeviceState(Cr50Test):
     # A dictionary of ok count values for each irq that shouldn't follow the
     # DEFAULT_COUNTS range.
     EXPECTED_IRQ_COUNT_RANGE = {
-        KEY_TPM_INIT : [0, TPM_INIT_MAX],
-        KEY_RESET : [0, 0],
-        KEY_DEEP_SLEEP : [0, DEEP_SLEEP_MAX],
-        KEY_TIME : [0, CONSERVATIVE_WAIT_TIME],
-        'S0ix' + DEEP_SLEEP_STEP_SUFFIX : [0, 0],
-        # Cr50 may enter deep sleep an extra time, because of how the test
-        # collects taskinfo counts. Just verify that it does enter deep sleep
-        'S3' + DEEP_SLEEP_STEP_SUFFIX : [1, 2],
-        'G3' + DEEP_SLEEP_STEP_SUFFIX : [1, 2],
-        # ARM devices don't enter deep sleep in S3
-        ARM + 'S3' + DEEP_SLEEP_STEP_SUFFIX : [0, 0],
-        ARM + 'G3' + DEEP_SLEEP_STEP_SUFFIX : [1, 2],
-        # Regular sleep is calculated based on the cr50 time
+            KEY_TPM_INIT: [0, TPM_INIT_MAX],
+            KEY_RESET: [0, 0],
+            KEY_DEEP_SLEEP: [0, DEEP_SLEEP_MAX],
+            KEY_TIME: [0, CONSERVATIVE_WAIT_TIME],
+            'lid_close' + DEEP_SLEEP_STEP_SUFFIX: [0, 2],
+            'default_suspend' + DEEP_SLEEP_STEP_SUFFIX: [0, 2],
+            'S0ix' + DEEP_SLEEP_STEP_SUFFIX: [0, 0],
+            # Cr50 may enter deep sleep an extra time, because of how the test
+            # collects taskinfo counts. Just verify that it does enter deep sleep
+            'S3' + DEEP_SLEEP_STEP_SUFFIX: [1, 2],
+            'G3' + DEEP_SLEEP_STEP_SUFFIX: [1, 2],
+            # ARM devices don't enter deep sleep in S3
+            ARM + 'S3' + DEEP_SLEEP_STEP_SUFFIX: [0, 0],
+            ARM + 'G3' + DEEP_SLEEP_STEP_SUFFIX: [1, 2],
+            ARM + 'lid_close' + DEEP_SLEEP_STEP_SUFFIX: [0, 2],
+            ARM + 'default_suspend' + DEEP_SLEEP_STEP_SUFFIX: [0, 2],
+            # Regular sleep is calculated based on the cr50 time
     }
     START = ''
     INCREASE = '+'
@@ -414,6 +418,8 @@ class firmware_Cr50DeviceState(Cr50Test):
                 step = '%s step %d %s' % (state, i, self.step_names[i].strip())
                 errors[step] = step_error
 
+        if self._found_state:
+            state += ' (%s)' % self._found_state
         logging.info('DIFF %s IRQ Counts - fwmp %s:\n%s', state, self.fwmp,
                      '\n'.join(irq_diff))
         if errors:
@@ -442,8 +448,14 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def enter_state(self, state):
         """Get the command to enter the power state"""
+        target_state = state
         if state == 'S0':
-            self.trigger_s0()
+            if self.lid_closed:
+                logging.info('Open lid')
+                self.servo.set('lid_open', 'yes')
+                self.lid_closed = False
+            else:
+                self.trigger_s0()
             # Suppress host command output, so it doesn't look like an interrupt
             # storm. Set it whenever the system enters S0 to ensure the setting
             # is restored if the EC enters hibernate.
@@ -451,7 +463,18 @@ class firmware_Cr50DeviceState(Cr50Test):
             logging.info('Setting EC chan %x', self.CHAN_RESTRICTED)
             self.ec.send_command('chan 0x%x' % self.CHAN_RESTRICTED)
         else:
-            if state == 'S0ix':
+            if state == 'lid_close':
+                self.lid_closed = True
+                logging.info('Open lid')
+                self.servo.set_nocheck('lid_open', 'no')
+                # It's difficult to tell the target state. Just log what it is.
+                target_state = None
+            elif state == 'default_suspend':
+                self.faft_client.system.run_shell_command(
+                        'powerd_dbus_suspend', False)
+                # It's difficult to tell the target state. Just log what it is.
+                target_state = None
+            elif state == 'S0ix':
                 self.enter_suspend(state)
             elif state == 'S3':
                 self.enter_suspend(state)
@@ -460,9 +483,14 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         time.sleep(self.ENTER_STATE_WAIT)
         # check state transition
-        if not self.wait_power_state(state, self.POWER_STATE_CHECK_TRIES):
+        if target_state and not self.wait_power_state(
+                state, self.POWER_STATE_CHECK_TRIES):
             self._record_uart_capture()
             raise error.TestFail('Platform failed to reach %s state.' % state)
+        power_state = self.get_power_state()
+        logging.info('%s: Entered %s', state, power_state)
+        # If the target state is unknown, track it for logging.
+        self._found_state = '' if target_state else power_state
 
     def enter_suspend(self, state):
         """Enter S0ix or S3"""
@@ -484,7 +512,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             else:
                 cmds.append(self.POWER_STATE_S3)
             cmds = '; '.join(cmds)
-            logging.info('enter_suspend %s', cmds)
+            logging.info('runing suspend commands %s', cmds)
             self.faft_client.system.run_shell_command(cmds, False)
 
     def stage_irq_add(self, irq_dict, name=''):
@@ -515,13 +543,15 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         # Enter the given state
         self.enter_state(state)
-        self.stage_irq_add(self.get_irq_counts(), 'entered %s' % state)
+        desc = 'entered %s' % self._found_state or state
+        self.stage_irq_add(self.get_irq_counts(), desc)
 
         logging.info('waiting %d seconds', self.SLEEP_TIME)
         time.sleep(self.SLEEP_TIME)
         # Nothing is really happening. Cr50 should basically be idle during
         # SLEEP_TIME.
-        self.stage_irq_add(self.get_irq_counts(), 'idle in %s' % state)
+        desc = 'idle in %s' % self._found_state or state
+        self.stage_irq_add(self.get_irq_counts(), desc)
 
         # Return to S0
         self.enter_state('S0')
@@ -599,6 +629,15 @@ class firmware_Cr50DeviceState(Cr50Test):
         # from this test run.
         self.verify_state('G3')
 
+        self.verify_state('default_suspend')
+
+        if self.check_ec_capability("lid"):
+            try:
+                self.verify_state('lid_close')
+            finally:
+                # Make sure it ends with the lid open.
+                self.servo.set('lid_open', 'yes')
+
         self.mount_power_config()
         try:
             if self.s0ix_supported:
@@ -653,6 +692,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         """Go through S0ix, S3, and G3. Verify there are no interrupt storms"""
         self.all_errors = {}
         self.host = host
+        self.lid_closed = False
         self.is_arm = self.is_arm_family()
         supports_dts_control = self.gsc.servo_dts_mode_is_valid()
 

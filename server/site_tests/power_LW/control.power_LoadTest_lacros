@@ -11,6 +11,7 @@ METADATA = {
     "doc" : "Control file for running power_LoadTest.lacros in power lab.",
 }
 TEST_TYPE = "server"
+ATTRIBUTES = "suite:lacros_power_dashboard"
 DEPENDENCIES = "servo_state:WORKING"
 
 from autotest_lib.client.common_lib import utils

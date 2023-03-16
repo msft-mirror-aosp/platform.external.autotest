@@ -1,0 +1,45 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'tast.hwsec-cq'
+METADATA = {
+    "contacts": ["cros-hwsec@google.com", "zuan@chromium.org"],
+    "bug_component": "b:1188704",
+    "criteria": "Run the CQ Tast tests for HWSec daemons",
+    "hw_agnostic": False
+}
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'servo_state:WORKING'
+ATTRIBUTES = 'suite:hwsec-cq'
+MAX_RESULT_SIZE_KB = 256 * 1024
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+args_dict = utils.args_to_dict(args)
+assert 'servo_state:WORKING' in DEPENDENCIES
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine, servo_args=servo_args),
+                 test_exprs=['('
+                             '"group:mainline" && '
+                             '!informational && '
+                             '('
+                               '"name:hwsec.*" ||'
+                               '"name:cryptohome.*" ||'
+                               '"name:security.*" ||'
+                               '"name:login.*" ||'
+                               '"name:lockscreen.*" ||'
+                               '"name:u2fd.*" ||'
+                               '"name:policy.*"'
+                             ')'
+                             ')'],
+                 ignore_test_failures=False, max_run_sec=1800,
+                 command_args=args,
+                 clear_tpm=True,
+                 retries=2)
+
+parallel_simple(run, machines)

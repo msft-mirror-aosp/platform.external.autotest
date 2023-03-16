@@ -191,7 +191,7 @@ class BluetoothAdapterQuickTests(
             logging.info('labels: %s', self.host.get_labels())
 
             if len(self.host.btpeer_list) == 0:
-                raise error.TestFail('Unable to find a Bluetooth peer')
+                raise error.TestNAError('Unable to find a Bluetooth peer')
 
             # Check the chameleond version on the peer and update if necessary
             if update_btpeers:

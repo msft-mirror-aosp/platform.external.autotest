@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 
+import difflib
 import logging
 import os
 import pprint
@@ -16,7 +17,7 @@ from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.common_lib.cros import cr50_utils, tpm_utils
 from autotest_lib.server.cros import filesystem_util, gsutil_wrapper
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
-from autotest_lib.server.cros.servo import firmware_programmer
+from autotest_lib.server.cros.servo import chrome_ti50, firmware_programmer
 
 
 class Cr50Test(FirmwareTest):
@@ -88,6 +89,7 @@ class Cr50Test(FirmwareTest):
         # it doesn't take half an hour for commands to timeout when the DUT is
         # down.
         self.host.set_default_run_timeout(180)
+        self.init_flog()
 
         # TODO(b/218492933) : find better way to disable rddkeepalive
         # Disable rddkeepalive, so the test can disable ccd.
@@ -729,7 +731,12 @@ class Cr50Test(FirmwareTest):
             self.servo.enable_main_servo_device()
 
             self._try_to_bring_dut_up()
-            self._restore_cr50_state()
+            try:
+                flog_errors = self.check_flog_output()
+                if flog_errors:
+                    raise error.TestFail('Flog Error %s' % flog_errors)
+            finally:
+                self._restore_cr50_state()
 
             # Make sure the sarien EC isn't stuck in factory mode.
             self._discharging_factory_mode_cleanup()
@@ -1179,3 +1186,28 @@ class Cr50Test(FirmwareTest):
         result = self.host.run('tpm_version', ignore_status=True)
         logging.debug(result.stdout.strip())
         return not result.exit_status
+
+    def init_flog(self):
+        """Save original FLOG output. Check for new messages at end of test."""
+        self._original_flog = cr50_utils.DumpFlog(
+                self.host, self.gsc.NAME == chrome_ti50.CHIP_NAME).strip()
+        logging.debug('Initial FLOG output:\n%s', self._original_flog)
+
+    def check_flog_output(self):
+        """Check for new flog messages.
+
+        @returns an error message with the flog difference, if there are new
+                 entries.
+        """
+        new_flog = cr50_utils.DumpFlog(
+                self.host, self.gsc.NAME == chrome_ti50.CHIP_NAME).strip()
+        logging.debug('FLOG output (cleanup):\n%s', new_flog)
+        diff = difflib.unified_diff(self._original_flog.splitlines(),
+                                    new_flog.splitlines())
+        line_diff = '\n'.join(diff)
+        logging.info('FLOG diff:%s', line_diff)
+        if not line_diff:
+            logging.info('No new FLOG output')
+        logging.warning('New Flog messages (%s)', ','.join(diff))
+        # TODO: return unexpected flog events.
+        return None

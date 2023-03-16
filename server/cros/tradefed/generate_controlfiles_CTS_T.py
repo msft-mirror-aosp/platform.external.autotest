@@ -36,7 +36,7 @@ CONFIG['JAVA_EXECUTABLE_PATH'] = 'android-cts/jdk/bin/java'
 CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 
 # On moblab everything runs in the same suite.
-CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts','suite:arc-cts-t']
+CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 

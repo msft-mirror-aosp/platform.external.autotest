@@ -222,15 +222,10 @@ class UserCrashTest(crash_test.CrashTest):
 
         crasher_command = []
 
-        if username == 'root':
-            if expected_exit_code is None:
-                expected_exit_code = -signal.SIGSEGV
-        else:
-            if expected_exit_code is None:
-                expected_exit_code = 128 + signal.SIGSEGV
-
-            if not run_crasher:
-                crasher_command.extend(['sudo', '-u', username, '--'])
+        if expected_exit_code is None:
+            expected_exit_code = -signal.SIGSEGV
+        if username != 'root' and not run_crasher:
+            crasher_command.extend(['sudo', '-u', username, '--'])
 
         crasher_command.append(crasher_path)
         basename = os.path.basename(crasher_path)

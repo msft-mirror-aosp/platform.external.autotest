@@ -1,0 +1,31 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+NAME = 'platform_GetBootPerfData'
+METADATA = {
+    'contacts': [ 'baseos-perf@google.com' ],
+    'bug_component': "b:167279", # ChromeOS > Platform > System > Performance
+    'criteria': 'Wrapper of the platform.BootPerf tast test in manual reboot testing',
+    'hw_agnostic': False
+}
+TEST_TYPE = 'Server'
+
+def run(machine):
+    host=hosts.create_host(machine)
+    args_dict = utils.args_to_dict(args)
+
+    expr = 'platform.BootPerf'
+    varslist = ['platform.BootPerf.manualReboot=true']
+
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=[expr],
+                 command_args=args,
+                 max_run_sec=600,
+                 varslist=varslist,
+                 clear_tpm=False)
+
+parallel_simple(run, machines)

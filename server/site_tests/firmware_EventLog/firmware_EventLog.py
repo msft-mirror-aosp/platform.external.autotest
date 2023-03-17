@@ -22,6 +22,7 @@ class firmware_EventLog(FirmwareTest):
     NEEDS_SERVO_USB = True
 
     _TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+    _TIME_FORMAT_ZONE = '%Y-%m-%d %H:%M:%S%z'
 
     def initialize(self, host, cmdline_args):
         super(firmware_EventLog, self).initialize(host, cmdline_args)
@@ -40,7 +41,10 @@ class firmware_EventLog(FirmwareTest):
         self._events = []
         for line in reversed(entries):
             _, time_string, event = line.split(' | ', 2)
-            timestamp = time.strptime(time_string, self._TIME_FORMAT)
+            try:
+                timestamp = time.strptime(time_string, self._TIME_FORMAT)
+            except ValueError:
+                timestamp = time.strptime(time_string, self._TIME_FORMAT_ZONE)
             if timestamp > now:
                 logging.error('Found prophecy: "%s"', line)
                 raise error.TestFail('Event timestamp lies in the future')

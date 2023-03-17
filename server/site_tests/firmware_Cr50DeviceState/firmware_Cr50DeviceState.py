@@ -543,14 +543,14 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         # Enter the given state
         self.enter_state(state)
-        desc = 'entered %s' % self._found_state or state
+        desc = 'entered %s' % (self._found_state or state)
         self.stage_irq_add(self.get_irq_counts(), desc)
 
         logging.info('waiting %d seconds', self.SLEEP_TIME)
         time.sleep(self.SLEEP_TIME)
         # Nothing is really happening. Cr50 should basically be idle during
         # SLEEP_TIME.
-        desc = 'idle in %s' % self._found_state or state
+        desc = 'idle in %s' % (self._found_state or state)
         self.stage_irq_add(self.get_irq_counts(), desc)
 
         # Return to S0
@@ -631,7 +631,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         self.verify_state('default_suspend')
 
-        if self.check_ec_capability("lid"):
+        if self.check_ec_capability(["lid"]):
             try:
                 self.verify_state('lid_close')
             finally:

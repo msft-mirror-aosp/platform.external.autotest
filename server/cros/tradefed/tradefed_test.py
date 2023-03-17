@@ -197,6 +197,8 @@ class TradefedTest(test.test):
             | stat.S_IXOTH)
 
         self._install_files(constants.ADB_DIR, constants.ADB_FILES, permission)
+        self._install_files(constants.AAPT_DIR, constants.AAPT_FILES,
+                            permission)
         self._install_files(constants.SDK_TOOLS_DIR,
                             constants.SDK_TOOLS_FILES, permission)
 

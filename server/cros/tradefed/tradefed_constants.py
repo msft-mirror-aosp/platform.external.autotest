@@ -3,9 +3,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TODO(ihf): Find a good aapt and update to it.
-SDK_TOOLS_DIR = 'gs://chromeos-arc-images/builds/git_nyc-mr1-arc-linux-static_sdk_tools/3544738'
-SDK_TOOLS_FILES = ['aapt']
+# TODO(kinaba): Update adb and aapt as well to this version.
+SDK_TOOLS_DIR = 'gs://chromeos-arc-images/builds/git_udc_release-static_sdk_tools/9594652'
+SDK_TOOLS_FILES = ['aapt2']
+
+AAPT_DIR = 'gs://chromeos-arc-images/builds/git_nyc-mr1-arc-linux-static_sdk_tools/3544738'
+AAPT_FILES = ['aapt']
 
 # adb 31.0.0 from https://developer.android.com/studio/releases/platform-tools
 ADB_DIR = 'gs://chromeos-arc-images/builds/aosp-sdk-release/7110759/'

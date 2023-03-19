@@ -23,7 +23,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

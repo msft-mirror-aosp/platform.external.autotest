@@ -377,7 +377,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Outgoing: BLE Keyboard: Services in Allowlist',
-                  devices={'BLE_KEYBOARD':1})
+                  devices={'BLE_KEYBOARD':1},
+                  supports_floss=True)
     def ep_outgoing_ble_hid_services_in_allowlist(self):
         """The test for BLE gatt services in allowlist."""
         device = self.devices['BLE_KEYBOARD'][0]
@@ -409,7 +410,8 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('Reconnection: BLE Keyboard: Service in Allowlist',
-                  devices={'BLE_KEYBOARD':1})
+                  devices={'BLE_KEYBOARD':1},
+                  supports_floss=True)
     def ep_reconnection_ble_hid_service_in_allowlist(self):
         """Service in allowlist for auto reconnection from device."""
         device = self.devices['BLE_KEYBOARD'][0]
@@ -545,7 +547,11 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('MD: BLE HID and Audio: Services in Allowlist',
-                  devices={'BLE_MOUSE':1, 'BLUETOOTH_AUDIO':1})
+                  devices={
+                           'BLE_MOUSE':1,
+                           'BLUETOOTH_AUDIO':1
+                  },
+                  supports_floss=True)
     def ep_md_ble_hid_and_audio_in_allowlist(self):
         """The multi-device test for BLE HID and audio services in allowlist."""
         hid_device = self.devices['BLE_MOUSE'][0]
@@ -575,7 +581,11 @@ class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
 
 
     @test_wrapper('MD: BLE HID and Audio: Only BLE HID in Allowlist',
-                  devices={'BLE_KEYBOARD':1, 'BLUETOOTH_AUDIO':1})
+                  devices={
+                           'BLE_KEYBOARD':1,
+                           'BLUETOOTH_AUDIO':1
+                  },
+                  supports_floss=True)
     def ep_md_ble_hid_in_allowlist(self):
         """The multi-device test for audio services in allowlist."""
         hid_device = self.devices['BLE_KEYBOARD'][0]

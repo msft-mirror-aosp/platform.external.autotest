@@ -114,7 +114,12 @@ class firmware_Cr50DeviceState(Cr50Test):
                                   | CHAN_USBCHARGE)
 
 
-    def initialize(self, host, cmdline_args, full_args, fwmp=None):
+    def initialize(self,
+                   host,
+                   cmdline_args,
+                   full_args,
+                   fwmp=None,
+                   pcr_extend=False):
         super(firmware_Cr50DeviceState, self).initialize(host, cmdline_args,
                                                          full_args)
         # Don't bother if there is no Chrome EC or if EC hibernate doesn't work.
@@ -122,6 +127,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             raise error.TestNAError("Nothing needs to be tested on this device")
 
         self.fwmp = fwmp
+        self.pcr_extend = pcr_extend
 
         self.INT_NAME = self.gsc.IRQ_DICT.copy()
         self.INT_NAME.update(self.GSC_STATUS_DICT)
@@ -691,6 +697,7 @@ class firmware_Cr50DeviceState(Cr50Test):
     def cleanup(self):
         """Clear the fwmp."""
         try:
+            self.gsc.ccd_reset_and_wipe_tpm()
             self._try_to_bring_dut_up()
             self.clear_fwmp()
         finally:
@@ -716,6 +723,17 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.s3_supported = not self.host.run(
                 'grep -q deep /sys/power/mem_sleep',
                 ignore_status=True).exit_status
+        if self.pcr_extend:
+            self.fast_ccd_open(True)
+            # Extend pcr0. The index must be 0. The value doesn't matter.
+            self.host.run('trunks_client --extend_pcr --index=0 --value=7')
+            # Manually send TPM2_Shutdown(STATE) to ensure saving the PCR0
+            # value in nvmem
+            self.host.run(
+                    'trunks_send --raw 80 01 00 00 00 0c 00 00 01 45 00 01')
+            self.print_fwmp('Extended PCR0', initialized=False)
+            self.host.reboot()
+            self.print_fwmp('PCR0 after reboot', initialized=False)
         self.init_fwmp()
 
         # The sleep times should be sufficient. Don't wait 3 minutes for

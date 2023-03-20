@@ -66,7 +66,12 @@ class firmware_CorruptBothFwSigAB(FirmwareTest):
         self.faft_client.system.set_try_fw_b()
 
         self.servo.switch_usbkey('host')
-        self.switcher.simple_reboot(sync_before_boot=False)
+        # The EC is still in RO. This makes the next reset, which will be
+        # issued by the AP after finding an invalid keyblock, traped by the EC.
+        # On this shutdown hook, the EC keeps the AP off. So, we need to do
+        # hardware reset here so that the EC gets out of RO.
+        psc = self.servo.get_power_state_controller()
+        psc.reset()
         self.switcher.bypass_rec_mode()
         self.switcher.wait_for_client()
 

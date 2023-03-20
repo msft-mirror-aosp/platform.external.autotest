@@ -98,6 +98,12 @@ class firmware_Cr50DeviceState(Cr50Test):
     POWER_STATE_PATH = '/sys/power/state'
     POWER_STATE_S0IX = 'echo %s > %s' % ('freeze', POWER_STATE_PATH)
     POWER_STATE_S3 = 'echo %s > %s' % ('mem', POWER_STATE_PATH)
+    MOUNT_POWERD = (
+            'mkdir -p %s && echo 0 > %s/suspend_to_idle && mount --bind %s %s && restart powerd'
+            % (TMP_POWER_MANAGER_PATH, TMP_POWER_MANAGER_PATH,
+               TMP_POWER_MANAGER_PATH, POWER_MANAGER_PATH))
+
+
     # TODO(mruthven): remove ec chan restriction once soraka stops spamming host
     # command output. The extra activity makes it look like a interrupt storm on
     # the EC uart.
@@ -147,13 +153,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         """Mounts power_manager settings to tmp,
         ensuring that any changes do not persist across reboots
         """
-        self.faft_client.system.run_shell_command(
-                'mkdir -p %s && \
-            echo 0 > %s/suspend_to_idle && \
-            mount --bind %s %s && \
-            restart powerd' %
-                (self.TMP_POWER_MANAGER_PATH, self.TMP_POWER_MANAGER_PATH,
-                 self.TMP_POWER_MANAGER_PATH, self.POWER_MANAGER_PATH), True)
+        self.faft_client.system.run_shell_command(self.MOUNT_POWERD, True)
 
     def umount_power_config(self):
         """Unmounts power_manager settings"""

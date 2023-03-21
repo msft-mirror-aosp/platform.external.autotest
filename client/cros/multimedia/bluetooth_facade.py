@@ -1810,17 +1810,17 @@ class BluetoothBaseFacadeLocal(object):
 
         @return: Unsigned 8-bit RSSI value.
         """
-        # Converts the RSSI value that should be between (-128 to 127) to
+        # Converts the RSSI value that should be between (-127 to 20) to
         # unsigned byte in range (0 to 255) by checking if the RSSI value is
         # negative, add the maximum value that can be represented by the
         # unsigned byte plus one. Else, return the same value.
-        if -128 <= rssi < 0:
+        if -127 <= rssi < 0:
             return rssi + 256
-        elif 0 <= rssi <= 127:
+        elif 0 <= rssi <= 20:
             return rssi
         else:
-            raise ValueError('RSSI value is out of the boundary of the signed '
-                             '8-bit range.')
+            raise ValueError('RSSI value is out of the boundary of the RSSI '
+                             'LE Range.')
 
 
 class BluezPairingAgent:

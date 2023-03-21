@@ -158,9 +158,10 @@ class BluetoothAdapterAdvMonitorTests(
     UNSET_TIMEOUT = 0
     UNSET_SAMPLING_PERIOD = 256
 
-    # Unset sampling period in Floss that follows the value of MSFT HCI
-    # specification.
+    # Unset sampling period, RSSI and timeout values in Floss.
     FLOSS_UNSET_SAMPLING_PERIOD = 255
+    FLOSS_UNSET_RSSI = -127
+    FLOSS_UNSET_TIMEOUT = 60
 
     # Non-zero count value is used to indicate the case where multiple
     # DeviceFound/DeviceLost events are expected to occur.
@@ -1175,12 +1176,31 @@ class BluetoothAdapterAdvMonitorTests(
     def unset_sampling_period(self):
         """Gets unset sampling period value.
 
-         @return: unset sampling period.
-         """
+        @return: The required unset sampling period value.
+        """
         if self.floss:
             return self.FLOSS_UNSET_SAMPLING_PERIOD
         return self.UNSET_SAMPLING_PERIOD
 
+    @property
+    def unset_rssi_value(self):
+        """Gets unset RSSI value.
+
+        @return: The required unset RSSI value.
+        """
+        if self.floss:
+            return self.FLOSS_UNSET_RSSI
+        return self.UNSET_RSSI
+
+    @property
+    def unset_timeout_value(self):
+        """Gets unset timeout value.
+
+        @return: The required unset timeout value.
+        """
+        if self.floss:
+            return self.FLOSS_UNSET_TIMEOUT
+        return self.UNSET_TIMEOUT
 
     def advmon_test_monitor_validity(self):
         """Test case: MONITOR_VALIDITY
@@ -1214,36 +1234,38 @@ class BluetoothAdapterAdvMonitorTests(
         # Incorrect monitor type, release should get called.
         self.test_add_monitor(monitor1, expected_release=True)
 
-        # Incorrect rssi parameters, release should get called.
-        monitor2.update_rssi([40, 10, -60, 10])
+        if not self.floss:
+            # Incorrect rssi parameters, release should get called.
+            monitor2.update_rssi([40, 10, -60, 10])
+            self.test_add_monitor(monitor2, expected_release=True)
+
+        monitor2.update_rssi([-127, 10, -60, 10])
         self.test_add_monitor(monitor2, expected_release=True)
 
-        monitor2.update_rssi([-128, 10, -60, 10])
+        monitor2.update_rssi([-40, 10, 20, 10])
         self.test_add_monitor(monitor2, expected_release=True)
 
-        monitor2.update_rssi([-40, 10, 60, 10])
-        self.test_add_monitor(monitor2, expected_release=True)
-
-        monitor2.update_rssi([-40, 10, -128, 10])
-        self.test_add_monitor(monitor2, expected_release=True)
+        if not self.floss:
+            monitor2.update_rssi([-40, 10, -160, 10])
+            self.test_add_monitor(monitor2, expected_release=True)
 
         monitor2.update_rssi([-60, 10, -40, 10])
         self.test_add_monitor(monitor2, expected_release=True)
 
         # Correct rssi parameters, activate should get called.
-        monitor2.update_rssi([self.UNSET_RSSI, 10, -60, 10])
+        monitor2.update_rssi([self.unset_rssi_value, 10, -60, 10])
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
-        monitor2.update_rssi([-40, self.UNSET_TIMEOUT, -60, 10])
+        monitor2.update_rssi([-40, self.unset_timeout_value, -60, 10])
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
-        monitor2.update_rssi([-40, 10, self.UNSET_RSSI, 10])
+        monitor2.update_rssi([-40, 10, self.unset_rssi_value, 10])
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
-        monitor2.update_rssi([-40, 10, -60, self.UNSET_TIMEOUT])
+        monitor2.update_rssi([-40, 10, -60, self.unset_timeout_value])
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
@@ -1253,31 +1275,33 @@ class BluetoothAdapterAdvMonitorTests(
             self.test_add_monitor(monitor2, expected_release=True)
 
         # Partial RSSI filter and sampling period, activate should get called.
-        monitor2.update_rssi([-40, 10, self.UNSET_RSSI, self.UNSET_TIMEOUT])
+        monitor2.update_rssi(
+                [-40, 10, self.unset_rssi_value, self.unset_timeout_value])
         monitor2.update_sampling_period(self.unset_sampling_period)
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
-        monitor2.update_rssi([-40, 10, self.UNSET_RSSI, self.UNSET_TIMEOUT])
+        monitor2.update_rssi(
+                [-40, 10, self.unset_rssi_value, self.unset_timeout_value])
         monitor2.update_sampling_period(5)
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
-        monitor2.update_rssi([self.UNSET_RSSI, self.UNSET_TIMEOUT, -60, 10])
+        monitor2.update_rssi(
+                [self.unset_rssi_value, self.unset_timeout_value, -60, 10])
         monitor2.update_sampling_period(self.unset_sampling_period)
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
-        monitor2.update_rssi([self.UNSET_RSSI, self.UNSET_TIMEOUT, -60, 10])
+        monitor2.update_rssi(
+                [self.unset_rssi_value, self.UNSET_TIMEOUT, -60, 10])
         monitor2.update_sampling_period(10)
         self.test_add_monitor(monitor2, expected_activate=True)
         self.test_remove_monitor(monitor2)
 
         monitor2.update_rssi([
-                self.UNSET_RSSI,
-                self.UNSET_TIMEOUT,
-                self.UNSET_RSSI,
-                self.UNSET_TIMEOUT
+                self.unset_rssi_value, self.unset_timeout_value,
+                self.unset_rssi_value, self.unset_timeout_value
         ])
         monitor2.update_sampling_period(self.unset_sampling_period)
         self.test_add_monitor(monitor2, expected_activate=True)
@@ -1457,10 +1481,8 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_register_app(app1)
 
         monitor1.update_rssi([
-                self.UNSET_RSSI,
-                self.UNSET_TIMEOUT,
-                self.UNSET_RSSI,
-                self.UNSET_TIMEOUT
+                self.unset_rssi_value, self.unset_timeout_value,
+                self.unset_rssi_value, self.unset_timeout_value
         ])
         self.test_add_monitor(monitor1, expected_activate=True)
 
@@ -1516,7 +1538,10 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_register_app(app1)
 
         monitor1.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                3,
         ])
         self.test_add_monitor(monitor1, expected_activate=True)
 
@@ -1567,7 +1592,10 @@ class BluetoothAdapterAdvMonitorTests(
         self.test_register_app(app1)
 
         monitor1.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 10,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                10,
         ])
         self.test_add_monitor(monitor1, expected_activate=True)
 
@@ -1627,7 +1655,10 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x19, [0xc1, 0x03]],
         ])
         monitor1.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                3,
         ])
 
         monitor2 = TestMonitor(app2, self.floss)
@@ -1637,7 +1668,10 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x19, [0xc1, 0x03]],
         ])
         monitor2.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                3,
         ])
 
         # Activate should get invoked.
@@ -1660,7 +1694,10 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x19, [0xc2, 0x03]],
         ])
         monitor3.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                3,
         ])
 
         monitor4 = TestMonitor(app2, self.floss)
@@ -1669,7 +1706,10 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x19, [0xc2, 0x03]],
         ])
         monitor4.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 10,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                10,
         ])
 
         # Activate should get invoked.
@@ -1711,7 +1751,10 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x03, [0x12, 0x18]],
         ])
         monitor1.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                3,
         ])
 
         # Register the app, should not fail.
@@ -1804,28 +1847,40 @@ class BluetoothAdapterAdvMonitorTests(
         monitor1.update_type('or_patterns')
         monitor1.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
         monitor1.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                3,
         ])
 
         monitor2 = TestMonitor(app1, self.floss)
         monitor2.update_type('or_patterns')
         monitor2.update_patterns([ [0, 0x19, [0xc2, 0x03]], ])
         monitor2.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 10,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                10,
         ])
 
         monitor3 = TestMonitor(app2, self.floss)
         monitor3.update_type('or_patterns')
         monitor3.update_patterns([ [0, 0x03, [0x12, 0x18]], ])
         monitor3.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 3,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                3,
         ])
 
         monitor4 = TestMonitor(app2, self.floss)
         monitor4.update_type('or_patterns')
         monitor4.update_patterns([ [0, 0x19, [0xc1, 0x03]], ])
         monitor4.update_rssi([
-                self.HIGH_RSSI, self.UNSET_TIMEOUT, self.LOW_RSSI, 15,
+                self.HIGH_RSSI,
+                self.unset_timeout_value,
+                self.LOW_RSSI,
+                15,
         ])
 
         # Activate should get invoked.
@@ -1903,10 +1958,8 @@ class BluetoothAdapterAdvMonitorTests(
                 [0, 0x03, [0x12, 0x18]],
         ])
         monitor1.update_rssi([
-                self.UNSET_RSSI,
-                self.UNSET_TIMEOUT,
-                self.UNSET_RSSI,
-                self.UNSET_TIMEOUT
+                self.unset_rssi_value, self.unset_timeout_value,
+                self.unset_rssi_value, self.unset_timeout_value
         ])
 
         # Register the app, should not fail.
@@ -2013,7 +2066,8 @@ class BluetoothAdapterAdvMonitorTests(
             monitor.update_type('or_patterns')
             monitor.update_patterns([[0, 0x09, 'COND{}_'.format(i)]])
             monitor.update_rssi([
-                    high_rssi, self.UNSET_TIMEOUT, low_rssi, RSSI_LOW_TIMEOUT
+                    high_rssi, self.unset_timeout_value, low_rssi,
+                    RSSI_LOW_TIMEOUT
             ])
 
             self.test_add_monitor(monitor,

@@ -83,7 +83,5 @@ class autoupdate_WithFirmware(update_engine_test.UpdateEngineTest):
         expected = self.get_os_bundled_fw_version()
         logging.info('Expected post-update FW version is %s', expected)
         logging.info('Actual Post-update FW version is %s', actual)
-        # TODO(b/228121045): Enable the FW update verification once the client
-        # flag is available to trigger the FW update.
-        # if actual != expected:
-        #     raise error.TestFail('The firmware did not update')
+        if actual != expected:
+            raise error.TestFail('The firmware did not update')

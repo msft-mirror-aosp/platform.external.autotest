@@ -1,0 +1,37 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The test runs CTS ARC R on Floss.
+# For BlueZ, we use cheets_CTS_R/control.internal.arm.CtsBluetooth instead.
+# After Floss is migrated, we should remove this test, because the test
+# mentioned above will run Floss by default.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterCTSHealth.cts_arc_r.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass all health test',
+    'hw_agnostic': False,
+}
+
+ATTRIBUTES = 'suite:bluetooth_floss'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth_state:NORMAL, arc'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterCTSHealth', host=host,
+                  arc_version='R',
+                  run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsBluetoothTestCases', '--include-filter', 'CtsBluetoothTestCases[secondary_user]', '--logcat-on-failure'],
+                  retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+                  test_name=NAME.split('.')[1],
+                  floss=True)
+
+parallel_simple(run, machines)

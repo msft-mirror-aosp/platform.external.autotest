@@ -1520,7 +1520,8 @@ class TradefedTest(test.test):
                                    extra_artifacts_host=[],
                                    login_precondition_commands=[],
                                    precondition_commands=[],
-                                   prerequisites=[]):
+                                   prerequisites=[],
+                                   chrome_feature=None):
         """Run CTS/GTS with retry logic.
 
         We first kick off the specified module. Then rerun just the failures
@@ -1567,7 +1568,8 @@ class TradefedTest(test.test):
                     dont_override_profile=keep_media,
                     enable_default_apps=enable_default_apps,
                     vm_force_max_resolution=vm_force_max_resolution,
-                    log_dir=session_log_dir) as current_logins:
+                    log_dir=session_log_dir,
+                    feature=chrome_feature) as current_logins:
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation

@@ -29,7 +29,8 @@ class ChromeLogin(object):
                  enable_default_apps=False,
                  toggle_ndk=False,
                  vm_force_max_resolution=False,
-                 log_dir=None):
+                 log_dir=None,
+                 feature=None):
         """Initializes the ChromeLogin object.
 
         @param board: optional parameter to extend timeout for login for slow
@@ -50,6 +51,7 @@ class ChromeLogin(object):
         self._toggle_ndk = toggle_ndk
         self._vm_force_max_resolution = vm_force_max_resolution
         self._log_dir = log_dir
+        self._feature = feature
 
     def _cmd_builder(self, verbose=False):
         """Gets remote command to start browser with ARC enabled."""
@@ -78,6 +80,8 @@ class ChromeLogin(object):
             cmd += ' --enable_default_apps'
         if self._vm_force_max_resolution:
             cmd += ' --vm_force_max_resolution'
+        if self._feature:
+            cmd += ' --feature=' + self._feature
         if not verbose:
             cmd += ' > /dev/null 2>&1'
         return cmd

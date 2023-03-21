@@ -151,7 +151,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         time.sleep(1)
         self.run_keyboard_tests(device=device)
 
-    @test_wrapper('Battery Reporting', devices={'BLE_MOUSE': 1})
+    @test_wrapper('Battery Reporting',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def battery_reporting(self):
         """Run battery reporting tests"""
 

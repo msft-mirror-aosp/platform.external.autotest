@@ -25,7 +25,6 @@ def run(machine):
                  host=host,
                  skipped_model_with_bugs={
                     'kevin':'b/250681713',
-                    'hayato': 'b/272395201',
                     'rusty': 'b/272390993',
                 },)
 

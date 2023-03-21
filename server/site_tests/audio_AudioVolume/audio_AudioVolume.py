@@ -127,16 +127,27 @@ class audio_AudioVolume(audio_test.AudioTest):
                 @param tag: file name tag.
 
                 """
-                # Starts recording, waits for some time, and starts playing.
-                # This is to avoid artifact caused by Chameleon codec
-                # initialization. The gap should be removed later.
+                # There is a known issue that if we reopen the HDMI device,
+                # chameleon will interrupt recording (crbug.com/1027040). However,
+                # if there is another stream playing earlier, CRAS may need to
+                # reopen the device during recording. To fix it, we should move
+                # playback before the recording of chameleon.
+                if recorder_id == chameleon_audio_ids.ChameleonIds.HDMI:
+                    logging.info('Start playing %s on Cros device',
+                                 golden_file.path)
+                    source.start_playback()
+
                 logging.info('Start recording from Chameleon.')
                 recorder.start_recording()
-                time.sleep(self.DELAY_BEFORE_PLAYBACK)
 
-                logging.info('Start playing %s on Cros device',
-                             golden_file.path)
-                source.start_playback()
+                if recorder_id != chameleon_audio_ids.ChameleonIds.HDMI:
+                    # Starts recording, waits for some time, and starts playing.
+                    # This is to avoid artifact caused by Chameleon codec
+                    # initialization. The gap should be removed later.
+                    time.sleep(self.DELAY_BEFORE_PLAYBACK)
+                    logging.info('Start playing %s on Cros device',
+                                 golden_file.path)
+                    source.start_playback()
 
                 time.sleep(self.RECORD_SECONDS)
                 self.facade.check_audio_stream_at_selected_device()

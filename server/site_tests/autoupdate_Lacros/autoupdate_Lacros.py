@@ -43,8 +43,11 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
             self.provision_dut(public_bucket=running_at_desk)
 
         # Login and check rootfs-lacros version
-        self._run_client_test_and_check_result('desktopui_RootfsLacros',
-                                               tag='before')
+        self._run_client_test_and_check_result(
+                'desktopui_RootfsLacros',
+                username=self._LOGIN_TEST_USERNAME,
+                password=self._LOGIN_TEST_PASSWORD,
+                tag='before')
         before_version = self._host.run(['cat',
                                          '/tmp/lacros_version.txt']).stdout
         logging.info('rootfs-lacros version before update: %s', before_version)
@@ -62,10 +65,19 @@ class autoupdate_Lacros(update_engine_test.UpdateEngineTest):
         rootfs_hostlog, _ = self._create_hostlog_files()
         self.verify_update_events(self._FORCED_UPDATE, rootfs_hostlog)
 
+        if m2n:
+            # Bring stateful version to the same version as rootfs.
+            logging.info('Restoring stateful partition to ToT version')
+            self._restore_stateful(clobber_stateful=False,
+                                   public_bucket=running_at_desk)
+
         # Check the rootfs-lacros version again.
-        self._run_client_test_and_check_result('desktopui_RootfsLacros',
-                                               tag='after',
-                                               dont_override_profile=True)
+        self._run_client_test_and_check_result(
+                'desktopui_RootfsLacros',
+                username=self._LOGIN_TEST_USERNAME,
+                password=self._LOGIN_TEST_PASSWORD,
+                tag='after',
+                dont_override_profile=True)
         after_version = self._host.run(['cat',
                                         '/tmp/lacros_version.txt']).stdout
         logging.info('rootfs-lacros version after update: %s', after_version)

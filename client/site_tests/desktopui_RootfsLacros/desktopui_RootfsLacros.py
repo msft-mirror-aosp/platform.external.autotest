@@ -24,7 +24,10 @@ class desktopui_RootfsLacros(test.test):
                             ignore_status=True).stdout
         return len(process) > 0
 
-    def run_once(self, dont_override_profile=False):
+    def run_once(self,
+                 dont_override_profile=False,
+                 username=None,
+                 password=None):
         """Check rootfs-lacros opens and its version number."""
         # Use args to keep test as hermetic as possible.
         # See crbug.com/1268252 and crbug.com/1268743 for details.
@@ -36,6 +39,8 @@ class desktopui_RootfsLacros(test.test):
 
         with chrome.Chrome(autotest_ext=True,
                            dont_override_profile=dont_override_profile,
+                           username=username,
+                           password=password,
                            extra_browser_args=browser_args) as cr:
             # Use chrome.automation API to drive UI.
             self.ui = ui_utils.UI_Handler()

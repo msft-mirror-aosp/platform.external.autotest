@@ -86,9 +86,9 @@ class chromium_Graphics(test.test):
                 'vpython3',
                 '-vpython-spec',
                 vpython3_spec,
-                os.path.join(self.server_pkg, 'testing', 'scripts',
+                os.path.join('../../testing', 'scripts',
                              'run_gpu_integration_test_as_googletest.py'),
-                os.path.join(self.server_pkg, 'content', 'test', 'gpu',
+                os.path.join('../../content', 'test', 'gpu',
                              'run_gpu_integration_test.py'),
                 # Generate a gtest-ish result file. This is mostly for reference now,
                 # because GPU tests do not upload it to RDB.
@@ -102,8 +102,7 @@ class chromium_Graphics(test.test):
                 # to upload them to RDB. See crrev.com/c/4081733.
                 '--rdb-content-output-file={}'.format(
                         os.path.join(self.resultsdir, 'native_results.jsonl')),
-                '--chromium-output-directory={}'.format(
-                        os.path.join(self.server_pkg, 'out', 'Release')),
+                '--chromium-output-directory=./',
                 '--remote={}'.format(self.host.hostname),
         ]
         # Pass the test arguments from the browser test owners.
@@ -119,6 +118,10 @@ class chromium_Graphics(test.test):
 
         logging.debug('Running: %s', cmd)
         exit_code = 0
+        # We must kick off the test from src/out/Release, because
+        # the flags configured by browser side are assumed so.
+        os.chdir(os.path.join(self.server_pkg, 'out', 'Release'))
+        logging.debug('CWD: %s', os.getcwd())
         try:
             result = utils.run(cmd,
                                stdout_tee=sys.stdout,

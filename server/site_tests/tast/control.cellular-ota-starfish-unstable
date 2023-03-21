@@ -10,7 +10,7 @@ METADATA = {
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cellular_repair'
+ATTRIBUTES = 'suite:cellular_ota_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 DEPENDENCIES = "carrier:starfish"
@@ -58,10 +58,10 @@ def run(machine):
             temp_file.flush()
             testgroups = {"0_dut_check":["cellular.IsConnected."+carrier,"cellular.Identifiers."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
                           "1_is_modem_up":["cellular.IsModemUp"],
-                          "2_autoconnect_enable":["cellular.Autoconnect."+carrier,"cellular.ShillEnableDisable."+carrier],
-                          "3_platform":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e")']}
+                          "2_autoconnect_enable":["cellular.Autoconnect."+carrier,"cellular.ShillEnableDisable."+carrier]}
+                          # "3_platform":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e")']}
             for testsession in sorted(testgroups):
-                sessiontag = carrier+"_"+testsession
+                sessiontag = testsession+"_"+carrier
                 tast_test_expr = testgroups[testsession]
                 job.run_test('tast',
                              host=host,

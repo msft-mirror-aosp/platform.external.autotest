@@ -56,7 +56,6 @@ class firmware_Cr50DeviceState(Cr50Test):
     POWER_STATE_CHECK_TRIES = 6
     CONSERVATIVE_WAIT_TIME = SLEEP_TIME * 2
 
-    TPM_INIT_MAX = 120000
     DEEP_SLEEP_MAX = 2
     ARM = 'ARM '
     # If there are over 100,000 interrupts, it is an interrupt storm.
@@ -64,7 +63,6 @@ class firmware_Cr50DeviceState(Cr50Test):
     # A dictionary of ok count values for each irq that shouldn't follow the
     # DEFAULT_COUNTS range.
     EXPECTED_IRQ_COUNT_RANGE = {
-            KEY_TPM_INIT: [0, TPM_INIT_MAX],
             KEY_RESET: [0, 0],
             KEY_DEEP_SLEEP: [0, DEEP_SLEEP_MAX],
             KEY_TIME: [0, CONSERVATIVE_WAIT_TIME],
@@ -140,6 +138,10 @@ class firmware_Cr50DeviceState(Cr50Test):
         if self.deep_sleep_in_s0i3:
             irq_s0ix_deep_sleep_key = 'S0ix' + self.DEEP_SLEEP_STEP_SUFFIX
             self.EXPECTED_IRQ_COUNT_RANGE[irq_s0ix_deep_sleep_key] = [0, 2]
+        # Set the maximum amount of time allowed for the gsc chip type or board type.
+        max_tpm_init = (getattr(self.faft_config, 'custom_max_tpm_init_us',
+                                None) or self.gsc.TPM_INIT_MAX)
+        self.EXPECTED_IRQ_COUNT_RANGE[self.KEY_TPM_INIT] = [0, max_tpm_init]
 
     def get_tpm_init_time(self):
         """If the AP is on, return the time it took the tpm to initialize."""

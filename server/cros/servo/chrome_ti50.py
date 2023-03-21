@@ -87,6 +87,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     # Ti50 inhibits deep sleep for 60 seconds after AP power on.
     DEEP_SLEEP_DELAY = 60
     DS_RESETS_TIMER = False
+    # Maximum TPM init time.
+    TPM_INIT_MAX = 40000
 
     def set_ccd_level(self, level, password=''):
         if level == 'unlock':

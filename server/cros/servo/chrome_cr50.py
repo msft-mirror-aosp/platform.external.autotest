@@ -264,6 +264,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # Cr50 will deep sleep after 20 seconds.
     DEEP_SLEEP_DELAY = 20
     DS_RESETS_TIMER = True
+    # Maximum TPM init time.
+    TPM_INIT_MAX = 120000
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.

@@ -185,7 +185,8 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         result = self.test_discoverable_timeout(timeout_values=[0, 7, 15])
         logging.info("Result is %s", result)
 
-    @test_wrapper('Adapter PairableTimeout test')
+    @test_wrapper('Adapter PairableTimeout test',
+                  supports_floss=False)
     def sa_adapter_pairable_timeout_test(self):
         """Verify that PairableTimout Property works."""
         result = self.test_pairable_timeout(timeout_values=[0, 7, 15])

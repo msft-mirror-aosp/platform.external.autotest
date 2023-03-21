@@ -123,7 +123,8 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
     @test_wrapper('Interleave Scan Tests',
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=False)
     def advmon_interleaved_scan_tests(self):
         """Tests interleave scan."""
         self.advmon_test_interleaved_scan()

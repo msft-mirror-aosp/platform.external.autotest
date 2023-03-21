@@ -314,6 +314,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         # if the device enters s5.
         if reset_type == 'reboot':
             self._enters_deep_sleep = True
+        elif not getattr(self.faft_config, 'suspend_cbmem', True):
+            raise error.TestNAError(
+                    'Cannot run power_SuspendStress without cbmem support')
         else:
             is_arm = self.check_ec_capability(['arm'], suppress_warning=True)
 

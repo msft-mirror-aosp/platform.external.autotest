@@ -143,9 +143,15 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def get_tpm_init_time(self):
         """If the AP is on, return the time it took the tpm to initialize."""
+        # The AP has to be on and have cbmem support to get `cbmem -t`.
         if not self.gsc.ap_is_on():
             return -1
-        result = self.host.run('cbmem -t')
+        # The board may not support cbmem after suspend. Ignore errors on those
+        # devices.
+        ignore_status = not getattr(self.faft_config, 'suspend_cbmem', True)
+        result = self.host.run('cbmem -t', ignore_status=ignore_status)
+        if result.exit_status:
+            return 0
         match = re.search('TPM initialization.*\((.*)\)', result.stdout)
         return int(match.group(1).replace(',', ''))
 

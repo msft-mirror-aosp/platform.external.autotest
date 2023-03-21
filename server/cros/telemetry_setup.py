@@ -137,7 +137,7 @@ class TelemetrySetup(object):
         url = (self._STATIC_URL_TEMPLATE %
                (self._ds.url(), self._build, filename))
         try:
-            resp = requests.get(url)
+            resp = requests.get(url, timeout=60)
             resp.raise_for_status()
             with open(dep_path, 'wb') as f:
                 for content in resp.iter_content(_READ_BUFFER_SIZE_BYTES):
@@ -155,6 +155,12 @@ class TelemetrySetup(object):
                         'The request failed because a connection to the devserver '
                         '%s could not be established. Attempting to execute the '
                         'request %s once by SSH-ing into the devserver.',
+                        self._ds.url(), url)
+                return self._DownloadFilesFromDevserverViaSSH(url, dep_path)
+            elif isinstance(e, requests.exceptions.Timeout):
+                logging.warning(
+                        'The request %s had 60s timeout. Attempting to execute '
+                        'the request %s once by SSH-ing into the devserver.',
                         self._ds.url(), url)
                 return self._DownloadFilesFromDevserverViaSSH(url, dep_path)
             else:

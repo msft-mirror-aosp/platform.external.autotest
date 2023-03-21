@@ -954,6 +954,7 @@ class DevServerTest(unittest.TestCase):
         ImageServer and AndroidBuildServer use ImageServerBase.run_call.
         """
         argument = comparators.Substring(self._HOST)
+        dut = dev_server.get_hostname(self._HOST)
 
         # for testing CrashServer
 
@@ -984,6 +985,24 @@ class DevServerTest(unittest.TestCase):
             dev_server.AndroidBuildServer.run_call.assert_called_with(
                     argument, timeout=mock.ANY)
 
+        with patch.object(utils, 'get_restricted_subnet') as subnet_patch:
+            subnet_patch.return_value = False
+            # for testing ImageServer curl download
+            dev_server.ENABLE_SSH_CONNECTION_FOR_DEVSERVER = True
+            # First call returns string revision which can be used in the
+            # following call.
+            self.utils_run_mock.return_value.stdout = "R01"
+            self.assertTrue(
+                    dev_server.ImageServer.devserver_healthy(self._HOST))
+            self.assertEqual(self.utils_run_mock.call_count, 2)
+            self.assertRegex(
+                    self.utils_run_mock.call_args[0][0],
+                    r'^ssh %s \'curl -f "%s.*%s.*"\' | wc$' %
+                    (dut, self._HOST, "R01"))
+            # curl returned error
+            self.utils_run_mock.side_effect = CMD_ERROR
+            self.assertFalse(
+                    dev_server.ImageServer.devserver_healthy(self._HOST))
 
     def testLocateFile(self):
         """Test locating files for AndriodBuildServer."""

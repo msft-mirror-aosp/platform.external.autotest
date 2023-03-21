@@ -518,7 +518,47 @@ class DevServer(object):
 
 
     @classmethod
-    def devserver_healthy(cls, devserver,
+    def curl_download_ok(cls, devserver, timeout_min):
+        """Test curl download.
+
+        @param devserver: url of the devserver.
+        @param timeout_min: How long to wait in minutes before deciding the
+                            the devserver is not up (float).
+
+        @return: True if curl can download a file from devserver.
+        """
+        url_base = "%s/static/trogdor-release" % devserver
+        url = "%s/LATEST-main" % url_base
+
+        hostname = get_hostname(url)
+        is_in_restricted_subnet = utils.get_restricted_subnet(
+                hostname, utils.get_all_restricted_subnets())
+        if is_in_restricted_subnet or not ENABLE_SSH_CONNECTION_FOR_DEVSERVER:
+            return True
+
+        ssh_command = "ssh %s 'curl -f \"%s\"'" % (hostname, url)
+        logging.debug("curl_download_ok() calls '%s'", ssh_command)
+        try:
+            result = utils.run(ssh_command, timeout_min * 60)
+            rev = result.stdout if result else ""
+            if not rev:
+                return False
+            url = "%s/%s/ebuild_logs.tar.xz" % (url_base, rev)
+            ssh_command = "ssh %s 'curl -f \"%s\"' | wc" % (hostname, url)
+            logging.debug("curl_download_ok() calls '%s'", ssh_command)
+            result = utils.run(ssh_command, timeout_min * 60)
+            if result and result.stdout:
+                logging.debug("run() returned %s", result.stdout)
+        except error.CmdError as e:
+            logging.debug('"%s" failed with status: %s', ssh_command,
+                          e.result_obj.exit_status)
+            return False
+
+        return True
+
+    @classmethod
+    def devserver_healthy(cls,
+                          devserver,
                           timeout_min=DEVSERVER_SSH_TIMEOUT_MINS):
         """Returns True if the |devserver| is healthy to stage build.
 
@@ -548,13 +588,21 @@ class DevServer(object):
                 return False
 
             disk_ok = cls.is_free_disk_ok(load)
+            healthy = bool(disk_ok)
             if not disk_ok:
                 reason = '(3) Disk space too low.'
                 logging.error('Devserver check_health failed. Free disk space is '
                               'low. Only %dGB is available.',
                               load[cls.FREE_DISK])
-            healthy = bool(disk_ok)
-            return disk_ok
+                return False
+
+            curl_ok = cls.curl_download_ok(devserver, timeout_min)
+            if not curl_ok:
+                logging.error(
+                        'Devserver check_health failed. Curl failed to download'
+                        ' a file from %s', devserver)
+                return False
+            return True
         finally:
             c.increment(fields={'dev_server': cls(devserver).resolved_hostname,
                                 'healthy': healthy,

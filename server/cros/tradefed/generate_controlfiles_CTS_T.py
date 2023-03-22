@@ -170,6 +170,8 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsMediaTestCases',
 ]
 
+CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = ['CtsSensorTestCases']
+
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [
         'CtsAppSecurityHostTestCases',

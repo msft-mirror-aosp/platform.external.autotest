@@ -360,6 +360,7 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
 
 CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
+        'CtsSensorTestCases',
 ]
 
 CONFIG['SHARD_COUNT'] = {'CtsDeqpTestCases': 10}

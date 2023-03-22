@@ -249,6 +249,7 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
 
 CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
         'CtsMediaTestCases',
+        'CtsSensorTestCases',
 ]
 
 # See b/149889853. Non-media test basically does not require dynamic

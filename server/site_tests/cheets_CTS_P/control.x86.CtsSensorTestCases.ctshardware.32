@@ -5,7 +5,7 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_P.x86.CtsSensorTestCases.ctshardware'
+NAME = 'cheets_CTS_P.x86.CtsSensorTestCases.ctshardware.32'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
@@ -26,9 +26,9 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=12,
-        tag='x86.CtsSensorTestCases.ctshardware',
-        test_name='cheets_CTS_P.x86.CtsSensorTestCases.ctshardware',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsSensorTestCases'],
+        tag='x86.CtsSensorTestCases.ctshardware.32',
+        test_name='cheets_CTS_P.x86.CtsSensorTestCases.ctshardware.32',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsSensorTestCases', '--abi', 'x86'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsSensorTestCases',
         target_plan=None,

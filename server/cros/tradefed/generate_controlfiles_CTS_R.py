@@ -897,6 +897,10 @@ CONFIG['EXTRA_COMMANDLINE'] = {
 
 CONFIG['EXTRA_ATTRIBUTES'] = {}
 
+CONFIG['PUBLIC_EXTRA_SUITES_FOR_TAG'] = {
+        'arm.CtsSensorTestCases.32': ['suite:faft_experimental']
+}
+
 CONFIG['EXTRA_ARTIFACTS'] = {}
 CONFIG['PREREQUISITES'] = {}
 

@@ -847,6 +847,10 @@ CONFIG['EXTRA_ATTRIBUTES'] = {
     _COLLECT: ['suite:arc-cts-qual', 'suite:arc-cts'],
 }
 
+CONFIG['PUBLIC_EXTRA_SUITES_FOR_TAG'] = {
+        'arm.CtsSensorTestCases.32': ['suite:faft_experimental']
+}
+
 CONFIG['EXTRA_ARTIFACTS'] = {
     'CtsViewTestCases': ["/storage/emulated/0/SurfaceViewSyncTest/"],
 }

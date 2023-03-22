@@ -364,6 +364,7 @@ def get_cts_hardware_modules(is_public):
 
 
 def get_suites(modules,
+               tag,
                abi,
                is_public,
                camera_facing=None,
@@ -379,9 +380,14 @@ def get_suites(modules,
     cts_hardware_modules = get_cts_hardware_modules(is_public)
 
     if is_public:
-        suites = set([CONFIG['MOBLAB_SUITE_NAME']])
         if hardware_suite:
             suites = set([CONFIG['MOBLAB_HARDWARE_SUITE_NAME']])
+        else:
+            suites = set([CONFIG['MOBLAB_SUITE_NAME']])
+            for module in modules:
+                suites |= set(
+                        CONFIG.get('PUBLIC_EXTRA_SUITES_FOR_TAG',
+                                   {}).get(tag, []))
         return sorted(list(suites))
 
     suites = set(CONFIG['INTERNAL_SUITE_NAMES'])
@@ -1041,7 +1047,7 @@ def get_controlfile_content(combined,
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
     name = '%s.%s' % (CONFIG['TEST_NAME'], tag)
     if not suites:
-        suites = get_suites(modules, abi, is_public, camera_facing,
+        suites = get_suites(modules, tag, abi, is_public, camera_facing,
                             hardware_suite, vm_force_max_resolution)
     # while creating the control files, check if this is meant for qualification suite. i.e. arc-cts-qual
     # if it is meant for qualification suite, also add new suite ar-cts-camera-opendut which is meant for

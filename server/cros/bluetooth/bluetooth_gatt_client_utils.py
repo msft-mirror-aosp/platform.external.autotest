@@ -7,6 +7,7 @@
 
 import base64
 import json
+from uuid import UUID
 
 
 class GATT_ClientFacade(object):
@@ -37,13 +38,73 @@ class GATT_ClientFacade(object):
         return application
 
 
+def UUID_Short2Full(uuid):
+    """Transforms 2-byte UUID string to 16-byte UUID string.
+     It transforms the 2-byte UUID by inserting it into a fixed template
+     16-byte UUID string.
+
+    @param uuid: 2-byte shortened UUID string in hex.
+
+    @return: Full 16-byte UUID string.
+    """
+    uuid_template = '0000%s-0000-1000-8000-00805f9b34fb'
+    return uuid_template % uuid
+
+
 class GATT_Application(object):
     """A GATT client application class"""
+
+    BATTERY_SERVICE_UUID = UUID_Short2Full('180f')
+    BATTERY_LEVEL_UUID = UUID_Short2Full('2a19')
+    CLI_CHRC_CONFIG_UUID = UUID_Short2Full('2902')
+    GENERIC_ATTRIBUTE_PROFILE_UUID = UUID_Short2Full('1801')
+    SERVICE_CHANGED_UUID = UUID_Short2Full('2a05')
+    DEVICE_INFO_UUID = UUID_Short2Full('180a')
+    MANUFACTURER_NAME_STR_UUID = UUID_Short2Full('2a29')
+    PNP_ID_UUID = UUID_Short2Full('2a50')
+    GENERIC_ACCESS_PROFILE_UUID = UUID_Short2Full('1800')
+    DEVICE_NAME_UUID = UUID_Short2Full('2a00')
+    APPEARANCE_UUID = UUID_Short2Full('2a01')
+    HID_SERVICE_UUID = UUID_Short2Full('1812')
+    REPORT_UUID = UUID_Short2Full('2a4d')
+    REPORT_REFERENCE_UUID = UUID_Short2Full('2908')
+    REPORT_MAP_UUID = UUID_Short2Full('2a4b')
+    HID_INFORMATION_UUID = UUID_Short2Full('2a4a')
+    HID_CONTROL_POINT_UUID = UUID_Short2Full('2a4c')
 
     def __init__(self):
         """Initialize a GATT Application"""
         self.services = dict()
 
+    def browse_floss(self, attr_map_json, bluetooth_facade):
+        """Browse the application on GATT server.
+
+        @param attr_map_json: A json object returned by
+                              bluetooth_device_xmlrpc_server.
+        @param bluetooth_facade: Facade to communicate with adapter in DUT.
+        """
+        for service in attr_map_json:
+            path = None
+
+            uuid = str(UUID(bytes=bytes(service['uuid'])))
+            service_obj = GATT_Service(uuid, path, bluetooth_facade)
+            service_obj.fill_floss_properties(service)
+            self.add_service(service_obj)
+
+            chrcs_json = service['characteristics']
+            for charac in chrcs_json:
+                path = None
+                uuid = str(UUID(bytes=bytes(charac['uuid'])))
+                chrc_obj = GATT_Characteristic(uuid, path, bluetooth_facade)
+                chrc_obj.fill_floss_properties(charac)
+                service_obj.add_characteristic(chrc_obj)
+                descs_json = charac['descriptors']
+                for desc in descs_json:
+                    path = None
+                    uuid = str(UUID(bytes=bytes(desc['uuid'])))
+                    desc_obj = GATT_Descriptor(uuid, path, bluetooth_facade)
+                    desc_obj.fill_floss_properties(desc)
+                    chrc_obj.add_descriptor(desc_obj)
 
     def browse(self, attr_map_json, bluetooth_facade):
         """Browse the application on GATT server
@@ -54,6 +115,9 @@ class GATT_Application(object):
         @bluetooth_facade: facade to communicate with adapter in DUT
 
         """
+        if bluetooth_facade.floss:
+            self.browse_floss(attr_map_json, bluetooth_facade)
+            return
         servs_json = attr_map_json['services']
         for uuid in servs_json:
             path = servs_json[uuid]['path']
@@ -129,6 +193,9 @@ class GATT_Service(object):
     """GATT client service class"""
     PROPERTIES = ['UUID', 'Primary', 'Device', 'Includes']
 
+    FLOSS_PROPERTIES = [
+            'uuid', 'instance_id', 'service_type', 'included_services'
+    ]
 
     def __init__(self, uuid, object_path, bluetooth_facade):
         """Initialize a GATT service object
@@ -146,6 +213,20 @@ class GATT_Service(object):
         self.properties = dict()
         self.characteristics = dict()
 
+    def fill_floss_properties(self, service):
+        """Fill all properties in this service.
+
+        @param service: GATT service.
+
+        @return: GATT service properties.
+        """
+        for prop_name in self.FLOSS_PROPERTIES:
+            if prop_name is 'uuid':
+                self.properties[prop_name] = str(
+                        UUID(bytes=bytes(service[prop_name])))
+            else:
+                self.properties[prop_name] = service[prop_name]
+        return self.properties
 
     def add_characteristic(self, chrc_obj):
         """Add a characteristic attribute into service
@@ -206,7 +287,7 @@ class GATT_Service(object):
         """
         result = []
 
-        for prop_name in GATT_Service.PROPERTIES:
+        for prop_name in serv_b.properties.keys():
             if serv_a.properties[prop_name] != serv_b.properties[prop_name]:
                 result.append("Service %s is different in %s: %s vs %s" %
                               (serv_a.uuid, prop_name,
@@ -235,6 +316,10 @@ class GATT_Characteristic(object):
 
     PROPERTIES = ['UUID', 'Service', 'Value', 'Notifying', 'Flags']
 
+    FLOSS_PROPERTIES = [
+            'uuid', 'instance_id', 'properties', 'permissions', 'write_type',
+            'key_size'
+    ]
 
     def __init__(self, uuid, object_path, bluetooth_facade):
         """Initialize a GATT characteristic object
@@ -252,6 +337,20 @@ class GATT_Characteristic(object):
         self.properties = dict()
         self.descriptors = dict()
 
+    def fill_floss_properties(self, char):
+        """Fill all properties in this characteristic.
+
+        @param char: GATT characteristic.
+
+        @return: GATT characteristic properties.
+        """
+        for prop_name in self.FLOSS_PROPERTIES:
+            if prop_name is 'uuid':
+                self.properties[prop_name] = str(
+                        UUID(bytes=bytes(char[prop_name])))
+            else:
+                self.properties[prop_name] = char[prop_name]
+        return self.properties
 
     def add_descriptor(self, desc_obj):
         """Add a characteristic attribute into service
@@ -324,7 +423,7 @@ class GATT_Characteristic(object):
         """
         result = []
 
-        for prop_name in GATT_Characteristic.PROPERTIES:
+        for prop_name in chrc_b.properties.keys():
             if chrc_a.properties[prop_name] != chrc_b.properties[prop_name]:
                 result.append("Characteristic %s is different in %s: %s vs %s"
                               % (chrc_a.uuid, prop_name,
@@ -353,6 +452,8 @@ class GATT_Descriptor(object):
 
     PROPERTIES = ['UUID', 'Characteristic', 'Value', 'Flags']
 
+    FLOSS_PROPERTIES = ['uuid', 'instance_id', 'permissions']
+
     def __init__(self, uuid, object_path, bluetooth_facade):
         """Initialize a GATT descriptor object
 
@@ -368,6 +469,20 @@ class GATT_Descriptor(object):
         self.bluetooth_facade = bluetooth_facade
         self.properties = dict()
 
+    def fill_floss_properties(self, desc):
+        """Fill all properties in this descriptor.
+
+        @param desc: GATT descriptor.
+
+        @return: GATT descriptor properties.
+        """
+        for prop_name in self.FLOSS_PROPERTIES:
+            if prop_name is 'uuid':
+                self.properties[prop_name] = str(
+                        UUID(bytes=bytes(desc[prop_name])))
+            else:
+                self.properties[prop_name] = desc[prop_name]
+        return self.properties
 
     def read_properties(self):
         """Read all properties in this characteristic"""
@@ -424,39 +539,16 @@ class GATT_Descriptor(object):
         return result
 
 
-def UUID_Short2Full(uuid):
-    """Transform 2 bytes uuid string to 16 bytes
-
-    @param uuid: 2 bytes shortened UUID string in hex
-
-    @return: full uuid string
-    """
-    uuid_template = '0000%s-0000-1000-8000-00805f9b34fb'
-    return uuid_template % uuid
 
 
 class GATT_HIDApplication(GATT_Application):
     """Default HID Application on Raspberry Pi GATT server
     """
-
-    BatteryServiceUUID = UUID_Short2Full('180f')
-    BatteryLevelUUID = UUID_Short2Full('2a19')
-    CliChrcConfigUUID = UUID_Short2Full('2902')
-    GenericAttributeProfileUUID = UUID_Short2Full('1801')
-    ServiceChangedUUID = UUID_Short2Full('2a05')
-    DeviceInfoUUID = UUID_Short2Full('180a')
-    ManufacturerNameStrUUID = UUID_Short2Full('2a29')
-    PnPIDUUID = UUID_Short2Full('2a50')
-    GenericAccessProfileUUID = UUID_Short2Full('1800')
-    DeviceNameUUID = UUID_Short2Full('2a00')
-    AppearanceUUID = UUID_Short2Full('2a01')
-
-
     def __init__(self):
         """
         """
         GATT_Application.__init__(self)
-        BatteryService = GATT_Service(self.BatteryServiceUUID, None, None)
+        BatteryService = GATT_Service(self.BATTERY_SERVICE_UUID, None, None)
         BatteryService.properties = {
                 'UUID': BatteryService.uuid,
                 'Primary': True,
@@ -465,7 +557,7 @@ class GATT_HIDApplication(GATT_Application):
         }
         self.add_service(BatteryService)
 
-        BatteryLevel = GATT_Characteristic(self.BatteryLevelUUID, None, None)
+        BatteryLevel = GATT_Characteristic(self.BATTERY_LEVEL_UUID, None, None)
         BatteryLevel.properties = {
                 'UUID': BatteryLevel.uuid,
                 'Service': None,
@@ -475,7 +567,7 @@ class GATT_HIDApplication(GATT_Application):
         }
         BatteryService.add_characteristic(BatteryLevel)
 
-        CliChrcConfig = GATT_Descriptor(self.CliChrcConfigUUID, None, None)
+        CliChrcConfig = GATT_Descriptor(self.CLI_CHRC_CONFIG_UUID, None, None)
         CliChrcConfig.properties = {
                 'UUID': CliChrcConfig.uuid,
                 'Characteristic': None,
@@ -485,8 +577,8 @@ class GATT_HIDApplication(GATT_Application):
 
         BatteryLevel.add_descriptor(CliChrcConfig)
 
-        GenericAttributeProfile = GATT_Service(self.GenericAttributeProfileUUID,
-                                               None, None)
+        GenericAttributeProfile = GATT_Service(
+                self.GENERIC_ATTRIBUTE_PROFILE_UUID, None, None)
         GenericAttributeProfile.properties = {
                 'UUID': GenericAttributeProfile.uuid,
                 'Primary': True,
@@ -495,7 +587,7 @@ class GATT_HIDApplication(GATT_Application):
         }
         self.add_service(GenericAttributeProfile)
 
-        ServiceChanged = GATT_Characteristic(self.ServiceChangedUUID, None,
+        ServiceChanged = GATT_Characteristic(self.SERVICE_CHANGED_UUID, None,
                                              None)
         ServiceChanged.properties = {
                 'UUID': ServiceChanged.uuid,
@@ -506,7 +598,7 @@ class GATT_HIDApplication(GATT_Application):
         }
         GenericAttributeProfile.add_characteristic(ServiceChanged)
 
-        CliChrcConfig = GATT_Descriptor(self.CliChrcConfigUUID, None, None)
+        CliChrcConfig = GATT_Descriptor(self.CLI_CHRC_CONFIG_UUID, None, None)
         CliChrcConfig.properties = {
                 'UUID': CliChrcConfig.uuid,
                 'Characteristic': None,
@@ -515,7 +607,7 @@ class GATT_HIDApplication(GATT_Application):
         }
         ServiceChanged.add_descriptor(CliChrcConfig)
 
-        DeviceInfo = GATT_Service(self.DeviceInfoUUID, None, None)
+        DeviceInfo = GATT_Service(self.DEVICE_INFO_UUID, None, None)
         DeviceInfo.properties = {
                 'UUID': DeviceInfo.uuid,
                 'Primary': True,
@@ -524,8 +616,8 @@ class GATT_HIDApplication(GATT_Application):
         }
         self.add_service(DeviceInfo)
 
-        ManufacturerNameStr = GATT_Characteristic(self.ManufacturerNameStrUUID,
-                                                  None, None)
+        ManufacturerNameStr = GATT_Characteristic(
+                self.MANUFACTURER_NAME_STR_UUID, None, None)
         ManufacturerNameStr.properties = {
                 'UUID': ManufacturerNameStr.uuid,
                 'Service': None,
@@ -535,7 +627,7 @@ class GATT_HIDApplication(GATT_Application):
         }
         DeviceInfo.add_characteristic(ManufacturerNameStr)
 
-        PnPID = GATT_Characteristic(self.PnPIDUUID, None, None)
+        PnPID = GATT_Characteristic(self.PNP_ID_UUID, None, None)
         PnPID.properties = {
                 'UUID': PnPID.uuid,
                 'Service': None,
@@ -545,7 +637,7 @@ class GATT_HIDApplication(GATT_Application):
         }
         DeviceInfo.add_characteristic(PnPID)
 
-        GenericAccessProfile = GATT_Service(self.GenericAccessProfileUUID,
+        GenericAccessProfile = GATT_Service(self.GENERIC_ACCESS_PROFILE_UUID,
                                             None, None)
         GenericAccessProfile.properties = {
                 'UUID': GenericAccessProfile.uuid,
@@ -555,7 +647,7 @@ class GATT_HIDApplication(GATT_Application):
         }
         self.add_service(GenericAccessProfile)
 
-        DeviceName = GATT_Characteristic(self.DeviceNameUUID, None, None)
+        DeviceName = GATT_Characteristic(self.DEVICE_NAME_UUID, None, None)
         DeviceName.properties = {
                 'UUID': DeviceName.uuid,
                 'Service': None,
@@ -565,12 +657,213 @@ class GATT_HIDApplication(GATT_Application):
         }
         GenericAccessProfile.add_characteristic(DeviceName)
 
-        Appearance = GATT_Characteristic(self.AppearanceUUID, None, None)
+        Appearance = GATT_Characteristic(self.APPEARANCE_UUID, None, None)
         Appearance.properties = {
                 'UUID': Appearance.uuid,
                 'Service': None,
                 'Value': [],
                 'Notifying': None,
                 'Flags': ['read']
+        }
+        GenericAccessProfile.add_characteristic(Appearance)
+
+
+class Floss_GATT_HIDApplication(GATT_Application):
+    """Default Floss HID Application on Raspberry Pi GATT server."""
+    def __init__(self):
+        """
+        """
+        GATT_Application.__init__(self)
+
+        HIDService = GATT_Service(self.HID_SERVICE_UUID, None, None)
+        HIDService.properties = {
+                'uuid': HIDService.uuid,
+                'service_type': 0,
+                'instance_id': 0,
+                'included_services': []
+        }
+        self.add_service(HIDService)
+
+        Report = GATT_Characteristic(self.REPORT_UUID, None, None)
+        Report.properties = {
+                'uuid': Report.uuid,
+                'properties': 18,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 12
+        }
+        HIDService.add_characteristic(Report)
+
+        CliChrcConfig = GATT_Descriptor(self.CLI_CHRC_CONFIG_UUID, None, None)
+        CliChrcConfig.properties = {
+                'uuid': CliChrcConfig.uuid,
+                'permissions': 0,
+                'instance_id': 13
+        }
+        Report.add_descriptor(CliChrcConfig)
+
+        ReportReference = GATT_Descriptor(self.REPORT_REFERENCE_UUID, None,
+                                          None)
+        ReportReference.properties = {
+                'uuid': ReportReference.uuid,
+                'permissions': 0,
+                'instance_id': 14
+        }
+        Report.add_descriptor(ReportReference)
+
+        ReportMap = GATT_Characteristic(self.REPORT_MAP_UUID, None, None)
+        ReportMap.properties = {
+                'uuid': ReportMap.uuid,
+                'properties': 2,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 16
+        }
+        HIDService.add_characteristic(ReportMap)
+
+        HIDInformation = GATT_Characteristic(self.HID_INFORMATION_UUID, None,
+                                             None)
+        HIDInformation.properties = {
+                'uuid': HIDInformation.uuid,
+                'properties': 2,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 18
+        }
+        HIDService.add_characteristic(HIDInformation)
+
+        HIDControlPoint = GATT_Characteristic(self.HID_CONTROL_POINT_UUID,
+                                              None, None)
+        HIDControlPoint.properties = {
+                'uuid': HIDControlPoint.uuid,
+                'properties': 4,
+                'key_size': 16,
+                'write_type': 1,
+                'permissions': 0,
+                'instance_id': 20
+        }
+        HIDService.add_characteristic(HIDControlPoint)
+
+        BatteryService = GATT_Service(self.BATTERY_SERVICE_UUID, None, None)
+        BatteryService.properties = {
+                'uuid': BatteryService.uuid,
+                'service_type': 0,
+                'instance_id': 0,
+                'included_services': []
+        }
+        self.add_service(BatteryService)
+
+        BatteryLevel = GATT_Characteristic(self.BATTERY_LEVEL_UUID, None, None)
+        BatteryLevel.properties = {
+                'uuid': BatteryLevel.uuid,
+                'properties': 18,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 23
+        }
+        BatteryService.add_characteristic(BatteryLevel)
+
+        CliChrcConfig = GATT_Descriptor(self.CLI_CHRC_CONFIG_UUID, None, None)
+        CliChrcConfig.properties = {
+                'uuid': CliChrcConfig.uuid,
+                'permissions': 0,
+                'instance_id': 24
+        }
+        BatteryLevel.add_descriptor(CliChrcConfig)
+
+        GenericAttributeProfile = GATT_Service(
+                self.GENERIC_ATTRIBUTE_PROFILE_UUID, None, None)
+        GenericAttributeProfile.properties = {
+                'uuid': GenericAttributeProfile.uuid,
+                'service_type': 0,
+                'instance_id': 0,
+                'included_services': []
+        }
+        self.add_service(GenericAttributeProfile)
+
+        ServiceChanged = GATT_Characteristic(self.SERVICE_CHANGED_UUID, None,
+                                             None)
+        ServiceChanged.properties = {
+                'uuid': ServiceChanged.uuid,
+                'properties': 32,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 8
+        }
+        GenericAttributeProfile.add_characteristic(ServiceChanged)
+
+        CliChrcConfig = GATT_Descriptor(self.CLI_CHRC_CONFIG_UUID, None, None)
+        CliChrcConfig.properties = {
+                'uuid': CliChrcConfig.uuid,
+                'permissions': 0,
+                'instance_id': 9
+        }
+        ServiceChanged.add_descriptor(CliChrcConfig)
+
+        DeviceInfo = GATT_Service(self.DEVICE_INFO_UUID, None, None)
+        DeviceInfo.properties = {
+                'uuid': DeviceInfo.uuid,
+                'service_type': 0,
+                'instance_id': 0,
+                'included_services': []
+        }
+        self.add_service(DeviceInfo)
+
+        ManufacturerNameStr = GATT_Characteristic(
+                self.MANUFACTURER_NAME_STR_UUID, None, None)
+        ManufacturerNameStr.properties = {
+                'uuid': ManufacturerNameStr.uuid,
+                'properties': 2,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 27
+        }
+        DeviceInfo.add_characteristic(ManufacturerNameStr)
+
+        PnPID = GATT_Characteristic(self.PNP_ID_UUID, None, None)
+        PnPID.properties = {
+                'uuid': PnPID.uuid,
+                'properties': 2,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 29
+        }
+        DeviceInfo.add_characteristic(PnPID)
+        GenericAccessProfile = GATT_Service(self.GENERIC_ACCESS_PROFILE_UUID,
+                                            None, None)
+        GenericAccessProfile.properties = {
+                'uuid': GenericAccessProfile.uuid,
+                'service_type': 0,
+                'instance_id': 0,
+                'included_services': []
+        }
+        self.add_service(GenericAccessProfile)
+
+        DeviceName = GATT_Characteristic(self.DEVICE_NAME_UUID, None, None)
+        DeviceName.properties = {
+                'uuid': DeviceName.uuid,
+                'properties': 2,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 3
+        }
+        GenericAccessProfile.add_characteristic(DeviceName)
+
+        Appearance = GATT_Characteristic(self.APPEARANCE_UUID, None, None)
+        Appearance.properties = {
+                'uuid': Appearance.uuid,
+                'properties': 2,
+                'key_size': 16,
+                'write_type': 2,
+                'permissions': 0,
+                'instance_id': 5
         }
         GenericAccessProfile.add_characteristic(Appearance)

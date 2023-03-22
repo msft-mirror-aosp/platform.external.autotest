@@ -36,7 +36,8 @@ from autotest_lib.client.bin.input.linux_input import (
         REL_WHEEL_HI_RES, KEY_PLAYCD, KEY_PAUSECD, KEY_STOPCD, KEY_NEXTSONG,
         KEY_PREVIOUSSONG)
 from autotest_lib.server.cros.bluetooth.bluetooth_gatt_client_utils import (
-        GATT_ClientFacade, GATT_Application, GATT_HIDApplication)
+        GATT_ClientFacade, GATT_Application, GATT_HIDApplication,
+        Floss_GATT_HIDApplication)
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 import six
 from six.moves import map
@@ -4017,9 +4018,22 @@ class BluetoothAdapterTests(test.test):
                  timeout, False otherwise.
 
         """
-        is_resolved_func = self.bluetooth_facade.device_services_resolved
-        return self._wait_for_condition(lambda : is_resolved_func(address),\
-                                        method_name())
+        # it's not exactly the same as ServiceResolved in bluez. An empty list
+        # could mean both:
+        # (1) The SDP has completed, but it didn't find any service.
+        # (2) the SDP hasn't completed. But since test registers some services
+        # in raspi.
+        # So it should be safe to use this property to determine ServiceResolved
+        # property.
+        if self.floss:
+            uuids = self.bluetooth_facade.get_device_property(address, 'Uuids')
+            if uuids and len(uuids) > 0:
+                return True
+            return False
+        else:
+            is_resolved_func = self.bluetooth_facade.device_services_resolved
+            return self._wait_for_condition(lambda: is_resolved_func(address),
+                                            method_name())
 
 
     @test_retry_and_log(False)
@@ -4034,8 +4048,12 @@ class BluetoothAdapterTests(test.test):
         """
 
         gatt_client_facade = GATT_ClientFacade(self.bluetooth_facade)
+        if self.floss:
+            self.bluetooth_facade.connect_gatt_client(address)
+            expected_app = Floss_GATT_HIDApplication()
+        else:
+            expected_app = GATT_HIDApplication()
         actual_app = gatt_client_facade.browse(address)
-        expected_app = GATT_HIDApplication()
         diff = GATT_Application.diff(actual_app, expected_app)
 
         self.result = {

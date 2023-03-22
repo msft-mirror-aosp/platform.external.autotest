@@ -63,6 +63,7 @@ from autotest_lib.client.cros.bluetooth.floss.adapter_client import (
 from autotest_lib.client.cros.bluetooth.floss.admin_client import FlossAdminClient
 from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
         FlossAdvertisingClient)
+from autotest_lib.client.cros.bluetooth.floss.gatt_client import FlossGattClient
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClient
 from autotest_lib.client.cros.bluetooth.floss.scanner_client import FlossScannerClient
@@ -4407,6 +4408,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     FLOSS_WINDOW = 0
     FLOSS_SCAN_TYPE = 0
 
+    FAKE_GATT_APP_ID = '12345678123456781234567812345678'
+
     class DiscoveryObserver(BluetoothCallbacks):
         """ Discovery observer that restarts discovery until a timeout.
 
@@ -4498,6 +4501,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                                                  self.DEFAULT_ADAPTER)
         self.battery_client = FlossBatteryManagerClient(
                 self.bus, self.DEFAULT_ADAPTER)
+        self.gatt_client = FlossGattClient(self.bus, self.DEFAULT_ADAPTER)
         self.is_clean = False
 
         # Discovery needs to last longer than the default 12s. Keep an observer
@@ -4690,6 +4694,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
             self.advertising_client = FlossAdvertisingClient(
                     self.bus, default_adapter)
+            self.gatt_client = FlossGattClient(self.bus, default_adapter)
             self.media_client = FlossMediaClient(self.bus, default_adapter)
 
             self.socket_client = FlossSocketManagerClient(
@@ -4724,6 +4729,10 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
             if not self.socket_client.register_callbacks():
                 logging.error('socket_client: Failed to register callbacks')
+                return False
+            if not self.gatt_client.register_client(self.FAKE_GATT_APP_ID,
+                                                    False):
+                logging.error('gatt_client: Failed to register callbacks')
                 return False
             if not self.admin_client.register_admin_policy_callback():
                 logging.error('admin_client: Failed to register callbacks')
@@ -5496,3 +5505,21 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             return None
 
         return self.battery_client.get_battery_property(address, prop_name)
+
+    def connect_gatt_client(self, address):
+        """Connects GATT client.
+
+        @param address: Remote device MAC address.
+
+        @return: True on success, False otherwise.
+        """
+        return self.gatt_client.connect_client_sync(address)
+
+    def get_gatt_attributes_map(self, address):
+        """Returns a JSON formatted string of the GATT attributes of a device.
+
+        @param address: Remote device MAC address.
+
+        @return: JSON string for remote device GATT services.
+        """
+        return json.dumps(self.gatt_client.discover_services_sync(address))

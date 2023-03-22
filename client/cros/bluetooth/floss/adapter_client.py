@@ -403,6 +403,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 'Alias': (self.proxy().GetRemoteAlias, None),
                 'Class': (self.proxy().GetRemoteClass, None),
                 'WakeAllowed': (self.proxy().GetRemoteWakeAllowed, None),
+                'Uuids': (self.proxy().GetRemoteUuids, None),
                 'RSSI': (self.get_mock_remote_rssi, None),
         })
 

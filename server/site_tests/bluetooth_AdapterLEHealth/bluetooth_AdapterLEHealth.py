@@ -194,7 +194,9 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                 check_connected_method=self.test_mouse_left_click,
                 restart_adapter=True)
 
-    @test_wrapper('GATT Client', devices={'BLE_KEYBOARD': 1})
+    @test_wrapper('GATT Client',
+                  devices={'BLE_KEYBOARD': 1},
+                  supports_floss=True)
     def le_gatt_client_attribute_browse_test(self):
         """Browse the whole tree-structured GATT attributes"""
 

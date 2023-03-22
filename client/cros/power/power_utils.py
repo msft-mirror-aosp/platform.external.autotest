@@ -25,9 +25,6 @@ DISPLAY_POWER_INTERNAL_ON_EXTERNAL_OFF = 3
 # for bounds checking
 DISPLAY_POWER_MAX = 4
 
-# Retry times for ectool chargecontrol
-ECTOOL_CHARGECONTROL_RETRY_TIMES = 3
-
 
 def set_fullscreen(chrome):
     """Make the current focused window fullscreen.
@@ -222,57 +219,6 @@ def has_hammer():
     """
     command = 'grep Hammer /sys/bus/usb/devices/*/product'
     return utils.run(command, ignore_status=True).exit_status == 0
-
-
-def _charge_control_by_ectool(is_charge, ignore_status):
-    """execute ectool command.
-
-    Args:
-      is_charge: Boolean, True for charging, False for discharging.
-      ignore_status: do not raise an exception.
-
-    Returns:
-      Boolean, True if the command success, False otherwise.
-
-    Raises:
-      error.CmdError: if ectool returns non-zero exit status.
-    """
-    ec_cmd_discharge = 'ectool chargeoverride dontcharge'
-    ec_cmd_normal = 'ectool chargeoverride off'
-    try:
-        if is_charge:
-            utils.run(ec_cmd_normal)
-        else:
-            utils.run(ec_cmd_discharge)
-    except error.CmdError as e:
-        logging.warning('Unable to use ectool: %s', e)
-        if ignore_status:
-            return False
-        else:
-            raise e
-
-    return True
-
-
-def charge_control_by_ectool(is_charge, ignore_status=True):
-    """Force the battery behavior by the is_charge paremeter.
-
-    Args:
-      is_charge: Boolean, True for charging, False for discharging.
-      ignore_status: do not raise an exception.
-
-    Returns:
-      Boolean, True if the command success, False otherwise.
-
-    Raises:
-      error.CmdError: if ectool returns non-zero exit status.
-    """
-    for i in range(ECTOOL_CHARGECONTROL_RETRY_TIMES):
-        if _charge_control_by_ectool(is_charge, ignore_status):
-            return True
-        time.sleep(0.1)
-
-    return False
 
 
 def get_core_keyvals(keyvals):

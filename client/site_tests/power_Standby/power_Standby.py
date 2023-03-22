@@ -7,8 +7,8 @@ import logging, math, time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import force_discharge_utils
 from autotest_lib.client.cros import rtc
-from autotest_lib.client.cros.power import force_discharge_utils
 from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_suspend

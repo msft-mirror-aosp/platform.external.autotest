@@ -12,11 +12,15 @@ import logging
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.bin import utils
 from autotest_lib.client.cros import ec
 from autotest_lib.client.cros.power import power_utils
 from six.moves import range
 
 _FORCE_DISCHARGE_SETTINGS = ['false', 'true', 'optional']
+
+# Retry times for ectool chargecontrol
+ECTOOL_CHARGECONTROL_RETRY_TIMES = 3
 
 
 def _parse(force_discharge):
@@ -60,6 +64,54 @@ def _wait_for_battery_discharge(status):
     return False
 
 
+def _charge_control_by_ectool(is_charge, ignore_status, host=None):
+    """execute ectool command.
+
+    @param is_charge: bool, True for charging, False for discharging.
+    @param ignore_status: do not raise an exception.
+    @param host: An optional host object if running against a remote host
+
+    @returns bool, True if the command success, False otherwise.
+
+    @raises error.CmdError: if ectool returns non-zero exit status.
+    """
+    ec_cmd_discharge = 'ectool chargeoverride dontcharge'
+    ec_cmd_normal = 'ectool chargeoverride off'
+    run_func = host.run if host else utils.run
+    try:
+        if is_charge:
+            run_func(ec_cmd_normal)
+        else:
+            run_func(ec_cmd_discharge)
+    except error.CmdError as e:
+        logging.warning('Unable to use ectool: %s', e)
+        if ignore_status:
+            return False
+        else:
+            raise e
+
+    return True
+
+
+def charge_control_by_ectool(is_charge, ignore_status=True, host=None):
+    """Force the battery behavior by the is_charge paremeter.
+
+    @param is_charge: Boolean, True for charging, False for discharging.
+    @param ignore_status: do not raise an exception.
+    @param host: An optional host object if running against a remote host
+
+    @return: bool, True if the command success, False otherwise.
+
+    @raises error.CmdError: if ectool returns non-zero exit status.
+    """
+    for i in range(ECTOOL_CHARGECONTROL_RETRY_TIMES):
+        if _charge_control_by_ectool(is_charge, ignore_status, host):
+            return True
+        time.sleep(0.1)
+
+    return False
+
+
 def process(force_discharge, status):
     """
     Perform force discharge steps.
@@ -90,7 +142,7 @@ def process(force_discharge, status):
         if not ec.has_cros_ec():
             raise error.TestNAError('DUT does not have CrOS EC. '
                                     'Could not force discharge.')
-        if not power_utils.charge_control_by_ectool(False):
+        if not charge_control_by_ectool(False):
             raise error.TestError('Could not run battery force discharge.')
         if not _wait_for_battery_discharge(status):
             logging.warning('Battery does not report discharging state.')
@@ -104,7 +156,7 @@ def process(force_discharge, status):
             logging.warning('DUT does not have CrOS EC. '
                             'Do not force discharge.')
             return False
-        if not power_utils.charge_control_by_ectool(False):
+        if not charge_control_by_ectool(False):
             logging.warning('Could not run battery force discharge. '
                             'Do not force discharge.')
             return False
@@ -123,5 +175,5 @@ def restore(force_discharge_success):
             successfully, set DUT back to charging.
     """
     if force_discharge_success:
-        if not power_utils.charge_control_by_ectool(True):
+        if not charge_control_by_ectool(True):
             logging.warning('Can not restore from force discharge.')

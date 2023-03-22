@@ -3,3 +3,4 @@ include /ENGPROD_OWNERS
 include /INFRA_OWNERS
 
 per-file utils.py = file:/POWER_OWNERS
+per-file cros/force_discharge_utils.py = file:/POWER_OWNERS

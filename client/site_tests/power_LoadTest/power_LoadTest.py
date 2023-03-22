@@ -19,6 +19,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as _utils
 from autotest_lib.client.common_lib.cros import arc
+from autotest_lib.client.common_lib.cros import force_discharge_utils
 from autotest_lib.client.common_lib.cros import power_load_util
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import multicast_disabler
@@ -36,7 +37,6 @@ from autotest_lib.client.cros.networking import wifi_proxy
 from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
-from autotest_lib.client.cros.power import force_discharge_utils
 from autotest_lib.client.cros.tast.ui import chrome_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_tab

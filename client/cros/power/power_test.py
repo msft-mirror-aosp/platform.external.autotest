@@ -11,12 +11,12 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import arc_common
+from autotest_lib.client.common_lib.cros import force_discharge_utils
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.common_lib.cros.network import multicast_disabler
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.camera import camera_utils
-from autotest_lib.client.cros.power import force_discharge_utils
 from autotest_lib.client.cros.power import power_dashboard
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_telemetry_utils

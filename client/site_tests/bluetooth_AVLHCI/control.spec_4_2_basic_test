@@ -22,6 +22,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'all subtests passed',
     'hw_agnostic': False,
+    'requirements': ['bt-spec-0017-v01']
 }
 
 ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_fw'

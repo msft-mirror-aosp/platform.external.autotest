@@ -15,7 +15,8 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Tests controller can accept HID connection during Sender role',
-    'hw_agnostic': False
+    'hw_agnostic': False,
+    'requirements': ['bt-spec-0014-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'

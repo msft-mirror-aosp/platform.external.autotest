@@ -23,6 +23,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'all subtests passed',
     'hw_agnostic': False,
+    'requirements': ['bt-spec-0006-v01']
 }
 
 ATTRIBUTES = 'suite:bluetooth_flaky'

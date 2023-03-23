@@ -19,6 +19,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass all health test',
     'hw_agnostic': False,
+    'requirements': ['bt-spec-0016-v01']
 }
 
 

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import logging
+import re
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import autotest, test
@@ -23,8 +24,8 @@ class firmware_Cr50InvalidateRW(test.test):
     version = 1
 
     GET_CRYPTOHOME_MESSAGE ='grep cryptohomed /var/log/messages'
-    SUCCESS = 'Successfully invalidated inactive Cr50 RW'
-    FAIL = 'Invalidating inactive Cr50 RW failed'
+    SUCCESS = r'Successfully invalidated inactive (Cr50|GSC) RW'
+    FAIL = r'Invalidating inactive (Cr50|GSC) RW failed'
     NO_ATTEMPT = 'Did not try to invalidate header'
     LOGIN_ATTEMPTS = 5
 
@@ -64,7 +65,8 @@ class firmware_Cr50InvalidateRW(test.test):
         for message in messages:
             logging.debug(message)
             # Return the message that is related to the RW invalidate attempt
-            if self.FAIL in message or self.SUCCESS in message:
+            if re.search(self.FAIL, message) or re.search(
+                    self.SUCCESS, message):
                 rv = message
         return rv
 
@@ -78,7 +80,7 @@ class firmware_Cr50InvalidateRW(test.test):
                                     dont_override_profile=dont_override_profile)
 
 
-    def login_and_verify(self, use_guest=False, corrupt_login=None):
+    def login_and_verify(self, use_guest=False, corrupt_login_attempt=None):
         """Verify the header is only invalidated on the specified login.
 
         login LOGIN_ATTEMPTS times. Verify that cryptohome only tries to corrupt
@@ -87,17 +89,18 @@ class firmware_Cr50InvalidateRW(test.test):
 
         Args:
             use_guest: True to login as guest
-            corrupt_login: The login attempt that we expect the header to be
-                           corrupted on
+            corrupt_login_attempt: The login attempt that we expect the header
+                                   to be corrupted on
 
         Raises:
             TestError if the system attempts to corrupt the header on any login
-            that isn't corrupt_login or if an attepmt to corrupt the header
-            fails.
+            that isn't corrupt_login_attempt or if an attepmt to corrupt the
+            header fails.
         """
         for i in range(self.LOGIN_ATTEMPTS):
             attempt = i + 1
-            # Dont override profile when we are not using guest and we are after first attempt
+            # Dont override profile when we are not using guest and we are after
+            # first attempt
             dont_override_profile = not use_guest and i > 0
             self.login(use_guest, dont_override_profile)
             result = self.check_for_invalidated_rw()
@@ -107,14 +110,22 @@ class firmware_Cr50InvalidateRW(test.test):
             logging.info(message)
 
             # Anytime the invalidate attempt fails raise an error
-            if self.FAIL in result:
+            if re.search(self.FAIL, result):
                 raise error.TestError(message)
 
-            # The header should be invalidated only on corrupt_login. Raise
-            # an error if it was invalidated on some other login or if
+            # The header should be invalidated only on corrupt_login_attempt.
+            # Raise an error if it was invalidated on some other login or if
             # cryptohome did not try on the first one.
-            if (attempt == corrupt_login) != (self.SUCCESS in result):
-                raise error.TestError('Unexpected result %s' % message)
+            invalidated_rw = not not re.search(self.SUCCESS, result)
+            if invalidated_rw:
+                if attempt != corrupt_login_attempt:
+                    raise error.TestFail(
+                            'Invalidated header on wrong login %r' % message)
+            else:
+                if attempt == corrupt_login_attempt:
+                    raise error.TestError(
+                            'Did not invalidate header on login %d %s' %
+                            (corrupt_login_attempt, message))
 
 
     def restart_cryptohome(self):
@@ -150,4 +161,4 @@ class firmware_Cr50InvalidateRW(test.test):
         self.take_tpm_owner()
 
         self.login_and_verify(use_guest=True)
-        self.login_and_verify(corrupt_login=2)
+        self.login_and_verify(corrupt_login_attempt=2)

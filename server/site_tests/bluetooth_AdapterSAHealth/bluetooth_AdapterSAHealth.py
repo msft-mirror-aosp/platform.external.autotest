@@ -204,13 +204,13 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.valid_address_test()
 
 
-    @test_wrapper('Valid adapter ID test')
+    @test_wrapper('Valid adapter ID test', supports_floss=True)
     def sa_valid_id_test(self):
         """Verify that the adapter has a correctly-formatted ID"""
         self.test_check_valid_adapter_id()
 
 
-    @test_wrapper('Valid adapter alias test')
+    @test_wrapper('Valid adapter alias test', supports_floss=True)
     def sa_valid_alias_test(self):
         """Verify that the adapter has a correctly-formatted alias"""
         self.test_check_valid_alias()
@@ -228,7 +228,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.test_dbus_get_supported_capabilities_success()
         self.test_dbus_get_supported_capabilities_success_power_off()
 
-    @test_wrapper('EIR Max Alias Size test')
+    @test_wrapper('EIR Max Alias Size test', supports_floss=True)
     def sa_eir_max_name_size_test(self):
         """ Verify that the non-default max eir name size is used """
         EIR_80_char_name = ('1234567890123456789012345678901234567890'

@@ -118,6 +118,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
     ADAPTER_CB_OBJ_NAME = 'test_adapter_client'
     ADAPTER_CONN_CB_INTF = 'org.chromium.bluetooth.BluetoothConnectionCallback'
     ADAPTER_CONN_CB_OBJ_NAME = 'test_connection_client'
+    QA_INTERFACE = 'org.chromium.bluetooth.BluetoothQA'
+    QA_LEGACY_INTERFACE = 'org.chromium.bluetooth.BluetoothQALegacy'
 
     @staticmethod
     def parse_dbus_device(remote_device_dbus):
@@ -372,6 +374,17 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         return self.bus.get(self.ADAPTER_SERVICE,
                             self.objpath)[self.ADAPTER_INTERFACE]
 
+    def qa_proxy(self):
+        """Gets proxy object to QA interface for method calls."""
+        return self.bus.get(self.ADAPTER_SERVICE,
+                            self.objpath)[self.QA_INTERFACE]
+
+    def qa_legacy_proxy(self):
+        """Gets proxy object to QA Legacy interface for method calls."""
+        return self.bus.get(self.ADAPTER_SERVICE,
+                            self.objpath)[self.QA_LEGACY_INTERFACE]
+
+
     # TODO(b/227405934): Not sure we want GetRemoteRssi on adapter api since
     #                    it's unlikely to be accurate over time. Use a mock for
     #                    testing for now.
@@ -384,6 +397,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         self.properties = PropertySet({
                 'Address': (self.proxy().GetAddress, None),
                 'Name': (self.proxy().GetName, self.proxy().SetName),
+                'Alias': (self._get_alias, None),
+                'Modalias': (self._get_modalias, None),
                 'Class': (self.proxy().GetBluetoothClass,
                           self.proxy().SetBluetoothClass),
                 'Uuids': (self._get_uuids, None),
@@ -406,6 +421,28 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 'Uuids': (self.proxy().GetRemoteUuids, None),
                 'RSSI': (self.get_mock_remote_rssi, None),
         })
+
+    def _get_alias(self):
+        """Gets the adapter's alias name.
+
+        It tries BluetoothQA interface first. In case it fails, use
+        BluetoothQALegacy interface instead.
+        """
+        try:
+            return self.qa_proxy().GetAlias()
+        except:
+            return self.qa_legacy_proxy().GetAlias()
+
+    def _get_modalias(self):
+        """Gets the adapter modalias name.
+
+        It tries BluetoothQA interface first. In case it fails, use
+        BluetoothQALegacy interface instead.
+        """
+        try:
+            return self.qa_proxy().GetModalias()
+        except:
+            return self.qa_legacy_proxy().GetModalias()
 
     def _get_uuids(self):
         """Gets the UUIDs from the D-Bus.

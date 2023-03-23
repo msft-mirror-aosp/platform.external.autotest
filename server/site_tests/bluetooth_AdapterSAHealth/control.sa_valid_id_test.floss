@@ -1,0 +1,35 @@
+# Lint as:python3
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Checks the Bluetooth ID of the system.  If the ID is not "00E0:24..:0400" the
+# test will fail.  It does not check the platform-specific number in the ID.
+#
+# A platform should not FSI without an assigned Bluetooth ID from Google.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterSAHealth.sa_valid_id_test.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass if the Bluetooth ID matches the expected format',
+    'hw_agnostic': True,
+}
+
+
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterSAHealth', host=host,
+                  num_iterations=1, test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

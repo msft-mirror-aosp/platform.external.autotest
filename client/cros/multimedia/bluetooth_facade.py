@@ -5523,3 +5523,13 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @return: JSON string for remote device GATT services.
         """
         return json.dumps(self.gatt_client.discover_services_sync(address))
+
+    def set_adapter_alias(self, alias):
+        """Sets the adapter's alias.
+        Set the adapter name in Floss will set the alias name.
+
+        @param alias: Adapter alias to set with type String.
+
+        @return: True on success, False otherwise.
+        """
+        return self.adapter_client.set_property('Name', alias)

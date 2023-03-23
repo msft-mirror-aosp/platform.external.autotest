@@ -7,6 +7,7 @@ import logging
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib.cros import force_discharge_utils
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server.hosts import factory
@@ -111,3 +112,9 @@ class power_LW(test.test):
             autotest_client.run_test(test, **args)
         finally:
             self._start_servo_usb_and_ethernet(host, wlan_host)
+            if not host.wait_up(timeout=30):
+                logging.warning("ethernet connection did not return.")
+                force_discharge_utils.charge_control_by_ectool(True,
+                                                               host=wlan_host)
+            else:
+                force_discharge_utils.charge_control_by_ectool(True, host=host)

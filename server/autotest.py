@@ -99,7 +99,7 @@ class AutotestDeviceRebooted(AutotestDeviceError):
     """Error for when a DUT rebooted unexpectedly."""
 
 
-class AutotestDevicePythonAccessibility(AutotestDeviceError):
+class AutotestDeviceEssentialUtilMissing(AutotestDeviceError):
     """Error when python is not accessible on the host"""
 
 
@@ -591,7 +591,7 @@ class Autotest(installable_object.InstallableObject):
             atrun.execute_control(
                     timeout=timeout,
                     client_disconnect_timeout=client_disconnect_timeout)
-        except AutotestDevicePythonAccessibility as e:
+        except AutotestDeviceEssentialUtilMissing as e:
             crashcollect.get_crashinfo(host, None)
 
 
@@ -965,7 +965,13 @@ class _Run(object):
                 self.host.run("python --version")
             except error.AutoservRunError as e:
                 msg += ('DUT could not execute python: %s\n' % str(e))
-                raise AutotestDevicePythonAccessibility(msg)
+                raise AutotestDeviceEssentialUtilMissing(msg)
+            try:
+                self.host.run("hwsec-ownership-id")
+            except error.AutoservRunError as e:
+                msg += ('DUT cout not execute hwsec-ownership-id: %s\n' %
+                        str(e))
+                raise AutotestDeviceEssentialUtilMissing(msg)
 
             msg += ('DUT is pingable, SSHable and did NOT restart '
                     'un-expectedly. We probably lost connectivity during the '
@@ -1221,7 +1227,7 @@ class _Run(object):
                 # healthy, we give up and abort.
                 try:
                     self._diagnose_dut(boot_id)
-                except AutotestDevicePythonAccessibility as e:
+                except AutotestDeviceEssentialUtilMissing as e:
                     self.host.job.record('FAIL', None, None, str(e))
                     self.host.job.record('END FAIL', None, None)
                     self.host.job.record('END GOOD', None, None)

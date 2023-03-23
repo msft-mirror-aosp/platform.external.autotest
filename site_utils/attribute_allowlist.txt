@@ -477,6 +477,7 @@ suite:kernel_per-build_regression
 suite:kiosk_longevity
 suite:labqual
 suite:labstation_verification
+suite:lacros_power_dashboard
 suite:lacros-version-skew-beta
 suite:lacros-version-skew-canary
 suite:lacros-version-skew-dev

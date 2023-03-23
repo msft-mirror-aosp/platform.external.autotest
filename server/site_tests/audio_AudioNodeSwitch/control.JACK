@@ -30,5 +30,6 @@ def run(machine):
                                  'brask',    # Pending fix for b/268744440
                                  'corsola',    # Pending fix for b/268744440
                                  'nissa',    # Pending fix for b/268744440
+                                 'caroline',    # Skip, see dicussion at b/272391048 and b/273162963
                                 ])
 parallel_simple(run, machines)

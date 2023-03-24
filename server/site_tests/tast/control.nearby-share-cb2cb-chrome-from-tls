@@ -8,6 +8,12 @@ from autotest_lib.client.common_lib.error import TestFail
 from autotest_lib.server.cros import chrome_sideloader
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
+METADATA = {
+    'contacts': ['chromeos-sw-engprod@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Nearby CrOS to CrOS test with sideloaded Chrome',
+    'hw_agnostic': False
+}
 NAME = 'tast.nearby-share-cb2cb-chrome-from-tls'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
@@ -68,7 +74,8 @@ def run(machine):
                  ignore_test_failures=False,
                  max_run_sec=3600,
                  companion_duts={'cd1': secondary_dut},
-                 command_args=args
+                 command_args=args,
+                 clear_tpm=False
                  )
 
 

@@ -130,6 +130,16 @@ def _mount_lacros(host, chrome_dir, lacros_mount_point):
     host.run(['mv', '%s/*' % chrome_dir, '%s/' % lacros_mount_point])
 
 
+def _log_chrome_version(host):
+    """
+    Log the chrome version.
+
+    @param host: The DUT to execute the command on
+
+    """
+    host.run(['/opt/google/chrome/chrome', '--version'])
+
+
 def _mount_chrome(host, chrome_dir, chrome_mount_point):
     """
     Mounts chrome to a mount point
@@ -140,6 +150,9 @@ def _mount_chrome(host, chrome_dir, chrome_mount_point):
     @param chrome_mount_point: Chrome mount point
 
     """
+    logging.debug('Before mounting chrome on host: %s', host)
+    _log_chrome_version(host)
+
     chrome_stopped = _stop_chrome_if_necessary(host)
     _umount_chrome(host, chrome_mount_point)
 
@@ -158,6 +171,9 @@ def _mount_chrome(host, chrome_dir, chrome_mount_point):
 
     if chrome_stopped:
         host.run('start ui', ignore_status=True)
+
+    logging.debug('After mounting chrome on host: %s', host)
+    _log_chrome_version(host)
 
 
 def _umount_lacros(host, lacros_mount_point):
@@ -182,6 +198,9 @@ def _umount_chrome(host, chrome_mount_point):
     @param chrome_mount_point: Chrome mount point
 
     """
+    logging.debug('Before unmounting chrome on host: %s', host)
+    _log_chrome_version(host)
+
     chrome_stopped = _stop_chrome_if_necessary(host)
     # Unmount chrome. Upon restart, the default version of chrome
     # under the root partition will be used.
@@ -193,6 +212,9 @@ def _umount_chrome(host, chrome_mount_point):
 
     if chrome_stopped:
         host.run('start ui', ignore_status=True)
+
+    logging.info('After unmounting chrome on host: %s', host)
+    _log_chrome_version(host)
 
 
 def setup_host(host, chrome_dir, chrome_mount_point, is_cros_chrome=True):
@@ -234,7 +256,7 @@ def cleanup_host(host, chrome_dir, chrome_mount_point, is_cros_chrome=True):
     @param chrome_mount_point: Chrome mount point
     @is_cros_chrome: Umount cros chrome or lacros. True by default.
     """
-    logging.info('Unmounting chrome on host: %s', host)
+    logging.info('Cleaning up host: %s', host)
     try:
         if chrome_mount_point:
             _umount = _umount_chrome if is_cros_chrome else _umount_lacros

@@ -61,11 +61,12 @@ def run(machine):
     chrome_sideloader.setup_host(host, CHROME_DIR, CHROME_MOUNT_POINT)
 
     tast_expr = chrome_sideloader.get_tast_expr(args_dict)
-    logging.info("Running %s on host: %s with Tast expression:%s",
-                 NAME, host, tast_expr)
     total_shards=args_dict.get('total_shards', 1)
     shard_index=args_dict.get('shard_index', 0)
     max_run_sec=int(args_dict.get('max_run_sec', 21600)) # 6 hours.
+    logging.info("Running %s on host: %s with Tast expression:%s "
+                 "total_shards: %s shard_index: %s max_run_sec: %s",
+                 NAME, host, tast_expr, total_shards, shard_index, max_run_sec)
 
     # Register a clean up callback to reset the chrome mount.
     def cleanup():
@@ -80,6 +81,7 @@ def run(machine):
                  max_run_sec=max_run_sec,
                  command_args=args,
                  totalshards=total_shards,
-                 shardindex=shard_index)
+                 shardindex=shard_index,
+                 clear_tpm=False)
 
 parallel_simple(run, machines)

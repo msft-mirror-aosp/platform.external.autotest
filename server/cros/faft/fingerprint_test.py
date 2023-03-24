@@ -343,7 +343,7 @@ class FingerprintTest(test.test):
 
     def get_chromeos_version(self):
         """Returns the chrome os version."""
-        cmd = 'cat /etc/lsb-release | grep CHROMEOS_RELEASE_BUILDER_PATH'
+        cmd = 'cat /etc/lsb-release | grep CHROMEOS_RELEASE_VERSION'
         result = self.run_cmd(cmd)
         result = result.stdout
         result = result.split("=")

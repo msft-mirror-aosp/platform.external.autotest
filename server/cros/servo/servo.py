@@ -2047,3 +2047,31 @@ class Servo(object):
             return
 
         self.set_nocheck('dut_usb_mux_enable', state)
+
+    def usb_mux_reset(self):
+        """Reset USB mux state if supported.
+
+        It does nothing if servo setup does not support mux control for the USB
+        connection, only log information about this.
+        """
+        if self.supports_usb_mux_control():
+            logging.info('Resetting servo USB connection to DUT...')
+            self.set_usb_mux('off')
+            # Sleep for 5s to allow the DUT to detect the disconnect then re
+            # enumerate the USB connection. This can take up to 2.025s with
+            # USB-C due to the following reset specification for PD:
+            # PD_T_SAFE_0V (650 * MSEC)
+            # PD_T_SRC_RECOVER_MAX (1000 * MSEC)
+            # PD_T_SRC_TURN_ON (275 * MSEC)
+            # PD_T_VCONN_SOURCE_ON (100 * MSEC)
+            # = 2025 * MSEC total
+            #
+            # We also need to handle buggier type-A connections as well, so
+            # delay for 5s. We can't detect when certain events happen on
+            # the DUT to stop waiting as well, since this pulls down the
+            # network connection on the DUT.
+            time.sleep(5)
+            self.set_usb_mux('on')
+        else:
+            logging.info('Trying to reset servos USB connection to DUT, but'
+                         'this feature is not supported on used servo setup.')

@@ -25,6 +25,7 @@ class firmware_FwScreenPressPower(FirmwareTest):
 
     def wait_fw_screen_and_press_power(self):
         """Wait for firmware warning screen and press power button."""
+        logging.info("Sleeping for %s", self.faft_config.firmware_screen)
         time.sleep(self.faft_config.firmware_screen)
         # While the firmware screen, the power button probing loop sleeps
         # 0.25 second on every scan. Use the normal delay (1.2 second) for
@@ -43,6 +44,7 @@ class firmware_FwScreenPressPower(FirmwareTest):
 
     def wait_longer_fw_screen_and_press_power(self):
         """Wait for firmware screen without timeout and press power button."""
+        logging.info("Sleeping for %s", self.faft_config.dev_screen_timeout)
         time.sleep(self.faft_config.dev_screen_timeout)
         self.wait_fw_screen_and_press_power()
 
@@ -130,6 +132,7 @@ class firmware_FwScreenPressPower(FirmwareTest):
                 'devsw_boot': '1',
                 'mainfw_type': 'developer',
         }))
+        logging.info("Starting power state recovery")
         self.servo.set_nocheck('power_state', 'rec')
         self.run_shutdown_process(
                 self.wait_longer_fw_screen_and_press_power,

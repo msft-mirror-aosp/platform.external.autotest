@@ -112,7 +112,7 @@ class chromium_Graphics(test.test):
         # reason we have to pass extra-browser-args separately.
         cmd.extend(self.test_args)
         # Autotest does not recognize args with '-'.
-        cmd.append('--extra-browser-args="{}"'.format(
+        cmd.append('--extra-browser-args={}'.format(
                 chrome_sideloader.get_test_args(self.args_dict,
                                                 'extra_browser_args')))
 

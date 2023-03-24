@@ -47,6 +47,7 @@ class firmware_RollbackFirmware(FirmwareTest):
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected firmware B boot and rollback firmware B.")
+        self.check_state((self.checkers.mode_checker, 'dev'))
         self.check_state((self.checkers.fw_tries_checker, ('B', False)))
         version_b = self.faft_client.bios.get_version('b')
         logging.info("Change B version from %d to %d.", version_b,
@@ -56,18 +57,24 @@ class firmware_RollbackFirmware(FirmwareTest):
         # Older devices (without BROKEN screen) didn't wait for removal in
         # dev mode. Make sure the USB key is not plugged in so they won't
         # start booting immediately and get interrupted by unplug/replug.
-        self.servo.switch_usbkey('host')
+        self.servo.switch_usbkey('dut')
+        self.servo.switch_usbkey('off')
         self.switcher.simple_reboot()
         self.switcher.bypass_rec_mode()
         self.switcher.wait_for_client()
 
         logging.info("Expected recovery boot and restores firmware A and B.")
+        # If this fails with recovery_reason == 2, that means that
+        # bypass_rec_mode above send power_state:rec more than once. Adjust the
+        # firmware_screen and delay_reboot_to_ping times to prevent that.
         self.check_state((self.checkers.crossystem_checker, {
-                           'mainfw_type': 'recovery',
-                           'recovery_reason': (
-                                vboot.RECOVERY_REASON['RO_INVALID_RW'],
-                                vboot.RECOVERY_REASON['RW_FW_ROLLBACK']),
-                           }))
+                'mainfw_type':
+                'recovery',
+                'recovery_reason': (
+                        vboot.RECOVERY_REASON['RO_INVALID_RW'],
+                        vboot.RECOVERY_REASON['RW_FW_ROLLBACK'],
+                ),
+        }))
         logging.info("Restore version of firmware A/B to %d/%d.", version_a,
                      version_b)
         self.faft_client.bios.set_version('a', version_a)

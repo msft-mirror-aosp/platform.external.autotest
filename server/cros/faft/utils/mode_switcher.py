@@ -143,7 +143,8 @@ class _KeyboardBypasser(_BaseFwBypasser):
     def bypass_rec_mode(self):
         """Bypass the rec mode firmware logic to boot USB."""
         self.servo.switch_usbkey('host')
-        self.faft_framework.wait_for('usb_plug', 'Switching usb key to DUT')
+        self.faft_framework.wait_for('firmware_screen',
+                                     'Switching usb key to DUT')
         self.check_vbus_and_pd_state()
         self.servo.switch_usbkey('dut')
         logging.info('Enabled dut_sees_usb')
@@ -154,8 +155,12 @@ class _KeyboardBypasser(_BaseFwBypasser):
             tries = tries - 1
             logging.info('connect timed out, try REC_ON, retries left: %d',
                          tries)
+            self.servo.switch_usbkey('off')
             psc = self.servo.get_power_state_controller()
             psc.power_on(psc.REC_ON)
+            self.faft_framework.wait_for('firmware_screen',
+                                         'Switching usb key to DUT')
+            self.servo.switch_usbkey('dut')
             # Check Vbus after reboot again
             self.check_vbus_and_pd_state()
         logging.info('bypass_rec_mode DONE')

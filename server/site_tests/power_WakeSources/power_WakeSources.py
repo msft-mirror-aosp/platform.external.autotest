@@ -317,17 +317,26 @@ class power_WakeSources(test.test):
         # Give enough time to reconnect if the ethernet dongle accidentally
         # comes up in storage mode.
         if not self._host.wait_up(timeout=NET_UP_TIMEOUT):
-            logging.error(
-                    'Device did not resume from suspend for %s.'
-                    ' Waking system with power button then RTC.', wake_source)
-            self._trigger_wake('PWR_BTN')
-            self._after_resume(wake_source)
-            if not self._host.is_up():
+            # Try to reset the DUT's ethernet if it doesn't return, then wait
+            # for it to come back online again.
+            if self._host.servo.supports_eth_power_control():
+                self._host.servo.eth_power_reset()
+            else:
+                self._host.servo.usb_mux_reset()
+            if not self._host.wait_up(timeout=NET_UP_TIMEOUT):
+                logging.error(
+                        'Device did not resume from suspend for %s.'
+                        ' Waking system with power button then RTC.',
+                        wake_source)
+                self._trigger_wake('PWR_BTN')
+                self._after_resume(wake_source)
+                if not self._host.is_up():
+                    raise error.TestFail(
+                            'Device failed to wakeup from backup wake sources'
+                            ' (power button and RTC).')
                 raise error.TestFail(
-                        'Device failed to wakeup from backup wake sources'
-                        ' (power button and RTC).')
-            raise error.TestFail(
-                'Device did not resume from suspend for %s.' % wake_source)
+                        'Device did not resume from suspend for %s.' %
+                        wake_source)
 
         count_after = self._dr_utils.count_dark_resumes()
         if full_wake:

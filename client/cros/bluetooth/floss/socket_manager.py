@@ -4,45 +4,14 @@
 # found in the LICENSE file.
 """Client class to access the Floss socket manager interface."""
 
-from enum import IntEnum
 from gi.repository import GLib
 import logging
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.cros.bluetooth.floss.floss_enums import BtStatus
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         generate_dbus_cb_objpath, glib_call, glib_callback)
-
-
-class BtStatus(IntEnum):
-    """Bluetooth return status."""
-    SUCCESS = 0
-    FAIL = 1
-    NOT_READY = 2
-    NO_MEMORY = 3
-    BUSY = 4
-    DONE = 5
-    UNSUPPORTED = 6
-    INVALID_PARAM = 7
-    UNHANDLED = 8
-    AUTH_FAILURE = 9
-    REMOTE_DEVICE_DOWN = 10
-    AUTH_REJECTED = 11
-    JNI_ENVIRONMENT_ERROR = 12
-    JNI_THREAD_ATTACH_ERROR = 13
-    WAKE_LOCK_ERROR = 14
-
-
-class SocketType(IntEnum):
-    """Socket types."""
-    GT_SOCK_ANY = 0
-    GT_SOCK_STREAM = 1
-    GT_SOCK_DGRAM = 2
-    GT_SOCK_RAW = 3
-    GT_SOCK_RDM = 4
-    GT_SOCK_SEQPACKET = 5
-    GT_SOCK_DCCP = 6
-    GT_SOCK_PACKET = 10
 
 
 class SocketManagerCallbacks:

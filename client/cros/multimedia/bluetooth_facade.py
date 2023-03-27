@@ -58,11 +58,14 @@ from autotest_lib.client.cros.bluetooth import adv_monitor_helper
 from autotest_lib.client.cros.bluetooth import output_recorder
 from autotest_lib.client.cros.bluetooth import logger_helper
 from autotest_lib.client.cros.bluetooth.floss.adapter_client import (
-        FlossAdapterClient, BluetoothCallbacks, BluetoothConnectionCallbacks,
-        BondState, SspVariant, Transport)
+        FlossAdapterClient, BluetoothCallbacks, BluetoothConnectionCallbacks)
+
 from autotest_lib.client.cros.bluetooth.floss.admin_client import FlossAdminClient
 from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
         FlossAdvertisingClient)
+from autotest_lib.client.cros.bluetooth.floss.floss_enums import (BondState,
+                                                                  SspVariant,
+                                                                  Transport)
 from autotest_lib.client.cros.bluetooth.floss.gatt_client import FlossGattClient
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClient

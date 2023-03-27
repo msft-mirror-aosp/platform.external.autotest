@@ -8,36 +8,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from enum import IntEnum
 from gi.repository import GLib
 from uuid import UUID
 import logging
 
+from autotest_lib.client.cros.bluetooth.floss.floss_enums import BondState
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         generate_dbus_cb_objpath, glib_call, glib_callback, PropertySet)
-
-
-class BondState(IntEnum):
-    """Bluetooth bonding state."""
-    NOT_BONDED = 0
-    BONDING = 1
-    BONDED = 2
-
-
-class Transport(IntEnum):
-    """Bluetooth transport type."""
-    AUTO = 0
-    BREDR = 1
-    LE = 2
-
-
-class SspVariant(IntEnum):
-    """Bluetooth SSP variant type."""
-    PASSKEY_CONFIRMATION = 0
-    PASSKEY_ENTRY = 1
-    CONSENT = 2
-    PASSKEY_NOTIFICATION = 3
 
 
 class BluetoothCallbacks:

@@ -4,80 +4,15 @@
 # found in the LICENSE file.
 """Client Class to access the Floss GATT client interface."""
 
-from enum import IntEnum
 import logging
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.cros.bluetooth.floss.floss_enums import (BtTransport,
+                                                                  LePhy,
+                                                                  GattStatus)
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         generate_dbus_cb_objpath, glib_call, glib_callback)
-
-
-class BtTransport(IntEnum):
-    """Bluetooth transport type."""
-    AUTO = 0
-    BR_EDR = 1
-    LE = 2
-
-
-class GattWriteType(IntEnum):
-    """GATT write type."""
-    INVALID = 0
-    WRITE_NO_RSP = 1
-    WRITE = 2
-    WRITE_PREPARE = 3
-
-
-class LePhy(IntEnum):
-    """Bluetooth LE physical type."""
-    INVALID = 0
-    PHY1M = 1
-    PHY2M = 2
-    PHY_CODED = 3
-
-
-class GattStatus(IntEnum):
-    """Bluetooth GATT return status."""
-    SUCCESS = 0x00
-    INVALID_HANDLE = 0x01
-    READ_NOT_PERMIT = 0x02
-    WRITE_NOT_PERMIT = 0x03
-    INVALID_PDU = 0x04
-    INSUF_AUTHENTICATION = 0x05
-    REQ_NOT_SUPPORTED = 0x06
-    INVALID_OFFSET = 0x07
-    INSUF_AUTHORIZATION = 0x08
-    PREPARE_Q_FULL = 0x09
-    NOT_FOUND = 0x0A
-    NOT_LONG = 0x0B
-    INSUF_KEY_SIZE = 0x0C
-    INVALID_ATTRLEN = 0x0D
-    ERR_UNLIKELY = 0x0E
-    INSUF_ENCRYPTION = 0x0F
-    UNSUPPORT_GRP_TYPE = 0x10
-    INSUF_RESOURCE = 0x11
-    DATABASE_OUT_OF_SYNC = 0x12
-    VALUE_NOT_ALLOWED = 0x13
-    ILLEGAL_PARAMETER = 0x87
-    TOO_SHORT = 0x7F
-    NO_RESOURCES = 0x80
-    INTERNAL_ERROR = 0x81
-    WRONG_STATE = 0x82
-    DB_FULL = 0x83
-    BUSY = 0x84
-    ERROR = 0x85
-    CMD_STARTED = 0x86
-    PENDING = 0x88
-    AUTH_FAIL = 0x89
-    MORE = 0x8A
-    INVALID_CFG = 0x8B
-    SERVICE_STARTED = 0x8C
-    ENCRYPTED_NO_MITM = 0x8D
-    NOT_ENCRYPTED = 0x8E
-    CONGESTED = 0x8F
-    DUP_REG = 0x90
-    ALREADY_OPEN = 0x91
-    CANCEL = 0x92
 
 
 class GattClientCallbacks:

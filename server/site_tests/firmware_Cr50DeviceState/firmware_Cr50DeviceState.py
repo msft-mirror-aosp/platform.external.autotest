@@ -719,10 +719,11 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.s0ix_supported = not self.host.run(
                 'check_powerd_config --suspend_to_idle',
                 ignore_status=True).exit_status
+        logging.info('S0ix: %s', self.s0ix_supported)
         # Check if the device supports S3.
-        self.s3_supported = not self.host.run(
-                'grep -q deep /sys/power/mem_sleep',
-                ignore_status=True).exit_status
+        self.s3_supported = not self.host.run('grep -q mem /sys/power/state',
+                                              ignore_status=True).exit_status
+        logging.info('S3: %s', self.s3_supported)
         if self.pcr_extend:
             self.fast_ccd_open(True)
             # Extend pcr0. The index must be 0. The value doesn't matter.

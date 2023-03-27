@@ -9,6 +9,7 @@ suite:appcompat_smoke
 suite:appcompat_top_apps
 suite:arc_playstore
 suite:arc_core
+suite:arc_chromeos_vm
 suite:arc-cts
 suite:arc-cts-camera
 suite:arc-cts-camera-opendut

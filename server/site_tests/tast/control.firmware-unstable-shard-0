@@ -44,7 +44,7 @@ def run(machine):
                  command_args=command_args,
                  varslist=varslist,
                  ephemeraldevserver='false',
-                 totalshards=3,
+                 totalshards=6,
                  shardindex=0,
                  )
 

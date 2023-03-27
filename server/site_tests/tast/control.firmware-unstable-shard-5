@@ -1,4 +1,4 @@
-# Copyright 2021 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,11 +6,11 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'ChromiumOS Firmware EngProd team'
-NAME = 'tast.firmware-unstable-shard-1'
+NAME = 'tast.firmware-unstable-shard-5'
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Run Tast tests for firmware"
+        "criteria": "Run Tast tests for EC firmware"
 }
 TIME = 'LENGTHY'
 TEST_TYPE = 'Server'
@@ -45,7 +45,7 @@ def run(machine):
                  varslist=varslist,
                  ephemeraldevserver='false',
                  totalshards=6,
-                 shardindex=1,
+                 shardindex=5,
                  )
 
 parallel_simple(run, machines)

@@ -187,15 +187,6 @@ CONFIG['BVT_PERBUILD'] = [
         'CtsMidiTestCases',
 ]
 
-# Test cases relying on USB stick to be removed should enable servo
-CONFIG['NEEDS_DISK_EJECT'] = [
-        'CtsAppSecurityHostTestCases',
-        'CtsJobSchedulerTestCases',
-        'CtsMediaTestCases',
-        'CtsOsTestCases',
-        'CtsProviderTestCases',
-        'CtsProviderUiTestCases',
-]
 
 CONFIG['NEEDS_POWER_CYCLE'] = [
         'CtsAppTestCases',
@@ -377,6 +368,10 @@ CONFIG['SPLIT_BY_VM_FORCE_MAX_RESOLUTION'] = [
         'CtsAccessibilityServiceTestCases',
 ]
 
+# Run `eject` for (and only for) each device with RM=1 in lsblk output.
+_EJECT_REMOVABLE_DISK_COMMAND = (
+        "\'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject\'")
+
 _WIFI_CONNECT_COMMANDS_V2 = [
         # These needs to be in order.
         "'adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass))",
@@ -396,7 +391,13 @@ CONFIG['PRECONDITION'] = {
             [_SECURITY_PARANOID_COMMAND, _CONFIG_MODULE_COMMAND],
 }
 
-CONFIG['LOGIN_PRECONDITION'] = {}
+CONFIG['LOGIN_PRECONDITION'] = {
+        'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+        'CtsJobSchedulerTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+        'CtsMediaTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+        'CtsOsTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+        'CtsProviderTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
+}
 
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {

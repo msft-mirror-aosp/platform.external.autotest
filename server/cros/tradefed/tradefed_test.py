@@ -254,17 +254,6 @@ class TradefedTest(test.test):
                 bundle)
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
-        # Make sure USB key is invisible to the device.
-        if self._hosts[0].servo:
-            self._hosts[0].servo.switch_usbkey('off')
-            logging.info("servo switched usb key off")
-            try:
-                self._hosts[0].servo.set('aux_usbkey_pwr', 'off')
-                logging.info('servo turned aux off')
-            except Exception as e:
-                logging.exception('Failed to power off aux_usbkey_pwr')
-        else:
-            logging.error('no servo')
 
     def _output_perf(self):
         """Output performance values."""

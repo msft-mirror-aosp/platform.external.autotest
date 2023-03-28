@@ -148,6 +148,9 @@ class ChameleonConnection(object):
         self._ready_test_name = ready_test_name
         self._chameleond_proxy = None
 
+    def get_hostname(self):
+        """Get hostname."""
+        return self._hostname
 
     def _create_server_proxy(self):
         """Creates the chameleond server proxy.
@@ -367,6 +370,9 @@ class ChameleonBoard(object):
         """Reboots Chameleon board."""
         self._chameleond_proxy.Reboot()
 
+    def get_network_address(self):
+        """Get the network address, could be either hostname or IP given locally."""
+        return self.host.hostname if self.host else self._chameleond_proxy.get_hostname()
 
     def get_bt_commit_hash(self):
         """ Read the current git commit hash of chameleond."""

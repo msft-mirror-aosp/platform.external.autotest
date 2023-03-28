@@ -1,0 +1,27 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+NAME = "audio_RebootChameleon.audiocable"
+METADATA = {
+    "contacts": ["crosep-intertech@google.com"],
+    "bug_component": "b:1280385",
+    "criteria": "This test will trigger chameleon reboot.",
+    "doc" : "Reboot chameleon per test bed type within the audio pool."
+}
+
+ATTRIBUTES = "suite:audio_advanced"
+DEPENDENCIES = "audio_cable, chameleon_state:WORKING"
+JOB_RETRIES = 0
+TEST_TYPE = "server"
+
+args_dict = utils.args_to_dict(args)
+chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)
+
+def run(machine):
+    host = hosts.create_host(machine, chameleon_args=chameleon_args)
+    job.run_test("audio_RebootChameleon", host=host, tag="audiocable")
+
+parallel_simple(run, machines)

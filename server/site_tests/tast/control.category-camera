@@ -13,6 +13,13 @@ ATTRIBUTES = 'suite:bvt-tast-cq-camera, suite:bvt-tast-cq-cft-camera'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 
+METADATA = {
+    'contacts': ['chromeos-camera-eng@google.com'],
+    'bug_component': 'b:167281', # ChromeOS > Platform > Technologies > Camera
+    'criteria': 'Run camera tests and tests depends on camera',
+}
+
+
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
@@ -39,7 +46,7 @@ def run(machine):
                  test_exprs=['('
                              '"group:mainline" && '
                              '!informational && '
-                             '"name:camera.*"'
+                             '("name:camera.*" || "group:camera_dependent")'
                              ')'],
                  ignore_test_failures=False, max_run_sec=1800,
                  command_args=args,

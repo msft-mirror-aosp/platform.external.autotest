@@ -68,6 +68,9 @@ def run(machine):
     if 'chameleon_ssh_port' in args_dict:
         chameleon_ssh_port = args_dict['chameleon_ssh_port']
         varslist.append(f'graphics.chameleon_ssh_port={chameleon_ssh_port}')
+    if 'connected_ports' in args_dict:
+        connected_ports = args_dict['connected_ports']
+        varslist.append(f'graphics.connected_ports={connected_ports}')
 
     logging.info(f'Running IGT with args: {args} and varslist: {varslist}')
 

@@ -47,7 +47,8 @@ class firmware_RollbackFirmware(FirmwareTest):
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected firmware B boot and rollback firmware B.")
-        self.check_state((self.checkers.mode_checker, 'dev'))
+        self.check_state(
+                (self.checkers.mode_checker, 'dev' if dev_mode else 'normal'))
         self.check_state((self.checkers.fw_tries_checker, ('B', False)))
         version_b = self.faft_client.bios.get_version('b')
         logging.info("Change B version from %d to %d.", version_b,

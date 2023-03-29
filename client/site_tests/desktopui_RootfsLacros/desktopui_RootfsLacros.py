@@ -5,6 +5,7 @@
 
 import logging
 import os
+import shutil
 import time
 
 from autotest_lib.client.bin import test
@@ -34,21 +35,26 @@ class desktopui_RootfsLacros(test.test):
         browser_args = [
                 '--lacros-selection=rootfs', '--enable-features=LacrosSupport',
                 '--enable-features=LacrosPrimary',
+                '--enable-features=LacrosOnly',
+                '--enable-features=LacrosProfileMigrationForceOff',
                 '--disable-lacros-keep-alive', '--disable-login-lacros-opening'
         ]
 
-        with chrome.Chrome(autotest_ext=True,
-                           dont_override_profile=dont_override_profile,
-                           username=username,
-                           password=password,
-                           extra_browser_args=browser_args) as cr:
+        try:
+            # Don't use a context manager to make sure we can save the lacros
+            # logs before Chrome is closed.
+            cr = chrome.Chrome(autotest_ext=True,
+                               dont_override_profile=dont_override_profile,
+                               username=username,
+                               password=password,
+                               extra_browser_args=browser_args)
             # Use chrome.automation API to drive UI.
             self.ui = ui_utils.UI_Handler()
             self.ui.start_ui_root(cr)
 
-            # Click the shelf button for lacors.
-            self.ui.wait_for_ui_obj('Lacros', role='button')
-            self.ui.doDefault_on_obj('Lacros', role='button')
+            # Click the shelf button for lacros.
+            self.ui.wait_for_ui_obj('Chrome', role='button')
+            self.ui.doDefault_on_obj('Chrome', role='button')
 
             # Check that lacros process is running.
             try:
@@ -75,3 +81,11 @@ class desktopui_RootfsLacros(test.test):
                 utils.poll_for_condition(condition=self.is_lacros_running)
             except utils.TimeoutError:
                 raise error.TestFail('No Lacros processes running after 10s')
+        finally:
+            # Save lacros logs for debugging.
+            log_path = '/home/chronos/user/lacros/lacros.log'
+            if os.path.exists(log_path):
+                shutil.copy(log_path, self.resultsdir)
+            else:
+                logging.info('Lacros logs not found')
+            cr.close()

@@ -95,7 +95,10 @@ class firmware_FAFTSetup(FirmwareTest):
 
         stdout = io.StringIO()
         self._client.run(['crossystem', 'mainfw_type'], stdout_tee=stdout)
-        self.check_state(lambda: stdout.getvalue() == 'recovery')
+        if stdout.getvalue() != 'recovery':
+            raise error.TestError(
+                    'Reboot to rec - expected fw type recovery, got %s.' %
+                    stdout.getvalue())
 
         logging.info("Check cold boot")
         self.run_shutdown_cmd()

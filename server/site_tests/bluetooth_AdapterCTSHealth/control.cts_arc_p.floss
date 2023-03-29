@@ -18,9 +18,9 @@ METADATA = {
     'hw_agnostic': False,
 }
 
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth_state:NORMAL, arc'
+DEPENDENCIES = 'arc'
 
 
 args_dict = utils.args_to_dict(args)

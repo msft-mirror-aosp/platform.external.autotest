@@ -32,7 +32,8 @@ def run_faftrpc(machine):
                  cmdline_args=args,
                  disable_sysinfo=True,
                  category_under_test="ec",
-                 reboot_after_completion=True
+                 reboot_after_completion=True,
+                 tag='ec',
                  )
 
 parallel_simple(run_faftrpc, machines)

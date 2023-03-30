@@ -38,6 +38,6 @@ def run(machine):
     num_iterations = int(args_dict.get("num_iterations", 1))
 
     job.run_test("firmware_Cr50InvalidateRW", host=host,
-                 iterations=num_iterations)
+                 iterations=num_iterations, tag='faft_cr50_tot')
 
 parallel_simple(run, machines)

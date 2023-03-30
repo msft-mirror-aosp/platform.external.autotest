@@ -34,6 +34,6 @@ def run(machine):
                  test_exe="system_is_locked.sh",
                  test_exe_args=test_images,
                  enable_hardware_write_protect=True,
-                 enable_software_write_protect=True)
+                 enable_software_write_protect=True, tag='SystemIsLocked')
 
 parallel_simple(run, machines)

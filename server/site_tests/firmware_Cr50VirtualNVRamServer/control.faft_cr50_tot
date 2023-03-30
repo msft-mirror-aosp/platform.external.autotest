@@ -34,6 +34,6 @@ args_dict['tot_test_run'] = 'true'
 
 def run_test(machine):
     host = hosts.create_host(machine)
-    job.run_test('firmware_Cr50VirtualNVRamServer', host=host)
+    job.run_test('firmware_Cr50VirtualNVRamServer', host=host, tag='faft_cr50_tot')
 
 parallel_simple(run_test, machines)

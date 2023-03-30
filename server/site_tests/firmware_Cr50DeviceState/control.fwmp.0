@@ -38,6 +38,6 @@ def run(machine):
     iterations = int(args_dict.get("iterations", 1))
 
     job.run_test("firmware_Cr50DeviceState", host=host, cmdline_args=args,
-                 full_args=args_dict, iterations=iterations, fwmp="0")
+                 full_args=args_dict, iterations=iterations, fwmp="0", tag='fwmp.0')
 
 parallel_simple(run, machines)

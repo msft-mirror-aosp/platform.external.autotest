@@ -27,6 +27,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run_recoverystress(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("firmware_RecoveryStress", host=host, cmdline_args=args,
-                 disable_sysinfo=True, reboot_iterations=15, mode="rec")
+                 disable_sysinfo=True, reboot_iterations=15, mode="rec", tag="rec")
 
 parallel_simple(run_recoverystress, machines)

@@ -34,6 +34,6 @@ args_dict['tot_test_run'] = 'true'
 
 def run(machine):
     host = hosts.create_host(machine)
-    job.run_test("firmware_Cr50PinWeaverServer", host=host, cmdline_args=args)
+    job.run_test("firmware_Cr50PinWeaverServer", host=host, cmdline_args=args, tag='faft_cr50_tot')
 
 parallel_simple(run, machines)

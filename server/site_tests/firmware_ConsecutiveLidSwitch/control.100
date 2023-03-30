@@ -31,6 +31,6 @@ args.append('faft_iterations=100')
 def run_consecutive_lid_switch(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("firmware_ConsecutiveLidSwitch",
-                 host=host, cmdline_args=args, disable_sysinfo=True)
+                 host=host, cmdline_args=args, disable_sysinfo=True, tag="100")
 
 parallel_simple(run_consecutive_lid_switch, machines)

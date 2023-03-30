@@ -33,6 +33,6 @@ def run_test(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     iterations = int(args_dict.get("iterations", 1))
     job.run_test('firmware_Cr50U2fCommands', host=host, cmdline_args=args,
-                 iterations=iterations)
+                 iterations=iterations, tag='faft_cr50_tot')
 
 parallel_simple(run_test, machines)

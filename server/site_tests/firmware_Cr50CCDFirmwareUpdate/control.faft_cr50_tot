@@ -35,6 +35,6 @@ args_dict['tot_test_run'] = 'true'
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test('firmware_Cr50CCDFirmwareUpdate', host=host, cmdline_args=args,
-                 full_args=args_dict, rw_only=False)
+                 full_args=args_dict, rw_only=False, tag='faft_cr50_tot')
 
 parallel_simple(run, machines)

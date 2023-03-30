@@ -37,6 +37,6 @@ def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("firmware_Fingerprint", host=host,
                  test_exe="ro_only_boots_valid_rw.sh",
-                 test_exe_args=test_images)
+                 test_exe_args=test_images, tag='ROOnlyBootsValidRW')
 
 parallel_simple(run, machines)

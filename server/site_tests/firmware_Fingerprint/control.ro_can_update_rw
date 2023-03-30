@@ -34,6 +34,6 @@ def run(machine):
     job.run_test("firmware_Fingerprint", host=host,
                  test_exe="ro_can_update_rw.sh",
                  test_exe_args=test_images,
-                 use_dev_signed_fw=True)
+                 use_dev_signed_fw=True, tag='ROCanUpdateRW')
 
 parallel_simple(run, machines)

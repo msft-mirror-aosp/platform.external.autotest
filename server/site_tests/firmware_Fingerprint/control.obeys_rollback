@@ -37,6 +37,6 @@ def run(machine):
     job.run_test("firmware_Fingerprint", host=host,
                  test_exe="obeys_rollback.sh",
                  test_exe_args=test_images,
-                 use_dev_signed_fw=True)
+                 use_dev_signed_fw=True, tag='ObeysRollback')
 
 parallel_simple(run, machines)

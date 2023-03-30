@@ -30,6 +30,6 @@ def run(machine):
     iterations = int(args_dict.get("iterations", 1))
 
     job.run_test("firmware_Cr50Keygen", host=host, cmdline_args=args,
-                 key_type="ecc", iterations=iterations)
+                 key_type="ecc", iterations=iterations, tag='ecc')
 
 parallel_simple(run, machines)

@@ -30,6 +30,6 @@ test_images = [ 'TEST_IMAGE_DEV' ]
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("firmware_Fingerprint", host=host,
-                 test_exe="rw_no_update_ro.sh", test_exe_args=test_images)
+                 test_exe="rw_no_update_ro.sh", test_exe_args=test_images, tag='RWNoUpdateRO')
 
 parallel_simple(run, machines)

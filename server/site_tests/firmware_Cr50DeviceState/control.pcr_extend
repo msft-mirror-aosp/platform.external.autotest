@@ -39,6 +39,6 @@ def run(machine):
 
     job.run_test("firmware_Cr50DeviceState", host=host, cmdline_args=args,
                  full_args=args_dict, iterations=iterations, fwmp="0x41",
-                 pcr_extend=True)
+                 pcr_extend=True, tag='pcr_extend')
 
 parallel_simple(run, machines)

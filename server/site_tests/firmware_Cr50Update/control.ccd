@@ -75,6 +75,6 @@ def run(machine):
                  release_path=release_path, release_ver=release_ver,
                  old_release_path=old_release_path,
                  old_release_ver=old_release_ver, test="ccd",
-                 iterations=iterations, full_args=args_dict)
+                 iterations=iterations, full_args=args_dict, tag='ccd')
 
 parallel_simple(run, machines)

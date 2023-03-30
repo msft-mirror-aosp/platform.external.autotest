@@ -34,6 +34,6 @@ def run(machine):
                              pdtester_args=pdtester_args)
     job.run_test("firmware_PDResetSoft", host=host, cmdline_args=args,
                  disable_sysinfo=True, flip_cc=False, dts_mode=False,
-                 init_power_mode="shutdown", tag="normal")
+                 init_power_mode="shutdown", tag="shutdown")
 
 parallel_simple(run, machines)

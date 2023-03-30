@@ -33,7 +33,8 @@ def run_faftmodetransitions(machine):
             host=host,
             cmdline_args=args,
             disable_sysinfo=True,
-            mode_seq=["normal", "dev", "rec", "normal", "rec", "dev", "normal"])
+            mode_seq=["normal", "dev", "rec", "normal", "rec", "dev", "normal"],
+            tag='all_single')
 
 
 parallel_simple(run_faftmodetransitions, machines)

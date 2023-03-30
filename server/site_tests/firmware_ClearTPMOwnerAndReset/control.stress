@@ -30,6 +30,6 @@ def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
     job.run_test("firmware_ClearTPMOwnerAndReset", host=host, cmdline_args=args,
-                 iterations=iterations)
+                 iterations=iterations, tag="stress")
 
 parallel_simple(run, machines)

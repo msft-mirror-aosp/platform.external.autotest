@@ -42,6 +42,6 @@ def run(machine):
 
     job.run_test("firmware_Cr50Open", host=host, cmdline_args=args,
                  ccd_open_restricted=ccd_open_restricted,
-                 full_args=args_dict, iterations=iterations)
+                 full_args=args_dict, iterations=iterations, tag='ccd_open_unrestricted')
 
 parallel_simple(run, machines)

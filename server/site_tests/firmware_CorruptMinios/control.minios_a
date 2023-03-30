@@ -30,6 +30,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("firmware_CorruptMinios", host=host, cmdline_args=args,
-                 disable_sysinfo=True, minios_section='a')
+                 disable_sysinfo=True, minios_section='a', tag='minios_a')
 
 parallel_simple(run, machines)

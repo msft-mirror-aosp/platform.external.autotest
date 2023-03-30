@@ -35,6 +35,6 @@ def run_firmwareupdate(machine):
     # Setup the client machine.
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test('firmware_FWupdate', test_name=NAME, host=host,
-                 cmdline_args=args)
+                 cmdline_args=args, tag='downgrade_rw')
 
 parallel_simple(run_firmwareupdate, machines)

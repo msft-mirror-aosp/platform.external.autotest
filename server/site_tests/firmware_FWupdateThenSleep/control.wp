@@ -33,6 +33,6 @@ def run_firmwareupdate(machine):
     # Setup the client machine.
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test('firmware_FWupdateThenSleep', host=host, cmdline_args=args,
-                 wp=1)
+                 wp=1, tag='wp')
 
 parallel_simple(run_firmwareupdate, machines)

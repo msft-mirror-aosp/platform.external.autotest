@@ -31,6 +31,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run_fwscreenpresspower(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("firmware_FwScreenPressPower", host=host, cmdline_args=args,
-                 disable_sysinfo=True, dev_mode=True, tag="dev")
+                 disable_sysinfo=True, dev_mode=True)
 
 parallel_simple(run_fwscreenpresspower, machines)

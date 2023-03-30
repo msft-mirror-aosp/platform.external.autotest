@@ -24,6 +24,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("firmware_Fingerprint", host=host, test_exe="reboot_to_ro.sh")
+    job.run_test("firmware_Fingerprint", host=host, test_exe="reboot_to_ro.sh", tag='RebootToRO')
 
 parallel_simple(run, machines)

@@ -38,6 +38,6 @@ def run(machine):
     iterations = int(args_dict.get("iterations", 1))
 
     job.run_test("firmware_Cr50Unlock", host=host, cmdline_args=args,
-                 full_args=args_dict, iterations=iterations)
+                 full_args=args_dict, iterations=iterations, tag='faft_cr50_tot')
 
 parallel_simple(run, machines)

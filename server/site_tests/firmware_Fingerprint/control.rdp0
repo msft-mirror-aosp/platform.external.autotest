@@ -38,6 +38,6 @@ def run(machine):
                  # the original firmware that was flashed and the value that is
                  # read.
                  force_firmware_flashing=True,
-                 init_entropy=False)
+                 init_entropy=False, tag='RDP0')
 
 parallel_simple(run, machines)

@@ -35,6 +35,6 @@ def run(machine):
     reset_type = args_dict.get("reset_type", "reboot")
 
     job.run_test("firmware_Cr50DeepSleepStress", host=host, cmdline_args=args,
-                 suspend_count=suspend_count, reset_type=reset_type, fwmp=fwmp)
+                 suspend_count=suspend_count, reset_type=reset_type, fwmp=fwmp, tag='reboot')
 
 parallel_simple(run, machines)

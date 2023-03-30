@@ -36,6 +36,6 @@ def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
     job.run_test("firmware_Cr50RejectUpdate", host=host, cmdline_args=args,
-                 full_args=args_dict)
+                 full_args=args_dict, tag='faft_cr50_tot')
 
 parallel_simple(run, machines)

@@ -42,6 +42,6 @@ def run(machine):
                  test_exe="rdp1.sh",
                  test_exe_args=test_images,
                  enable_hardware_write_protect=False,
-                 enable_software_write_protect=True)
+                 enable_software_write_protect=True, tag='RDP1')
 
 parallel_simple(run, machines)

@@ -31,7 +31,8 @@ def run_faftrpc(machine):
                  host=host,
                  cmdline_args=args,
                  disable_sysinfo=True,
-                 category_under_test="system"
+                 category_under_test="system",
+                 tag='system',
                  )
 
 parallel_simple(run_faftrpc, machines)

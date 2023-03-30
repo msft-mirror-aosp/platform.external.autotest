@@ -39,6 +39,6 @@ def run_firmwareupdate(machine):
     host = hosts.create_host(machine, servo_args=servo_args,
                              pdtester_args=pdtester_args)
     job.run_test('firmware_FWupdateThenSleep', host=host, cmdline_args=args,
-                 battery_only=True, wp=1)
+                 battery_only=True, wp=1, tag='batteryonly')
 
 parallel_simple(run_firmwareupdate, machines)

@@ -697,9 +697,9 @@ class firmware_Cr50DeviceState(Cr50Test):
     def cleanup(self):
         """Clear the fwmp."""
         try:
-            self.gsc.ccd_reset_and_wipe_tpm()
             self._try_to_bring_dut_up()
             self.clear_fwmp()
+            self.gsc.ccd_reset_and_wipe_tpm()
         finally:
             super(firmware_Cr50DeviceState, self).cleanup()
 

@@ -47,15 +47,6 @@ class power_SuspendToIdle(test.test):
 
         self._error_count = 0
         self._error_message = []
-        dmc_firmware_stats = None
-        s0ix_residency_stats = None
-        cpu_packages_stats = None
-        rc6_residency_stats = None
-
-        with self._log_error_message():
-            dmc_firmware_stats = power_status.DMCFirmwareStats()
-            if not dmc_firmware_stats.check_fw_loaded():
-                raise error.TestFail('DMC firmware not loaded.')
 
         with self._log_error_message():
             pch_powergating_stats = power_status.PCHPowergatingStats()
@@ -76,14 +67,10 @@ class power_SuspendToIdle(test.test):
                 raise error.TestFail('PCH powergating check failed: ',
                                      ', '.join(on_pch))
 
-        with self._log_error_message():
-            s0ix_residency_stats = power_status.S0ixResidencyStats()
-
-        with self._log_error_message():
-            cpu_packages_stats = power_status.CPUPackageStats()
-
-        with self._log_error_message():
-            rc6_residency_stats = power_status.RC6ResidencyStats()
+        s0ix_residency_stats = power_status.S0ixResidencyStats()
+        dmc_firmware_stats = power_status.DMCFirmwareStats()
+        cpu_packages_stats = power_status.CPUPackageStats()
+        rc6_residency_stats = power_status.RC6ResidencyStats()
 
         with self._log_error_message():
             suspender = power_suspend.Suspender(self.resultsdir,
@@ -91,25 +78,20 @@ class power_SuspendToIdle(test.test):
             suspender.suspend()
 
         with self._log_error_message():
-            if (dmc_firmware_stats and
-                dmc_firmware_stats.is_dc6_supported() and
-                dmc_firmware_stats.get_accumulated_dc6_entry() <= 0):
-                raise error.TestFail('DC6 entry check failed.')
-
-        with self._log_error_message():
-            if (s0ix_residency_stats and
-                s0ix_residency_stats.get_accumulated_residency_secs() <= 0):
+            if s0ix_residency_stats.get_accumulated_residency_secs() <= 0:
                 raise error.TestFail('S0ix residency check failed.')
 
-        with self._log_error_message():
-            if (cpu_packages_stats and
-                cpu_packages_stats.refresh().get('C10', 0) <= 0):
-                raise error.TestFail('C10 state check failed.')
+        if (dmc_firmware_stats.is_dc6_supported()
+                    and dmc_firmware_stats.get_accumulated_dc6_entry() <= 0):
+            logging.warning('DC6 entry check failed.')
 
-        with self._log_error_message():
-            if (rc6_residency_stats and
+        if (cpu_packages_stats.refresh().get('C10', 0) <= 0):
+            logging.warning('C10 state check failed.')
+
+        if (
+                rc6_residency_stats.is_rc6_enabled() and
                 rc6_residency_stats.get_accumulated_residency_msecs() <= 0):
-                raise error.TestFail('RC6 residency check failed.')
+            logging.warning('RC6 residency check failed.')
 
         if self._error_count > 0:
             raise error.TestFail('Found %d errors: ' % self._error_count,

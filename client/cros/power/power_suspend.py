@@ -112,6 +112,18 @@ class Suspender(object):
     # (b/79442787) Ignore these uarch for s0ix residency counter checking
     _IGNORE_S0IX_RESIDENCY_CHECK = ['Skylake']
 
+    # Attribute to control autosuspend
+    _AUTOSUSPEND_CONTROL = 'power/control'
+
+    # Attribute value that disables autosuspend
+    _AUTOSUSPEND_DISABLE = 'on'
+
+    # Dictionary of board-specific autosuspend paths to disable.
+    _AUTOSUSPEND_DISABLE_PATHS = {
+            'skyrim':
+            ['/sys/devices/pci0000:00/0000:00:08.3/0000:04:00.0/usb5/5-1']
+    }
+
     def __init__(self, logdir, method=sys_power.do_suspend,
                  throw=False, device_times=False, suspend_state=''):
         """
@@ -576,6 +588,29 @@ class Suspender(object):
         logging.warning('Could not match with base log; ignoring base log')
         return log
 
+    def _force_disable_autosuspend(self, device_paths):
+        """Force autosuspend disabled for some devices.
+
+        USB autosuspend can interfere with suspend because wake from autosuspend
+        is considered a wake event. Thus, any traffic on an idle USB device that
+        happens between when we read the wakeup count and when we start kernel
+        suspend could cause suspend to be cancelled.
+
+        @param device_paths: List of device paths for which autosuspend should
+                             be disabled. The given device path must be exact as
+                             we will only search for `power/control` at that
+                             spot.
+        """
+        for path in device_paths:
+            control_path = os.path.join(path, self._AUTOSUSPEND_CONTROL)
+            try:
+                with open(control_path, 'w') as f:
+                    f.write(self._AUTOSUSPEND_DISABLE)
+                    logging.info('Disabled autosuspend on %s', control_path)
+            except Exception as e:
+                logging.debug('Could not disable autosuspend on path %s: %s',
+                              control_path, str(e))
+                continue
 
     def suspend(self, duration=10, ignore_kernel_warns=False,
                 measure_arc=False):
@@ -610,6 +645,11 @@ class Suspender(object):
                 utils.open_write_close(self.HWCLOCK_FILE, '')
                 self._reset_logs()
                 utils.system('sync')
+                # TODO(b/277074940) - Temporary workaround until we get rid of
+                # sending wakeup counts to powerd_dbus_suspend.
+                self._force_disable_autosuspend(
+                        self._AUTOSUSPEND_DISABLE_PATHS.get(
+                                self._get_board(), []))
                 board_delay = self.get_suspend_delay()
                 # Clear the ARC logcat to make parsing easier.
                 if measure_arc:

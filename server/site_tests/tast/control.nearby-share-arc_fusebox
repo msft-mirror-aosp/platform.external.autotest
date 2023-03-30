@@ -11,7 +11,7 @@ METADATA = {
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:nearby-share-arc_fusebox'
+ATTRIBUTES = 'suite:nearby-share-arc'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

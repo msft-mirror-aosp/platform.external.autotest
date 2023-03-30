@@ -1510,6 +1510,7 @@ class TradefedTest(test.test):
                                    media_asset=None,
                                    enable_default_apps=False,
                                    vm_force_max_resolution=False,
+                                   vm_tablet_mode=False,
                                    target_module=None,
                                    target_plan=None,
                                    executable_test_count=None,
@@ -1603,9 +1604,15 @@ class TradefedTest(test.test):
                     logging.info('No back camera. Skipping back-camera collect-tests.')
                     return
 
+                if vm_tablet_mode:
+                    self._run_commands([
+                            'inject_powerd_input_event --code=tablet --value=1'
+                    ],
+                                       ignore_status=True)
+
                 # TODO(kinaba): Make it a general config (per-model choice
                 # of tablet,clamshell,default) if the code below works.
-                if utils.is_in_container() and not client_utils.is_moblab():
+                elif utils.is_in_container() and not client_utils.is_moblab():
                     # Force laptop mode for non TABLET_MODE_BOARDS
                     if not self._is_tablet_mode_device():
                         self._run_commands(

@@ -368,6 +368,11 @@ CONFIG['SPLIT_BY_VM_FORCE_MAX_RESOLUTION'] = [
         'CtsAccessibilityServiceTestCases',
 ]
 
+# Modules that need to be tested for tablet mode in VM.
+CONFIG['SPLIT_BY_VM_TABLET_MODE'] = [
+        'CtsWindowManagerDeviceTestCases',
+]
+
 # Run `eject` for (and only for) each device with RM=1 in lsblk output.
 _EJECT_REMOVABLE_DISK_COMMAND = (
         "\'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject\'")

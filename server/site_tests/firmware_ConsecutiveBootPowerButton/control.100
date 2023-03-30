@@ -7,9 +7,9 @@ from autotest_lib.server import utils
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_ConsecutiveBootPowerButton.100"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Servo based consecutive boot test (100 iterations)"
+    "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Servo based consecutive boot test (100 iterations)",
 }
 ATTRIBUTES = "suite:faft_stress"
 DEPENDENCIES = "servo_state:WORKING"
@@ -26,12 +26,19 @@ Runs 100 boot iterations.
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
-args.append('faft_iterations=100')
+args.append("faft_iterations=100")
+
 
 def run_consecutive_boot(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("firmware_ConsecutiveBootPowerButton",
-                 host=host, cmdline_args=args,
-                 disable_sysinfo=True, dev_mode=False, tag="100")
+    job.run_test(
+        "firmware_ConsecutiveBootPowerButton",
+        host=host,
+        cmdline_args=args,
+        disable_sysinfo=True,
+        dev_mode=False,
+        tag="100",
+    )
+
 
 parallel_simple(run_consecutive_boot, machines)

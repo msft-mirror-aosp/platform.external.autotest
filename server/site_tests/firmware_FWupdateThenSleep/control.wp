@@ -5,10 +5,10 @@
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_FWupdateThenSleep.wp"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "COPY FROM PURPOSE OR CRITERIA",
-        "requirements": ["sys-fw-0024-v01", "sys-fw-0025-v01"],
+    "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "COPY FROM PURPOSE OR CRITERIA",
+    "requirements": ["sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
 ATTRIBUTES = "suite:faft_bios_ro_qual, suite:faft_bios_rw_qual"
 DEPENDENCIES = "servo_state:WORKING"
@@ -29,10 +29,17 @@ from autotest_lib.client.common_lib import utils
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
+
 def run_firmwareupdate(machine):
     # Setup the client machine.
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test('firmware_FWupdateThenSleep', host=host, cmdline_args=args,
-                 wp=1, tag='wp')
+    job.run_test(
+        "firmware_FWupdateThenSleep",
+        host=host,
+        cmdline_args=args,
+        wp=1,
+        tag="wp",
+    )
+
 
 parallel_simple(run_firmwareupdate, machines)

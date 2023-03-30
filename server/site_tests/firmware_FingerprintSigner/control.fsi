@@ -24,8 +24,10 @@ JOB_RETRIES = 0
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
+
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("firmware_FingerprintSigner", host=host, fsi=True, tag='fsi')
+    job.run_test("firmware_FingerprintSigner", host=host, fsi=True, tag="fsi")
+
 
 parallel_simple(run, machines)

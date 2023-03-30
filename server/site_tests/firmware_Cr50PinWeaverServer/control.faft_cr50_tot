@@ -7,9 +7,9 @@ from autotest_lib.server import utils
 AUTHOR = "allenwebb"
 NAME = "firmware_Cr50PinWeaverServer.faft_cr50_tot"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "allenwebb@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Validate PinWeaver functionality on Cr50"
+    "contacts": ["chromeos-faft@google.com", "allenwebb@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Validate PinWeaver functionality on Cr50",
 }
 ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "SHORT"
@@ -30,10 +30,17 @@ TODO(crbug.com/1014572) Drop this control file once suites can inject test args.
 args_dict = utils.args_to_dict(args)
 
 # crbug.com/1014572: Inject test args.
-args_dict['tot_test_run'] = 'true'
+args_dict["tot_test_run"] = "true"
+
 
 def run(machine):
     host = hosts.create_host(machine)
-    job.run_test("firmware_Cr50PinWeaverServer", host=host, cmdline_args=args, tag='faft_cr50_tot')
+    job.run_test(
+        "firmware_Cr50PinWeaverServer",
+        host=host,
+        cmdline_args=args,
+        tag="faft_cr50_tot",
+    )
+
 
 parallel_simple(run, machines)

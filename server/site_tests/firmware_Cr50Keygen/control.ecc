@@ -7,29 +7,39 @@ from autotest_lib.server import utils
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50Keygen.ecc"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify ecc key generation."
+    "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Verify ecc key generation.",
 }
-ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
+ATTRIBUTES = (
+    "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
+)
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
 TEST_TYPE = "server"
 
 DOC = """Verify ecc keygen."""
 
-if 'args_dict' not in locals():
+if "args_dict" not in locals():
     args_dict = {}
 
 args_dict.update(utils.args_to_dict(args))
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
     iterations = int(args_dict.get("iterations", 1))
 
-    job.run_test("firmware_Cr50Keygen", host=host, cmdline_args=args,
-                 key_type="ecc", iterations=iterations, tag='ecc')
+    job.run_test(
+        "firmware_Cr50Keygen",
+        host=host,
+        cmdline_args=args,
+        key_type="ecc",
+        iterations=iterations,
+        tag="ecc",
+    )
+
 
 parallel_simple(run, machines)

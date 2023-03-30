@@ -7,10 +7,10 @@ from autotest_lib.server import utils
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_CorruptBothKernelAB"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Servo based both kernel A and B corruption test",
-        "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
+    "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Servo based both kernel A and B corruption test",
+    "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv3, suite:faft_normal, suite:faft_bios_tot"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
@@ -31,9 +31,16 @@ recovery boot.
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
+
 def run_corruptbothkernelab(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("firmware_CorruptBothKernelAB", host=host, cmdline_args=args,
-                 disable_sysinfo=True, dev_mode=False)
+    job.run_test(
+        "firmware_CorruptBothKernelAB",
+        host=host,
+        cmdline_args=args,
+        disable_sysinfo=True,
+        dev_mode=False,
+    )
+
 
 parallel_simple(run_corruptbothkernelab, machines)

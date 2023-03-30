@@ -7,9 +7,9 @@ from autotest_lib.server import utils
 AUTHOR = "aluo"
 NAME = "firmware_FAFTModeTransitions.normal_u"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "aluo@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Test FAFT ability to switch from normal to another mode and back"
+    "contacts": ["chromeos-faft@google.com", "aluo@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Test FAFT ability to switch from normal to another mode and back",
 }
 ATTRIBUTES = "suite:faft_smoke"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
@@ -30,12 +30,13 @@ def run_faftmodetransitions(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
     job.run_test(
-            "firmware_FAFTModeTransitions",
-            host=host,
-            cmdline_args=args,
-            disable_sysinfo=True,
-            mode_seq=["normal", "dev", "normal", "rec", "normal"],
-            tag='normal_u')
+        "firmware_FAFTModeTransitions",
+        host=host,
+        cmdline_args=args,
+        disable_sysinfo=True,
+        mode_seq=["normal", "dev", "normal", "rec", "normal"],
+        tag="normal_u",
+    )
 
 
 parallel_simple(run_faftmodetransitions, machines)

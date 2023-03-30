@@ -7,9 +7,9 @@ from autotest_lib.server import utils
 AUTHOR = "Cr50 FW team"
 NAME = "firmware_Cr50CCDUartStress.main.cr50"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Uart Stress Test the main servo cr50 console"
+    "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Uart Stress Test the main servo cr50 console",
 }
 ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "MEDIUM"
@@ -22,15 +22,23 @@ This test runs 'uart_stress_tester.py' and checks if there are any characters
 lost.
 """
 
-if 'args_dict' not in locals():
+if "args_dict" not in locals():
     args_dict = {}
 
 args_dict.update(utils.args_to_dict(args))
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
+
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test('firmware_Cr50CCDUartStress', host=host, cmdline_args=args,
-                 duration=600, console='cr50', tag='main.cr50')
+    job.run_test(
+        "firmware_Cr50CCDUartStress",
+        host=host,
+        cmdline_args=args,
+        duration=600,
+        console="cr50",
+        tag="main.cr50",
+    )
+
 
 parallel_simple(run, machines)

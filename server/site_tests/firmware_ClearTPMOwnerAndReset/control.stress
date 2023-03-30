@@ -5,9 +5,9 @@
 AUTHOR = "mruthven"
 NAME = "firmware_ClearTPMOwnerAndReset.stress"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify normal boot after clearing the tpm owner and rebooting the ec"
+    "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Verify normal boot after clearing the tpm owner and rebooting the ec",
 }
 # TODO(b/77292177): add to faft_cr50 once the issue has been addressed.
 TIME = "SHORT"
@@ -26,10 +26,17 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 iterations = int(args_dict.get("iterations", 10))
 
+
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
-    job.run_test("firmware_ClearTPMOwnerAndReset", host=host, cmdline_args=args,
-                 iterations=iterations, tag="stress")
+    job.run_test(
+        "firmware_ClearTPMOwnerAndReset",
+        host=host,
+        cmdline_args=args,
+        iterations=iterations,
+        tag="stress",
+    )
+
 
 parallel_simple(run, machines)

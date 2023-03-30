@@ -21,23 +21,29 @@ TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"
 JOB_RETRIES = 0
 
-test_images = [ 'TEST_IMAGE_ORIGINAL' ]
+test_images = ["TEST_IMAGE_ORIGINAL"]
 
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
+
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("firmware_Fingerprint", host=host,
-                 test_exe="rdp0.sh",
-                 test_exe_args=test_images,
-                 enable_hardware_write_protect=False,
-                 enable_software_write_protect=False,
-                 # This test requires a forced flash without entropy
-                 # initialization to ensure that we get an exact match between
-                 # the original firmware that was flashed and the value that is
-                 # read.
-                 force_firmware_flashing=True,
-                 init_entropy=False, tag='RDP0')
+    job.run_test(
+        "firmware_Fingerprint",
+        host=host,
+        test_exe="rdp0.sh",
+        test_exe_args=test_images,
+        enable_hardware_write_protect=False,
+        enable_software_write_protect=False,
+        # This test requires a forced flash without entropy
+        # initialization to ensure that we get an exact match between
+        # the original firmware that was flashed and the value that is
+        # read.
+        force_firmware_flashing=True,
+        init_entropy=False,
+        tag="RDP0",
+    )
+
 
 parallel_simple(run, machines)

@@ -7,9 +7,9 @@ from autotest_lib.server import utils
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50InvalidateRW.faft_cr50_tot"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify the inactive cr50 header is corrupted after login"
+    "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Verify the inactive cr50 header is corrupted after login",
 }
 ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "MEDIUM"
@@ -30,14 +30,20 @@ TODO(crbug.com/1014572) Drop this control file once suites can inject test args.
 args_dict = utils.args_to_dict(args)
 
 # crbug.com/1014572: Inject test args.
-args_dict['tot_test_run'] = 'true'
+args_dict["tot_test_run"] = "true"
+
 
 def run(machine):
     host = hosts.create_host(machine)
 
     num_iterations = int(args_dict.get("num_iterations", 1))
 
-    job.run_test("firmware_Cr50InvalidateRW", host=host,
-                 iterations=num_iterations, tag='faft_cr50_tot')
+    job.run_test(
+        "firmware_Cr50InvalidateRW",
+        host=host,
+        iterations=num_iterations,
+        tag="faft_cr50_tot",
+    )
+
 
 parallel_simple(run, machines)

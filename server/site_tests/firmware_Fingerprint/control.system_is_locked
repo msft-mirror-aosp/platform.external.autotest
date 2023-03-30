@@ -23,17 +23,23 @@ TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"
 JOB_RETRIES = 0
 
-test_images = ['TEST_IMAGE_ORIGINAL']
+test_images = ["TEST_IMAGE_ORIGINAL"]
 
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
+
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("firmware_Fingerprint", host=host,
-                 test_exe="system_is_locked.sh",
-                 test_exe_args=test_images,
-                 enable_hardware_write_protect=True,
-                 enable_software_write_protect=True, tag='SystemIsLocked')
+    job.run_test(
+        "firmware_Fingerprint",
+        host=host,
+        test_exe="system_is_locked.sh",
+        test_exe_args=test_images,
+        enable_hardware_write_protect=True,
+        enable_software_write_protect=True,
+        tag="SystemIsLocked",
+    )
+
 
 parallel_simple(run, machines)

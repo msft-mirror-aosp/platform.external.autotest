@@ -5,9 +5,9 @@
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50Update.post_install"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify Cr50 update"
+    "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Verify Cr50 update",
 }
 ATTRIBUTES = "suite:faft_cr50_experimental, suite:faft_ti50_qual,suite:faft_gsc_nightly,suite:faft_cr50_pvt,suite:faft_cr50_prepvt"
 TIME = "SHORT"
@@ -64,7 +64,7 @@ device.
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
 
-if 'args_dict' not in locals():
+if "args_dict" not in locals():
     args_dict = {}
 
 args_dict.update(utils.args_to_dict(args))
@@ -76,13 +76,23 @@ old_release_ver = args_dict.get("old_release_ver", "")
 release_path = args_dict.get("release_path", "")
 release_ver = args_dict.get("release_ver", "")
 
+
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
-    job.run_test("firmware_Cr50Update", host=host, cmdline_args=args,
-                 release_path=release_path, release_ver=release_ver,
-                 old_release_path=old_release_path,
-                 old_release_ver=old_release_ver, test="post_install",
-                 iterations=iterations, full_args=args_dict, tag='post_install')
+    job.run_test(
+        "firmware_Cr50Update",
+        host=host,
+        cmdline_args=args,
+        release_path=release_path,
+        release_ver=release_ver,
+        old_release_path=old_release_path,
+        old_release_ver=old_release_ver,
+        test="post_install",
+        iterations=iterations,
+        full_args=args_dict,
+        tag="post_install",
+    )
+
 
 parallel_simple(run, machines)

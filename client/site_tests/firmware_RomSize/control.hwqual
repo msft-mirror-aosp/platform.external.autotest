@@ -5,9 +5,9 @@
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_RomSize.hwqual"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Ensure the firmware size is large enough."
+    "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Ensure the firmware size is large enough.",
 }
 ATTRIBUTES = "suite:hwqual"
 TIME = "SHORT"
@@ -17,5 +17,8 @@ DOC = """
 This test relies on dmidecode to find the ROM Size.
 """
 
-job.run_test('firmware_RomSize', constraints=['kb_system_rom_size >= 4096',
-                                              'kb_ec_rom_size >= 128'], tag='hwqual')
+job.run_test(
+    "firmware_RomSize",
+    constraints=["kb_system_rom_size >= 4096", "kb_ec_rom_size >= 128"],
+    tag="hwqual",
+)

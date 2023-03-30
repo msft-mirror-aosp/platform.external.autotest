@@ -25,18 +25,26 @@ JOB_RETRIES = 0
 # This test uses futility and dev keys from autotest/files/server/cros/faft.
 REQUIRE_SSP = True
 
-test_images = [ 'TEST_IMAGE_DEV_RB_ZERO',
-                'TEST_IMAGE_DEV_RB_ONE',
-                'TEST_IMAGE_DEV_RB_NINE']
+test_images = [
+    "TEST_IMAGE_DEV_RB_ZERO",
+    "TEST_IMAGE_DEV_RB_ONE",
+    "TEST_IMAGE_DEV_RB_NINE",
+]
 
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
+
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    job.run_test("firmware_Fingerprint", host=host,
-                 test_exe="obeys_rollback.sh",
-                 test_exe_args=test_images,
-                 use_dev_signed_fw=True, tag='ObeysRollback')
+    job.run_test(
+        "firmware_Fingerprint",
+        host=host,
+        test_exe="obeys_rollback.sh",
+        test_exe_args=test_images,
+        use_dev_signed_fw=True,
+        tag="ObeysRollback",
+    )
+
 
 parallel_simple(run, machines)

@@ -7,11 +7,13 @@ from autotest_lib.server import utils
 AUTHOR = "mruthven"
 NAME = "firmware_Cr50Open.ccd_open_unrestricted"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify cr50 open"
+    "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+    "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
+    "criteria": "Verify cr50 open",
 }
-ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_ti50_qual"
+ATTRIBUTES = (
+    "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_ti50_qual"
+)
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "cr50:prepvt, servo_state:WORKING"
@@ -28,11 +30,12 @@ This test is applicable when ccd open is unrestricted.
 TODO(crbug.com/1014572) Drop separate control files for ccd open state.
 """
 
-if 'args_dict' not in locals():
+if "args_dict" not in locals():
     args_dict = {}
 
 args_dict.update(utils.args_to_dict(args))
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
@@ -40,8 +43,15 @@ def run(machine):
     ccd_open_restricted = args_dict.get("ccd_open_restricted", "false").lower()
     ccd_open_restricted = ccd_open_restricted != "false"
 
-    job.run_test("firmware_Cr50Open", host=host, cmdline_args=args,
-                 ccd_open_restricted=ccd_open_restricted,
-                 full_args=args_dict, iterations=iterations, tag='ccd_open_unrestricted')
+    job.run_test(
+        "firmware_Cr50Open",
+        host=host,
+        cmdline_args=args,
+        ccd_open_restricted=ccd_open_restricted,
+        full_args=args_dict,
+        iterations=iterations,
+        tag="ccd_open_unrestricted",
+    )
+
 
 parallel_simple(run, machines)

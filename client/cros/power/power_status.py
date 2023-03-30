@@ -2993,14 +2993,16 @@ class DMCFirmwareStats(object):
         """
         path = '/sys/kernel/debug/dri/0/i915_dmc_info'
         if not os.path.exists(path):
-            raise error.TestFail('DMC info file not found.')
+            logging.info('DMC info file not found.')
+            return dict()
 
         with open(path, 'r') as f:
             lines = [line.strip() for line in f.readlines()]
 
         # For pre 4.16 kernel. https://git.io/vhThb
         if lines[0] == 'not supported':
-            raise error.TestFail('DMC not supported.')
+            logging.info('DMC not supported.')
+            return dict()
 
         ret = dict()
         for line in lines:
@@ -3018,8 +3020,14 @@ class RC6ResidencyStats(object):
     """
     Collect RC6 residency stats of Intel based system.
     """
+    RC6_ENABLE_PATH = '/sys/class/drm/card0/power/rc6_enable'
+    RC6_RESIDENCY_PATH = '/sys/class/drm/card0/power/rc6_residency_ms'
+
     def __init__(self):
-        self._rc6_enable_checked = False
+        if not self.is_rc6_enabled():
+            logging.info('RC6 is not enabled.')
+            return
+
         self._previous_stat = self._parse_rc6_residency_info()
         self._accumulated_stat = 0
 
@@ -3042,8 +3050,12 @@ class RC6ResidencyStats(object):
     def get_accumulated_residency_msecs(self):
         """Check number of RC6 state entry since the class has been initialized.
 
-        @returns int of RC6 residency in milliseconds since instantiation.
+        @returns int of RC6 residency in milliseconds since instantiation or -1
+                 if not supported/enabled.
         """
+        if not self.is_rc6_enabled():
+            return -1
+
         current_stat = self._parse_rc6_residency_info()
 
         # The problem here is that we cannot assume the rc6_residency_ms is
@@ -3077,36 +3089,43 @@ class RC6ResidencyStats(object):
         self._previous_stat = current_stat
         return self._accumulated_stat
 
-    def _is_rc6_enable(self):
+    def _is_rc6_supported(self):
         """
-        Verified that RC6 is enable.
+        Verify that RC6 is supported.
+
+        @returns Boolean True if RC6 is supported and False otherwise.
+        """
+        return (os.path.exists(self.RC6_ENABLE_PATH)
+                and os.path.exists(self.RC6_RESIDENCY_PATH))
+
+    def is_rc6_enabled(self):
+        """
+        Verified that RC6 is enabled.
 
         @returns Boolean of RC6 enable status.
         @raises error.TestFail if the sysfs file not found.
         """
-        path = '/sys/class/drm/card0/power/rc6_enable'
-        if not os.path.exists(path):
-            raise error.TestFail('RC6 enable file not found.')
+        if not self._is_rc6_supported():
+            return False
+        if not os.path.exists(self.RC6_ENABLE_PATH):
+            return False
 
-        return (int(utils.read_one_line(path)) & 0x1) == 0x1
+        return (int(utils.read_one_line(self.RC6_ENABLE_PATH)) & 0x1) == 0x1
 
     def _parse_rc6_residency_info(self):
         """
         Parses RC6 residency info for Intel based systems.
 
-        @returns int of RC6 residency in millisec since boot.
-        @raises error.TestFail if the sysfs file not found or RC6 not enabled.
+        @returns int of RC6 residency in millisec since boot or -1 if not
+                 supported/enabled
         """
-        if not self._rc6_enable_checked:
-            if not self._is_rc6_enable():
-                raise error.TestFail('RC6 is not enabled.')
-            self._rc6_enable_checked = True
+        if not self.is_rc6_enabled():
+            return -1
 
-        path = '/sys/class/drm/card0/power/rc6_residency_ms'
-        if not os.path.exists(path):
-            raise error.TestFail('RC6 residency file not found.')
+        if not os.path.exists(self.RC6_RESIDENCY_PATH):
+            return -1
 
-        return int(utils.read_one_line(path))
+        return int(utils.read_one_line(self.RC6_RESIDENCY_PATH))
 
 
 class PCHPowergatingStats(object):

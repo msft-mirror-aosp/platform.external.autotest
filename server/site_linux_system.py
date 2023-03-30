@@ -12,6 +12,7 @@ import collections
 import logging
 import os
 import random
+import re
 import time
 
 from autotest_lib.client.common_lib import error
@@ -165,22 +166,31 @@ class LinuxSystem(object):
 
     def setup_logs(self):
         """Setup the logs for this system."""
-        # Log the most recent message on the device.
-        last_log_line = self.host.run('tail -1 /var/log/messages',
-                                      ignore_status=True).stdout
-        if not last_log_line:
+        last_log_line = None
+        timestamp_index = 0
+        if self.host.path_exists('/var/log/messages'):
+            # Log the most recent message on the device.
+            last_log_line = self.host.run('tail -1 /var/log/messages',
+                                          ignore_status=True).stdout
+        elif path_utils.get_install_path('logread', self.host):
+            last_log_line = self.host.run('logread -t -l 1',
+                                          ignore_status=True).stdout
+            timestamp_index = 5
+
+        if not last_log_line or len(last_log_line) == 0:
+            logging.debug(
+                    '/var/log/messages or logread is non-existent or empty;'
+                    ' will retrieve whole log')
+            # If syslog is empty, we just use a wildcard pattern, to grab
+            # everything.
+            self._log_start_timestamp = '.'
             return
         # We're trying to get the timestamp from:
         # 2014-07-23T17:29:34.961056+00:00 localhost kernel: blah blah blah
-        self._log_start_timestamp = last_log_line.strip().partition(' ')[0]
-        if self._log_start_timestamp:
-            logging.debug('Will only retrieve logs after %s.',
-                          self._log_start_timestamp)
-        else:
-            # If syslog is empty, we just use a wildcard pattern, to grab
-            # everything.
-            logging.debug('Empty or corrupt log; will retrieve whole log')
-            self._log_start_timestamp = '.'
+        self._log_start_timestamp = re.split(
+                r' +|\t+]', last_log_line.strip())[timestamp_index]
+        logging.debug('Will only retrieve logs after %s.',
+                      self._log_start_timestamp)
 
 
     @property
@@ -330,9 +340,14 @@ class LinuxSystem(object):
         # dnsmasq and hostapd cause interesting events to go to system logs.
         # Retrieve only the suffix of the logs after the timestamp we stored
         # on device creation.
-        self.host.run("sed -n -e '/%s/,$p' /var/log/messages >%s" %
-                        (self._log_start_timestamp, device_log),
-                        ignore_status=True)
+        if self.host.path_exists('/var/log/messages'):
+            self.host.run("sed -n -e '/%s/,$p' /var/log/messages >%s" %
+                          (self._log_start_timestamp, device_log),
+                          ignore_status=True)
+        elif path_utils.get_install_path('logread', self.host):
+            self.host.run("logread -t | sed -n -e '/%s/,$p' >%s" %
+                          (self._log_start_timestamp, device_log),
+                          ignore_status=True)
         self.host.get_file(device_log, 'debug/%s_host_messages' % self.role)
 
 

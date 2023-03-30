@@ -148,7 +148,7 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
 
         # MiniOS booting to be verified.
         if has_update:
-            self._verifications.append(self._boot_minios)
+            self._verifications.append(self._verify_boot_minios)
 
     def _setup_cros_update(self, has_update, build=None):
         if has_update:
@@ -209,6 +209,13 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
                                omaha_url='fake_url')
         if not self._dlc_util.is_installed(self._dlc_util._SAMPLE_DLC_ID):
             raise error.TestFail('Test DLC was not installed.')
+
+    def _verify_boot_minios(self):
+        logging.info('Trying boot into updated miniOS.')
+        self._boot_minios()
+        logging.info('The updated miniOS is verified to be bootable, '
+                     'rebooting back to chromeOS.')
+        self._host.reboot()
 
     def run_once(self,
                  full_payload=True,

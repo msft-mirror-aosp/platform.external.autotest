@@ -18,6 +18,7 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.cros import debugd_util
+from autotest_lib.client.cros import upstart
 
 import archiver
 import configurator
@@ -220,6 +221,12 @@ class platform_PrinterPpds(test.test):
                 self._new_digests[doc_name] = dict()
                 self._new_sizes[doc_name] = dict()
 
+        # We want to talk directly to cupsd and debugd without going through the
+        # UI.  Stop the UI to eliminate sources of flakiness.
+        upstart.stop_job('ui')
+        upstart.restart_job('debugd')
+        upstart.restart_job('cupsd')
+
         # Runs tests for all PPD files (in parallel)
         outputs = self._processor.run(self._thread_test_PPD, len(self._ppds))
 
@@ -242,6 +249,9 @@ class platform_PrinterPpds(test.test):
                         doc_name + '.digests')
                 helpers.save_digests_file(path, self._new_digests[doc_name],
                                           self._new_sizes[doc_name], failures)
+
+        # Restore the ui job.
+        upstart.restart_job('ui')
 
         # Raises an exception if at least one test failed
         if len(failures) > 0:

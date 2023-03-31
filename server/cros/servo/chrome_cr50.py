@@ -70,7 +70,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     #   RW_A:  * 0.0.21/cr50_v1.1.6133-fd788b
     #   RW_B:    Error
     # Ti50 will print "Empty" not "Error"
-    VERSION_FORMAT = '\nRW_(A|B): +%s +(\d+\.\d+\.\d+|Error|Empty)(/DBG)?(\S+)?\s'
+    VERSION_FORMAT = 'RW_(A|B): +%s +(\d+\.\d+\.\d+|Error|Empty)(/DBG)?(\S+)?\s'
     INACTIVE_VERSION = VERSION_FORMAT % ''
     ACTIVE_VERSION = VERSION_FORMAT % '\*'
     # Following lines of the version output may print the image board id

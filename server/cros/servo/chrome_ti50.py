@@ -3,6 +3,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+import pprint
 import re
 
 from autotest_lib.server.cros.servo import chrome_cr50
@@ -89,6 +91,51 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     DS_RESETS_TIMER = False
     # Maximum TPM init time.
     TPM_INIT_MAX = 40000
+    TIMESTAMP_RE = '[\n\^\[ 0-9\.]*\] '
+    INVALID_RE_CHARS = r'[\n\^]'
+
+    def strip_timestamp(self, result):
+        """Remove the timstamp from the result output.
+
+        Tests expect a certain format from the command result. Timestamps add
+        random noise to the output that tests can't handle. Strip the timestamp
+        from the start of every line of the result. This makes the result closer
+        to cr50 behavior. Cr50 doesn't print timestamps in console output.
+
+        @param result: The list of matched output.
+        @return: The list of matched output without timestamps
+        """
+        if isinstance(result, list) or isinstance(result, tuple):
+            if isinstance(result, tuple):
+                logging.warning('Turning tuple into list')
+            new_result = []
+            for part in result:
+                new_result.append(self.strip_timestamp(part))
+        elif isinstance(result, str):
+            new_result = re.sub(self.TIMESTAMP_RE, '\n', result)
+        else:
+            new_result = result
+        return new_result
+
+    def send_command_get_output(self, command, regexp_list):
+        """Send the command get the result.
+
+        Strip ti50 timestamps from the result before returning it.
+
+        @param command: the command to send
+        @param regexp_list: The list of regular expressions to match in the
+                            command output
+        @return: A list of matched output
+        """
+        rv = super(ChromeTi50,
+                   self).send_command_get_output(command, regexp_list)
+        logging.debug('old: %s', pprint.pformat(rv))
+        if regexp_list:
+            # Remove the timestamps from the ti50 output since tests can't
+            # handle it.
+            rv = self.strip_timestamp(rv)
+        logging.debug('no timestamps: %s', pprint.pformat(rv))
+        return rv
 
     def set_ccd_level(self, level, password=''):
         if level == 'unlock':

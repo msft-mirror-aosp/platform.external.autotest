@@ -58,6 +58,8 @@ class power_ThermalLoad(power_test.power_Test):
         extra_browser_args = ['--disable-sync']
         # b/228256145 to avoid powerd restart
         extra_browser_args.append('--disable-features=FirmwareUpdaterApp')
+        # Disable Chrome browser battery saver mode to prevent fps cap.
+        extra_browser_args.append('--disable-features=BatterySaverModeAvailable')
         with chrome.Chrome(autotest_ext=True,
                            extra_browser_args=extra_browser_args,
                            init_network_controller=True) as self.cr:

@@ -1020,8 +1020,9 @@ class power_LoadTest(arc.ArcTest):
                                 key = 'Tab: ' + site.group('site')
 
                     if key.startswith('Service Worker'):
-                        key = 'Service Worker: ' + \
-                            pattern.search(key).group('site')
+                        site = pattern.search(key)
+                        if site:
+                            key = 'Service Worker: ' + site.group('site')
 
                     items[key] = p['cpu']
                     if key not in process_dict:

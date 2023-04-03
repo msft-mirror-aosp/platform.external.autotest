@@ -223,7 +223,10 @@ class platform_PrinterPpds(test.test):
 
         # We want to talk directly to cupsd and debugd without going through the
         # UI.  Stop the UI to eliminate sources of flakiness.
-        upstart.stop_job('ui')
+        try:
+            upstart.stop_job('ui')
+        except error.CmdError as e:
+            logging.warning("Failed to stop ui: %s", e)
         upstart.restart_job('debugd')
         upstart.restart_job('cupsd')
 

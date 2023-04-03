@@ -651,6 +651,10 @@ class tast(test.test):
         """
         gs_bucket = dev_server._get_image_storage_server()
         args_dict = utils.args_to_dict(self._command_args)
+        gcs_override = args_dict.get('buildartifactsurl')
+        if gcs_override:
+            logging.info('Cloud storage bucket: %s', gcs_override)
+            return ['-buildartifactsurl=%s' % gcs_override]
         build = args_dict.get('build')
         if not build:
             labels = self._host.host_info_store.get().labels

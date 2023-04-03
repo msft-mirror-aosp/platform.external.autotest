@@ -128,8 +128,11 @@ TELEMETRY_AFDO_BENCHMARKS = (
 )
 
 # Supported <board>: <architecture>.
-LLVM_BOARDS = {'chell': 'amd64',
-               'trogdor': 'arm'}
+LLVM_BOARDS = {
+        'chell': 'amd64',
+        'hatch': 'amd64',
+        'trogdor': 'arm',
+}
 
 
 class telemetry_AFDOGenerate(test.test):

@@ -492,6 +492,7 @@ suite:medium-low-tier
 suite:memory_qual
 suite:memory_qual2
 suite:memory_qual_quick
+suite:mfp_printscan
 suite:ml_benchmark_nightly
 suite:mmc_qual
 suite:moblab

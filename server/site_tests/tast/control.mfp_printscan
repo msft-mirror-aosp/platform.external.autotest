@@ -4,9 +4,13 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.mfp_printscan'
+METADATA = {
+    "contacts": ["chromeos-test@google.com", "kalin@google.com"],
+    "bug_component": "b:167231", # ChromeOS > Platform > Services > Printing
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:printscan'
+ATTRIBUTES = 'suite:mfp_printscan'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 
@@ -14,7 +18,7 @@ PY_VERSION = 3
 REQUIRE_SSP = True
 
 DOC = '''
-Runs the scan tests that do not have the tast manual attribute.
+Runs the print and scan tests that require physical hardware.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for

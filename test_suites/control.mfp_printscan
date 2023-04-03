@@ -3,7 +3,11 @@
 # found in the LICENSE file.
 
 AUTHOR = "chromeos-test"
-NAME = "printscan"
+NAME = "mfp_printscan"
+METADATA = {
+    "contacts": ["chromeos-test@google.com", "kalin@google.com"],
+    "bug_component": "b:167231", # ChromeOS > Platform > Services > Printing
+}
 PURPOSE = "Tests printing and scanning on real MFPs."
 
 TIME = "SHORT"
@@ -26,7 +30,7 @@ Printing and scanning tests with real MFPs.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['name'] = 'printscan'
+args_dict['name'] = 'mfp_printscan'
 args_dict['add_experimental'] = True
 args_dict['max_runtime_mins'] = 60
 args_dict['job'] = job

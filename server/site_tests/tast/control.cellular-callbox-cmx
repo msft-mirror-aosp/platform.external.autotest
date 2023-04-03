@@ -1,0 +1,48 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'Chromium OS team'
+NAME = 'tast.cellular-callbox-cmx'
+METADATA = {
+    "contacts": ["chromeos-cellular-team@google.com"],
+    "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
+    }
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:cellular_callbox'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+DEPENDENCIES = "carrier:cmx500"
+
+DOC = '''
+Run the Tast tests designed specifically for CMX500.
+
+"group:cellular" indicates that the test runs on DUTs with a Cellular modem.
+"cellular_cmx_callbox": Attribute used to select tests that specifically run on DUTs with CMX500 callbox.
+"cellular_unstable": Unstable tests that will be excluded from this suite.
+
+Tast is an integration-testing framework analagous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+See http://go/tast-failures for information about investigating failures.
+'''
+import json
+import tempfile
+import yaml
+
+def run(machine):
+    host = hosts.create_host(machine)
+    with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
+        host_info = host.host_info_store.get()
+        yaml.safe_dump({'autotest_host_info_labels':
+                        json.dumps(host_info.labels)},
+                        stream=temp_file)
+        temp_file.flush()
+        job.run_test('tast',
+                    host=host,
+                    test_exprs=['(("group:cellular" && "cellular_cmx_callbox" && !"cellular_unstable"))'],
+                    ignore_test_failures=True, max_run_sec=20000,
+                    command_args=args,
+                    varsfiles=[temp_file.name])
+parallel_simple(run, machines)

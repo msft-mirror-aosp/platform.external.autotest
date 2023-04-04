@@ -254,6 +254,16 @@ class TradefedTest(test.test):
                 bundle)
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
+        # TODO(kinaba) Clean up after the root cause is fixed.
+        # Workaround for b/276392841 to ensure device is NOT in RMA mode.
+        try:
+            self._run_commands(
+                    ['rm /mnt/stateful_partition/unencrypted/rma-data/state'])
+            logging.error('Detected b/276392841.')
+        except:
+            # The file does not exist in a good state. Exception is the
+            # valid and expected outcome.
+            pass
 
     def _output_perf(self):
         """Output performance values."""

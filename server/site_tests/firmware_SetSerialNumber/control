@@ -31,6 +31,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run_SetSerialNumber(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("firmware_SetSerialNumber", host=host, cmdline_args=args,
-                 disable_sysinfo=True, tag="dev")
+                 disable_sysinfo=True)
 
 parallel_simple(run_SetSerialNumber, machines)

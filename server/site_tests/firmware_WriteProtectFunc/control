@@ -32,6 +32,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run_writeprotectfunc(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("firmware_WriteProtectFunc", host=host, cmdline_args=args,
-                 dev_mode=False, tag="normal")
+                 dev_mode=False)
 
 parallel_simple(run_writeprotectfunc, machines)

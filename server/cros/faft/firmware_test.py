@@ -1795,17 +1795,17 @@ class FirmwareTest(test.test):
         remote_bios_path = os.path.join(remote_temp_dir, 'bios')
         self.faft_client.bios.dump_whole(remote_bios_path)
         self._client.get_file(remote_bios_path,
-                              os.path.join(self.resultsdir, 'bios' + suffix))
+                              os.path.join(self.tmpdir, 'bios' + suffix))
 
         if self.faft_config.chrome_ec:
             remote_ec_path = os.path.join(remote_temp_dir, 'ec')
             self.faft_client.ec.dump_whole(remote_ec_path)
             self._client.get_file(remote_ec_path,
-                              os.path.join(self.resultsdir, 'ec' + suffix))
+                                  os.path.join(self.tmpdir, 'ec' + suffix))
 
         self._client.run('rm -rf %s' % remote_temp_dir)
         logging.info('Backup firmware stored in %s with suffix %s',
-            self.resultsdir, suffix)
+                     self.tmpdir, suffix)
 
         self._backup_firmware_identity = self.get_current_firmware_identity()
 
@@ -1834,13 +1834,13 @@ class FirmwareTest(test.test):
         # Restore firmware.
         remote_temp_dir = self.faft_client.system.create_temp_dir()
 
-        bios_local = os.path.join(self.resultsdir, 'bios%s' % suffix)
+        bios_local = os.path.join(self.tmpdir, 'bios%s' % suffix)
         bios_remote = os.path.join(remote_temp_dir, 'bios%s' % suffix)
         self._client.send_file(bios_local, bios_remote)
         self.faft_client.bios.write_whole(bios_remote)
 
         if self.faft_config.chrome_ec and restore_ec:
-            ec_local = os.path.join(self.resultsdir, 'ec%s' % suffix)
+            ec_local = os.path.join(self.tmpdir, 'ec%s' % suffix)
             ec_remote = os.path.join(remote_temp_dir, 'ec%s' % suffix)
             self._client.send_file(ec_local, ec_remote)
             ec_cmd = self.faft_client.ec.get_write_cmd(ec_remote)
@@ -1933,11 +1933,11 @@ class FirmwareTest(test.test):
             servicer.dump(p, remote_path)
             self._client.get_file(
                     remote_path,
-                    os.path.join(self.resultsdir,
+                    os.path.join(self.tmpdir,
                                  '%s_%s%s' % (kernel_name, p, suffix)))
             self._backup_kernel_sha[kernel_type][p] = servicer.get_sha(p)
         logging.info('Backup %s stored in %s with suffix %s', kernel_name,
-                     self.resultsdir, suffix)
+                     self.tmpdir, suffix)
 
     def is_kernel_saved(self, kernel_type='KERN'):
         """Check if kernel images are saved (backup_kernel called before).
@@ -1969,7 +1969,7 @@ class FirmwareTest(test.test):
                                        '%s_%s' % (kernel_name, p))
             servicer.dump(p, remote_path)
             self._client.send_file(
-                    os.path.join(self.resultsdir,
+                    os.path.join(self.tmpdir,
                                  '%s_%s%s' % (kernel_name, p, suffix)),
                     remote_path)
             servicer.write(p, remote_path)

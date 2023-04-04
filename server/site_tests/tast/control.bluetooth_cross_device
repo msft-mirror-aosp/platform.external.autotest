@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 import autotest_lib.server.cros.bluetooth.bluetooth_control_file_utils as bt_control_utils
 
@@ -12,6 +13,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:bluetooth_cross_device'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
+REQUIRE_SSP = True
 
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com',"chromeos-cross-device-eng@google.com",'chromeos-connectivity-engprod@google.com'],
@@ -32,10 +34,12 @@ DOC = '''Run the Tast Cross Device Bluetooth test suite.'''
 #
 
 command_args, varslist = tast.split_arguments(args)
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
 
-    host = hosts.create_host(machine)
+    host = hosts.create_host(machine, servo_args=servo_args)
     companions = hosts.create_companion_hosts(companion_hosts)
     # Currently the bluetooth peer in multi-dut testbeds are not added to UFS, hence
     # there is no need to add number of peer to the expression.

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 import autotest_lib.server.cros.bluetooth.bluetooth_control_file_utils as bt_control_utils
 
@@ -13,12 +14,13 @@ ATTRIBUTES = 'suite:bluetooth_sa'
 DEPENDENCIES = 'bluetooth'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
+REQUIRE_SSP = True
 
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
-    'criteria': 'All bluetooth stable tests that needs a peer device',
+    'criteria': 'All bluetooth stable tests that do not need a peer device',
     'hw_agnostic': False,
 }
 
@@ -50,9 +52,11 @@ that require one or more btpeers are not run.
 '''
 
 command_args, varslist = tast.split_arguments(args)
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
-    host = hosts.create_host(machine)
+    host = hosts.create_host(machine, servo_args=servo_args)
     btpeer_count_attribute_expression = bt_control_utils.build_tast_btpeer_count_attribute_test_expression(0)
     tast_test_expr = '("group:bluetooth" && !bluetooth_flaky && bluetooth_sa && %s)' % btpeer_count_attribute_expression
     job.run_test('tast',

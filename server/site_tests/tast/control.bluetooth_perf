@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 import autotest_lib.server.cros.bluetooth.bluetooth_control_file_utils as bt_control_utils
 
@@ -14,6 +15,15 @@ CRITERIA = 'Bluetooth peer should be present'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
+REQUIRE_SSP = True
+
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'All stable bluetooth performance tests',
+    'hw_agnostic': False,
+}
 
 DOC = '''
 Run the stable Tast tests part of the the bluetooth_perf suite.
@@ -48,9 +58,11 @@ test_that --host_labels "working_bluetooth_btpeer:4" --args "tast.btpeers=<btpee
 '''
 
 command_args, varslist = tast.split_arguments(args)
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
-    host = hosts.create_host(machine)
+    host = hosts.create_host(machine, servo_args=servo_args)
     working_bluetooth_btpeers = bt_control_utils.get_working_bluetooth_btpeer(host)
     btpeer_count_attribute_expression = bt_control_utils.build_tast_btpeer_count_attribute_test_expression(working_bluetooth_btpeers)
     tast_test_expr = '("group:bluetooth" && !bluetooth_flaky && bluetooth_perf && %s)' % btpeer_count_attribute_expression

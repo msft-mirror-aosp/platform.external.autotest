@@ -413,7 +413,9 @@ def VerifyUpdate(client, ver='', last_message=''):
 
     new_ver = GetRunningVersion(client)
     if ver != '':
-        if STUB_VER != ver[0]:
+        # RO will only update if it's newer than the running version.
+        if (STUB_VER != ver[0]
+                    and GetNewestVersion(ver[0], new_ver[0]) != new_ver[0]):
             AssertVersionsAreEqual('Old RO', ver[0], 'Updated RO', new_ver[0])
         AssertVersionsAreEqual('Old RW', ver[1], 'Updated RW', new_ver[1])
     return new_ver, last_message

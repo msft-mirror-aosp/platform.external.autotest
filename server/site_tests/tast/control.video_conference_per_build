@@ -1,0 +1,35 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'yanghenry@google.com'
+NAME = 'tast.video-conference-per-build'
+TIME = 'SHORT'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:video-conference-per-build'
+MAX_RESULT_SIZE_KB = 50 * 1024
+PY_VERSION = 3
+
+METADATA = {
+    'contacts': ['cros-videoconferencing@google.com', 'chrome-knowledge-eng@google.com'],
+    'bug_component': 'b:187682', # ChromeOS > Software > Fundamentals > Machine Intelligence > Knowledge
+}
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run video conference Tast tests per build.
+Tast is an integration-testing framework analagous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+'''
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 max_run_sec=1800,  # 30 Minutes,
+                 test_exprs=['("group:video_conference" && video_conference_per_build)'],
+                 command_args=args)
+
+sparallel_simple(run, machines)

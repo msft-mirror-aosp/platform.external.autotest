@@ -628,6 +628,7 @@ suite:usb_detect_stress
 suite:vdi-limited
 suite:video
 suite:video-conference-cq-critical
+suite:video-conference-per-build
 suite:vmtest-informational1
 suite:vmtest-informational2
 suite:vmtest-informational3

@@ -34,7 +34,6 @@ def run_TS(machine):
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='cts-dev',
         target_plan='waivers',
-        load_waivers=False,
         bundle='arm',
         uri='DEV_WAIVER',
         timeout=7200)

@@ -95,7 +95,6 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
                    host=None,
                    hosts=None,
                    max_retry=None,
-                   load_waivers=True,
                    retry_manual_tests=False,
                    warn_on_test_retry=True,
                    cmdline_args=None,
@@ -106,7 +105,6 @@ class cheets_CTS_R(tradefed_test.TradefedTest):
                                host=host,
                                hosts=hosts,
                                max_retry=max_retry,
-                               load_waivers=load_waivers,
                                retry_manual_tests=retry_manual_tests,
                                warn_on_test_retry=warn_on_test_retry,
                                hard_reboot_on_failure=hard_reboot_on_failure)

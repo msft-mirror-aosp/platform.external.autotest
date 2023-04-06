@@ -121,7 +121,8 @@ class Suspender(object):
     # Dictionary of board-specific autosuspend paths to disable.
     _AUTOSUSPEND_DISABLE_PATHS = {
             'skyrim':
-            ['/sys/devices/pci0000:00/0000:00:08.3/0000:04:00.0/usb5/5-1']
+            ['/sys/devices/pci0000:00/0000:00:08.3/0000:04:00.0/usb5/5-1', 
+            '/sys/devices/pci0000:00/0000:00:08.3/0000:05:00.0/usb5/5-1']
     }
 
     def __init__(self, logdir, method=sys_power.do_suspend,

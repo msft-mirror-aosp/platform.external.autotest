@@ -131,7 +131,8 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
 
     @test_wrapper('Condition Device Count Tests',
                   devices={'BLE_MOUSE': 1},
-                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS)
+                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS,
+                  supports_floss=True)
     def advmon_condition_device_count_tests(self):
         """Tests minimum supported condition and device count."""
         self.advmon_test_condition_device_count()

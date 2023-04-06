@@ -116,6 +116,9 @@ class firmware_Cr50CCDServoCap(Cr50Test):
             raise error.TestNAError('Test can only be run on devices with '
                                     'access to the GSC console')
 
+        if not self.check_ec_capability(suppress_warning=True):
+            raise error.TestNAError('Only applicable for devices with an EC')
+
         if not self.gsc.servo_dts_mode_is_valid():
             raise error.TestNAError('Need working servo v4 DTS control')
 
@@ -136,8 +139,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         # Check EC uart if servo has ccd controls and the board has an EC.
         self.check_ec_uart = (
                 self.servo.get_ccd_servo_device() and
-                self.servo.has_control('ec_board', prefix=self._ccd_prefix)
-                and self.check_ec_capability(suppress_warning=True))
+                self.servo.has_control('ec_board', prefix=self._ccd_prefix))
 
 
     def cleanup(self):

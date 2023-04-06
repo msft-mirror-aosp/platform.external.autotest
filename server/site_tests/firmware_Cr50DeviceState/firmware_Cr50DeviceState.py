@@ -726,11 +726,27 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.s0ix_supported = not self.host.run(
                 'check_powerd_config --suspend_to_idle',
                 ignore_status=True).exit_status
+        # Check the faft config to see if it overrides the command check.
+        skip_s0ix = getattr(self.faft_config, 's0ix_override_to_unsupported',
+                            False)
+        if skip_s0ix and self.s0ix_supported:
+            logging.info('S0ix faft_config override')
+            self.s0ix_supported = False
         logging.info('S0ix: %s', self.s0ix_supported)
         # Check if the device supports S3.
         self.s3_supported = not self.host.run('grep -q mem /sys/power/state',
                                               ignore_status=True).exit_status
+        # Check the faft config to see if it overrides the command check.
+        skip_s3 = getattr(self.faft_config, 's3_override_to_unsupported', False)
+        if skip_s3 and self.s3_supported:
+            logging.info('S3 faft_config override')
+            self.s3_supported = False
         logging.info('S3: %s', self.s3_supported)
+
+        if (not self.default_suspend and not self.s3_supported and
+            not self.s0ix_supported):
+            raise error.TestNAError('Manual suspend is unsupported.')
+
         if self.pcr_extend:
             self.fast_ccd_open(True)
             # Extend pcr0. The index must be 0. The value doesn't matter.

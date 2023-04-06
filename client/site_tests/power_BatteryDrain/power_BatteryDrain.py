@@ -8,6 +8,7 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.common_lib import utils
+from autotest_lib.client.common_lib.cros import force_discharge_utils
 from autotest_lib.client.cros.power import power_status
 from autotest_lib.client.cros.power import power_utils
 from autotest_lib.client.cros import service_stopper
@@ -70,7 +71,7 @@ class power_BatteryDrain(test.test):
 
         self._force_discharge = force_discharge
         if force_discharge:
-            if not power_utils.charge_control_by_ectool(False):
+            if not force_discharge_utils.charge_control_by_ectool(False):
                 raise error.TestError('Could not run battery force discharge.')
 
         ac_error = error.TestFail('DUT is on AC power, but should not be')

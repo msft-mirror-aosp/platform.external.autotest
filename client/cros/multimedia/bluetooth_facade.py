@@ -4392,6 +4392,11 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     # tracks how long an overall discovery session should be.
     DISCOVERY_TIMEOUT_SEC = 60
 
+    # Define discoverable mode. ref: system/gd/rust/topshim/src/btif.rs
+    NONE_DISCOVERABLE_MODE = 0
+    LIMIT_DISCOVERABLE_MODE = 1
+    GENERAL_DISCOVERABLE_MODE = 2
+
     # A list of device models that do not support the role of
     # 'central-peripheral'.
     NON_CENTRAL_PERIPHERAL_MODELS = [
@@ -5119,7 +5124,11 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
     def set_discoverable(self, discoverable, duration=60):
         """Sets the adapter as discoverable for given duration in seconds."""
-        return self.adapter_client.set_property('Discoverable', discoverable,
+        discoverable_mode = self.NONE_DISCOVERABLE_MODE
+        if discoverable:
+            discoverable_mode = self.GENERAL_DISCOVERABLE_MODE
+
+        return self.adapter_client.set_property('Discoverable', discoverable_mode,
                                                 duration)
 
     def get_discoverable_timeout(self):

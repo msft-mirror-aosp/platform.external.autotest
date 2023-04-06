@@ -1,15 +1,15 @@
-# Copyright 2017 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
-NAME = "firmware_Cr50DeviceState"
+NAME = "firmware_Cr50DeviceState.manual_suspend"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify Cr50 tracks the EC and AP state correctly"
+        "criteria": "Verify DUT can suspend and resume from non-default power states"
 }
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_pvt, suite:faft_cr50_prepvt, suite:faft_ti50_qual"
 TIME = "SHORT"
@@ -36,12 +36,10 @@ def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
     iterations = int(args_dict.get("iterations", 1))
-    # Don't run the manual suspend sequences unless they're requested
-    manual_suspend = args_dict.get("manual_suspend", "false").lower() != "false"
-    default_suspend = args_dict.get("default_suspend", "true").lower() != "false"
 
     job.run_test("firmware_Cr50DeviceState", host=host, cmdline_args=args,
                  full_args=args_dict, iterations=iterations,
-                 manual_suspend=manual_suspend, default_suspend=default_suspend)
+                 manual_suspend=True, default_suspend=False,
+                 tag="manual_suspend")
 
 parallel_simple(run, machines)

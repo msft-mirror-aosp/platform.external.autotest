@@ -119,7 +119,9 @@ class firmware_Cr50DeviceState(Cr50Test):
                    cmdline_args,
                    full_args,
                    fwmp=None,
-                   pcr_extend=False):
+                   pcr_extend=False,
+                   default_suspend=True,
+                   manual_suspend=True):
         super(firmware_Cr50DeviceState, self).initialize(host, cmdline_args,
                                                          full_args)
         # Don't bother if there is no Chrome EC or if EC hibernate doesn't work.
@@ -128,6 +130,8 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         self.fwmp = fwmp
         self.pcr_extend = pcr_extend
+        self.default_suspend = default_suspend
+        self.manual_suspend = manual_suspend
 
         self.INT_NAME = self.gsc.IRQ_DICT.copy()
         self.INT_NAME.update(self.GSC_STATUS_DICT)
@@ -643,29 +647,32 @@ class firmware_Cr50DeviceState(Cr50Test):
         # from this test run.
         self.verify_state('G3')
 
-        self.verify_state('default_suspend')
+        if self.default_suspend:
+            self.verify_state('default_suspend')
 
-        if self.check_ec_capability(["lid"]):
+            if self.check_ec_capability(["lid"]):
+                try:
+                    self.verify_state('lid_close')
+                finally:
+                    # Make sure it ends with the lid open.
+                    self.servo.set('lid_open', 'yes')
+
+        # Manually enter the non-default power states.
+        if self.manual_suspend:
+            self.mount_power_config()
             try:
-                self.verify_state('lid_close')
-            finally:
-                # Make sure it ends with the lid open.
-                self.servo.set('lid_open', 'yes')
+                if self.s0ix_supported:
+                    self.verify_state('S0ix')
 
-        self.mount_power_config()
-        try:
-            if self.s0ix_supported:
-                self.verify_state('S0ix')
-
-            if self.s3_supported:
-                self.verify_state('S3')
-        except Exception as e:
-            self._try_to_bring_dut_up()
-            logging.info('Caught exception %r', e)
-            self.run_errors['Caught Exception'] = str(e)
-            self.host.reboot()
-        else:
-            self.umount_power_config()
+                if self.s3_supported:
+                    self.verify_state('S3')
+            except Exception as e:
+                self._try_to_bring_dut_up()
+                logging.info('Caught exception %r', e)
+                self.run_errors['Caught Exception'] = str(e)
+                self.host.reboot()
+            else:
+                self.umount_power_config()
 
         if self.run_errors:
             self.all_errors[self.ccd_str] = self.run_errors

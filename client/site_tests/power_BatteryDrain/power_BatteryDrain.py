@@ -29,7 +29,7 @@ class power_BatteryDrain(test.test):
     def cleanup(self):
         '''Cleanup for a test run'''
         if self._force_discharge:
-            if not power_utils.charge_control_by_ectool(True):
+            if not force_discharge_utils.charge_control_by_ectool(True):
                 logging.warning('Can not restore from force discharge.')
         if self.backlight:
             self.backlight.restore()

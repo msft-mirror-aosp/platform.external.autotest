@@ -30,10 +30,5 @@ def run(machine):
     job.run_test('bluetooth_AdapterSAHealth', host=host,
                   num_iterations=1, test_name=NAME.split('.')[1], floss=True)
 
-parallel_simple(run, machines)
-def run(machine):
-    host = hosts.create_host(machine)
-    job.run_test('bluetooth_AdapterSAHealth', host=host,
-                  num_iterations=1, test_name=NAME.split('.')[1])
 
 parallel_simple(run, machines)

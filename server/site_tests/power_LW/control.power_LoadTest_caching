@@ -1,0 +1,41 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = "power_LW.power_LoadTest_caching"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com", "dbasehore"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a power benchmark test.",
+    "hw_agnostic": False,
+    "doc" : "Control file for running power_LoadTest with caching in power lab.",
+}
+TEST_TYPE = "server"
+DEPENDENCIES = "servo_state:WORKING"
+
+from autotest_lib.client.common_lib import utils
+
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+test = 'power_LoadTest'
+# Only run power_LoadTest for up to 12 hours. Tests can only run for up to 16
+# hours in the lab, and some of the time needs to be allocated for charging.
+args = {
+    'pdash_note': args_dict.get('pdash_note', ''),
+    'tag' : 'caching_PLW',
+    'loop_time' : 3600,
+    'loop_count' : 12,
+    'test_low_batt_p' : 5,
+    'tast_bundle_path': args_dict.get('tast_bundle_path'),
+    'web_caching' : True,
+}
+
+def run(machine):
+    host = hosts.create_host(machine, servo_args=servo_args)
+    job.run_test("power_BatteryChargeControl", host=host,
+                 percent_charge_to_add=None, percent_target_charge=95,
+                 tag=NAME.split('.')[1])
+    job.run_test("power_LW", host=host, test=test, args=args,
+                 machine=machine, tag=NAME.split('.')[1])
+
+parallel_simple(run, machines)

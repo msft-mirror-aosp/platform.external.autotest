@@ -123,8 +123,17 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         self.context.client.powersave_switch(power_save)
         ps_tag = 'PS%s' % ('on' if power_save else 'off')
         governor_tag = 'governor-%s' % governor_name
-        ap_config_tag = '_'.join([ap_config.perf_loggable_description,
-                                  ps_tag, governor_tag])
+        all_tags = [ap_config.perf_loggable_description, ps_tag, governor_tag]
+
+        # backward compatible with gale
+        router_os_arch = None
+        router_os_type = self.context.get_wifi_host().get_os_type()
+        router_arch = self.context.get_wifi_host().get_arch()
+        if router_os_type != 'cros':
+            router_os_arch = router_os_type + '_' + router_arch
+            all_tags.append(router_os_arch)
+
+        ap_config_tag = '_'.join(all_tags)
         signal_level = self.context.client.wifi_signal_level
         signal_description = '_'.join([ap_config_tag, 'signal'])
         self.write_perf_keyval({signal_description: signal_level})
@@ -146,12 +155,8 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                 raise error.TestFail(
                         'Failed to get the channel width used by the AP and client'
                 )
-            router_arch = None
-            if self.context.get_wifi_host().get_os_type() != 'cros':
-                router_arch = self.context.get_wifi_host().get_os_type(
-                ) + '_' + self.context.get_wifi_host().get_arch()
             expected_throughput = expected_performance_results.get_expected_throughput_wifi(
-                    test_type, ap_config.mode, ch_width, router_arch)
+                    test_type, ap_config.mode, ch_width, router_os_arch)
             results = session.run(config)
             if not results:
                 logging.error('Failed to take measurement for %s', test_type)

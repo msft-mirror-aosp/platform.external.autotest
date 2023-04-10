@@ -151,6 +151,8 @@ class power_LoadTest(arc.ArcTest):
         self._log_mem_bandwidth = log_mem_bandwidth
         self._wait_time = 60
         self._stats = collections.defaultdict(list)
+        self._force_discharge = force_discharge
+        self._force_discharge_errors = 0
         self._pdash_note = pdash_note
         self._run_arc = run_arc
         self._web_caching = web_caching
@@ -158,7 +160,7 @@ class power_LoadTest(arc.ArcTest):
         self._power_status = power_status.get_status()
 
         self._force_discharge_success = force_discharge_utils.process(
-                force_discharge, self._power_status)
+                self._force_discharge, self._power_status)
         if self._force_discharge_success:
             self._ac_ok = True
 
@@ -583,7 +585,13 @@ class power_LoadTest(arc.ArcTest):
         keyvals['wh_energy_powerlogger'] = \
                              self._energy_use_from_powerlogger(keyvals)
 
-        if (self._force_discharge_success or not self._power_status.on_ac()
+        if self._force_discharge_success:
+            keyvals['force_discharge_errors'] = self._force_discharge_errors
+
+        max_force_discharge_errors = 3
+        if ((self._force_discharge_success
+             and self._force_discharge_errors < max_force_discharge_errors)
+                    or not self._power_status.on_ac()
             ) and keyvals['ah_charge_used'] > 0:
             # For full runs, we should use charge to scale for battery life,
             # since the voltage swing is accounted for.
@@ -763,8 +771,17 @@ class power_LoadTest(arc.ArcTest):
 
             self._power_status.refresh()
 
-            if not self._ac_ok and self._power_status.on_ac():
-                raise error.TestError('Running on AC power now.')
+            if not self._power_status.battery_discharging():
+                if (
+                        self._force_discharge_success
+                        and force_discharge_utils.process(
+                                self._force_discharge, self._power_status)):
+                    self._force_discharge_errors += 1
+                    logging.warning('Force discharge temporarily stopped'
+                                    'working, possibly due to a charger'
+                                    'connection reset')
+                elif not self._ac_ok:
+                    raise error.TestError('Running on AC power now.')
 
             if self._power_status.battery:
                 if (not self._ac_ok and

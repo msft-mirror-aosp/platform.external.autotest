@@ -119,3 +119,12 @@ def FwmpIsAllZero(get_fwmp_output):
     return ('flags=0x00000000' in get_fwmp_output and
             'hash=0000000000000000000000000000000000000000000000000000000000000000'
             in get_fwmp_output)
+
+def SendTPMShutdownState(client):
+    """Send the tpm  Shutdown(STATE) command.
+
+    @param client: client object to run commands on.
+    """
+    logging.info('Send Shutdown(STATE)')
+    # Send  Shutdown(STATE). Shutdown(CLEAR) would be `00 00` at the end.
+    client.run('trunks_send --raw 80 01 00 00 00 0c 00 00 01 45 00 01')

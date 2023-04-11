@@ -7,12 +7,6 @@ forward.  In many cases, there is legacy code that contradicts this style; we
 should go through and refactor that code to fit these guidelines as time
 allows.
 
-## Upstream Documentation
-
-There is a sizeable volume of general Autotest documentation available on
-github:
-https://github.com/autotest/autotest/wiki
-
 ## Coding style
 
 Basically PEP-8.  See [docs/coding-style.md](coding-style.md)
@@ -89,43 +83,59 @@ client or server.
 
 ### Control files
 
-Upstream documentation
-Our local conventions for autotest control files deviate from the above a bit,
-but the indication about which fields are mandatory still holds.  Single quotes
-are preferred over double quotes in control files for consistency.
-Example of control file with single quotes:
-```
-# Copyright 2022 The ChromiumOS Authors
-# Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
+Control files are written in Python, and any variables defined in the file will
+be evaluated to extract test information.  While any variable names are allowed,
+the variables described below have usage outside of just running the test:
 
-AUTHOR = '<author>@google.com'
-NAME = 'my_ExampleTest'
-PURPOSE = 'Verifies some feature works'
-TIME = 'SHORT'
-TEST_TYPE = 'client'
-
-DOC = '''
-This is a long description of my test and what args it takes.
-'''
-
-job.run_test('my_ExampleTest')
-```
+Single quotes are preferred over double quotes in control files for consistency.
 
 Following is a list of fields which are used within ChromeOS, any field not
 listed here is optional and is not used within ChromeOS for scheduling or any
 other purposes.
 
-| Variable     | Required | Value                                                                                                                                                                                                                                                                                                                                    |
+| Variable     | Required | Value |
 |--------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | AUTHOR       | Yes      | A comma-delimited string of at least one responsible engineer and a backup engineer -- or at worst a backup mailing list. i.e. AUTHOR = ‘msb, snanda’                                                                                                                                                                                    |
-| DEPENDENCIES | No       | list of tags known to the HW test lab.                                                                                                                                                                                                                                                                                                   |
-| DOC          | Yes      | Long description of the test, pass/fail criteria                                                                                                                                                                                                                                                                                         |
-| NAME         | Yes      | Display name of the test. Generally this is the directory where your test lives e.g. hardware_TPMCheck. If you are using multiple run_test calls in the same control file or multiple control files with one test wrapper in the same suite, problems arise with the displaying of your test name. crosbug.com/35795. When in doubt ask. |
-| SYNC\_COUNT  | No       | Integer >= 1.  Number of simultaneous devices needed for a test run.                                                                                                                                                                                                                                                                     |
-| TIME         | Yes      | Test duration: 'SHORT' (<1m), 'MEDIUM' (<10m), 'LONG' (<20m), 'LENGTHY' (>30m)                                                                                                                                                                                                                                                            |
+| METADATA | YES       | A dictionary of metadata used to populate the test-harness-agnostic output used across Chrome OS.                                                                                                                                                                                                                                                                                                   |
+| NAME         | Yes      | Display name of the test. Generally this is the directory where your test lives, e.g. hardware_TPMCheck. If there are multiple control files, each one should use the test class name as a prefix, e.g. hardware_TPMCheck.foo and hardware_TPMCheck.bar.|
 | TEST\_TYPE   | Yes      | Client or Server                                                                                                                                                                                                                                                                                                                         |
 | ATTRIBUTES   | No       | Comma separated list of attribute tags to apply to this control file, used in composing suites. For instance, 'suite:foo, suite:bar'.                                                                                                                                                                                                    |
+| DEPENDENCIES | No       | list of tags known to the HW test lab.                                                                                                                                                                                                                                                                                                   |
+
+
+The METADATA dictionary can contain the following options:
+| Field Name     | Required | Value |
+|----------------|----------|-------|
+| 'contacts' | Yes | A list of strings of email addresses.  The first address must be the team alias for whichever team/product area ultimately owns the test.  Partner tests should have a googler contact, but addresses outside of google or chromium are ok for the second+ entries.  Please make sure your group alias can be emailed by googlers outside of the group. |
+| 'bug_component' | Yes | A string of the form 'b:xxxx' or 'crbug:xxxx' which matches the component where bugs should be filed.  E.g. 'b:1034625' or 'crbug:UI>Shell>Launcher'. |
+| 'criteria' | Yes | A short, human-readable description of what the test is supposed to do - will be exported with test results. |
+| 'hw_agnostic' | No | A boolean (defaults to False) of whether this test should be run on real hardware. A value of True indicates that the test *could* be run on a VM. |
+
+
+Example of control file:
+```
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description (optional)
+# Add whatever additional description you think needs to be added here -
+# this will not be used outside this file.
+
+
+NAME = 'my_ExampleTest'
+METADATA = {
+    'contacts': ['cros-automation-frameworks@google.com'],
+    'bug_component': 'b:1034523',
+    'criteria': 'Short, human-readable description of what the test is - will be exported with test results',
+    'hw_agnostic': True
+}
+ATTRIBUTES = ''
+TEST_TYPE = 'client'
+
+job.run_test('my_ExampleTest')
+```
+
 
 ### Running tests in suites
 

@@ -506,6 +506,7 @@ def main(args):
         else:
             tests.log('Queried suite not found')
     if args.list_suite is not None:
+        tast_tests = TastManager()
         tests.log(tests.list_suite_named(args.list_suite, pretty=True))
     if args.list_multiple_suites is not None:
         for suite_name in args.list_multiple_suites:

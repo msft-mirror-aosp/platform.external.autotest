@@ -26,7 +26,7 @@ class audio_AudioVolume(audio_test.AudioTest):
     version = 1
     RECORD_SECONDS = 8
     DELAY_AFTER_BINDING = 0.5
-    DELAY_BEFORE_PLAYBACK = 0.5
+    DELAY_BEFORE_RECORD_SECONDS = 0.5
 
     def run_once(self, source_id, skipped_model_with_bugs={}, ignore_frequencies=[]):
         """Running audio volume test.
@@ -132,22 +132,15 @@ class audio_AudioVolume(audio_test.AudioTest):
                 # if there is another stream playing earlier, CRAS may need to
                 # reopen the device during recording. To fix it, we should move
                 # playback before the recording of chameleon.
-                if recorder_id == chameleon_audio_ids.ChameleonIds.HDMI:
-                    logging.info('Start playing %s on Cros device',
-                                 golden_file.path)
-                    source.start_playback()
+                logging.info('Start playing %s on Cros device',
+                             golden_file.path)
+                source.start_playback()
 
+                # Wait for some time, and then start recording.
+                # This is to avoid artifact caused by codec initialization.
+                time.sleep(self.DELAY_BEFORE_RECORD_SECONDS)
                 logging.info('Start recording from Chameleon.')
                 recorder.start_recording()
-
-                if recorder_id != chameleon_audio_ids.ChameleonIds.HDMI:
-                    # Starts recording, waits for some time, and starts playing.
-                    # This is to avoid artifact caused by Chameleon codec
-                    # initialization. The gap should be removed later.
-                    time.sleep(self.DELAY_BEFORE_PLAYBACK)
-                    logging.info('Start playing %s on Cros device',
-                                 golden_file.path)
-                    source.start_playback()
 
                 time.sleep(self.RECORD_SECONDS)
                 self.facade.check_audio_stream_at_selected_device()
@@ -163,7 +156,10 @@ class audio_AudioVolume(audio_test.AudioTest):
                 recorder.read_recorded_binary()
                 logging.info('Read recorded binary from Chameleon.')
 
-                recorder.remove_head(self.DELAY_BEFORE_PLAYBACK)
+                # Removes the beginning of recorded data. This is to avoid artifact
+                # caused by Chameleon codec initialization in the beginning of
+                # recording.
+                recorder.remove_head(0.5)
                 recorder.lowpass_filter(3000)
                 recorded_file = os.path.join(self.resultsdir,
                                              "recorded_%s.raw" % tag)

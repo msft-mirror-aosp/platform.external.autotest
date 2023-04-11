@@ -526,12 +526,9 @@ class Cr50Test(FirmwareTest):
                     and not self._saved_cr50_state(self.ERASEFLASHINFO_IMAGE)):
             raise error.TestFail('Did not save eraseflashinfo image')
 
-        # Remove prepvt and prod iamges, so they don't interfere with the test
-        # rolling back and updating to images that my be older than the images
-        # on the device.
-        if filesystem_util.is_rootfs_writable(self.host):
-            self.host.run('rm %s' % self.gsc.DUT_PREPVT, ignore_status=True)
-            self.host.run('rm %s' % self.gsc.DUT_PROD, ignore_status=True)
+        # Make sure the DUT doesn't have any gsc firmware images otherwise it'll
+        # enter a reboot loop when it updates to the EFI image.
+        self.remove_gsc_firmware_images()
 
         if eraseflashinfo:
             self.run_update_to_eraseflashinfo()
@@ -548,6 +545,27 @@ class Cr50Test(FirmwareTest):
         # stays in the inactive slot, the rollback counter could get cleared
         # and gsc will switch to the DBG image.
         self._retry_gsc_update_with_ccd_and_ap(image_path, 3, False)
+
+    def gsc_firmware_images_exist(self):
+        """Returns True if the .prod or .prepvt image exist."""
+        prod_exists = self.host.path_exists(self.gsc.DUT_PROD)
+        prepvt_exists = self.host.path_exists(self.gsc.DUT_PREPVT)
+        logging.info('prod exists: %s', prod_exists)
+        logging.info('prepvt exists: %s', prepvt_exists)
+        return prod_exists or prepvt_exists
+
+    def remove_gsc_firmware_images(self):
+        """Remove gsc .prod and .prepvt images from the dut."""
+        if not self.gsc_firmware_images_exist():
+            return
+        logging.info('Removing gsc firmware images')
+        if not filesystem_util.is_rootfs_writable(self.host):
+            self.make_rootfs_writable()
+        self.host.run('rm /opt/google/*50/firmware/*', ignore_status=True)
+        self.host.run('sync')
+
+        if self.gsc_firmware_images_exist():
+            raise error.TestError('Unable to remove gsc firmware images')
 
     def _discharging_factory_mode_cleanup(self):
         """Try to get the dut back into charging mode.
@@ -762,6 +780,10 @@ class Cr50Test(FirmwareTest):
         if not mismatch:
             logging.info('Nothing to do.')
             return
+        # Remove prepvt and prod iamges, so they don't interfere with the test
+        # rolling back and updating to images that my be older than the images
+        # on the device.
+        self.remove_gsc_firmware_images()
 
         # Use the DBG image to restore the original image.
         if self._cleanup_required(mismatch, self.DBG_IMAGE):
@@ -771,8 +793,9 @@ class Cr50Test(FirmwareTest):
         self._try_to_bring_dut_up()
         new_mismatch = self._check_running_image_and_board_id(state)
         # Copy the original .prod and .prepvt images back onto the DUT.
-        if (self._cleanup_required(new_mismatch, self.DEVICE_IMAGES)
-                    and filesystem_util.is_rootfs_writable(self.host)):
+        if self._cleanup_required(new_mismatch, self.DEVICE_IMAGES):
+            if not filesystem_util.is_rootfs_writable(self.host):
+                self.make_rootfs_writable()
             # Copy the .prod file onto the DUT.
             if prod_path and 'prod_version' in new_mismatch:
                 cr50_utils.InstallImage(self.host, prod_path,

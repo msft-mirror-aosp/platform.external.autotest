@@ -266,7 +266,14 @@ def collect_qr_event_from_log(file_path):
         if not line.startswith(QUALITY_PREFIX_STRING):
             continue
 
+        # Parses a line.
         subevt, value, time_ = _read_line(line)
+
+        # A workaround to ignore unknown event.
+        if "unknown" in line:
+            logging.debug(f"unknown sub event: {line}, ingored.")
+            continue
+
         if not report:
             report[START_TIME_SUBEVT] = time_
         else:

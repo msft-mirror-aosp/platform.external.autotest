@@ -800,18 +800,18 @@ class FirmwareTest(test.test):
           A string representing USB disk path, like '/dev/sdb', or None if
           no USB disk is found.
         """
-        cmd = 'ls -d /dev/s*[a-z]'
+        cmd = 'ls -d /dev/sd[a-z]'
         original_value = self.servo.get_usbkey_state()
 
         # Make the dut unable to see the USB disk.
         self.servo.switch_usbkey('off')
-        time.sleep(self.faft_config.usb_unplug)
+        self.wait_for('usb_unplug')
         no_usb_set = set(
             self.faft_client.system.run_shell_command_get_output(cmd))
 
         # Make the dut able to see the USB disk.
         self.servo.switch_usbkey('dut')
-        time.sleep(self.faft_config.usb_plug)
+        self.wait_for('usb_plug')
         has_usb_set = set(
             self.faft_client.system.run_shell_command_get_output(cmd))
 
@@ -823,6 +823,8 @@ class FirmwareTest(test.test):
         if len(diff_set) == 1:
             return diff_set.pop()
         else:
+            logging.debug("has_usb_set(%s) - no_usb_set(%s) = %s", has_usb_set,
+                          no_usb_set, diff_set)
             return None
 
     def _create_faft_lockfile(self):

@@ -442,6 +442,7 @@ suite:fingerprint-cq
 suite:fingerprint-mcu-dragonclaw
 suite:fleet_firmware_update
 suite:flashrom
+suite:flex-criticalstaging
 suite:flex-perbuild
 suite:fwupd_downgrade
 suite:fwupd_install_file

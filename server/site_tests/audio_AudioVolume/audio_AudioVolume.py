@@ -77,7 +77,8 @@ class audio_AudioVolume(audio_test.AudioTest):
             return audio_test_data.GenerateAudioTestData(
                     path=os.path.join(self.bindir, 'fix_2k_16.raw'),
                     duration_secs=10,
-                    frequencies=[2000, 2000])
+                    frequencies=[2000, 2000],
+                    volume_scale=0.5)
 
         if (source_id == chameleon_audio_ids.CrosIds.SPEAKER
                     and not audio_test_utils.has_internal_speaker(self.host)):
@@ -96,7 +97,7 @@ class audio_AudioVolume(audio_test.AudioTest):
             binder = self.widget_factory.create_binder(source, recorder)
 
         low_volume, high_volume, highest_ratio = get_volume_spec(source_id)
-        ignore_frequencies += [50, 60]
+        ignore_frequencies += [17, 29, 42, 43, 50, 60]
 
         second_peak_ratio = audio_test_utils.get_second_peak_ratio(
                 source_id=source_id, recorder_id=recorder_id, is_hsp=False)

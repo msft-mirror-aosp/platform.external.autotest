@@ -15,7 +15,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota_flaky, suite:cellular_repair'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:vodafone"
+DEPENDENCIES = "carrier:vodafone, cellular_modem_state:NORMAL"
 
 DOC = '''
 

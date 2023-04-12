@@ -15,7 +15,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota, suite:cellular_repair'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:att"
+DEPENDENCIES = "carrier:att, cellular_modem_state:NORMAL"
 
 DOC = '''
 

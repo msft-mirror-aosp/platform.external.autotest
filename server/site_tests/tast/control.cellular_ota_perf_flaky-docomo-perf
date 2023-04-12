@@ -15,7 +15,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota_perf_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:docomo"
+DEPENDENCIES = "carrier:docomo, cellular_modem_state:NORMAL"
 
 DOC = '''
 

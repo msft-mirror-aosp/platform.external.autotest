@@ -15,7 +15,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular-cq'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:tmobile"
+DEPENDENCIES = "carrier:tmobile, cellular_modem_state:NORMAL"
 
 DOC = '''
 

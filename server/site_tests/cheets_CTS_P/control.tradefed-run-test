@@ -61,7 +61,7 @@ if not cts_abi or not cts_module or not cts_test:
 
 # And we are getting ready for tradefed.
 uri = ('gs://chromeos-arc-images/cts/bundle/P/android-cts-' + cts_revision +
-       '-linux_x86-' + cts_abi + '.zip') if cts_revision else 'LATEST'
+       '-linux_x86-' + cts_abi + '.zip') if cts_revision else 'DEV'
 run_template = ['run', 'commandAndExit', 'cts',
                 '--include-filter', cts_module + ' ' + cts_test,
                 '--skip-device-info',
@@ -109,7 +109,6 @@ def run_TS(machine):
         target_plan=None,
         bundle=cts_abi,
         uri=uri,
-        load_waivers=('#' not in cts_test),  # No waivers for single-test runs
         retry_manual_tests=('#' in cts_test),  # No waivers for single-test runs
         login_precondition_commands=[
             'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'

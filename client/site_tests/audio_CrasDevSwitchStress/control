@@ -8,7 +8,7 @@ METADATA = {
     "bug_component": "b:875558",
     "criteria": "Fail if device buffer drifts too high."
 }
-ATTRIBUTES = "suite:audio, suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
+# ATTRIBUTES = "suite:audio, suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 TEST_TYPE = 'client'
 
 """

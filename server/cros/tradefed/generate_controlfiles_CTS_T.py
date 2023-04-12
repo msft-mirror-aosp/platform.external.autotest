@@ -39,6 +39,8 @@ CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
+CONFIG['VM_SUITE_NAME'] = 'suite:arc-cts-vm'
+CONFIG['STABLE_VM_SUITE_NAME'] = 'suite:arc-cts-vm-stable'
 
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
@@ -171,6 +173,114 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
 ]
 
 CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = ['CtsSensorTestCases']
+
+CONFIG['X86_SKIP_SUITES'] = ['suite:arc-cts-vm']
+# List of modules that skip x86 runs.
+CONFIG['SKIP_X86_MODULE_RULES'] = [
+        '+.*',
+]
+
+# Syntax:
+# - First character is either '+' (include) or '-' (exclude).
+# - Remaining is a regex that matches the CTS module name.
+# Rules are evaluated in list order, and the first match is returned.
+CONFIG['VM_MODULES_RULES'] = [
+        # Exception to CtsUi.* below.
+        '+CtsUidIsolation.*',
+
+        # HW-dependent tests to exclude.
+        '-CtsBluetooth.*',
+        '-CtsCamera.*',
+        '-CtsDeqp.*',
+        '-CtsFileSystem.*',
+        '-CtsGpu.*',
+        '-CtsGraphics.*',
+        '-CtsHardware.*',
+        '-CtsMedia.*',
+        '-CtsNNAPI.*',
+        '-CtsNative.*',
+        '-CtsOpenG.*',
+        '-CtsSample.*',
+        '-CtsSecurity.*',
+        '-CtsSensor.*',
+        '-CtsSimpleCpu.*',
+        '-CtsSkQP.*',
+        '-CtsUi.*',
+        '-CtsVideo.*',
+        '-CtsView.*',
+        '-CtsWifi.*',
+
+        # Add everything else.
+        '+.*',
+]
+
+# Same Syntax as VM_MODULES_RULES.
+# These VM testing are unstable, and will also run at regular frequency on
+# hardware.
+CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
+        # Uncomment the line below to add all tests back to hardware.
+        # TODO(fqj): comment out once arc-cts-vm is running.
+        "+.*",
+
+        # These tests failed more than once between Oct/13 and Nov/09 2022 on R.
+        "+CtsApp.*",
+        "+CtsBionic.*",
+        "+CtsCamera.*",
+        "+CtsJobScheduler.*",
+        "+CtsNet.*",
+        "+CtsOs.*",
+        "+CtsProvider.*",
+        "+CtsSimpleperfTestCases",
+        "+CtsStatsdHost.*",
+
+        # These tests has suspicious bug reports on R.
+        '+CtsAccessibility.*',  # b/192310577, b/196934844
+        '+CtsApp.*',  # b/216741475
+        '+CtsAssist.*',  # b/160541876
+        '+CtsAutoFillService.*',  # b/216897339
+        '+CtsBionic.*',  # b/160851611
+        '+CtsBlobStore.*',  # b/180681350
+        '+CtsBootStats.*',  # b/174224484
+        '+CtsDownloadManager.*',  # b/163729385
+        '+CtsDropBoxManagerTestCases.*',  # b/177029550
+        '+CtsDynamic.*',  # b/163121640
+        '+CtsFragment.*',  # b/251276296
+        '+CtsIke.*',  # b/160541882
+        '+CtsInputMethod.*',  # b/253540001, b/191413875
+        '+CtsJni.*',  # b/160867403
+        '+CtsJobScheduler.*',  # b/226422237
+        '+CtsMidiTestCases.*',  # b/222242213
+        '+CtsNdkBinder.*',  # b/163123128
+        '+CtsNet.*',  # b/258074918
+        '+CtsOs.*',  # b/b/187745471
+        '+CtsPerfetto.*',  # b/203614416
+        '+CtsProvider.*',  # b/212194116
+        '+CtsRs.*',  # b/166168119
+        '+CtsScopedStorageHostTest.*',  # b/232055847
+        '+CtsSimpleperfTestCases.*',  # b/247434877
+        '+CtsTransition.*',  # b/160544400
+        '+CtsWidget.*',  # b/214332007
+        '+LegacyStorageTest.*',  # b/190457907
+        '+ScopedStorageTest.*',  # b/190457907
+        '+vm-tests-tf.*',  # b/158533921
+
+        # May depend on HW ?
+        '+CtsDisplay.*',
+        '+CtsDpi.*',
+        # This suite include tests sensitive to graphics performance
+        # (GraphicsStatsValidationTest) so we probably need HW coverage.
+        '+CtsIncidentHost.*',
+        # We do see device-specfic failure from CtsWM (e.g., b/264339925) and
+        # formfactor dependence (5 or 6 kukui/nocturne-only failures must have
+        # been addressed before they become launch ready.) It is safer to leave
+        # this to the hw-dependence family at least until we have tablet/laptop
+        # coverage by Betty
+        '+CtsWindowManager.*',
+        '+signed-Cts.*',
+
+        # All others tests are stable on VM.
+        '-.*',
+]
 
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [

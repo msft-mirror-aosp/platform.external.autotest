@@ -27,7 +27,7 @@ def run_TS(machine):
         iterations=1,
         tag='internal.x86.vm-tests-tf',
         test_name='cheets_CTS_T.internal.x86.vm-tests-tf',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'vm-tests-tf', '--include-filter', 'vm-tests-tf04-10', '--include-filter', 'vm-tests-tf[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'vm-tests-tf', '--include-filter', 'vm-tests-tf04-12', '--include-filter', 'vm-tests-tf[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='vm-tests-tf',
         target_plan=None,

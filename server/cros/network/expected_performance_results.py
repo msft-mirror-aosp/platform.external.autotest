@@ -311,31 +311,31 @@ expected_throughput_wifi_router_arch = {
                         # TODO(b/271490937): wifi_perf_openwrt: UDP TX perf numbers are low
                         hostap_config.HostapConfig.MODE_11N_PURE: {
                                 hostap_config.HostapConfig.HT_CHANNEL_WIDTH_20:
-                                (30, 101),
+                                (72, 101),
                                 hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_PLUS:
-                                (50, 195),
+                                (135, 195),
                                 hostap_config.HostapConfig.HT_CHANNEL_WIDTH_40_MINUS:
-                                (50, 195)
+                                (135, 195)
                         },
                         hostap_config.HostapConfig.MODE_11AC_MIXED: {
                                 hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_80:
-                                (200, 500)
+                                (347, 500)
                         },
                         hostap_config.HostapConfig.MODE_11AC_PURE: {
                                 hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20:
-                                (30, 121),
+                                (87, 121),
                                 hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40:
-                                (50, 260)
+                                (180, 260)
                         },
                         hostap_config.HostapConfig.MODE_11AX_MIXED: {
                                 hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80:
-                                (200, 500)
+                                (347, 500)
                         },
                         hostap_config.HostapConfig.MODE_11AX_PURE: {
                                 hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20:
-                                (30, 121),
+                                (87, 121),
                                 hostap_config.HostapConfig.HE_CHANNEL_WIDTH_40:
-                                (50, 260)
+                                (180, 260)
                         }
                 }
         }

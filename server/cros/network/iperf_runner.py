@@ -386,6 +386,13 @@ class IperfRunner(object):
         self._udp_flag = '-u' if config.udp else ''
         self._bidirectional_flag = '-d' if config.bidirectional else ''
 
+        # TODO(b/271490937): wifi_perf_openwrt: UDP TX perf numbers are low on
+        # openwrt. Overwrite the num_ports for UDP_TX on openwrt since it's the
+        # only viable workaround to improve the Tput in such case.
+        if self._config.udp and not self._config.bidirectional and self._server_host.get_os_type(
+        ) == 'openwrt':
+            self._config.num_ports = 1
+
     def __enter__(self):
         self._restart_iperf_server()
         return self
@@ -463,10 +470,11 @@ class IperfRunner(object):
         @return IperfResult summarizing an iperf run.
 
         """
-        iperf_client = '%s -c %s -B %s -b %s -x C -y c -P 4 -t %s %s %s' % (
+        iperf_client = '%s -c %s -B %s -b %s -x C -y c -P %d -t %s %s %s' % (
                 self._command_iperf_client, self._server_ip, self._client_ip,
-                self._config.max_bandwidth, self._config.test_time,
-                self._udp_flag, self._bidirectional_flag)
+                self._config.max_bandwidth, self._config.num_ports,
+                self._config.test_time, self._udp_flag,
+                self._bidirectional_flag)
 
         logging.info('Running iperf client for %d seconds.',
                      self._config.test_time)

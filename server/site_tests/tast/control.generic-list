@@ -41,6 +41,7 @@ def run(machine):
                  command_args=command_args,
                  varslist=varslist,
                  exclude_missing=True,
-                 report_skipped=True)
+                 report_skipped=True,
+                 clear_tpm=False)
 
 parallel_simple(run, machines)

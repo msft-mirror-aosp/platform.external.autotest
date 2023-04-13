@@ -64,7 +64,15 @@ def _wait_for_battery_discharge(status):
 
 
 def _charge_control_by_ectool(is_charge, ignore_status, host=None):
-    """execute ectool command.
+    """execute ectool commands.
+
+    When forcing the battery to discharge, we force the charger off. If
+    supported, we enable the battery sustainer for 5% display charge as a
+    back-up in-case the charger connection resets (causing the system to charge
+    again).
+
+    For enabling charging, we reset chargeoverride and chargecontrol back to the
+    default states.
 
     @param is_charge: bool, True for charging, False for discharging.
     @param ignore_status: do not raise an exception.
@@ -75,13 +83,20 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
     @raises error.CmdError: if ectool returns non-zero exit status.
     """
     ec_cmd_discharge = 'ectool chargeoverride dontcharge'
-    ec_cmd_normal = 'ectool chargeoverride off'
+    ec_cmd_charge = 'ectool chargeoverride off'
+    ec_cmd_sustain = 'ectool chargecontrol normal 5 5'
+    ec_cmd_normal = 'ectool chargecontrol normal'
     run_func = host.run if host else utils.run
     try:
         if is_charge:
+            run_func(ec_cmd_charge)
             run_func(ec_cmd_normal)
         else:
             run_func(ec_cmd_discharge)
+            try:
+                run_func(ec_cmd_sustain)
+            except error.CmdError as e:
+                logging.info('Battery sustainer maybe not supported: %s', e)
     except error.CmdError as e:
         logging.warning('Unable to use ectool: %s', e)
         if ignore_status:

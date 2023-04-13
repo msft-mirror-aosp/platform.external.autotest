@@ -236,7 +236,7 @@ class TradefedTest(test.test):
 
         # Load expected test failures to exclude them from re-runs.
         self._waivers = set()
-        is_dev = uri.startswith('DEV')
+        is_dev = uri and uri.startswith('DEV')
         self._waivers.update(
                 self._get_expected_failures('expectations', bundle, is_dev))
         if not retry_manual_tests:

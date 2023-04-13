@@ -4,12 +4,16 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.cellular-ota-roamsim-unstable'
+METADATA = {
+    "contacts": ["chromeos-cellular-team@google.com"],
+    "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
+    }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:roamsim"
+DEPENDENCIES = "carrier:roamsim, cellular_modem_state:normal"
 
 DOC = '''
 Run the unstable Tast tests which verify cellular roaming functionality.

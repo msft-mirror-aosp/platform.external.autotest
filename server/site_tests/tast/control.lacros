@@ -68,7 +68,7 @@ def run(machine):
     total_shards=args_dict.get('total_shards', 1)
     shard_index=args_dict.get('shard_index', 0)
     run_private_tests=args_dict.get('run_private_tests', 'true') == 'true'
-    retries=args_dict.get('retries', 0)
+    retries=int(args_dict.get('retries', 0))
 
     def cleanup():
         chrome_sideloader.cleanup_host(host, CHROME_DIR, None)

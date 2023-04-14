@@ -1154,6 +1154,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
       be passed to quick_provision. This is useful for M2N tests to easily find
       the first build to provision.
 
+      For Moblab runs, all arguments to this function are ignored. The image
+      archive format must be used, and only the latest stable is currently
+      supported.
+
       @param release_archive_path: True to return the build's release archive
                                    path, i.e.
                                    <channel>-channel/<board>/<build number>
@@ -1183,16 +1187,25 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                         "deviceCategory=ChromeOS", t.name)
                 stable_build_idx = None
                 reader = csv.reader(t.fo, delimiter=',')
-                # Parse first row to find index of `cros_stable`.
-                target_build_idx = next(reader).index('cros_stable')
+                # Parse first row to find index of `cros_stable` for the cros
+                # build number and `cr_stable` for the milestone number.
+                first_row = next(reader)
+                target_build_idx = first_row.index('cros_stable')
+                target_cr_idx = first_row.index('cr_stable')
                 for row in reader:
                     if row[0].startswith(board):
                         target_build = row[target_build_idx]
+                        target_cr = row[target_cr_idx]
                         break
 
-            if target_build is not None:
-                logging.info('Found stable build: %s', target_build)
-                return os.path.join(channel, board, target_build)
+            if target_build is not None and target_cr is not None:
+                logging.info('Found stable build %s, Chrome %s', target_build,
+                             target_cr)
+                # Moblab partner buckets use the image archive style paths.
+                milestone = target_cr.split('.')[0]
+                version = 'R' + '-'.join([milestone, target_build])
+                builder = board + '-release'
+                return os.path.join(builder, version)
 
             raise error.TestNAError(
                     "Moblab could not find stable build to run M2N.")
@@ -1239,11 +1252,12 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         @param build_name: The build name to use, such as
                            dev-channel/asurada/14515.0.0 for the release
-                           bucket, or asurada-release/14515.0.0 for the archive
-                           bucket.
+                           bucket, or asurada-release/R100-14515.0.0 for the
+                           archive bucket.
         @param is_release_bucket: If True (default), use release bucket
                                   gs://chromeos-releases else use archive bucket
-                                  gs://chromeos-image-archive.
+                                  gs://chromeos-image-archive. Only used for
+                                  public bucket staging.
         @param public_bucket: True to use a public GS bucket for provisioning
                               when the DUT is not connected to the lab network.
                               False assumes the DUT is connected to the lab
@@ -1281,6 +1295,31 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         else:
             cache_server_url = self._get_cache_server_url()
             update_url = os.path.join(cache_server_url, 'update', build_name)
+
+        # Moblab runs still use a devserver, so stage the artifacts.
+        if lsbrelease_utils.is_moblab():
+            # Get the partner bucket archive URL for staging.
+            image_path = global_config.global_config.get_config_value(
+                    'CROS', 'image_storage_server', type=str)
+            stable_archive_url = os.path.join(image_path, build_name)
+            filenames = [
+                    self._KERNEL_ARCHIVE_NAME, self._ROOTFS_ARCHIVE_NAME,
+                    self._STATEFUL_ARCHIVE_NAME
+            ]
+            if with_minios:
+                filenames.append(self._MINIOS_ARCHIVE_NAME)
+
+            logging.info('Staging provision artifacts on devserver for moblab')
+            ds_url, _ = tools.get_devserver_build_from_package_url(
+                    self._get_job_repo_url())
+            ds = dev_server.ImageServer(ds_url)
+            try:
+                ds.stage_artifacts(image=build_name,
+                                   files=filenames,
+                                   archive_url=stable_archive_url)
+            except dev_server.DevServerException as e:
+                raise error.TestError(
+                        'Failed to stage provision artifacts: %s' % e)
 
         # Provision will be attempted, so ensure stateful will be restored
         # after the update.

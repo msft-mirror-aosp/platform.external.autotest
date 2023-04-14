@@ -3170,6 +3170,8 @@ class PCHPowergatingStats(object):
             LPSS|                    # UART, I2C, SPI - On if console suspend
             ISH|                     # Integrated Sensor Hub - On if not use CrOS EC
             EXI|                     # Embedded Debug Interface
+            GBE|                     # Gigabit Ethernet
+            CUNIT|                   # Undocument
         '''
         re_flags = re.IGNORECASE | re.VERBOSE
         allow_matcher = re.compile(S0IX_ALLOWLIST_REGEX, re_flags)

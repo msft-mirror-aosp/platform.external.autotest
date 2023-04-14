@@ -14,7 +14,6 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros import ec
-from autotest_lib.client.cros.power import power_utils
 from six.moves import range
 
 _FORCE_DISCHARGE_SETTINGS = ['false', 'true', 'optional']

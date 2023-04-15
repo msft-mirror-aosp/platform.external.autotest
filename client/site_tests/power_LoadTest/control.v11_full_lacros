@@ -9,7 +9,7 @@
 #
 # This version of test use web caching.
 
-NAME = "power_LoadTest.caching_full_lacros"
+NAME = "power_LoadTest.v11_full_lacros"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",

@@ -12,7 +12,7 @@
 #   - Ethernet is connected.
 #   - Use web caching
 
-NAME = "power_LoadTest.caching_lacros"
+NAME = "power_LoadTest.v11_1hr"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",
@@ -33,4 +33,4 @@ job.run_test('power_LoadTest', loop_time=loop_time, loop_count=loop_count,
              check_network=False, tag=NAME.split('.')[1],
              pdash_note=pdash_note,
              tast_bundle_path=args_dict.get('tast_bundle_path'),
-             web_caching=True, use_lacros=True)
+             web_caching=True)

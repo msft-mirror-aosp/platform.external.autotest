@@ -535,11 +535,12 @@ class UpdateEngineUtil(object):
         @param powerwash: True to powerwash along with the rollback.
 
         """
-        cmd = [self._UPDATE_ENGINE_CLIENT_CMD, '--rollback', '--follow']
+        cmd = [self._UPDATE_ENGINE_CLIENT_CMD, '--rollback']
         if not powerwash:
             cmd.append('--nopowerwash')
         logging.info('Performing rollback with cmd: %s.', cmd)
         self._run(cmd)
+        self._wait_for_update_status(self._UPDATE_STATUS_UPDATED_NEED_REBOOT)
         kernel_utils.verify_kernel_state_after_update(self._host)
 
 

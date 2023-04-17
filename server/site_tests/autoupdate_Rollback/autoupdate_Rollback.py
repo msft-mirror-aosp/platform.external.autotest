@@ -7,6 +7,7 @@ import logging
 import os
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -97,6 +98,12 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
 
         logging.info('Update verified, initiating rollback.')
         # Powerwash is tested separately from rollback.
+        # Wait for update_engine to be idle before initiating a rollback,
+        # since other operations such as DLC installations could still be
+        # happening.
+        utils.poll_for_condition(condition=self._is_update_engine_idle,
+                                 timeout=300,
+                                 desc='Waiting for update engine idle')
         self._rollback(powerwash=False)
         self._host.reboot()
 

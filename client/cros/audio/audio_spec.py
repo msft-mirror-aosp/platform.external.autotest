@@ -69,6 +69,7 @@ def strip_kernelnext_suffix(board_name):
     return board_name
 
 BOARDS_WITH_HOTWORDING = ['kevin']
+MODELS_WITH_HOTWORDING = ['brya', 'skolas']
 
 
 def has_hotwording(board_name, model_name):
@@ -81,7 +82,8 @@ def has_hotwording(board_name, model_name):
 
     """
     board_name = strip_kernelnext_suffix(board_name)
-    return (board_name in BOARDS_WITH_HOTWORDING)
+    return (board_name in BOARDS_WITH_HOTWORDING
+            or model_name in MODELS_WITH_HOTWORDING)
 
 def has_echo_reference(board_name):
     """Checks if a board has echo reference.

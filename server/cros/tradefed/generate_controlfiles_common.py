@@ -1186,24 +1186,10 @@ def get_tradefed_data(path, is_public, abi):
     _ABI_PREFIXES = ('arm', 'x86')
     _MODULE_PREFIXES = ('Cts', 'cts-', 'signed-Cts', 'vm-tests-tf', 'Sts')
 
-    # Some CTS/GTS versions insert extra linebreaks due to a bug b/196912758.
-    # Below is a heurestical workaround for the situation.
-    lines = []
-    prev_line_abi_prefixed = False
-    for line in tradefed_output.splitlines():
-        abi_prefixed = line.startswith(_ABI_PREFIXES)
-        end_of_modules = (len(line) == 0 or 'Saved log to' in line)
-        if prev_line_abi_prefixed and not end_of_modules and not abi_prefixed:
-            # Merge a line immediately following 'abi XtsModuleName'
-            lines[-1] += line
-        else:
-            lines.append(line)
-        prev_line_abi_prefixed = abi_prefixed
-
     modules = set()
     build = '<unknown>'
     revision = None
-    for line in lines:
+    for line in tradefed_output.splitlines():
         # Android Compatibility Test Suite 7.0 (3423912)
         if (line.startswith('Android Compatibility Test Suite ')
                     or line.startswith('Android Google ')

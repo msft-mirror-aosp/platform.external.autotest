@@ -1792,7 +1792,15 @@ class Servo(object):
             logging.info('PD controls require a servo v4 type-c.')
             return False
         # Lastly, one cannot really do anything without a plugged in charger.
-        chg_port_mv = self.get('ppchg5_mv')
+        try:
+            # TODO(b/278690937): raise an error once ppchg5_mv failures are
+            # understood.
+            chg_port_mv = self.get('ppchg5_mv')
+        except Exception as e:
+            logging.warning('ppchg5_mv error %r', e)
+            # If ppchg5_mv returns an error, then pd control can't be used. It's
+            # unsupported.
+            return False
         if chg_port_mv < V4_CHG_ATTACHED_MIN_VOLTAGE_MV:
             logging.info(
                     'It appears that no charger is plugged into servo v4. '

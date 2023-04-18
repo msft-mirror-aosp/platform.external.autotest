@@ -639,7 +639,7 @@ class Cr50Test(FirmwareTest):
         state['prepvt_version'] = self._get_image_information('prepvt')
         state['chip_bid'] = cr50_utils.GetChipBoardId(self.host)
         state['chip_bid_str'] = '%08x:%08x:%08x' % state['chip_bid']
-        state['running_image_ver'] = cr50_utils.GetRunningVersion(self.host)
+        state['running_image_ver'] = cr50_utils.GetFwVersion(self.host)
         state['running_image_bid'] = self.gsc.get_active_board_id_str()
 
         logging.debug('Current %s state:\n%s', self.gsc.NAME,

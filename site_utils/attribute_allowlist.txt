@@ -539,6 +539,7 @@ suite:platform_test_nightly
 suite:policy
 suite:power_build
 suite:power_check
+suite:power_cpd
 suite:power_daily
 suite:power_dashboard
 suite:power_idle

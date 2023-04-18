@@ -32,4 +32,4 @@ def run(machine):
                  test_exprs=['("group:video_conference" && video_conference_per_build)'],
                  command_args=args)
 
-sparallel_simple(run, machines)
+parallel_simple(run, machines)

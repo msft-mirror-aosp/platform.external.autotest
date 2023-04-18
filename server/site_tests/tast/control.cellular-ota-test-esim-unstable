@@ -4,12 +4,16 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.cellular-ota-test-esim-unstable'
+METADATA = {
+    "contacts": ["cros-connectivity@google.com"],
+    "bug_component": "b:1226026", # ChromeOS > Software > System Services > Connectivity
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:testesim"
+DEPENDENCIES = "carrier:testesim, cellular_modem_state:NORMAL"
 
 DOC = '''
 Run the unstable Tast tests which verify cellular test esim functionality.

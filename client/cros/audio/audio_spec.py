@@ -85,16 +85,24 @@ def has_hotwording(board_name, model_name):
     return (board_name in BOARDS_WITH_HOTWORDING
             or model_name in MODELS_WITH_HOTWORDING)
 
-def has_echo_reference(board_name):
+
+MODELS_WITH_ECHO_REFERENCE = [
+        'volmar', 'gimble', 'redrix', 'zavala', 'kano', 'zydron'
+]
+
+
+def has_echo_reference(board_name, model_name):
     """Checks if a board has echo reference.
 
     @param board_name: board name of the DUT.
+    @param model_name: model name of the DUT.
 
     @returns: True if the board has echo reference.
 
     """
     board_name = strip_kernelnext_suffix(board_name)
-    return board_name in ['nocturne', 'atlas', 'volteer', 'brya', 'rammus']
+    return (board_name in ['nocturne', 'atlas', 'volteer', 'rammus']
+            or model_name in MODELS_WITH_ECHO_REFERENCE)
 
 
 BoardInfo = collections.namedtuple('BoardInfo', ['board', 'model', 'sku'])

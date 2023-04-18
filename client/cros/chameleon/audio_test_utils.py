@@ -257,7 +257,11 @@ def has_echo_reference(host):
     @returns: True if the board has echo reference. False otherwise.
 
     """
-    return audio_spec.has_echo_reference(get_board_name(host))
+    board_name = get_board_name(host)
+    model_name = host.get_platform()
+
+    return audio_spec.has_echo_reference(board_name, model_name)
+
 
 def suspend_resume(host, suspend_time_secs=30, resume_network_timeout_secs=60):
     """Performs the suspend/resume on Cros device.

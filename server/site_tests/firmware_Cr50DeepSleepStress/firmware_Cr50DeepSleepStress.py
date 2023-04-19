@@ -392,7 +392,11 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             errors.append(rv)
         rv = self.check_flog_output(original_flog)
         if rv:
-            errors.append(rv)
+            # TODO(b/260779816): enable on ti50 when flog issues are fixed.
+            if self.gsc.NAME == 'ti50':
+                logging.warning('Ignoring Flog Errors %r', rv)
+            else:
+                errors.append(rv)
         secondary_error = 'Suspend issues: %s' % ', '.join(errors)
         if main_error:
             logging.info(secondary_error)

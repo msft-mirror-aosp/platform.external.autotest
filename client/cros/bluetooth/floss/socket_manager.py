@@ -216,7 +216,7 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
             utils.poll_for_condition(
                     condition=(lambda: socket_id in self.ready_sockets),
                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
-        except TimeoutError:
+        except utils.TimeoutError:
             logging.error('on_incoming_socket_ready not called')
             return None, None
         socket, status = self.ready_sockets[socket_id]
@@ -388,7 +388,7 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
 
             return True
-        except TimeoutError:
+        except utils.TimeoutError:
             logging.error('on_incoming_socket_closed not called')
             return False
 

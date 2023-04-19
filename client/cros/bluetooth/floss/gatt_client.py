@@ -916,7 +916,7 @@ class FlossGattClient(GattClientCallbacks):
                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
             return True
 
-        except TimeoutError:
+        except utils.TimeoutError:
             logging.error('on_client_connection_state not called')
             return False
 
@@ -933,7 +933,7 @@ class FlossGattClient(GattClientCallbacks):
                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
             return True
 
-        except TimeoutError:
+        except utils.TimeoutError:
             logging.error('on_search_complete not called')
             return False
 

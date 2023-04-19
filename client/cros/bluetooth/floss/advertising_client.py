@@ -697,7 +697,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                     condition=(lambda: reg_id in self.start_adv_results),
                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
 
-        except TimeoutError:
+        except utils.TimeoutError:
             logging.error('on_advertising_set_started not called')
             return (None, None)
 
@@ -725,7 +725,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
 
             return True
-        except TimeoutError:
+        except utils.TimeoutError:
             logging.error('on_advertising_set_stopped not called')
             return False
 

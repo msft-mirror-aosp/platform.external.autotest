@@ -420,7 +420,7 @@ class FlossScannerClient(BluetoothScannerCallbacks):
             utils.poll_for_condition(condition=(
                     lambda: uuid in self.register_scanner_results),
                                      timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
-        except TimeoutError:
+        except utils.TimeoutError:
             logging.error('on_scanner_registered not called')
             return None, None
         scanner_id, status = self.register_scanner_results[uuid]

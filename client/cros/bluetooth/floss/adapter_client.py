@@ -12,6 +12,7 @@ from gi.repository import GLib
 from uuid import UUID
 import logging
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.floss_enums import BondState
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (
@@ -98,6 +99,8 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
     ADAPTER_CONN_CB_OBJ_NAME = 'test_connection_client'
     QA_INTERFACE = 'org.chromium.bluetooth.BluetoothQA'
     QA_LEGACY_INTERFACE = 'org.chromium.bluetooth.BluetoothQALegacy'
+
+    DISCONNECTION_TIMEOUT = 5
 
     @staticmethod
     def parse_dbus_device(remote_device_dbus):
@@ -744,3 +747,23 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 address,
                 self.known_devices.get(address, {}).get('name', 'Test device'))
         return bool(self.proxy().DisconnectAllEnabledProfiles(device))
+
+    def wait_for_device_disconnected(self, address):
+        """Waits for the device become disconnected."""
+        def device_disconnected(self):
+            return not self.known_devices.get(address, {}).get(
+                    'connected', True)
+
+        try:
+            utils.poll_for_condition(
+                    condition=(lambda: device_disconnected(self)),
+                    timeout=self.DISCONNECTION_TIMEOUT)
+            return True
+        except utils.TimeoutError:
+            logging.error('on_device_disconnected not called')
+            return False
+
+    def disconnect_device(self, address):
+        """Disconnect a specific address."""
+        return self.disconnect_all_enabled_profiles(
+                address) and self.wait_for_device_disconnected(address)

@@ -4879,7 +4879,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
     def disconnect_device(self, address):
         """Disconnect a specific address."""
-        return self.adapter_client.disconnect_all_enabled_profiles(address)
+        return self.adapter_client.disconnect_device(address)
 
     def get_device_property(self, address, prop_name):
         """Read a property from a remote device.

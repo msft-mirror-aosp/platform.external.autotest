@@ -3,21 +3,21 @@
 # found in the LICENSE file.
 
 AUTHOR = 'n/a'
-NAME = '{name}{suite_tag}{iteration_label}'
-METADATA = {{
+NAME = 'GoogleMeet_grid_advanced_quick_v2'
+METADATA = {
     "contacts": ["chromeos-perf-reliability-eng@google.com", "asadrieh@google.com"],
     "bug_component": "b:1025042",
     "criteria": "Tauto wrapper for SPRITE v2 Tast test.",
     "hw_agnostic": True
-}}
-ATTRIBUTES = 'suite:performance_cuj_sprite{suite_tag}'
+}
+ATTRIBUTES = 'suite:performance_cuj_sprite_quick_v2'
 TIME = 'long'
 TEST_CATEGORY = 'Stress'
 TEST_CLASS = 'Hardware'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 4
-ITERATION = {iteration}
+ITERATION = 1
 REQUIRE_SSP = True
 DEPENDENCIES = ''
 PY_VERSION = 3
@@ -37,7 +37,7 @@ from autotest_lib.utils import labellib
 
 def report_host_info(host):
   labels = labellib.LabelsMapping(host.host_info_store.get().labels)
-  labels['test'] = '{test_exprs}'
+  labels['test'] = 'spera.GoogleMeet.grid_advanced'
   utils.write_keyval(job.resultdir, labels)
   try:
     # Try to retrieve and report DUT HWID and serial number.
@@ -53,7 +53,7 @@ def run(machine):
   varslist = ['iteration=%d' % ITERATION]
   job.run_test('tast',
               host=host,
-              test_exprs=['{test_exprs}'],
+              test_exprs=['spera.GoogleMeet.grid_advanced'],
               ignore_test_failures=False,
               max_run_sec= 120 * 60,
               varslist=varslist,

@@ -29,4 +29,4 @@ METADATA = {
 ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_fw'
 TEST_TYPE = 'client'
 
-job.run_test('bluetooth_AVLHCI', test_name=NAME.split('.')[1], tag=NAME.split('.')[1])
+job.run_test('bluetooth_AVLHCI', test_name=NAME.split('.')[1], tag='.'.join(NAME.split('.')[1:]))

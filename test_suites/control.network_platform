@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.network_platform'
+NAME = 'network_platform'
 METADATA = {
     "contacts": ["cros-networking@google.com"],
     "bug_component": "b:156085", # ChromeOS > Platform > System > Networking

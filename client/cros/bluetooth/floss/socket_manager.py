@@ -291,6 +291,9 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
 
         socket_id = socket_result['id']
         server_socket, status = self.wait_for_incoming_socket_ready(socket_id)
+        if status is None:
+            return None
+
         if BtStatus(status) != BtStatus.SUCCESS:
             logging.error('Failed to start socket with id: %s, status = %s',
                           socket_id, status)

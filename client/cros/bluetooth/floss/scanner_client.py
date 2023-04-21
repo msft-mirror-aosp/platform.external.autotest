@@ -462,6 +462,8 @@ class FlossScannerClient(BluetoothScannerCallbacks):
             return None
 
         scanner_id, status = self.wait_for_on_scanner_registered(uuid)
+        if status is None:
+            return None
 
         if GattStatus(status) != GattStatus.SUCCESS:
             logging.error(

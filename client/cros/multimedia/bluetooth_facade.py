@@ -5523,7 +5523,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         @param address: Remote device MAC address.
 
-        @return: True on success, False otherwise.
+        @return: Client id on success, None otherwise.
         """
         return self.gatt_client.connect_client_sync(address)
 

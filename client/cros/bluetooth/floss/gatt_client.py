@@ -942,10 +942,11 @@ class FlossGattClient(GattClientCallbacks):
 
         @param address: Remote device MAC address.
 
-        @return: Client id.
+        @return: Client id on success, None otherwise.
         """
         self.connect_client(address=address)
-        self.wait_for_client_connected(address)
+        if not self.wait_for_client_connected(address):
+            return None
         return self.connected_clients[address]
 
     def discover_services_sync(self, address):
@@ -953,8 +954,10 @@ class FlossGattClient(GattClientCallbacks):
 
         @param address: Remote device MAC address.
 
-        @return: Remote device GATT services as a list.
+        @return: Remote device GATT services as a list on success,
+                 None otherwise.
         """
         self.discover_services(address)
-        self.wait_for_search_complete(address)
+        if not self.wait_for_search_complete(address):
+            return None
         return self.gatt_services[address]

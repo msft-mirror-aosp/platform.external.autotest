@@ -756,6 +756,9 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
             return None
 
         advertise_id, status = self.wait_for_adv_started(reg_id)
+        if status is None:
+            return None
+
         if GattStatus(status) != GattStatus.SUCCESS:
             logging.error(
                     'Failed to start advertisement with id: %s, status = %s',

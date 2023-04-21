@@ -30,6 +30,7 @@ _chip_info = {
         'Intel-AC9560': ChipInfo(False, True, 0x001e),
         'Intel-AX200': ChipInfo(False, True, 0x001e),
         'Intel-AX201': ChipInfo(False, True, 0x001e),
+        'Intel-AX203': ChipInfo(False, True, 0x001e),
         'Intel-AX211': ChipInfo(False, True, 0x001e),
 
         # Realtek chipsets

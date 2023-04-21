@@ -330,6 +330,7 @@ class BluetoothBaseFacadeLocal(object):
             'Intel-AX201': [(('0x8086', '0x02f0'), 'USB'),
                             (('0x8086', '0x4df0'), 'USB'),
                             (('0x8086', '0xa0f0'), 'USB')],  # HrP2
+            'Intel-AX203': [(('0x8086', '0x54f0', '0x0274'), 'USB')],  # JnP
             'Intel-AX211': [(('0x8086', '0x51f0'), 'USB'),
                             (('0x8086', '0x51f1'), 'USB'),
                             (('0x8086', '0x54f0'), 'USB'),
@@ -1135,25 +1136,32 @@ class BluetoothBaseFacadeLocal(object):
 
     def get_wlan_vid_pid(self):
         """ Return vendor id and product id of the wlan chip on BT/WiFi module
+        If subsystem is available, also return subsystem id.
 
-        @returns: (vid,pid) on success; (None,None) on failure
+        @returns: (vid,pid,subsystem) on success; (None,None,None) on failure
         """
         vid = None
         pid = None
+        subsystem = None
         path_template = '/sys/class/net/%s/device/'
         for dev_name in ['wlan0', 'mlan0']:
             if os.path.exists(path_template % dev_name):
                 path_v = path_template % dev_name + 'vendor'
                 path_d = path_template % dev_name + 'device'
-                logging.debug('Paths are %s %s', path_v, path_d)
+                path_s = path_template % dev_name + 'subsystem_device'
+                logging.debug('Paths are %s %s %s', path_v, path_d, path_s)
                 try:
                     vid = open(path_v).read().strip('\n')
                     pid = open(path_d).read().strip('\n')
+                    subsystem = open(path_s).read().strip('\n')
                     break
                 except Exception as e:
-                    logging.error('Exception %s while reading vid/pid', str(e))
-        logging.debug('returning vid:%s pid:%s', vid, pid)
-        return (vid, pid)
+                    logging.error(
+                            'Exception %s while reading vid/pid/subsystem',
+                            str(e))
+        logging.debug('returning vid:%s pid:%s subsystem:%s', vid, pid,
+                      subsystem)
+        return (vid, pid, subsystem)
 
     def get_bt_transport(self):
         """ Return transport (UART/USB/SDIO) used by BT module
@@ -1218,8 +1226,9 @@ class BluetoothBaseFacadeLocal(object):
 
         @returns chipset name if successful else ''
         """
-        (vid, pid) = self.get_wlan_vid_pid()
-        logging.debug('Bluetooth module vid pid is %s %s', vid, pid)
+        (vid, pid, subsystem) = self.get_wlan_vid_pid()
+        logging.debug('Bluetooth module vid pid is %s %s %s', vid, pid,
+                      subsystem)
         transport = self.get_bt_transport()
         logging.debug('Bluetooth transport is %s', transport)
         if vid is None or pid is None:
@@ -1228,6 +1237,12 @@ class BluetoothBaseFacadeLocal(object):
             # This will return one of the known chipset names or a string
             # containing the name of chipset read from DUT
             return self.get_bt_module_name()
+        # if subsystem id is available, match it first
+        if subsystem is not None:
+            for name, l in self.CHIPSET_TO_VIDPID.items():
+                if ((vid, pid, subsystem), transport) in l:
+                    return name
+
         for name, l in self.CHIPSET_TO_VIDPID.items():
             if ((vid, pid), transport) in l:
                 return name

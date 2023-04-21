@@ -229,25 +229,14 @@ class power_WakeSources(test.test):
             self._host.servo.set_nocheck('init_usb_keyboard', 'on')
             time.sleep(USB_PRESENT_DELAY)
             # Check if DUT can see a wake capable Atmel USB keyboard.
-            if servo_keyboard_utils.is_servo_usb_keyboard_present(
+            if not servo_keyboard_utils.is_servo_usb_keyboard_present(
                     self._host):
-                if servo_keyboard_utils.is_servo_usb_wake_capable(
-                        self._host):
-                    return True
-                else:
-                    logging.warning(
-                            'Atmel USB keyboard does not have wake capability.'
-                            ' See '
-                            'https://chromium.googlesource.com/chromiumos/'
-                            'third_party/hdctools/+/HEAD/docs/servo_v4p1_cf.md'
-                            '#programming-the-atmel-atmega32u4')
-                    return False
-            else:
-                logging.warning(
-                    'DUT cannot see a Atmel USB keyboard. '
-                    ' Please plug in USB C charger into Servo if using V4.')
-
-                return False
+                logging.error('DUT cannot see a Atmel USB keyboard.')
+            elif not servo_keyboard_utils.is_servo_usb_wake_capable(
+                    self._host):
+                logging.error('Atmel USB keyboard does not have required wake '
+                              'capability.')
+            return True
         if wake_source in ['AC_CONNECTED', 'AC_DISCONNECTED']:
             arch = self._host.get_architecture()
             wake_mask = 0

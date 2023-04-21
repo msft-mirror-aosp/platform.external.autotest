@@ -651,8 +651,11 @@ class power_LoadTest(arc.ArcTest):
 
         logger = power_dashboard.KeyvalLogger(self._start_time, self._end_time)
         for key in [
-                'b_on_ac', 'force_discharge', 'gaia_login',
-                'percent_usb_suspended_time', 'web_caching'
+                'b_on_ac',
+                'force_discharge',
+                'gaia_login',
+                'percent_usb_suspended_time',
+                'web_caching',
         ]:
             logger.add_item(key, keyvals[key], 'point', 'perf')
 
@@ -696,6 +699,24 @@ class power_LoadTest(arc.ArcTest):
             for index, val in enumerate(vals):
                 log_name = 'loop%02d_ms_page_load_time' % index
                 logger.add_item(log_name, val, 'point', 'perf')
+
+        backlight_keys = [
+                _loop_keyname(i, 'level_backlight_')
+                for i in range(self._loop_count)
+        ]
+        for key in backlight_keys:
+            level_backlight_percent = key + 'percent'
+            level_backlight_nonlinear = key + 'nonlinear'
+            # Not all tests will run loop_count times, checking if the backlight
+            # percent is being added to keyvals first before adding to logger
+            if level_backlight_percent in keyvals:
+                logger.add_item(level_backlight_percent,
+                                keyvals[level_backlight_percent], 'point',
+                                'perf')
+            if level_backlight_nonlinear in keyvals:
+                logger.add_item(level_backlight_nonlinear,
+                                keyvals[level_backlight_nonlinear], 'point',
+                                'perf')
 
         # Add battery life and power to power dashboard
         for key in ('minutes_battery_life_tested', 'minutes_battery_life',

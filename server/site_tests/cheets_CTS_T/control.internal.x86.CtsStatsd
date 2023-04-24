@@ -4,7 +4,6 @@
 
 # This file has been automatically generated. Do not edit!
 from autotest_lib.client.common_lib import utils, global_config
-import pipes
 
 AUTHOR = 'n/a'
 NAME = 'cheets_CTS_T.internal.x86.CtsStatsd'
@@ -38,7 +37,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='x86',
         uri='DEV',
-        precondition_commands=['adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass)), 'adb shell cmd wifi connect-network %s' % pipes.quote(ssid), 'adb shell dumpsys wifi transports -eth'],
         timeout=18000)
 
 parallel_simple(run_TS, machines)

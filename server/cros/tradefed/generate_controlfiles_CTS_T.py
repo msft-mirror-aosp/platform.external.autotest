@@ -301,11 +301,6 @@ _WIFI_CONNECT_COMMANDS_V2 = [
         "'adb shell dumpsys wifi transports -eth'",
 ]
 
-_DISPLAY_REFRESH_COMMANDS = [
-        "'sleep 20'",  # Wait for the intent helper mojo connection established
-        "'android-sh -c \\'am start -a android.intent.action.VIEW -d https://webglsamples.org/electricflower/electricflower.html\\''"
-]
-
 CONFIG['WIFI_MODULES'] = [
         'CtsLibcoreTestCases',
         'CtsNetApi23TestCases',
@@ -317,7 +312,6 @@ CONFIG['WIFI_MODULES'] = [
 
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
-        'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
 }
 
 CONFIG['LOGIN_PRECONDITION'] = {
@@ -325,12 +319,10 @@ CONFIG['LOGIN_PRECONDITION'] = {
 
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
-        'CtsCameraTestCases.NativeCameraDeviceTest': _DISPLAY_REFRESH_COMMANDS,
 }
 
 for m in CONFIG['WIFI_MODULES']:
     CONFIG['PUBLIC_PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS
-    CONFIG['PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {
         'CtsCameraTestCases': ['lighting'],

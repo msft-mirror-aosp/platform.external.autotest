@@ -28,15 +28,24 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-
-    def au_run_method(self, device, test_method, test_profile):
+    def au_run_method(self,
+                      device,
+                      test_method,
+                      test_profile,
+                      *,
+                      test_with_ui_enabled=False):
         """audio procedure of running a specified test method.
 
         @param device: the bt peer device
         @param test_method: the audio test method to run
         @param test_profile: which test profile is used,
                              A2DP, HFP_WBS or HFP_NBS
+        @param test_with_ui_enabled: a bool indicating whether it should
+                enable ui before testing. If True, ui is enabled before
+                tests and disabled after tests. Otherwise, no effect.
         """
+        if test_with_ui_enabled is True:
+            self.test_enable_disable_ui(True)
         self.test_reset_on_adapter()
         self.test_bluetoothd_running()
         self.initialize_bluetooth_audio(device, test_profile)
@@ -48,6 +57,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.collect_audio_diagnostics()
         self.test_disconnection_by_adapter(device.address)
         self.cleanup_bluetooth_audio(device, test_profile)
+        if test_with_ui_enabled is True:
+            self.test_enable_disable_ui(False)
 
 
     def au_run_test_sequence(self, device, test_sequence, test_profile):
@@ -161,13 +172,20 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         test_sequence = lambda: self.pinned_playback(device, test_profile)
         self.au_run_test_sequence(device, test_sequence, test_profile)
 
-
-    def au_hfp_run_method(self, device, test_method, test_profile):
+    def au_hfp_run_method(self,
+                          device,
+                          test_method,
+                          test_profile,
+                          *,
+                          test_with_ui_enabled=False):
         """Run an HFP test with the specified test method.
 
         @param device: the bt peer device
         @param test_method: the specific HFP WBS test method
         @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
+        @param test_with_ui_enabled: a bool indicating whether it should
+                enable ui before testing. If True, ui is enabled before
+                tests and disabled after tests. Otherwise, no effect.
         """
         if self.check_wbs_capability():
             if test_profile in (HFP_WBS, HFP_WBS_MEDIUM):
@@ -199,8 +217,10 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 # The audio team suggests a simple 2-second sleep.
                 time.sleep(2)
 
-        self.au_run_method(
-                device, lambda: test_method(device, test_profile), test_profile)
+        self.au_run_method(device,
+                           lambda: test_method(device, test_profile),
+                           test_profile,
+                           test_with_ui_enabled=test_with_ui_enabled)
 
 
     @test_wrapper('HFP WBS sinewave test with dut as source',
@@ -225,14 +245,21 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 HFP_WBS)
 
 
-    @test_wrapper('HFP WBS sinewave test with dut as sink with super resolution',
-                  devices={'BLUETOOTH_AUDIO':1},
-                  skip_models=[
-                       'brask', 'brya', 'corsola', 'jacuzzi', 'kukui', 'nissa'])
+    @test_wrapper(
+            'HFP WBS sinewave test with dut as sink with super resolution',
+            devices={'BLUETOOTH_AUDIO': 1},
+            skip_models=[
+                    'brask', 'brya', 'corsola', 'jacuzzi', 'kukui', 'nissa'
+            ],
+            supports_floss=True)
     def au_hfp_wbs_dut_as_sink_with_super_resolution_test(self):
         """HFP WBS test with sinewave and super_resolution streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_sink_with_super_resolution, HFP_WBS)
+        # Enabling ui is needed, or the downloading in dlc service won't work.
+        self.au_hfp_run_method(device,
+                               self.hfp_dut_as_sink_with_super_resolution,
+                               HFP_WBS,
+                               test_with_ui_enabled=True)
 
 
     @test_wrapper('HFP NBS sinewave test with dut as source',
@@ -257,14 +284,21 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 HFP_NBS)
 
 
-    @test_wrapper('HFP NBS sinewave test with dut as sink with super resolution',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  skip_models=[
-                       'brask', 'brya', 'corsola', 'jacuzzi', 'kukui', 'nissa'])
+    @test_wrapper(
+            'HFP NBS sinewave test with dut as sink with super resolution',
+            devices={'BLUETOOTH_AUDIO': 1},
+            skip_models=[
+                    'brask', 'brya', 'corsola', 'jacuzzi', 'kukui', 'nissa'
+            ],
+            supports_floss=True)
     def au_hfp_nbs_dut_as_sink_with_super_resolution_test(self):
         """HFP NBS test with sinewave and super_resolution streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_sink_with_super_resolution, HFP_NBS)
+        # Enabling ui is needed, or the downloading in dlc service won't work.
+        self.au_hfp_run_method(device,
+                               self.hfp_dut_as_sink_with_super_resolution,
+                               HFP_NBS,
+                               test_with_ui_enabled=True)
 
 
     @test_wrapper('HFP WBS VISQOL test with dut as sink',
@@ -436,9 +470,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_a2dp_to_hfp_wbs_dut_as_source_test()
         self.au_hfp_nbs_to_a2dp_dut_as_source_test()
         self.au_hfp_wbs_to_a2dp_dut_as_source_test()
-        # The following tests will try to start custom chrome before running the
-        # tests because the feature is currently controlled by chrome flags.
-        # They will also try to stop ui after the test run.
+        # The following tests will try to enable ui before running the tests
+        # and they will also try to disable ui after the test run.
         self.au_hfp_nbs_dut_as_sink_with_super_resolution_test()
         self.au_hfp_wbs_dut_as_sink_with_super_resolution_test()
 

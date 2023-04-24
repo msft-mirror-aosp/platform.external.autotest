@@ -1726,8 +1726,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param device: the Bluetooth peer device.
         @param test_profile: which test profile is used, HFP_WBS or HFP_NBS.
         """
-        # Enabling ui is needed, or the downloading in dlc service won't work.
-        self.test_enable_disable_ui(True)
         # Sleeping is needed, or the step test_hfp_connected inside the method
         # hfp_dut_as_sink will fail.
         time.sleep(10)
@@ -1738,7 +1736,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 test_profile,
                 check_input_device_sample_rate=24000)
         self.test_set_force_sr_bt_enabled(False)
-        self.test_enable_disable_ui(False)
 
 
     def hfp_dut_as_source_back2back(self, device, test_profile):

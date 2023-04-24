@@ -1,0 +1,39 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_T.internal.arm.tradefed-run-collect-tests-only-internal.camerabox.front'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-qual'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 0
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 1024000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_T',
+        hosts=host_list,
+        iterations=1,
+        max_retry=0,
+        tag='internal.arm.tradefed-run-collect-tests-only-internal.camerabox.front',
+        test_name='cheets_CTS_T.internal.arm.tradefed-run-collect-tests-only-internal.camerabox.front',
+        run_template=['run', 'commandAndExit', 'collect-tests-only', '--disable-reboot', '--module', 'CtsCameraTestCases', '--module-arg', 'CtsMediaStressTestCases:skip-media-download:true', '--module-arg', 'CtsMediaBitstreamsTestCases:skip-media-download:true'],
+        retry_template=None,
+        target_module=None,
+        target_plan=None,
+        bundle='arm',
+        uri='LATEST',
+        timeout=172800)
+
+parallel_simple(run_TS, machines)

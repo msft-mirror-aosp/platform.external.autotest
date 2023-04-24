@@ -1,0 +1,43 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+from autotest_lib.client.common_lib import utils, global_config
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_T.internal.x86.all.CtsServiceKillTestCases_-_CtsSyncManagerTestsCases'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-qual'
+DEPENDENCIES = 'arc, cts_abi_x86'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    ssid = utils.get_wireless_ssid(machine['hostname'])
+    wifipass = global_config.global_config.get_config_value('CLIENT',
+                'wireless_password', default=None)
+    job.run_test(
+        'cheets_CTS_T',
+        hosts=host_list,
+        iterations=1,
+        max_retry=9,
+        tag='internal.x86.all.CtsServiceKillTestCases_-_CtsSyncManagerTestsCases',
+        test_name='cheets_CTS_T.internal.x86.all.CtsServiceKillTestCases_-_CtsSyncManagerTestsCases',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsServiceKillTestCases', '--include-filter', 'CtsSettingsAPITestCases', '--include-filter', 'CtsSettingsAPITestCases[instant]', '--include-filter', 'CtsSettingsAPITestCases[secondary_user]', '--include-filter', 'CtsSettingsHostTestCases', '--include-filter', 'CtsSettingsSuggestionsTest', '--include-filter', 'CtsSettingsSuggestionsTest[secondary_user]', '--include-filter', 'CtsSettingsTestCases', '--include-filter', 'CtsSettingsTestCases[secondary_user]', '--include-filter', 'CtsSharedLibsApiSignatureTestCases', '--include-filter', 'CtsSharedLibsApiSignatureTestCases[instant]', '--include-filter', 'CtsSharedLibsApiSignatureTestCases[secondary_user]', '--include-filter', 'CtsSharedUserMigrationTestCases', '--include-filter', 'CtsSharedUserMigrationTestCases[secondary_user]', '--include-filter', 'CtsSharesheetTestCases', '--include-filter', 'CtsSharesheetTestCases[secondary_user]', '--include-filter', 'CtsShortcutHostTestCases', '--include-filter', 'CtsShortcutManagerTestCases', '--include-filter', 'CtsShortcutManagerTestCases[secondary_user]', '--include-filter', 'CtsSignedConfigHostTestCases', '--include-filter', 'CtsSignedConfigHostTestCases[secondary_user]', '--include-filter', 'CtsSilentUpdateHostTestCases', '--include-filter', 'CtsSilentUpdateHostTestCases[secondary_user]', '--include-filter', 'CtsSimPhonebookProviderTestCases', '--include-filter', 'CtsSimPhonebookProviderTestCases[secondary_user]', '--include-filter', 'CtsSimRestrictedApisTestCases', '--include-filter', 'CtsSimRestrictedApisTestCases[secondary_user]', '--include-filter', 'CtsSimpleCpuTestCases', '--include-filter', 'CtsSimpleCpuTestCases[secondary_user]', '--include-filter', 'CtsSimpleperfTestCases', '--include-filter', 'CtsSimpleperfTestCases[secondary_user]', '--include-filter', 'CtsSkQPTestCases', '--include-filter', 'CtsSkQPTestCases[secondary_user]', '--include-filter', 'CtsSliceTestCases', '--include-filter', 'CtsSliceTestCases[secondary_user]', '--include-filter', 'CtsSmartspaceServiceTestCases', '--include-filter', 'CtsSmartspaceServiceTestCases[secondary_user]', '--include-filter', 'CtsSoundTriggerTestCases', '--include-filter', 'CtsSoundTriggerTestCases[instant]', '--include-filter', 'CtsSoundTriggerTestCases[secondary_user]', '--include-filter', 'CtsSpeechTestCases', '--include-filter', 'CtsSpeechTestCases[secondary_user]', '--include-filter', 'CtsStagedInstallHostTestCases', '--include-filter', 'CtsStatsdAtomHostTestCases', '--include-filter', 'CtsStatsdAtomHostTestCases[instant]', '--include-filter', 'CtsStatsdAtomHostTestCases[secondary_user]', '--include-filter', 'CtsStatsdHostTestCases', '--include-filter', 'CtsStatsdHostTestCases[instant]', '--include-filter', 'CtsStatsdHostTestCases[secondary_user]', '--include-filter', 'CtsStrictJavaPackagesTestCases', '--include-filter', 'CtsStrictJavaPackagesTestCases[secondary_user]', '--include-filter', 'CtsSuspendAppsPermissionTestCases', '--include-filter', 'CtsSuspendAppsPermissionTestCases[secondary_user]', '--include-filter', 'CtsSuspendAppsTestCases', '--include-filter', 'CtsSuspendAppsTestCases[secondary_user]', '--include-filter', 'CtsSustainedPerformanceHostTestCases', '--include-filter', 'CtsSustainedPerformanceHostTestCases[secondary_user]', '--include-filter', 'CtsSyncAccountAccessOtherCertTestCases', '--include-filter', 'CtsSyncAccountAccessOtherCertTestCases[secondary_user]', '--include-filter', 'CtsSyncContentHostTestCases', '--include-filter', 'CtsSyncContentHostTestCases[secondary_user]', '--include-filter', 'CtsSyncManagerTestsCases', '--include-filter', 'CtsSyncManagerTestsCases[secondary_user]', '--logcat-on-failure'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='all.CtsServiceKillTestCases_-_CtsSyncManagerTestsCases',
+        target_plan=None,
+        bundle='x86',
+        uri='LATEST',
+        timeout=172800)
+
+parallel_simple(run_TS, machines)

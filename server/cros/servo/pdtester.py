@@ -136,11 +136,12 @@ class PDTester(chrome_ec.ChromeEC):
         """Gets a list of SourceCap Tuples in mV/mA."""
         try:
             res = self.get(self.USBC_SRC_CAPS)
-        except:
+        except Exception as e:
             raise PDTesterError('Unsupported servov4 command(%s). '
                                 'Maybe firmware or servod too old? '
                                 'sudo servo_updater -b servo_v4; '
-                                'sudo emerge hdctools' % self.USBC_SRC_CAPS)
+                                'sudo emerge hdctools' %
+                                self.USBC_SRC_CAPS) from e
 
         srccaps = []
         for pdo_str in res:
@@ -154,8 +155,9 @@ class PDTester(chrome_ec.ChromeEC):
             srccaps = self.get_adapter_source_caps()
         except PDTesterError:
             # htctools and servov4 is not updated, fallback to the old path.
-            logging.warning('hdctools or servov4 firmware too old, fallback to '
-                         'fixed charging voltages.')
+            logging.exception(
+                    'hdctools or servov4 firmware too old, fallback to '
+                    'fixed charging voltages.')
             return list(self.USBC_CHARGING_VOLTAGES_LEGACY.keys())
 
         # insert 0 voltage for sink

@@ -118,7 +118,7 @@ TELEMETRY_AFDO_BENCHMARKS = (
                 'archs': ('amd64', 'arm')
         },
         {
-                'name': 'kraken',
+                'name': 'jetstream2',
                 'archs': ('amd64', 'arm')
         },
         {

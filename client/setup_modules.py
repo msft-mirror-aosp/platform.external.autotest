@@ -2,6 +2,7 @@ import os
 import re
 import six
 import sys
+import time
 
 # This must run on Python versions less than 2.4.
 dirname = os.path.dirname(sys.modules[__name__].__file__)
@@ -264,20 +265,34 @@ def _setup_autotest_lib(autotest_lib_path, autotest_lib_name):
     # Add autotest_lib to our path
     sys.path.insert(0, autotest_lib_path)
 
-    try:
-        # This is a symlink back to the autotest directory
-        importlib.import_module(autotest_lib_name)
-    except ImportError:
-        sys.stderr.write('process pid: %s\n' % str(os.getpid()))
-        sys.stderr.write('autotest_lib_path: %s\n' % autotest_lib_path)
-        sys.stderr.write('autotest_lib_name: %s\n' % autotest_lib_name)
-        sys.stderr.write(
-                f'Autotest - directory listing {autotest_lib_path}- BEGIN \n')
-        sys.stderr.write('\t')
-        sys.stderr.write('\n\t'.join(os.listdir(autotest_lib_path)))
-        sys.stderr.write(
-                f'\nAutotest - directory listing {autotest_lib_path}- END \n')
-        raise
+    max_retries = 5
+    i = 0
+    while i <= max_retries:
+        i += 1
+        try:
+            # This is a symlink back to the autotest directory
+            sys.stdout.write('Performing autotest_lib import\n')
+            importlib.import_module(autotest_lib_name)
+            i = max_retries + 1
+        except ImportError:
+            sys.stderr.write(
+                    'autotest_lib import failed on attempt #%d of %d\n' %
+                    (i + 1, max_retries))
+            if i < max_retries:
+                time.sleep(1)
+            else:
+                sys.stderr.write('process pid: %s\n' % str(os.getpid()))
+                sys.stderr.write('autotest_lib_path: %s\n' % autotest_lib_path)
+                sys.stderr.write('autotest_lib_name: %s\n' % autotest_lib_name)
+                sys.stderr.write(
+                        f'Autotest - directory listing {autotest_lib_path}- BEGIN \n'
+                )
+                sys.stderr.write('\t')
+                sys.stderr.write('\n\t'.join(os.listdir(autotest_lib_path)))
+                sys.stderr.write(
+                        f'\nAutotest - directory listing {autotest_lib_path}- END \n'
+                )
+                raise
 
     # Setup toplevel 'autotest_lib' module name
     sys.modules['autotest_lib'] = sys.modules[autotest_lib_name]

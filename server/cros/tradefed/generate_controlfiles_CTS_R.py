@@ -351,7 +351,6 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
 
 CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
-        'CtsSensorTestCases',
 ]
 
 CONFIG['SHARD_COUNT'] = {'CtsDeqpTestCases': 10}
@@ -543,10 +542,14 @@ CONFIG['PERF_MODULES'] = {
     },
 }
 
-# Moblab optionally can reshard modules, this was originally used
-# for deqp but it is no longer required for that module.  Retaining
-# feature in case future slower module needs to be sharded.
+_firmware_sensor_tests = {
+        'CtsSensorTestCases.faft': ['suite:faft_experimental']
+}
+
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
+        'arm': {
+                'CtsSensorTestCases': _firmware_sensor_tests,
+        },
 }
 
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {
@@ -866,6 +869,12 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 '--include-filter',
                 'CtsPermissionTestCases android.permission.cts.Camera2PermissionTest',
         ],
+        'CtsSensorTestCases.faft': [
+                '--include-filter',
+                'CtsSensorTestCases',
+                '--abi',
+                'armeabi-v7a',
+        ],
         'CtsVideoTestCases.arc_perf': [
                 '--include-filter',
                 'CtsVideoTestCases android.video.cts.VideoEncoderDecoderTest',
@@ -901,10 +910,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
 }
 
 CONFIG['EXTRA_ATTRIBUTES'] = {}
-
-CONFIG['PUBLIC_EXTRA_SUITES_FOR_TAG'] = {
-        'arm.CtsSensorTestCases.32': ['suite:faft_experimental']
-}
 
 CONFIG['EXTRA_ARTIFACTS'] = {}
 CONFIG['PREREQUISITES'] = {}

@@ -375,7 +375,6 @@ def get_cts_hardware_modules(is_public):
 
 
 def get_suites(modules,
-               tag,
                abi,
                is_public,
                camera_facing=None,
@@ -392,14 +391,9 @@ def get_suites(modules,
     cts_hardware_modules = get_cts_hardware_modules(is_public)
 
     if is_public:
+        suites = set([CONFIG['MOBLAB_SUITE_NAME']])
         if hardware_suite:
             suites = set([CONFIG['MOBLAB_HARDWARE_SUITE_NAME']])
-        else:
-            suites = set([CONFIG['MOBLAB_SUITE_NAME']])
-            for module in modules:
-                suites |= set(
-                        CONFIG.get('PUBLIC_EXTRA_SUITES_FOR_TAG',
-                                   {}).get(tag, []))
         return sorted(list(suites))
 
     suites = set(CONFIG['INTERNAL_SUITE_NAMES'])
@@ -893,7 +887,7 @@ def get_extra_modules_dict(source_type, abi):
     if source_type != SourceType.MOBLAB:
         return CONFIG['EXTRA_MODULES']
 
-    extra_modules = copy.deepcopy(CONFIG['PUBLIC_EXTRA_MODULES'])
+    extra_modules = copy.deepcopy(CONFIG['PUBLIC_EXTRA_MODULES'].get(abi, {}))
     if abi in CONFIG['EXTRA_SUBMODULE_OVERRIDE']:
         for _, config in extra_modules.items():
             for old, news in CONFIG['EXTRA_SUBMODULE_OVERRIDE'][abi].items():
@@ -1060,7 +1054,7 @@ def get_controlfile_content(combined,
     # suite/ARM. But with the monthly uprevs this will quickly get confusing.
     name = '%s.%s' % (CONFIG['TEST_NAME'], tag)
     if not suites:
-        suites = get_suites(modules, tag, abi, is_public, camera_facing,
+        suites = get_suites(modules, abi, is_public, camera_facing,
                             hardware_suite, vm_force_max_resolution,
                             vm_tablet_mode)
     # while creating the control files, check if this is meant for qualification suite. i.e. arc-cts-qual

@@ -172,8 +172,6 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsMediaTestCases',
 ]
 
-CONFIG['PUBLIC_SPLIT_BY_BITS_MODULES'] = ['CtsSensorTestCases']
-
 CONFIG['X86_SKIP_SUITES'] = ['suite:arc-cts-vm']
 # List of modules that skip x86 runs.
 CONFIG['SKIP_X86_MODULE_RULES'] = [
@@ -420,13 +418,13 @@ CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
         },
 }
 
-# Moblab optionally can reshard modules, this was originally used
-# for deqp but it is no longer required for that module.  Retaining
-# feature in case future slower module needs to be sharded.
+_firmware_sensor_tests = {
+        'CtsSensorTestCases.faft': ['suite:faft_experimental']
+}
+
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
-        'CtsCameraTestCases': {
-             'CtsCameraTestCases.NativeCameraDeviceTest':
-                [CONFIG['MOBLAB_SUITE_NAME']],
+        'arm': {
+                'CtsSensorTestCases': _firmware_sensor_tests,
         },
 }
 
@@ -751,6 +749,12 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 '--include-filter',
                 'CtsPermissionTestCases android.permission.cts.Camera2PermissionTest',
         ],
+        'CtsSensorTestCases.faft': [
+                '--include-filter',
+                'CtsSensorTestCases',
+                '--abi',
+                'armeabi-v7a',
+        ],
         'CtsWindowManager.A': [
                 '--include-filter',
                 'CtsWindowManagerDeviceTestCases android.server.wm.ActivityManagerGetConfigTests',
@@ -952,10 +956,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
 }
 
 CONFIG['EXTRA_ATTRIBUTES'] = {}
-
-CONFIG['PUBLIC_EXTRA_SUITES_FOR_TAG'] = {
-        'arm.CtsSensorTestCases.32': ['suite:faft_experimental']
-}
 
 CONFIG['EXTRA_ARTIFACTS'] = {}
 CONFIG['PREREQUISITES'] = {}

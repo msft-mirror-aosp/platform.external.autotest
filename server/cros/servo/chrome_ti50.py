@@ -88,11 +88,14 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     SLEEP_RATE = 0
     # Ti50 inhibits deep sleep for 60 seconds after AP power on.
     DEEP_SLEEP_DELAY = 60
-    DS_RESETS_TIMER = False
+    DS_RESETS_TIMER = True
     # Maximum TPM init time.
     TPM_INIT_MAX = 40000
     TIMESTAMP_RE = '[\n\^\[ 0-9\.]*\] '
     INVALID_RE_CHARS = r'[\n\^]'
+    TIME_RE = r'Since %s: [x0-9a-f]* = ([0-9\.]*) s'
+    TIME_SINCE_DS_RE = TIME_RE % 'deep sleep'
+    TIME_SINCE_COLD_RESET_RE = TIME_RE % 'reset'
 
     def strip_timestamp(self, result):
         """Remove the timstamp from the result output.
@@ -170,22 +173,6 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         else:
             raise error.TestError('parameter, mode_exp is not valid: %s' %
                                   mode_exp)
-
-    def gettime(self):
-        """Get the current Ti50 system time"""
-        rv = self.send_safe_command_get_output(
-                'gettime', ['gettime(.*)>'])[0][1]
-        # Newer Ti50 images report time since reset in addition to RTC value.
-        # Use this if available.
-        # TODO: Remove the fallback to RTC value once we no longer care about
-        # results from older Ti50 images.
-        m = re.search('Since reset: .* = (.*) s', rv)
-        if m is not None:
-            return float(m.group(1))
-        m = re.search('Time: .* = (.*) s', rv)
-        if m is not None:
-            return float(m.group(1))
-        raise error.TestError('Unexpected gettime output: %s' % rv)
 
     def get_serial(self):
         """Ti50's serial is lowercase."""

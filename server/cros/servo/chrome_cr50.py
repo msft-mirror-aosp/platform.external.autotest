@@ -266,6 +266,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     DS_RESETS_TIMER = True
     # Maximum TPM init time.
     TPM_INIT_MAX = 120000
+    TIME_SINCE_DS_RE = ' = (.*) s'
+    TIME_SINCE_COLD_RESET_RE = 'since cold_reset: ([0-9]*) s'
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.
@@ -1107,11 +1109,29 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             logging.debug('Pressing PP to turn back on')
 
 
-    def gettime(self):
-        """Get the current cr50 system time"""
-        result = self.send_safe_command_get_output('gettime', [' = (.*) s'])
-        return float(result[0][1])
+    def send_gettime_cmd_get_output(self, regex, raise_error=True):
+        """Send get time command."""
+        rv = self.send_safe_command_get_output(
+                'gettime', ['gettime(.*)>'])[0][1]
+        m = re.search(regex, rv)
+        if m is not None:
+            return float(m.group(1))
+        # TODO: always raise an error when cr50 has time since cold reset
+        # support.
+        err = 'Did not find %r in gettime output: %s' % (regex, rv)
+        if raise_error:
+            raise error.TestError(err)
+        logging.warning(err)
+        return 0
 
+    def gettime_since_cold_reset(self):
+        """Get the time since the last cold reset"""
+        return self.send_gettime_cmd_get_output(self.TIME_SINCE_COLD_RESET_RE,
+                                                False)
+
+    def gettime(self):
+        """Get the time since deep sleep"""
+        return self.send_gettime_cmd_get_output(self.TIME_SINCE_DS_RE)
 
     def servo_dts_mode_is_valid(self):
         """Returns True if cr50 registers change in servo dts mode."""

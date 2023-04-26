@@ -609,6 +609,20 @@ class firmware_Cr50DeviceState(Cr50Test):
         # Check that the progress of the irq counts seems reasonable
         self.check_for_errors(state)
 
+    def verify_sleep_state(self, state):
+        """Verify cr50 behavior while running through S0ix or S3"""
+
+        boot_id = self.host.get_boot_id()
+        self.mount_power_config()
+        self.verify_state(state)
+
+        # umount_power_config will fail if the DUT reboots after
+        # mount_power_config is called. Detect reboots and raise a clear error
+        # message when one occurs.
+        if boot_id == self.host.get_boot_id():
+            self.umount_power_config()
+        else:
+            raise error.TestFail('DUT rebooted during %s test' % state)
 
     def is_arm_family(self):
         """Returns True if the DUT is an ARM device."""
@@ -649,20 +663,22 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         # Manually enter the non-default power states.
         if self.manual_suspend:
-            self.mount_power_config()
             try:
                 if self.s0ix_supported:
-                    self.verify_state('S0ix')
+                    self.verify_sleep_state('S0ix')
+
+                    if self.s3_supported:
+                        # Entering S3 after S0ix might not work. Reboot the DUT
+                        # for S3 test.
+                        logging.info('Rebooting for S3 test')
+                        self.host.reboot()
 
                 if self.s3_supported:
-                    self.verify_state('S3')
+                    self.verify_sleep_state('S3')
             except Exception as e:
                 self._try_to_bring_dut_up()
                 logging.info('Caught exception %r', e)
                 self.run_errors['Caught Exception'] = str(e)
-                self.host.reboot()
-            else:
-                self.umount_power_config()
 
         if self.run_errors:
             self.all_errors[self.ccd_str] = self.run_errors

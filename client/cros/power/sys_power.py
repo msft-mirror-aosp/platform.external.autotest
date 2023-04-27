@@ -10,6 +10,8 @@ import fcntl
 import logging
 import multiprocessing
 import os
+import re
+import subprocess
 import time
 
 import common
@@ -124,6 +126,11 @@ class S2IdleResidencyNotChanged(SuspendFailure):
     pass
 
 
+class RTCWakealarmProgrammingError(SuspendFailure):
+    """We weren't able to properly program the RTC wakealarm"""
+    pass
+
+
 def prepare_wakeup(seconds):
     """Prepare the device to wake up from an upcoming suspend.
 
@@ -203,15 +210,26 @@ def do_suspend(wakeup_timeout, delay_seconds=0):
 
     """
     pause_check_network_hook()
-    estimated_alarm, wakeup_count = prepare_wakeup(wakeup_timeout)
     upstart.ensure_running('powerd')
-    command = ('/usr/bin/powerd_dbus_suspend --delay=%d --timeout=30 '
-               '--wakeup_count=%d --wakeup_timeout=%d' %
-               (delay_seconds, wakeup_count, wakeup_timeout))
-    logging.info("Running '%s'", command)
-    os.system(command)
-    check_wakeup(estimated_alarm)
-    return estimated_alarm
+    suspend_cmd_argv = [
+            '/usr/bin/powerd_dbus_suspend',
+            '--delay=%d' % delay_seconds,
+            '--timeout=30',
+            '--wakeup_count=%d' % read_wakeup_count(),
+            '--suspend_for_sec=%d' % wakeup_timeout,
+    ]
+    logging.info("Running '%s'", ' '.join(suspend_cmd_argv))
+    result = subprocess.run(suspend_cmd_argv, stdout=subprocess.PIPE)
+    m = re.search("rtc wakealarm: (\d+)", result.stdout.decode())
+    if m is None:
+        raise RTCWakealarmProgrammingError(
+                "Could not find rtc wakealarm spec in powerd_dbus_suspend output: '"
+                + result.stdout.decode() + "'")
+    reported_alarm = int(m.group(1))
+
+    check_wakeup(reported_alarm)
+    logging.info("rtc wakealarm: '%d'", reported_alarm)
+    return reported_alarm
 
 
 def suspend_for(time_in_suspend, delay_seconds=0):

@@ -23,6 +23,8 @@ FORCED_UMOUNT_DIR_IF_MOUNTPOINT_CMD = (
 SET_MOUNT_FLAGS_CMD = 'mount -o remount,exec,suid %s'
 # Shell command to send SIGHUP to dbus daemon
 DBUS_RELOAD_COMMAND = 'killall -HUP dbus-daemon'
+# Shell command to restore SELinux context of sideloaded files
+RESTORECON_COMMAND = 'restorecon -R %s'
 
 # Lacros artifact path mask
 _LACROS_PATH_MASK = 'gs://chrome-unsigned/desktop-5c0tCh/{version}/{variant}/lacros.zip'
@@ -162,6 +164,9 @@ def _mount_chrome(host, chrome_dir, chrome_mount_point):
 
     # Chrome needs partition to have exec and suid flags set
     host.run(SET_MOUNT_FLAGS_CMD % chrome_mount_point)
+
+    # Restore SELinux context of sideloaded files.
+    host.run(RESTORECON_COMMAND % chrome_mount_point)
 
     # Send SIGHUP to dbus-daemon to tell it to reload its configs. This won't
     # pick up major changes (bus type, logging, etc.), but all we care about is

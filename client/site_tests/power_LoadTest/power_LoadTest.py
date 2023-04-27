@@ -77,7 +77,7 @@ class power_LoadTest(arc.ArcTest):
                    tasks='',
                    volume_level=10,
                    mic_gain=10,
-                   low_batt_margin_p=2,
+                   low_batt_margin_p=5,
                    ac_ok=False,
                    log_mem_bandwidth=False,
                    gaia_login=None,

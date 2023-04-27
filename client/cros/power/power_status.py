@@ -643,7 +643,7 @@ class SysStat(object):
             raise error.TestFail('battery must be in range [{}, {}]'.format(
                                  min_level, max_level))
 
-    def is_low_battery(self, low_batt_margin_p=2.0):
+    def is_low_battery(self, low_batt_margin_p=5.0):
         """Returns True if battery current charge is low
 
         @param low_batt_margin_p: percentage of battery that would be added to

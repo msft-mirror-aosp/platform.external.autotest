@@ -68,7 +68,7 @@ def run(machine):
                  test_exprs=[expr],
                  download_data_lazily=False,
                  ignore_test_failures=False,
-                 max_run_sec=3600,
+                 max_run_sec=7200,
                  command_args=args,
                  varslist=varslist,
                  clear_tpm=False,

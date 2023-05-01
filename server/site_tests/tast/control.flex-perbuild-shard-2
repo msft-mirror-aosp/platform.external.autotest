@@ -33,6 +33,7 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=['('
 		             '"group:mainline" && '
+			     '!"group:crostini_slow" &&'
 			     '!"group:hw_agnostic" &&'
 			     '!informational'
 			     ')'],

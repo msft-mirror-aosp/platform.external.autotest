@@ -263,19 +263,11 @@ class firmware_Cr50DeviceState(Cr50Test):
             # Only enforce the minimum regular sleep count if the device is
             # idle. Cr50 may not enter regular sleep during power state
             # transitions.
-            if idle:
-                if cr50_time > self.SLEEP_DELAY:
-                    if self.gsc.SLEEP_RATE == 0:
-                        min_count = 1
-                    else:
-                        min_count = cr50_time - self.SLEEP_DELAY
+            if idle and  cr50_time > self.SLEEP_DELAY:
+                if self.gsc.SLEEP_RATE == 0:
+                    min_count = 1
                 else:
-                    min_count = 0
-                # If deep sleep doesn't reset timer, then cr50_time can't be
-                # used to know if there was enough time to enter regular sleep
-                # after resume from deep sleep.
-                if (not self.gsc.DS_RESETS_TIMER) and ds_resume:
-                    min_count = 0
+                    min_count = cr50_time - self.SLEEP_DELAY
             else:
                 min_count = 0
             # Check that cr50 isn't continuously entering and exiting sleep.
@@ -382,12 +374,6 @@ class firmware_Cr50DeviceState(Cr50Test):
                 # The deep sleep counts are not reset after deep sleep. Change
                 # the event to INCREASE.
                 if irq_key in self.KEY_SURVIVES_DS and event == self.DS_RESUME:
-                    event = self.INCREASE
-
-                # If time does not reset after deep sleep change the event to
-                # INCREASE.
-                if ((not self.gsc.DS_RESETS_TIMER) and
-                    irq_key == self.KEY_TIME and event == self.DS_RESUME):
                     event = self.INCREASE
 
                 if irq_key in self.STEP_INDEPENDENT_KEYS:

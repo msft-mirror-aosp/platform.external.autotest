@@ -263,7 +263,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     SLEEP_RATE = 2
     # Cr50 will deep sleep after 20 seconds.
     DEEP_SLEEP_DELAY = 20
-    DS_RESETS_TIMER = True
     # Maximum TPM init time.
     TPM_INIT_MAX = 120000
     TIME_SINCE_DS_RE = ' = (.*) s'

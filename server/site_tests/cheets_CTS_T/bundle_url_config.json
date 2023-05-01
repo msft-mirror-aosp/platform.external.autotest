@@ -1,5 +1,5 @@
 {
-    "public_base": "https://dl.google.com/dl/android/cts/",
+    "partner_base": "gs://chromeos-partner-gts/",
     "internal_base": "gs://chromeos-arc-images/cts/bundle/T/",
     "official_url_pattern": "android-cts-%s-linux_x86-%s.zip",
     "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",

@@ -1110,8 +1110,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def send_gettime_cmd_get_output(self, regex, raise_error=True):
         """Send get time command."""
-        rv = self.send_safe_command_get_output(
-                'gettime', ['gettime(.*)>'])[0][1]
+        rv = self.send_safe_command_get_output('gettime',
+                                               ['gettime(.*)>'])[0][1]
         m = re.search(regex, rv)
         if m is not None:
             return float(m.group(1))

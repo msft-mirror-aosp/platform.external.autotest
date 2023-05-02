@@ -41,11 +41,11 @@ class firmware_Cr50DeviceState(Cr50Test):
     STEP_INDEPENDENT_KEYS = [KEY_TPM_INIT]
     KEY_SURVIVES_DS = [KEY_DEEP_SLEEP, KEY_COLD_RESET_TIME]
     GSC_STATUS_DICT = {
-            KEY_TPM_INIT : 'TPM init (us)',
-            KEY_RESET  : 'Reset Count',
-            KEY_DEEP_SLEEP  : 'Deep Sleep Count',
-            KEY_TIME  : 'Time (DS)',
-            KEY_COLD_RESET_TIME  : 'Time (cold reset)',
+            KEY_TPM_INIT: 'TPM init (us)',
+            KEY_RESET: 'Reset Count',
+            KEY_DEEP_SLEEP: 'Deep Sleep Count',
+            KEY_TIME: 'Time (DS)',
+            KEY_COLD_RESET_TIME: 'Time (cold reset)',
     }
 
     # Cr50 won't enable any form of sleep until it has been up for 20 seconds.
@@ -220,7 +220,8 @@ class firmware_Cr50DeviceState(Cr50Test):
         # expectations
         start_cmd_time = int(self.gsc.gettime())
         irq_counts[self.KEY_TIME] = start_cmd_time
-        irq_counts[self.KEY_COLD_RESET_TIME] = self.gsc.gettime_since_cold_reset()
+        irq_counts[self.
+                   KEY_COLD_RESET_TIME] = self.gsc.gettime_since_cold_reset()
 
         output = self.get_taskinfo_output()
         irq_list = re.findall('\d+\s+\d+[\r\n]', output)
@@ -267,7 +268,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             # Only enforce the minimum regular sleep count if the device is
             # idle. Cr50 may not enter regular sleep during power state
             # transitions.
-            if idle and  cr50_time > self.SLEEP_DELAY:
+            if idle and cr50_time > self.SLEEP_DELAY:
                 if self.gsc.SLEEP_RATE == 0:
                     min_count = 1
                 else:

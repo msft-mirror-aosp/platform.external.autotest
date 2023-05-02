@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no' ?>
+<SubPlan version="2.0">
+  <!--
+    Unless there's special reason, the entries can be removed only
+    when the DEV version bundle's provisional version number (like 9.0r13)
+    is incremented. Otherwise the computation for the canonical list
+    of test cases is confused. See b/151779432.
+  -->
+  <Entry include="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityMagnificationTest#testListener_magnificationConfigChangedWithoutAnimation_notifyConfigChanged" />
+  <Entry include="CtsAppCompatHostTestCases com.android.cts.appcompat.CompatChangesValidConfigTest#testDeviceContainsExpectedConfig" />
+  <Entry include="CtsAppCompatHostTestCases[instant] com.android.cts.appcompat.CompatChangesValidConfigTest#testDeviceContainsExpectedConfig" />
+  <Entry include="CtsContentTestCases android.content.pm.cts.PackageManagerTest#testEnforceIntentToMatchIntentFilter" />
+  <Entry include="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testAudioFocusDelayedByCall" />
+  <Entry include="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testAudioFocusTransientDelayedByCall" />
+  <Entry include="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioFocusTest#testAudioFocusDelayedByCall" />
+  <Entry include="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioFocusTest#testAudioFocusTransientDelayedByCall" />
+  <Entry include="CtsOsTestCases android.os.storage.cts.StorageManagerTest#testGetStorageVolumeSDCard" />
+  <Entry include="CtsOsTestCases android.os.storage.cts.StorageManagerTest#testGetStorageVolumeUSB" />
+  <Entry include="CtsOsTestCases[run-on-clone-profile] android.os.storage.cts.StorageManagerTest#testGetStorageVolumeSDCard" />
+  <Entry include="CtsOsTestCases[run-on-clone-profile] android.os.storage.cts.StorageManagerTest#testGetStorageVolumeUSB" />
+</SubPlan>

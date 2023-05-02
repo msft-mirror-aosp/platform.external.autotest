@@ -68,7 +68,8 @@ class autoupdate_CannedOmahaUpdate(update_engine_test.UpdateEngineTest):
             # Setup DUT so that we have ssh over ethernet but DUT uses
             # cellular as main connection.
             try:
-                with test_environment.CellularOTATestEnvironment() as test_env:
+                with test_environment.CellularOTATestEnvironment(
+                        shutdown_ethernet=True) as test_env:
                     service = test_env.shill.wait_for_cellular_service_object()
                     if not service:
                         raise error.TestError('No cellular service found.')

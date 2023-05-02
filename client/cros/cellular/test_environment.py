@@ -60,13 +60,16 @@ class CellularTestEnvironment(object):
                  modem_pattern='',
                  skip_modem_reset=False,
                  is_esim_test=False,
-                 enable_temp_containments=True):
+                 enable_temp_containments=True,
+                 shutdown_ethernet=False):
         """
         @param shutdown_other_devices: If True, shutdown all devices except
                 cellular.
         @param modem_pattern: Search string used when looking for the modem.
         @param enable_temp_containments: Enable temporary containments to avoid
                 failures on tests with known problems.
+        @param shutdown_ethernet: If True, shutdown ethernet as well. Only
+                applies if shutdown_other_devices is true.
 
         """
         # Tests should use this main loop instead of creating their own.
@@ -83,7 +86,9 @@ class CellularTestEnvironment(object):
         self._is_esim_test = is_esim_test
         self._enable_temp_containments = enable_temp_containments
         self._system_service_order = ''
-        self._test_service_order = 'cellular,ethernet'
+        self._test_service_order = 'cellular'
+        if not shutdown_ethernet:
+            self._test_service_order += ',ethernet'
 
         self._nested = None
         self._context_managers = []
@@ -91,11 +96,13 @@ class CellularTestEnvironment(object):
                 local_host.LocalHost())
         self.detect_crash.remove_crash_files()
         if shutdown_other_devices:
+            allowed_technologies = [shill_proxy.ShillProxy.TECHNOLOGY_CELLULAR]
+            if not shutdown_ethernet:
+                allowed_technologies.append(
+                        shill_proxy.ShillProxy.TECHNOLOGY_ETHERNET)
             self._context_managers.append(
-                    shill_context.AllowedTechnologiesContext([
-                            shill_proxy.ShillProxy.TECHNOLOGY_CELLULAR,
-                            shill_proxy.ShillProxy.TECHNOLOGY_ETHERNET
-                    ]))
+                    shill_context.AllowedTechnologiesContext(
+                            allowed_technologies))
 
     @contextlib.contextmanager
     def _disable_shill_autoconnect(self):

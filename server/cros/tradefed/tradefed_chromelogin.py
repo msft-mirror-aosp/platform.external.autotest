@@ -67,6 +67,8 @@ class ChromeLogin(object):
         cmd += ' --no-arc-syncs'
         # Disable popup notifications to stabilize the tests.
         cmd += ' --no-popup-notification'
+        # (b/280347237) Temporary change to enable Privacy Hub feature
+        cmd += ' --feature=CrosPrivacyHub'
         # Toggle the translation from houdini to ndk
         if self._toggle_ndk:
             cmd += ' --toggle_ndk'

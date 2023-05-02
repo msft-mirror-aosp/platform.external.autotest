@@ -339,6 +339,7 @@ suite:check_setup_cts_N
 suite:check_setup_storage_qual
 suite:chrome-informational
 suite:commercial-limited
+suite:cq-medium
 suite:cq-minimal
 suite:complementary
 suite:cros-av-analysis

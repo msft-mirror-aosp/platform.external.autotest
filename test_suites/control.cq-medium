@@ -1,0 +1,29 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromiumOS Team"
+NAME = "cq-medium"
+PURPOSE = "CQ tests for each area with coverage greater than cq-miniumal and less than bvt-tast-cq."
+METADATA = {
+  "contacts": ["dhaddock@google.com", "bhthompson@google.com"],
+}
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This is a suite of tests to do medium level validation in the CQ.
+
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['max_runtime_mins'] = 60
+args_dict['timeout_mins'] = 120
+args_dict['name'] = 'cq-medium'
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

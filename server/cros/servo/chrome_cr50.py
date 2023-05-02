@@ -653,8 +653,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # for cr50 to print the start string.
         self._servo.set_nocheck('cr50_uart_timeout', timeout)
         try:
-            self.send_command_get_output(cmd, self.START_STR)
-            logging.debug('Detected cr50 reboot')
+            rv = self.send_command_get_output(cmd, self.START_STR)
+            logging.debug('Detected cr50 reboot %s', rv[0][0])
         except error.TestFail as e:
             logging.debug('Failed to detect cr50 reboot')
         # Reset the timeout.
@@ -1125,12 +1125,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def gettime_since_cold_reset(self):
         """Get the time since the last cold reset"""
-        return self.send_gettime_cmd_get_output(self.TIME_SINCE_COLD_RESET_RE,
-                                                False)
+        rv = self.send_gettime_cmd_get_output(self.TIME_SINCE_COLD_RESET_RE,
+                                              False)
+        logging.info('Time since cold reset: %r', rv)
+        return rv
 
     def gettime(self):
         """Get the time since deep sleep"""
-        return self.send_gettime_cmd_get_output(self.TIME_SINCE_DS_RE)
+        rv = self.send_gettime_cmd_get_output(self.TIME_SINCE_DS_RE)
+        logging.info('Time since last reset: %r', rv)
+        return rv
 
     def servo_dts_mode_is_valid(self):
         """Returns True if cr50 registers change in servo dts mode."""

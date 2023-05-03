@@ -34,7 +34,8 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Adapter should work in correct states.',
-    'hw_agnostic': False
+    'hw_agnostic': False,
+    'requirements': ['bt-gen-0001-v01'],
 }
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'server'
@@ -48,6 +49,7 @@ def run(machine):
                  host=host,
                  num_iterations=1,
                  args_dict=args_dict,
+                 tag='.'.join(NAME.split('.')[1:]),
                  test_name=NAME.split('.')[1], floss=True)
 
 parallel_simple(run, machines)

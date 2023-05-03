@@ -38,6 +38,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass all health test',
     'hw_agnostic': False,
+    'requirements': ['bt-gen-0001-v01'],
 }
 
 
@@ -53,6 +54,7 @@ def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterLEHealth', host=host,
                  num_iterations=1, args_dict=args_dict,
+                 tag='.'.join(NAME.split('.')[1:]),
                  test_name=NAME.split('.')[1], floss=True)
 
 parallel_simple(run, machines)

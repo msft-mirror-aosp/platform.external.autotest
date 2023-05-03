@@ -29,7 +29,8 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Adapter should receive HID events correctly.',
-    'hw_agnostic': False
+    'hw_agnostic': False,
+    'requirements': ['bt-gen-0001-v01'],
 }
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TEST_TYPE = 'server'
@@ -43,6 +44,7 @@ def run(machine):
                  host=host,
                  num_iterations=1,
                  args_dict=args_dict,
+                 tag='.'.join(NAME.split('.')[1:]),
                  test_name=NAME.split('.')[1])
 
 parallel_simple(run, machines)

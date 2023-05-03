@@ -52,6 +52,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': '',
     'hw_agnostic': False,
+    'requirements': ['bt-gen-0001-v01'],
 }
 
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_core'
@@ -65,6 +66,7 @@ def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterCLHealth', host=host,
                  num_iterations=1, args_dict=args_dict,
+                 tag='.'.join(NAME.split('.')[1:]),
                  test_name=NAME.split('.')[1])
 
 parallel_simple(run, machines)

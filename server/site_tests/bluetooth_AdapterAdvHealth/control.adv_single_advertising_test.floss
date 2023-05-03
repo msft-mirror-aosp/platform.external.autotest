@@ -47,7 +47,8 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Test bluetooth adapter single advertising capability',
-    'hw_agnostic': True
+    'hw_agnostic': True,
+    'requirements': ['bt-gen-0001-v01'],
 }
 ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'
@@ -56,6 +57,7 @@ DEPENDENCIES = 'bluetooth'
 def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterAdvHealth', host=host, num_iterations=1,
+                 tag='.'.join(NAME.split('.')[1:]),
                  test_name=NAME.split('.')[1], peer_required=False,floss =True)
 
 parallel_simple(run, machines)

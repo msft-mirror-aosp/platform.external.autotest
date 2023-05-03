@@ -80,6 +80,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Adapter should advertise with correct parameters.',
     'hw_agnostic': False,
+    'requirements': ['bt-gen-0001-v01'],
 }
 
 ATTRIBUTES = 'suite:bluetooth_sa'
@@ -91,6 +92,7 @@ DEPENDENCIES = 'bluetooth'
 def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterAdvHealth', host=host, num_iterations=1,
+                 tag='.'.join(NAME.split('.')[1:]),
                  test_name=NAME.split('.')[1], peer_required=False)
 
 parallel_simple(run, machines)

@@ -38,6 +38,7 @@ def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterQuickHealth', host=host,
                  num_iterations=1, args_dict=args_dict,
+                 tag='.'.join(NAME.split('.')[1:]),
                  flag='AVL')
 
 parallel_simple(run, machines)

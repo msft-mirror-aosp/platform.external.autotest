@@ -1,0 +1,29 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+NAME = 'tast.racc-general'
+METADATA = {
+    'contacts': [
+        'chromeos-runtime-probe@google.com',
+        'clarkchung@google.com',
+    ],
+    'bug_component': 'b:606088',
+    'criteria': ('Medium, this test runs several RACC related tast tests to '
+                 'check the RACC-related binaries functionality.'),
+    'hw_agnostic': False,
+}
+ATTRIBUTES = 'suite:racc_general_perbuild'
+TEST_TYPE = 'Server'
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['("group:racc" && "racc_general")'],
+                 command_args=args)
+
+parallel_simple(run, machines)

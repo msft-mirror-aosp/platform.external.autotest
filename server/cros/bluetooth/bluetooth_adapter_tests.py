@@ -127,6 +127,9 @@ INQUIRY_MODE = {'STANDARD': 0, 'RSSI': 1, 'EIR': 2, 'ERROR': -1}
 HID_RECONNECT_TIME_MAX_SEC = 3
 LE_HID_RECONNECT_TIME_MAX_SEC = 3
 
+# Defines for advertising parameters
+ADV_TX_POWER_NO_PREFERENCE = 127
+
 
 def method_name():
     """Get the method name of a class.
@@ -3346,7 +3349,10 @@ class BluetoothAdapterTests(test.test):
             return True
 
         # Make sure the correct number of Tx power setting is logged in btmon.
-        search_str = 'TX power: {} dbm'.format(adv_tx_power)
+        if adv_tx_power == ADV_TX_POWER_NO_PREFERENCE:
+            search_str = 'TX power: Host has no preference'
+        else:
+            search_str = 'TX power: {} dbm'.format(adv_tx_power)
         contents = self.bluetooth_facade.btmon_get(search_str=search_str,
                                                    start_str='')
         if len(contents) < adv_tx_power_appearance_count:

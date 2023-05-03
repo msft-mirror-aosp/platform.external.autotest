@@ -2085,6 +2085,14 @@ class MeasurementLogger(threading.Thread):
                 results.append(result)
                 raw_results.append((prefix,) + tuple(meas_array.tolist()))
 
+                # VideoFpsLogger may log outliers that does not represent the true FPS of the video
+                # at the beginning of sampling. Ignore these samples in calculating statistics of
+                # video FPS.
+                ignore_fps_data = 5
+                # Make sure we still have enough valid measurement.
+                if mtype == 'fps' and meas_array.size > 2 * ignore_fps_data:
+                    meas_array = meas_array[ignore_fps_data:]
+
                 keyvals[prefix + '_' + mtype + '_avg'] = meas_mean
                 keyvals[prefix + '_' + mtype + '_cnt'] = meas_array.size
                 keyvals[prefix + '_' + mtype + '_max'] = meas_array.max()

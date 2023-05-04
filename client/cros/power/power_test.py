@@ -271,6 +271,8 @@ class power_Test(test.test):
         keyvals['level_backlight_max'] = self.backlight.get_max_level()
         keyvals['level_backlight_current'] = self.backlight.get_level()
         keyvals['level_backlight_percent'] = self.backlight.get_percent()
+        keyvals['level_backlight_nonlinear'] = \
+            self.backlight.linear_to_nonlinear(keyvals['level_backlight_percent'])
         if self.kbd_backlight:
             keyvals['level_kbd_backlight_max'] = \
                     self.kbd_backlight.get_max_level()
@@ -282,7 +284,8 @@ class power_Test(test.test):
                                  and self.status.on_ac())
         keyvals['force_discharge'] = int(self._force_discharge_success)
         for key in [
-                'b_on_ac', 'force_discharge', 'percent_usb_suspended_time'
+                'b_on_ac', 'force_discharge', 'percent_usb_suspended_time',
+                'level_backlight_percent', 'level_backlight_nonlinear'
         ]:
             self._keyvallogger.add_item(key, keyvals[key], 'point', 'perf')
 

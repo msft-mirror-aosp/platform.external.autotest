@@ -716,8 +716,31 @@ class firmware_Cr50DeviceState(Cr50Test):
         finally:
             super(firmware_Cr50DeviceState, self).cleanup()
 
+    def is_s3_supported(self):
+        """
+        The S3 detection method changes depending on the kernel version.
+        Newer kernels have a '/sys/power/mem_sleep' file that can be queried.
+        If 'deep' exists within the 'mem_sleep', then S3 is supported.
+        Older kernels do not have this file. Instead, one must look for 'mem'
+        in '/sys/power/state'.
+        See '{kernel-root}/Documentation/ABI/testing/sysfs-power' for more
+        information.
+        """
+        supported = False
+        if self.host.path_exists(self.MEM_SLEEP_PATH):
+            supported = not self.host.run(f'grep -q deep '
+                                          f'{self.MEM_SLEEP_PATH}',
+                                          ignore_status=True).exit_status
+        else:
+            # Assumes kernel cli pararm: relative_sleep_states==0
+            supported = not self.host.run(f'grep -q mem '
+                                          f'{self.POWER_STATE_PATH}',
+                                          ignore_status=True).exit_status
+        return supported
+
     def run_once(self, host):
         """Go through S0ix, S3, and G3. Verify there are no interrupt storms"""
+
         self.all_errors = {}
         self.host = host
         self.lid_closed = False
@@ -740,8 +763,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             self.s0ix_supported = False
         logging.info('S0ix: %s', self.s0ix_supported)
         # Check if the device supports S3.
-        self.s3_supported = not self.host.run('grep -q mem /sys/power/state',
-                                              ignore_status=True).exit_status
+        self.s3_supported = self.is_s3_supported()
         # Check the faft config to see if it overrides the command check.
         skip_s3 = getattr(self.faft_config, 's3_override_to_unsupported', False)
         if skip_s3 and self.s3_supported:

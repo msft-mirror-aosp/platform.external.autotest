@@ -125,6 +125,10 @@ class firmware_Cr50DeviceState(Cr50Test):
                    pcr_extend=False,
                    default_suspend=True,
                    manual_suspend=True):
+        if not host.servo or host.servo.main_device_is_ccd():
+            raise error.TestNAError(
+                    "Test can't run with ccd. Run with servo micro or c2d2")
+
         super(firmware_Cr50DeviceState, self).initialize(host, cmdline_args,
                                                          full_args)
         # Don't bother if there is no Chrome EC or if EC hibernate doesn't work.

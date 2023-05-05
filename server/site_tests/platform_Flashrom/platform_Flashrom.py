@@ -49,9 +49,6 @@ class platform_Flashrom(FirmwareTest):
         self.run_cmd('flashrom -p host --wp-status', checkfor='is disabled')
         if self.faft_config.chrome_ec:
             self.run_cmd('flashrom -p ec --wp-status', checkfor='is disabled')
-        if self.faft_config.chrome_usbpd:
-            self.run_cmd('flashrom -p ec:type=pd --wp-status',
-                         checkfor='is disabled')
 
     def _get_region(self, fmap_filename, region):
         """Get region start and size from fmap.

@@ -6,6 +6,7 @@ AUTHOR = 'ChromeOS Camera Team/chromeos-camera-eng@google.com'
 NAME = 'tast.camerabox-facing-back'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
+DEPENDENCIES = 'camerabox_facing:back'
 ATTRIBUTES = 'suite:camerabox_facing-back'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3

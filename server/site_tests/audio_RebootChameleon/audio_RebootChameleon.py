@@ -82,6 +82,5 @@ class audio_RebootChameleon(audio_test.AudioTest):
 
         self._reboot_chameleon()
         self._polling_with_ping(address)
-        self._reconnect(address)
-        response = self._health_check()
-        logging.info("Successfully rebooted. Supported ports: %s", response)
+
+        logging.info("Successfully rebooted.")

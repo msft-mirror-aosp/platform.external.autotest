@@ -119,6 +119,10 @@ Figure 2 shows a diagram of how to connect a servoV4 Type-C, to the test
 controller, DUT, and network. It is important to ensure the DUT is powered off
 before plugging in cables and components to the servo and DUT.
 
+For this configuration, FAFT won't be able to enable testlab mode automatically
+for you, so you will want to
+[open CCD and set testlab mode](https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/HEAD/docs/servo_v4.md#enabling-case-closed-debug-ccd).
+
 ![Figure2](assets/faft_rc_typec.png)
 
 **Figure 2.Diagram of hardware configuration for a ServoV4 Type-C.**

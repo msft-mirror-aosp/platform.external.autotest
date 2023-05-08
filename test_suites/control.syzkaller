@@ -19,7 +19,7 @@ See go/ctp-syzkaller for more details.
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['max_runtime_mins'] = 60
+args_dict['max_runtime_mins'] = 90
 args_dict['name'] = NAME
 args_dict['job'] = job
 

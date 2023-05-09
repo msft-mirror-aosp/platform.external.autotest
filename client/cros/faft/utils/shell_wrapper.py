@@ -129,10 +129,10 @@ class LocalShell(object):
         The output is returned as a list of strings stripped of the newline
         characters.
         """
-        process, stdout, stderr = self._run_command(cmd)
-        text = [x.rstrip() for x in stdout.splitlines()]
+        result = self.run_command_get_result(cmd)
+        text = [x.rstrip() for x in result.stdout.splitlines()]
         if include_stderr:
-            text.extend([x.rstrip() for x in stderr.splitlines()])
+            text.extend([x.rstrip() for x in result.stderr.splitlines()])
         return text
 
     def read_file(self, path):

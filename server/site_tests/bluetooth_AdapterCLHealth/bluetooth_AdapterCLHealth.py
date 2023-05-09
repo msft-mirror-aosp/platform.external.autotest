@@ -86,7 +86,8 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         self.pairing_test(device,
                           check_connected_method=\
                           self.run_keyboard_tests,
-                          inq_mode='STANDARD')
+                          inq_mode='STANDARD',
+                          check_inq=True)
 
     @test_wrapper('Pairing Suspend Resume Test',
                   devices={"MOUSE": 1},

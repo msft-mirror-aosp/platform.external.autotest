@@ -44,7 +44,8 @@ class BluetoothAdapterPairingTests(
                      pairing_twice=False,
                      suspend_resume=False,
                      reboot=False,
-                     inq_mode=None):
+                     inq_mode=None,
+                     check_inq=False):
         """Running Bluetooth adapter tests about pairing to a device."""
 
         # Reset the adapter to forget previously paired devices if any.
@@ -62,13 +63,14 @@ class BluetoothAdapterPairingTests(
 
         try:
             self._pairing_test_impl(device, check_connected_method,
-                                    pairing_twice, suspend_resume, reboot)
+                                    pairing_twice, suspend_resume, reboot,
+                                    check_inq)
         finally:
             if original_inq_mode:
                 self.write_inquiry_mode(original_inq_mode)
 
     def _pairing_test_impl(self, device, check_connected_method, pairing_twice,
-                           suspend_resume, reboot):
+                           suspend_resume, reboot, check_inq):
         """Running Bluetooth adapter tests about pairing to a device."""
 
         # The adapter must be set to the pairable state.
@@ -77,8 +79,12 @@ class BluetoothAdapterPairingTests(
 
         # Test if the adapter could discover the target device.
         time.sleep(self.PAIR_TEST_SLEEP_SECS)
-        if not self.test_discover_device(device.address):
-            return
+        if check_inq:
+            if not self.test_discover_device_and_check_inq(device.address):
+                return
+        else:
+            if not self.test_discover_device(device.address):
+                return
 
         # Test if the discovered device class of service is correct.
         if not self.test_device_class_of_service(device.address,

@@ -2333,7 +2333,8 @@ class BluetoothAdapterTests(test.test):
                              device_address,
                              start_discovery=True,
                              stop_discovery=True,
-                             identity_address=None):
+                             identity_address=None,
+                             wait_complete=False):
         """Test that the adapter could discover the specified device address.
 
         @param device_address: Address of the device.
@@ -2344,6 +2345,7 @@ class BluetoothAdapterTests(test.test):
                                test_stop_discovery afterwards.
         @param identity_address: When using RPA, the device_address is not the
                                  identity address.
+        @param wait_complete: Whether to wait for the inquiry complete.
 
         @returns: True if the device is found. False otherwise.
 
@@ -2367,7 +2369,8 @@ class BluetoothAdapterTests(test.test):
                 self.bluetooth_facade.remove_device_object(
                         device_address, identity_address)
 
-            discovery_started, _ = self.bluetooth_facade.start_discovery()
+            discovery_started, _ = self.bluetooth_facade.start_discovery(
+                    register_observer=not wait_complete)
 
         if discovery_started:
             try:
@@ -2388,11 +2391,19 @@ class BluetoothAdapterTests(test.test):
             except:
                 logging.error('test_discover_device: unexpected error')
 
-        if start_discovery and stop_discovery:
-            discovery_stopped, _ = self.bluetooth_facade.stop_discovery()
-            is_not_discovering = self._wait_for_condition(
-                    lambda: not self.bluetooth_facade.is_discovering(),
-                    method_name())
+        if start_discovery:
+            if stop_discovery:
+                discovery_stopped, _ = self.bluetooth_facade.stop_discovery()
+
+                is_not_discovering = self._wait_for_condition(
+                        lambda: not self.bluetooth_facade.is_discovering(),
+                        method_name())
+            # Waits until the inquiry command completes, unless we stop it
+            # manually, to investigate the RNR behavior.
+            elif wait_complete:
+                # core specification suggested discovery time.
+                # Aligns with bluez and floss.
+                time.sleep(12.8)
 
         self.results = {
                 'should_start_discovery': start_discovery,
@@ -2409,6 +2420,52 @@ class BluetoothAdapterTests(test.test):
 
         return device_found
 
+    @test_retry_and_log(False)
+    def test_discover_device_and_check_inq(self, device_address):
+        """Test that the adapter could discover the specified device address.
+
+        @param device_address: Address of the device.
+
+        @returns: True if the device is found and the inquiry command sequence
+                  is correct. False otherwise.
+
+        """
+        self._get_btmon_log(lambda: self.test_discover_device(
+                device_address, True, False, None, True))
+
+        # Make sure that the RNR command is not found during the inquiry
+        # procedure. An example of RNR command:
+        # < HCI Command: Remote Name Request (0x01|0x0019) plen 10
+        #         Address: F8:1A:2B:3C:13:37 (Google, Inc.)
+        #         Page scan repetition mode: R1 (0x01)
+        #         Page scan mode: Mandatory (0x00)
+        #         Clock offset: 0xe541
+        HCI_COMMAND_REMOTE_NAMA_REQUEST = '< HCI Command: Remote Name Request'
+        HCI_COMMAND_INQUIRY = '< HCI Command: Inquiry'
+        HCI_EVENT_INQUIRY_COMPLETE = '> HCI Event: Inquiry Complete'
+
+        contents = self.bluetooth_facade.btmon_get(
+                search_str=HCI_COMMAND_REMOTE_NAMA_REQUEST,
+                start_str=HCI_COMMAND_INQUIRY,
+                end_str=HCI_EVENT_INQUIRY_COMPLETE)
+
+        self.results = {
+                'Inquiry command count': 0,
+                'RNR command count': 0,
+                'Inquiry command complete count': 0,
+        }
+
+        for line in contents:
+            if line.startswith(HCI_COMMAND_INQUIRY):
+                self.results['Inquiry command count'] += 1
+            elif line.startswith(HCI_COMMAND_REMOTE_NAMA_REQUEST):
+                self.results['RNR command count'] += 1
+            elif line.startswith(HCI_EVENT_INQUIRY_COMPLETE):
+                self.results['Inquiry command complete count'] += 1
+
+        return (self.results['Inquiry command count'] == 1
+                and self.results['RNR command count'] == 0
+                and self.results['Inquiry command complete count'] == 1)
 
     def _test_discover_by_device(self, device):
         return device.Discover(self.bluetooth_facade.address)

@@ -971,13 +971,11 @@ RPC_CATEGORIES = [
                                         "cleanup",
                                         "stop_daemon",
                                         "start_daemon",
-                                        # "modify_ecid_and_flash_to_bios",
                                         "get_ec_hash",
                                         "reset_shellball",
                                         # "run_factory_install",
                                         # "run_recovery",
                                         "cbfs_setup_work_dir",
-                                        # "cbfs_sign_and_flash",
                                         "get_temp_path",
                                         "get_keys_path",
                                         "get_work_path",
@@ -1126,22 +1124,6 @@ RPC_CATEGORIES = [
                                         NO_ARGS,
                                         ("foo", "bar"),
                                 ],
-                        },
-                        {
-                                "method_names": [
-                                        "cbfs_extract_chip",
-                                        "cbfs_get_chip_hash",
-                                        "cbfs_replace_chip",
-                                ],
-                                "passing_args":
-                                [(chip_fw_name, )
-                                 for chip_fw_name in CHIP_FW_NAMES],
-                                "failing_args": [
-                                        NO_ARGS,
-                                        ONE_INT_ARG,
-                                ],
-                                "allow_error_msg":
-                                "cbfstool /usr/local/tmp/faft/"
                         },
                         {
                                 "method_name":

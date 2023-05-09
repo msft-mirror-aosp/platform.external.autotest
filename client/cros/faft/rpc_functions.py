@@ -1119,10 +1119,6 @@ class UpdaterServicer(object):
         """Modify the fwid in the image, but don't flash it."""
         return self._updater.modify_image_fwids(target, sections)
 
-    def modify_ecid_and_flash_to_bios(self):
-        """Modify ecid, put it to AP firmware, and flash it to the system."""
-        self._updater.modify_ecid_and_flash_to_bios()
-
     def corrupt_diagnostics_image(self, local_filename):
         """Corrupts a diagnostics image in the CBFS working directory.
 
@@ -1215,18 +1211,6 @@ class UpdaterServicer(object):
         """Sets up cbfstool work directory."""
         return self._updater.cbfs_setup_work_dir()
 
-    def cbfs_extract_chip(self,
-                          fw_name,
-                          extension='.bin',
-                          hash_extension='.hash'):
-        """Runs cbfstool to extract chip firmware.
-
-        @param fw_name: Name of chip firmware to extract.
-        @return: Boolean success status.
-        """
-        return self._updater.cbfs_extract_chip(fw_name, extension,
-                                               hash_extension)
-
     def cbfs_extract_diagnostics(self, diag_name, local_filename):
         """Runs cbfstool to extract a diagnostics image.
 
@@ -1244,38 +1228,6 @@ class UpdaterServicer(object):
             CBFS working directory
         """
         self._updater.cbfs_replace_diagnostics(diag_name, local_filename)
-
-    def cbfs_get_chip_hash(self, fw_name, hash_extension='.hash'):
-        """Gets the chip firmware hash blob.
-
-        The hash data is returned as a list of stringified two-byte pieces:
-        \x12\x34...\xab\xcd\xef -> ['0x12', '0x34', ..., '0xab', '0xcd', '0xef']
-
-        @param fw_name: Name of chip firmware whose hash blob to return.
-        @return: Hex string of hash blob.
-        """
-        return self._updater.cbfs_get_chip_hash(fw_name, hash_extension)
-
-    def cbfs_replace_chip(self,
-                          fw_name,
-                          extension='.bin',
-                          hash_extension='.hash',
-                          regions=('a', 'b')):
-        """Runs cbfstool to replace chip firmware.
-
-        @param fw_name: Name of chip firmware to extract.
-        @return: Boolean success status.
-        """
-        return self._updater.cbfs_replace_chip(fw_name, extension,
-                                               hash_extension, regions)
-
-    def cbfs_sign_and_flash(self):
-        """Runs cbfs signer and flash it.
-
-        @param fw_name: Name of chip firmware to extract.
-        @return: Boolean success status.
-        """
-        return self._updater.cbfs_sign_and_flash()
 
     def cbfs_extract(self,
                      filename,

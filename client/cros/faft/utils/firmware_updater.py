@@ -12,7 +12,6 @@ import os
 import six
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import chip_utils
 from autotest_lib.client.common_lib.cros import cros_config
 from autotest_lib.client.cros.faft.utils import flashrom_handler
 
@@ -284,53 +283,6 @@ class FirmwareUpdater(object):
         handler.new_image(image_fullpath)
 
         return fwids
-
-    def modify_ecid_and_flash_to_bios(self):
-        """Modify ecid, put it to AP firmware, and flash it to the system.
-
-        This method is used for testing EC software sync for EC EFS (Early
-        Firmware Selection). It creates a slightly different EC RW image
-        (a different EC fwid) in AP firmware, in order to trigger EC
-        software sync on the next boot (a different hash with the original
-        EC RW).
-
-        The steps of this method:
-         * Modify the EC fwid by appending a '~', like from
-           'fizz_v1.1.7374-147f1bd64' to 'fizz_v1.1.7374-147f1bd64~'.
-         * Resign the EC image.
-         * Store the modififed EC RW image to CBFS component 'ecrw' of the
-           AP firmware's FW_MAIN_A and FW_MAIN_B, and also the new hash.
-         * Resign the AP image.
-         * Flash the modified AP image back to the system.
-        """
-        self.cbfs_setup_work_dir()
-
-        fwid = self.get_section_fwid('ec', 'rw')
-        if fwid.endswith('~'):
-            raise FirmwareUpdaterError('The EC fwid is already modified')
-
-        # Modify the EC FWID and resign
-        fwid = fwid[:-1] + '~'
-        ec = self._get_handler('ec')
-        ec.set_section_fwid('rw', fwid.encode('utf-8'))
-        ec.resign_ec_rwsig()
-
-        # Replace ecrw to the new one
-        ecrw_bin_path = os.path.join(self._cbfs_work_path,
-                                     chip_utils.ecrw.cbfs_bin_name)
-        ec.dump_section_body('rw', ecrw_bin_path)
-
-        # Replace ecrw.hash to the new one
-        ecrw_hash_path = os.path.join(self._cbfs_work_path,
-                                      chip_utils.ecrw.cbfs_hash_name)
-        with open(ecrw_hash_path, 'wb') as f:
-            f.write(self.get_ec_hash())
-
-        # Store the modified ecrw and its hash to cbfs
-        self.cbfs_replace_chip(chip_utils.ecrw.fw_name, extension='')
-
-        # Resign and flash the AP firmware back to the system
-        self.cbfs_sign_and_flash()
 
     def corrupt_diagnostics_image(self, local_path):
         """Corrupts a diagnostics image in the CBFS working directory.
@@ -644,41 +596,6 @@ class FirmwareUpdater(object):
             # already logged by run_shell_command()
             return None
 
-    def cbfs_extract_chip(self,
-                          fw_name,
-                          extension='.bin',
-                          hash_extension='.bash',
-                          regions=('a', )):
-        """Extracts chip firmware blob from cbfs.
-
-        For a given chip type, looks for the corresponding firmware
-        blob and hash in the specified bios.  The firmware blob and
-        hash are extracted into self._cbfs_work_path.
-
-        The extracted blobs will be <fw_name><extension> and
-        <fw_name>.hash located in cbfs_work_path.
-
-        @param fw_name: Chip firmware name to be extracted.
-        @param extension: File extension of the cbfs file, including '.'
-        @param hash_extension: File extension of the hash file, including '.'
-        @return: dict of {'image': image_fullpath, 'hash': hash_fullpath},
-        """
-        regions = self._cbfs_regions(regions)
-
-        results = {}
-
-        if extension is not None:
-            image_path = self.cbfs_extract(fw_name, extension, regions)
-            if image_path:
-                results['image'] = image_path
-
-        if hash_extension is not None and hash_extension != extension:
-            hash_path = self.cbfs_extract(fw_name, hash_extension, regions)
-            if hash_path:
-                results['hash'] = hash_path
-
-        return results
-
     def cbfs_extract_diagnostics(self, diag_name, local_path):
         """Runs cbfstool to extract a diagnostics image.
 
@@ -690,24 +607,6 @@ class FirmwareUpdater(object):
                                  '', ['RW_LEGACY'],
                                  local_path,
                                  arch='x86')
-
-    def cbfs_get_chip_hash(self, fw_name, hash_extension='.hash'):
-        """Returns chip firmware hash blob.
-
-        For a given chip type, returns the chip firmware hash blob.
-        Before making this request, the chip blobs must have been
-        extracted from cbfs using cbfs_extract_chip().
-        The hash data is returned as a list of stringified two-byte pieces:
-        \x12\x34...\xab\xcd\xef -> ['0x12', '0x34', ..., '0xab', '0xcd', '0xef']
-
-        @param fw_name: Chip firmware name whose hash blob to get.
-        @return: Boolean success status.
-        @raise error.CmdError: Underlying remote shell operations failed.
-        """
-        fw_path = os.path.join(self._cbfs_work_path, fw_name)
-        hexdump_cmd = '%s %s%s' % (self.HEXDUMP, fw_path, hash_extension)
-        hashblob = self.os_if.run_shell_command_get_output(hexdump_cmd)
-        return hashblob
 
     def cbfs_remove(self, filename, extension, regions=('a', 'b')):
         """Remove the given binary from CBFS, in FW_MAIN_A/FW_MAIN_B
@@ -763,34 +662,6 @@ class FirmwareUpdater(object):
         self.os_if.run_shell_command(add_cmd)
         return True
 
-    def cbfs_replace_chip(self,
-                          fw_name,
-                          extension='.bin',
-                          hash_extension='.hash',
-                          regions=('a', 'b')):
-        """Replaces chip firmware and its hash in CBFS (bios.bin).
-
-        For a given chip type, replaces its firmware blob and hash in
-        bios.bin.  All files referenced are expected to be in the
-        directory set up using cbfs_setup_work_dir().
-
-        @param cbfs_filename: Name within cbfs of the file, without extension
-        @param extension: Extension of the name of the cbfs component.
-        @param regions: tuple of regions to act on (full name, or 'A' or 'B')
-        @return: Boolean success status.
-        @raise error.CmdError: If underlying remote shell operations failed.
-        """
-        regions = self._cbfs_regions(regions)
-        self.cbfs_expand(regions)
-        if hash_extension is not None and hash_extension != extension:
-            self.cbfs_remove(fw_name, hash_extension, regions)
-        self.cbfs_remove(fw_name, extension, regions)
-        if hash_extension is not None and hash_extension != extension:
-            self.cbfs_add(fw_name, hash_extension, regions)
-        self.cbfs_add(fw_name, extension, regions)
-        self.cbfs_truncate(regions)
-        return True
-
     def cbfs_replace_diagnostics(self, diag_name, local_path):
         """Runs cbfstool to replace a diagnostics image in the firmware image.
 
@@ -803,17 +674,6 @@ class FirmwareUpdater(object):
         self.cbfs_remove(diag_name, '', regions)
         self.cbfs_add(diag_name, '', regions, local_path)
         self.cbfs_truncate(regions)
-
-    def cbfs_sign_and_flash(self):
-        """Signs CBFS (bios.bin) and flashes it."""
-        self.resign_firmware(work_path=self._cbfs_work_path)
-        bios = self._get_handler('bios')
-        bios_file = os.path.join(self._cbfs_work_path, self._bios_path)
-        bios.new_image(bios_file)
-        # futility makes sure to preserve important sections (HWID, GBB, VPD).
-        self.os_if.run_shell_command_get_result(
-                'futility update --mode=recovery -i %s' % bios_file)
-        return True
 
     def copy_bios(self, filename):
         """Copy the shellball BIOS to the given name in the temp dir

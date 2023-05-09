@@ -355,6 +355,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         # From root screen to storage screen
         self.menu.move_to(5, 0) # language menu
         self.menu.down() # storage health info
+        self.test.wait_for('keypress_delay')
         self.menu.select('Selecting "Storage (Health) Info"...')
         self.test.wait_for('keypress_delay')
         # Since the default selection is unknown, navigate to item 4 first
@@ -438,6 +439,7 @@ class _MenuModeSwitcher(_BaseMenuModeSwitcher):
         else:
             logging.info('Boot to MiniOS')
             self.menu.down()
+            self.test.wait_for('keypress_delay')
             self.menu.select(
                     'Selecting "Recovery using internet connection"...')
 

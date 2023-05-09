@@ -79,14 +79,14 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('keyboard Pairing In Standard Inquiry Mode Test',
                   devices={"KEYBOARD": 1},
-                  supports_floss=True,
-                  eir_inq_mode=False)
+                  supports_floss=True)
     def cl_adapter_keyboard_pairing_in_standard_inq_mode_test(self):
         """Performs pairing test with keyboard in standard inquiry mode"""
         device = self.devices['KEYBOARD'][0]
         self.pairing_test(device,
                           check_connected_method=\
-                          self.run_keyboard_tests)
+                          self.run_keyboard_tests,
+                          inq_mode='STANDARD')
 
     @test_wrapper('Pairing Suspend Resume Test',
                   devices={"MOUSE": 1},
@@ -136,14 +136,14 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('HID keyboard Reports In Standard Inquiry Mode Test',
                   devices={'KEYBOARD': 1},
-                  supports_floss=True,
-                  eir_inq_mode=False)
+                  supports_floss=True)
     def cl_HID_keyboard_reports_in_standard_inq_mode_test(self):
         """Performs HID report test with keyboard in standard inquiry mode"""
         device = self.devices['KEYBOARD'][0]
         self.run_hid_reports_test(device,
                           check_connected_method=\
-                          self.run_keyboard_tests)
+                          self.run_keyboard_tests,
+                          inq_mode='STANDARD')
 
     @test_wrapper('HID Reconnect Speed Test',
                   devices={"MOUSE": 1},

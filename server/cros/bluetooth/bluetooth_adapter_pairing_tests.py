@@ -38,13 +38,38 @@ class BluetoothAdapterPairingTests(
     # TODO(josephsih): Reduce the sleep intervals to speed up the tests.
     PAIR_TEST_SLEEP_SECS = 5
 
-    def pairing_test(self, device, check_connected_method=lambda device: True,
-                     pairing_twice=False, suspend_resume=False, reboot=False):
+    def pairing_test(self,
+                     device,
+                     check_connected_method=lambda device: True,
+                     pairing_twice=False,
+                     suspend_resume=False,
+                     reboot=False,
+                     inq_mode=None):
         """Running Bluetooth adapter tests about pairing to a device."""
 
         # Reset the adapter to forget previously paired devices if any.
         if not self.test_reset_on_adapter():
             return
+
+        original_inq_mode = None
+        if inq_mode and self.test_valid_inquiry_mode(inq_mode):
+            original_inq_mode = self.read_inquiry_mode()
+
+            if original_inq_mode == inq_mode:
+                original_inq_mode = None
+            else:
+                self.write_inquiry_mode(inq_mode)
+
+        try:
+            self._pairing_test_impl(device, check_connected_method,
+                                    pairing_twice, suspend_resume, reboot)
+        finally:
+            if original_inq_mode:
+                self.write_inquiry_mode(original_inq_mode)
+
+    def _pairing_test_impl(self, device, check_connected_method, pairing_twice,
+                           suspend_resume, reboot):
+        """Running Bluetooth adapter tests about pairing to a device."""
 
         # The adapter must be set to the pairable state.
         if not self.test_pairable():

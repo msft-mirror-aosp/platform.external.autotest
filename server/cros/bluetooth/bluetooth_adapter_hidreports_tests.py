@@ -66,7 +66,8 @@ class BluetoothAdapterHIDReportTests(
                              check_connected_method=lambda device: True,
                              suspend_resume=False,
                              reboot=False,
-                             restart=False):
+                             restart=False,
+                             inq_mode=None):
         """Running Bluetooth HID reports tests."""
         logging.info("run hid reports test")
         # Reset the adapter and set it pairable.
@@ -89,6 +90,15 @@ class BluetoothAdapterHIDReportTests(
         dev_paired = False
         dev_connected = False
         try:
+            original_inq_mode = None
+            if inq_mode and self.test_valid_inquiry_mode(inq_mode):
+                original_inq_mode = self.read_inquiry_mode()
+
+                if original_inq_mode == inq_mode:
+                    original_inq_mode = None
+                else:
+                    self.write_inquiry_mode(inq_mode)
+
             # Let the adapter pair, and connect to the target device.
             self.test_discover_device(device.address)
             dev_paired = self.test_pairing(device.address,
@@ -164,3 +174,5 @@ class BluetoothAdapterHIDReportTests(
                 self.test_disconnection_by_adapter(device.address)
             if dev_paired:
                 self.test_remove_pairing(device.address)
+            if original_inq_mode:
+                self.write_inquiry_mode(original_inq_mode)

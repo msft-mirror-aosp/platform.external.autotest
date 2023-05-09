@@ -51,11 +51,14 @@ def run(machine):
     ephemeraldevserver = None
     if 'ephemeraldevserver' in args_dict:
         ephemeraldevserver = args_dict['ephemeraldevserver']
+    max_run_sec = 3600
+    if 'max_run_sec' in args_dict:
+        max_run_sec = int(args_dict['max_run_sec'])
 
     job.run_test('tast',
                  host=hosts.create_host(machine, servo_args=servo_args),
                  test_exprs=[expr],
-                 ignore_test_failures=False, max_run_sec=3600,
+                 ignore_test_failures=False, max_run_sec=max_run_sec,
                  command_args=args,
                  ephemeraldevserver=ephemeraldevserver)
 

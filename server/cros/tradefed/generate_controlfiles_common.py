@@ -1401,7 +1401,8 @@ def write_controlfile(name,
                 & set(CONFIG.get('SPLIT_BY_VM_FORCE_MAX_RESOLUTION', []))):
         vm_force_max_resolution_list.append(True)
     vm_tablet_mode_list = [False]
-    if modules & set(CONFIG.get('SPLIT_BY_VM_TABLET_MODE', [])):
+    if (source_type == SourceType.DEV and modules
+                & set(CONFIG.get('SPLIT_BY_VM_TABLET_MODE', []))):
         vm_tablet_mode_list.append(True)
 
     for abi, abi_bits in abi_bits_list:

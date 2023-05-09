@@ -9,6 +9,7 @@ These will be exposed via an xmlrpc server running on the DUT.
 """
 
 from __future__ import print_function
+import re
 
 from six.moves import http_client as httplib
 import logging
@@ -873,6 +874,21 @@ class SystemServicer(object):
         """
         return self._os_if.run_shell_command_get_output(
                 'crossystem %s' % key)[0]
+
+    GSCVERSION_RE = re.compile(r'([A-Z_]+)=(.*)')
+
+    def get_gsc_versions(self):
+        """Get GSC versions as reported by gsctool.
+
+        Returns:
+            A map of all gsc versions.
+        """
+        result = {}
+        for line in self._os_if.run_shell_command_get_output('gsctool -afM'):
+            match = self.GSCVERSION_RE.match(line)
+            if match:
+                result[match[1]] = match[2]
+        return result
 
     def get_boot_mode(self):
         """Get the current firmware boot mode.

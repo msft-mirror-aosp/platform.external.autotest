@@ -14,6 +14,7 @@ import time
 import uuid
 
 import six
+from six.moves import xmlrpc_client as xmlrpclib
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error, global_config
 from autotest_lib.client.common_lib.cros import dev_server, retry, tpm_utils
@@ -432,11 +433,23 @@ class FirmwareTest(test.test):
             'servo_type': self.servo.get_servo_version()
         }
 
+        try:
+            vers = self.faft_client.system.get_gsc_versions()
+            if "RO_FW_VER" in vers:
+                system_info['gsc_ro'] = vers["RO_FW_VER"]
+            if "RW_FW_VER" in vers:
+                system_info['gsc_rw'] = vers["RW_FW_VER"]
+        except xmlrpclib.Fault:
+            logging.exception("get_gsc_versions failed")
+
         # Record the servo v4 and servo micro versions when possible
         system_info.update(self.servo.get_servo_fw_versions())
 
         if hasattr(self, 'gsc'):
-            system_info['cr50_version'] = self.gsc.get_full_version()
+            system_info['gsc_rw_full'] = self.gsc.get_full_version()
+            system_info['gsc_ro_full'] = self.gsc.get_full_ro_version()
+            # For backwards compatibility
+            system_info['cr50_version'] = system_info['gsc_rw_full']
 
         logging.info('System info:\n%s', pprint.pformat(system_info))
         self.write_attr_keyval(system_info)

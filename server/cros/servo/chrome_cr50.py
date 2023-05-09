@@ -73,6 +73,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     VERSION_FORMAT = 'RW_(A|B): +%s +(\d+\.\d+\.\d+|Error|Empty)(/DBG)?(\S+)?\s'
     INACTIVE_VERSION = VERSION_FORMAT % ''
     ACTIVE_VERSION = VERSION_FORMAT % '\*'
+    RO_VERSION_FORMAT = VERSION_FORMAT.replace('RW', 'RO')
+
+    RO_ACTIVE_VERSION = RO_VERSION_FORMAT % '\*'
     # Following lines of the version output may print the image board id
     # information. eg.
     # BID A:   5a5a4146:ffffffff:00007f00 Yes
@@ -772,6 +775,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return self.get_version_info(self.ACTIVE_VERSION)
 
 
+    def get_ro_active_version_info(self):
+        """Get the active partition, version, and hash"""
+        return self.get_version_info(self.RO_ACTIVE_VERSION)
+
     def using_prod_rw_keys(self):
         """Returns True if the RW keyid is prod"""
         rv = self.send_command_retry_get_output('sysinfo',
@@ -809,6 +816,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Get the RW version"""
         return self.get_active_version_info()[1].strip()
 
+    def get_ro_version(self):
+        """Get the RW version"""
+        return self.get_ro_active_version_info()[1].strip()
+
     def running_mp_image(self):
         """Returns True if gsc is running a mp image"""
         major = int(self.get_version().split('.')[1])
@@ -818,6 +829,11 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Get the complete RW version string."""
         _, rw_ver, dbg, ver_str = self.get_active_version_info()
         return  rw_ver + (dbg if dbg else '') + ver_str
+
+    def get_full_ro_version(self):
+        """Get the complete RW version string."""
+        _, ro_ver, dbg, ver_str = self.get_ro_active_version_info()
+        return ro_ver + (dbg if dbg else '') + ver_str
 
     def ccd_is_enabled(self):
         """Return True if ccd is enabled.

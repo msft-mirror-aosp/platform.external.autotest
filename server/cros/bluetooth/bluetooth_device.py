@@ -789,17 +789,19 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def btmon_get(self, search_str='', start_str=''):
+    def btmon_get(self, search_str='', start_str='', end_str=''):
         """Get btmon output contents.
 
         @param search_str: only lines with search_str would be kept.
         @param start_str: all lines before the occurrence of start_str would be
-                filtered.
+                          filtered.
+        @param end_str: all lines after the occurrence of end_str would be
+                        filtered.
 
         @returns: the recorded btmon output.
 
         """
-        return self._proxy.btmon_get(search_str, start_str)
+        return self._proxy.btmon_get(search_str, start_str, end_str)
 
 
     @proxy_thread_safe

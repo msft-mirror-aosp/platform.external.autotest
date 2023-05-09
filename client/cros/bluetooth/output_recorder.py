@@ -165,33 +165,45 @@ class OutputRecorder(object):
         self.contents = []
 
 
-    def get_contents(self, search_str='', start_str=''):
+    def get_contents(self, search_str='', start_str='', end_str=''):
         """Get the (filtered) contents.
 
         @param search_str: only lines with search_str would be kept.
         @param start_str: all lines before the occurrence of start_str would be
                           filtered.
+        @param end_str: all lines after the occurrence of end_str would be
+                        filtered.
 
         @returns: the (filtered) contents.
 
         """
         search_pattern = re.compile(search_str) if search_str else None
         start_pattern = re.compile(start_str) if start_str else None
+        end_pattern = re.compile(end_str) if end_str else None
 
         # Just returns the original contents if no filtered conditions are
         # specified.
-        if not search_pattern and not start_pattern:
+        if not search_pattern and not start_pattern and not end_pattern:
             return self.contents
 
         contents = []
         start_flag = not bool(start_pattern)
         for line in self.contents:
             if start_flag:
-                if search_pattern.search(line):
+                if end_pattern and end_pattern.search(line):
+                    contents.append(line.strip())
+                    break
+                if search_pattern and search_pattern.search(line):
+                    contents.append(line.strip())
+                elif not search_pattern:
                     contents.append(line.strip())
             elif start_pattern.search(line):
                 start_flag = True
                 contents.append(line.strip())
+
+                # start_pattern == end_pattern
+                if end_pattern.search(line):
+                    break
 
         return contents
 

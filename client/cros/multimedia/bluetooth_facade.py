@@ -1780,18 +1780,21 @@ class BluetoothBaseFacadeLocal(object):
         """Stops btmon monitoring."""
         self.btmon.stop()
 
-    def btmon_get(self, search_str, start_str):
+    def btmon_get(self, search_str, start_str, end_str):
         """Gets btmon output contents.
 
         @param search_str: only lines with search_str would be kept.
         @param start_str: all lines before the occurrence of start_str would be
-                filtered.
+                          filtered.
+        @param end_str: all lines after the occurrence of end_str would be
+                        filtered.
 
         @returns: the recorded btmon output.
 
         """
         return self.btmon.get_contents(search_str=search_str,
-                                       start_str=start_str)
+                                       start_str=start_str,
+                                       end_str=end_str)
 
     def btmon_find(self, pattern_str):
         """Finds if a pattern string exists in btmon output.

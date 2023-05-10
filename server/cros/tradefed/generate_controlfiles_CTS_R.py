@@ -405,7 +405,6 @@ CONFIG['LOGIN_PRECONDITION'] = {
 
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
-        'CtsHostsideNetworkTests': _WIFI_CONNECT_COMMANDS_V2,
         'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS_V2,
         'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS_V2,
         'CtsNetTestCases': _WIFI_CONNECT_COMMANDS_V2,

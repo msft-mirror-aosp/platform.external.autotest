@@ -186,6 +186,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                                   target_release):
         """
         Creates the expected event fired during post-reboot update check.
+        The `previous_version` field is purposefully excluded, since scaled-dlc
+        installs can occur after reboot which will roll the previous version
+        forward and cause issues verifying the hostlog. It should not be added
+        to the post-reboot check until `previousversion` is handled separately.
 
         @param source_release: The source build version.
         @param target_release: The target build version.
@@ -196,7 +200,6 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 event_type=uee.EVENT_TYPE_REBOOTED_AFTER_UPDATE,
                 event_result=uee.EVENT_RESULT_SUCCESS,
                 version=target_release,
-                previous_version=source_release,
                 timeout = self._POST_REBOOT_TIMEOUT)
         ]
 

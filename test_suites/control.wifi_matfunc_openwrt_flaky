@@ -1,0 +1,39 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "chromeos-kernel-wifi@google.com"
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    'criteria': 'Test basic WiFi functionalities on a flaky suite on OpenWrt router',
+    'hw_agnostic': False,
+}
+NAME = "wifi_matfunc_openwrt_flaky"
+PURPOSE = "Test basic WiFi functionalities on a flaky suite on OpenWrt router."
+
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+The suite is a placeholder for new WiFi Tast tests.
+
+It is the landing suite for new/ported WiFi Tast tests. After a test is
+stable enough (say at least the same pass rate compare to Autotest
+version), the test can be moved to suite:wifi_matfunc_openwrt.
+
+Refer to https://goto.google.com/cros-wifi-tast-suites for detail.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['add_experimental'] = True
+args_dict['max_runtime_mins'] = 300
+args_dict['name'] = NAME
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

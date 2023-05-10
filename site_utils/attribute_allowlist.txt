@@ -659,6 +659,7 @@ suite:wifi_lucidsleep
 suite:wifi_matfunc
 suite:wifi_matfunc_flaky
 suite:wifi_matfunc_openwrt
+suite:wifi_matfunc_openwrt_flaky
 suite:wifi_perf
 suite:wifi_perf_flaky
 suite:wifi_perf_openwrt

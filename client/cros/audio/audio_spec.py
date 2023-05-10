@@ -69,7 +69,7 @@ def strip_kernelnext_suffix(board_name):
     return board_name
 
 BOARDS_WITH_HOTWORDING = ['kevin']
-MODELS_WITH_HOTWORDING = ['brya', 'skolas']
+MODELS_WITH_HOTWORDING = ['brya', 'skolas', 'delbin']
 
 
 def has_hotwording(board_name, model_name):

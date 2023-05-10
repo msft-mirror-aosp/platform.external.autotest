@@ -69,7 +69,8 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
     When forcing the battery to discharge, we force the charger off. If
     supported, we enable the battery sustainer for 5% display charge as a
     back-up in-case the charger connection resets (causing the system to charge
-    again).
+    again). Since the battery sustainer will only discharge on older firmwares
+    if lower != upper, set the lower limit to 4%.
 
     For enabling charging, we reset chargeoverride and chargecontrol back to the
     default states.
@@ -84,7 +85,7 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
     """
     ec_cmd_discharge = 'ectool chargeoverride dontcharge'
     ec_cmd_charge = 'ectool chargeoverride off'
-    ec_cmd_sustain = 'ectool chargecontrol normal 5 5'
+    ec_cmd_sustain = 'ectool chargecontrol normal 4 5'
     ec_cmd_normal = 'ectool chargecontrol normal'
     run_func = host.run if host else utils.run
     try:

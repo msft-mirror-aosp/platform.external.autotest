@@ -1,0 +1,42 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "clarkchung@google.com, chromeos-runtime-probe@google.com"
+NAME = "racc_general_perbuild"
+PURPOSE = "RACC tests for DUTs with RACC binary available"
+TIME = "SHORT"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+METADATA = {
+    'contacts': [
+        'chromeos-runtime-probe@google.com',
+        'clarkchung@google.com',
+    ],
+    'bug_component': 'b:606088',
+    'criteria': ('Medium, this test runs several RACC related tast tests to '
+                 'validate the RACC binary behavior.'),
+    'hw_agnostic': False,
+}
+
+
+DOC = """
+ChromeOS RACC tests.
+
+This suite is used as an entry point for racc_general_perbuild, which
+perform tests at DUTs with RACC binaries installed.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+
+args_dict['max_runtime_mins'] = 10
+args_dict['timeout_mins'] = 10
+args_dict['job'] = job
+args_dict['name'] = NAME
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

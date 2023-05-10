@@ -7,6 +7,7 @@ import logging
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.cellular import test_environment
+from autotest_lib.client.cros.power import sys_power
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
 from autotest_lib.client.cros.update_engine import update_engine_test
 
@@ -68,6 +69,9 @@ class autoupdate_CannedOmahaUpdate(update_engine_test.UpdateEngineTest):
             # Setup DUT so that we have ssh over ethernet but DUT uses
             # cellular as main connection.
             try:
+                # Pause the check_network.hook which will cause a reboot in
+                # about a minute after the ethernet is disconnected.
+                sys_power.pause_check_network_hook()
                 with test_environment.CellularOTATestEnvironment(
                         shutdown_ethernet=True) as test_env:
                     service = test_env.shill.wait_for_cellular_service_object()
@@ -85,3 +89,5 @@ class autoupdate_CannedOmahaUpdate(update_engine_test.UpdateEngineTest):
                 # propagated to the server test's failure message.
                 logging.error('Failed setting up cellular connection.')
                 raise error.TestFail(e)
+            finally:
+                sys_power.resume_check_network_hook()

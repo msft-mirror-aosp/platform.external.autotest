@@ -574,7 +574,6 @@ suite:racc_config_installed_perbuild
 suite:racc_general_perbuild
 suite:regression
 suite:rlz
-suite:runtime_probe_perbuild
 suite:sanity
 suite:satlab-qual-arc-cts
 suite:satlab-qual-arc-cts-qual

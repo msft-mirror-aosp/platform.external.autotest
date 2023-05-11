@@ -56,10 +56,9 @@ def run(machine):
                             json.dumps(labels)},
                             stream=temp_file)
             temp_file.flush()
-            testgroups = {"0_dut_check":["cellular.IsConnected."+carrier,"cellular.Identifiers."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
-                          "1_is_modem_up":["cellular.IsModemUp"],
+            testgroups = {"0_is_modem_up":["cellular.IsModemUp"],
+                          "1_dut_check":["cellular.IsConnected."+carrier,"cellular.Identifiers."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
                           "2_autoconnect_enable":["cellular.Autoconnect."+carrier,"cellular.ShillEnableDisable."+carrier]}
-                          # "3_platform":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e")']}
             for testsession in sorted(testgroups):
                 sessiontag = testsession+"_"+carrier
                 tast_test_expr = testgroups[testsession]
@@ -72,5 +71,6 @@ def run(machine):
                              varsfiles=[temp_file.name],
                              varslist=svars,
                              tag=sessiontag)
+                job.clear_post_run_hooks()
 
 parallel_simple(run, machines)

@@ -1122,6 +1122,10 @@ class server_job(base_job.base_job):
         return result
 
 
+    def clear_post_run_hooks(self):
+        """A function to clear the post_run_hooks after they are executed."""
+        self._post_run_hooks.clear()
+
     def run_group(self, function, *args, **dargs):
         """\
         @param function: subroutine to run

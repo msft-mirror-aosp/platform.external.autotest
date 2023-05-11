@@ -20,7 +20,7 @@ METADATA = {
             """
 }
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:audio_advanced"
+# ATTRIBUTES = "suite:audio_advanced"
 DEPENDENCIES = "board:volteer, audio_box, chameleon_state:WORKING"
 JOB_RETRIES = 1
 

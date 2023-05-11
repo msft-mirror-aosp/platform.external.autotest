@@ -569,7 +569,7 @@ suite:pvs-tast-cq
 suite:pvs-video
 suite:py3-beta
 suite:reboot_stress
-suite:graphics_satlab_redrix_stress_b246324780
+suite:graphics_satlab_vc
 suite:racc_config_installed_perbuild
 suite:racc_general_perbuild
 suite:regression

@@ -1,12 +1,10 @@
-# Copyright 2019 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TODO(ihf): delete when b/246324780 is fixed.
-
 AUTHOR = "chromeos-gfx"
-NAME = "graphics_satlab_redrix_stress_b246324780"
-PURPOSE = "Graphics tests"
+NAME = "graphics_satlab_vc"
+PURPOSE = "Graphics tests to run on vc satlab"
 
 TIME = "MEDIUM"
 TEST_CATEGORY = "Graphics"
@@ -22,8 +20,6 @@ METADATA = {
 }
 
 DOC = """
-This is the part of the graphics redrix stress suite for b/246324780.
-
 @param build: The name of the image to test.
               Ex: x86-mario-release/R17-1412.33.0-a1-b29
 @param board: The board to test on.  Ex: x86-mario
@@ -39,7 +35,7 @@ from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 args_dict['max_runtime_mins'] = 960
 args_dict['timeout_mins'] = 1440
 args_dict['file_bugs'] = False
-args_dict['name'] = 'graphics_satlab_redrix_stress_b246324780'
+args_dict['name'] = 'graphics_satlab_vc'
 args_dict['job'] = job
 args_dict['add_experimental'] = True
 args_dict['bug_template'] = _BUG_TEMPLATE

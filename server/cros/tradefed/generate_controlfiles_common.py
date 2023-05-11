@@ -99,6 +99,8 @@ _CONTROLFILE_TEMPLATE = Template(
         {%- endif %}
         {%- if wifi_info_needed %}
         ssid = utils.get_wireless_ssid(machine['hostname'])
+        if machine['hostname'].startswith('chromeos8'):
+            ssid = 'wl-ChromeOS_lab_AP'
         wifipass = global_config.global_config.get_config_value('CLIENT',
                     'wireless_password', default=None)
         {%- endif %}

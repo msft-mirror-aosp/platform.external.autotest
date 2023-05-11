@@ -294,8 +294,11 @@ _WIFI_CONNECT_COMMANDS_V2 = [
         "'adb shell dumpsys wifi transports -eth'",
 ]
 
-CONFIG['WIFI_MODULES'] = [
+IPV6_MODULES = [
         'CtsLibcoreTestCases',
+]
+
+CONFIG['WIFI_MODULES'] = [
         'CtsNetApi23TestCases',
         'CtsNetTestCases',
         'CtsJobSchedulerTestCases',
@@ -314,8 +317,12 @@ CONFIG['LOGIN_PRECONDITION'] = {
 CONFIG['PUBLIC_PRECONDITION'] = {
 }
 
+for m in IPV6_MODULES:
+    CONFIG['PUBLIC_PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
+
 for m in CONFIG['WIFI_MODULES']:
     CONFIG['PUBLIC_PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
+    CONFIG['PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {
         'CtsCameraTestCases': ['lighting'],

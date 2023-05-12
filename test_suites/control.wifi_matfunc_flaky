@@ -3,8 +3,11 @@
 # found in the LICENSE file.
 
 AUTHOR = "deanliao@chromium.org"
-NAME = "wifi_func_tast"
-PURPOSE = "Test basic WiFi functionalities using Tast framework."
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+}
+NAME = "wifi_matfunc_flaky"
+PURPOSE = "Test basic WiFi functionalities in a flaky suite."
 
 TIME = "SHORT"
 TEST_CATEGORY = "General"
@@ -12,9 +15,10 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-The suite is a placeholder for new WiFi Tast tests.
+The suite is a placeholder for new WiFi tests or tests that have
+high fail rate.
 
-It is the landing suite for new/ported WiFi Tast tests. After a test is
+It is also the landing suite for new/ported WiFi Tast tests. After a test is
 stable enough (say at least the same pass rate compare to Autotest
 version), the test can be moved to suite:wifi_matfunc.
 

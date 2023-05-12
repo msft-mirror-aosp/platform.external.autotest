@@ -9,7 +9,7 @@ METADATA = {
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:wifi_func_tast'
+ATTRIBUTES = 'suite:wifi_matfunc_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

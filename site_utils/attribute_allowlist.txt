@@ -652,12 +652,12 @@ suite:wifi_cross_device_tdls_flaky
 suite:wifi_endtoend
 suite:wifi_endtoend_flaky
 suite:wifi_flaky
-suite:wifi_func_tast
 suite:wifi_interop
 suite:wifi_interop_static
 suite:wifi_interop_wpa2
 suite:wifi_lucidsleep
 suite:wifi_matfunc
+suite:wifi_matfunc_flaky
 suite:wifi_matfunc_openwrt
 suite:wifi_perf
 suite:wifi_perf_flaky

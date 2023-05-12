@@ -1,0 +1,2 @@
+android.net.ipsec.ike.cts.IkeSessionDigitalSignatureTest#testIkeSessionSetupAndChildSessionSetupWithTransportMode: [all]
+android.net.ipsec.ike.cts.IkeSessionMschapV2Test#testIkeSessionSetupAndChildSessionSetupWithTransportMode: [all]

@@ -6,4 +6,6 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <Entry include="CtsIkeTestCases android.net.ipsec.ike.cts.IkeSessionDigitalSignatureTest#testIkeSessionSetupAndChildSessionSetupWithTransportMode" />
+  <Entry include="CtsIkeTestCases android.net.ipsec.ike.cts.IkeSessionMschapV2Test#testIkeSessionSetupAndChildSessionSetupWithTransportMode" />
 </SubPlan>

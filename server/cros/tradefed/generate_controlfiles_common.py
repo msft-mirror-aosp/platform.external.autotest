@@ -1157,19 +1157,31 @@ def get_controlfile_content(combined,
             executable_test_count=executable_test_count)
 
 
+def fixup_tradefed_executable_bits(basepath):
+    """ Do chmod u+x for files to be executed, because Python's zipfile
+    module does not set the executable bit.
+    """
+    # The list of files to be fixed.
+    executables = [CONFIG['TRADEFED_EXECUTABLE_PATH']]
+    executables.extend(CONFIG.get('EXECUTABLE_PATH_LIST', []))
+    # Legacy config (deprecated by EXECUTABLE_PATH_LIST)
+    if 'JAVA_EXECUTABLE_PATH' in CONFIG:
+        executables.append(CONFIG['JAVA_EXECUTABLE_PATH'])
+
+    for subpath in executables:
+        path = os.path.join(basepath, subpath)
+        if os.path.exists(path):
+            os.chmod(path, os.stat(path).st_mode | stat.S_IEXEC)
+
+
 def get_tradefed_data(path, is_public, abi):
     """Queries tradefed to provide us with a list of modules.
 
     Notice that the parsing gets broken at times with major new CTS drops.
     """
+    fixup_tradefed_executable_bits(path)
+
     tradefed = os.path.join(path, CONFIG['TRADEFED_EXECUTABLE_PATH'])
-    # Python's zipfle module does not set the executable bit.
-    # tradefed and java command need chmod +x.
-    os.chmod(tradefed, os.stat(tradefed).st_mode | stat.S_IEXEC)
-    java = CONFIG.get('JAVA_EXECUTABLE_PATH', None)
-    if java:
-        java = os.path.join(path, java)
-        os.chmod(java, os.stat(java).st_mode | stat.S_IEXEC)
     cmd_list = [tradefed, 'list', 'modules']
     logging.info('Calling tradefed for list of modules.')
     with open(os.devnull, 'w') as devnull:

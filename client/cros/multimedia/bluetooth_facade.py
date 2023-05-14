@@ -67,6 +67,7 @@ from autotest_lib.client.cros.bluetooth.floss.floss_enums import (BondState,
                                                                   SspVariant,
                                                                   Transport)
 from autotest_lib.client.cros.bluetooth.floss.gatt_client import FlossGattClient
+from autotest_lib.client.cros.bluetooth.floss.logger import FlossLogger
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClient
 from autotest_lib.client.cros.bluetooth.floss.scanner_client import FlossScannerClient
@@ -4456,6 +4457,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.adapter_client.register_callback_observer(
                     'DiscoveryObserver', self)
             self.discovering = None
+            self.enable_floss_debug = False
 
         def __del__(self):
             if self.adapter_client:
@@ -4527,6 +4529,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                                                  self.DEFAULT_ADAPTER)
         self.battery_client = FlossBatteryManagerClient(
                 self.bus, self.DEFAULT_ADAPTER)
+        self.floss_logger = FlossLogger(self.bus, self.DEFAULT_ADAPTER)
         self.gatt_client = FlossGattClient(self.bus, self.DEFAULT_ADAPTER)
         self.is_clean = False
 
@@ -4652,12 +4655,16 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Checks whether an adapter exists."""
         return len(self.manager_client.get_available_adapters()) > 0
 
-    def set_debug_log_levels(self, bluez_vb, kernel_vb):
-        """Enables verbose logging."""
-        # TODO(abps) - This will be necessary for Floss but may not need to
-        #              touch the kernel. This needs to be implemented at the
-        #              daemon level still.
-        return False
+    def set_debug_log_levels(self, floss_vb, kernel_vb=0):
+        """Enables Floss verbose logging.
+
+        @param floss_vb: verbosity of Floss debug log, either 0 or 1.
+        @param kernel_vb: verbosity of kernel debug log (ignored in Floss).
+        """
+        self.enable_floss_debug = bool(floss_vb)
+        if self.is_bluetoothd_proxy_valid():
+            self.floss_logger.set_debug_logging(self.enable_floss_debug)
+        return
 
     def start_discovery(self, register_observer=True):
         """Start discovery of remote devices.
@@ -4729,6 +4736,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.scanner_client = FlossScannerClient(self.bus, default_adapter)
             self.battery_client = FlossBatteryManagerClient(
                     self.bus, default_adapter)
+            self.floss_logger = FlossLogger(self.bus, default_adapter)
 
             try:
                 utils.poll_for_condition(
@@ -4740,6 +4748,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 logging.error('timeout: error starting adapter daemon: %s', e)
                 logging.error(traceback.format_exc())
                 return False
+
+            self.floss_logger.set_debug_logging(self.enable_floss_debug)
 
             # We need to observe callbacks for proper operation.
             if not self.adapter_client.register_callbacks():
@@ -5563,3 +5573,10 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @return: True on success, False otherwise.
         """
         return self.adapter_client.set_property('Name', alias)
+
+    def is_debug_enabled(self):
+        """Checks if debug is enabled.
+
+        @return: True on success, False on failure, None on DBus error.
+        """
+        return self.floss_logger.is_debug_enabled()

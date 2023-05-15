@@ -243,7 +243,7 @@ into the chroot:
 3.  Go into a second chroot
 4.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
 5.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP firmware_FAFTSetup`
-6.  Run the `firmware.Pre.normal` test to verify tast tests are working also. `tast run --var=servo=localhost:9999 $DUT_IP firmware.Pre.normal`
+6.  Run the `firmware.Fixture.normal` test to verify tast tests are working also. `tast run --var=servo=localhost:9999 $DUT_IP firmware.Fixture.normal`
 
 You can omit the --autotest_dir if you have built packages for the board and want to use the build version of the tests, i.e.:
 

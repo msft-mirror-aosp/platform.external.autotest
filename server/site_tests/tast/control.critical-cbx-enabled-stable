@@ -1,0 +1,51 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+
+AUTHOR = 'The ChromiumOS Authors'
+NAME = 'tast.critical-cbx-enabled-stable'
+METADATA = {
+    "contacts": ["tast-core@google.com@google.com"],
+    "bug_component": "b:1034522", # ChromeOS > Test > Harness > Tast > Examples
+    }
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'label-cbx:True'
+ATTRIBUTES = "suite:cbx_enabled_critical"
+MAX_RESULT_SIZE_KB = 256 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run the Tast must-pass cbx test suite on cbx devices.
+
+Tast is an integration-testing framework analagous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+
+This test runs cbx Tast-based tests that are required to pass
+against a cbx DUT. It fails if any individual Tast tests fail.
+
+See http://go/tast-failures for information about investigating failures.
+'''
+
+args_dict = utils.args_to_dict(args)
+assert 'label-cbx:True' in DEPENDENCIES
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['('
+                             '"group:cbx" && '
+                             'cbx_feature_enabled && '
+                             'cbx_stable'
+                             ')'],
+                 ignore_test_failures=False, max_run_sec=3600,
+                 command_args=args,
+                 retries=2)
+
+parallel_simple(run, machines)

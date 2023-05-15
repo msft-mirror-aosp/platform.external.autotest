@@ -45,7 +45,14 @@ class bluetooth_AdapterControllerRoleTests(
         self.test_discover_device(device.address)
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=False)
-        self.test_disconnection_by_adapter(device.address)
+        # Disconnect from different sides depending on the stack.
+        # This prevents the unexpected reconnection issue of BlueZ,
+        # and the failing to send traffic issue of Floss.
+        # See b/280534346 for more detail.
+        if self.floss:
+            self.test_disconnection_by_device(device)
+        else:
+            self.test_disconnection_by_adapter(device.address)
 
 
     def connect_and_test_secondary_device(self, device, secondary_test_func):

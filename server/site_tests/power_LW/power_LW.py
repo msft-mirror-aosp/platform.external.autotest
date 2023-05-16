@@ -109,7 +109,7 @@ class power_LW(test.test):
             args['tag'] = args.get('tag', 'PLW')
 
             autotest_client = autotest.Autotest(wlan_host)
-            autotest_client.run_test(test, **args)
+            autotest_client.run_test(test, check_client_result=True, **args)
         finally:
             self._start_servo_usb_and_ethernet(host, wlan_host)
             if not host.wait_up(timeout=30):

@@ -660,6 +660,8 @@ class _BaseModeSwitcher(object):
                 if wait_for_dut_up:
                     self.bypass_dev_mode()
         elif to_mode == 'normal':
+            logging.info('Executing crossystem disable_dev_request=1')
+            self.faft_client.system.run_shell_command('crossystem disable_dev_request=1')
             self._enable_normal_mode_and_reboot()
         else:
             raise NotImplementedError('Unexpected boot mode param: %s',

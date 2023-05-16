@@ -16,7 +16,7 @@ from autotest_lib.client.bin import utils, package
 _DEFAULT_COMMANDS_TO_LOG_PER_TEST = []
 _DEFAULT_COMMANDS_TO_LOG_PER_BOOT = [
         'lspci -vvnn',
-        'lsusb -vt'
+        'lsusb -vt',
         'gcc --version',
         'ld --version',
         'mount',

@@ -37,7 +37,7 @@ METADATA = {
     'hw_agnostic': False,
     'requirements': ['bt-gen-0001-v01'],
 }
-ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 

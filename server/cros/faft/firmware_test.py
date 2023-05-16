@@ -1559,13 +1559,15 @@ class FirmwareTest(test.test):
         logging.info('System entered into %s state..', power_state)
 
     def check_lid_and_power_on(self):
-        """
+        """Power on if lid is not open.
+
         On devices with EC software sync, system powers on after EC reboots if
         lid is open. Otherwise, the EC shuts down CPU after about 3 seconds.
         This method checks lid switch state and presses power button if
         necessary.
         """
-        if self.servo.get("lid_open") == "no":
+        if self.check_ec_capability(["lid"
+                                     ]) and self.servo.get("lid_open") == "no":
             time.sleep(self.faft_config.software_sync)
             self.servo.power_short_press()
 

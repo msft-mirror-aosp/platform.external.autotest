@@ -10,10 +10,9 @@
 # Description
 # Runs eight minutes of suspend/resume cycles in the background of a file I/O bench.
 
-NAME = ""
+NAME = "power_SuspendStress.disk"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "jwerner, chromeos-power",
     "bug_component": "b:167191",
     "criteria": "This test is a functional test",
     "hw_agnostic": False,

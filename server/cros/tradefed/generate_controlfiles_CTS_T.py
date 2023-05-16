@@ -431,6 +431,16 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 '--module', 'CtsAppTestCases', '--test',
                 'android.app.cts.SystemFeaturesTest'
         ],
+        'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
+                '--module', 'CtsDeqpTestCases', '--test',
+                'dEQP-GLES3.functional.prerequisite#*'
+        ],
+        'CtsMediaStressTestCases.camera': [
+                '--module',
+                'CtsMediaStressTestCases',
+                '--test',
+                'android.mediastress.cts.MediaRecorderStressTest',
+        ],
         'CtsPermissionTestCases.camera': [
                 '--include-filter',
                 'CtsPermissionTestCases android.permission.cts.CameraPermissionTest',

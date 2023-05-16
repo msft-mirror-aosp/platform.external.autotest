@@ -59,6 +59,10 @@ class power_LW(test.test):
     def _start_servo_usb_and_ethernet(self, host, wlan_host):
         if host.servo and host.servo.supports_usb_mux_control():
             host.servo.set_usb_mux('on')
+            # Restore the prior USB3 state.
+            if (host.servo.supports_usb3_control()
+                        and self._usb3_state == 'allowed/enabled'):
+                host.servo.set_usb3_control('enable')
         else:
             # Reboot to restore USB ethernet if it was stopped via unbind.
             wlan_host.reboot()
@@ -76,6 +80,12 @@ class power_LW(test.test):
             # default.
             if host.servo and host.servo.supports_usb_mux_control():
                 host.servo.set_usb_mux('off')
+
+                # Also disable USB3 if it's on.
+                if host.servo.supports_usb3_control():
+                    self._usb3_state = host.servo.get_usb3_control()
+                    if self._usb3_state == 'allowed/enabled':
+                        host.servo.set_usb3_control('disable')
             elif host != wlan_host:
                 # Fall back to unbinding the USB device for ethernet if eth
                 # power control isn't supported on the servo.
@@ -114,6 +124,8 @@ class power_LW(test.test):
             self._start_servo_usb_and_ethernet(host, wlan_host)
             if not host.wait_up(timeout=30):
                 logging.warning("ethernet connection did not return.")
+                host.servo.usb_mux_reset()
+                host.servo.usb3_control_reset()
                 force_discharge_utils.charge_control_by_ectool(True,
                                                                host=wlan_host)
             else:

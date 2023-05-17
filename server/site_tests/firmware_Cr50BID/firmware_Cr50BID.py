@@ -96,7 +96,7 @@ class firmware_Cr50BID(Cr50Test):
         # DUT is in recovery without being able to ssh into the DUT.
     ]
 
-    def initialize(self, host, cmdline_args, basic=False, full_args={}):
+    def initialize(self, host, cmdline_args, basic=True, full_args={}):
         if not host.servo or host.servo.main_device_is_ccd():
             raise error.TestNAError('Use a flex cable instead of CCD cable.')
         # Restore the original image and board id during cleanup.

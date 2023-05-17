@@ -295,12 +295,13 @@ class BluetoothAdapterPairingTests(
             time.sleep(2)
             self.test_device_is_not_connected(device.address)
 
-            start_time = time.time()
             if 'BLE' in device_type:
                 self.test_device_set_discoverable(device, True)
+                start_time = time.time()
                 self.test_device_is_connected(device.address,
                                               sleep_interval=0.1)
             else:
+                start_time = time.time()
                 self.test_connection_by_device(device, post_connection_delay=0)
 
             check_connected_method(device)

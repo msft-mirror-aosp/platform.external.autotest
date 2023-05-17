@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'The ChromiumOS Authors'
-NAME = 'tast.input-tools'
+NAME = 'tast.input-tools-shard-1'
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:input-tools'

@@ -130,6 +130,10 @@ def main(args):
                         '--feature',
                         action='append',
                         help='Enables the specified Chrome feature flag')
+    parser.add_argument('--disable-feature',
+                        action='append',
+                        help='Disable the specified Chrome feature flag')
+
     parser.add_argument('--url', help='Navigate to URL.')
     args = parser.parse_args(args)
 
@@ -145,6 +149,8 @@ def main(args):
         browser_args.append('--no-startup-window')
     if args.feature:
         browser_args.append('--enable-features=%s' % ','.join(args.feature))
+    if args.disable_feature:
+        browser_args.append('--disable-features=%s' % ','.join(args.disable_feature))
 
     extension_paths = None
     # Load display test extension if vm_force_max_resolution is enabled.

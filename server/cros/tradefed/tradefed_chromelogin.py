@@ -67,6 +67,8 @@ class ChromeLogin(object):
         cmd += ' --no-arc-syncs'
         # Disable popup notifications to stabilize the tests.
         cmd += ' --no-popup-notification'
+        # Always disable external storage for ARC
+        cmd += ' --disable-feature=ArcExternalStorageAccess'
         # Toggle the translation from houdini to ndk
         if self._toggle_ndk:
             cmd += ' --toggle_ndk'

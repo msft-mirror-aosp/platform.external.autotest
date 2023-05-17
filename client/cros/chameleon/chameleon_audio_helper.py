@@ -111,6 +111,10 @@ class AudioLinkFactory(object):
                 audio_widget_link.USBToChameleonWidgetLink,
         (ids.ChameleonIds.USBOUT, ids.CrosIds.USBIN):
                 audio_widget_link.USBToCrosWidgetLink,
+        (ids.CrosIds.HEADPHONE, ids.ChameleonIds.USBIN):
+                audio_widget_link.AnalogToExtUSBSndCardWidgetLink,
+        (ids.ChameleonIds.USBOUT, ids.CrosIds.EXTERNAL_MIC):
+                audio_widget_link.ExtUSBSndCardToAnalogWidgetLink,
         # TODO(cychiang): Add link for other widget pairs.
     }
 

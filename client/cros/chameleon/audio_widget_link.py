@@ -361,7 +361,6 @@ class USBWidgetLink(WidgetLink):
         source.handler.unplug()
         sink.handler.unplug()
 
-
 class USBToCrosWidgetLink(USBWidgetLink):
     """The abstraction for the USB cable connected to the Cros device."""
 
@@ -370,7 +369,6 @@ class USBToCrosWidgetLink(USBWidgetLink):
         super(USBToCrosWidgetLink, self).__init__(*args, **kwargs)
         self.name = 'USB Cable to Cros'
         logging.debug('Create a USBToCrosWidgetLink: %s', self.name)
-
 
 class USBToChameleonWidgetLink(USBWidgetLink):
     """The abstraction for the USB cable connected to the Chameleon device."""
@@ -381,6 +379,42 @@ class USBToChameleonWidgetLink(USBWidgetLink):
         self.name = 'USB Cable to Chameleon'
         logging.debug('Create a USBToChameleonWidgetLink: %s', self.name)
 
+class AnalogToExtUSBSndCardWidgetLink(USBWidgetLink):
+    """The abstraction for the audio analog testbed (to Pi).
+
+    An external USB card (as link) is used between DUT and Pi.
+     ________              __________________          ______
+    |        |            |  ext. soundcard  |        |      |
+    |        |            |      link        |        |      |
+    | source |----------->| input     output |------->| sink |
+    |  DUT   | attenuator |  Mic        USB  |        | Pi   |
+    |________|   cable    |__________________|        |______|
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initializes a AnalogToExtUSBSndCardWidgetLink."""
+        super(AnalogToExtUSBSndCardWidgetLink, self).__init__(*args, **kwargs)
+        self.name = 'External USB Sound Card (playing to Pi)'
+        logging.debug('Create a AnalogToExtUSBSndCardWidgetLink: %s', self.name)
+
+class ExtUSBSndCardToAnalogWidgetLink(USBWidgetLink):
+    """The abstraction for the audio analog testbed (from Pi).
+
+    An external USB card (as link) is used between Pi and DUT.
+     ________          __________________              ______
+    |        |        |  ext. soundcard  |            |      |
+    |        |        |      link        |            |      |
+    | source |------->| input     output |----------->| sink |
+    |   Pi   |        |  USB   Headphone | attenuator | DUT  |
+    |________|        |__________________|   cable    |______|
+    """
+    _DEFAULT_CHANNEL_MAP = [0]
+
+    def __init__(self, *args, **kwargs):
+        """Initializes a ExtUSBSndCardToAnalogWidgetLink."""
+        super(ExtUSBSndCardToAnalogWidgetLink, self).__init__(*args, **kwargs)
+        self.name = 'External USB Sound Card (playing to Cros)'
+        logging.debug('Create a ExtUSBSndCardToAnalogWidgetLink: %s', self.name)
 
 class HDMIWidgetLink(WidgetLink):
     """The abstraction for HDMI cable."""

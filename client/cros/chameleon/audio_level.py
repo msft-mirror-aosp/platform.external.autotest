@@ -18,12 +18,18 @@ class _AudioLevel(object):
     # 1 mV RMS.
     MIC_LEVEL = 'Mic level'
     # Digital signal, e.g., USB, HDMI. is not subjected to bias level or
-    # full swing constraints. The signal is guranteed to be transmitted to the
+    # full swing constraints. The signal is guaranteed to be transmitted to the
     # other end without noise introduced on the path.
     # Signal level is relative to full swing of data width.
     # E.g. 2^12 is 1/8 of maximum amplitude, that is, 2^15 - 1, of signed
     # 16 bit data format.
-    # TODO(cychiang) Check if we need to do level scaling for digital signal.
+    #
+    # NOTE:
+    # Level scaling for digital signal be needed in the analog audio testbed
+    # with Raspberry Pi - An external USB soundcard is attached with Pi to
+    # send/receive analog signal from 3.5mm headphone/mic port. Meanwhile,
+    # 3.5mm attenuator cables are also used to reduce the signal to MIC_LEVEL.
+    # See b/279861793 for more details.
     DIGITAL = 'Digital'
     # The signal level of input of bluetooth module on the audio board is
     # slightly higher than mic level.
@@ -35,6 +41,7 @@ class _AudioLevel(object):
 _RELATIVE_LEVEL = {
     _AudioLevel.LINE_LEVEL: 1.0,
     _AudioLevel.MIC_LEVEL: 0.033,
+    _AudioLevel.DIGITAL: 0.033,
     _AudioLevel.BLUETOOTH_SIGNAL_INPUT_LEVEL: 0.05,
 }
 

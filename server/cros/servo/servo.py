@@ -53,6 +53,20 @@ CONSOLE_MISMATCH_RE = re.compile(r'%sThere was output:' % CONSOLE_COMMON_RE)
 # capabilities can be used.
 V4_CHG_ATTACHED_MIN_VOLTAGE_MV = 4400
 
+# Sleep for 5s to allow the DUT to detect the disconnect then re-enumerate the
+# USB connection. This can take up to 2.025s with USB-C due to the following
+# reset specification for PD:
+# PD_T_SAFE_0V (650 * MSEC)
+# PD_T_SRC_RECOVER_MAX (1000 * MSEC)
+# PD_T_SRC_TURN_ON (275 * MSEC)
+# PD_T_VCONN_SOURCE_ON (100 * MSEC)
+# = 2025 * MSEC total
+#
+# We also need to handle buggier type-A connections as well, so delay for 5s. We
+# can't detect when certain events happen on the DUT to stop waiting as well,
+# since this pulls down the network connection on the DUT.
+USB_CONNECTION_RESET_DELAY_SEC = 5
+
 
 class ControlUnavailableError(error.TestFail):
     """Custom error class to indicate a control is unavailable on servod."""
@@ -2071,21 +2085,54 @@ class Servo(object):
         if self.supports_usb_mux_control():
             logging.info('Resetting servo USB connection to DUT...')
             self.set_usb_mux('off')
-            # Sleep for 5s to allow the DUT to detect the disconnect then re
-            # enumerate the USB connection. This can take up to 2.025s with
-            # USB-C due to the following reset specification for PD:
-            # PD_T_SAFE_0V (650 * MSEC)
-            # PD_T_SRC_RECOVER_MAX (1000 * MSEC)
-            # PD_T_SRC_TURN_ON (275 * MSEC)
-            # PD_T_VCONN_SOURCE_ON (100 * MSEC)
-            # = 2025 * MSEC total
-            #
-            # We also need to handle buggier type-A connections as well, so
-            # delay for 5s. We can't detect when certain events happen on
-            # the DUT to stop waiting as well, since this pulls down the
-            # network connection on the DUT.
-            time.sleep(5)
+            time.sleep(USB_CONNECTION_RESET_DELAY_SEC)
             self.set_usb_mux('on')
         else:
             logging.info('Trying to reset servos USB connection to DUT, but'
                          'this feature is not supported on used servo setup.')
+
+    def supports_usb3_control(self):
+        """True if servo supports enabling/disabling USB3 for the DUT."""
+        return self.has_control('servo_v4p1_dut_usb3_en')
+
+    def get_usb3_control(self):
+        if not self.supports_usb3_control():
+            return None
+
+        return self.get('servo_v4p1_dut_usb3_en')
+
+    def set_usb3_control(self, state):
+        """Set USB3 control to state, either "enable" or "disable".
+
+        Note: this functionality is only supported on servo v4p1.
+
+        @param state: a string of "enable" or "disable".
+        """
+        if state != 'disable' and state != 'enable':
+            raise error.TestError('Unknown USB3 state request: %s' % state)
+
+        if not self.supports_usb3_control():
+            logging.info(
+                    'Not a supported servo setup. Unable to set USB3 state %s.',
+                    state)
+            return
+
+        self.set_nocheck('servo_v4p1_dut_usb3_en', state)
+
+    def usb3_control_reset(self):
+        """Reset USB3 control if supported and currently enabled.
+
+        It does nothing if servo setup does not support USB3 control for the
+        DUT, or if the USB3 connection to the DUT is currently disabled.
+        """
+        if not self.supports_usb3_control():
+            logging.info('Trying to reset servos USB3 connection to DUT, but'
+                         'this feature is not supported on used servo setup')
+        elif self.get_usb3_control() != 'allowed/enabled':
+            logging.info('Not resetting USB3 connection to DUT since it is not'
+                         'enabled')
+        else:
+            logging.info('Resetting servo USB3 connection to DUT...')
+            self.set_usb3_control('disable')
+            time.sleep(USB_CONNECTION_RESET_DELAY_SEC)
+            self.set_usb3_control('enable')

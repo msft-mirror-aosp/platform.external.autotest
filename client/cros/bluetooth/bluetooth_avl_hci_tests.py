@@ -81,7 +81,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     CHIPSETS_UNSUPPORT_5_2 = [
             'MVL-8897', 'MVL-8997', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB',
             'QCA-WCN3991', 'Intel-AC7265', 'Intel-AC9260', 'Intel-AC9560',
-            'Intel-AX200', 'Intel-AX201', 'Intel-AX211',
+            'Intel-AX200', 'Intel-AX201', 'Intel-AX203', 'Intel-AX211',
             'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
             'Realtek-RTL8852A-USB', 'QCA-WCN6750'
     ]

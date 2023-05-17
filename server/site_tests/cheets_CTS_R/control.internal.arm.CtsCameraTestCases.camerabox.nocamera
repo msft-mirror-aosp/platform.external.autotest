@@ -34,6 +34,6 @@ def run_TS(machine):
         bundle='arm',
         uri='DEV',
         retry_manual_tests=True,
-        timeout=7200)
+        timeout=9000)
 
 parallel_simple(run_TS, machines)

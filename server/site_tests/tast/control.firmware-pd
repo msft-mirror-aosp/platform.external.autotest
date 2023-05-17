@@ -11,7 +11,6 @@ METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Servo based PD data role swap test",
-    	"requirements": ["sys-fw-0023-v01"],
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'

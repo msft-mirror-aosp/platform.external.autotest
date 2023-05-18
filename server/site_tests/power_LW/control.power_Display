@@ -4,7 +4,7 @@
 
 NAME = "power_LW.power_Display"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com", "puthik"],
+    "contacts": ["chromeos-platform-power@google.com", "puthik@google.com"],
     "bug_component": "b:167191",
     "criteria": "This test is a power benchmark with different display brightnesses.",
     "hw_agnostic": False,

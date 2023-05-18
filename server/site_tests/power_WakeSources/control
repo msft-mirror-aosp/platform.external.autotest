@@ -11,7 +11,8 @@
 
 NAME = "power_WakeSources"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com", "ravisadineni"],
+    "contacts": ["chromeos-platform-power@google.com",
+                 "ravisadineni@google.com"],
     "bug_component": "b:167191",
     "criteria": "",
     "hw_agnostic": False

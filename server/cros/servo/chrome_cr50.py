@@ -232,7 +232,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     DUT_PROD = DUT_FW + PROD_FILE
     DUT_PREPVT = DUT_FW + 'cr50.bin.prepvt'
     # ===============================================================
-
     # Cr50 interrupt numbers reported in taskinfo
     IRQ_DICT = {
         4 : 'HOST_CMD_DONE',
@@ -255,6 +254,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         191 : 'EC_RX_CR50_TX',
         193 : 'USB',
     }
+    PRINT_IRQ_FMT = '    %3s %-20s %-10s'
     # USB, AP UART, and EC UART should be disabled if ccd is disabled.
     CCD_IRQS = [ 181, 184, 188, 191, 193 ]
     # Each line relevant taskinfo output should be 13 characters long with only
@@ -1593,3 +1593,35 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
         self.ccd_reset()
         self.reboot()
+
+    def get_taskinfo_output(self):
+        """Return a dict with the irq numbers as keys and counts as values"""
+        output = self.send_command_retry_get_output('taskinfo',
+                                                    self.GET_TASKINFO,
+                                                    safe=True,
+                                                    retries=10)[0][1]
+        return output
+
+    def print_irqs(self, irq_dict):
+        """Print the irq number, name, and count."""
+        for num, count in irq_dict.items():
+            logging.info(self.PRINT_IRQ_FMT, num, self.IRQ_DICT.get(num),
+                         count)
+
+    def get_irq_counts(self):
+        """Return a dict with the irq counts."""
+        irq_counts = {}
+        output = self.get_taskinfo_output()
+        irq_list = re.findall('\d+\s+\d+[\r\n]', output)
+        logging.info('IRQ:')
+        # Make sure the regular sleep irq is in the dictionary, even if cr50
+        # hasn't seen any interrupts. It's important the test sees that there's
+        # never an interrupt.
+        for irq_info in irq_list:
+            logging.debug(irq_info)
+            num, count = irq_info.split()
+            num = int(num)
+            count = int(count)
+            irq_counts[num] = count
+        self.print_irqs(irq_counts)
+        return irq_counts

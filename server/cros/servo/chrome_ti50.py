@@ -77,6 +77,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         115 : 'USB0_USBINTR',
         257 : 'WAKEUP',
     }
+    PRINT_IRQ_FMT = '    0x%x %-20s %-10s'
     # USB should be disabled if ccd is disabled.
     CCD_IRQS = [ 115 ]
     # Each line relevant taskinfo output should be 13 characters long with only

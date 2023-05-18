@@ -204,14 +204,6 @@ class firmware_Cr50DeviceState(Cr50Test):
                                                     safe=True)[0])
 
 
-    def get_taskinfo_output(self):
-        """Return a dict with the irq numbers as keys and counts as values"""
-        output = self.gsc.send_command_retry_get_output('taskinfo',
-            self.gsc.GET_TASKINFO, safe=True, retries=10)[0][1]
-        logging.debug(output)
-        return output
-
-
     def get_irq_counts(self):
         """Return a dict with the irq numbers as keys and counts as values"""
         irq_counts = { self.KEY_REGULAR_SLEEP : 0 }
@@ -223,15 +215,8 @@ class firmware_Cr50DeviceState(Cr50Test):
         irq_counts[self.
                    KEY_COLD_RESET_TIME] = self.gsc.gettime_since_cold_reset()
 
-        output = self.get_taskinfo_output()
-        irq_list = re.findall('\d+\s+\d+[\r\n]', output)
-        # Make sure the regular sleep irq is in the dictionary, even if cr50
-        # hasn't seen any interrupts. It's important the test sees that there's
-        # never an interrupt.
-        for irq_info in irq_list:
-            logging.debug(irq_info)
-            num, count = irq_info.split()
-            irq_counts[int(num)] = int(count)
+        irq_counts.update(self.gsc.get_irq_counts())
+
         irq_counts[self.KEY_RESET] = int(self.gsc.get_reset_count())
         irq_counts[self.KEY_DEEP_SLEEP] = int(self.gsc.get_deep_sleep_count())
         # Log some information, so we can debug issues with sleep.
@@ -530,10 +515,12 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def stage_irq_add(self, irq_dict, name=''):
         """Add the current irq counts to the stored dictionary of irq info"""
+        if name:
+            logging.info('%s:', name.strip())
+        irq_dict = self.get_irq_counts()
         self.steps.append(irq_dict)
         self.step_names.append(name.center(12))
         self.irqs.update(irq_dict.keys())
-        logging.info('%s:\n%s', name, pprint.pformat(irq_dict))
 
 
     def reset_irq_counts(self):
@@ -556,24 +543,22 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         # Enter the given state
         self.enter_state(state)
-        desc = 'entered %s' % (self._found_state or state)
-        self.stage_irq_add(self.get_irq_counts(), desc)
+        self.stage_irq_add('entered %s' % (self._found_state or state))
 
         logging.info('waiting %d seconds', self.SLEEP_TIME)
         time.sleep(self.SLEEP_TIME)
         # Nothing is really happening. Cr50 should basically be idle during
         # SLEEP_TIME.
-        desc = 'idle in %s' % (self._found_state or state)
-        self.stage_irq_add(self.get_irq_counts(), desc)
+        self.stage_irq_add('idle in %s' % (self._found_state or state))
 
         # Return to S0
         self.enter_state('S0')
-        self.stage_irq_add(self.get_irq_counts(), 'entered S0')
+        self.stage_irq_add('entered S0')
 
         logging.info('waiting %d seconds', self.SLEEP_TIME)
         time.sleep(self.SLEEP_TIME)
 
-        self.stage_irq_add(self.get_irq_counts(), 'idle in S0')
+        self.stage_irq_add('idle in S0')
 
         # The DUT has already been up for 60 seconds. It should be pingable.
         if not self.host.ping_wait_up(self.faft_config.delay_reboot_to_ping):

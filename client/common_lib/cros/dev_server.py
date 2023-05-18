@@ -535,7 +535,6 @@ class DevServer(object):
                 hostname, utils.get_all_restricted_subnets())
         if is_in_restricted_subnet or not ENABLE_SSH_CONNECTION_FOR_DEVSERVER:
             return True
-
         ssh_command = "ssh %s 'curl -f \"%s\"'" % (hostname, url)
         logging.debug("curl_download_ok() calls '%s'", ssh_command)
         try:
@@ -1082,7 +1081,14 @@ class ImageServerBase(DevServer):
         @return the results of this call.
         """
         hostname = get_hostname(call)
-        ssh_call = 'ssh %s \'curl "%s"\'' % (hostname, utils.sh_escape(call))
+
+        swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
+        BBID = os.getenv('BUILD_BUCKET_ID', default='None')
+
+        ssh_call = 'ssh %s \'curl -H X-SWARMING-TASK-ID:%s -H X-BBID:%s "%s"\'' % (
+                swarming_id, BBID, hostname, utils.sh_escape(call))
+
+        logging.debug("ImageServerBase::run_ssh_call ssh_call: %s", ssh_call)
         timeout_seconds = timeout if timeout else DEVSERVER_SSH_TIMEOUT_MINS*60
         try:
             result = utils.run(ssh_call, timeout=timeout_seconds)

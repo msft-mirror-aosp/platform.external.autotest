@@ -6,7 +6,6 @@
 import json
 import logging
 import os
-import shutil
 
 from autotest_lib.client.common_lib import utils
 
@@ -137,8 +136,8 @@ class DLCUtil(object):
 
         """
         preload_dir = os.path.join(_PRELOAD_DIR, dlc_id)
-        if os.path.exists(preload_dir) and os.path.isdir(preload_dir):
-            shutil.rmtree(preload_dir)
+        cmd = ['rm', '-r', preload_dir]
+        self._run(cmd, ignore_status=True)
 
 
     def is_installed(self, dlc_id):

@@ -24,6 +24,8 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
             self._dlc_util.purge(dlc_id)
         # DLCs may be present but not mounted, so they won't be purged above.
         self._dlc_util.purge(self._dlc_util._SAMPLE_DLC_ID, ignore_status=True)
+        # Remove preloaded sample-dlc so it actually get installed.
+        self._dlc_util.remove_preloaded(self._dlc_util._SAMPLE_DLC_ID)
 
 
     def cleanup(self):

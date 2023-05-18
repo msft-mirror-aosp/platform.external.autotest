@@ -81,7 +81,8 @@ def restart_job(service_name, timeout=None):
     """
 
     if has_started(service_name):
-        logging.debug('%s is already running: restart instead.', service_name)
+        logging.warning('%s is already running: restart instead.',
+                        service_name)
         utils.system_output('restart %s' % service_name, timeout=timeout)
     else:
         utils.system_output('start %s' % service_name, timeout=timeout)

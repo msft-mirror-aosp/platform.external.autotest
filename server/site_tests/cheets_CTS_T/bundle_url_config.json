@@ -1,9 +1,9 @@
 {
-    "partner_base": "gs://chromeos-partner-gts/",
+    "partner_base": "https://dl.google.com/dl/android/cts/",
     "internal_base": "gs://chromeos-arc-images/cts/bundle/T/",
     "official_url_pattern": "android-cts-%s-linux_x86-%s.zip",
     "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",
-    "official_version_name": "9985740",
+    "official_version_name": "13_r4",
     "preview_version_name": "10113717",
     "abi_list": {
         "arm": "test_suites_arm64",

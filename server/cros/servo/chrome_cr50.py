@@ -234,29 +234,33 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # ===============================================================
     # Cr50 interrupt numbers reported in taskinfo
     IRQ_DICT = {
-        4 : 'HOST_CMD_DONE',
-        81  : 'GPIO0',
-        98  : 'GPIO1',
-        103 : 'I2CS WRITE',
-        112 : 'PMU WAKEUP',
-        113 : 'AC present FED',
-        114 : 'AC present RED',
-        124 : 'RBOX_INTR_PWRB',
-        130 : 'SPS CS deassert',
-        138 : 'SPS RXFIFO LVL',
-        159 : 'SPS RXFIFO overflow',
-        160 : 'EVENT TIMER',
-        174 : 'CR50_RX_SERVO_TX',
-        177 : 'CR50_TX_SERVO_RX',
-        181 : 'AP_TX_CR50_RX',
-        184 : 'AP_RX_CR50_TX',
-        188 : 'EC_TX_CR50_RX',
-        191 : 'EC_RX_CR50_TX',
-        193 : 'USB',
+            4: 'HOST_CMD_DONE',
+            81: 'GPIO0',
+            98: 'GPIO1',
+            103: 'I2CS WRITE',
+            112: 'PMU WAKEUP',
+            113: 'AC present FED',
+            114: 'AC present RED',
+            124: 'RBOX_INTR_PWRB',
+            126: 'RDD',
+            130: 'SPS CS deassert',
+            138: 'SPS RXFIFO LVL',
+            159: 'SPS RXFIFO overflow',
+            160: 'EVENT TIMER',
+            174: 'CR50_RX_SERVO_TX',
+            177: 'CR50_TX_SERVO_RX',
+            181: 'AP_TX_CR50_RX',
+            184: 'AP_RX_CR50_TX',
+            188: 'EC_TX_CR50_RX',
+            191: 'EC_RX_CR50_TX',
+            193: 'USB',
+            201: 'SLOW_CALIB_OVERFLOW'
     }
     PRINT_IRQ_FMT = '    %3s %-20s %-10s'
     # USB, AP UART, and EC UART should be disabled if ccd is disabled.
     CCD_IRQS = [ 181, 184, 188, 191, 193 ]
+    # Rdd and timer sof overflow IRQs
+    CCD_CHANGE_IRQS = [126, 201]
     # Each line relevant taskinfo output should be 13 characters long with only
     # digits or spaces. Use this information to make sure every taskinfo command
     # gets the full relevant output. There are 4 characters for the irq number

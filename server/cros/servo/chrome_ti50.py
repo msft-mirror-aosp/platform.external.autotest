@@ -66,20 +66,24 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
 
     # Ti50 interrupt numbers reported in taskinfo
     IRQ_DICT = {
-        0 : 'UART0_GRP0',
-        1 : 'UART1_GRP0',
-        2 : 'UART2_GRP0',
-        3 : 'UART3_GRP0',
-        79 : 'I2CS0_GRP0',
-        99 : 'RBOX0_GRP1',
-        106 : 'TIMER0_TIMER0_MATCH1',
-        108 : 'TIMER0_TIMER1_MATCH0',
-        115 : 'USB0_USBINTR',
-        257 : 'WAKEUP',
+            0: 'UART0_GRP0',
+            1: 'UART1_GRP0',
+            2: 'UART2_GRP0',
+            3: 'UART3_GRP0',
+            5: 'ADC0_GRP0',
+            79: 'I2CS0_GRP0',
+            99: 'RBOX0_GRP1',
+            106: 'TIMER0_TIMER0_MATCH1',
+            108: 'TIMER0_TIMER1_MATCH0',
+            115: 'USB0_USBINTR',
+            116: 'XO_CALIB',
+            257: 'WAKEUP',
     }
     PRINT_IRQ_FMT = '    0x%x %-20s %-10s'
     # USB should be disabled if ccd is disabled.
     CCD_IRQS = [ 115 ]
+    # Rdd and timer sof overflow irqs
+    CCD_CHANGE_IRQS = [5, 116]
     # Each line relevant taskinfo output should be 13 characters long with only
     # digits or spaces. Use this information to make sure every taskinfo command
     # gets the full relevant output. There are 4 characters for the irq number

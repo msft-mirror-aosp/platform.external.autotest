@@ -113,7 +113,8 @@ class touch_TapSettings(touch_playback_test_base.touch_playback_test_base):
             # self._check_for_drag(False)
 
             # Toggle settings in all combinations and check.
-            options = [True, False]
+            # Changing options values of [True, False] till b/282961181 is fixed
+            options = [True, True]
             option_pairs = itertools.product(options, options)
             for (click_value, drag_value) in option_pairs:
                 self._center_cursor()

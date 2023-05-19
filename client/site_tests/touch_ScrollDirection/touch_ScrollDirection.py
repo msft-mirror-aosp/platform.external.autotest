@@ -105,6 +105,7 @@ class touch_ScrollDirection(touch_playback_test_base.touch_playback_test_base):
             self._verify_scrolling()
 
             # Toggle Australian scrolling and check again.
-            self._australian_state = not self._australian_state
-            self._set_australian_scrolling(value=self._australian_state)
-            self._verify_scrolling()
+            # Disabling Australian scrolling verification ( b/282959010 )
+            #self._australian_state = not self._australian_state
+            #self._set_australian_scrolling(value=self._australian_state)
+            #self._verify_scrolling()

@@ -680,7 +680,15 @@ class FirmwareTest(test.test):
             for second in self.pdtester.SECOND_PD_SETUP_ELEMENT:
                 pd_setup.append(first + '_with_' + second)
 
-        if pd_faft and self.pdtester.servo_type not in pd_setup:
+        # Servod running with --device-discovery=full can result in a servo type
+        # that ends with something like _and_ccd_ti50. These types should be
+        # supported so match based on what comes before the first _and
+        and_index = self.pdtester.servo_type.find('_and')
+        servo_base_type = self.pdtester.servo_type
+        if and_index != -1:
+            servo_base_type = self.pdtester.servo_type[0:and_index]
+
+        if pd_faft and servo_base_type not in pd_setup:
             raise error.TestError(', '.join(pd_setup) +
                                   ' is a mandatory setup '
                                   'for PD FAFT. Got %s.' %

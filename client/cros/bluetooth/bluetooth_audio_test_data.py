@@ -69,6 +69,7 @@ VISQOL_BUFFER_LENGTH = 10.0
 
 # Audio servers
 PULSEAUDIO = 'pulseaudio'
+PIPEWIRE = 'pipewire'
 AUDIO_SERVER = 'audio_server'
 
 # Audio codecs
@@ -85,6 +86,9 @@ CODEC_DICT = {
         0x02: AAC,
         0xff: A2DP_CODEC_VENDOR,
 }
+
+# Capabilities
+CAP_PIPEWIRE = 'PIPEWIRE'
 
 
 def download_file_from_bucket(dir, file_address, verify_download):

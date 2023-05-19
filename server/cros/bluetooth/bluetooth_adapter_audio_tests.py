@@ -23,8 +23,8 @@ from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS, HFP_WBS_MEDIUM,
         AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH, DATA_DIR, VISQOL_PATH,
         VISQOL_SIMILARITY_MODEL, VISQOL_TEST_DIR, AUDIO_RECORD_DIR,
-        AUDIO_SERVER, PULSEAUDIO, A2DP_CODEC, SBC, audio_test_data,
-        get_audio_test_data, get_visqol_binary)
+        AUDIO_SERVER, PULSEAUDIO, PIPEWIRE, A2DP_CODEC, SBC, AAC,
+        audio_test_data, get_audio_test_data, get_visqol_binary)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
     BluetoothAdapterTests, test_retry_and_log)
 from six.moves import range
@@ -62,7 +62,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
     DEFAULT_ADUIO_CONFIG = {AUDIO_SERVER: PULSEAUDIO, A2DP_CODEC: SBC}
 
-    AUDIO_SERVER_CHOICE = {SBC: PULSEAUDIO}
+    # This is temporary. All codecs will be served by PIPEWIRE eventually.
+    AUDIO_SERVER_CHOICE = {SBC: PULSEAUDIO, AAC: PIPEWIRE}
 
     # The real IP replacent when used in ssh tunneling environment
     real_ip = None
@@ -372,7 +373,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.generate_audio_config(audio_config)
 
         audio_server = self.get_audio_server_name()
-        if audio_server != PULSEAUDIO:
+        if audio_server != PULSEAUDIO and audio_server != PIPEWIRE:
             raise error.TestError('%s not supported' % audio_server)
 
         if not self.bluetooth_facade.create_audio_record_directory(
@@ -380,9 +381,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             raise error.TestError('Failed to create %s on the DUT' %
                                   AUDIO_RECORD_DIR)
 
-        if not device.StartPulseaudio(test_profile):
-            raise error.TestError('Failed to start pulseaudio.')
-        logging.debug('pulseaudio is started.')
+        device.SetAudioConfig(self._audio_config)
+
+        if not device.StartAudioServer(test_profile):
+            raise error.TestError('Failed to start %s.' % audio_server)
+        logging.info('%s is started.', audio_server)
 
         if test_profile in (HFP_WBS, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS_MEDIUM):
             if device.StartOfono():
@@ -407,10 +410,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         self.cleanup_audio_config()
 
-        if device.StopPulseaudio():
-            logging.debug('pulseaudio is stopped.')
+        if device.StopAudioServer():
+            logging.debug('The audio serever is stopped.')
         else:
-            logging.warning('Failed to stop pulseaudio. Ignored.')
+            logging.warning('Failed to stop the audio server. Ignored.')
 
         if device.StopOfono():
             logging.debug('ofono is stopped.')
@@ -1112,13 +1115,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         }
         return all(self.results.values())
 
-
     @test_retry_and_log(False)
     def test_device_a2dp_connected(self, device, timeout=15):
         """ Tests a2dp profile is connected on device. """
+        audio_server = self.get_audio_server_name()
+        if audio_server == PULSEAUDIO:
+            check_connection = lambda: self._get_pulseaudio_bluez_source_a2dp(
+                    device, A2DP)
+        elif audio_server == PIPEWIRE:
+            check_connection = lambda: device.GetPipewireBluezId() is not None
+        else:
+            raise error.TestError('%s not supported' % audio_server)
+
         self.results = {}
-        check_connection = lambda: self._get_pulseaudio_bluez_source_a2dp(
-                device, A2DP)
         is_connected = self._wait_for_condition(check_connection,
                                                 'test_device_a2dp_connected',
                                                 timeout=timeout)

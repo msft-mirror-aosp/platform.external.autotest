@@ -418,5 +418,9 @@ class power_Test(test.test):
         if self.kbd_backlight:
             self.kbd_backlight.restore()
         self._multicast_disabler.enable_network_multicast()
+        started_services = self._services.get_started_services()
         self._services.restore_services()
         super(power_Test, self).cleanup()
+        if started_services:
+            raise error.TestWarn("Following services are not stopped: %s" %
+                                 str(started_services))

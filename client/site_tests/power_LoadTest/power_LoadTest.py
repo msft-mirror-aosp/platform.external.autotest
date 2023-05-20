@@ -747,7 +747,9 @@ class power_LoadTest(arc.ArcTest):
         force_discharge_utils.restore(self._force_discharge_success)
         if self._backlight:
             self._backlight.restore()
+        started_services = []
         if self._services:
+            started_services = self._services.get_started_services()
             self._services.restore_services()
         audio_helper.set_default_volume_levels()
         self._detachable_handler.restore()
@@ -772,6 +774,9 @@ class power_LoadTest(arc.ArcTest):
         if self._testServer:
             self._testServer.stop()
 
+        if started_services:
+            raise error.TestWarn("Following services are not stopped: %s" %
+                                 str(started_services))
 
     def _do_wait(self, verbose, seconds, latch):
         latched = False

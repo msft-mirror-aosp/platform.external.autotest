@@ -94,6 +94,12 @@ class ServiceStopper(object):
                 continue
         self._services_stopped = fail_restored
 
+    def get_started_services(self):
+        started_services = []
+        for service in self._services_stopped:
+            if upstart.has_started(service):
+                started_services.append(service)
+        return started_services
 
     def __enter__(self):
         self.stop_services()

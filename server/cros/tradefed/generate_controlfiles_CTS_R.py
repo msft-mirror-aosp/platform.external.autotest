@@ -545,10 +545,24 @@ _firmware_sensor_tests = {
         'CtsSensorTestCases.faft': ['suite:faft_experimental']
 }
 
+# TODO(b/277861132): remove once the root cause is fixed.
+# This is for working around test stability when full dEQP was executed.
+_public_deqp_tests = {
+        'CtsDeqpTestCases.dEQP-EGL': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-GLES2': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-GLES3': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-GLES31': [CONFIG['MOBLAB_SUITE_NAME']],
+        'CtsDeqpTestCases.dEQP-VK': [CONFIG['MOBLAB_SUITE_NAME']],
+}
+
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
         'arm': {
+                'CtsDeqpTestCases': _public_deqp_tests,
                 'CtsSensorTestCases': _firmware_sensor_tests,
         },
+        'x86': {
+                'CtsDeqpTestCases': _public_deqp_tests,
+        }
 }
 
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {

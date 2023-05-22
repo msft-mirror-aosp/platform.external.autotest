@@ -18,4 +18,5 @@
   <Entry include="CtsOsTestCases android.os.storage.cts.StorageManagerTest#testGetStorageVolumeUSB" />
   <Entry include="CtsOsTestCases[run-on-clone-profile] android.os.storage.cts.StorageManagerTest#testGetStorageVolumeSDCard" />
   <Entry include="CtsOsTestCases[run-on-clone-profile] android.os.storage.cts.StorageManagerTest#testGetStorageVolumeUSB" />
+  <Entry include="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testAppLaunchCount" />
 </SubPlan>

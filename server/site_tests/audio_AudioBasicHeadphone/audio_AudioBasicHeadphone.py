@@ -50,9 +50,11 @@ class audio_AudioBasicHeadphone(audio_test.AudioTest):
                 duration_secs=10,
                 frequencies=[1330, 1330])
 
+        use_pi_testbed = self.host.chameleon.get_platform() == "RASPI"
         source = self.widget_factory.create_widget(
                 chameleon_audio_ids.CrosIds.HEADPHONE)
         recorder = self.widget_factory.create_widget(
+                chameleon_audio_ids.ChameleonIds.USBIN if use_pi_testbed else
                 chameleon_audio_ids.ChameleonIds.LINEIN)
         binder = self.widget_factory.create_binder(source, recorder)
 

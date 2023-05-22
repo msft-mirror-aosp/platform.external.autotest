@@ -33,7 +33,6 @@ class audio_AudioBasicExternalMicrophone(audio_test.AudioTest):
 
         @param check_quality: flag to check audio quality.
         @blocked_boards: boards to ignore and exit.
-
         """
         if self.host.get_board().split(':')[1] in blocked_boards:
             raise error.TestNAError('Board NOT APPLICABLE to test!')
@@ -49,7 +48,9 @@ class audio_AudioBasicExternalMicrophone(audio_test.AudioTest):
                 frequencies=[1330, 1330],
                 volume_scale=0.1)
 
+        use_pi_testbed = self.host.chameleon.get_platform() == "RASPI"
         source = self.widget_factory.create_widget(
+                chameleon_audio_ids.ChameleonIds.USBOUT if use_pi_testbed else
                 chameleon_audio_ids.ChameleonIds.LINEOUT)
         recorder = self.widget_factory.create_widget(
                 chameleon_audio_ids.CrosIds.EXTERNAL_MIC)

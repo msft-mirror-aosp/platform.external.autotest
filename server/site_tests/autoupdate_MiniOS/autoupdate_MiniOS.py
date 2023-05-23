@@ -204,9 +204,13 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
                 self._FORCED_UPDATE,
                 dlc_rootfs_hostlog[self._dlc_util._SAMPLE_DLC_ID])
         # Verify the DLC was successfully installed.
-        self._dlc_util.remove_preloaded(self._dlc_util._SAMPLE_DLC_ID)
-        self._dlc_util.install(self._dlc_util._SAMPLE_DLC_ID,
-                               omaha_url='fake_url')
+        try:
+            self._dlc_util.disable_preloaded([self._dlc_util._SAMPLE_DLC_ID])
+            self._dlc_util.install(self._dlc_util._SAMPLE_DLC_ID,
+                                   omaha_url='fake_url')
+        finally:
+            self._dlc_util.restore_preloaded([self._dlc_util._SAMPLE_DLC_ID])
+
         if not self._dlc_util.is_installed(self._dlc_util._SAMPLE_DLC_ID):
             raise error.TestFail('Test DLC was not installed.')
 

@@ -14,6 +14,9 @@ _DEFAULT_RUN = utils.run
 # Directory for preloaded DLCs that may be packaged with the OS. Preloaded
 # DLCs can be installed without needing to go through update_engine.
 _PRELOAD_DIR = '/mnt/stateful_partition/var_overlay/cache/dlc-images/'
+_DISABLED_PRELOAD_DIR = (
+        '/mnt/stateful_partition/var_overlay/cache/dlc-images-disabled/')
+
 
 class DLCUtil(object):
     """
@@ -120,24 +123,39 @@ class DLCUtil(object):
         self._run(cmd, ignore_status=ignore_status)
 
 
-    def remove_preloaded(self, dlc_id):
+    def disable_preloaded(self, dlc_ids):
         """
-        Remove a DLC from the preload directory. DLCs in this directory can be
-        preloaded, meaning they can be installed without needing to download
-        and install them using update_engine. It is hard to differentiate
-        preloading a DLC and installing a DLC after a successful AU. After
-        AU, updated DLCs should be installed but not yet mounted. In both
-        cases, calling dlcservice_util --install should result in the DLC
-        being installed without going through Omaha/Nebraska. Clearing the
-        preload directory for a DLC allows us to verify it was updated,
-        by ruling out the possibility that it was preloaded instead.
+        Move DLCs out of the preload directory to disable using them and restore
+        them afterward. DLCs in this directory can be preloaded, meaning they
+        can be installed without needing to download and install them using
+        update_engine. It is hard to differentiate preloading a DLC and
+        installing a DLC after a successful AU. After AU, updated DLCs should be
+        installed but not yet mounted. In both cases, calling
+        dlcservice_util --install should result in the DLC being installed
+        without going through Omaha/Nebraska. Clearing the preload directory for
+        a DLC allows us to verify it was updated, by ruling out the possibility
+        that it was preloaded instead.
 
-        @param dlc_id: Wipe preload directory for the DLC with this id.
+        @param dlc_ids: The preload directories for the DLCs with these ids.
 
         """
-        preload_dir = os.path.join(_PRELOAD_DIR, dlc_id)
-        cmd = ['rm', '-r', preload_dir]
-        self._run(cmd, ignore_status=True)
+        self._run(['mkdir', '-p', _DISABLED_PRELOAD_DIR], ignore_status=False)
+        for dlc_id in dlc_ids:
+            preload_dir = os.path.join(_PRELOAD_DIR, dlc_id)
+            preload_dir_disabled = os.path.join(_DISABLED_PRELOAD_DIR, dlc_id)
+            ret = self._run(['test', '-d', preload_dir], ignore_status=True)
+            if ret.exit_status == 0:
+                self._run(['mv', preload_dir, preload_dir_disabled],
+                          ignore_status=False)
+
+    def restore_preloaded(self, dlc_ids):
+        """Restore disabled DLCs by moving them back to preload directory"""
+        for dlc_id in dlc_ids:
+            preload_dir = os.path.join(_PRELOAD_DIR, dlc_id)
+            preload_dir_disabled = os.path.join(_DISABLED_PRELOAD_DIR, dlc_id)
+            self._run(['mv', preload_dir_disabled, preload_dir],
+                      ignore_status=True)
+        self._run(['rm', '-r', _DISABLED_PRELOAD_DIR], ignore_status=True)
 
 
     def is_installed(self, dlc_id):

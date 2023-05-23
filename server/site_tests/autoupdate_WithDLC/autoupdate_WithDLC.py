@@ -24,12 +24,14 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
             self._dlc_util.purge(dlc_id)
         # DLCs may be present but not mounted, so they won't be purged above.
         self._dlc_util.purge(self._dlc_util._SAMPLE_DLC_ID, ignore_status=True)
-        # Remove preloaded sample-dlc so it actually get installed.
-        self._dlc_util.remove_preloaded(self._dlc_util._SAMPLE_DLC_ID)
+        # Disable preloaded sample-dlc so it actually get installed.
+        self._dlc_util.disable_preloaded([self._dlc_util._SAMPLE_DLC_ID])
 
 
     def cleanup(self):
         self._save_extra_update_engine_logs(number_of_logs=2)
+        # Restore disabled sample-dlc.
+        self._dlc_util.restore_preloaded([self._dlc_util._SAMPLE_DLC_ID])
         super(autoupdate_WithDLC, self).cleanup()
 
 
@@ -101,7 +103,6 @@ class autoupdate_WithDLC(update_engine_test.UpdateEngineTest):
         # 1. the DLC is not being preloaded (|dlcservice_util --install| will
         #    show the same behavior if the DLC is preloaded)
         # 2. the install doesn't hit Omaha/Nebraska, by using a bad omaha_url
-        self._dlc_util.remove_preloaded(self._dlc_util._SAMPLE_DLC_ID)
         self._dlc_util.install(self._dlc_util._SAMPLE_DLC_ID,
                                omaha_url='fake_url')
         if not self._dlc_util.is_installed(self._dlc_util._SAMPLE_DLC_ID):

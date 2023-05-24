@@ -2,14 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# The test runs CTS ARC T on Floss.
-# For BlueZ, we use cheets_CTS_T/control.internal.arm.CtsBluetooth instead.
+# The test runs CTS ARC {arc} on Floss, with {arc} being one of P|R|T,
+# determined at runtime by detecting the installed arc version on the host.
+# For BlueZ, we use cheets_CTS_{arc}/control.internal.arm.CtsBluetooth instead.
 # After Floss is migrated, we should remove this test, because the test
 # mentioned above will run Floss by default.
 
 from autotest_lib.server import utils
 
-NAME = 'bluetooth_AdapterCTSHealth.cts_arc_t.floss'
+NAME = 'bluetooth_AdapterCTSHealth.cts.floss'
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth
@@ -28,9 +29,6 @@ args_dict = utils.args_to_dict(args)
 def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterCTSHealth', host=host,
-                  arc_version='T',
-                  run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsBluetoothTestCases', '--include-filter', 'CtsBluetoothTestCases[secondary_user]', '--logcat-on-failure'],
-                  retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
                   test_name=NAME.split('.')[1],
                   floss=True)
 

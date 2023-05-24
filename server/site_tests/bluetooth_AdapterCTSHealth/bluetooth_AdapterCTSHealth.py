@@ -8,6 +8,7 @@ import os
 import sys
 
 from autotest_lib.client.bin import utils as client_utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
 from autotest_lib.server.cros.tradefed import bundle_utils
 from autotest_lib.server.cros.tradefed.tradefed_test import BundleSpecification
@@ -18,6 +19,8 @@ CTS_BUNDLE = 'arm'
 CTS_URI = 'DEV'
 CTS_TIMEOUT_SECONDS = 5400
 CTS_CONFIG_RELATIVE_PATH = '../../cheets_CTS_{}/bundle_url_config.json'
+ARC_FIELD_ID = 'CHROMEOS_ARC_ANDROID_SDK_VERSION'
+ARC_VERSION_MAPPING = {'28': 'P', '30': 'R', '33': 'T'}
 
 
 class bluetooth_AdapterCTSHealth(TradefedTest):
@@ -78,16 +81,67 @@ class bluetooth_AdapterCTSHealth(TradefedTest):
                 bundle_utils.make_bundle_url(url_config, uri, bundle),
                 bundle_password)
 
-    def initialize(self, arc_version=None, host=None):
+    def probe_arc_version(self):
+        """Detects the installed ARC version."""
+        arc_version = ''
+        cmd_result = self.host.run('cat', args=('/etc/lsb-release', ))
+        output_text = cmd_result.stdout
+        for line in output_text.splitlines():
+            if ARC_FIELD_ID not in line:
+                continue
+            arc_version_num = line.split('=')[1].strip()
+            arc_version = ARC_VERSION_MAPPING.get(arc_version_num)
+            if not arc_version:
+                raise error.TestFail('Unknown ARC version: %s; expected: %s',
+                                     arc_version_num,
+                                     ARC_VERSION_MAPPING.keys())
+        if arc_version == '':
+            raise error.TestFail('ARC version not found')
+
+        self.arc_version = arc_version
+        logging.info('ARC version %s detected', arc_version)
+
+    def initialize_arc_templates(self):
+        """Assigns the ARC templates.
+
+        The templates are required by the tradefed test. The content is copy
+        pasted from CTS test files.
+        """
+        if self.arc_version == 'P':
+            self.run_template = [
+                    'run', 'commandAndExit', 'cts', '--module',
+                    'CtsBluetoothTestCases', '--logcat-on-failure',
+                    '--dynamic-config-url='
+            ]
+            self.retry_template = [
+                    'run', 'commandAndExit', 'retry', '--retry',
+                    '{session_id}', '--dynamic-config-url='
+            ]
+        elif self.arc_version == 'R' or self.arc_version == 'T':
+            self.run_template = [
+                    'run', 'commandAndExit', 'cts', '--include-filter',
+                    'CtsBluetoothTestCases', '--include-filter',
+                    'CtsBluetoothTestCases[secondary_user]',
+                    '--logcat-on-failure'
+            ]
+            self.retry_template = [
+                    'run', 'commandAndExit', 'retry', '--retry', '{session_id}'
+            ]
+
+    def initialize(self, host):
         """Tradefed function to initialize the test.
 
         This function is overrided to store the arc_version, in order to
         avoid creating one test file for each of the arc versions.
 
-        @param arc_version: The arc version to test, e.g. 'P', 'R', or 'T'
         @param host: The DUT, usually a chromebook
         """
-        self.arc_version = arc_version
+        if not host:
+            raise error.TestFail('The host is unspecified')
+
+        self.host = host
+        self.probe_arc_version()
+        self.initialize_arc_templates()
 
         super(bluetooth_AdapterCTSHealth, self).initialize(bundle=CTS_BUNDLE,
                                                            uri=CTS_URI,
@@ -95,21 +149,17 @@ class bluetooth_AdapterCTSHealth(TradefedTest):
 
     def run_once(self,
                  test_name=None,
-                 run_template=None,
-                 retry_template=None,
                  floss=False):
-        """Run the batch of Bluetooth CTS health tests
+        """Runs the batch of Bluetooth CTS health tests
 
         @param test_name: The name of the test
-        @param run_template: Needed by tradefed. Content is copy-pasted
-        @param retry_template: Needed by tradefed. Content is copy-pasted
         @param floss: Is bluetooth running Floss?
         """
         chrome_feature = 'Floss' if floss else None
 
         self._run_tradefed_with_retries(test_name=test_name,
-                                        run_template=run_template,
-                                        retry_template=retry_template,
+                                        run_template=self.run_template,
+                                        retry_template=self.retry_template,
                                         target_module=CTS_TARGET_MODULE,
                                         bundle=CTS_BUNDLE,
                                         timeout=CTS_TIMEOUT_SECONDS,

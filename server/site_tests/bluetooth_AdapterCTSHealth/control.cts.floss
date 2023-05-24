@@ -21,7 +21,7 @@ METADATA = {
 
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'arc'
+DEPENDENCIES = 'arc, bluetooth, working_bluetooth_btpeer:2'
 
 
 args_dict = utils.args_to_dict(args)
@@ -30,6 +30,7 @@ def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterCTSHealth', host=host,
                   test_name=NAME.split('.')[1],
+                  args_dict=args_dict,
                   floss=True)
 
 parallel_simple(run, machines)

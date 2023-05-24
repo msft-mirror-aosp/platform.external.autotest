@@ -10,6 +10,7 @@ import sys
 from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import utils
+from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.tradefed import bundle_utils
 from autotest_lib.server.cros.tradefed.tradefed_test import BundleSpecification
 from autotest_lib.server.cros.tradefed.tradefed_test import TradefedTest
@@ -23,7 +24,9 @@ ARC_FIELD_ID = 'CHROMEOS_ARC_ANDROID_SDK_VERSION'
 ARC_VERSION_MAPPING = {'28': 'P', '30': 'R', '33': 'T'}
 
 
-class bluetooth_AdapterCTSHealth(TradefedTest):
+class bluetooth_AdapterCTSHealth(TradefedTest,
+                                 bluetooth_adapter_tests.BluetoothAdapterTests
+                                 ):
     """Class to run Bluetooth CTS health tests"""
 
     def _tradefed_retry_command(self, template, session_id):
@@ -143,24 +146,77 @@ class bluetooth_AdapterCTSHealth(TradefedTest):
         self.probe_arc_version()
         self.initialize_arc_templates()
 
-        super(bluetooth_AdapterCTSHealth, self).initialize(bundle=CTS_BUNDLE,
-                                                           uri=CTS_URI,
-                                                           host=host)
+        TradefedTest.initialize(self,
+                                bundle=CTS_BUNDLE,
+                                uri=CTS_URI,
+                                host=host)
+        bluetooth_adapter_tests.BluetoothAdapterTests.initialize(self)
 
-    def run_once(self,
-                 test_name=None,
-                 floss=False):
+    def prepare_btpeers(self, args_dict):
+        """Prepares the btpeers for the CTS test.
+
+        We need two btpeers: a classic peer to be discoverable and an LE peer
+        to advertise. We need to be able to receive both inquiry and
+        advertisement to pass all CTS tests, therefore we require the two peers.
+
+        It's ideal to use the same framework as the other BT adapter tests, but
+        that is difficult to achieve since Tradefed tests has it's own quirks.
+        Directly using both of them makes things complicated (such as both are
+        trying to restart UI). Therefore, here we only reuse some methods and
+        copy some parts of Bluetooth adapter tests.
+
+        @param args_dict: The arguments passed from the command line
+        """
+
+        btpeer_args = self.host.get_btpeer_arguments(args_dict)
+        self.host.initialize_btpeer(btpeer_args=btpeer_args)
+        for btpeer in self.host.btpeer_list:
+            btpeer.register_raspPi_log(self.outputdir)
+
+        self.btpeer_group = dict()
+        self.btpeer_group_copy = dict()
+        self.group_btpeers_type()
+
+        devices = {'KEYBOARD': 1, 'BLE_MOUSE': 1}
+        is_enough_peer = self.get_device_rasp(devices)
+        if not is_enough_peer:
+            raise error.TestNAError('Not enough peers!')
+
+        classic_peer = self.devices['KEYBOARD'][0]
+        classic_peer.SetDiscoverable(True)
+        ble_peer = self.devices['BLE_MOUSE'][0]
+        ble_peer.SetDiscoverable(True)
+
+    def stop_btpeers(self):
+        """Stops the btpeers from being discoverable.
+
+        This is just a courtesy to stop the scanning that is started on the
+        prepare function. The outcome of the test is not impacted by anything
+        inside this function, and it's safe not to call this at all.
+        """
+
+        classic_peer = self.devices['KEYBOARD'][0]
+        classic_peer.SetDiscoverable(False)
+        ble_peer = self.devices['BLE_MOUSE'][0]
+        ble_peer.SetDiscoverable(False)
+
+    def run_once(self, test_name=None, floss=False, args_dict=None):
         """Runs the batch of Bluetooth CTS health tests
 
         @param test_name: The name of the test
-        @param floss: Is bluetooth running Floss?
+        @param floss: Is Bluetooth running Floss?
+        @param args_dict: The arguments passed from the command line
         """
-        chrome_feature = 'Floss' if floss else None
+        self.prepare_btpeers(args_dict)
 
-        self._run_tradefed_with_retries(test_name=test_name,
-                                        run_template=self.run_template,
-                                        retry_template=self.retry_template,
-                                        target_module=CTS_TARGET_MODULE,
-                                        bundle=CTS_BUNDLE,
-                                        timeout=CTS_TIMEOUT_SECONDS,
-                                        chrome_feature=chrome_feature)
+        chrome_feature = 'Floss' if floss else None
+        try:
+            self._run_tradefed_with_retries(test_name=test_name,
+                                            run_template=self.run_template,
+                                            retry_template=self.retry_template,
+                                            target_module=CTS_TARGET_MODULE,
+                                            bundle=CTS_BUNDLE,
+                                            timeout=CTS_TIMEOUT_SECONDS,
+                                            chrome_feature=chrome_feature)
+        finally:
+            self.stop_btpeers()

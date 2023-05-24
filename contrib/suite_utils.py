@@ -233,7 +233,7 @@ class TestParser(object):
             if cf_object.test_class == 'suite' or self.in_suites_dir(
                     file_path):
                 if cf_object.test_class != 'suite':
-                    logging.warn(
+                    logging.warning(
                             'Treating unmarked suite %s as a suite based on control file path, expected TEST_CLASS = \'suite\' in the control file',
                             cf_object.name)
                 suites[cf_object.name] = (TestSuite(cf_object, cf_object.name,

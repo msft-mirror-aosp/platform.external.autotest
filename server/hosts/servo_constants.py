@@ -16,6 +16,7 @@ SERVO_BOARD_ATTR = 'servo_board'
 SERVO_MODEL_ATTR = 'servo_model'
 SERVO_SERIAL_ATTR = 'servo_serial'
 SERVOD_DOCKER_ATTR = 'servod_docker'
+SERVOD_DOCKER_NETWORK_ATTR = 'servod_docker_network'
 # Indicates what type of servo setup, example value: REGULAR or DUAL_V4.
 SERVO_SETUP_ATTR = 'servo_setup'
 SERVO_FW_CHANNEL_ATTR = 'servo_fw_channel'
@@ -25,6 +26,7 @@ SERVO_ATTR_KEYS = (
         SERVO_BOARD_ATTR,
         SERVO_HOST_ATTR,
         SERVOD_DOCKER_ATTR,
+        SERVOD_DOCKER_NETWORK_ATTR,
         SERVO_HOST_SSH_PORT_ATTR,
         SERVO_PORT_ATTR,
         SERVO_SERIAL_ATTR,

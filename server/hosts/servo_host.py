@@ -158,6 +158,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_setup = None
         self.servo_recovery = None
         self.servo_fw_channel = None
+        self.servod_docker_network = None
         self.additional_servod_args = None
         self._dut_health_profile = None
         # The flag that indicate if a servo is connected to a smart usbhub.
@@ -184,6 +185,7 @@ class ServoHost(base_servohost.BaseServoHost):
                     servo_setup=None,
                     servo_recovery=None,
                     servo_fw_channel=None,
+                    servod_docker_network=None,
                     additional_servod_args=None,
                     is_in_lab=None,
                     *args,
@@ -203,6 +205,7 @@ class ServoHost(base_servohost.BaseServoHost):
         @param servo_setup: Type of servo setup, e.g. REGULAR or DUAL_V4.
         @param additional_servod_args: Additional args that will append to
                                        servod start command.
+        @param servod_docker_network: network option to use for servod container
         @param is_in_lab: True if the servo host is in Cros Lab. Default is set
                           to None, for which utils.host_is_in_lab_zone will be
                           called to check if the servo host is in Cros lab.
@@ -218,6 +221,7 @@ class ServoHost(base_servohost.BaseServoHost):
         self.servo_setup = servo_setup
         self.servo_recovery = servo_recovery
         self.servo_fw_channel = servo_fw_channel
+        self.servod_docker_network = servod_docker_network
         self.additional_servod_args = additional_servod_args
 
         # The location of the log files on the servo host for this instance.
@@ -822,6 +826,8 @@ class ServoHost(base_servohost.BaseServoHost):
             environment.append("REC_MODE=1")
 
         container_network = os.environ.get("DOCKER_DEFAULT_NETWORK", None)
+        if self.servod_docker_network is not None and container_network is None:
+            container_network = self.servod_docker_network
         # In case the network environment is not set, fallback to default network
         # for moblab or satlab based on the TLE.
         if not container_network:

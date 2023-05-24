@@ -155,21 +155,21 @@ class firmware_CsmeFwUpdate(FirmwareTest):
             return "DEFAULT"
 
     def check_if_me_blob_exist_in_image(self, image_path):
-        """
-        Checks if me_blob exists in FW MAIN section of an image
+        """Checks if me_blob exists in FW MAIN section of an image.
 
-        @param image_path: path of the image
-        @returns True if present else False
+        Args:
+            image_path: path of the image
 
+        Returns:
+            True if present else False
         """
         # Check if me_rw.version present FW_MAIN region
         logging.info("Checking if me_rw.version file " \
                      "present in image : %s", image_path )
-        command = "cbfstool %s print -r FW_MAIN_A " \
-                            "| grep me_rw.version" % image_path
-        output = self.faft_client.system.run_shell_command_get_output(
-                    command, True)
-        if output:
+        command = f"cbfstool {image_path} print -r FW_MAIN_A " \
+                            "| grep me_rw.version"
+        status = self.faft_client.system.run_shell_command_get_status(command)
+        if status == 0:
             available = True
             logging.info("me_rw.version present in image")
         else:

@@ -119,6 +119,10 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
                 host=self._host,
                 payload_url=payload_url) as nebraska:
             nebraska.update_config(no_update=True)
+            # The post-reboot event may not appear immediately in the logs if
+            # update_engine is blocked when we start the update check, so
+            # ensure its status is IDLE first.
+            self._wait_for_update_to_idle()
             self._check_for_update(nebraska.get_update_url())
 
         # Compare hostlog events from the update to the expected ones.

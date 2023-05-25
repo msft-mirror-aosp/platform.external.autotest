@@ -81,7 +81,9 @@ class autoupdate_EndToEndTest(update_engine_test.UpdateEngineTest):
         else:
             update_parameters = self._get_update_parameters_from_uri(
                     test_conf['target_payload_uri'])
-            payload_url = os.path.join(self._get_cache_server_url(), 'static',
+            payload_url = os.path.join(self._get_cache_server_url(),
+                                       'swarming', self._swarming_task_id,
+                                       'bbid', self._bb_id, 'static',
                                        update_parameters[0],
                                        update_parameters[1])
 

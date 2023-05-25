@@ -127,6 +127,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('cache_endpoint received: %s', cache_endpoint)
         self._cache_server_url = cache_endpoint or self._get_cache_server_url()
 
+        # Task IDs for caching requests in the lab.
+        self._swarming_task_id = os.environ.get('SWARMING_TASK_ID', 'None')
+        self._bb_id = os.environ.get('BUILD_BUCKET_ID', 'None')
+
     def cleanup(self):
         """Clean up update_engine autotests."""
         if self._host:
@@ -334,9 +338,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             except dev_server.DevServerException as e:
                 raise error.TestError('Failed to stage payload: %s' % e)
 
-        url_pattern = '%s/static/%s'
-        return ('/'.join([(url_pattern % (cache_server_url, build_name)), f])
-                for f in filenames)
+            url = f'{cache_server_url}/static/{build_name}'
+            return ('/'.join([url, f]) for f in filenames)
+
+        # Requests to cache servers in the lab should include the associated
+        # swarming task and build bucket IDs.
+        url = (f'{cache_server_url}/swarming/{self._swarming_task_id}/bbid/'
+               f'{self._bb_id}/static/{build_name}')
+        return ('/'.join([url, f]) for f in filenames)
 
 
     def _get_payload_url(self,

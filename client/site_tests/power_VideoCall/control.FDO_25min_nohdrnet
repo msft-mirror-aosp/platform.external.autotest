@@ -20,7 +20,8 @@ METADATA = {
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:power_daily")
+# TODO(b/268093159) Disable lab run for now
+# ATTRIBUTES = ("suite:power_daily")
 TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)

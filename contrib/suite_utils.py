@@ -398,13 +398,17 @@ class TastManager(object):
                              '../../../../platform/tast-tests-private'))
 
         self.metadata = tc_metadata_pb.TestCaseMetadataList()
-        self._gen_metadata("cros", "chromiumos/tast/local/bundles/cros")
-        self._gen_metadata("remote_cros",
-                           "chromiumos/tast/remote/bundles/cros")
+        self._gen_metadata(
+                "cros", "go.chromium.org/tast-tests/cros/local/bundles/cros")
+        self._gen_metadata(
+                "remote_cros",
+                "go.chromium.org/tast-tests/cros/remote/bundles/cros")
         if os.path.isdir(tast_private_path):
             # Handle internal crosint tests if the they are checked out
-            self._gen_metadata("remote_crosint",
-                               "chromiumos/tast/local/bundles/crosint")
+            self._gen_metadata(
+                    "remote_crosint",
+                    "go.chromium.org/tast-tests-private/crosint/local/bundles/crosint"
+            )
 
     def _gen_metadata(self, name, package):
         """

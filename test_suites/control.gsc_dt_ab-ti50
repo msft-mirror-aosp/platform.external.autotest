@@ -1,0 +1,42 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "gsc_dt_ab-ti50"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "aluo@google.com"],
+        "bug_component": "b:715469", # ChromeOS > Platform > System > Hardware Security > HwSec GSC > Ti50
+        "criteria": "Run Tast tests for gsc devboard"
+}
+PURPOSE = "Suite to run gsc devboard tests on Andreiboard using Ti50 image."
+
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This is the gsc_dt_ab-ti50 test suite.
+
+This will verify gsc images on devboards before they are released to ChromeOS.
+After the image is released and verified, we will update the chromeos image to
+include the new gsc image.
+
+@param build: The name of the image to test.
+              Ex: firmware-ti50-postsubmit/R111-15289.0.0-75500-8794056063434194849
+@param board: The board to test on.  Ex: andreiboard
+@param pool: The pool of machines to utilize for scheduling. If pool=None
+             board is used.
+@param check_hosts: require appropriate live hosts to exist in the lab.
+@param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = 'gsc_dt_ab-ti50'
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

@@ -61,7 +61,7 @@ class GSCDevboardHost(remote.RemoteHost):
     def _initialize(self,
                     hostname,
                     service_debugger_serial=None,
-                    service_ip=None,
+                    service_ip="",
                     service_port=DEFAULT_SERVICE_PORT,
                     service_gsc_serial=None,
                     host_info_store=None,
@@ -106,10 +106,11 @@ class GSCDevboardHost(remote.RemoteHost):
         self._prestart = None
         logging.info("Using service port %s", self._service_port)
 
-        if service_ip is not None:
+        if len(service_ip) > 0 and not service_ip.startswith('detect_'):
             return
 
         try:
+            logging.info('Trying docker host from env')
             self._client = docker.from_env()
             logging.info("Created docker host from env")
         except NameError:
@@ -122,6 +123,7 @@ class GSCDevboardHost(remote.RemoteHost):
             ]
             for h in candidate_hosts:
                 try:
+                    logging.info('Trying docker host at {}'.format(h))
                     c = docker.DockerClient(base_url=h, timeout=2)
                     c.close()
                     docker_host = h
@@ -261,8 +263,18 @@ class GSCDevboardHost(remote.RemoteHost):
         if self._docker_container is not None:
             return
 
+        # Adopt the convention that devboard containers are named
+        # gsc_dev_board_[dt_ab|ot_fpga_cw310|he]
+        if self._service_ip.startswith("detect_"):
+            container_name = "gsc_dev_board_" + self._service_ip[7:]
+            c = self._client.containers.get(container_name)
+            settings = c.attrs['NetworkSettings']
+            self._service_ip = settings['Networks'][
+                    self._docker_network]['IPAddress']
+            logging.info('Detected service ip %s', self._service_ip)
+
         if self._service_ip:
-            # Assume container was manually started if service_ip was set
+            # Assume container already exists if service_ip was set
             logging.info("Skip start_service due to set service_ip")
             return
 

@@ -115,6 +115,9 @@ class FirmwareTest(test.test):
         'usb_check': False,
     }
 
+    _TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+    _TIME_FORMAT_ZONE = '%Y-%m-%d %H:%M:%S%z'
+
     # CCD password used by tests.
     CCD_PASSWORD = 'Password'
 
@@ -1759,6 +1762,34 @@ class FirmwareTest(test.test):
         @raise TestFail: If the function does notsucceed.
         """
         self._call_action(func, check_status=True)
+
+	# This assumes that Linux and the firmware use the same RTC. elogtool uses
+	# timestamps in localtime, and so do we (by calling date without --utc).
+    def _now(self):
+        time_string = self.faft_client.system.run_shell_command_get_output(
+	            'date +"%s"' % self._TIME_FORMAT)[0]
+        logging.debug('Current local system time on DUT is "%s"', time_string)
+        return time.strptime(time_string, self._TIME_FORMAT)
+
+    def check_recovery_reason_since(self, time_since, expected_rec_reason):
+        entries = self.faft_client.system.run_shell_command_get_output(
+                'elogtool list')
+        for line in reversed(entries):
+            _, time_string, _ = line.split(' | ', 2)
+            try:
+                timestamp = time.strptime(time_string, self._TIME_FORMAT)
+            except ValueError:
+                timestamp = time.strptime(time_string, self._TIME_FORMAT_ZONE)
+            if timestamp < time_since:
+                break
+            pattern = re.compile(r"recovery_reason=0x([0-9a-fA-F]+)/.*")
+            rec_reason = pattern.search(line)
+            if rec_reason:
+                rec_value = rec_reason.group(1)
+                rec_value = str(int(rec_value, 16))
+                if rec_value in expected_rec_reason:
+                    return
+        raise error.TestError('recovery reason is not as expected')
 
     def get_current_firmware_identity(self):
         """Get current firmware sha and fwids of body and vblock.

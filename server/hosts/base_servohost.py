@@ -718,7 +718,7 @@ class BaseServoHost(ssh_host.SSHHost):
             # Look up the container list with hostname and with/without servod process by label.
             containers = client.containers.list(
                     filters={
-                            'name': self.hostname,
+                            'name': self.servod_container_name,
                             'label': ["WITH_SERVOD=%s" % str(with_servod)]
                     })
             if not containers:

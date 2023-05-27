@@ -11,8 +11,13 @@ import re
 import requests
 import stat
 import string
+import sys
+import tempfile
+import zipfile
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils as common_utils
 from autotest_lib.client.common_lib.cros import dev_server
 
 
@@ -311,16 +316,65 @@ def get_tast_expr_from_file(host, args_dict, results_dir, base_path=None):
         os.chmod(results_dir, st.st_mode | stat.S_IWRITE)
         host.get_file(tast_expr_file_name, local_file_name, delete_dest=True)
 
-        with open(local_file_name) as tast_expr_file:
-            expr_dict = json.load(tast_expr_file)
-            expr = expr_dict.get(tast_expr_key)
-            # If both args were provided, the entry is expected in the file
-            if not expr:
-                raise Exception('tast_expr_key: %s could not be found' %
-                                tast_expr_key)
-            logging.info('tast_expr retrieved from:%s', tast_expr_file)
-            return expr
+        return _get_tast_expr_from_json_file(local_file_name, tast_expr_key)
+    elif tast_expr_file_name or tast_expr_file_name:
+        raise Exception('Missing tast_expr_file or tast_expr_key')
     return None
+
+
+def get_tast_expr_from_local_file(args_dict, base_path=None):
+    """
+    Gets Tast expression from argument dictionary using a file.
+    If the tast_expr_file and tast_expr_key are in the dictionary returns the
+    tast expression from the file. If either/both args are not in the dict,
+    None is returned.
+    tast_expr_file expects a file containing a json dictionary which it will
+    then use tast_expr_key to pull the tast_expr.
+
+    The tast_expr_file is a json file containing a dictionary of names to tast
+    expressions like:
+
+    {
+    'default': '("group:mainline" && "dep:lacros" && !informational)',
+    'tast_disabled_tests_from_lacros_example': '("group:mainline" && "dep:lacros" && !informational && !"name:lacros.Basic")'
+    }
+
+    @param args_dict: Argument dictionary
+    @param results_dir: Where to store the tast_expr_file from the dut
+    @param base_path: Base path of the provisioned folder
+
+    """
+    tast_expr_file_name = args_dict.get('tast_expr_file')
+    tast_expr_key = args_dict.get('tast_expr_key')
+    if tast_expr_file_name and tast_expr_key:
+        if base_path:
+            tast_expr_file_name = os.path.join(base_path, tast_expr_file_name)
+        return _get_tast_expr_from_json_file(tast_expr_file_name,
+                                             tast_expr_key)
+    elif tast_expr_file_name or tast_expr_file_name:
+        raise Exception('Missing tast_expr_file or tast_expr_key')
+    return None
+
+
+def _get_tast_expr_from_json_file(tast_expr_file_name, tast_expr_key):
+    """
+    Gets Tast expression from argument dictionary using a file.
+
+    @param tast_expr_file_name: A json file containing a dictionary of names to tast
+    expressions.
+    @param tast_expr_key: key to pull the tast expression.
+
+    @return: tast expression.
+    """
+    with open(tast_expr_file_name) as tast_expr_file:
+        expr_dict = json.load(tast_expr_file)
+        expr = expr_dict.get(tast_expr_key)
+        # If both args were provided, the entry is expected in the file
+        if not expr:
+            raise Exception('tast_expr_key: %s could not be found' %
+                            tast_expr_key)
+        logging.info('tast_expr retrieved from:%s', tast_expr_file)
+        return expr
 
 
 def get_test_args(args_dict, expr_key):
@@ -480,55 +534,23 @@ def deploy_lacros(host,
 
     lacros_version = None
     if gs_path:
-        # expects gs path format to be gs://{bucket}/{path}/{zipfile}
-        matches = re.match("(gs://(.*?)/(.*))/(.*)", gs_path)
-        if len(matches.groups()) != 4:
-            raise Exception(
-                'Failed to extract required parts from gs_path: %s' % gs_path)
-        archive_url, bucket, image, zip_name = matches.groups()
-        logging.info("DEBUG %s %s %s %s", archive_url, bucket, image, zip_name)
+        pass
     elif channel:
         # lookup lacros artifact path based on channel
-        gs_path, lacros_version, variant = _lookup_lacros_path(host, channel)
-        bucket = 'chrome-unsigned'
-        image = 'desktop-5c0tCh/{version}/{variant}'.format(
-            version=lacros_version, variant=variant)
-        archive_url = 'gs://{bucket}/{image}'.format(
-            bucket=bucket, image=image)
-        zip_name = os.path.basename(gs_path)
+        gs_path, lacros_version, _ = _lookup_lacros_path(host, channel)
     else:
         raise Exception(
             'Please specify either channel or gs_path to locate Lacros artifacts.')
 
-    # Stage Lacros artifact onto Cache Server
-    cache_endpoint = args_dict.get('cache_endpoint')
-    logging.info('cache_endpoint: %s', cache_endpoint)
-    if cache_endpoint:
-        # CFT handles the Cache Server lookup outside of Tauto.
-        ds = dev_server.ImageServer('http://%s' % cache_endpoint)
-    else:
-        # For Non-CFT, Tauto handles Cache Server lookup.
-        ds = dev_server.ImageServer.resolve(image, host.hostname)
-    logging.info('Cache Server: %s', ds)
-    try:
-        ds.stage_artifacts(image=image,
-                           archive_url=archive_url,
-                           files=[zip_name])
-        download_url = ds.get_staged_file_url(
-            zip_name, image) + '?gs_bucket={bucket}'.format(bucket=bucket)
-    except Exception as e:
-        raise Exception('Failed to stage image on Cache Server: %s' % e)
-
-    tmp_dir = '/tmp/lacros_%s' % _gen_random_str(8)
-
     # Create directories from scratch
+    tmp_dir = '/tmp/lacros_%s' % _gen_random_str(8)
     host.run(['rm', '-rf', lacros_dir])
     host.run(['mkdir', '-p', '--mode', '0755', lacros_dir, tmp_dir])
 
     try:
         # Download Lacros zip archive from Cache Server.
-        zip_path = os.path.join(tmp_dir, zip_name)
-        host.run(['curl', download_url, '--output', zip_path])
+        zip_path = download_gs_to_host(host, gs_path, tmp_dir,
+                                       args_dict.get('cache_endpoint'))
 
         # unzip file to Lacros directory
         host.run(['unzip', zip_path, '-d', lacros_dir])
@@ -547,8 +569,8 @@ def deploy_lacros(host,
                     'Incorrect Lacros version format: %s' % lacros_version)
 
     except Exception as e:
-        raise Exception(
-            'Error extracting content from %s to %s' % (download_url, lacros_dir)) from e
+        raise Exception('Error extracting content from %s to %s' %
+                        (gs_path, lacros_dir)) from e
     finally:
         host.run(['rm', '-rf', tmp_dir])
 
@@ -560,3 +582,221 @@ def deploy_lacros(host,
     logging.info('deploy_lacros successful. ash_version: %s  lacros_version: %s',
                  ash_version, lacros_version)
     utils.write_keyval(host.job.resultdir, keyvals)
+
+
+def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
+    """
+    Deploy chrome onto DUT using chromite.
+    Chromite is expected to be packaged in the chrome archive.
+
+    @param host: The DUT to execute the command on
+    @param gs_path: The GCS file of the chrome archive.
+    @param archive_type: The type of archive. e.g. chrome, lacros
+
+    @return: Directory on drone server that contains the unarchived chrome contents
+    """
+    if not gs_path:
+        raise Exception('gs_path is required')
+
+    chrome_dir = tempfile.mkdtemp()
+    # Download artifacts onto drone server and unarchive to a temp directory.
+    with tempfile.TemporaryDirectory() as tmp_archive_dir:
+        archive_file_path = download_gs(gs_path, tmp_archive_dir)
+        if os.path.basename(archive_file_path).endswith(".zip"):
+            with zipfile.ZipFile(archive_file_path, 'r') as zip_ref:
+                zip_ref.extractall(chrome_dir)
+        elif os.path.basename(archive_file_path).endswith(".squash"):
+            unsquashfs(archive_file_path, chrome_dir)
+        else:
+            raise Exception('Unsupported file extension: %s' %
+                            archive_file_path)
+
+    # change file permissions to allow for script execution
+    cmd = ['chmod', '-R', '755', chrome_dir]
+    try:
+        common_utils.run(cmd, stdout_tee=sys.stdout, stderr_tee=sys.stderr)
+    except error.CmdError as e:
+        raise Exception('Error changing file permissions', e)
+
+    # Deploy chrome with chromite
+    logging.info('Before deploy_chrome')
+    _log_chrome_version(host)
+
+    # Changing current working directory to allow chromite to be properly located by wrapper scripts.
+    chromite_dir = os.path.join(chrome_dir, 'third_party/chromite')
+    if not os.path.isdir(chromite_dir):
+        raise Exception(
+                'chromite is not packaged in the lacros_gcs_path archive')
+
+    if archive_type == 'chrome':
+        board = _remove_prefix(host.get_board(), 'board:')
+        cmd = [
+                'deploy_chrome', '--force', '--build-dir',
+                os.path.join(chrome_dir, 'out/Release/'), '--process-timeout',
+                '180', '--device', host.host_port, '--board', board, '--mount',
+                '--nostrip'
+        ]
+    elif archive_type == 'lacros':
+        cmd = [
+                'deploy_chrome', '--build-dir',
+                os.path.join(chrome_dir, 'out/Release/'), '--device',
+                host.host_port, '--lacros', '--nostrip', '--force',
+                '--skip-modifying-config-file'
+        ]
+    else:
+        raise Exception('Unknown archive_type:%s' % archive_type)
+
+    try:
+        common_utils.run(cmd,
+                         stdout_tee=sys.stdout,
+                         stderr_tee=sys.stderr,
+                         timeout=1200,
+                         extra_paths=[os.path.join(chromite_dir, 'bin')])
+    except error.CmdError as e:
+        logging.debug('Error occurred executing chromite.deploy_chrome')
+        raise e
+
+    logging.info('After deploy_chrome')
+    _log_chrome_version(host)
+
+    return chrome_dir
+
+
+def _remove_prefix(text, prefix):
+    return text[text.startswith(prefix) and len(prefix):]
+
+
+def download_gs_to_host(host, gs_path, dest_dir, cache_endpoint):
+    """
+    Download GCS file to host.
+
+    @param host: The DUT to execute the command on
+    @param gs_path: The GCS file path.
+    @param dest_dir: The directory where the file is copied to.
+    @param cache_endpoint: Cache server endpoint.
+
+    @return: The path of the downloaded file on host
+    """
+    archive_url, bucket, image, file_name = _parse_info_from_gs_path(gs_path)
+    download_url = _stage_artifacts_on_dev_server(host.hostname,
+                                                  cache_endpoint, archive_url,
+                                                  bucket, image, file_name)
+    try:
+        # Download gs file from Cache Server.
+        file_path = os.path.join(dest_dir, file_name)
+        host.run(['curl', download_url, '--output', file_path])
+
+    except Exception as e:
+        raise Exception('Error downloading cache server content %s to %s' %
+                        (download_url, dest_dir)) from e
+
+    return file_path
+
+
+def download_gs(gs_path, dest_dir):
+    """
+    Download GCS file to drone server.
+
+    @param gs_path: The GCS file path.
+    @param dest_dir: The directory where the file is copied to.
+
+    @return: The path of the downloaded file
+    """
+    _, _, _, file_name = _parse_info_from_gs_path(gs_path)
+    try:
+        # Download gs file from Cache Server.
+        cmd = [
+                'BOTO_CONFIG=', 'gsutil', '-o',
+                'Credentials:gs_service_key_file=/creds/service_accounts/skylab-drone.json',
+                'cp', gs_path, dest_dir
+        ]
+        file_path = os.path.join(dest_dir, file_name)
+        common_utils.run(cmd,
+                         stdout_tee=sys.stdout,
+                         stderr_tee=sys.stderr,
+                         timeout=1200,
+                         extra_paths=['/opt/infra-tools'])
+
+    except Exception as e:
+        raise Exception('Error downloading with gsutil from %s to %s' %
+                        (gs_path, dest_dir)) from e
+
+    return file_path
+
+
+def _stage_artifacts_on_dev_server(hostname, cache_endpoint, archive_url,
+                                   bucket, image, file_name):
+    # Stage artifact onto Cache Server
+
+    logging.info('cache_endpoint: %s', cache_endpoint)
+    if cache_endpoint:
+        # CFT handles the Cache Server lookup outside of Tauto.
+        ds = dev_server.ImageServer('http://%s' % cache_endpoint)
+    else:
+        # For Non-CFT, Tauto handles Cache Server lookup.
+        ds = dev_server.ImageServer.resolve(image, hostname)
+
+    try:
+        ds.stage_artifacts(image=image,
+                           archive_url=archive_url,
+                           files=[file_name])
+        download_url = ds.get_staged_file_url(
+                file_name, image) + '?gs_bucket={bucket}'.format(bucket=bucket)
+    except Exception as e:
+        raise Exception('Failed to stage image on Cache Server', e)
+
+    return download_url
+
+
+def _parse_info_from_gs_path(gs_path):
+    # expects gs path format to be gs://{bucket}/{path}/{zipfile}
+    matches = re.match('(gs://(.*?)/(.*))/(.*)', gs_path)
+    if len(matches.groups()) != 4:
+        raise Exception('Failed to extract required parts from gs_path: %s' %
+                        gs_path)
+    archive_url, bucket, image, file_name = matches.groups()
+    return archive_url, bucket, image, file_name
+
+
+def unsquashfs(file_path, dest_dir):
+    """
+    Unarchive squashfs file into a directory.
+
+    @param file_path: The path for squashfs archive.
+    @param dest_dir: The directory where the file is copied to.
+    """
+    # Download artifacts onto drone server and unzip to a temp directory.
+    with tempfile.TemporaryDirectory() as tmp_squashfs_dir:
+        # create ensure-file for squashfs
+        ensure_file_path = os.path.join(tmp_squashfs_dir, 'ensure_file.txt')
+        with open(ensure_file_path, 'w') as f:
+            f.write('infra/3pp/tools/squashfs/linux-amd64 latest\n')
+            f.write('infra/3pp/static_libs/libzstd/linux-amd64 latest')
+
+        # download squashfs from cipd
+        cmd = [
+                'cipd', 'ensure', '-ensure-file', ensure_file_path, '-root',
+                tmp_squashfs_dir
+        ]
+        try:
+            common_utils.run(cmd,
+                             stdout_tee=sys.stdout,
+                             stderr_tee=sys.stderr,
+                             extra_paths=['/opt/infra-tools'])
+        except error.CmdError as e:
+            raise Exception('Error downloading squashfs from CIPD', e)
+
+        # unsquashfs archive into destination directory
+        env_dict = {'LD_LIBRARY_PATH': os.path.join(tmp_squashfs_dir, 'lib')}
+        cmd = [
+                os.path.join(tmp_squashfs_dir, 'squashfs-tools', 'unsquashfs'),
+                '-f', '-d', dest_dir, file_path
+        ]
+        try:
+            common_utils.run(cmd,
+                             stdout_tee=sys.stdout,
+                             stderr_tee=sys.stderr,
+                             env=env_dict,
+                             extra_paths=['/opt/infra-tools'])
+        except error.CmdError as e:
+            raise Exception('Error running unsquashfs on %s' % file_path, e)

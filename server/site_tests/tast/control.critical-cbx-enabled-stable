@@ -12,7 +12,7 @@ METADATA = {
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'label-cbx:True'
+DEPENDENCIES = 'cbx:True'
 ATTRIBUTES = "suite:cbx_enabled_critical"
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3

@@ -570,3 +570,19 @@ class FlossScannerClient(BluetoothScannerCallbacks):
 
         self.scanners[scanner_id].set_target_devices(devices)
         return True
+
+    def remove_monitor(self, scanner_id):
+        """Removes the Advertisement Monitor object.
+
+        @param scanner_id: The scanner ID.
+
+        @return: True on success, False otherwise.
+        """
+        stop_scan = self.stop_scan(scanner_id)
+        unregister_scanner = self.unregister_scanner(scanner_id)
+
+        if stop_scan == BtStatus.SUCCESS:
+            stop_scan = True
+        else:
+            return False
+        return stop_scan and unregister_scanner

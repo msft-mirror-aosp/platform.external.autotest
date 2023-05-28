@@ -5529,7 +5529,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         @return: True on success, False otherwise.
         """
-        return self.scanner_client.stop_scan(scanner_id)
+        return self.scanner_client.remove_monitor(scanner_id)
 
     def get_battery_property(self, address, prop_name):
         """Read a property from GetBatteryInformation interface.

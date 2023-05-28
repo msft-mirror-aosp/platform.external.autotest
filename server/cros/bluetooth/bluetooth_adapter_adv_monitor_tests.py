@@ -755,12 +755,10 @@ class BluetoothAdapterAdvMonitorTests(
             return False
 
         ret = self.remove_monitor(app_id, monitor_id)
-        monitor.update_monitor_id(None)
 
-        if ret is None:
-            return False
-
-        return True
+        if ret:
+            monitor.update_monitor_id(None)
+        return ret
 
 
     @test_retry_and_log(False)

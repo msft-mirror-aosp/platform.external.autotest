@@ -1007,6 +1007,15 @@ class Servo(object):
         """
         self.set_nocheck('sysrq_x', press_secs)
 
+    def sysrq_r(self, press_secs='tab'):
+        """Simulate Alt VolumeUp R simultaneous press.
+
+        This key combination is the kernel system request (sysrq) R.
+
+        @param press_secs: int, float, str; time to press key in seconds or
+                           known shorthand: 'tab' 'press' 'long_press'
+        """
+        self.set_nocheck('sysrq_r', press_secs)
 
     def toggle_recovery_switch(self):
         """Toggle recovery switch on and off."""

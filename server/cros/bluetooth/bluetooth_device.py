@@ -815,6 +815,15 @@ class BluetoothDevice(object):
         """
         return self._proxy.btmon_find(pattern_str)
 
+    @proxy_thread_safe
+    def btmon_find_consecutive(self, patterns):
+        """Checks if the patterns match part of the contents consecutively.
+
+        @param patterns: Sequence of patterns to search within another list.
+
+        @return: True if found, False otherwise.
+        """
+        return self._proxy.btmon_find_consecutive(patterns)
 
     @proxy_thread_safe
     def advmon_check_manager_interface_exist(self):

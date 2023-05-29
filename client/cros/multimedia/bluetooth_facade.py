@@ -1815,6 +1815,15 @@ class BluetoothBaseFacadeLocal(object):
         """
         return self.btmon.find(pattern_str)
 
+    def btmon_find_consecutive(self, patterns):
+        """Checks if the patterns match part of the contents consecutively.
+
+        @param patterns: Sequence of patterns to search within another list.
+
+        @return: True if found, False otherwise.
+        """
+        return self.btmon.find_consecutive(patterns)
+
     def convert_rssi_value_to_unsigned_byte(self, rssi):
         """Converts the negative RSSI value to unsigned 8-bit value.
 

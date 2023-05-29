@@ -229,6 +229,37 @@ class OutputRecorder(object):
         return False
 
 
+    def find_consecutive(self, patterns):
+        """Checks if the patterns match part of the contents consecutively.
+
+        Like find(), re.escape() is applied for every element in `patterns`.
+
+        @param patterns: Sequence of patterns to search within another list.
+
+        @return: True if found, False otherwise.
+        """
+        patterns_len = len(patterns)
+        contents_len = len(self.contents)
+
+        if patterns_len > contents_len:
+            return False
+
+        compiled_pattern_list = [
+                re.compile(re.escape(pattern)) for pattern in patterns
+        ]
+
+        for start_idx in range(contents_len - patterns_len + 1):
+            patterns_found = True
+            sub_contents = self.contents[start_idx:start_idx + patterns_len]
+            for p, l in zip(compiled_pattern_list, sub_contents):
+                if not p.search(l):
+                    patterns_found = False
+                    break
+            if patterns_found:
+                return True
+        return False
+
+
 if __name__ == '__main__':
     # A demo using btmon tool to monitor bluetoohd activity.
     cmd = ['btmon', '-c', 'never']

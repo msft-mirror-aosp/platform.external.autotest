@@ -67,8 +67,15 @@ class BluetoothAdapterLLPrivacyTests(
 
         enable_address_resolution = self.bluetooth_facade.btmon_find(
                 'Address resolution: Enabled')
-        add_dev_to_resolv_list = self.bluetooth_facade.btmon_find(
-                'LE Add Device To Resolving List')
+
+        patterns = [
+                '> HCI Event: Command Complete (0x0e)',
+                'LE Add Device To Resolving List (0x08|0x0027) ncmd 1',
+                'Status: Success (0x00)'
+        ]
+        add_dev_to_resolv_list = self.bluetooth_facade.btmon_find_consecutive(
+                patterns)
+
         use_accept_list = self.bluetooth_facade.btmon_find(
                 'Filter policy: Ignore not in accept list (0x01)')
 

@@ -512,6 +512,9 @@ class bluetooth_AdapterLEAdvertising(
             res = self.test_peer_received_correct_adv(peer, advertisements[i],
                                                       discover_time)
 
+        # Clean up the advertising sets so that next test won't be affected.
+        self.test_reset_advertising()
+
     def advertising_peer_suspend_resume_test(self, peer):
         """Verify expected advertising behavior around suspend/resume
 
@@ -1537,6 +1540,9 @@ class bluetooth_AdapterLEAdvertising(
         # properties are sent to the controller.
         self.register_advertisements(advertisements, orig_min_adv_interval_ms,
                                      orig_max_adv_interval_ms)
+
+        # Clean up the advertising sets so that next test won't be affected.
+        self.test_reset_advertising()
 
     def run_le_advertising_test(self, host, advertisements, test_type, \
                                 num_iterations=1):

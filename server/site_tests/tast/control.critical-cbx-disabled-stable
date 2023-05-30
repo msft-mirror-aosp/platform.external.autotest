@@ -34,7 +34,6 @@ See http://go/tast-failures for information about investigating failures.
 '''
 
 args_dict = utils.args_to_dict(args)
-assert 'label-cbx:False' in DEPENDENCIES
 
 def run(machine):
     job.run_test('tast',

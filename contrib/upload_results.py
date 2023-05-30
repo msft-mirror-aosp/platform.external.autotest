@@ -483,7 +483,8 @@ class ResultsParserClass:
             match = re.match(LABEL_REGEX, path)
             job.label = "chroot/" + match.group(2)
         job.afe_job_id = str(job_id)
-        job.afe_parent_job_id = str(job_id + 1)
+        if not job.afe_parent_job_id:
+            job.afe_parent_job_id = str(job_id + 1)
         name = self.job_tag(job_id, job.machine)
         export_tko_job_to_file(job, name, serialize_path)
 

@@ -79,8 +79,10 @@ class power_Test(test.test):
         self._checkpoint_logger = power_status.CheckpointLogger()
         self._seconds_period = seconds_period
 
+        self._force_discharge = force_discharge
+        self._force_discharge_errors = 0
         self._force_discharge_success = force_discharge_utils.process(
-                force_discharge, self.status)
+                self._force_discharge, self.status)
 
         ifaces = [iface for iface in interface.get_interfaces()
                 if (not iface.is_wifi_device() and
@@ -176,13 +178,32 @@ class power_Test(test.test):
         power_telemetry_utils.start_measurement()
 
     def loop_sleep(self, loop, sleep_secs):
-        """Jitter free sleep.
+        """Jitter free sleep with a discharge check.
 
         @param loop: integer of loop (1st is zero).
         @param sleep_secs: integer of desired sleep seconds.
         """
         next_time = self._start_time + (loop + 1) * sleep_secs
-        time.sleep(next_time - time.time())
+        check_interval = self._seconds_period
+        while time.time() < next_time:
+            self.check_force_discharge()
+            sleep_interval = min(max(next_time - time.time(), 0),
+                                 check_interval)
+            time.sleep(sleep_interval)
+
+    def check_force_discharge(self):
+        """Watchdog device is still discharging.
+        """
+        if not self.status.battery_discharging():
+            if (self._force_discharge_success
+                        and force_discharge_utils.process(
+                                self._force_discharge, self.status)):
+                self._force_discharge_errors += 1
+                logging.warning('Force discharge temporarily stopped'
+                                'working, possibly due to a charger'
+                                'connection reset')
+            elif self._force_discharge == 'true':
+                raise error.TestError('Running on AC power now.')
 
     def checkpoint_measurements(self, name, start_time=None):
         """Checkpoint measurements.
@@ -289,7 +310,13 @@ class power_Test(test.test):
         ]:
             self._keyvallogger.add_item(key, keyvals[key], 'point', 'perf')
 
-        if self.status.battery:
+        if self._force_discharge_success:
+            keyvals['force_discharge_errors'] = self._force_discharge_errors
+
+        max_force_discharge_errors = 3
+        if (
+                self.status.battery
+                and self._force_discharge_errors < max_force_discharge_errors):
             keyvals['ah_charge_full'] = self.status.battery.charge_full
             keyvals['ah_charge_full_design'] = \
                                 self.status.battery.charge_full_design

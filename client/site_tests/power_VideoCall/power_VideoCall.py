@@ -252,6 +252,7 @@ class power_VideoCall(power_test.power_Test):
                         self._failure_messages.append(msg)
                     break
 
+                self.check_force_discharge()
                 self.status.refresh()
                 if self.status.is_low_battery():
                     logging.info(

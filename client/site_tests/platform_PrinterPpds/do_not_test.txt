@@ -22,7 +22,6 @@ foomatic-20200219-Epson-Stylus_Color_680-Stc680pX.upp.ppd.gz
 foomatic-20200219-Epson-Stylus_Color_760-stc740X.upp.ppd.gz
 foomatic-20200219-Epson-Stylus_Photo_720-Stp720pX.upp.ppd.gz
 foomatic-20200219-Epson-Stylus_Photo_870-Stp870pX.upp.ppd.gz
-foomatic-20200219-Generic-PCL_3_Printer-pcl3.ppd.gz
 foomatic-20200219-HP-DesignJet_1050C-Postscript-HP.ppd.gz
 foomatic-20200219-HP-DesignJet_1055CM-Postscript-HP.ppd.gz
 foomatic-20200219-HP-DesignJet_2500CP-Postscript-HP.ppd.gz
@@ -85,5 +84,4 @@ hplip-20201209-hplip-3.20.11-hp-designjet_Z9dr_44in-ps.ppd.gz
 hplip-20201209-hplip-3.20.11-hp-designjet_z2600_postscript-ps.ppd.gz
 hplip-20201209-hplip-3.20.11-hp-designjet_z5400-postscript.ppd.gz
 hplip-20201209-hplip-3.20.11-hp-designjet_z5600_postscript-ps.ppd.gz
-kyocera-20190830-Kyocera_Generic_Monochrome.ppd.gz
 star-20191209-tsp651.ppd.gz

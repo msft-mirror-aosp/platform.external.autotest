@@ -491,6 +491,7 @@ suite:lacros-version-skew-beta
 suite:lacros-version-skew-canary
 suite:lacros-version-skew-dev
 suite:lacros-version-skew-stable
+suite:launcher_search_quality_daily
 suite:link_perf
 suite:longevity
 suite:manual_platform_suite

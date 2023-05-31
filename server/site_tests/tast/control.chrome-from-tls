@@ -64,6 +64,7 @@ def run(machine):
     total_shards=args_dict.get('total_shards', 1)
     shard_index=args_dict.get('shard_index', 0)
     max_run_sec=int(args_dict.get('max_run_sec', 21600)) # 6 hours.
+    extrauseflags=args_dict.get('extrauseflags', '')
     logging.info("Running %s on host: %s with Tast expression:%s "
                  "total_shards: %s shard_index: %s max_run_sec: %s",
                  NAME, host, tast_expr, total_shards, shard_index, max_run_sec)
@@ -79,6 +80,7 @@ def run(machine):
                  download_data_lazily=False,
                  ignore_test_failures=False,
                  max_run_sec=max_run_sec,
+                 extrauseflags=extrauseflags,
                  command_args=args,
                  totalshards=total_shards,
                  shardindex=shard_index,

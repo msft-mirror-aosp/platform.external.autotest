@@ -222,6 +222,7 @@ class tast(test.test):
                    is_cft=False,
                    exclude_missing=False,
                    test_filter_files=[],
+                   extrauseflags=None,
                    report_skipped=False,
                    max_sys_msg_log_size=_DEFAULT_MAX_SYS_MSG_LOG_SIZE):
         """
@@ -272,6 +273,8 @@ class tast(test.test):
         `tast list` command
         @param test_filter_files: This option includes a list of files containing names
         of test to be disabled.
+        @param extrauseflags: Extra use flags to control tast behavior. This value will be passed to
+            the `tast` command as -extrauseflags command line flag,
         @param report_skipped: If true then skipped tests will be reported in
         the status.log
         @param max_sys_msg_log_size: Max size for the downloaded system message log after
@@ -320,6 +323,7 @@ class tast(test.test):
         self._ephemeraldevserver = ephemeraldevserver
         self._exclude_missing = exclude_missing
         self._test_filter_files = test_filter_files
+        self._extrauseflags = extrauseflags
         self._report_skipped = report_skipped
         self._max_sys_msg_log_size = max_sys_msg_log_size
 
@@ -927,6 +931,9 @@ class tast(test.test):
 
         for file in self._test_filter_files:
             args.append('-testfilterfile=%s' % file)
+
+        if self._extrauseflags:
+            args.append('-extrauseflags=%s' % self._extrauseflags)
 
         logging.info('Running tests with timeout of %d sec', self._max_run_sec)
         # This option will exclude tests that are requested, but not found in

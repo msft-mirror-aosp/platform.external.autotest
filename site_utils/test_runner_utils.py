@@ -39,6 +39,7 @@ from autotest_lib.utils.frozen_chromite.lib import remote_access
 
 _autoserv_proc = None
 _sigint_handler_lock = threading.Lock()
+_path = os.path.dirname(os.path.realpath(__file__))
 
 _AUTOSERV_SIGINT_TIMEOUT_SECONDS = 5
 NO_BOARD = 'ad_hoc_board'
@@ -418,6 +419,25 @@ def get_predicate_for_possible_test_arg(test):
             'job name similar to %s' % test)
 
 
+def _add_ssh_key(private_key, temp_directory):
+    """Copy a private key to temp directory and add it to ssh authentication agent
+
+    @param private_key: A string path for a private key to add.
+    @param temp_directory: A directory to copy the |private key| into.
+    """
+    logging.info('Copying private key %s to %s', private_key, temp_directory)
+    shutil.copy(private_key, temp_directory)
+    key_copy_path = os.path.join(temp_directory, os.path.basename(private_key))
+    # Make the key it NOT world-readable. Otherwise, ssh-add complains.
+    os.chmod(key_copy_path, stat.S_IRUSR | stat.S_IWUSR)
+    p = subprocess.Popen(['ssh-add', key_copy_path],
+                         stderr=subprocess.STDOUT,
+                         stdout=subprocess.PIPE)
+    p_out, _ = p.communicate()
+    for line in p_out.splitlines():
+        logging.info(line)
+
+
 def add_ssh_identity(temp_directory, ssh_private_key=TEST_KEY_PATH):
     """Add an ssh identity to the agent.
 
@@ -429,17 +449,24 @@ def add_ssh_identity(temp_directory, ssh_private_key=TEST_KEY_PATH):
     """
     # Add the testing key to the current ssh agent.
     if 'SSH_AGENT_PID' in os.environ:
-        # Copy the testing key to the temp directory and make it NOT
-        # world-readable. Otherwise, ssh-add complains.
-        shutil.copy(ssh_private_key, temp_directory)
-        key_copy_path = os.path.join(temp_directory,
-                                     os.path.basename(ssh_private_key))
-        os.chmod(key_copy_path, stat.S_IRUSR | stat.S_IWUSR)
-        p = subprocess.Popen(['ssh-add', key_copy_path],
-                             stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-        p_out, _ = p.communicate()
-        for line in p_out.splitlines():
-            logging.info(line)
+        # Add the testing_rsa to the temp directory
+        _add_ssh_key(ssh_private_key, temp_directory)
+        # Add the partner_testing_rsa to the temp directory.
+        partner_ssh_private_key = os.path.join(
+                _path, '../../../../../sshkeys/partner_testing_rsa')
+        if os.path.exists(partner_ssh_private_key):
+            _add_ssh_key(partner_ssh_private_key, temp_directory)
+        else:
+            logging.warning(
+                    '\n************************************\n'
+                    'If you are testing with an internal ChromeOS image, '
+                    'not a ChromiumOS image, \n'
+                    'please ensure `partner_testing_rsa` '
+                    'exist in path `<your_chromiumos_path>/sshkeys/`. \nCheck '
+                    'go/chromeos-lab-duts-ssh#setup-private-key-and-ssh-config '
+                    'step 2 for how to retrieve partner_testing_rsa.\n'
+                    'Otherwise, sshing to the DUT will fail later.\n'
+                    '************************************')
     else:
         logging.warning('There appears to be no running ssh-agent. Attempting '
                         'to continue without running ssh-add, but ssh commands '

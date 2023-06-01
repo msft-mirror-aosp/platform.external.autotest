@@ -4,8 +4,8 @@
 
 NAME = "touch_WakeupSource.touchpad"
 METADATA = {
-    "contacts": ["chromeos-tango@google.com"],
-    "bug_component": "b:167253",
+    "contacts": ["chromeos-power@google.com"],
+    "bug_component": "b:167191",
     "criteria": "Touchpad is a wakeup source.",
     "hw_agnostic": False
 }

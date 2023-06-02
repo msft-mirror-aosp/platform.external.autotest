@@ -80,7 +80,7 @@ class FirmwareError(SuspendFailure):
             # Ignore i2c address write failure messages for cr50/ti50 as they
             # occur during initial probing of DidVid of GSC
             (r'.*', r'cr50_i2c_read: Address write failed'),
-            (r'.*', r'I2C TX abort detected (00000001)')
+            (r'.*', r'I2C TX abort detected \(00000001\)')
     ]
 
 

@@ -37,6 +37,11 @@ class firmware_CorruptBothFwBodyAB(FirmwareTest):
 
     def run_once(self, dev_mode=False):
         """Runs a single iteration of the test."""
+        recovery_reason = (vboot.RECOVERY_REASON['RO_INVALID_RW'],
+                           vboot.RECOVERY_REASON['RW_VERIFY_BODY'])
+
+        time_now = self._now()
+
         logging.info("Corrupt both firmware body A and B.")
         self.check_state((self.checkers.crossystem_checker, {
                     'mainfw_type': 'developer' if dev_mode else 'normal',
@@ -56,11 +61,10 @@ class firmware_CorruptBothFwBodyAB(FirmwareTest):
 
         logging.info("Expected recovery boot and restore firmware.")
         self.check_state((self.checkers.crossystem_checker, {
-                              'mainfw_type': 'recovery',
-                              'recovery_reason':
-                              (vboot.RECOVERY_REASON['RO_INVALID_RW'],
-                              vboot.RECOVERY_REASON['RW_VERIFY_BODY']),
-                              }))
+                            'mainfw_type': 'recovery',
+                            }))
+        self.check_recovery_reason_since(time_now, recovery_reason)
+
         self.faft_client.bios.modify_body('a', offset_a, byte_a)
         self.faft_client.bios.modify_body('b', offset_b, byte_b)
         self.switcher.mode_aware_reboot()

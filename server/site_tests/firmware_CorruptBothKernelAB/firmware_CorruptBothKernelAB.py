@@ -60,6 +60,8 @@ class firmware_CorruptBothKernelAB(FirmwareTest):
                            vboot.RECOVERY_REASON['RW_NO_KERNEL'],
                            vboot.RECOVERY_REASON['RW_INVALID_OS'])
 
+        time_now = self._now()
+
         logging.info("Corrupt kernel A and B.")
         self.check_state((self.check_root_part_on_non_recovery, 'a'))
         self.faft_client.kernel.corrupt_sig('a')
@@ -75,9 +77,10 @@ class firmware_CorruptBothKernelAB(FirmwareTest):
 
         logging.info("Expected recovery boot and restore the OS image.")
         self.check_state((self.checkers.crossystem_checker, {
-                              'mainfw_type': 'recovery',
-                              'recovery_reason': recovery_reason,
-                              }))
+                            'mainfw_type': 'recovery',
+                            }))
+        self.check_recovery_reason_since(time_now, recovery_reason)
+
         self.faft_client.kernel.restore_sig('a')
         self.faft_client.kernel.restore_sig('b')
         self.switcher.mode_aware_reboot()

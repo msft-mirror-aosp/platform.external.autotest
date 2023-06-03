@@ -38,6 +38,10 @@ class firmware_RollbackFirmware(FirmwareTest):
 
     def run_once(self, dev_mode=False):
         """Runs a single iteration of the test."""
+        recovery_reason = (vboot.RECOVERY_REASON['RO_INVALID_RW'],
+                           vboot.RECOVERY_REASON['RW_FW_ROLLBACK'])
+        time_now = self._now()
+
         logging.info("Rollback firmware A.")
         self.check_state((self.checkers.fw_tries_checker, 'A'))
         version_a = self.faft_client.bios.get_version('a')
@@ -65,17 +69,11 @@ class firmware_RollbackFirmware(FirmwareTest):
         self.switcher.wait_for_client()
 
         logging.info("Expected recovery boot and restores firmware A and B.")
-        # If this fails with recovery_reason == 2, that means that
-        # bypass_rec_mode above send power_state:rec more than once. Adjust the
-        # firmware_screen and delay_reboot_to_ping times to prevent that.
         self.check_state((self.checkers.crossystem_checker, {
-                'mainfw_type':
-                'recovery',
-                'recovery_reason': (
-                        vboot.RECOVERY_REASON['RO_INVALID_RW'],
-                        vboot.RECOVERY_REASON['RW_FW_ROLLBACK'],
-                ),
-        }))
+                            'mainfw_type': 'recovery',
+                            }))
+        self.check_recovery_reason_since(time_now, recovery_reason)
+
         logging.info("Restore version of firmware A/B to %d/%d.", version_a,
                      version_b)
         self.faft_client.bios.set_version('a', version_a)

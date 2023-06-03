@@ -46,6 +46,10 @@ class firmware_UserRequestRecovery(FirmwareTest):
 
     def run_once(self, dev_mode=False):
         """Runs a single iteration of the test."""
+
+        recovery_reason = (vboot.RECOVERY_REASON['US_TEST'])
+        time_now = self._now()
+
         logging.info("Request recovery boot.")
         self.check_state((self.checkers.crossystem_checker, {
                            'mainfw_type': 'developer' if dev_mode else 'normal',
@@ -69,9 +73,9 @@ class firmware_UserRequestRecovery(FirmwareTest):
 
         logging.info("Expected recovery boot, request recovery again.")
         self.check_state((self.checkers.crossystem_checker, {
-                           'mainfw_type': 'recovery',
-                           'recovery_reason' : vboot.RECOVERY_REASON['US_TEST'],
-                           }))
+                            'mainfw_type': 'recovery',
+                            }))
+        self.check_recovery_reason_since(time_now, recovery_reason)
 
         self.faft_client.system.request_recovery_boot()
         self.switcher.simple_reboot()
@@ -80,9 +84,9 @@ class firmware_UserRequestRecovery(FirmwareTest):
 
         logging.info("Expected recovery boot.")
         self.check_state((self.checkers.crossystem_checker, {
-                           'mainfw_type': 'recovery',
-                           'recovery_reason' : vboot.RECOVERY_REASON['US_TEST'],
-                           }))
+                            'mainfw_type': 'recovery',
+                            }))
+        self.check_recovery_reason_since(time_now, recovery_reason)
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected normal boot.")

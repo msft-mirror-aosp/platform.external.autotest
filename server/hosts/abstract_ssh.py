@@ -836,7 +836,7 @@ class AbstractSSHHost(remote.RemoteHost):
                                                  highest_frames=7)
             logging.warning("is_up_fast called with icmp disabled from %s!",
                             stack)
-            return True
+            return self.is_up()
         ping_config = ping_runner.PingConfig(self.hostname,
                                              count=1,
                                              ignore_result=True,

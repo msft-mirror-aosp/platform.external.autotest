@@ -1250,6 +1250,13 @@ class BluetoothBaseFacadeLocal(object):
                 return name
         return ''
 
+    def get_kernel_version(self):
+        """Gets the kernel's version.
+
+        @return: The running kernel's version.
+        """
+        return utils.system_output('uname -r')
+
     def get_bt_usb_device_strs(self):
         """ Return the usb endpoints for the bluetooth device, if they exist
 

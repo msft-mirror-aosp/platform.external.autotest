@@ -10,6 +10,7 @@ import functools
 import logging
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 
 
 class BluetoothQuickTestsBase(object):
@@ -87,6 +88,15 @@ class BluetoothQuickTestsBase(object):
         """
         raise NotImplementedError
 
+    def quick_test_get_kernel_version(self):
+        """This method should be implemented by children classes.
+
+        The ways to get the kernel's version are different between server and
+        client sides. The derived class should provide the method to get the
+        info.
+        """
+        raise NotImplementedError
+
     @staticmethod
     def quick_test_test_decorator(test_name,
                                   flags=None,
@@ -96,7 +106,8 @@ class BluetoothQuickTestsBase(object):
                                   model_testWarn=None,
                                   skip_models=None,
                                   skip_chipsets=None,
-                                  skip_common_errors=False):
+                                  skip_common_errors=False,
+                                  minimum_kernel_version=''):
         """A decorator providing a wrapper to a quick test.
 
         Using the decorator a test method can implement only the core
@@ -131,6 +142,9 @@ class BluetoothQuickTestsBase(object):
                                    throughout the whole test (i.e. advertising)
                                    and any outside failure will cause the test
                                    to fail.
+       @param minimum_kernel_version: Raises TestNA on less than this kernel's
+                                      version and doesn't attempt to run the
+                                      tests.
         """
 
         if flags is None:
@@ -186,6 +200,21 @@ class BluetoothQuickTestsBase(object):
                                      test_name, chipset)
                         raise error.TestNAError(
                                 'Test not supported on this chipset')
+
+                    if minimum_kernel_version != '':
+                        kernel_ver = self.quick_test_get_kernel_version()
+                        major_ver = '.'.join(
+                                kernel_ver.rsplit('-', 1)[0].split('.')[:2])
+                        logging.debug('The Kernel version %s', kernel_ver)
+                        # -1 means the major_ver < minimum_kernel_version.
+                        if utils.compare_versions(
+                                major_ver, minimum_kernel_version) == -1:
+                            logging.info(
+                                    'SKIPPING TEST %s on kernel version %s',
+                                    test_name, kernel_ver)
+                            raise error.TestNAError(
+                                    'Test not supported on this kernel version'
+                            )
 
                     if pretest_func:
                         pretest_func(self)

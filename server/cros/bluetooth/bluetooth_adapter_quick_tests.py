@@ -265,6 +265,13 @@ class BluetoothAdapterQuickTests(
         """
         return self.bluetooth_facade.get_chipset_name()
 
+    def quick_test_get_kernel_version(self):
+        """Returns the kernel's version.
+
+           Needed by BluetoothQuickTestsBase.quick_test_test_decorator.
+        """
+        return self.bluetooth_facade.get_kernel_version()
+
     @staticmethod
     def quick_test_test_decorator(test_name,
                                   devices={},
@@ -275,7 +282,8 @@ class BluetoothAdapterQuickTests(
                                   skip_chipsets=[],
                                   skip_common_errors=False,
                                   supports_floss=False,
-                                  use_all_peers=False):
+                                  use_all_peers=False,
+                                  minimum_kernel_version=''):
         """A decorator providing a wrapper to a quick test.
            Using the decorator a test method can implement only the core
            test and let the decorator handle the quick test wrapper methods
@@ -311,6 +319,9 @@ class BluetoothAdapterQuickTests(
                                  like bluetooth_PeerVerify which uses all
                                  available peers. Specify only one device type
                                  if this is set to true
+           @param minimum_kernel_version: Raises TestNA on less than this
+                                          kernel's version and doesn't attempt
+                                          to run the tests.
         """
 
         base_class = bluetooth_quick_tests_base.BluetoothQuickTestsBase
@@ -324,7 +335,8 @@ class BluetoothAdapterQuickTests(
                 model_testWarn=model_testWarn,
                 skip_models=skip_models,
                 skip_chipsets=skip_chipsets,
-                skip_common_errors=skip_common_errors)
+                skip_common_errors=skip_common_errors,
+                minimum_kernel_version=minimum_kernel_version)
 
     def quick_test_test_pretest(self,
                                 test_name=None,

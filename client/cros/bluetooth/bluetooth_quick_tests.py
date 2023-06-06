@@ -302,7 +302,8 @@ class BluetoothQuickTests(test.test,
                                   model_testWarn=None,
                                   skip_models=None,
                                   skip_chipsets=None,
-                                  skip_common_errors=False):
+                                  skip_common_errors=False,
+                                  minimum_kernel_version=''):
         """A decorator providing a wrapper to a quick test.
 
         Using the decorator a test method can implement only the core
@@ -329,6 +330,9 @@ class BluetoothQuickTests(test.test,
                                    throughout the whole test (i.e. advertising)
                                    and any outside failure will cause the test
                                    to fail.
+       @param minimum_kernel_version: Raises TestNA on less than this kernel's
+                                      version and doesn't attempt to run the
+                                      tests.
         """
 
         if flags is None:
@@ -343,7 +347,8 @@ class BluetoothQuickTests(test.test,
                 model_testWarn=model_testWarn,
                 skip_models=skip_models,
                 skip_chipsets=skip_chipsets,
-                skip_common_errors=skip_common_errors)
+                skip_common_errors=skip_common_errors,
+                minimum_kernel_version=minimum_kernel_version)
 
     def pretest_function(self):
         """Runs before each test."""
@@ -462,3 +467,10 @@ class BluetoothQuickTests(test.test,
         Needed by BluetoothQuickTestsBase.quick_test_test_decorator.
         """
         return self.bluetooth_facade.get_chipset_name()
+
+    def quick_test_get_kernel_version(self):
+        """Returns the kernel's version.
+
+        Needed by BluetoothQuickTestsBase.quick_test_test_decorator.
+        """
+        return self.bluetooth_facade.get_kernel_version()

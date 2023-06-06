@@ -1783,6 +1783,14 @@ class BluetoothDevice(object):
         return self._proxy.get_chipset_name()
 
     @proxy_thread_safe
+    def get_kernel_version(self):
+        """Gets the kernel's version on this host.
+
+        @return: The running kernel's version.
+        """
+        return self._proxy.get_kernel_version()
+
+    @proxy_thread_safe
     def get_device_utc_time(self):
         """ Get the current device time in UTC. """
         return datetime.strptime(self._proxy.get_device_utc_time(),

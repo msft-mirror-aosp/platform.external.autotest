@@ -327,7 +327,9 @@ class bluetooth_AdapterLLPrivacyHealth(
                                      kbd_test_func,
                                      secondary_info=hid_test_device)
 
-    @test_wrapper('Use Resolving List for RPA Test', devices={"BLE_MOUSE": 1})
+    @test_wrapper('Use Resolving List for RPA Test',
+                  devices={"BLE_MOUSE": 1},
+                  minimum_kernel_version='4.19')
     def le_address_resolution_power_cycle(self):
         """Test RPA is used when pairing and address resolution is enabled with
         LL privacy enabled.

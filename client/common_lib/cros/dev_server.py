@@ -1085,8 +1085,9 @@ class ImageServerBase(DevServer):
         swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
         BBID = os.getenv('BUILD_BUCKET_ID', default='None')
 
-        ssh_call = 'ssh %s \'curl -H X-SWARMING-TASK-ID:%s -H X-BBID:%s "%s"\'' % (
-                swarming_id, BBID, hostname, utils.sh_escape(call))
+        ssh_call = ('ssh %s \'curl -H X-SWARMING-TASK-ID:%s '
+                    '-H X-BBID:%s "%s"\'' %
+                    (hostname, swarming_id, BBID, utils.sh_escape(call)))
 
         logging.debug("ImageServerBase::run_ssh_call ssh_call: %s", ssh_call)
         timeout_seconds = timeout if timeout else DEVSERVER_SSH_TIMEOUT_MINS*60

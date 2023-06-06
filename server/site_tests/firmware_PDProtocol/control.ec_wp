@@ -9,7 +9,8 @@ NAME = "firmware_PDProtocol.ec_wp"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify PD protocol negotiation"
+        "criteria": "Verify PD protocol negotiation",
+        "requirements": ["sys-fw-0022-v02"]
 }
 ATTRIBUTES = "suite:faft_ec_fw_qual, suite:faft_ec_wp"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"

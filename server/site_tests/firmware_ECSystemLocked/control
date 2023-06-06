@@ -9,7 +9,8 @@ NAME = "firmware_ECSystemLocked"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Ensure that CONFIG_SYSTEM_UNLOCKED is unset"
+        "criteria": "Ensure that CONFIG_SYSTEM_UNLOCKED is unset",
+        "requirements": ["sys-fw-0022-v02"]
 }
 ATTRIBUTES = "suite:faft_ec_fw_qual"
 TIME = "SHORT"

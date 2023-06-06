@@ -10,7 +10,7 @@ METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Servo based EC watchdog test",
-        "requirements": ["sys-fw-0022-v01"]
+        "requirements": ["sys-fw-0022-v02"]
 }
 ATTRIBUTES = "suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot"
 TIME = "SHORT"

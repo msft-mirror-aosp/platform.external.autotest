@@ -9,8 +9,11 @@ METADATA = {
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Provision a system to the correct gsc firmware version."
 }
-TIME = "MEDIUM"
-TEST_TYPE = "Server"
+ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_ti50_qual"
+# Provision runs quickly. TIME is set to LENGTHY, so this test gets scheduled
+# first in the suite.
+TIME = "LENGTHY"
+TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 
 DOC = """

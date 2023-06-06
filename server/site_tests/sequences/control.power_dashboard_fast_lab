@@ -42,8 +42,6 @@ CLIENT_TESTS = [
         'secs_per_video' : 10, 'fast' : True }),
     ('power_Display', {
         'tag' : 'fast', 'secs_per_page' : 2}),
-    ('power_WebGL', {
-        'tag' : 'fast', 'duration' : 10}),
 ]
 
 SERVO_V4_ETH_VENDOR = '0bda'

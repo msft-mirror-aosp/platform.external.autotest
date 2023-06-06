@@ -41,8 +41,6 @@ CLIENT_TESTS = [
         'secs_per_video' : 10, 'fast' : True }),
     ('power_Display', {
         'tag' : 'fast', 'secs_per_page' : 2}),
-    ('power_WebGL', {
-        'tag' : 'fast', 'duration' : 10}),
 ]
 
 # Tagged test name and sweetberry interval
@@ -53,7 +51,6 @@ SWEETBERRY_TESTS = [
     ('power_VideoPlayback.fast', 1),
     ('power_VideoPlayback.sw_decoder_fast', 1),
     ('power_Display.fast', 1),
-    ('power_WebGL.fast', 1),
 ]
 
 POWERLOG_TESTNAME = 'power_PowerlogWrapper'

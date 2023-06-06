@@ -33,7 +33,6 @@ CLIENT_TESTS = [
     ('power_VideoPlayback', {
         'tag' : 'sw_decoder', 'use_hw_decode' : False}),
     ('power_Display', {}),
-    ('power_WebGL', {}),
     ('power_Standby', {
         'tag' : 'fast', 'sample_hours' : 0.334, 'test_hours' : 0.334}),
 ]

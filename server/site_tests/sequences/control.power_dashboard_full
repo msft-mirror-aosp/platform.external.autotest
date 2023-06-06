@@ -32,7 +32,6 @@ CLIENT_TESTS = [
     ('power_VideoPlayback', {
         'tag' : 'sw_decoder', 'use_hw_decode' : False}),
     ('power_Display', {}),
-    ('power_WebGL', {}),
     ('power_Standby', {
         'tag' : 'fast', 'sample_hours' : 0.334, 'test_hours' : 0.334}),
 ]
@@ -45,7 +44,6 @@ SWEETBERRY_TESTS = [
     ('power_VideoPlayback', 5),
     ('power_VideoPlayback.sw_decoder', 5),
     ('power_Display', 5),
-    ('power_WebGL', 5),
 ]
 
 POWERLOG_TESTNAME = 'power_PowerlogWrapper'

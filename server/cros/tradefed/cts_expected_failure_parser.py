@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import logging
 import yaml
 
@@ -56,12 +57,18 @@ class ParseKnownCTSFailures(object):
         @param failure_files: files with failure configs.
         @return a dictionary of failures config in yaml format.
         """
-        waivers_yaml = {}
+        waivers_yaml = collections.defaultdict(list)
         for failure_file in failure_files:
             try:
                 logging.info('Loading expected failure file: %s.', failure_file)
                 with open(failure_file) as wf:
-                    waivers_yaml.update(yaml.safe_load(wf.read()))
+                    loaded = yaml.safe_load(wf.read())
+                    # The loaded yaml is of shape: Dict[str, List[str]]
+                    # b/286176301: If a test case already exists in
+                    # waivers_yaml, combine the newly read config with the
+                    # existing one.
+                    for testcase, config in loaded.items():
+                        waivers_yaml[testcase].extend(config)
             except IOError as e:
                 logging.error('Error loading %s (%s).',
                               failure_file,

@@ -1945,7 +1945,7 @@ class BluetoothAdapterAdvMonitorTests(
             # scan shall not be used.
             sw_interleave_scan = False
         else:
-            sw_interleave_scan = True
+            raise error.TestNAError('Not supporting hardware filtering')
 
         # Create a test app instance.
         app1 = self.create_app()

@@ -402,7 +402,6 @@ def get_suites(modules,
 
     vm_modules = []
     nonvm_modules = []
-    can_skip_x86 = True
     has_unstable_vm_modules = False
     for module in modules:
         if module in get_collect_modules(is_public, hardware_suite):
@@ -422,14 +421,16 @@ def get_suites(modules,
             # This logic put the whole control group (if combined) into
             # VM_SUITE_NAME if any module is listed in get_vm_modules(). We
             # should not do it once in production.
-            suites.add(CONFIG['VM_SUITE_NAME'])
+            # If VM_RUN_SINGLE_ABI is specified, append VM suite only if it
+            # matches the current abi. The remaining logic is kept in order to
+            # correctly create the stable VM suite.
+            if CONFIG.get('VM_RUN_SINGLE_ABI', abi) == abi:
+                suites.add(CONFIG['VM_SUITE_NAME'])
             vm_modules.append(module)
             if is_unstable_vm_modules(module):
                 has_unstable_vm_modules = True
         else:
             nonvm_modules.append(module)
-        if not is_skip_x86_modules(module):
-            can_skip_x86 = False
         if abi == 'x86':
             # Handle a special builder for running all of CTS in a betty VM.
             # TODO(ihf): figure out if this builder is still alive/needed.
@@ -468,11 +469,6 @@ def get_suites(modules,
             suites = suites - set(CONFIG.get('VM_SKIP_SUITES', []))
             if 'STABLE_VM_SUITE_NAME' in CONFIG:
                 suites.add(CONFIG['STABLE_VM_SUITE_NAME'])
-
-    # For group without modules for both archs, skip from given suites.
-    if suites.intersection(set(CONFIG.get('X86_SKIP_SUITES', []))):
-        if abi == 'x86' and can_skip_x86:
-            suites = suites - set(CONFIG.get('X86_SKIP_SUITES', []))
 
     return sorted(list(suites))
 
@@ -934,11 +930,6 @@ def is_vm_modules(module):
 def is_unstable_vm_modules(module):
     """Checks if module is still unstable for VM."""
     return is_in_rule(module, CONFIG.get('VM_UNSTABLE_MODULES_RULES', []))
-
-
-def is_skip_x86_modules(module):
-    """Checks if module can skip x86 runs."""
-    return is_in_rule(module, CONFIG.get('SKIP_X86_MODULE_RULES', []))
 
 
 def get_extra_artifacts(modules):

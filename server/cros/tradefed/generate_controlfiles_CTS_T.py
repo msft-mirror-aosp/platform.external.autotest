@@ -167,11 +167,9 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases.dEQP-VK',
 ]
 
-CONFIG['X86_SKIP_SUITES'] = ['suite:arc-cts-vm']
-# List of modules that skip x86 runs.
-CONFIG['SKIP_X86_MODULE_RULES'] = [
-        '+.*',
-]
+# Specifies if the VM suite should include only a single ABI. If unspecified,
+# the suite includes both arm/x86 modules.
+CONFIG['VM_RUN_SINGLE_ABI'] = 'x86'
 
 # Syntax:
 # - First character is either '+' (include) or '-' (exclude).

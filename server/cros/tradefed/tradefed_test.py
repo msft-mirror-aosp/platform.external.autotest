@@ -1155,7 +1155,9 @@ class TradefedTest(test.test):
             pre_commands = [
                     'adb kill-server',
                     'echo %s > %s' %
-                    (pipes.quote(constants.PRIVATE_KEY), key_path)
+                    (pipes.quote(constants.PRIVATE_KEY), key_path),
+                    # Workaround b/285802634: no-op command to ensure connection
+                    'adb shell cd'
             ]
 
         for host in self._hosts:

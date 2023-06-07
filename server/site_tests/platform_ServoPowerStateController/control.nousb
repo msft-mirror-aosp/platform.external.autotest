@@ -5,7 +5,7 @@
 from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
-NAME = "platform_ServoPowerStateController.USBUnplugged"
+NAME = "platform_ServoPowerStateController.nousb"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
@@ -32,6 +32,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test('platform_ServoPowerStateController', host=host,
-                 usb_available=False)
+                 usb_available=False, tag=NAME.split('.')[1])
 
 parallel_simple(run, machines)

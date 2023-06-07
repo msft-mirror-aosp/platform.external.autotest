@@ -67,7 +67,7 @@ class firmware_ECSharedMem(FirmwareTest):
         logging.info("Check shared memory in normal operation and crash EC.")
         self.check_state(self.shared_mem_checker)
         self.switcher.mode_aware_reboot(
-                'custom', lambda:self.ec.send_command('crash unaligned'))
+                'custom', lambda: self.ec.send_command('crash divzero'))
 
         logging.info("Check shared memory after crash and system jump.")
         self.check_state([self.shared_mem_checker, self.jump_checker])

@@ -230,16 +230,5 @@
             "bytes_rootfs_prod",
             "bytes_rootfs_test"
         ]
-    },
-    {
-        "benchmark": "glbench",
-        "autotest_name": "graphics_GLBench/control$",
-        "perf_keys": [
-            "1280x768_fps_compositing",
-            "mpixels_sec_clear_color",
-            "mpixels_sec_fill_solid",
-            "mpixels_sec_yuv_shader_2",
-            "mtri_sec_triangle_setup"
-        ]
     }
 ]

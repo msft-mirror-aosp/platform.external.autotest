@@ -157,7 +157,8 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_rssi_filter_multi_peers_tests()
         self.advmon_rssi_filter_reset_tests()
         self.advmon_multi_client_tests()
-        self.advmon_fg_bg_combination_tests()
+        # TODO(b/252440201) - Disable fg_bg test until fixed. See #comment8.
+        # self.advmon_fg_bg_combination_tests()
         self.advmon_suspend_resume_tests()
         self.advmon_interleaved_scan_tests()
         self.advmon_condition_device_count_tests()

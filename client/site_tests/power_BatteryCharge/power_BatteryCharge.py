@@ -31,9 +31,8 @@ class power_BatteryCharge(power_test.power_Test):
                                                     pdash_note=pdash_note,
                                                     force_discharge=False)
 
-        self._services = service_stopper.ServiceStopper(
-            service_stopper.ServiceStopper.POWER_DRAW_SERVICES + ['ui'])
-        self._services.stop_services()
+        self._services_other = service_stopper.ServiceStopper(['ui'])
+        self._services_other.stop_services()
 
     def run_once(self, max_run_time=180, percent_charge_to_add=1,
                  percent_initial_charge_max=None,
@@ -170,7 +169,8 @@ class power_BatteryCharge(power_test.power_Test):
 
     def cleanup(self):
         """Restore stop services and backlight level."""
-        if hasattr(self, '_services') and self._services:
-            self._services.restore_services()
+        if hasattr(self, '_services_other') and self._services_other:
+            self._services_other.restore_services()
         if hasattr(self, '_backlight') and self._backlight:
             self._backlight.restore()
+        super(power_BatteryCharge, self).cleanup()

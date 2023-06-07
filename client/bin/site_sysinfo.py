@@ -340,6 +340,7 @@ class site_sysinfo(base_sysinfo.base_sysinfo):
         self.before_iteration_loggables.add(
             command(constants.CHROME_VERSION_COMMAND, "chrome_version"))
         self.boot_loggables.add(command("crossystem", "crossystem"))
+        self.boot_loggables.add(command("gsctool -a -f", "gsctool"))
         self.test_loggables.add(
             purgeable_logdir(
                 os.path.join(constants.CRYPTOHOME_MOUNT_PT, "log")))

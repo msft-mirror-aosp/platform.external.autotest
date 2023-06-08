@@ -417,7 +417,8 @@ def get_suites(modules,
         # We don't want to include max resolution tests or tablet mode tests in non-VM suites.
         if vm_force_max_resolution or vm_table_mode:
             suites.clear()
-        if is_vm_modules(module) and 'VM_SUITE_NAME' in CONFIG:
+        if is_vm_modules(
+                module) and 'VM_SUITE_NAME' in CONFIG and not camera_facing:
             # This logic put the whole control group (if combined) into
             # VM_SUITE_NAME if any module is listed in get_vm_modules(). We
             # should not do it once in production.

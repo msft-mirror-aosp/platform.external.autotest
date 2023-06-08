@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'ChromiumOS team'
-NAME = 'tast.flex-perbuild-shard-0'
+NAME = 'tast.flex-perbuild-shard-3'
 METADATA = {
   "contacts": [
     "chromeos-flex-eng@google.com",
@@ -39,7 +39,7 @@ def run(machine):
 			     ')'],
                  ignore_test_failures=False,
                  totalshards=4,
-                 shardindex=0,
+                 shardindex=3,
                  max_run_sec=7200,
                  command_args=args,
                  clear_tpm=False)

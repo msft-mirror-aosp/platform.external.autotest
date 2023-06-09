@@ -166,7 +166,7 @@ class BluetoothAdapterQuickTests(
                           str(e))
             raise error.TestFail('Unable to create bluetooth_facade')
 
-        if clean_log is not 'FALSE':
+        if clean_log != 'FALSE':
             # Clean Bluetooth kernel logs in the DUT to prevent
             # /var/log/messages occupying too much space
             self.bluetooth_facade.cleanup_syslogs()

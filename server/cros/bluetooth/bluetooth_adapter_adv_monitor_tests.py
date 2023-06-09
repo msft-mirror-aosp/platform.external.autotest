@@ -776,9 +776,9 @@ class BluetoothAdapterAdvMonitorTests(
 
         for device_type, device_list in self.devices.items():
             for device in device_list:
-                if device_type is 'BLE_KEYBOARD':
+                if device_type == 'BLE_KEYBOARD':
                     self.peer_keybd = device
-                elif device_type is 'BLE_MOUSE':
+                elif device_type == 'BLE_MOUSE':
                     self.peer_mouse = device
 
         if self.peer_keybd is None or self.peer_mouse is None:

@@ -101,6 +101,9 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     TIME_SINCE_DS_RE = TIME_RE % 'deep sleep'
     TIME_SINCE_COLD_RESET_RE = TIME_RE % 'reset'
 
+    # Ti50 doesn't configure PLT_RST vs SYS_RST. All boards use PLT_RST
+    BOARD_PROP_ALWAYS_TRUE = ['BOARD_USE_PLT_RESET']
+
     def strip_timestamp(self, result):
         """Remove the timstamp from the result output.
 

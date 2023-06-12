@@ -67,11 +67,13 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         # warm_reset doesn't interfere with rdd, so it's best to use that when
         # possible.
         self.reset_ec = self.gsc.uses_board_property('BOARD_USE_PLT_RESET')
-        if (self.reset_ec and self.servo.has_control('cold_reset_select') and
-            (self.servo.get('cold_reset_select') == 'gsc_reset')):
+        if self.servo.has_control('cold_reset_select'):
             # Use the servo micro cold reset signal to hold the EC in reset.
-            self.servo.set('cold_reset_select', 'cold_reset_default')
-            logging.info('Using servo cold_reset signal')
+            if self.reset_ec:
+                self.servo.set('cold_reset_select', 'cold_reset_default')
+                logging.info('Using servo cold_reset signal')
+            logging.info('using %s for cold reset',
+                         self.servo.get('cold_reset_select'))
         self.changed_dut_state = True
         if self.reset_ec and not self.check_deep_sleep_while_off():
             # Some devices can't tell the AP is off when the EC is off. Try

@@ -121,6 +121,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # start with some whitespace, so account for that too.
     CAP_FORMAT = r'\s+(Y|-) \d\=(%s[\S ]*)[\r\n]+\s*' % CAP_STATES
 
+    BOARD_PROP_ALWAYS_TRUE = []
     # CR50 Board Properties as defined in platform/ec/board/cr50/scratch-reg1.h
     BOARD_PROP = {
             'BOARD_PERIPH_CONFIG_SPI': (1 << 0, None),
@@ -621,6 +622,12 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         @param prop_name: a property name in string type.
         """
+        # Ti50 and Cr50 configure different board properties differently.
+        # Some may be always true for Ti50. They won't show up in the board
+        # property value.
+        if prop_name in self.BOARD_PROP_ALWAYS_TRUE:
+            logging.info('%s is not configured by brdprop', prop_name)
+            return True
         brdprop = self.get_board_properties()
         (prop, mask) = self.BOARD_PROP[prop_name]
         # Use the board property value for the mask if no mask is given.

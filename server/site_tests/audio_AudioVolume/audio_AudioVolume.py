@@ -43,7 +43,18 @@ class audio_AudioVolume(audio_test.AudioTest):
             if source_id == chameleon_audio_ids.CrosIds.SPEAKER:
                 return chameleon_audio_ids.ChameleonIds.MIC
             elif source_id == chameleon_audio_ids.CrosIds.HEADPHONE:
-                return chameleon_audio_ids.ChameleonIds.LINEIN
+
+                # As of June 2023, we're migrating audio_cable testbed from
+                # Chameleon V2 to Raspberry Pi.
+                # A different binder will be needed for the new testbed,
+                # because the chameleond is now using an USB external mic.
+                # TODO: remove if-else branch after migration is completed.
+                use_pi_testbed = self.host.chameleon.get_platform() == "RASPI"
+                if use_pi_testbed:
+                    return chameleon_audio_ids.ChameleonIds.USBIN
+                else:
+                    return chameleon_audio_ids.ChameleonIds.LINEIN
+
             elif source_id == chameleon_audio_ids.CrosIds.HDMI:
                 return chameleon_audio_ids.ChameleonIds.HDMI
             elif source_id == chameleon_audio_ids.CrosIds.USBOUT:

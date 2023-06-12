@@ -378,6 +378,11 @@ Q: How can I obtain a device for a local FAFT execution?
 
 - A: The lab is a good source of devices for FAFT per go/cros-testing-kernelnext. If DUTs are not available or cannot be repaired by the lab team, request a DUT for development via go/hwrequest.
 
+Q: My USB stick keeps getting corrupted and I can't get firmware_FAFTSetup to pass.
+
+- A: Check that your OS is not auto-mounting USB storage devices. On Ubuntu the
+  command to disable is `gsettings set org.gnome.desktop.media-handling automount false`
+
 [FAFT suite]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/main/server/site_tests/
 [servo]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/README.md#Power-Measurement
 [servo v2]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_v2.md

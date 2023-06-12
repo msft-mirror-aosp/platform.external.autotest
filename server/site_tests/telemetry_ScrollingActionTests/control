@@ -4,7 +4,7 @@
 
 NAME = "telemetry_ScrollingActionTests"
 METADATA = {
-    "contacts": ["chromeos-perfmetrics-eng@google.com"],
+    "contacts": ["cros-sw-perf@google.com"],
     "bug_component": "b:1045832",  # ChromeOS > Software > Performance > TPS
     "criteria": "Executes the Telemetry Scrolling Benchmark.",
     "hw_agnostic": False

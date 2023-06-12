@@ -8,7 +8,7 @@ from autotest_lib.client.common_lib import utils
 
 NAME = 'telemetry_Benchmarks.blink_perf.image_decoder'
 METADATA = {
-    'contacts': ['chromeos-perfmetrics-eng@google.com'],
+    'contacts': ['cros-sw-perf@google.com'],
     'bug_component': 'b:1045832',  # ChromeOS > Software > Performance > TPS
     'criteria': ('Executes the Telemetry Benchmark: blink_perf.image_decoder.'
                  'Pass local=True to run with local telemetry and no AFE '

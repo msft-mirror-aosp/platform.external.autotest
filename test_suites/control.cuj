@@ -2,8 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ChromeOS Performance Metrics Team (chromeos-perfmetrics-eng@google.com)"
+AUTHOR = 'ChromeOS SW Performance Team'
 NAME = "cuj"
+METADATA = {
+    "contacts": ["cros-sw-perf@google.com"],
+    "bug_component": 'b:1045832',  # ChromeOS > Software > Performance > TPS
+}
 PURPOSE = "Suite to run CUJ tests regularly on ChromeOS devices."
 
 TIME = "MEDIUM"

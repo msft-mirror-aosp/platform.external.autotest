@@ -5,17 +5,17 @@
 # Do not edit manually. Generated using ~/chromiumos/src/platform/dev/net/gen_control_files.py
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.cellular_ota_flaky-rakuten-suspend_resume'
+NAME = 'tast.cellular_ota-tmobile-suspend_resume'
 METADATA = {
     "contacts": ["chromeos-cellular-team@google.com"],
     "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cellular_ota_flaky, suite:cellular_repair'
+ATTRIBUTES = 'suite:cellular_ota, suite:cellular_repair'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:rakuten, cellular_modem_state:NORMAL"
+DEPENDENCIES = "carrier:tmobile, cellular_modem_state:NORMAL"
 
 DOC = '''
 
@@ -42,7 +42,7 @@ def run(machine):
         job.run_test('tast',
                     host=host,
                     clear_tpm = False,
-                    test_exprs=['("group:cellular" && "cellular_sim_active" && "cellular_unstable" && "cellular_suspend")'],
+                    test_exprs=['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")'],
                     ignore_test_failures=True, max_run_sec=10800,
                     command_args=args,
                     varsfiles=[temp_file.name]

@@ -432,17 +432,6 @@ def get_suites(modules,
                 has_unstable_vm_modules = True
         else:
             nonvm_modules.append(module)
-        if abi == 'x86':
-            # Handle a special builder for running all of CTS in a betty VM.
-            # TODO(ihf): figure out if this builder is still alive/needed.
-            vm_suite = None
-            for suite in CONFIG['VMTEST_INFO_SUITES']:
-                if not vm_suite:
-                    vm_suite = suite
-                if module in CONFIG['VMTEST_INFO_SUITES'][suite]:
-                    vm_suite = suite
-            if vm_suite is not None:
-                suites.add('suite:%s' % vm_suite)
         # One or two modules hould be in suite:bvt-arc to cover CQ/PFQ. A few
         # spare/fast modules can run in suite:bvt-perbuild in case we need a
         # replacement for the module in suite:bvt-arc (integration test for

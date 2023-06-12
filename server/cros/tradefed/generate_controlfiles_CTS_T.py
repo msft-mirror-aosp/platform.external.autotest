@@ -4,7 +4,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
 import os
 
 CONFIG = {}
@@ -144,9 +143,6 @@ CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
         'CtsCameraTestCases',
         'CtsBluetoothTestCases',
 ]
-
-# The suite is divided based on the run-time hint in the *.config file.
-CONFIG['VMTEST_INFO_SUITES'] = collections.OrderedDict()
 
 # Modules that are known to download and/or push media file assets.
 CONFIG['MEDIA_MODULES'] = [

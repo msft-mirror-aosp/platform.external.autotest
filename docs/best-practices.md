@@ -289,6 +289,39 @@ More details, including a longer list of available methods, and more about how
 they work can be found in the Autotest documentation for autoserv and Autotest
 documentation for Host.
 
+### DEPENDENCIES and scheduling
+
+The `DEPENDENCIES` setting guarantees that if the test is scheduled in the lab,
+it will be assigned to a DUT which matches this field. Its important to note
+that the items set here must have a proper match in the swarming labels. If you
+are unsure, check the devices in swarming to see what labels exist.
+
+This field can be set in either a singular test control file via the steps
+documented in the `Servo-based tests` below, or in a suite control file.
+
+When the field is set in a suite control file, it will apply to all tests
+scheduled via that suite.
+
+Note: the syntax is slightly different for suites as the example below shows:
+
+```
+AUTHOR = 'bmahadev, tienchang, krisr'
+NAME = 'wifi_interop_wpa2'
+...
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['add_experimental'] = True
+args_dict['max_runtime_mins'] = 1440
+args_dict['timeout_mins'] = 1440
+args_dict['suite_dependencies'] = 'chaos_nightly'  # THIS FIELD
+args_dict['name'] = NAME
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)
+```
+
 ### Servo-based tests
 
 For server-side tests that use a servo-attached DUT, the host object has a

@@ -1,0 +1,21 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description
+# This is a suspending stress test. It suspends the system many times
+# when memory is low. It simulates the memory fragmentation by creating
+# many tabs and cycling tabs.
+
+NAME = "power_LowMemorySuspend.10hours"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "author": "Vovo Yang",
+    "bug_component": "b:167191",
+    "criteria": "Fails if system hang or reboot during this test",
+    "hw_agnostic": False,
+}
+TEST_TYPE = "client"
+EXTENDED_TIMEOUT = 36900  # 10 hours + 900 second guard
+
+job.run_test('power_LowMemorySuspend', total_suspend_duration=36000)

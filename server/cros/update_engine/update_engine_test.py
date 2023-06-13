@@ -1298,15 +1298,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         logging.info('build name is %s', build_name)
 
         # Install the matching build with quick provision.
-        cache_server_url = None
         if public_bucket:
             self._copy_quick_provision_to_dut()
             update_url = self._get_provision_url_on_public_bucket(
                     build_name, is_release_bucket=is_release_bucket,
                     with_minios=with_minios)
         else:
-            cache_server_url = self._get_cache_server_url()
-            update_url = os.path.join(cache_server_url, 'update', build_name)
+            update_url = os.path.join(self._cache_server_url, 'update',
+                                      build_name)
 
         # Moblab runs still use a devserver, so stage the artifacts.
         if lsbrelease_utils.is_moblab():
@@ -1343,7 +1342,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 host=self._host,
                 is_release_bucket=True,
                 public_bucket=public_bucket,
-                cache_server_url=cache_server_url,
+                cache_server_url=self._cache_server_url,
                 with_minios=with_minios,
                 with_firmware=with_firmware).run_provision()
 

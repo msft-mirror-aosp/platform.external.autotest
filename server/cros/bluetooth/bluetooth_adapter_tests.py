@@ -5186,6 +5186,11 @@ class BluetoothAdapterTests(test.test):
         alias_found = self.bluetooth_facade.btmon_find(expected_alias_str)
 
         # 3. Re-apply previous bluez alias as other tests expect default
+        #    If the original alias is None, we use an empty string instead.
+        #    Otherwise, set_adapter_alias() below would fail such that the
+        #    Alias property of the DUT remains to be the value of `alias`.
+        if orig_alias is None:
+            orig_alias = ''
         self.bluetooth_facade.set_adapter_alias(orig_alias)
 
         self.results = {'alias_found': alias_found}

@@ -2448,12 +2448,13 @@ class FirmwareTest(test.test):
             enable_testlab = False
 
         restore_cold_reset_select = None
-        if 'c2d2' in self.servo.get_servo_version():
+        # If servo uses gsc_ec_reset to hold the EC in reset, it won't be
+        # available when gsc is locked. Use gsc_reset to open ccd since that
+        # works with locked ccd.
+        if (self.servo.has_control('cold_reset_select')
+                    and self.servo.get('cold_reset_select') == 'gsc_ec_reset'):
             restore_cold_reset_select = self.servo.get('cold_reset_select')
-            # c2d2 uses ecrst for cold_reset, but that won't be accessible if
-            # gsc is locked. Use cr50_reset_odl to open ccd since that will be
-            # available.
-            self.servo.set('cold_reset_select', 'cr50_reset_odl')
+            self.servo.set('cold_reset_select', 'gsc_reset')
 
         # Try to use testlab open first, so we don't have to wait for the
         # physical presence check.

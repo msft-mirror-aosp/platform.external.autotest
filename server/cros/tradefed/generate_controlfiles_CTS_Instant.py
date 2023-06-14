@@ -123,8 +123,14 @@ CONFIG['ENABLE_DEFAULT_APPS'] = []
 _EJECT_REMOVABLE_DISK_COMMAND = (
     "\'lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject\'")
 
+# Mitigation attempt for b/281975410
+_SLEEP_60_COMMAND = "\'sleep 60\'"
+
 # Preconditions applicable to public and internal tests.
-CONFIG['PRECONDITION'] = {}
+CONFIG['PRECONDITION'] = {
+        'CtsViewTestCases': [_SLEEP_60_COMMAND],
+}
+
 CONFIG['LOGIN_PRECONDITION'] = {
     'CtsAppSecurityHostTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],
     'CtsJobSchedulerTestCases': [_EJECT_REMOVABLE_DISK_COMMAND],

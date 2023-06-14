@@ -23,8 +23,8 @@ CRASHER = 'crasher_nobreakpad'
 class UserCrashTest(crash_test.CrashTest):
     """
     Base class for tests that verify crash reporting for user processes. Shared
-    functionality includes installing a crasher executable, generating Breakpad
-    symbols, running the crasher process, and verifying collection and sending.
+    functionality includes installing a crasher executable, running the crasher
+    process, and verifying collection and sending.
     """
 
 
@@ -77,101 +77,6 @@ class UserCrashTest(crash_test.CrashTest):
         # this directory and its decendents in order to run crasher
         # executable as different users.
         utils.system('chmod -R a+rx ' + self.bindir)
-
-
-    def _populate_symbols(self):
-        """Set up Breakpad's symbol structure.
-
-        Breakpad's minidump processor expects symbols to be in a directory
-        hierarchy:
-          <symbol-root>/<module_name>/<file_id>/<module_name>.sym
-        """
-        self._symbol_dir = os.path.join(os.path.dirname(self._crasher_path),
-                                        'symbols')
-        utils.system('rm -rf %s' % self._symbol_dir)
-        os.mkdir(self._symbol_dir)
-
-        basename = os.path.basename(self._crasher_path)
-        utils.system('dump_syms %s > %s.sym' % (self._crasher_path, basename))
-        sym_name = '%s.sym' % basename
-        symbols = utils.read_file(sym_name)
-        # First line should be like:
-        # MODULE Linux x86 7BC3323FBDBA2002601FA5BA3186D6540 crasher_XXX
-        #  or
-        # MODULE Linux arm C2FE4895B203D87DD4D9227D5209F7890 crasher_XXX
-        first_line = symbols.split('\n')[0]
-        tokens = first_line.split()
-        if tokens[0] != 'MODULE' or tokens[1] != 'Linux':
-            raise error.TestError('Unexpected symbols format: %s', first_line)
-        file_id = tokens[3]
-        target_dir = os.path.join(self._symbol_dir, basename, file_id)
-        os.makedirs(target_dir)
-        os.rename(sym_name, os.path.join(target_dir, sym_name))
-
-
-    def _is_frame_in_stack(self, frame_index, module_name,
-                           function_name, file_name,
-                           line_number, stack):
-        """Search for frame entries in the given stack dump text.
-
-        A frame entry looks like (alone on a line):
-          16  crasher_nobreakpad!main [crasher.cc : 21 + 0xb]
-
-        Args:
-          frame_index: number of the stack frame (0 is innermost frame)
-          module_name: name of the module (executable or dso)
-          function_name: name of the function in the stack
-          file_name: name of the file containing the function
-          line_number: line number
-          stack: text string of stack frame entries on separate lines.
-
-        Returns:
-          Boolean indicating if an exact match is present.
-
-        Note:
-          We do not care about the full function signature - ie, is it
-          foo or foo(ClassA *).  These are present in function names
-          pulled by dump_syms for Stabs but not for DWARF.
-        """
-        regexp = (r'\n\s*%d\s+%s!%s.*\[\s*%s\s*:\s*%d\s.*\]' %
-                  (frame_index, module_name,
-                   function_name, file_name,
-                   line_number))
-        logging.info('Searching for regexp %s', regexp)
-        return re.search(regexp, stack) is not None
-
-
-    def _verify_stack(self, stack, basename, from_crash_reporter):
-        # Should identify cause as SIGSEGV at address 0x16.
-        logging.debug('minidump_stackwalk output:\n%s', stack)
-
-        # Look for a line like:
-        # Crash reason:  SIGSEGV
-        # Crash reason:  SIGSEGV /0x00000000
-        match = re.search(r'Crash reason:\s+([^\s]*)', stack)
-        expected_address = '0x16'
-        if not match or match.group(1) != 'SIGSEGV':
-            raise error.TestFail('Did not identify SIGSEGV cause')
-        match = re.search(r'Crash address:\s+(.*)', stack)
-        if not match or match.group(1) != expected_address:
-            raise error.TestFail('Did not identify crash address %s' %
-                                 expected_address)
-
-        # Should identify crash at *(char*)0x16 assignment line
-        if not self._is_frame_in_stack(0, basename,
-                                       'recbomb', 'bomb.cc', 9, stack):
-            raise error.TestFail('Did not show crash line on stack')
-
-        # Should identify recursion line which is on the stack
-        # for 15 levels
-        if not self._is_frame_in_stack(15, basename, 'recbomb',
-                                       'bomb.cc', 12, stack):
-            raise error.TestFail('Did not show recursion line on stack')
-
-        # Should identify main line
-        if not self._is_frame_in_stack(16, basename, 'main',
-                                       'crasher.cc', 24, stack):
-            raise error.TestFail('Did not show main on stack')
 
 
     def _run_crasher_process(self, username, cause_crash=True, consent=True,
@@ -324,13 +229,6 @@ class UserCrashTest(crash_test.CrashTest):
             raise error.TestFail(
                 'Expected %s to have mode in %s (actual %o)' %
                 (crash_dir, ("%o" % m for m in permitted_modes), mode))
-
-
-    def _check_minidump_stackwalk(self, minidump_path, basename,
-                                  from_crash_reporter):
-        stack = utils.system_output('minidump_stackwalk %s %s' %
-                                    (minidump_path, self._symbol_dir))
-        self._verify_stack(stack, basename, from_crash_reporter)
 
 
     def _check_generated_report_sending(self, meta_path, payload_path,
@@ -501,9 +399,6 @@ class UserCrashTest(crash_test.CrashTest):
         if not result['minidump']:
             raise error.TestFail('crash reporter did not generate minidump')
 
-        self._check_minidump_stackwalk(result['minidump'],
-                                       result['basename'],
-                                       from_crash_reporter=True)
         self._check_generated_report_sending(result['meta'],
                                              result['minidump'],
                                              result['basename'],

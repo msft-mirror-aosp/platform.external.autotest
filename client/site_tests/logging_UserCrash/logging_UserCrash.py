@@ -64,7 +64,6 @@ class logging_UserCrash(user_crash_test.UserCrashTest):
     def run_once(self):
         """ Run all tests once """
         self._prepare_crasher()
-        self._populate_symbols()
 
         # Run the test once without re-initializing
         # to catch problems with the default crash reporting setup

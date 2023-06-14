@@ -35,8 +35,10 @@ Chromium builders create Ash Chrome binaries and artifacts and upload to GCS.
 Ash Chrome binaries are in turn provisioned to the DUT through TLS and are
 used in Tast tests.
 
-This control file expects tast_expr or tast_expr_b64 argument to determine
-the set of tast tests to be executed.
+This control file expects tast_expr_file and tast_expr_key arguments
+to determine the set of tast tests to be executed.
+If these are not set or no key match in the file, tast_expr or tast_expr_b64 argument
+will be used instead.
 
 Example for tast_expr: test_that --args="tast_expr=nearbyshare.SmokeMultiDUTUI"
 
@@ -60,7 +62,8 @@ def run(machine):
     # Setup DUT to use the chrome binary from TLS
     chrome_sideloader.setup_host(host, CHROME_DIR, CHROME_MOUNT_POINT)
 
-    tast_expr = chrome_sideloader.get_tast_expr(args_dict)
+    tast_expr = (chrome_sideloader.get_tast_expr_from_file(host, args_dict, '%s/' % job.resultdir, CHROME_DIR)
+                 or chrome_sideloader.get_tast_expr(args_dict))
     total_shards=args_dict.get('total_shards', 1)
     shard_index=args_dict.get('shard_index', 0)
     max_run_sec=int(args_dict.get('max_run_sec', 21600)) # 6 hours.

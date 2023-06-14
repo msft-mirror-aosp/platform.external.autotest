@@ -57,9 +57,6 @@ CONFIG['CONTROLFILE_WRITE_EXTRA'] = True
 _COLLECT = 'tradefed-run-collect-tests-only-internal'
 _PUBLIC_COLLECT = 'tradefed-run-collect-tests-only'
 
-# Test module name for WM presubmit tests.
-_WM_PRESUBMIT = 'wm-presubmit'
-
 CONFIG['LAB_DEPENDENCY'] = {
     'x86': ['cts_abi_x86']
 }
@@ -96,7 +93,6 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsWidgetTestCases': 1.5,
         _COLLECT: 2.5,
         _PUBLIC_COLLECT: 2.5,
-        _WM_PRESUBMIT: 0.2,
 }
 
 # Any test that runs as part as blocking BVT needs to be stable and fast. For
@@ -136,14 +132,6 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
         'CtsViewTestCasesz',
         'zzzzz'  # A bookend to simplify algorithm.
 ])
-
-CONFIG['SMOKE'] = [
-    _WM_PRESUBMIT,
-]
-
-CONFIG['BVT_ARC'] = [
-    'CtsAccelerationTestCases',
-]
 
 CONFIG['BVT_PERBUILD'] = [
     'CtsAccountManagerTestCases',
@@ -405,9 +393,6 @@ CONFIG['EXTRA_MODULES'] = {
         },
         'CtsMediaTestCases': {
                 'CtsMediaTestCases.audio': ['suite:arc-cts'],
-        },
-        _WM_PRESUBMIT: {
-                _WM_PRESUBMIT: [],
         },
 }
 
@@ -773,31 +758,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
         ],
         'CtsSensorTestCases.faft':
         ['--include-filter', 'CtsSenorTestCases', '--abi', 'armeabi-v7a'],
-        _WM_PRESUBMIT: [
-                '--include-filter',
-                'CtsActivityManagerDeviceSdk25TestCases',
-                '--include-filter',
-                'CtsActivityManagerDeviceTestCases',
-                '--include-filter',
-                'CtsAppTestCases android.app.cts.TaskDescriptionTest',
-                '--include-filter',
-                'CtsWindowManagerDeviceTestCases',
-                '--test-arg',
-                ('com.android.compatibility.common.tradefed.testtype.JarHostTest:'
-                 'include-annotation:android.platform.test.annotations.Presubmit'
-                 ),
-                '--test-arg',
-                ('com.android.tradefed.testtype.AndroidJUnitTest:'
-                 'include-annotation:android.platform.test.annotations.Presubmit'
-                 ),
-                '--test-arg',
-                ('com.android.tradefed.testtype.HostTest:'
-                 'include-annotation:android.platform.test.annotations.Presubmit'
-                 ),
-                '--test-arg',
-                ('com.android.tradefed.testtype.AndroidJUnitTest:'
-                 'exclude-annotation:androidx.test.filters.FlakyTest'),
-        ],
 }
 
 CONFIG['EXTRA_ATTRIBUTES'] = {

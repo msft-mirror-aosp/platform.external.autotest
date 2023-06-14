@@ -177,10 +177,6 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
         'zzzzz'  # A bookend to simplify algorithm.
 ])
 
-CONFIG['SMOKE'] = []
-
-CONFIG['BVT_ARC'] = []
-
 CONFIG['BVT_PERBUILD'] = [
         'CtsAccelerationTestCases',
         'CtsMidiTestCases',

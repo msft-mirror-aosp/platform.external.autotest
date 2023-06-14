@@ -11,9 +11,9 @@ METADATA = {
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts, suite:bvt-arc'
+ATTRIBUTES = 'suite:arc-cts'
 DEPENDENCIES = 'arc'
-JOB_RETRIES = 2
+JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
@@ -25,7 +25,6 @@ def run_TS(machine):
         'cheets_CTS_P',
         hosts=host_list,
         iterations=1,
-        max_retry=3,
         tag='internal.arm.CtsAccelerationTestCases',
         test_name='cheets_CTS_P.internal.arm.CtsAccelerationTestCases',
         run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsAccelerationTestCases', '--logcat-on-failure', '--dynamic-config-url='],
@@ -34,6 +33,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='DEV',
-        timeout=720)
+        timeout=3600)
 
 parallel_simple(run_TS, machines)

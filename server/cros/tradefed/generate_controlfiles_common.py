@@ -411,9 +411,6 @@ def get_suites(modules,
         if module in CONFIG['EXTRA_ATTRIBUTES']:
             # Special cases come with their own suite definitions.
             suites |= set(CONFIG['EXTRA_ATTRIBUTES'][module])
-        if module in CONFIG['SMOKE'] and (abi == 'arm' or abi == ''):
-            # Handle VMTest by adding a few jobs to suite:smoke.
-            suites.add('suite:smoke')
         # We don't want to include max resolution tests or tablet mode tests in non-VM suites.
         if vm_force_max_resolution or vm_table_mode:
             suites.clear()
@@ -432,13 +429,8 @@ def get_suites(modules,
                 has_unstable_vm_modules = True
         else:
             nonvm_modules.append(module)
-        # One or two modules hould be in suite:bvt-arc to cover CQ/PFQ. A few
-        # spare/fast modules can run in suite:bvt-perbuild in case we need a
-        # replacement for the module in suite:bvt-arc (integration test for
-        # cheets_CTS only, not a correctness test for CTS content).
-        if module in CONFIG['BVT_ARC'] and (abi == 'arm' or abi == ''):
-            suites.add('suite:bvt-arc')
-        elif module in CONFIG['BVT_PERBUILD'] and (abi == 'arm' or abi == ''):
+        # A few fast modules can run in suite:bvt-perbuild.
+        if module in CONFIG['BVT_PERBUILD'] and (abi == 'arm' or abi == ''):
             suites.add('suite:bvt-perbuild')
 
     if hardware_suite:
@@ -820,9 +812,8 @@ def _format_modules_cmd(is_public,
 
     if CONFIG['TRADEFED_DISABLE_REBOOT']:
         cmd.append('--disable-reboot')
-    if (CONFIG['TRADEFED_MAY_SKIP_DEVICE_INFO'] and
-        not (modules.intersection(CONFIG['BVT_ARC'] + CONFIG['SMOKE'] +
-             CONFIG['NEEDS_DEVICE_INFO']))):
+    if (CONFIG['TRADEFED_MAY_SKIP_DEVICE_INFO']
+                and not modules.intersection(CONFIG['NEEDS_DEVICE_INFO'])):
         cmd.append('--skip-device-info')
     if abi_to_run:
         cmd += ['--abi', abi_to_run]

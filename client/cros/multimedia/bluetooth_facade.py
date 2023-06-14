@@ -346,6 +346,7 @@ class BluetoothBaseFacadeLocal(object):
             # MediaTek chipsets
             'Mediatek-MTK7921-USB': [(('0x14c3', '0x7961'), 'USB')],
             'Mediatek-MTK7921-SDIO': [(('0x037a', '0x7901'), 'SDIO')],
+            'Mediatek-MTK7922-USB': [(('0x14c3', '0x0616'), 'USB')],
 
             # Marvell chipsets
             'MVL-8897': [(('0x02df', '0x912d'), 'SDIO')],

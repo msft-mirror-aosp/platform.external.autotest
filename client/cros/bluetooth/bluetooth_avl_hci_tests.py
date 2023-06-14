@@ -105,7 +105,8 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     CHIPSETS_SUPPORT_BQR_ONLY = [
             'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
             'Realtek-RTL8852A-USB', 'Realtek-RTL8852C-USB',
-            'Mediatek-MTK7921-USB', 'Mediatek-MTK7921-SDIO'
+            'Mediatek-MTK7921-USB', 'Mediatek-MTK7921-SDIO',
+            'Mediatek-MTK7922-USB'
     ]
 
     def initialize(self):

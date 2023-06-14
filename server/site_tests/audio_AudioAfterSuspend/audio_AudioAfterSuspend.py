@@ -42,15 +42,15 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
 
         """
         logging.debug('Plugging' if plug_state else 'Unplugging')
-        jack_plugger = self.audio_board.get_jack_plugger()
 
-        # It is not required for the test to have jack plugger.
+        # It is not required for the test to have audio board or jack plugger.
         # We'll ignore the plug/unplug action and assume the target device
         # is all time plugged/unplugged if there is no jack plugger.
-        if jack_plugger is None:
-            logging.debug('Jack plugger is NOT present!')
+        if self.audio_board is None or self.audio_board.get_jack_plugger() is None:
+            logging.debug('Audio Board or Jack plugger is NOT present!')
             return
 
+        jack_plugger = self.audio_board.get_jack_plugger()
         if plug_state:
             jack_plugger.plug()
             audio_test_utils.check_plugged_nodes_contain(self.audio_facade,

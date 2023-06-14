@@ -5,7 +5,7 @@
 
 import logging
 
-# from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
 from autotest_lib.server.cros.update_engine import update_engine_test
@@ -57,6 +57,14 @@ class autoupdate_WithFirmware(update_engine_test.UpdateEngineTest):
         logging.info('Pre-update FW version is %s',
                      self.get_current_fw_version())
 
+        # Log in on the source version to ensure we can still log in after
+        # updating the OS and firmware.
+        self._run_client_test_and_check_result(
+                self._LOGIN_TEST,
+                username=self._LOGIN_TEST_USERNAME,
+                password=self._LOGIN_TEST_PASSWORD,
+                tag='before')
+
         # Perform the update.
         with nebraska_wrapper.NebraskaWrapper(
                 host=self._host,
@@ -85,3 +93,15 @@ class autoupdate_WithFirmware(update_engine_test.UpdateEngineTest):
         logging.info('Actual Post-update FW version is %s', actual)
         if actual != expected:
             raise error.TestFail('The firmware did not update')
+
+        # Bring stateful version to the same version as rootfs.
+        logging.info('Restoring stateful partition to target version')
+        self._update_stateful()
+
+        # Check that we can log back in with the existing user account.
+        self._run_client_test_and_check_result(
+                self._LOGIN_TEST,
+                tag='after',
+                username=self._LOGIN_TEST_USERNAME,
+                password=self._LOGIN_TEST_PASSWORD,
+                dont_override_profile=True)

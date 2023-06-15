@@ -14,7 +14,8 @@ METADATA = {
 }
 TIME = "SHORT"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:cellular_au"
+# Disable due to b/190648331, full payload tests exceed autotest SSH timeout.
+# ATTRIBUTES = "suite:cellular_au"
 DEPENDENCIES = "carrier:verizon"
 DOC = """
 This tests autoupdate over a cellular connection.

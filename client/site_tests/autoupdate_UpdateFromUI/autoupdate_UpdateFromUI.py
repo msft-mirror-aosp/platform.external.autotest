@@ -84,7 +84,7 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
                 self._take_screenshot('before_check_for_updates.png')
                 request_update_js = '''
                     async function checkForUpdate() {
-                        return await import('chrome://os-settings/chromeos/os_settings.js').then(m =>
+                        return await import('chrome://os-settings/os_settings.js').then(m =>
                           m.AboutPageBrowserProxyImpl.getInstance().requestUpdate());
                     }
                     checkForUpdate();

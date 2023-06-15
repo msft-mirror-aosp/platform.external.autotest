@@ -80,7 +80,7 @@ class autoupdate_EOL(update_engine_test.UpdateEngineTest):
         tab.WaitForDocumentReadyStateToBeComplete()
         eol_js = '''
             async function getEOL() {
-                return await import('chrome://os-settings/chromeos/os_settings.js').then(m =>
+                return await import('chrome://os-settings/os_settings.js').then(m =>
                     m.AboutPageBrowserProxyImpl.getInstance().getEndOfLifeInfo());
             }
             getEOL();

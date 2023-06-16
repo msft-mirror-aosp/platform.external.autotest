@@ -67,8 +67,6 @@ class ChromeLogin(object):
         cmd += ' --no-arc-syncs'
         # Disable popup notifications to stabilize the tests.
         cmd += ' --no-popup-notification'
-        # (b/280347237) Temporary change to enable Privacy Hub feature
-        cmd += ' --feature=CrosPrivacyHub'
         # Always disable external storage for ARC
         cmd += ' --disable-feature=ArcExternalStorageAccess'
         # Toggle the translation from houdini to ndk

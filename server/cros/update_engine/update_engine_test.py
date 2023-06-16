@@ -125,7 +125,14 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Cache server URL to use for the test, if running on a lab DUT.
         cache_endpoint = kwargs.get('cache_endpoint')
         logging.info('cache_endpoint received: %s', cache_endpoint)
-        self._cache_server_url = cache_endpoint or self._get_cache_server_url()
+        if cache_endpoint:
+            # The cache_endpoint arg doesn't contain the leading http://, and
+            # there's a weird dependency on that somewhere in provisioner.py.
+            self._cache_server_url = (cache_endpoint if re.match(
+                    r'^https?://', cache_endpoint) else 'http://' +
+                                      cache_endpoint)
+        else:
+            self._cache_server_url = self._get_cache_server_url()
 
         # Task IDs for caching requests in the lab.
         self._swarming_task_id = os.environ.get('SWARMING_TASK_ID', 'None')

@@ -1,0 +1,44 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'The ChromiumOS Authors'
+NAME = 'wifi_perf_openwrt_flaky'
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    'criteria': 'Measure WiFi performance running on OpenWrt router',
+    'hw_agnostic': False,
+}
+TIME = 'LONG'
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = 'Server'
+
+# The suite is a placeholder for new OpenWRT perf WiFi Tast tests.
+#
+# It is the landing suite for new or ported WiFi Tast tests. After a test is
+# stable, the test can be moved to suite:wifi_perf_openwrt.
+#
+# Refer to https://goto.google.com/cros-wifi-tast-suites for detail.
+#
+# @param build: The name of the image to test.
+#          Ex: x86-mario-release/R17-1412.33.0-a1-b29
+# @param board: The board to test on. Ex: x86-mario
+# @param pool: The pool of machines to utilize for scheduling. If pool=None
+#             board is used.
+# @param check_hosts: require appropriate live hosts to exist in the lab.
+# @param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
+# @param file_bugs: If True your suite will file bugs on failures.
+# @param max_run_time: Amount of time each test should run in minutes.
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['add_experimental'] = True
+args_dict['max_runtime_mins'] = 120
+args_dict['name'] = NAME
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

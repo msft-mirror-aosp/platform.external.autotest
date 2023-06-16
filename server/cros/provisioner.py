@@ -414,17 +414,7 @@ class ChromiumOSProvisioner(object):
                  if self._is_release_bucket else 'chromeos-image-archive'))
 
         # Check if GS_Cache server is enabled on the server.
-        swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
-        BBID = os.getenv('BUILD_BUCKET_ID', default='None')
-
-        curl_command = 'curl -H X-SWARMING-TASK-ID:%s -H X-BBID:%s -s -o /dev/null %s' % (
-                swarming_id, BBID, gs_cache_url)
-
-        logging.debug(
-                "ChromiumOSProvisioner::_quick_provision_with_gs_cache curl_command: %s",
-                curl_command)
-
-        self._run(curl_command)
+        self._run('curl -s -o /dev/null %s' % gs_cache_url)
         with_minios = ""
         if self._with_minios:
             with_minios = " --minios"

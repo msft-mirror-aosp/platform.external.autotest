@@ -32,7 +32,7 @@ class bluetooth_WiFiCoexHealth(BluetoothAdapterQuickTests):
             # name is dut.cros.
             wifi_context = wifi_test_context_manager.WiFiTestContextManager(
                     'bluetooth_WiFiCoexHealth.independent_reset_test',
-                    self.host, {}, self.debugdir)
+                    self.host, self.args_dict, self.debugdir)
             wifi_context.setup(include_pcap=False, include_attenuator=False)
 
             # Connect to the AP and verify the connection with ping.
@@ -88,6 +88,7 @@ class bluetooth_WiFiCoexHealth(BluetoothAdapterQuickTests):
     def run_once(self,
                  host,
                  num_iterations=1,
+                 args_dict=None,
                  test_name=None,
                  peer_required=False,
                  flag='Quick Health',
@@ -105,6 +106,7 @@ class bluetooth_WiFiCoexHealth(BluetoothAdapterQuickTests):
                              use_btpeer=peer_required,
                              flag=flag,
                              start_browser=False,
+                             args_dict=args_dict,
                              floss=floss)
         self.wifi_coex_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

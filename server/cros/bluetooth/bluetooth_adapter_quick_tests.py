@@ -137,6 +137,7 @@ class BluetoothAdapterQuickTests(
         self.local_host_ip = None
         self.llprivacy = llprivacy
         self.floss_lm_quirk = floss_lm_quirk
+        self.args_dict = args_dict if args_dict else {}
 
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)

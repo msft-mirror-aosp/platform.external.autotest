@@ -193,10 +193,6 @@ CONFIG['CAMERA_MODULES'] = [
        'CtsCameraTestCases',
 ]
 
-CONFIG['HARDWARE_DEPENDENT_MODULES'] = CONFIG['CAMERA_MODULES'] + [
-        'CtsSensorTestCases', 'CtsBluetoothTestCases'
-]
-
 # Specifies if the VM suite should include only a single ABI. If unspecified,
 # the suite includes both arm/x86 modules.
 CONFIG['VM_RUN_SINGLE_ABI'] = 'arm'

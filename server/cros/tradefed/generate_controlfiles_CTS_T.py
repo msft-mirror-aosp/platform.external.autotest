@@ -134,12 +134,6 @@ CONFIG['NEEDS_POWER_CYCLE'] = [
         'CtsSensorTestCases',
 ]
 
-CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
-        'CtsSensorTestCases',
-        'CtsCameraTestCases',
-        'CtsBluetoothTestCases',
-]
-
 # Modules that are known to download and/or push media file assets.
 CONFIG['MEDIA_MODULES'] = [
         'CtsMediaStressTestCases',

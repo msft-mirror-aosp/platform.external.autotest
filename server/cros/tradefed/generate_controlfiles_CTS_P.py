@@ -155,12 +155,6 @@ CONFIG['NEEDS_POWER_CYCLE'] = [
     'CtsBluetoothTestCases',
 ]
 
-CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
-    'CtsSensorTestCases',
-    'CtsCameraTestCases',
-    'CtsBluetoothTestCases',
-]
-
 CONFIG['CAMERA_MODULES'] = [
        # CONTAINS ONLY CAMERA TESTS
        'CtsCameraTestCases',

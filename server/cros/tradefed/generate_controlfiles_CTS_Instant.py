@@ -90,27 +90,10 @@ CONFIG['QUAL_BOOKMARKS'] = [
         'zzzzz'  # A bookend to simplify algorithm.
 ]
 
-CONFIG['SMOKE'] = [
-    # TODO(b/113641546): add to CQ/PFQ when it's ready.
-    # 'CtsAccountManagerTestCases',
-]
-
-CONFIG['BVT_ARC'] = [
-    # TODO(b/113641546): add to CQ/PFQ when it's ready.
-    # 'CtsPermission2TestCases',
-]
-
 CONFIG['BVT_PERBUILD'] = [
-    'CtsAccountManagerTestCases',
-    'CtsPermission2TestCases',
-    'CtsUiAutomationTestCases',
-    'CtsUsbTests',
 ]
 
 CONFIG['NEEDS_POWER_CYCLE'] = [
-]
-
-CONFIG['HARDWARE_DEPENDENT_MODULES'] = [
 ]
 
 # Modules that are known to download and/or push media file assets.

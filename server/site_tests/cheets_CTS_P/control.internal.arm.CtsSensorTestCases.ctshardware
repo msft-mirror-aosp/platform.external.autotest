@@ -25,7 +25,6 @@ def run_TS(machine):
         'cheets_CTS_P',
         hosts=host_list,
         iterations=1,
-        max_retry=30,
         tag='internal.arm.CtsSensorTestCases.ctshardware',
         test_name='cheets_CTS_P.internal.arm.CtsSensorTestCases.ctshardware',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsSensorTestCases', '--logcat-on-failure', '--dynamic-config-url='],

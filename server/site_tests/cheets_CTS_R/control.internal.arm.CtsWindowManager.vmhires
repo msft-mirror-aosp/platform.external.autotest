@@ -25,7 +25,6 @@ def run_TS(machine):
         'cheets_CTS_R',
         hosts=host_list,
         iterations=1,
-        max_retry=10,
         vm_force_max_resolution=True,
         tag='internal.arm.CtsWindowManager.vmhires',
         test_name='cheets_CTS_R.internal.arm.CtsWindowManager.vmhires',

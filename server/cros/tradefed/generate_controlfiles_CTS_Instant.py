@@ -133,12 +133,6 @@ CONFIG['PUBLIC_DEPENDENCIES'] = {
 # This information is changed based on regular analysis of the failure rate on
 # partner moblabs.
 CONFIG['PUBLIC_MODULE_RETRY_COUNT'] = {
-    'CtsNetTestCases': 10,
-    'CtsSecurityHostTestCases': 10,
-    'CtsUsageStatsTestCases': 10,
-    'CtsFileSystemTestCases': 10,
-    'CtsBluetoothTestCases': 10,
-    _PUBLIC_COLLECT: 0,
 }
 
 CONFIG['PUBLIC_OVERRIDE_TEST_PRIORITY'] = {

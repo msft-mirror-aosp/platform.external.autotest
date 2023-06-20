@@ -441,6 +441,7 @@ class LineStatPlaceholder(DevStat):
     """
     def __init__(self):
         self.online = True
+        self.status = None
 
 
     def update(self):

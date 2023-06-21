@@ -722,19 +722,10 @@ RPC_CATEGORIES = [
                                 "expected_return_type": dict
                         },
                         {
-                                "method_name":
-                                "set_write_protect_region",
-                                "passing_args": [("WP_RO", ), ("WP_RO", None),
-                                                 ("WP_RO", True),
-                                                 ("WP_RO", False)],
-                                "failing_args":
-                                [NO_ARGS, (None, ), ("WP_RO", None, "EXTRA")],
-                        },
-                        {
                                 "method_name": "get_write_protect_status",
                                 "passing_args": [NO_ARGS],
                                 "failing_args": [ONE_INT_ARG, ONE_STR_ARG],
-                                "expected_return_type": dict
+                                "expected_return_type": bool
                         },
                         {
                                 "method_name":

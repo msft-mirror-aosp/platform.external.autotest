@@ -61,7 +61,7 @@ class firmware_FWupdateThenSleep(FirmwareTest):
         if self.faft_config.ap_access_ec_flash:
             self._setup_ec_write_protect(False)
         self.set_ap_write_protect_and_reboot(False)
-        self.faft_client.bios.set_write_protect_range(0, 0, False)
+        self.faft_client.bios.set_write_protect(False)
 
         if battery_only and self.have_power_control:
             self.set_servo_v4_role_to_snk()
@@ -80,11 +80,7 @@ class firmware_FWupdateThenSleep(FirmwareTest):
 
         try:
             # Restore the old write-protection value at the end of the test.
-            if self._original_sw_wp:
-                self.faft_client.bios.set_write_protect_range(
-                        self._original_sw_wp['start'],
-                        self._original_sw_wp['length'],
-                        self._original_sw_wp['enabled'])
+            self.faft_client.bios.set_write_protect(self._original_sw_wp)
         except (EnvironmentError, six.moves.xmlrpc_client.Fault,
                 error.AutoservError, error.TestBaseException):
             logging.error("Problem restoring SW write-protect:", exc_info=True)

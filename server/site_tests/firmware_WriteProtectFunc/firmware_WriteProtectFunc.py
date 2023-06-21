@@ -34,10 +34,10 @@ class firmware_WriteProtectFunc(FirmwareTest):
         self._flashrom_targets = {BIOS: 'host', EC: 'ec'}
         self._original_sw_wps = {}
         for target in self._targets:
-            sw_wp_dict = self._rpcs[target].get_write_protect_status()
+            sw_wp = self._rpcs[target].get_write_protect_status()
             logging.debug("self._rpcs[%s].get_write_protect_status() = %s",
-                          target, sw_wp_dict)
-            self._original_sw_wps[target] = sw_wp_dict['enabled']
+                          target, sw_wp)
+            self._original_sw_wps[target] = sw_wp
         self._original_hw_wp = 'on' in self.servo.get('fw_wp_state')
         self.backup_firmware()
         self.work_path = self.faft_client.system.create_temp_dir(
@@ -85,7 +85,7 @@ class firmware_WriteProtectFunc(FirmwareTest):
         if target == BIOS:
             # Unlock registers to alter the region/range
             self.set_ap_write_protect_and_reboot(False)
-            self.faft_client.bios.set_write_protect_region('WP_RO', enable)
+            self.faft_client.bios.set_write_protect(enable)
             if enable:
                 self.set_ap_write_protect_and_reboot(True)
         elif target == EC:
@@ -150,10 +150,10 @@ class firmware_WriteProtectFunc(FirmwareTest):
 
         # Check WP is properly enabled at the start
         for target in self._targets:
-            sw_wp_dict = self._rpcs[target].get_write_protect_status()
+            sw_wp = self._rpcs[target].get_write_protect_status()
             logging.debug("self._rpcs[%s].get_write_protect_status() = %s",
-                          target, sw_wp_dict)
-            if not sw_wp_dict['enabled']:
+                          target, sw_wp)
+            if not sw_wp:
                 raise error.TestFail('Failed to enable %s SW WP at '
                                      'test start' % target.upper())
 
@@ -170,10 +170,10 @@ class firmware_WriteProtectFunc(FirmwareTest):
             flashrom_return_code = self.faft_client.system.run_shell_command_get_status(
                     'flashrom -p %s --wp-disable' %
                     self._flashrom_targets[target])
-            sw_wp_dict = self._rpcs[target].get_write_protect_status()
+            sw_wp = self._rpcs[target].get_write_protect_status()
             logging.debug("self._rpcs[%s].get_write_protect_status() = %s",
-                          target, sw_wp_dict)
-            if not flashrom_return_code or not sw_wp_dict['enabled']:
+                          target, sw_wp)
+            if not flashrom_return_code or not sw_wp:
                 raise error.TestFail(
                         'Hardware write protection looks broken.  Software write '
                         'protection was mutated while hardware write protection '
@@ -184,8 +184,8 @@ class firmware_WriteProtectFunc(FirmwareTest):
         for (reboot_name, reboot_method) in reboots:
             self.switcher.mode_aware_reboot('custom', reboot_method)
             for target in self._targets:
-                sw_wp_dict = self._rpcs[target].get_write_protect_status()
-                if not sw_wp_dict['enabled']:
+                sw_wp = self._rpcs[target].get_write_protect_status()
+                if not sw_wp:
                     raise error.TestFail('%s SW WP can not stay preserved '
                                          'accross %s' %
                                          (target.upper(), reboot_name))

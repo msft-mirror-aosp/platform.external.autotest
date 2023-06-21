@@ -58,7 +58,7 @@ class firmware_PDProtocol(FirmwareTest):
                      str(self.original_dev_boot_usb))
 
         self.hw_wp = self.servo.get('fw_wp_state')
-        self.sw_wp = self.faft_client.ec.get_write_protect_status()['enabled']
+        self.sw_wp = self.faft_client.ec.get_write_protect_status()
         logging.info('hw_wp=%s, sw_wp=%s', self.hw_wp, self.sw_wp)
 
     def cleanup(self):

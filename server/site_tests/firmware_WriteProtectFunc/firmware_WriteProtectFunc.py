@@ -85,9 +85,11 @@ class firmware_WriteProtectFunc(FirmwareTest):
         if target == BIOS:
             # Unlock registers to alter the region/range
             self.set_ap_write_protect_and_reboot(False)
-            self.faft_client.bios.set_write_protect_region('WP_RO', enable)
             if enable:
+                self.faft_client.bios.enable_write_protect()
                 self.set_ap_write_protect_and_reboot(True)
+            else:
+                self.faft_client.bios.disable_write_protect()
         elif target == EC:
             self.switcher.mode_aware_reboot('custom',
                     lambda:self.set_ec_write_protect_and_reboot(enable))

@@ -5,14 +5,14 @@
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'cros-engprod-muc'
-NAME = 'tast.hardware-shard-2'
+NAME = 'tast.duop-hardware-shard-2'
 METADATA = {
         "contacts": ["kamilszarek@google.com", "cros-engprod-muc@google.com"],
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:hardware'
+ATTRIBUTES = 'suite:duop_hardware_shard_2'
 MAX_RESULT_SIZE_KB = 512 * 1024
 PY_VERSION = 3
 JOB_RETRIES = 0

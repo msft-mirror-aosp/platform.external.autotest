@@ -1,0 +1,30 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'hardware_MemoryThroughput.memory_qual'
+METADATA = {
+    "contacts": ["chromeos-memory-team@google.com"],
+    "bug_component": "b:167286",
+    "criteria": "Memory throughput should meet the minimal requirement",
+}
+TIME = 'SHORT'
+TEST_CLASS = 'hardware'
+TEST_TYPE = 'client'
+ATTRIBUTES = "suite:memory_qual2"
+PY_VERSION = 3
+
+DOC = """
+This uses the lmbench 3 bw_mem benchmark for measuring read throughput
+"""
+
+# The size of the accessed memory should be large enough to ensure it's
+# not measuring cache throughput.
+#
+# The memory throughput requirement is 25 GB/s. The test fails if the
+# memory throughput is less than the requirement.
+job.run_test('hardware_MemoryThroughput',
+              tag='memory_qual', test='rd', warmup=100,
+              num_iterations=5, parallel=4,
+              sizes=[67108864,], criteria=25*1024)
+

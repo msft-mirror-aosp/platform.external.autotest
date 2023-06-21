@@ -1031,26 +1031,28 @@ def get_controlfile_content(combined,
         suites = get_suites(modules, abi, is_public, camera_facing,
                             hardware_suite, vm_force_max_resolution,
                             vm_tablet_mode)
+    suites = suites.copy()
+
     # while creating the control files, check if this is meant for qualification suite. i.e. arc-cts-qual
     # if it is meant for qualification suite, also add new suite ar-cts-camera-opendut which is meant for
     # qualification purposes when cameraboxes fail.
     # if suites has arc-cts-qual and module is cameramodule then add arc-cts-camera-opendut
-    if (set(CONFIG.get('QUAL_SUITE_NAMES',[])) & set(suites)) and (set(get_camera_modules()) & set(modules)):
-        suites = suites.copy()
+    is_qual = bool(set(CONFIG.get('QUAL_SUITE_NAMES', [])) & set(suites))
+    is_internal = bool(
+            set(CONFIG.get('INTERNAL_SUITE_NAMES', [])) & set(suites))
+
+    if is_qual and (set(get_camera_modules()) & set(modules)):
         suites.append(CONFIG.get('CAMERA_DUT_SUITE_NAME'))
         for qual_suite in CONFIG.get('QUAL_SUITE_NAMES', []):
             suites.remove(qual_suite)
-    if (set(CONFIG.get('INTERNAL_SUITE_NAMES', []))
-                & set(suites)) and (set(get_camera_modules()) & set(modules)):
-        suites = suites.copy()
+        is_qual = False
+    if is_internal and (set(get_camera_modules()) & set(modules)):
         for regression_suite in CONFIG.get('INTERNAL_SUITE_NAMES', []):
             suites.remove(regression_suite)
-    attributes = ', '.join(suites)
+        is_internal = False
 
     #Adding shards to arc-cts-qual for automation purposes.
-    if (set(CONFIG.get('QUAL_SUITE_NAMES', [])) & set(suites)) and (
-            set(get_distributed_qual_modules()) & set(modules)):
-        suites = suites.copy()
+    if is_qual and (set(get_distributed_qual_modules()) & set(modules)):
         for module in CONFIG['DISTRIBUTED_QUAL_SHARD']:
             for res in set(modules):
                 if res == module:
@@ -1058,6 +1060,14 @@ def get_controlfile_content(combined,
                     suites.append(
                             CONFIG.get('DISTRIBUTED_QUAL_SUITE') +
                             str(CONFIG['DISTRIBUTED_QUAL_SHARD'].get(module)))
+
+    # TODO(shaochuan): implement suite split for qual
+    if 'SPLIT_SUITES' in CONFIG and is_internal and not is_qual:
+        test = combined + (f'.{abi_bits}' if abi_bits else '')
+        suites.append(
+                get_suite_split_shard(CONFIG['SPLIT_SUITES'], is_qual, test,
+                                      abi))
+
     attributes = ', '.join(suites)
     uri = {
             SourceType.MOBLAB: None,
@@ -1630,11 +1640,76 @@ def write_extra_camera_controlfiles(abi, revision, build, uri, source_type):
             f.write(content)
 
 
+def calculate_suite_split_shards(config):
+    """Pre-calculate shards for suite splitting based on runtime hint.
+
+    Args:
+        config: CONFIG['SPLIT_SUITES']
+    """
+    max_runtime = config['MAX_RUNTIME_SECS']
+    per_test_overhead = config['PER_TEST_OVERHEAD_SECS']
+
+    calculated = {}
+    cur_shard = 1
+    cur_total_runtime = 0
+    long_total_runtime = 0
+    for test, runtime in sorted(config['RUNTIME_HINT_SECS'].items()):
+        runtime += per_test_overhead
+        if runtime > max_runtime:
+            # Mark the test as a "long" test
+            logging.info('Marking long test: %s (%.1fh)', test, runtime / 3600)
+            calculated[test] = -1
+            long_total_runtime += runtime
+            continue
+        if cur_total_runtime + runtime > max_runtime:
+            # Current shard is full; increment shard count
+            cur_shard += 1
+            cur_total_runtime = 0
+        # Add test to current shard
+        calculated[test] = cur_shard
+        cur_total_runtime += runtime
+
+    config['CALCULATED_SHARDS'] = calculated
+    logging.info('Suite to be splitted into %d shards', cur_shard)
+    logging.info('Long test total runtime: %.1fh', long_total_runtime / 3600)
+
+
+def get_suite_split_shard(config, is_qual, test, abi):
+    """Retrieves which shard the test belongs to.
+
+    Args:
+        config: CONFIG['SPLIT_SUITES']
+        is_qual: True if the test belongs to qual suite.
+        test: The combined test name, optionally with suffixes when applicable.
+        abi: The abi to run.
+
+    Returns:
+        The suite name representing the shard the test belongs to.
+    """
+    if 'CALCULATED_SHARDS' not in config:
+        raise ValueError('Call calculate_suite_split_shards() first')
+
+    try:
+        shard = config['CALCULATED_SHARDS'][test]
+    except KeyError:
+        logging.warn('Test %s not found in runtime hint, assuming long test',
+                     test)
+        shard = -1
+    if shard == -1:
+        return (config['QUAL_SUITE_LONG']
+                if is_qual else config['DEV_SUITE_LONG'])
+    fmt = config['QUAL_SUITE_FORMAT'] if is_qual else config['DEV_SUITE_FORMAT']
+    return fmt.format(abi=abi, shard=shard)
+
+
 def run(source_contents, cache_dir, bundle_password=''):
     """Downloads each bundle in |uris| and generates control files for each
 
     module as reported to us by tradefed.
     """
+    if 'SPLIT_SUITES' in CONFIG:
+        calculate_suite_split_shards(CONFIG['SPLIT_SUITES'])
+
     for uri, source_type in source_contents:
         abi = get_bundle_abi(uri)
         is_public = (source_type == SourceType.MOBLAB)

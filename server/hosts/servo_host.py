@@ -35,6 +35,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import hosts
 from autotest_lib.client.common_lib import lsbrelease_utils
+from autotest_lib.client.common_lib import utils as client_utils
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.server import crashcollect
 from autotest_lib.server.cros.servo import servo
@@ -1312,6 +1313,16 @@ class ServoHost(base_servohost.BaseServoHost):
             logging.warning('Failed to collect servod start up log'
                             ' from servohost.')
 
+    def get_servo_info_log(self, outdir):
+        """Write servo info to sysinfo/servo log file."""
+        if self._servo is None or self._servo._servo_info is None:
+            return
+        log_dir = os.path.join(outdir, 'sysinfo')
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        client_utils.write_keyval(os.path.join(log_dir, 'servo'),
+                                  self._servo._servo_info)
+
     def get_instance_logs(self, instance_ts, outdir, old=False):
         """Collect all logs with |instance_ts| and dump into a dir in |outdir|
 
@@ -1519,6 +1530,7 @@ class ServoHost(base_servohost.BaseServoHost):
             if should_collect_log:
                 self.get_servod_startup_log(self.job.resultdir)
                 self.get_servohost_logs(self.job.resultdir)
+                self.get_servo_info_log(self.job.resultdir)
             # Grab current (not old like above) logs after the servo instance
             # was closed out.
             if servod_logs_available:

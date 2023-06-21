@@ -617,6 +617,7 @@ class Servo(object):
         self._servo_serial = servo_serial
         self._servo_type = None
         self._power_state = None
+        self._servo_info = None
         self._programmer = None
         self._prev_log_inode = None
         self._prev_log_size = 0
@@ -724,6 +725,13 @@ class Servo(object):
                 servo=self, description='initialize_dut()->get_version()'):
             version = self._server.get_version()
         logging.debug('Servo initialized, version is %s', version)
+        if self._servo_info is None:
+            self._servo_info = {
+                    'servo_host_os_version': self.get_os_version(),
+                    'servod_version': self.get_servod_version(),
+                    'servo_type': self.get_servo_type()
+            }
+            self._servo_info.update(self.get_servo_fw_versions())
 
 
     def is_localhost(self):

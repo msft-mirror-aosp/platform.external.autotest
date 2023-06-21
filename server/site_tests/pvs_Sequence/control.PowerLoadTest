@@ -8,7 +8,7 @@ METADATA = {
     'contacts': ['chromeos-pvs-eng@google.com'],
     'bug_component': 'b:1110659',
     'criteria': 'Sequence to qualify power during typical user load',
-    'requirements': ['pwr-batLife-0009-v01']
+    'requirements': ['pwr-batLife-0009-v01', 'pwr-batLife-0009-v02']
 }
 
 from autotest_lib.server import utils

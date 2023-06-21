@@ -8,7 +8,7 @@ METADATA = {
     'contacts': ['chromeos-pvs-eng@google.com'],
     'bug_component': 'b:1110659',
     'criteria': 'Sequence to qualify power during Video Playback',
-    'requirements': ['pwr-batLife-0010-v01']
+    'requirements': ['pwr-batLife-0010-v01', 'pwr-batLife-0010-v02']
 }
 
 from autotest_lib.server import utils

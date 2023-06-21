@@ -4,7 +4,7 @@
 
 NAME = "power_Display.brightness"
 METADATA = {
-  "requirements": ['pwr-batLife-0009-v01'],
+  "requirements": ['pwr-batLife-0009-v01', 'pwr-batLife-0009-v02'],
   "contacts": ["chromeos-platform-power@google.com"],
   "bug_component": "b:167191",
   "criteria": "This test is a benchmark.",

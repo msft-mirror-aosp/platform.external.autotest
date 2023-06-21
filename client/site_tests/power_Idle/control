@@ -20,7 +20,7 @@ METADATA = {
     "author": "ChromeOS Team",
     "bug_component": "b:167191",
     "criteria": "This test is a benchmark",
-    "requirements": ["pwr-batLife-0009-v01"],
+    "requirements": ["pwr-batLife-0009-v01", "pwr-batLife-0009-v02"],
     "hw_agnostic": False,
 }
 ATTRIBUTES = ("suite:bvt-perbuild, suite:power_idle, suite:power_check, "

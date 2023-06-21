@@ -46,9 +46,19 @@ class platform_Flashrom(FirmwareTest):
 
     def _check_wp_disable(self):
         """Check firmware is write protect disabled."""
-        self.run_cmd('flashrom -p host --wp-status', checkfor='is disabled')
+        self.run_cmd('futility flash --wp-status --ignore-hw',
+                     checkfor='disabled')
         if self.faft_config.chrome_ec:
-            self.run_cmd('flashrom -p ec --wp-status', checkfor='is disabled')
+            ec_status = self.run_cmd('ectool flashprotect')
+            active_flags = [l for l in ec_status if "Flash protect flags" in l]
+
+            if not active_flags:
+                raise error.TestFail(
+                        'Cannot find ec flags in ectool output: %s\n' %
+                        '\n'.join(ec_status))
+            if 'ro_now' in active_flags[0] or 'all_now' in active_flags[0]:
+                raise error.TestFail('EC WP active: %s\n' %
+                                     '\n'.join(ec_status))
 
     def _get_region(self, fmap_filename, region):
         """Get region start and size from fmap.

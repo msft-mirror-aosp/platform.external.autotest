@@ -58,7 +58,7 @@ class firmware_SetSerialNumber(FirmwareTest):
         self.set_hardware_write_protect(False)
 
         self.faft_client.system.run_shell_command_get_output(
-            'flashrom -p host --wp-disable')
+                'futility flash --wp-disable')
 
         self.faft_client.system.run_shell_command_get_output(
             'vpd -i RO_VPD -s serial_number="%s"' %
@@ -97,13 +97,11 @@ class firmware_SetSerialNumber(FirmwareTest):
 
         # Check that write protect is correctly set
         result = self.faft_client.system.run_shell_command_get_output(
-            'flashrom -p host --wp-status')
+                'futility flash --wp-status --ignore-hw')
 
         result = '\n'.join(result)
 
-        if ('is disabled' in result or
-                'start=0x00000000' in result or
-                'len=0x00000000' in result):
+        if 'enabled' not in result:
             raise error.TestFail('Expected write protection to be enabled '
                                  'but output was:\n\n%s' % result)
 

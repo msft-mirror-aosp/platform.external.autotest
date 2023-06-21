@@ -1,0 +1,40 @@
+# Copyright 2018 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_P.internal.arm.all.CtsOsHostTestCases_-_CtsPreferenceTestCases'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-arm-17'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_P',
+        hosts=host_list,
+        iterations=1,
+        max_retry=9,
+        tag='internal.arm.all.CtsOsHostTestCases_-_CtsPreferenceTestCases',
+        test_name='cheets_CTS_P.internal.arm.all.CtsOsHostTestCases_-_CtsPreferenceTestCases',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsOsHostTestCases', '--include-filter', 'CtsOsTestCases', '--include-filter', 'CtsPdfTestCases', '--include-filter', 'CtsPerfettoTestCases', '--include-filter', 'CtsPermission2TestCases', '--include-filter', 'CtsPermissionTestCases', '--include-filter', 'CtsPreference2TestCases', '--include-filter', 'CtsPreferenceTestCases', '--logcat-on-failure', '--dynamic-config-url='],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
+        target_module='all.CtsOsHostTestCases_-_CtsPreferenceTestCases',
+        target_plan=None,
+        bundle='arm',
+        uri='LATEST',
+        login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
+        timeout=16200)
+
+parallel_simple(run_TS, machines)

@@ -5,14 +5,14 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_P.internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases'
+NAME = 'cheets_CTS_P.internal.arm.all.CtsVmTestCases_-_CtsVoiceSettingsTestCases'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard3, suite:arc-cts-qual-x86-8'
-DEPENDENCIES = 'arc, cts_abi_x86'
+ATTRIBUTES = 'suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard8, suite:arc-cts-qual-arm-26'
+DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
@@ -26,14 +26,14 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=9,
-        tag='internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
-        test_name='cheets_CTS_P.internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsFileSystemTestCases', '--logcat-on-failure', '--dynamic-config-url='],
+        tag='internal.arm.all.CtsVmTestCases_-_CtsVoiceSettingsTestCases',
+        test_name='cheets_CTS_P.internal.arm.all.CtsVmTestCases_-_CtsVoiceSettingsTestCases',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsVmTestCases', '--include-filter', 'CtsVoiceInteractionTestCases', '--include-filter', 'CtsVoiceSettingsTestCases', '--logcat-on-failure', '--dynamic-config-url='],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
-        target_module='all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
+        target_module='all.CtsVmTestCases_-_CtsVoiceSettingsTestCases',
         target_plan=None,
-        bundle='x86',
+        bundle='arm',
         uri='LATEST',
-        timeout=10800)
+        timeout=7200)
 
 parallel_simple(run_TS, machines)

@@ -5,14 +5,14 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_P.internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases'
+NAME = 'cheets_CTS_P.internal.arm.all.CtsVrTestCases_-_CtsWindowManagerDeviceTestCases'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard3, suite:arc-cts-qual-x86-8'
-DEPENDENCIES = 'arc, cts_abi_x86'
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-arm-27'
+DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
@@ -26,14 +26,15 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=9,
-        tag='internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
-        test_name='cheets_CTS_P.internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsFileSystemTestCases', '--logcat-on-failure', '--dynamic-config-url='],
+        tag='internal.arm.all.CtsVrTestCases_-_CtsWindowManagerDeviceTestCases',
+        test_name='cheets_CTS_P.internal.arm.all.CtsVrTestCases_-_CtsWindowManagerDeviceTestCases',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsVrTestCases', '--include-filter', 'CtsWebkitTestCases', '--include-filter', 'CtsWidgetTestCases', '--include-filter', 'CtsWindowManagerDeviceTestCases', '--logcat-on-failure', '--dynamic-config-url='],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
-        target_module='all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
+        target_module='all.CtsVrTestCases_-_CtsWindowManagerDeviceTestCases',
         target_plan=None,
-        bundle='x86',
+        bundle='arm',
         uri='LATEST',
-        timeout=10800)
+        prerequisites=['region_us'],
+        timeout=12600)
 
 parallel_simple(run_TS, machines)

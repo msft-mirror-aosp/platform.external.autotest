@@ -7,6 +7,7 @@
 from __future__ import print_function
 
 import argparse
+import collections
 import contextlib
 import copy
 from enum import Enum
@@ -1009,7 +1010,8 @@ def get_controlfile_content(combined,
                             hardware_suite=False,
                             whole_module_set=None,
                             vm_force_max_resolution=False,
-                            vm_tablet_mode=False):
+                            vm_tablet_mode=False,
+                            shard_ref_test=None):
     """Returns the text inside of a control file.
 
     @param combined: name to use for this combination of modules.
@@ -1061,12 +1063,16 @@ def get_controlfile_content(combined,
                             CONFIG.get('DISTRIBUTED_QUAL_SUITE') +
                             str(CONFIG['DISTRIBUTED_QUAL_SHARD'].get(module)))
 
-    # TODO(shaochuan): implement suite split for qual
-    if 'SPLIT_SUITES' in CONFIG and is_internal and not is_qual:
-        test = combined + (f'.{abi_bits}' if abi_bits else '')
+    # TODO(b/287160788): Decide what to do with collect-tests-only and waivers.
+    # Now both goes to the long suite.
+    if 'SPLIT_SUITES' in CONFIG and (is_internal or is_qual):
+        if is_qual:
+            test = shard_ref_test
+        else:
+            test = combined + (f'.{abi_bits}' if abi_bits else '')
         suites.append(
-                get_suite_split_shard(CONFIG['SPLIT_SUITES'], is_qual, test,
-                                      abi))
+                get_suite_split_shard_name(CONFIG['SPLIT_SUITES'], is_qual,
+                                           test, abi))
 
     attributes = ', '.join(suites)
     uri = {
@@ -1365,6 +1371,46 @@ def combine_modules_by_bookmark(modules):
     return combined
 
 
+def combine_modules_by_suite_split_shards(config, modules):
+    """Combine modules based on suite splitting heuristics.
+
+    Returns:
+        A list of (key, shard_ref_test, modules):
+          - key: the combined test name
+          - shard_ref_test: the test name to use when querying
+                get_suite_split_shard_name().
+          - modules: set of combined modules.
+    """
+    # Runtime hints are based on DEV tests. Apply DEV grouping first.
+    combined = combine_modules_by_common_word(modules)
+
+    # Further combine DEV tests to make it one test per shard. For each shard,
+    # pick one DEV test name to use when calling get_suite_split_shard_name
+    # afterwards. Handle long tests separately.
+    shard_modules = collections.defaultdict(set)
+    shard_ref_test = {}
+    long_tests = []
+    for key, modules in combined.items():
+        shard = get_suite_split_shard_number(config, key)
+        if shard == -1:
+            long_tests.append((key, modules))
+            continue
+        shard_modules[shard].update(modules)
+        if shard not in shard_ref_test:
+            shard_ref_test[shard] = key
+
+    combined = []
+    # For each shard, apply a naming scheme similar to
+    # combine_modules_by_bookmark.
+    for shard, modules in shard_modules.items():
+        key = re.sub(r'\[[^]]*\]', '', min(modules) + '_-_' + max(modules))
+        combined.append((key, shard_ref_test[shard], modules))
+    # Each long test has its own control file.
+    for key, modules in long_tests:
+        combined.append((key, key, modules))
+    return combined
+
+
 def write_controlfile(name,
                       modules,
                       abi,
@@ -1375,7 +1421,8 @@ def write_controlfile(name,
                       source_type,
                       whole_module_set=None,
                       hardware_suite=False,
-                      abi_bits=None):
+                      abi_bits=None,
+                      shard_ref_test=None):
     """Write control files per each ABI or combined."""
     is_public = (source_type == SourceType.MOBLAB)
     abi_bits_list = []
@@ -1429,7 +1476,8 @@ def write_controlfile(name,
                             abi_bits=abi_bits,
                             shard=(shard_index, shard_count),
                             vm_force_max_resolution=vm_force_max_resolution,
-                            vm_tablet_mode=vm_tablet_mode)
+                            vm_tablet_mode=vm_tablet_mode,
+                            shard_ref_test=shard_ref_test)
                     with open(filename, 'w') as f:
                         f.write(content)
 
@@ -1516,6 +1564,45 @@ def write_qualification_controlfiles(modules, abi, revision, build, uri,
             write_controlfile('all.' + key, combined[key], abi,
                               revision, build, uri,
                               CONFIG.get('QUAL_SUITE_NAMES'), source_type)
+
+
+def write_qualification_suite_split_controlfiles(modules, abi, revision, build,
+                                                 uri, source_type):
+    """Fork of write_qualification_controlfiles with suite splitting applied."""
+    combined = combine_modules_by_suite_split_shards(CONFIG['SPLIT_SUITES'],
+                                                     set(modules))
+    for key, shard_ref_test, modules in combined:
+        if modules & set(CONFIG.get('SPLIT_BY_BITS_MODULES', [])):
+            if get_suite_split_shard_number(CONFIG['SPLIT_SUITES'],
+                                            shard_ref_test) != -1:
+                # TODO(b/287160788): Deal with this if it turns out problematic
+                logging.warn(
+                        "Bits splitting is not compatible with sharding; "
+                        "adding %s as long test", key)
+            # If |abi| is predefined (like CTS), splits the modules by
+            # 32/64-bits. If not (like GTS) generate both arm and x86 jobs.
+            for abi_arch in [abi] if abi else ['arm', 'x86']:
+                for abi_bits in [32, 64]:
+                    write_controlfile('all.' + key,
+                                      modules,
+                                      abi_arch,
+                                      revision,
+                                      build,
+                                      uri,
+                                      CONFIG.get('QUAL_SUITE_NAMES'),
+                                      source_type,
+                                      abi_bits=abi_bits)
+        else:
+            write_controlfile('all.' + key,
+                              modules,
+                              abi,
+                              revision,
+                              build,
+                              uri,
+                              CONFIG.get('QUAL_SUITE_NAMES'),
+                              source_type,
+                              shard_ref_test=shard_ref_test)
+
 
 def write_perf_qualification_controlfiles(_modules, abi, revision, build, uri,
                                      source_type):
@@ -1674,8 +1761,32 @@ def calculate_suite_split_shards(config):
     logging.info('Long test total runtime: %.1fh', long_total_runtime / 3600)
 
 
-def get_suite_split_shard(config, is_qual, test, abi):
-    """Retrieves which shard the test belongs to.
+def get_suite_split_shard_number(config, test):
+    """Retrieves the shard number the test belongs to.
+
+    Args:
+        config: CONFIG['SPLIT_SUITES']
+        test: The combined test name, optionally with suffixes when applicable.
+
+    Returns:
+        An integer; -1 stands for long test.
+    """
+    if 'CALCULATED_SHARDS' not in config:
+        raise ValueError('Call calculate_suite_split_shards() first')
+    if test is None:
+        # This happens in cases incompatible with suite splitting algorithm;
+        # assume long test for the purpose of suite split
+        return -1
+    try:
+        return config['CALCULATED_SHARDS'][test]
+    except KeyError:
+        logging.warn('Test %s not found in runtime hint, assuming long test',
+                     test)
+        return -1
+
+
+def get_suite_split_shard_name(config, is_qual, test, abi):
+    """Retrieves the shard suite name the test belongs to.
 
     Args:
         config: CONFIG['SPLIT_SUITES']
@@ -1686,15 +1797,7 @@ def get_suite_split_shard(config, is_qual, test, abi):
     Returns:
         The suite name representing the shard the test belongs to.
     """
-    if 'CALCULATED_SHARDS' not in config:
-        raise ValueError('Call calculate_suite_split_shards() first')
-
-    try:
-        shard = config['CALCULATED_SHARDS'][test]
-    except KeyError:
-        logging.warn('Test %s not found in runtime hint, assuming long test',
-                     test)
-        shard = -1
+    shard = get_suite_split_shard_number(config, test)
     if shard == -1:
         return (config['QUAL_SUITE_LONG']
                 if is_qual else config['DEV_SUITE_LONG'])
@@ -1750,8 +1853,14 @@ def run(source_contents, cache_dir, bundle_password=''):
                     write_perf_qualification_controlfiles(None, abi, revision,
                                                           build, uri, source_type)
                 if source_type == SourceType.LATEST:
-                    write_qualification_controlfiles(modules, abi, revision,
-                                                     build, uri, source_type)
+                    if 'SPLIT_SUITES' in CONFIG:
+                        write_qualification_suite_split_controlfiles(
+                                modules, abi, revision, build, uri,
+                                source_type)
+                    else:
+                        write_qualification_controlfiles(
+                                modules, abi, revision, build, uri,
+                                source_type)
 
             if CONFIG['CONTROLFILE_WRITE_CAMERA']:
                 # For now camerabox is not stable for qualification purpose.

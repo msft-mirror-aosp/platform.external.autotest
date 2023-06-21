@@ -5,14 +5,14 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_P.internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases'
+NAME = 'cheets_CTS_P.internal.arm.all.CtsViewTestCases.32'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard3, suite:arc-cts-qual-x86-8'
-DEPENDENCIES = 'arc, cts_abi_x86'
+ATTRIBUTES = 'suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard7, suite:arc-cts-qual-long'
+DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
@@ -26,14 +26,16 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=9,
-        tag='internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
-        test_name='cheets_CTS_P.internal.x86.all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsFileSystemTestCases', '--logcat-on-failure', '--dynamic-config-url='],
+        tag='internal.arm.all.CtsViewTestCases.32',
+        test_name='cheets_CTS_P.internal.arm.all.CtsViewTestCases.32',
+        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsViewTestCases', '--logcat-on-failure', '--abi', 'armeabi-v7a', '--dynamic-config-url='],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
-        target_module='all.CtsFileSystemTestCases_-_CtsFileSystemTestCases',
+        target_module='all.CtsViewTestCases',
         target_plan=None,
-        bundle='x86',
+        bundle='arm',
+        extra_artifacts=['/storage/emulated/0/SurfaceViewSyncTest/'],
         uri='LATEST',
-        timeout=10800)
+        precondition_commands=['sleep 60'],
+        timeout=3600)
 
 parallel_simple(run_TS, machines)

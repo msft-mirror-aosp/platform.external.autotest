@@ -1,0 +1,41 @@
+# Copyright 2018 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_P.internal.arm.all.CtsCarTestCases_-_CtsCppToolsTestCases'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard1, suite:arc-cts-qual-arm-5'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_P',
+        hosts=host_list,
+        iterations=1,
+        max_retry=9,
+        enable_default_apps=True,
+        tag='internal.arm.all.CtsCarTestCases_-_CtsCppToolsTestCases',
+        test_name='cheets_CTS_P.internal.arm.all.CtsCarTestCases_-_CtsCppToolsTestCases',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsCarTestCases', '--include-filter', 'CtsCarrierApiTestCases', '--include-filter', 'CtsColorModeTestCases', '--include-filter', 'CtsCompilationTestCases', '--include-filter', 'CtsContactsProviderWipe', '--include-filter', 'CtsContentTestCases', '--include-filter', 'CtsCppToolsTestCases', '--logcat-on-failure', '--dynamic-config-url='],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}', '--dynamic-config-url='],
+        target_module='all.CtsCarTestCases_-_CtsCppToolsTestCases',
+        target_plan=None,
+        bundle='arm',
+        uri='LATEST',
+        prerequisites=['region_us'],
+        timeout=14400)
+
+parallel_simple(run_TS, machines)

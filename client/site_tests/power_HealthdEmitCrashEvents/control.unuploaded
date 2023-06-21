@@ -1,0 +1,17 @@
+# Description
+# This test simulates healthd emitting crash events and record power related
+# statistic.
+
+
+NAME = "power_HealthdEmitCrashEvents.unuploaded"
+METADATA = {
+    "contacts": ["cros-tdm-tpe-eng@google.com"],
+    "author": "xuhong",
+    "bug_component": "b:982097",
+    "criteria": "This test is a benchmark.",
+    "hw_agnostic": True,
+}
+ATTRIBUTES = ("")
+TEST_TYPE = "client"
+
+job.run_test('power_HealthdEmitCrashEvents', uploaded=False, min_run_time_percent=75)

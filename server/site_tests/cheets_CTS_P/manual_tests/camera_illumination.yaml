@@ -1,4 +1,0 @@
-android.hardware.camera2.cts.StillCaptureTest#testAePrecaptureTriggerCancelJpegCapture: [scarlet]
-android.hardware.camera2.cts.StillCaptureTest#testAllocateBitmap: [scarlet]
-android.hardware.camera2.cts.StillCaptureTest#testTakePicture: [scarlet]
-android.hardware.camera2.cts.StillCaptureTest#testTakePictureZsl: [scarlet]

@@ -15,9 +15,8 @@ class firmware_Cr50WPG3(Cr50Test):
     version = 1
 
     WAIT_FOR_STATE = 10
-    WP_REGEX = r'write protect is ((en|dis)abled)\.'
-    FLASHROM_WP_CMD = 'sudo flashrom -p raiden_debug_spi:target=AP,serial=%s '
-    STATUS_CMD = '--wp-status'
+    WP_REGEX = r'WP status: ((en|dis)abled)\.'
+    STATUS_CMD = '--wp-status --ignore-hw'
     WP_ENABLE_CMD = '--wp-enable'
     WP_DISABLE_CMD = '--wp-disable'
     DISABLED = 'disabled'
@@ -42,26 +41,27 @@ class firmware_Cr50WPG3(Cr50Test):
         finally:
             super(firmware_Cr50WPG3, self).cleanup()
 
-    def generate_flashrom_wp_cmd(self):
-        """Use the cr50 serialname to generate the flashrom command."""
-        self._flashrom_cmd = self.FLASHROM_WP_CMD % self.gsc.get_serial()
+    def generate_futility_wp_cmd(self):
+        """Use the cr50 serialname to generate the futility command."""
+        self._futility_cmd = 'sudo futility flash -p raiden_debug_spi:target=AP,serial=%s ' %
+            % self.gsc.get_serial()
 
     def get_wp_state(self):
         """Returns 'on' if write protect is enabled. 'off' if it's disabled."""
-        output = self.servo.system_output(
-                self._flashrom_cmd + self.STATUS_CMD)
+        output = self.servo.system_output(self._futility_cmd + self.STATUS_CMD)
         m = re.search(self.WP_REGEX, output)
         logging.info('WP is %s', m.group(1) if m else 'UKNOWN')
-        logging.info('flashrom output\n%s', output)
+        logging.info('futility output\n%s', output)
         if not m:
-            raise error.TestError('Unable to find WP status in flashrom output')
+            raise error.TestError(
+                    'Unable to find WP status in futility output')
         return m.group(1)
 
     def set_sw_wp(self, cmd):
         """Set SW WP."""
         time.sleep(self.gsc.SHORT_WAIT)
-        output = self.servo.system_output(self._flashrom_cmd + cmd,
-                ignore_status=True)
+        output = self.servo.system_output(self._futility_cmd + cmd,
+                                          ignore_status=True)
         logging.debug('output: %r', output)
         time.sleep(self.gsc.SHORT_WAIT)
         return self.get_wp_state()
@@ -76,7 +76,7 @@ class firmware_Cr50WPG3(Cr50Test):
             self.gsc.ccd_enable(True)
         except:
             raise error.TestNAError('CCD required to check wp.')
-        self.generate_flashrom_wp_cmd()
+        self.generate_futility_wp_cmd()
 
         self.fast_ccd_open(True)
         # faft-cr50 runs with servo micro and type c servo v4. Use ccdblock to
@@ -104,7 +104,7 @@ class firmware_Cr50WPG3(Cr50Test):
 
         # Disable SW WP.
         wp_state = self.set_sw_wp(self.WP_DISABLE_CMD)
-        # Bring the DUT up since flashrom commands put the EC in reset.
+        # Bring the DUT up since futility commands put the EC in reset.
         self._try_to_bring_dut_up()
         if wp_state != self.DISABLED:
             raise error.TestFail('Unable to disable SW WP with HW WP enabled')

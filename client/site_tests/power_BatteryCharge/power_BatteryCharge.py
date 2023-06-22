@@ -21,6 +21,11 @@ class power_BatteryCharge(power_test.power_Test):
         if not power_utils.has_battery():
             raise error.TestNAError('DUT has no battery. Test Skipped')
 
+        # Temporarily disable Charge Limit if it's enabled.
+        if power_utils.is_charge_limit_enabled():
+            prefs = {'charge_limit_enabled': 0}
+            self.power_pref_changer = power_utils.PowerPrefChanger(prefs)
+
         self.status = power_status.get_status()
 
         if not self.status.on_ac():

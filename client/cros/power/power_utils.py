@@ -1136,3 +1136,15 @@ class BaseActivitySimulator(object):
 
             with open(self._autosuspend_delay_path, 'w') as f:
                 f.write(self._default_autosuspend_delay_ms)
+
+
+def is_charge_limit_enabled():
+    """Return if Charge Limit is enabled.
+
+    Returns:
+      True if Charge Limit is enabled and False if it is not.\
+    """
+    _CHECK_CHARGE_LIMIT_ENABLED_CMD_ = \
+        'check_powerd_config --charge_limit_enabled'
+    result = utils.run(_CHECK_CHARGE_LIMIT_ENABLED_CMD_, ignore_status=True)
+    return (result.exit_status == 0)

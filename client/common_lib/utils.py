@@ -987,14 +987,13 @@ def signal_pid(pid, sig):
     return False
 
 
-def nuke_subprocess(subproc):
+def nuke_subprocess(subproc, signal_queue=(signal.SIGTERM, signal.SIGKILL)):
     # check if the subprocess is still alive, first
     if subproc.poll() is not None:
         return subproc.poll()
 
     # the process has not terminated within timeout,
     # kill it via an escalating series of signals.
-    signal_queue = [signal.SIGTERM, signal.SIGKILL]
     for sig in signal_queue:
         signal_pid(subproc.pid, sig)
         if subproc.poll() is not None:

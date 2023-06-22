@@ -483,6 +483,7 @@ suite:cts_P
 suite:cuj
 suite:cuj_experimental
 suite:cups_weekly
+suite:data-leak-prevention-dmserver-enrollment-daily
 suite:debug_kernel_testing
 suite:deqp
 suite:dev_drone_image_test

@@ -1775,14 +1775,17 @@ class FirmwareTest(test.test):
         entries = self.faft_client.system.run_shell_command_get_output(
                 'elogtool list')
         for line in reversed(entries):
-            _, time_string, _ = line.split(' | ', 2)
+            tokens = line.split(' | ')
             try:
-                timestamp = time.strptime(time_string, self._TIME_FORMAT)
+                timestamp = time.strptime(tokens[1], self._TIME_FORMAT)
             except ValueError:
-                timestamp = time.strptime(time_string, self._TIME_FORMAT_ZONE)
+                timestamp = time.strptime(tokens[1], self._TIME_FORMAT_ZONE)
             if timestamp < time_since:
                 break
-            pattern = re.compile(r"recovery_reason=0x([0-9a-fA-F]+)/.*")
+            if (len(tokens)<5 or re.search(r"[rR]ecovery", line) == None):
+                continue
+            line = tokens[4]
+            pattern = re.compile(r"0x([0-9a-fA-F]+)*")
             rec_reason = pattern.search(line)
             if rec_reason:
                 rec_value = rec_reason.group(1)

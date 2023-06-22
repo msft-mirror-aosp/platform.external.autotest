@@ -25,6 +25,7 @@ METADATA = {
     "hw_agnostic": False,
 }
 ATTRIBUTES = ("suite:power_daily")
+EXTENDED_TIMEOUT = 4200
 TEST_TYPE = "client"
 
 # TODO (bleung): Find a way to do automatic Facebook login for test account.

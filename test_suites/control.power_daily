@@ -3,8 +3,11 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
+METADATA = {
+  "contacts": ["chromeos-power-team@google.com"]
+}
 NAME = "power_daily"
-TIME = "SHORT"
+TIME = "LENGTHY"
 TEST_CATEGORY = "General"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"

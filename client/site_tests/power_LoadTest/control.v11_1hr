@@ -21,6 +21,7 @@ METADATA = {
     "hw_agnostic": False,
 }
 ATTRIBUTES = "suite:power_daily"
+EXTENDED_TIMEOUT = 4200
 TEST_TYPE = "client"
 
 loop_time = 3600

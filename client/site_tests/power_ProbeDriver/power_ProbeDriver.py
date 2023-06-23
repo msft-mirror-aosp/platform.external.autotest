@@ -14,10 +14,12 @@ class power_ProbeDriver(test.test):
     unless device is AC only."""
     version = 1
 
-    def run_once(self, test_which='Mains'):
+    def initialize(self):
         # This test doesn't apply to systems that run on AC only.
         if not power_utils.has_battery():
-            return
+            raise error.TestNAError('DUT has no battery. Test Skipped')
+
+    def run_once(self, test_which='Mains'):
         # Gather power supplies
         status = power_status.get_status()
         run_dict = { 'Mains': self.run_ac, 'Battery': self.run_bat }

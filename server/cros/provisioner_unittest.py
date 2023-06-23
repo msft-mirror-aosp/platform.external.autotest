@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import unittest
 from unittest import mock
 
@@ -142,10 +143,14 @@ class TestProvisioner2(unittest.TestCase):
         kernel_utils.verify_kernel_state_after_update.return_value = 3
         kernel_utils.verify_boot_expectations = mock.MagicMock()
 
+        swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
+        BBID = os.getenv('BUILD_BUCKET_ID', default='None')
+        expected_url = (f'{devserver}/swarming/{swarming_id}/bbid/{BBID}/'
+                        'download/chromeos-image-archive')
         cros_provisioner.run_provision()
         host.run.assert_any_call(
-                '/usr/local/bin/quick-provision --noreboot %s '
-                '%s/download/chromeos-image-archive' % (image, devserver))
+                f'/usr/local/bin/quick-provision --noreboot {image} '
+                f'{expected_url}')
 
 
 if __name__ == '__main__':

@@ -13,6 +13,7 @@ import six.moves.urllib.parse
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server import autotest
@@ -408,10 +409,12 @@ class ChromiumOSProvisioner(object):
         # If enabled, GsCache server listion on different port on the
         # devserver.
         gs_cache_server = devserver_name.replace(DEVSERVER_PORT, GS_CACHE_PORT)
-        gs_cache_url = (
-                'http://%s/download/%s' %
-                (gs_cache_server, 'chromeos-releases'
-                 if self._is_release_bucket else 'chromeos-image-archive'))
+        bucket = ('chromeos-releases'
+                  if self._is_release_bucket else 'chromeos-image-archive')
+        swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
+        BBID = os.getenv('BUILD_BUCKET_ID', default='None')
+        gs_cache_url = (f'http://{gs_cache_server}/swarming/{swarming_id}/bbid'
+                        f'/{BBID}/download/{bucket}')
 
         # Check if GS_Cache server is enabled on the server.
         self._run('curl -s -o /dev/null %s' % gs_cache_url)
@@ -443,7 +446,14 @@ class ChromiumOSProvisioner(object):
         archive_url = ('gs://chromeos-releases/%s' %
                        image_name if self._is_release_bucket else None)
 
-        static_url = 'http://%s/static' % devserver_name
+        if lsbrelease_utils.is_moblab():
+            static_url = 'http://%s/static' % devserver_name
+        else:
+            swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
+            BBID = os.getenv('BUILD_BUCKET_ID', default='None')
+            static_url = (f'http://{devserver_name}/swarming/{swarming_id}/'
+                          f'bbid/{BBID}/static')
+
         with_minios = ""
         if self._with_minios:
             with_minios = " --minios"

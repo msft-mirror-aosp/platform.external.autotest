@@ -68,7 +68,8 @@ def run(machine):
     working_bluetooth_btpeers = bt_control_utils.get_working_bluetooth_btpeer(host)
     btpeer_count_attribute_expression = bt_control_utils.build_tast_btpeer_count_attribute_test_expression(working_bluetooth_btpeers)
     tast_test_expr = '("group:bluetooth" && !bluetooth_flaky && !bluetooth_mtbf && !bluetooth_stress && !bluetooth_perf && !bluetooth_wifi_coex && \
-                      !bluetooth_manual && !bluetooth_sa && !bluetooth_floss && !bluetooth_cross_device_fastpair_multidut && %s)' % btpeer_count_attribute_expression
+                      !bluetooth_manual && !bluetooth_sa && !bluetooth_floss && !bluetooth_floss_flaky && !bluetooth_cross_device_fastpair_multidut \
+                      && %s)' % btpeer_count_attribute_expression
     job.run_test('tast',
                  host=host,
                  test_exprs=[tast_test_expr],

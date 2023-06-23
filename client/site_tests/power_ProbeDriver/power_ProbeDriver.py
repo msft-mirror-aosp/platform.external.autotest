@@ -19,6 +19,11 @@ class power_ProbeDriver(test.test):
         if not power_utils.has_battery():
             raise error.TestNAError('DUT has no battery. Test Skipped')
 
+        # Temporarily disable Charge Limit if it's enabled.
+        if power_utils.is_charge_limit_enabled():
+            prefs = {'charge_limit_enabled': 0}
+            self.power_pref_changer = power_utils.PowerPrefChanger(prefs)
+
     def run_once(self, test_which='Mains'):
         # Gather power supplies
         status = power_status.get_status()

@@ -44,6 +44,8 @@ class firmware_ECCharging(FirmwareTest):
     # This should be >= BEGIN_CHARGING_TIMEOUT
     EXTRA_DISCHARGE_TIME = BEGIN_CHARGING_TIMEOUT + 30
 
+    POWER_PREF_DIR = '/var/lib/power_manager'
+
     def initialize(self, host, cmdline_args):
         super(firmware_ECCharging, self).initialize(host, cmdline_args)
         # Don't bother if there is no Chrome EC.
@@ -53,8 +55,30 @@ class firmware_ECCharging(FirmwareTest):
         # Only run in normal mode
         self.switcher.setup_mode('normal')
         self.ec.send_command("chan 0")
+        self.host = host
+        # Disable Charge Limit if it's enabled. PowerPrefChanger is client only,
+        # so open code it here. This is the only server side test that needs
+        # this.
+        if (host.run('check_powerd_config --charge_limit_enabled',
+                     ignore_status=True).exit_status == 0):
+            logging.info('Temporarily disabling Charge Limit')
+            self.tmp_power_prefs = host.run( \
+                    'mktemp -d /tmp/autotest_powerd_prefs.XXXX').stdout.strip()
+            host.run('cp -a %s %s' %
+                     (self.POWER_PREF_DIR, self.tmp_power_prefs))
+            host.run('echo 0 > %s/charge_limit_enabled' % self.tmp_power_prefs)
+            host.run('mount --bind %s %s' %
+                     (self.tmp_power_prefs, self.POWER_PREF_DIR))
+            host.run('restart powerd')
+            # Wait for powerd DBus session to start.
+            host.run('/usr/bin/gdbus wait --system --timeout 10 '
+                     'org.chromium.PowerManager')
 
     def cleanup(self):
+        if hasattr(self, 'tmp_power_prefs'):
+            self.host.run('umount %s' % self.POWER_PREF_DIR)
+            self.host.run('rm -rf %s' % self.tmp_power_prefs)
+            self.host.run('restart powerd')
         try:
             self.ec.send_command("chan 0xffffffff")
         except Exception as e:

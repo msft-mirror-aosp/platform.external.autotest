@@ -1,0 +1,28 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Cellular Team"
+NAME = "cellular_stress"
+METADATA = {
+    "contacts": ["chromeos-cellular-team@google.com"],
+    "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
+    }
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite contains cellular stress tests which suspend and resume,
+verify modem is in right state after each resume.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

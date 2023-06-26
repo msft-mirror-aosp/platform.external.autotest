@@ -320,7 +320,6 @@ CONFIG['NEEDS_CTS_HELPERS'] = [
 
 CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
-        'CtsDeqpTestCases.dEQP-VK',
         'CtsMediaTestCases',
 ]
 
@@ -429,11 +428,6 @@ CONFIG['OVERRIDE_TEST_LENGTH'] = {
 CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
         'all',
         'CtsDeqpTestCases',
-        'CtsDeqpTestCases.dEQP-EGL',
-        'CtsDeqpTestCases.dEQP-GLES2',
-        'CtsDeqpTestCases.dEQP-GLES3',
-        'CtsDeqpTestCases.dEQP-GLES31',
-        'CtsDeqpTestCases.dEQP-VK',
         'CtsLibcoreTestCases',
 ])
 
@@ -457,16 +451,8 @@ CONFIG['PUBLIC_HARDWARE_MODULES'] =  CONFIG['HARDWARE_MODULES']+['CtsCameraTestC
 
 R_QUAL_SUITES = ['suite:arc-cts-qual']
 R_QUAL_AND_REGRESSION_SUITES = R_QUAL_SUITES + ['suite:arc-cts']
-DEQP_SUITES = ['suite:arc-cts-deqp', 'suite:graphics_per-week']
 
 CONFIG['EXTRA_MODULES'] = {
-        'CtsDeqpTestCases': {
-                'CtsDeqpTestCases.dEQP-EGL': DEQP_SUITES,
-                'CtsDeqpTestCases.dEQP-GLES2': DEQP_SUITES,
-                'CtsDeqpTestCases.dEQP-GLES3': DEQP_SUITES,
-                'CtsDeqpTestCases.dEQP-GLES31': DEQP_SUITES,
-                'CtsDeqpTestCases.dEQP-VK': DEQP_SUITES,
-        },
         'CtsMediaTestCases': {
                 'CtsMediaTestCases.audio': R_QUAL_AND_REGRESSION_SUITES,
                 'CtsMediaTestCases.video': R_QUAL_AND_REGRESSION_SUITES,
@@ -564,177 +550,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
         'CtsDeqpTestCases.dEQP-VK': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test', 'dEQP-VK.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.api': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.api.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.binding_model': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.binding_model.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.clipping': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.clipping.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.compute': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.compute.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.device_group': [
-                '--include-filter',
-                'CtsDeqpTestCases',
-                '--module',
-                'CtsDeqpTestCases',
-                '--test',
-                'dEQP-VK.device_group*'  # Not ending on .* like most others!
-        ],
-        'CtsDeqpTestCases.dEQP-VK.draw': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.draw.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.dynamic_state': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.dynamic_state.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.fragment_operations': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.fragment_operations.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.geometry': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.geometry.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.glsl': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.glsl.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.image': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.image.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.info': [
-                '--include-filter',
-                'CtsDeqpTestCases',
-                '--module',
-                'CtsDeqpTestCases',
-                '--test',
-                'dEQP-VK.info*'  # Not ending on .* like most others!
-        ],
-        'CtsDeqpTestCases.dEQP-VK.memory': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.memory.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.multiview': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.multiview.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.pipeline': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.pipeline.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.protected_memory': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.protected_memory.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.query_pool': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.query_pool.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.rasterization': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.rasterization.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.renderpass': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.renderpass.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.renderpass2': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.renderpass2.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.robustness': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.robustness.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.sparse_resources': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.sparse_resources.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.spirv_assembly': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.spirv_assembly.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.ssbo': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.ssbo.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.subgroups': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.*'
-        ],
-        # Splitting VK.subgroups to smaller pieces to workaround b/138622686.
-        # TODO(kinaba,haddowk): remove them once the root cause is fixed, or
-        # reconsider the sharding strategy.
-        'CtsDeqpTestCases.dEQP-VK.subgroups.b': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.b*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.subgroups.s': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.s*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.subgroups.vote': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.vote#*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.subgroups.arithmetic': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.arithmetic#*'
-        ],
-        # TODO(haddowk,kinaba): Hack for b/138622686. Clean up later.
-        'CtsDeqpTestCases.dEQP-VK.subgroups.arithmetic.32': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.arithmetic#*',
-                '--abi', 'x86'
-        ],
-        # TODO(haddowk,kinaba): Hack for b/138622686. Clean up later.
-        'CtsDeqpTestCases.dEQP-VK.subgroups.arithmetic.64': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.arithmetic#*',
-                '--abi', 'x86_64'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.subgroups.clustered': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.clustered#*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.subgroups.quad': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.quad#*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.synchronization': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.synchronization.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.tessellation': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.tessellation.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.texture': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.texture.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.ubo': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.ubo.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.wsi': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.wsi.*'
-        ],
-        'CtsDeqpTestCases.dEQP-VK.ycbcr': [
-                '--include-filter', 'CtsDeqpTestCases', '--module',
-                'CtsDeqpTestCases', '--test', 'dEQP-VK.ycbcr.*'
         ],
         'CtsMediaStressTestCases.camera': [
                 '--module',

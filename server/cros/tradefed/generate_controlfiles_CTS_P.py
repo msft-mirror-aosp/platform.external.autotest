@@ -490,11 +490,6 @@ CONFIG['OVERRIDE_TEST_LENGTH'] = {
 CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
     'all',
     'CtsDeqpTestCases',
-    'CtsDeqpTestCases.dEQP-EGL',
-    'CtsDeqpTestCases.dEQP-GLES2',
-    'CtsDeqpTestCases.dEQP-GLES3',
-    'CtsDeqpTestCases.dEQP-GLES31',
-    'CtsDeqpTestCases.dEQP-VK',
     'CtsLibcoreTestCases',
 ])
 
@@ -515,17 +510,7 @@ CONFIG['PUBLIC_HARDWARE_MODULES'] = CONFIG['HARDWARE_MODULES'] + [
         'CtsCameraTestCases'
 ]
 
-SUITES_DEQP_SUBMODULE = [
-    'suite:arc-cts-deqp','suite:graphics_per-week']
-
 CONFIG['EXTRA_MODULES'] = {
-        'CtsDeqpTestCases': {
-                'CtsDeqpTestCases.dEQP-EGL': SUITES_DEQP_SUBMODULE,
-                'CtsDeqpTestCases.dEQP-GLES2': SUITES_DEQP_SUBMODULE,
-                'CtsDeqpTestCases.dEQP-GLES3': SUITES_DEQP_SUBMODULE,
-                'CtsDeqpTestCases.dEQP-GLES31': SUITES_DEQP_SUBMODULE,
-                'CtsDeqpTestCases.dEQP-VK': SUITES_DEQP_SUBMODULE,
-        },
         'CtsMediaTestCases': {
                 'CtsMediaTestCases.audio': ['suite:arc-cts'],
         },
@@ -897,21 +882,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
 
 CONFIG['EXTRA_ATTRIBUTES'] = {
     'CtsDeqpTestCases': ['suite:arc-cts', 'suite:arc-cts-deqp'],
-    'CtsDeqpTestCases.dEQP-EGL': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-week'
-    ],
-    'CtsDeqpTestCases.dEQP-GLES2': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-week'
-    ],
-    'CtsDeqpTestCases.dEQP-GLES3': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-week'
-    ],
-    'CtsDeqpTestCases.dEQP-GLES31': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-week'
-    ],
-    'CtsDeqpTestCases.dEQP-VK': [
-        'suite:arc-cts-deqp', 'suite:graphics_per-week'
-    ],
     _COLLECT: ['suite:arc-cts-qual', 'suite:arc-cts'],
 }
 

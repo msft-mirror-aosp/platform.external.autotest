@@ -116,44 +116,69 @@ class FingerprintTest(test.test):
     #   2) Used to verify that files that end up in the build (and therefore
     #      what we release) is exactly what we expect.
     _FIRMWARE_VERSION_MAP = {
-        _FP_BOARD_NAME_BLOONCHIPPER: {
-            'bloonchipper_v2.0.4277-9f652bb3-RO_v2.0.14348-e5fb0b9-RW.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: 'e7d8029216a9003fa467b23067ee4d216f052980e2419211beebcb26b2738f31',
-                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.4277-9f652bb3',
-                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.14348-e5fb0b9',
-                _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
+            _FP_BOARD_NAME_BLOONCHIPPER: {
+                    'bloonchipper_v2.0.4277-9f652bb3-RO_v2.0.21769-3757a66-RW.bin':
+                    {
+                            _FIRMWARE_VERSION_SHA256SUM:
+                            '5ae98b89d19933a892c7e831f44f8f95774f3c0cfa3d342fd82e88e6edd24251',
+                            _FIRMWARE_VERSION_RO_VERSION:
+                            'bloonchipper_v2.0.4277-9f652bb3',
+                            _FIRMWARE_VERSION_RW_VERSION:
+                            'bloonchipper_v2.0.21769-3757a66',
+                            _FIRMWARE_VERSION_KEY_ID:
+                            '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
+                    },
+                    'bloonchipper_v2.0.5938-197506c1-RO_v2.0.21769-3757a66-RW.bin':
+                    {
+                            _FIRMWARE_VERSION_SHA256SUM:
+                            'ea3a303049eba9724126d3bf0a5d4c622e8cd2ece59f6bf208c0704806c687b1',
+                            _FIRMWARE_VERSION_RO_VERSION:
+                            'bloonchipper_v2.0.5938-197506c1',
+                            _FIRMWARE_VERSION_RW_VERSION:
+                            'bloonchipper_v2.0.21769-3757a66',
+                            _FIRMWARE_VERSION_KEY_ID:
+                            '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
+                    },
             },
-            'bloonchipper_v2.0.5938-197506c1-RO_v2.0.14348-e5fb0b9-RW.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '689d70de090f92a397a6ca0484945a58fe7faf71d2ca0840272a626e33a3a413',
-                _FIRMWARE_VERSION_RO_VERSION: 'bloonchipper_v2.0.5938-197506c1',
-                _FIRMWARE_VERSION_RW_VERSION: 'bloonchipper_v2.0.14348-e5fb0b9',
-                _FIRMWARE_VERSION_KEY_ID: '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
+            _FP_BOARD_NAME_NOCTURNE: {
+                    'nocturne_fp_v2.2.64-58cf5974e-RO_v2.0.21761-e1e012ee-RW.bin':
+                    {
+                            _FIRMWARE_VERSION_SHA256SUM:
+                            '2c3f6f741a8da6a01e88e4b5872c02b2bbe265c9a62528f7d47a6d032bb78fbd',
+                            _FIRMWARE_VERSION_RO_VERSION:
+                            'nocturne_fp_v2.2.64-58cf5974e',
+                            _FIRMWARE_VERSION_RW_VERSION:
+                            'nocturne_fp_v2.0.21761-e1e012ee',
+                            _FIRMWARE_VERSION_KEY_ID:
+                            '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
+                    },
             },
-        },
-        _FP_BOARD_NAME_NOCTURNE: {
-            'nocturne_fp_v2.2.64-58cf5974e-RO_v2.0.14340-6c1587ca-RW.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '88c9a45f35d7344251a6945f40701bca2ab2581633c23f4e29e43774e0c2c80f',
-                _FIRMWARE_VERSION_RO_VERSION: 'nocturne_fp_v2.2.64-58cf5974e',
-                _FIRMWARE_VERSION_RW_VERSION: 'nocturne_fp_v2.0.14340-6c1587ca',
-                _FIRMWARE_VERSION_KEY_ID: '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
+            _FP_BOARD_NAME_NAMI: {
+                    'nami_fp_v2.2.144-7a08e07eb-RO_v2.0.21761-e1e012ee35-RW.bin':
+                    {
+                            _FIRMWARE_VERSION_SHA256SUM:
+                            '67f20c81756f35d9c6e8360f9d6e17de9a27b90aaface41fcbb75d3d7cb75e2f',
+                            _FIRMWARE_VERSION_RO_VERSION:
+                            'nami_fp_v2.2.144-7a08e07eb',
+                            _FIRMWARE_VERSION_RW_VERSION:
+                            'nami_fp_v2.0.21761-e1e012ee35',
+                            _FIRMWARE_VERSION_KEY_ID:
+                            '35486c0090ca390408f1fbbf2a182966084fe2f8',
+                    },
             },
-        },
-        _FP_BOARD_NAME_NAMI: {
-            'nami_fp_v2.2.144-7a08e07eb-RO_v2.0.14340-6c1587ca70-RW.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '8f8e8cc6e541b4312ad79bd2b6736e31434c88677117b86c2dd3b7e41e8f28e9',
-                _FIRMWARE_VERSION_RO_VERSION: 'nami_fp_v2.2.144-7a08e07eb',
-                _FIRMWARE_VERSION_RW_VERSION: 'nami_fp_v2.0.14340-6c1587ca70',
-                _FIRMWARE_VERSION_KEY_ID: '35486c0090ca390408f1fbbf2a182966084fe2f8',
+            _FP_BOARD_NAME_DARTMONKEY: {
+                    'dartmonkey_v2.0.2887-311310808-RO_v2.0.21761-e1e012ee3-RW.bin':
+                    {
+                            _FIRMWARE_VERSION_SHA256SUM:
+                            'dda3ef7bcdb88a5a7dd02facefb1e37b74d3760dfa6fe4cac984c861ec1f2863',
+                            _FIRMWARE_VERSION_RO_VERSION:
+                            'dartmonkey_v2.0.2887-311310808',
+                            _FIRMWARE_VERSION_RW_VERSION:
+                            'dartmonkey_v2.0.21761-e1e012ee3',
+                            _FIRMWARE_VERSION_KEY_ID:
+                            '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
+                    },
             },
-        },
-        _FP_BOARD_NAME_DARTMONKEY: {
-            'dartmonkey_v2.0.2887-311310808-RO_v2.0.14340-6c1587ca7-RW.bin': {
-                _FIRMWARE_VERSION_SHA256SUM: '9f53319deb1cf049e2ceea70865c4f4cdb561ebc8c94d7a9cd1f5ed33a9f3451',
-                _FIRMWARE_VERSION_RO_VERSION: 'dartmonkey_v2.0.2887-311310808',
-                _FIRMWARE_VERSION_RW_VERSION: 'dartmonkey_v2.0.14340-6c1587ca7',
-                _FIRMWARE_VERSION_KEY_ID: '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
-            },
-        },
     }
 
     _BIOD_UPSTART_JOB_NAME = 'biod'

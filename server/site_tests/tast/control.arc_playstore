@@ -4,6 +4,11 @@
 # found in the LICENSE file.
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.arc_playstore'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:arc_playstore'

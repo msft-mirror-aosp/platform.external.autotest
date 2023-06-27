@@ -5,8 +5,9 @@
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.wificell-stress'
 METADATA = {
-	 "contacts": ["chromeos-wifi-champs@google.com"], # WiFi oncall rotation
-	 "bug_component": "b:893827", # ChromeOS > Platform > Connectivity > WiFi
+    "contacts": ["chromeos-wifi-champs@google.com"], # WiFi oncall rotation
+    "bug_component": "b:893827", # ChromeOS > Platform > Connectivity > WiFi
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'

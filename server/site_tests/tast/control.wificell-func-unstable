@@ -5,7 +5,9 @@
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.wificell-func-unstable'
 METADATA = {
-  "contacts": ["chromeos-wifi-champs@google.com"],
+    "contacts": ["chromeos-wifi-champs@google.com"],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

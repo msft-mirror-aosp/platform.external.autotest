@@ -4,6 +4,11 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.skylab-staging'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 ATTRIBUTES = "suite:skylab_staging_test"
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

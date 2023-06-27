@@ -7,6 +7,11 @@ from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = "cros-flashrom-team@google.com"
 NAME = 'tast.flashrom'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'LENGTHY'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'

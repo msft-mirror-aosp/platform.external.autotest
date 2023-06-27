@@ -13,6 +13,7 @@ PY_VERSION = 3
 METADATA = {
     'contacts': ['cros-videoconferencing@google.com', 'chrome-knowledge-eng@google.com'],
     'bug_component': 'b:187682', # ChromeOS > Software > Fundamentals > Machine Intelligence > Knowledge
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

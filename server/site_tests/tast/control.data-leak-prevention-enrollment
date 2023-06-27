@@ -7,6 +7,7 @@ NAME = 'tast.data-leak-prevention-dmserver-enrollment-daily'
 METADATA = {
     "contacts": ["chromeos-dlp@google.com"],
     "bug_component": "b:892101", # ChromeOS > Software > Commercial (Enterprise) > DLP (Data Loss Prevention)
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'

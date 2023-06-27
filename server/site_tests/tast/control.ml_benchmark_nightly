@@ -4,6 +4,11 @@
 
 AUTHOR = "jakebarnes@chromium.org, chromeos-platform-ml-accelerators@google.com"
 NAME = "tast.ml_benchmark_nightly"
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = "LONG"
 TEST_TYPE = "Server"
 ATTRIBUTES = "suite:ml_benchmark_nightly"

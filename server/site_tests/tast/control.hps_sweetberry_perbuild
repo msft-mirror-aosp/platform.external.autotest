@@ -4,6 +4,11 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.hps-sweetberry-perbuild'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:hps_sweetberry_perf_perbuild'

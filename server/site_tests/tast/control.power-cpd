@@ -7,7 +7,9 @@ from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'The ChromiumOS Authors'
 METADATA = {
-  "contacts": ["chromeos-pvs-eng@google.com"]
+    "contacts": ["chromeos-pvs-eng@google.com"],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 NAME = 'tast.power-cpd'
 TIME = 'LENGTHY'

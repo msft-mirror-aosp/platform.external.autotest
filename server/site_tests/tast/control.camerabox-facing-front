@@ -4,6 +4,11 @@
 
 AUTHOR = 'ChromeOS Camera Team/chromeos-camera-eng@google.com'
 NAME = 'tast.camerabox-facing-front'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'camerabox_facing:front'

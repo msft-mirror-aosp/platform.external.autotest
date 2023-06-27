@@ -6,6 +6,11 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'abergman, chromeos-engprod-platform-syd'
 NAME = 'tast.storage-qual-quick'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:storage_qual_v2_quick'

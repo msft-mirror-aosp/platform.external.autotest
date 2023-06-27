@@ -4,6 +4,11 @@
 #
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
 NAME = 'tast.nearby-share-prod'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:nearby-share-prod'

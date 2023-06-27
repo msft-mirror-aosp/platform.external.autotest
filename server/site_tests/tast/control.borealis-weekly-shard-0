@@ -4,6 +4,11 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.borealis-weekly-shard-0'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:borealis_per-week'

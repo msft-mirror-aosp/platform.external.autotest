@@ -8,6 +8,11 @@ from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.generic'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 # This test belongs to no suite; it is intended mainly for manual invocation

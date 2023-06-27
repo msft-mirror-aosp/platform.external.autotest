@@ -221,6 +221,8 @@ suite:bvt-tast-cq-bluetooth
 suite:bvt-tast-cq-calendar
 suite:bvt-tast-cq-camera
 suite:bvt-tast-cq-cellular
+suite:bvt-tast-cq-cft-rollback
+suite:bvt-tast-cq-cft-supporttool
 suite:bvt-tast-cq-crash
 suite:bvt-tast-cq-crosh
 suite:bvt-tast-cq-crostini
@@ -247,6 +249,8 @@ suite:bvt-tast-cq-hardware
 suite:bvt-tast-cq-health
 suite:bvt-tast-cq-holdingspace
 suite:bvt-tast-cq-hps
+suite:bvt-tast-cq-hw
+suite:bvt-tast-cq-hw-agnostic
 suite:bvt-tast-cq-hwsec
 suite:bvt-tast-cq-inputs
 suite:bvt-tast-cq-kerberos
@@ -282,6 +286,7 @@ suite:bvt-tast-cq-projector
 suite:bvt-tast-cq-qemu
 suite:bvt-tast-cq-quickanswers
 suite:bvt-tast-cq-quicksettings
+suite:bvt-tast-cq-rollback
 suite:bvt-tast-cq-scanapp
 suite:bvt-tast-cq-scanner
 suite:bvt-tast-cq-sched
@@ -293,6 +298,7 @@ suite:bvt-tast-cq-shelf
 suite:bvt-tast-cq-shimlessrma
 suite:bvt-tast-cq-smartlock
 suite:bvt-tast-cq-storage
+suite:bvt-tast-cq-supporttool
 suite:bvt-tast-cq-system
 suite:bvt-tast-cq-tape
 suite:bvt-tast-cq-taskmanager
@@ -777,6 +783,7 @@ suite:wifi_cross_device_tdls_flaky
 suite:wifi_endtoend
 suite:wifi_endtoend_flaky
 suite:wifi_flaky
+suite:wifi_func_tast
 suite:wifi_interop
 suite:wifi_interop_static
 suite:wifi_interop_wpa2

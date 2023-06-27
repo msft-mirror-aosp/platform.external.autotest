@@ -7,7 +7,9 @@ from autotest_lib.client.common_lib import utils
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.informational-crostini-slow-shard-0'
 METADATA = {
-  "contacts": ["ashpakov@google.com"],
+    "contacts": ["ashpakov@google.com"],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

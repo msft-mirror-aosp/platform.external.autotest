@@ -5,7 +5,9 @@
 AUTHOR = 'chromeos-kernel-wifi@google.com'
 NAME = 'tast.wificell-func-stable-openwrt'
 METADATA = {
-  "contacts": ["chromeos-wifi-champs@google.com"],
+    "contacts": ["chromeos-wifi-champs@google.com"],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

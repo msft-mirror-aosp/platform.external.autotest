@@ -5,7 +5,9 @@
 AUTHOR = 'ChromiumOS team'
 NAME = 'tast.cq-medium'
 METADATA = {
-  "contacts": ["dhaddock@google.com", "bhthompson@google.com"],
+    "contacts": ["dhaddock@google.com", "bhthompson@google.com"],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'SHORT'
 TEST_TYPE = 'Server'

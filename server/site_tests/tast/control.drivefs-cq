@@ -4,6 +4,11 @@
 
 AUTHOR = 'chromeos-files-syd@google.com'
 NAME = 'tast.drivefs-cq'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:drivefs-cq'

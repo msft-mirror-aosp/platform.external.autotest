@@ -6,6 +6,7 @@ NAME = 'tast.hps-perbuild'
 METADATA = {
   "contacts": ["chromeos-hps-swe@google.com"],
   "bug_component": "b:1140302",
+  'criteria': 'Tauto wrapper for specified tast tests',
   "hw_agnostic": False
 }
 TIME = 'SHORT'

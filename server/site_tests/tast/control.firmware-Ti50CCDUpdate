@@ -7,6 +7,11 @@ from autotest_lib.server.hosts import gsc_devboard_host
 
 AUTHOR = 'ChromiumOS BaseOS Engprod'
 NAME = 'tast.firmware-Ti50CCDUpdate'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:faft_gsc_devboard'

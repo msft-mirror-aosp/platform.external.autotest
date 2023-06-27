@@ -6,6 +6,11 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'Ambalavanan M M <ambalavanan.m.m@intel.com>'
 NAME = 'tast.intel-gating'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:intel-gating'

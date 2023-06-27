@@ -7,6 +7,7 @@ NAME = 'tast.network-platform-flaky'
 METADATA = {
     "contacts": ["cros-networking@google.com"],
     "bug_component": "b:156085", # ChromeOS > Platform > System > Networking
+    'criteria': 'Tauto wrapper for specified tast tests',
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

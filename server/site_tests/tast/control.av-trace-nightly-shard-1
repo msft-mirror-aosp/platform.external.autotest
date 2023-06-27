@@ -4,6 +4,11 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.av-trace-nightly-shard-1'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:av-analysis_trace_per-day'

@@ -4,6 +4,11 @@
 
 AUTHOR = 'ChromiumOS team'
 NAME = 'tast.dmserver-zteenrollment-daily'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:dmserver-zteenrollment-daily'

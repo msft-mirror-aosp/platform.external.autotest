@@ -6,6 +6,11 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'cros-oem-services-team'
 NAME = 'tast.telemetry-extension-hw'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:telemetry-extension-hw'

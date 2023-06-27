@@ -13,6 +13,7 @@ PY_VERSION = 3
 METADATA = {
     'contacts': ['launcher-search-notify@google.com'],
     'bug_component': 'b:1257106', # ChromeOS > Software > Fundamentals > Machine Intelligence > Search
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

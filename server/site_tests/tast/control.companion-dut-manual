@@ -8,6 +8,11 @@
 
 AUTHOR = 'seewaifu'
 NAME = 'tast.companion_dut_manual'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'SHORT'
 TEST_TYPE = 'Server'
 # The following DEPENDENCIES variable is not appliable this test

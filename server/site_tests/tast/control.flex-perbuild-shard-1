@@ -32,11 +32,11 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['('
-		             '"group:mainline" && '
-			     '!"group:crostini_slow" &&'
-			     '!"group:hw_agnostic" &&'
-			     '!informational'
-			     ')'],
+                     '"group:mainline" && '
+                 '!"group:crostini_slow" &&'
+                 '!"group:hw_agnostic" &&'
+                 '!informational'
+                 ')'],
                  ignore_test_failures=False,
                  totalshards=4,
                  shardindex=1,

@@ -7,6 +7,11 @@ from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'Chromium OS team'
 NAME = 'tast.maxsysmsglogsize'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 256 * 1024

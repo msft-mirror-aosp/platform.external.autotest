@@ -7,7 +7,9 @@ from autotest_lib.client.common_lib import utils
 AUTHOR = 'cros-engprod-muc'
 NAME = 'tast.golden-tier-shard-2'
 METADATA = {
-        "contacts": ["kamilszarek@google.com", "cros-engprod-muc@google.com"],
+    "contacts": ["kamilszarek@google.com", "cros-engprod-muc@google.com"],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'

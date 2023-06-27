@@ -4,6 +4,11 @@
 
 AUTHOR = 'chromeos-kernel-wifi@google.com'
 NAME = 'tast.wificell-coss-device-sap-unstable'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:wifi_cross_device_sap'

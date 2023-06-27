@@ -4,6 +4,11 @@
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.wificell-dut-validation'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:wificell_dut_validation'

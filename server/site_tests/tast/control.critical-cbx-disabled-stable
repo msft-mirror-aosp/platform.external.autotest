@@ -9,6 +9,7 @@ NAME = 'tast.critical-cbx-disabled-stable'
 METADATA = {
     "contacts": ["tast-core@google.com@google.com"],
     "bug_component": "b:1034522", # ChromeOS > Test > Harness > Tast > Examples
+    'criteria': 'Tauto wrapper for specified tast tests',
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

@@ -7,6 +7,11 @@ from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.testfilterfile'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 MAX_RESULT_SIZE_KB = 256 * 1024
@@ -33,7 +38,7 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=['("group:meta")'],
                  ignore_test_failures=False, max_run_sec=3600,
-		 test_filter_files=test_filter_files,
+                 test_filter_files=test_filter_files,
                  command_args=args)
 
 parallel_simple(run, machines)

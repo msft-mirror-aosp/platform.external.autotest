@@ -16,6 +16,7 @@ PY_VERSION = 3
 METADATA = {
     "contacts": ["cros-tdm-tpe-eng@google.com"],
     "bug_component": "b:982097",
+    'criteria': 'Tauto wrapper for specified tast tests',
     "hw_agnostic": False
 }
 

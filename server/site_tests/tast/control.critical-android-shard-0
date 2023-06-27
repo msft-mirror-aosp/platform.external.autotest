@@ -6,6 +6,11 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.critical-android-shard-0'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'

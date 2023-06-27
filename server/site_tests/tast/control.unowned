@@ -6,7 +6,9 @@ from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'kamilszarek'
 METADATA = {
-	"contacts": ["cros-engprod-muc@google.com", "kamilszarek@google.com"]
+    "contacts": ["cros-engprod-muc@google.com", "kamilszarek@google.com"],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 NAME = 'tast.unowned'
 TIME = 'LONG'

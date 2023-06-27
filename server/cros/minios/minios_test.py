@@ -79,6 +79,19 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
     _GET_STATE_EXTRACTOR = re.compile(r'State is (\w+)')
 
+    def _after_iteration_hook(self, obj):
+        """
+        Save MiniOS logs and reboot back to ChromeOS before running rest of
+        the after iter hooks. This step is required because the rest of after
+        iter hooks expect to run in a ChromeOS environment.
+
+        @param obj: the test object.
+        """
+        if self._is_running_minios():
+            # Save log files before rebooting.
+            self._minios_cleanup()
+            self._host.reboot()
+
     def initialize(self, host, wifi_configs=None, running_at_desk=None,
                    skip_provisioning=None):
         """
@@ -103,6 +116,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         os.mkdir(self._minios_resultsdir)
         self._wifi_configs = wifi_configs
         self._wifi_context = None
+        self.register_after_iteration_hook(self._after_iteration_hook)
 
     def warmup(self, host, **kwargs):
         """
@@ -138,12 +152,6 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         # router.
         if self._wifi_context:
             self._wifi_context.router.close()
-        if self._nebraska:
-            self._nebraska.stop()
-        if self._is_running_minios():
-            # Make sure to reboot DUT into CroS in case of failures.
-            self._minios_cleanup()
-            self._host.reboot()
         # Restore the stateful partition.
         self._restore_stateful(public_bucket=self._use_public_bucket)
         super(MiniOsTest, self).cleanup()
@@ -171,6 +179,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         if self._nebraska:
             self._host.get_file(os.path.join('/tmp', self._NEBRASKA_LOG),
                                 self._minios_resultsdir)
+            self._nebraska = None
 
     def _is_running_minios(self):
         """Returns True if the DUT is booted into MiniOS."""

@@ -248,9 +248,10 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     @test_wrapper(
             'HFP WBS sinewave test with dut as sink with super resolution',
             devices={'BLUETOOTH_AUDIO': 1},
-            skip_models=[
-                    'brask', 'brya', 'corsola', 'jacuzzi', 'kukui', 'nissa'
-            ],
+            allowed_boards={
+                    'eve', 'soraka', 'nautilus', 'nami', 'atlas', 'nocturne',
+                    'rammus', 'fizz', 'brya'
+            },
             supports_floss=True)
     def au_hfp_wbs_dut_as_sink_with_super_resolution_test(self):
         """HFP WBS test with sinewave and super_resolution streaming from peer to dut."""
@@ -287,9 +288,10 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     @test_wrapper(
             'HFP NBS sinewave test with dut as sink with super resolution',
             devices={'BLUETOOTH_AUDIO': 1},
-            skip_models=[
-                    'brask', 'brya', 'corsola', 'jacuzzi', 'kukui', 'nissa'
-            ],
+            allowed_boards={
+                    'eve', 'soraka', 'nautilus', 'nami', 'atlas', 'nocturne',
+                    'rammus', 'fizz', 'brya'
+            },
             supports_floss=True)
     def au_hfp_nbs_dut_as_sink_with_super_resolution_test(self):
         """HFP NBS test with sinewave and super_resolution streaming from peer to dut."""

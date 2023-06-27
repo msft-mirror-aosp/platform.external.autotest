@@ -252,6 +252,13 @@ class BluetoothAdapterQuickTests(
         self.mtbf_end = False
         self.mtbf_end_lock = threading.Lock()
 
+    def quick_test_get_board(self):
+        """Returns the board.
+
+           Needed by BluetoothQuickTestsBase.quick_test_test_decorator.
+        """
+        return self.get_board()
+
     def quick_test_get_model_name(self):
         """Returns the model name.
 
@@ -277,6 +284,7 @@ class BluetoothAdapterQuickTests(
     def quick_test_test_decorator(test_name,
                                   devices={},
                                   flags=['All'],
+                                  allowed_boards=None,
                                   model_testNA=[],
                                   model_testWarn=[],
                                   skip_models=[],
@@ -297,6 +305,8 @@ class BluetoothAdapterQuickTests(
            @param flags: list of string to describe who should run the
                          test. The string could be one of the following:
                          ['AVL', 'Quick Health', 'All'].
+           @param allowed_boards: If not None, raises TestNA on boards that are
+                                  not in this set.
            @param model_testNA: If the current platform is in this list,
                                 failures are emitted as TestNAError.
            @param model_testWarn: If the current platform is in this list,
@@ -332,6 +342,7 @@ class BluetoothAdapterQuickTests(
                 pretest_func=lambda self: self.quick_test_test_pretest(
                         test_name, devices, use_all_peers, supports_floss),
                 posttest_func=lambda self: self.quick_test_test_posttest(),
+                allowed_boards=allowed_boards,
                 model_testNA=model_testNA,
                 model_testWarn=model_testWarn,
                 skip_models=skip_models,

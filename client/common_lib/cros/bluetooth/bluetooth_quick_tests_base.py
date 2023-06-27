@@ -71,6 +71,14 @@ class BluetoothQuickTestsBase(object):
         self.pkg_iter = None
         self.pkg_is_running = False
 
+    def quick_test_get_board(self):
+        """This method should be implemented by children classes.
+
+        The ways to get the board are different between server and client
+        sides. The derived class should provide the method to get the info.
+        """
+        raise NotImplementedError
+
     def quick_test_get_model_name(self):
         """This method should be implemented by children classes.
 
@@ -102,6 +110,7 @@ class BluetoothQuickTestsBase(object):
                                   flags=None,
                                   pretest_func=None,
                                   posttest_func=None,
+                                  allowed_boards=None,
                                   model_testNA=None,
                                   model_testWarn=None,
                                   skip_models=None,
@@ -126,6 +135,8 @@ class BluetoothQuickTestsBase(object):
                         test summary is logged.
                         Note that the exception raised from this function is NOT
                         caught by the decorator.
+        @param allowed_boards: If not None, raises TestNA on boards that are not
+                               in this set.
         @param model_testNA: If the current platform is in this list, failures
                              are emitted as TestNAError.
         @param model_testWarn: If the current platform is in this list, failures
@@ -187,6 +198,13 @@ class BluetoothQuickTestsBase(object):
                     return
 
                 try:
+                    if allowed_boards is not None:
+                        board = self.quick_test_get_board()
+                        if board not in allowed_boards:
+                            logging.info('SKIPPING TEST %s', test_name)
+                            raise error.TestNAError(
+                                    'Test not supported on this board')
+
                     model = self.quick_test_get_model_name()
                     if model in skip_models:
                         logging.info('SKIPPING TEST %s', test_name)

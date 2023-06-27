@@ -866,6 +866,12 @@ class BluetoothAdapterTests(test.test):
             # to handle the failure.
             return self.expect_fail(test_method, *args, **kwargs)
 
+    def get_board(self):
+        """Returns the DUT board.
+
+        @returns: String name of the DUT's board.
+        """
+        return self.host.get_board().replace('board:', '')
 
     # TODO(b/131170539) remove when sarien/arcada no longer have _signed
     # postfix

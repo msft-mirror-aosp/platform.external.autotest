@@ -42,6 +42,7 @@ def run(machine):
                  varslist=varslist,
                  exclude_missing=True,
                  report_skipped=True,
+                 ephemeraldevserver='false',
                  clear_tpm=False)
 
 parallel_simple(run, machines)

@@ -14,7 +14,6 @@ from enum import Enum
 import logging
 import os
 import re
-import shutil
 import stat
 import subprocess
 import tempfile
@@ -1066,13 +1065,10 @@ def get_controlfile_content(combined,
     # TODO(b/287160788): Decide what to do with collect-tests-only and waivers.
     # Now both goes to the long suite.
     if 'SPLIT_SUITES' in CONFIG and (is_internal or is_qual):
-        if is_qual:
-            test = shard_ref_test
-        else:
-            test = combined + (f'.{abi_bits}' if abi_bits else '')
+        test = shard_ref_test if is_qual else combined
         suites.append(
                 get_suite_split_shard_name(CONFIG['SPLIT_SUITES'], is_qual,
-                                           test, abi))
+                                           test, abi, abi_bits))
 
     attributes = ', '.join(suites)
     uri = {
@@ -1264,16 +1260,6 @@ def get_collect_modules(is_public, is_hardware=False):
         return set(_COLLECT + suffix for suffix in suffices)
 
 
-@contextlib.contextmanager
-def TemporaryDirectory(prefix):
-    """Poor man's python 3.2 import."""
-    tmp = tempfile.mkdtemp(prefix=prefix)
-    try:
-        yield tmp
-    finally:
-        shutil.rmtree(tmp)
-
-
 def get_word_pattern(m, l=1):
     """Return the first few words of the CamelCase module name.
 
@@ -1421,7 +1407,6 @@ def write_controlfile(name,
                       source_type,
                       whole_module_set=None,
                       hardware_suite=False,
-                      abi_bits=None,
                       shard_ref_test=None):
     """Write control files per each ABI or combined."""
     is_public = (source_type == SourceType.MOBLAB)
@@ -1546,24 +1531,8 @@ def write_qualification_controlfiles(modules, abi, revision, build, uri,
     """
     combined = combine_modules_by_bookmark(set(modules))
     for key in combined:
-        if combined[key] & set(CONFIG.get('SPLIT_BY_BITS_MODULES', [])):
-            # If |abi| is predefined (like CTS), splits the modules by
-            # 32/64-bits. If not (like GTS) generate both arm and x86 jobs.
-            for abi_arch in [abi] if abi else ['arm', 'x86']:
-                for abi_bits in [32, 64]:
-                    write_controlfile('all.' + key,
-                                      combined[key],
-                                      abi_arch,
-                                      revision,
-                                      build,
-                                      uri,
-                                      CONFIG.get('QUAL_SUITE_NAMES'),
-                                      source_type,
-                                      abi_bits=abi_bits)
-        else:
-            write_controlfile('all.' + key, combined[key], abi,
-                              revision, build, uri,
-                              CONFIG.get('QUAL_SUITE_NAMES'), source_type)
+        write_controlfile('all.' + key, combined[key], abi, revision, build,
+                          uri, CONFIG.get('QUAL_SUITE_NAMES'), source_type)
 
 
 def write_qualification_suite_split_controlfiles(modules, abi, revision, build,
@@ -1572,36 +1541,15 @@ def write_qualification_suite_split_controlfiles(modules, abi, revision, build,
     combined = combine_modules_by_suite_split_shards(CONFIG['SPLIT_SUITES'],
                                                      set(modules))
     for key, shard_ref_test, modules in combined:
-        if modules & set(CONFIG.get('SPLIT_BY_BITS_MODULES', [])):
-            if get_suite_split_shard_number(CONFIG['SPLIT_SUITES'],
-                                            shard_ref_test) != -1:
-                # TODO(b/287160788): Deal with this if it turns out problematic
-                logging.warn(
-                        "Bits splitting is not compatible with sharding; "
-                        "adding %s as long test", key)
-            # If |abi| is predefined (like CTS), splits the modules by
-            # 32/64-bits. If not (like GTS) generate both arm and x86 jobs.
-            for abi_arch in [abi] if abi else ['arm', 'x86']:
-                for abi_bits in [32, 64]:
-                    write_controlfile('all.' + key,
-                                      modules,
-                                      abi_arch,
-                                      revision,
-                                      build,
-                                      uri,
-                                      CONFIG.get('QUAL_SUITE_NAMES'),
-                                      source_type,
-                                      abi_bits=abi_bits)
-        else:
-            write_controlfile('all.' + key,
-                              modules,
-                              abi,
-                              revision,
-                              build,
-                              uri,
-                              CONFIG.get('QUAL_SUITE_NAMES'),
-                              source_type,
-                              shard_ref_test=shard_ref_test)
+        write_controlfile('all.' + key,
+                          modules,
+                          abi,
+                          revision,
+                          build,
+                          uri,
+                          CONFIG.get('QUAL_SUITE_NAMES'),
+                          source_type,
+                          shard_ref_test=shard_ref_test)
 
 
 def write_perf_qualification_controlfiles(_modules, abi, revision, build, uri,
@@ -1785,7 +1733,7 @@ def get_suite_split_shard_number(config, test):
         return -1
 
 
-def get_suite_split_shard_name(config, is_qual, test, abi):
+def get_suite_split_shard_name(config, is_qual, test, abi, abi_bits):
     """Retrieves the shard suite name the test belongs to.
 
     Args:
@@ -1793,10 +1741,13 @@ def get_suite_split_shard_name(config, is_qual, test, abi):
         is_qual: True if the test belongs to qual suite.
         test: The combined test name, optionally with suffixes when applicable.
         abi: The abi to run.
+        abi_bits: (For applicable tests only) bits variant.
 
     Returns:
         The suite name representing the shard the test belongs to.
     """
+    if test and abi_bits:
+        test += f'.{abi_bits}'
     shard = get_suite_split_shard_number(config, test)
     if shard == -1:
         return (config['QUAL_SUITE_LONG']
@@ -1817,7 +1768,7 @@ def run(source_contents, cache_dir, bundle_password=''):
         abi = get_bundle_abi(uri)
         is_public = (source_type == SourceType.MOBLAB)
         # Get tradefed data by downloading & unzipping the files
-        with TemporaryDirectory(prefix='cts-android_') as tmp:
+        with tempfile.TemporaryDirectory(prefix='cts-android_') as tmp:
             if cache_dir is not None:
                 assert(os.path.isdir(cache_dir))
                 bundle = os.path.join(cache_dir, os.path.basename(uri))

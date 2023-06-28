@@ -60,6 +60,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
 
     # Additional log files to be extracted from MiniOS.
     _MESSAGES_LOG = '/var/log/messages'
+    _MINIOS_LOG = '/var/log/minios.log'
     _NET_LOG = '/var/log/net.log'
     _UPSTART_LOG = '/var/log/upstart.log'
 
@@ -172,6 +173,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         """
         if self._host:
             self._host.get_file(self._MESSAGES_LOG, self._minios_resultsdir)
+            if self._host.is_file_exists(self._MINIOS_LOG):
+                self._host.get_file(self._MINIOS_LOG, self._minios_resultsdir)
             self._host.get_file(self._NET_LOG, self._minios_resultsdir)
             self._host.get_file(self._UPDATE_ENGINE_LOG_DIR,
                                 self._minios_resultsdir)

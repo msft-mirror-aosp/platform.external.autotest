@@ -196,8 +196,7 @@ CONFIG['VM_MODULES_RULES'] = [
 # hardware.
 CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
         # Uncomment the line below to add all tests back to hardware.
-        # TODO(fqj): comment out once arc-cts-vm is running.
-        "+.*",
+        # "+.*",
 
         # These tests failed more than once between Oct/13 and Nov/09 2022 on R.
         "+CtsApp.*",
@@ -258,6 +257,9 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
         # All others tests are stable on VM.
         '-.*',
 ]
+
+# List of suite that stable VM modules will skip.
+CONFIG['VM_SKIP_SUITES'] = ['suite:arc-cts']
 
 # Modules that are known to need the default apps of Chrome (eg. Files.app).
 CONFIG['ENABLE_DEFAULT_APPS'] = [

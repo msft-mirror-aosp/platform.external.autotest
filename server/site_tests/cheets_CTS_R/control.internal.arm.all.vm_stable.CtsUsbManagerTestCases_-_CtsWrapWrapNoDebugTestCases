@@ -1,0 +1,39 @@
+# Copyright 2020 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_R.internal.arm.all.vm_stable.CtsUsbManagerTestCases_-_CtsWrapWrapNoDebugTestCases'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-vm-stable-arm-21'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_R',
+        hosts=host_list,
+        iterations=1,
+        max_retry=9,
+        tag='internal.arm.all.vm_stable.CtsUsbManagerTestCases_-_CtsWrapWrapNoDebugTestCases',
+        test_name='cheets_CTS_R.internal.arm.all.vm_stable.CtsUsbManagerTestCases_-_CtsWrapWrapNoDebugTestCases',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsUsbManagerTestCases', '--include-filter', 'CtsUsbManagerTestCases[secondary_user]', '--include-filter', 'CtsUsbTests', '--include-filter', 'CtsUsbTests[instant]', '--include-filter', 'CtsUsbTests[secondary_user]', '--include-filter', 'CtsUsesLibraryHostTestCases', '--include-filter', 'CtsUsesLibraryHostTestCases[secondary_user]', '--include-filter', 'CtsUtilTestCases', '--include-filter', 'CtsUtilTestCases[instant]', '--include-filter', 'CtsUtilTestCases[secondary_user]', '--include-filter', 'CtsVoiceInteractionTestCases', '--include-filter', 'CtsVoiceInteractionTestCases[instant]', '--include-filter', 'CtsVoiceInteractionTestCases[secondary_user]', '--include-filter', 'CtsVoiceSettingsTestCases', '--include-filter', 'CtsVoiceSettingsTestCases[instant]', '--include-filter', 'CtsVoiceSettingsTestCases[secondary_user]', '--include-filter', 'CtsVrTestCases', '--include-filter', 'CtsVrTestCases[secondary_user]', '--include-filter', 'CtsWebkitTestCases', '--include-filter', 'CtsWebkitTestCases[instant]', '--include-filter', 'CtsWebkitTestCases[secondary_user]', '--include-filter', 'CtsWrapNoWrapTestCases', '--include-filter', 'CtsWrapNoWrapTestCases[secondary_user]', '--include-filter', 'CtsWrapWrapDebugMallocDebugTestCases', '--include-filter', 'CtsWrapWrapDebugMallocDebugTestCases[secondary_user]', '--include-filter', 'CtsWrapWrapDebugTestCases', '--include-filter', 'CtsWrapWrapDebugTestCases[secondary_user]', '--include-filter', 'CtsWrapWrapNoDebugTestCases', '--include-filter', 'CtsWrapWrapNoDebugTestCases[secondary_user]', '--logcat-on-failure'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='all.vm_stable.CtsUsbManagerTestCases_-_CtsWrapWrapNoDebugTestCases',
+        target_plan=None,
+        bundle='arm',
+        uri='LATEST',
+        timeout=172800)
+
+parallel_simple(run_TS, machines)

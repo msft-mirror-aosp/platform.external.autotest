@@ -1,0 +1,39 @@
+# Copyright 2020 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_R.internal.arm.all.vm_stable.CtsCarrierApiTestCases_-_CtsContactsProviderWipe'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-vm-stable-arm-4'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_R',
+        hosts=host_list,
+        iterations=1,
+        max_retry=9,
+        tag='internal.arm.all.vm_stable.CtsCarrierApiTestCases_-_CtsContactsProviderWipe',
+        test_name='cheets_CTS_R.internal.arm.all.vm_stable.CtsCarrierApiTestCases_-_CtsContactsProviderWipe',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsCarrierApiTestCases', '--include-filter', 'CtsClassLoaderFactoryInMemoryDexClassLoaderTestCases', '--include-filter', 'CtsClassLoaderFactoryInMemoryDexClassLoaderTestCases[instant]', '--include-filter', 'CtsClassLoaderFactoryInMemoryDexClassLoaderTestCases[secondary_user]', '--include-filter', 'CtsClassLoaderFactoryPathClassLoaderTestCases', '--include-filter', 'CtsClassLoaderFactoryPathClassLoaderTestCases[instant]', '--include-filter', 'CtsClassLoaderFactoryPathClassLoaderTestCases[secondary_user]', '--include-filter', 'CtsClassloaderSplitsHostTestCases', '--include-filter', 'CtsClassloaderSplitsHostTestCases[instant]', '--include-filter', 'CtsClassloaderSplitsHostTestCases[secondary_user]', '--include-filter', 'CtsCodePathHostTestCases', '--include-filter', 'CtsCodePathHostTestCases[secondary_user]', '--include-filter', 'CtsColorModeTestCases', '--include-filter', 'CtsColorModeTestCases[instant]', '--include-filter', 'CtsColorModeTestCases[secondary_user]', '--include-filter', 'CtsCompilationTestCases', '--include-filter', 'CtsCompilationTestCases[secondary_user]', '--include-filter', 'CtsContactsProviderTestCases', '--include-filter', 'CtsContactsProviderTestCases[secondary_user]', '--include-filter', 'CtsContactsProviderWipe', '--include-filter', 'CtsContactsProviderWipe[secondary_user]', '--logcat-on-failure'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='all.vm_stable.CtsCarrierApiTestCases_-_CtsContactsProviderWipe',
+        target_plan=None,
+        bundle='arm',
+        uri='LATEST',
+        timeout=172800)
+
+parallel_simple(run_TS, machines)

@@ -1,0 +1,39 @@
+# Copyright 2020 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_R.internal.arm.all.CtsDeqp.64.shard_4_10'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-qual, suite:distributed_arc_qual_cts_shard8, suite:arc-cts-qual-long'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'LONG'
+MAX_RESULT_SIZE_KB = 1024000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_R',
+        hosts=host_list,
+        iterations=1,
+        max_retry=0,
+        tag='internal.arm.all.CtsDeqp.64.shard_4_10',
+        test_name='cheets_CTS_R.internal.arm.all.CtsDeqp.64.shard_4_10',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases', '--include-filter', 'CtsDeqpTestCases[secondary_user]', '--shard-index', '4', '--shard-count', '10', '--abi', 'arm64-v8a'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='all.CtsDeqp',
+        target_plan=None,
+        bundle='arm',
+        uri='LATEST',
+        timeout=172800)
+
+parallel_simple(run_TS, machines)

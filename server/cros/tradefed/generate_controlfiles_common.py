@@ -1041,6 +1041,8 @@ def get_controlfile_content(combined,
     is_qual = bool(set(CONFIG.get('QUAL_SUITE_NAMES', [])) & set(suites))
     is_internal = bool(
             set(CONFIG.get('INTERNAL_SUITE_NAMES', [])) & set(suites))
+    is_vm_stable = 'STABLE_VM_SUITE_NAME' in CONFIG and CONFIG[
+            'STABLE_VM_SUITE_NAME'] in suites
 
     if is_qual and (set(get_camera_modules()) & set(modules)):
         suites.append(CONFIG.get('CAMERA_DUT_SUITE_NAME'))
@@ -1064,7 +1066,7 @@ def get_controlfile_content(combined,
 
     # TODO(b/287160788): Decide what to do with collect-tests-only and waivers.
     # Now both goes to the long suite.
-    if 'SPLIT_SUITES' in CONFIG and (is_internal or is_qual):
+    if 'SPLIT_SUITES' in CONFIG and (is_internal or is_qual or is_vm_stable):
         test = shard_ref_test if is_qual else combined
         suites.append(
                 get_suite_split_shard_name(CONFIG['SPLIT_SUITES'], is_qual,
@@ -1377,20 +1379,22 @@ def combine_modules_by_suite_split_shards(config, modules):
     shard_ref_test = {}
     long_tests = []
     for key, modules in combined.items():
-        shard = get_suite_split_shard_number(config, key)
+        shard, is_vm_stable = get_suite_split_shard_number(config, key)
         if shard == -1:
             long_tests.append((key, modules))
             continue
-        shard_modules[shard].update(modules)
-        if shard not in shard_ref_test:
-            shard_ref_test[shard] = key
+        shard_modules[(shard, is_vm_stable)].update(modules)
+        if (shard, is_vm_stable) not in shard_ref_test:
+            shard_ref_test[(shard, is_vm_stable)] = key
 
     combined = []
     # For each shard, apply a naming scheme similar to
     # combine_modules_by_bookmark.
-    for shard, modules in shard_modules.items():
+    for (shard, is_vm_stable), modules in shard_modules.items():
         key = re.sub(r'\[[^]]*\]', '', min(modules) + '_-_' + max(modules))
-        combined.append((key, shard_ref_test[shard], modules))
+        if is_vm_stable:
+            key = 'vm_stable.' + key
+        combined.append((key, shard_ref_test[(shard, is_vm_stable)], modules))
     # Each long test has its own control file.
     for key, modules in long_tests:
         combined.append((key, key, modules))
@@ -1684,29 +1688,44 @@ def calculate_suite_split_shards(config):
     max_runtime = config['MAX_RUNTIME_SECS']
     per_test_overhead = config['PER_TEST_OVERHEAD_SECS']
 
-    calculated = {}
-    cur_shard = 1
-    cur_total_runtime = 0
-    long_total_runtime = 0
-    for test, runtime in sorted(config['RUNTIME_HINT_SECS'].items()):
-        runtime += per_test_overhead
-        if runtime > max_runtime:
-            # Mark the test as a "long" test
-            logging.info('Marking long test: %s (%.1fh)', test, runtime / 3600)
-            calculated[test] = -1
-            long_total_runtime += runtime
-            continue
-        if cur_total_runtime + runtime > max_runtime:
-            # Current shard is full; increment shard count
-            cur_shard += 1
-            cur_total_runtime = 0
-        # Add test to current shard
-        calculated[test] = cur_shard
-        cur_total_runtime += runtime
+    def _calculate(test_runtimes, is_vm_stable):
+        if not test_runtimes:
+            return {}
+        log_prefix = '[VM-stable]' if is_vm_stable else '[non-VM-stable]'
+        calculated = {}
+        cur_shard = 1
+        cur_total_runtime = 0
+        long_total_runtime = 0
+        for test, runtime in test_runtimes.items():
+            runtime += per_test_overhead
+            if runtime > max_runtime:
+                # Mark the test as a "long" test
+                logging.info('%s Marking long test: %s (%.1fh)', log_prefix,
+                             test, runtime / 3600)
+                calculated[test] = -1
+                long_total_runtime += runtime
+                continue
+            if cur_total_runtime + runtime > max_runtime:
+                # Current shard is full; increment shard count
+                cur_shard += 1
+                cur_total_runtime = 0
+            # Add test to current shard
+            calculated[test] = cur_shard
+            cur_total_runtime += runtime
+        logging.info('%s Suite to be splitted into %d shards', log_prefix,
+                     cur_shard)
+        logging.info('%s Long test total runtime: %.1fh', log_prefix,
+                     long_total_runtime / 3600)
+        return calculated
 
-    config['CALCULATED_SHARDS'] = calculated
-    logging.info('Suite to be splitted into %d shards', cur_shard)
-    logging.info('Long test total runtime: %.1fh', long_total_runtime / 3600)
+    nonvm_test_runtimes, vm_test_runtimes = {}, {}
+    for test, runtime in sorted(config['RUNTIME_HINT_SECS'].items()):
+        is_vm_stable = is_vm_modules(test) and not is_unstable_vm_modules(test)
+        (vm_test_runtimes
+         if is_vm_stable else nonvm_test_runtimes)[test] = runtime
+
+    config['CALCULATED_SHARDS'] = _calculate(nonvm_test_runtimes, False)
+    config['CALCULATED_SHARDS_VM_STABLE'] = _calculate(vm_test_runtimes, True)
 
 
 def get_suite_split_shard_number(config, test):
@@ -1717,20 +1736,26 @@ def get_suite_split_shard_number(config, test):
         test: The combined test name, optionally with suffixes when applicable.
 
     Returns:
-        An integer; -1 stands for long test.
+        (shard, is_vm_stable):
+            shard: An integer; -1 stands for long test.
+            is_vm_stable: Whether it's a VM-stable shard.
     """
     if 'CALCULATED_SHARDS' not in config:
         raise ValueError('Call calculate_suite_split_shards() first')
     if test is None:
         # This happens in cases incompatible with suite splitting algorithm;
         # assume long test for the purpose of suite split
-        return -1
+        return -1, False
     try:
-        return config['CALCULATED_SHARDS'][test]
+        return config['CALCULATED_SHARDS'][test], False
     except KeyError:
-        logging.warn('Test %s not found in runtime hint, assuming long test',
-                     test)
-        return -1
+        try:
+            return config['CALCULATED_SHARDS_VM_STABLE'][test], True
+        except KeyError:
+            logging.warn(
+                    'Test %s not found in runtime hint, assuming long test',
+                    test)
+            return -1, False
 
 
 def get_suite_split_shard_name(config, is_qual, test, abi, abi_bits):
@@ -1748,11 +1773,20 @@ def get_suite_split_shard_name(config, is_qual, test, abi, abi_bits):
     """
     if test and abi_bits:
         test += f'.{abi_bits}'
-    shard = get_suite_split_shard_number(config, test)
+    shard, is_vm_stable = get_suite_split_shard_number(config, test)
     if shard == -1:
-        return (config['QUAL_SUITE_LONG']
-                if is_qual else config['DEV_SUITE_LONG'])
-    fmt = config['QUAL_SUITE_FORMAT'] if is_qual else config['DEV_SUITE_FORMAT']
+        if is_vm_stable:
+            return (config['QUAL_VM_STABLE_SUITE_LONG']
+                    if is_qual else config['DEV_VM_STABLE_SUITE_LONG'])
+        else:
+            return (config['QUAL_SUITE_LONG']
+                    if is_qual else config['DEV_SUITE_LONG'])
+    if is_vm_stable:
+        fmt = config['QUAL_VM_STABLE_SUITE_FORMAT'] if is_qual else config[
+                'DEV_VM_STABLE_SUITE_FORMAT']
+    else:
+        fmt = config['QUAL_SUITE_FORMAT'] if is_qual else config[
+                'DEV_SUITE_FORMAT']
     return fmt.format(abi=abi, shard=shard)
 
 

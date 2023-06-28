@@ -5,6 +5,7 @@
 import logging
 
 from autotest_lib.server.cros import chrome_sideloader
+from autotest_lib.server import utils
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
 METADATA = {
@@ -48,6 +49,7 @@ def run(machine):
     host = hosts.create_host(machine)
     companions = hosts.create_companion_hosts(companion_hosts)
     phone = companions[0]
+    args_dict = utils.args_to_dict(args)
 
     logging.info("Running %s on ChromeOS: %s and Phone:%s", NAME,
                  host, phone)
@@ -62,6 +64,9 @@ def run(machine):
     # Setup primary DUT to use the chrome binary from TLS
     chrome_sideloader.setup_host(host, CHROME_DIR, CHROME_MOUNT_POINT)
 
+    max_run_sec=int(args_dict.get('max_run_sec', 10800))
+    retries=int(args_dict.get('retries', 0))
+
     # Register a clean up callback to reset the chrome mount.
     def cleanup():
       chrome_sideloader.cleanup_host(host, CHROME_DIR, CHROME_MOUNT_POINT)
@@ -70,8 +75,10 @@ def run(machine):
     job.run_test('tast',
                  host=host,
                  test_exprs=['("group:cross-device" && "cross-device_nearbyshare" && "cross-device_cq")'],
-                 ignore_test_failures=True, max_run_sec=10800,
+                 ignore_test_failures=True,
+                 max_run_sec=max_run_sec,
                  command_args=args,
                  varslist=[ip_address_arg],
-                 clear_tpm=False)
+                 clear_tpm=False,
+                 retries=retries)
 parallel_simple(run, machines)

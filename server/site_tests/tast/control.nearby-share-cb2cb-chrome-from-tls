@@ -6,6 +6,7 @@ import logging
 
 from autotest_lib.client.common_lib.error import TestFail
 from autotest_lib.server.cros import chrome_sideloader
+from autotest_lib.server import utils
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
 METADATA = {
@@ -46,6 +47,7 @@ Tast tests uses the sideloaded version of chrome for testing.
 def run(machine):
     primary_dut = hosts.create_host(machine)
     companions = hosts.create_companion_hosts(companion_hosts)
+    args_dict = utils.args_to_dict(args)
 
     if not companions:
         raise TestFail('Missing companion hosts')
@@ -60,6 +62,9 @@ def run(machine):
         chrome_sideloader.setup_host(
             host, CHROME_DIR, CHROME_MOUNT_POINT)
 
+    max_run_sec=int(args_dict.get('max_run_sec', 10800))
+    retries=int(args_dict.get('retries', 0))
+
     # Register a clean up callback to reset the chrome mount.
     def cleanup():
         for host in [primary_dut, secondary_dut]:
@@ -72,11 +77,11 @@ def run(machine):
                  test_exprs=['("group:cross-device-remote" && "cross-device-remote_cq")'],
                  download_data_lazily=False,
                  ignore_test_failures=False,
-                 max_run_sec=3600,
+                 max_run_sec=max_run_sec,
                  companion_duts={'cd1': secondary_dut},
                  command_args=args,
-                 clear_tpm=False
-                 )
+                 clear_tpm=False,
+                 retries=retries)
 
 
 parallel_simple(run, machines)

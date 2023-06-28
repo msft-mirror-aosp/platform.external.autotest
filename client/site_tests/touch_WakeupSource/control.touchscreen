@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Touchscreen is a a wakeup source.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:power_daily"
+ATTRIBUTES = "suite:power_daily_misc"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchscreen"
 

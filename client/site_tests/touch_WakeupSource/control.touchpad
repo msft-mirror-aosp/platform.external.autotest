@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Touchpad is a wakeup source.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:power_daily"
+ATTRIBUTES = "suite:power_daily_misc"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchpad"
 

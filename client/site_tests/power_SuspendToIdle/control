@@ -23,7 +23,7 @@ METADATA = {
     "criteria": "This test is a functional test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:power_daily")
+ATTRIBUTES = ("suite:power_daily_misc")
 TEST_TYPE = "client"
 
 job.run_test('power_SuspendToIdle')

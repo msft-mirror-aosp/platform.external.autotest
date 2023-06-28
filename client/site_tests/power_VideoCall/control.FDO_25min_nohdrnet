@@ -21,7 +21,7 @@ METADATA = {
     "hw_agnostic": False,
 }
 # TODO(b/268093159) Disable lab run for now
-# ATTRIBUTES = ("suite:power_daily")
+# ATTRIBUTES = ("suite:power_daily_video_call")
 TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)

@@ -13,7 +13,7 @@ METADATA = {
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:power_daily")
+ATTRIBUTES = ("suite:power_daily_misc")
 TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)

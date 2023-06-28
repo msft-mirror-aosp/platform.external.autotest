@@ -887,7 +887,13 @@ suite:policy
 suite:power_build
 suite:power_check
 suite:power_cpd
-suite:power_daily
+suite:power_daily_load_test_v10
+suite:power_daily_load_test_v11
+suite:power_daily_load_test_v11_lacros
+suite:power_daily_misc
+suite:power_daily_video_call
+suite:power_daily_video_encode
+suite:power_daily_video_playback
 suite:power_dashboard
 suite:power_idle
 suite:power_loadtest

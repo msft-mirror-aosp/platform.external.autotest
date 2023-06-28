@@ -20,7 +20,7 @@ METADATA = {
     "hw_agnostic": False,
 }
 # Disabled due to 0% pass rate over 30 days. See b/241832890
-# ATTRIBUTES = ("suite:power_daily")
+# ATTRIBUTES = ("suite:power_daily_misc")
 TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)

@@ -1,0 +1,53 @@
+# Copyright 2022 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+from autotest_lib.server import utils as server_utils
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_T.internal.arm.all.CtsApp'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-long'
+DEPENDENCIES = 'arc'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+# For local debugging, if your test setup doesn't have servo, REMOVE these
+# two lines.
+args_dict = server_utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+def run_TS(machine):
+    # REMOVE 'servo_args=servo_args' arg for local debugging if your test
+    # setup doesn't have servo.
+    try:
+        host_list = [hosts.create_host(machine, servo_args=servo_args)]
+    except:
+        # Just ignore any servo setup flakiness.
+        host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_T',
+        hosts=host_list,
+        iterations=1,
+        max_retry=9,
+        enable_default_apps=True,
+        tag='internal.arm.all.CtsApp',
+        test_name='cheets_CTS_T.internal.arm.all.CtsApp',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsAppBindingHostTestCases', '--include-filter', 'CtsAppBindingHostTestCases[secondary_user]', '--include-filter', 'CtsAppCloningHostTest', '--include-filter', 'CtsAppCompatHostTestCases', '--include-filter', 'CtsAppCompatHostTestCases[instant]', '--include-filter', 'CtsAppCompatHostTestCases[secondary_user]', '--include-filter', 'CtsAppComponentFactoryTestCases', '--include-filter', 'CtsAppComponentFactoryTestCases[instant]', '--include-filter', 'CtsAppComponentFactoryTestCases[secondary_user]', '--include-filter', 'CtsAppEnumerationTestCases', '--include-filter', 'CtsAppEnumerationTestCases[secondary_user]', '--include-filter', 'CtsAppExitTestCases', '--include-filter', 'CtsAppExitTestCases[instant]', '--include-filter', 'CtsAppExitTestCases[secondary_user]', '--include-filter', 'CtsAppIntegrityDeviceTestCases', '--include-filter', 'CtsAppOps2TestCases', '--include-filter', 'CtsAppOps2TestCases[secondary_user]', '--include-filter', 'CtsAppOpsTestCases', '--include-filter', 'CtsAppOpsTestCases[instant]', '--include-filter', 'CtsAppOpsTestCases[secondary_user]', '--include-filter', 'CtsAppPredictionServiceTestCases', '--include-filter', 'CtsAppPredictionServiceTestCases[secondary_user]', '--include-filter', 'CtsAppSearchHostTestCases', '--include-filter', 'CtsAppSearchHostTestCases[secondary_user]', '--include-filter', 'CtsAppSearchTestCases', '--include-filter', 'CtsAppSearchTestCases[secondary_user]', '--include-filter', 'CtsAppSecurityHostTestCases', '--include-filter', 'CtsAppSecurityHostTestCases[secondary_user]', '--include-filter', 'CtsAppTestCases', '--include-filter', 'CtsAppTestCases[instant]', '--include-filter', 'CtsAppTestCases[secondary_user]', '--include-filter', 'CtsAppUsageHostTestCases', '--include-filter', 'CtsAppUsageHostTestCases[instant]', '--include-filter', 'CtsAppUsageHostTestCases[secondary_user]', '--include-filter', 'CtsAppWidgetTestCases', '--include-filter', 'CtsAppWidgetTestCases[instant]', '--include-filter', 'CtsAppWidgetTestCases[secondary_user]', '--logcat-on-failure'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='all.CtsApp',
+        target_plan=None,
+        bundle='arm',
+        uri='LATEST',
+        hard_reboot_on_failure=True,
+        timeout=172800)
+
+parallel_simple(run_TS, machines)

@@ -93,7 +93,14 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
             run_func(ec_cmd_charge)
             run_func(ec_cmd_normal)
         else:
-            run_func(ec_cmd_discharge)
+            # Jacuzzi has a single type-C port and no PPC switch, so the
+            # 'chargeoverride dontcharge' command has no effect.
+            if utils.get_board().startswith('jacuzzi'):
+                # This will be overwritten by ec_cmd_sustain once is supported
+                # on Jacuzzi, and the latter will handle the discharge.
+                run_func('ectool chargecontrol discharge')
+            else:
+                run_func(ec_cmd_discharge)
             try:
                 run_func(ec_cmd_sustain)
             except error.CmdError as e:

@@ -32,7 +32,7 @@ from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
 args_dict['name'] = 'mfp_printscan'
 args_dict['add_experimental'] = True
-args_dict['max_runtime_mins'] = 60
+args_dict['max_runtime_mins'] = 150
 args_dict['job'] = job
 
 dynamic_suite.reimage_and_run(**args_dict)

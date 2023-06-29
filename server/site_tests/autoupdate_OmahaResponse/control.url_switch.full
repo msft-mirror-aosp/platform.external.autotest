@@ -14,7 +14,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-perbuild-omaha-response"
 DOC = """
 This tests that we move to the second Url when we fail with the first Url.
 """

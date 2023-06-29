@@ -303,9 +303,14 @@ suite:arc-video
 suite:arc-vts-t
 suite:assistant-audiobox
 suite:au-m2n
+suite:au-m2n-chrome
+suite:au-m2n-firmware
 suite:au-oobe
 suite:au-p2p
 suite:au-perbuild
+suite:au-perbuild-chrome
+suite:au-perbuild-interrupt
+suite:au-perbuild-omaha-response
 suite:au-perbuild-tast
 suite:au_fsi
 suite:audio
@@ -793,6 +798,7 @@ suite:moblab_storage_qual
 suite:mtp
 suite:nbr
 suite:nbr-au
+suite:nbr-au-with-dlc
 suite:nbr-wifi
 suite:nearby-share
 suite:nearby-share-android

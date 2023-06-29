@@ -13,7 +13,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-m2n"
+ATTRIBUTES = "suite:au-m2n-firmware"
 DOC = """
 Tests that update_engine can update both the OS and firwmare (firmware updates
 are not triggered by default in most other AU tests).

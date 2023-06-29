@@ -14,7 +14,7 @@ METADATA = {
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-ATTRIBUTES = "suite:nbr-au"
+ATTRIBUTES = "suite:nbr-au-with-dlc"
 DOC = """
 MiniOS payload will be excluded after encountering certain types of failure.
 This tests that MiniOS payload can be successfully excluded and not blocks the

@@ -14,7 +14,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-perbuild-omaha-response"
 DOC = """
 Tests that an update fails when the metadata size value is invalid.
 """

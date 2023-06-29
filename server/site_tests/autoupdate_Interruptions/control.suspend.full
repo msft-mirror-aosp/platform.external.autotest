@@ -14,7 +14,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-perbuild-interrupt"
 DOC = """
 Tests suspending/resuming the chromebook during an update.
 

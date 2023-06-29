@@ -14,7 +14,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-perbuild-interrupt"
 DOC = """
 Tests disabling the network on the chromebook during an update.
 

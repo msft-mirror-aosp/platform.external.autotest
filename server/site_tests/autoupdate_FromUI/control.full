@@ -14,7 +14,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-perbuild-chrome"
 DOC = """
 This tests that an update can be triggered by clicking the 'Check for updates'
 button in the ChromeOS Settings app.

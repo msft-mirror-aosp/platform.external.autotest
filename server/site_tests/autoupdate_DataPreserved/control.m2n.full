@@ -14,7 +14,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-m2n"
+ATTRIBUTES = "suite:au-m2n-chrome"
 DOC = """
 This tests that user's timezone, input methods, and downloaded files remain
 unchanged after an update.

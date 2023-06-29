@@ -14,7 +14,7 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-perbuild-omaha-response"
 DOC = """
 Test we cannot update when we fail the first attempt and backoff is enabled.
 """

@@ -14,7 +14,7 @@ METADATA = {
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-ATTRIBUTES = "suite:nbr-au"
+ATTRIBUTES = "suite:nbr-au-with-dlc"
 DOC = """
 This tests the MiniOS update with the platform (OS) and DLC update.
 Use the `running_at_desk` arg when testing locally.

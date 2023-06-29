@@ -8,7 +8,7 @@ METADATA = {
     'contacts': ['chromeos-pvs-eng@google.com'],
     'bug_component': 'b:1110659',
     'criteria': 'Sequence to validate thermal stability while discharging',
-    'requirements': ['pwr-therm-0004-v01']
+    'requirements': ['pwr-therm-0004-v01', 'pwr-therm-0004-v02']
 }
 
 import datetime

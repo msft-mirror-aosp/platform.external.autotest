@@ -728,6 +728,7 @@ class FirmwareTest(test.test):
                         '%s is not sourcing power! Make sure the servo '
                         '"DUT POWER" port is connected to a working charger. '
                         'servo_pd_role:%s' % (pd_tester_device, role))
+        self.servo.disable_ccd_watchdog_for_test()
 
     def setup_usbkey(self, usbkey, host=None, used_for_recovery=None):
         """Setup the USB disk for the test.
@@ -1763,11 +1764,12 @@ class FirmwareTest(test.test):
         """
         self._call_action(func, check_status=True)
 
-	# This assumes that Linux and the firmware use the same RTC. elogtool uses
-	# timestamps in localtime, and so do we (by calling date without --utc).
+# This assumes that Linux and the firmware use the same RTC. elogtool uses
+# timestamps in localtime, and so do we (by calling date without --utc).
+
     def _now(self):
         time_string = self.faft_client.system.run_shell_command_get_output(
-	            'date +"%s"' % self._TIME_FORMAT)[0]
+                'date +"%s"' % self._TIME_FORMAT)[0]
         logging.debug('Current local system time on DUT is "%s"', time_string)
         return time.strptime(time_string, self._TIME_FORMAT)
 

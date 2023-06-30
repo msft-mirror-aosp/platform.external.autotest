@@ -471,6 +471,15 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
 # List of suite that stable VM modules will skip.
 CONFIG['VM_SKIP_SUITES'] = ['suite:arc-cts']
 
+CONFIG['VM_CONFIG'] = {
+        'SUITE_NAME': CONFIG['VM_SUITE_NAME'],
+        'STABLE_SUITE_NAME': CONFIG['STABLE_VM_SUITE_NAME'],
+        'STABLE_SKIP_SUITES': CONFIG['VM_SKIP_SUITES'],
+        'RUN_SINGLE_ABI': CONFIG['VM_RUN_SINGLE_ABI'],
+        'MODULES_RULES': CONFIG['VM_MODULES_RULES'],
+        'UNSTABLE_MODULES_RULES': CONFIG['VM_UNSTABLE_MODULES_RULES'],
+}
+
 # Modules that are known to download and/or push media file assets.
 CONFIG['MEDIA_MODULES'] = [
         'CtsMediaTestCases',
@@ -772,7 +781,7 @@ CONFIG['EXTRA_ATTRIBUTES'] = {}
 CONFIG['EXTRA_ARTIFACTS'] = {}
 CONFIG['PREREQUISITES'] = {}
 
-from generate_controlfiles_common import main
+from generate_controlfiles_new import main
 
 if __name__ == '__main__':
     main(CONFIG)

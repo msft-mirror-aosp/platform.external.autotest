@@ -5,14 +5,14 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_R.internal.arm.all.CtsLibcore'
+NAME = 'cheets_CTS_R.internal.x86.all.vm_stable.CtsLibcore'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
 ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-long'
-DEPENDENCIES = 'arc'
+DEPENDENCIES = 'arc, cts_abi_x86'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'
@@ -26,13 +26,13 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=9,
-        tag='internal.arm.all.CtsLibcore',
-        test_name='cheets_CTS_R.internal.arm.all.CtsLibcore',
+        tag='internal.x86.all.vm_stable.CtsLibcore',
+        test_name='cheets_CTS_R.internal.x86.all.vm_stable.CtsLibcore',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsLibcoreApiEvolutionTestCases', '--include-filter', 'CtsLibcoreApiEvolutionTestCases[secondary_user]', '--include-filter', 'CtsLibcoreFileIOTestCases', '--include-filter', 'CtsLibcoreFileIOTestCases[secondary_user]', '--include-filter', 'CtsLibcoreJsr166TestCases', '--include-filter', 'CtsLibcoreJsr166TestCases[secondary_user]', '--include-filter', 'CtsLibcoreLegacy22TestCases', '--include-filter', 'CtsLibcoreLegacy22TestCases[secondary_user]', '--include-filter', 'CtsLibcoreOjTestCases', '--include-filter', 'CtsLibcoreOjTestCases[secondary_user]', '--include-filter', 'CtsLibcoreOkHttpTestCases', '--include-filter', 'CtsLibcoreOkHttpTestCases[secondary_user]', '--include-filter', 'CtsLibcoreTestCases', '--include-filter', 'CtsLibcoreTestCases[secondary_user]', '--include-filter', 'CtsLibcoreWycheproofBCTestCases', '--include-filter', 'CtsLibcoreWycheproofBCTestCases[secondary_user]', '--include-filter', 'CtsLibcoreWycheproofConscryptTestCases', '--include-filter', 'CtsLibcoreWycheproofConscryptTestCases[secondary_user]'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
-        target_module='all.CtsLibcore',
+        target_module='all.vm_stable.CtsLibcore',
         target_plan=None,
-        bundle='arm',
+        bundle='x86',
         uri='LATEST',
         timeout=172800)
 

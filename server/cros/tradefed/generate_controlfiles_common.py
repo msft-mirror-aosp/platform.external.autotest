@@ -179,6 +179,12 @@ _CONTROLFILE_TEMPLATE = Template(
 
 CONFIG = None
 
+
+def inject_config(config):
+    global CONFIG
+    CONFIG = config
+
+
 _COLLECT = 'tradefed-run-collect-tests-only-internal'
 _PUBLIC_COLLECT = 'tradefed-run-collect-tests-only'
 _CTSHARDWARE_COLLECT = 'tradefed-run-collect-tests-only-hardware-internal'
@@ -1131,31 +1137,28 @@ def get_controlfile_content(combined,
             executable_test_count=executable_test_count)
 
 
-def fixup_tradefed_executable_bits(basepath):
+def fixup_tradefed_executable_bits(basepath, executables):
     """ Do chmod u+x for files to be executed, because Python's zipfile
     module does not set the executable bit.
     """
-    # The list of files to be fixed.
-    executables = [CONFIG['TRADEFED_EXECUTABLE_PATH']]
-    executables.extend(CONFIG.get('EXECUTABLE_PATH_LIST', []))
-    # Legacy config (deprecated by EXECUTABLE_PATH_LIST)
-    if 'JAVA_EXECUTABLE_PATH' in CONFIG:
-        executables.append(CONFIG['JAVA_EXECUTABLE_PATH'])
-
     for subpath in executables:
         path = os.path.join(basepath, subpath)
         if os.path.exists(path):
             os.chmod(path, os.stat(path).st_mode | stat.S_IEXEC)
 
 
-def get_tradefed_data(path, is_public, abi):
+def get_tradefed_data(path, tradefed_path=None, extra_executables=None):
     """Queries tradefed to provide us with a list of modules.
 
     Notice that the parsing gets broken at times with major new CTS drops.
     """
-    fixup_tradefed_executable_bits(path)
+    tradefed_path = tradefed_path or CONFIG['TRADEFED_EXECUTABLE_PATH']
+    executables = extra_executables.copy(
+    ) if extra_executables is not None else []
+    executables.append(tradefed_path)
+    fixup_tradefed_executable_bits(path, executables)
 
-    tradefed = os.path.join(path, CONFIG['TRADEFED_EXECUTABLE_PATH'])
+    tradefed = os.path.join(path, tradefed_path)
     cmd_list = [tradefed, 'list', 'modules']
     logging.info('Calling tradefed for list of modules.')
     with open(os.devnull, 'w') as devnull:
@@ -1802,7 +1805,7 @@ def run(source_contents, cache_dir, bundle_password=''):
                 download(uri, bundle)
             logging.info('Extracting %s.', bundle)
             unzip(bundle, tmp, bundle_password)
-            modules, build, revision = get_tradefed_data(tmp, is_public, abi)
+            modules, build, revision = get_tradefed_data(tmp)
             if not revision:
                 raise Exception('Could not determine revision.')
 

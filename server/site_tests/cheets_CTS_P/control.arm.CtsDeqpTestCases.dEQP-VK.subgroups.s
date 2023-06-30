@@ -30,7 +30,7 @@ def run_TS(machine):
         test_name='cheets_CTS_P.arm.CtsDeqpTestCases.dEQP-VK.subgroups.s',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases', '--module', 'CtsDeqpTestCases', '--test', 'dEQP-VK.subgroups.s*'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
-        target_module='CtsDeqpTestCases',
+        target_module='CtsDeqpTestCases.dEQP-VK.subgroups.s',
         target_plan=None,
         bundle='arm',
         retry_manual_tests=True,

@@ -29,7 +29,7 @@ def run_TS(machine):
         test_name='cheets_CTS_T.arm.CtsSensorTestCases.faft',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsSensorTestCases', '--abi', 'armeabi-v7a'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
-        target_module='CtsSensorTestCases',
+        target_module='CtsSensorTestCases.faft',
         target_plan=None,
         bundle='arm',
         retry_manual_tests=True,

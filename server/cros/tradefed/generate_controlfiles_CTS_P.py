@@ -801,7 +801,7 @@ CONFIG['PREREQUISITES'] = {
     'CtsThemeHostTestCases': [_PREREQUISITE_REGION_US],
 }
 
-from generate_controlfiles_common import main
+from generate_controlfiles_new import main
 
 if __name__ == '__main__':
 

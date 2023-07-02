@@ -70,7 +70,7 @@ class BluetoothAdapterLLPrivacyTests(
 
         patterns = [
                 '> HCI Event: Command Complete (0x0e)',
-                'LE Add Device To Resolving List (0x08|0x0027) ncmd 1',
+                'LE Add Device To Resolving List (0x08|0x0027)',
                 'Status: Success (0x00)'
         ]
         add_dev_to_resolv_list = self.bluetooth_facade.btmon_find_consecutive(

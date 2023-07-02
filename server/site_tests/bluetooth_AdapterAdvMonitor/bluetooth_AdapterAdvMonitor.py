@@ -42,6 +42,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
                   },
+                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS,
                   supports_floss=True)
     def advmon_pattern_filter_tests(self):
         """Tests pattern filter for single client."""

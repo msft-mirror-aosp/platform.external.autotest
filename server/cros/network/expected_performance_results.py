@@ -391,8 +391,13 @@ max_throughput_expectation_for_boards = {
         },
         # elm throughput results tracked in b:201806809.
         "elm": {
-                perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: 200,
-                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: 300
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX:
+                200,
+                perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX:
+                300,
+                # The regression on TCP_RX is tracked in b:238853149
+                perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX:
+                125
         },
         # eve throughput results tracked in b:188454947.
         "eve": {

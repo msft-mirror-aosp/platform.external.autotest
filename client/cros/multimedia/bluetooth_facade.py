@@ -5163,6 +5163,25 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """
         return self.adapter_client.is_bonded(address)
 
+    # TODO(b:288636142) remove this once b/288636142 has been solved.
+    def device_pairing_info_is_stored(self, address):
+        """ Check if the pairing info has been stored in a file
+        @param address: address of the device.
+
+        @returns: True if the device pairing info has been stored.
+            False otherwise
+        """
+        stored_path = '/var/lib/bluetooth/bt_config.conf'
+        cmd = 'grep -i {} {}'.format(address, stored_path)
+
+        result = utils.run(cmd, ignore_status=True)
+        if not result.exit_status:
+            return len(result.stdout) > 0
+        if len(result.stderr) > 0:
+            logging.error('Could not grep file %s: %s', stored_path,
+                          result.stderr)
+        return False
+
     def is_discoverable(self):
         """Return whether the adapter is currently discoverable."""
         return self.adapter_client.get_property('Discoverable')

@@ -2692,6 +2692,43 @@ class BluetoothAdapterTests(test.test):
         return all(self.results.values())
 
 
+    # TODO(b:288636142) remove this once b/288636142 has been solved.
+    @test_retry_and_log
+    def test_pairing_info_stored(self, device_address):
+        """Test that the pairing info of the device has been stored successfully
+
+        @param device_address: Address of the device.
+
+        @returns: True if the pairing info is stored. False otherwise.
+
+        """
+        def _pairing_info_stored():
+            """ Check if the pairing info has been stored in a file
+
+            @returns: True if the device pairing info has been stored.
+                False otherwise
+
+            """
+            return self.bluetooth_facade.device_pairing_info_is_stored(
+                    device_address)
+
+        stored = False
+        try:
+            utils.poll_for_condition(
+                    condition=_pairing_info_stored,
+                    timeout=self.ADAPTER_PAIRING_TIMEOUT_SECS,
+                    sleep_interval=self.ADAPTER_PAIRING_POLLING_SLEEP_SECS,
+                    desc='Waiting for pairing info of %s stored' %
+                    device_address)
+            stored = True
+        except utils.TimeoutError as e:
+            logging.error('test_pairing_info_stored: %s', e)
+        except Exception as e:
+            logging.error('test_pairing_info_stored: unexpected error %s', e)
+
+        self.results = {'pairing_info_stored': stored}
+        return all(self.results.values())
+
     @test_retry_and_log
     def test_disconnection_by_adapter(self, device_address):
         """Test that the adapter of dut could disconnect the device successfully

@@ -344,6 +344,11 @@ class BluetoothAdapterPairingTests(
         self.test_connection_by_adapter(device.address)
         self.test_hid_device_created(device.address)
 
+        # TODO(b:288636142) remove this once b/288636142 has been solved.
+        # Check the pairing info of the peer device has been stored.
+        if self.floss:
+            self.test_pairing_info_stored(device.address)
+
         total_reconnection_duration = 0
         loop_cnt = 0
         for i in range(loops):

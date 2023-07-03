@@ -1571,8 +1571,9 @@ def write_qualification_and_regression_controlfile(modules, abi, revision,
     """Write a control file to run "all" tests for qualification and regression.
     """
     # For cts-instant, qualication control files are expected to cover
-    # regressions as well. Hence the 'suite:arc-cts' is added.
-    suites = ['suite:arc-cts', 'suite:arc-cts-qual']
+    # regressions as well. Apply both regression and qual suites.
+    suites = CONFIG.get('INTERNAL_SUITE_NAMES', []) + CONFIG.get(
+            'QUAL_SUITE_NAMES', [])
     module_set = set(modules)
     combined = combine_modules_by_bookmark(module_set)
     for key in combined:

@@ -34,8 +34,9 @@ CONFIG['TRADEFED_EXECUTABLE_PATH'] = \
     'android-cts_instant/tools/cts-instant-tradefed'
 CONFIG['TRADEFED_IGNORE_BUSINESS_LOGIC_FAILURE'] = False
 
-CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts']
-CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
+# TODO(b/287160788): Implement split suites
+CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts', 'suite:arc-cts-long']
+CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual', 'suite:arc-cts-qual-long']
 
 # CTS Instant is relatively small (= shorter turnaround time), and very
 # unlikely to fail alone (= regression almost always caught by the

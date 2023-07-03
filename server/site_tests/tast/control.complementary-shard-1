@@ -15,7 +15,7 @@ METADATA = {
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:complementary'
+ATTRIBUTES = 'suite:duop_complementary_shard_1'
 MAX_RESULT_SIZE_KB = 512 * 1024
 PY_VERSION = 3
 JOB_RETRIES = 0
@@ -34,7 +34,7 @@ def run(machine):
                  test_exprs=['("group:complementary")'],
                  ignore_test_failures=True,
                  max_run_sec=3*60*60,
-                 totalshards=3,
+                 totalshards=4,
                  shardindex=1,
                  command_args=args)
 

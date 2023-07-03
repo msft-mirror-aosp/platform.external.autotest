@@ -5,23 +5,20 @@
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'cros-engprod-muc'
-NAME = 'tast.complementary-shard-2'
+NAME = 'tast.golden-tier-shard-3'
 METADATA = {
-    "contacts": ["kamilszarek@google.com", "cros-engprod-muc@google.com"],
-    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
-    'criteria': 'Tauto wrapper for specified tast tests',
-
+        "contacts": ["kamilszarek@google.com", "cros-engprod-muc@google.com"],
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:duop_complementary_shard_2'
+ATTRIBUTES = 'suite:duop_golden_shard_3'
 MAX_RESULT_SIZE_KB = 512 * 1024
 PY_VERSION = 3
 JOB_RETRIES = 0
 
 DOC = '''
-This suite runs the tests in Tast on devices that are not in golden, medium-low, hardware suites.
+This suite runs the golden_tier tests in Tast.
 '''
 
 args_dict = utils.args_to_dict(args)
@@ -31,11 +28,11 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine, servo_args=servo_args),
-                 test_exprs=['("group:complementary")'],
+                 test_exprs=['("group:golden_tier")'],
                  ignore_test_failures=True,
                  max_run_sec=3*60*60,
                  totalshards=4,
-                 shardindex=2,
+                 shardindex=3,
                  command_args=args)
 
 parallel_simple(run, machines)

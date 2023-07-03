@@ -5,17 +5,14 @@
 from autotest_lib.client.common_lib import utils
 
 AUTHOR = 'cros-engprod-muc'
-NAME = 'tast.complementary-shard-2'
+NAME = 'tast.complementary-shard-3'
 METADATA = {
-    "contacts": ["kamilszarek@google.com", "cros-engprod-muc@google.com"],
-    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
-    'criteria': 'Tauto wrapper for specified tast tests',
-
+        "contacts": ["kamilszarek@google.com", "cros-engprod-muc@google.com"],
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:duop_complementary_shard_2'
+ATTRIBUTES = 'suite:duop_complementary_shard_3'
 MAX_RESULT_SIZE_KB = 512 * 1024
 PY_VERSION = 3
 JOB_RETRIES = 0
@@ -35,7 +32,7 @@ def run(machine):
                  ignore_test_failures=True,
                  max_run_sec=3*60*60,
                  totalshards=4,
-                 shardindex=2,
+                 shardindex=3,
                  command_args=args)
 
 parallel_simple(run, machines)

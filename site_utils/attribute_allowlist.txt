@@ -667,7 +667,6 @@ suite:chrome-informational
 suite:commercial-limited
 suite:cq-medium
 suite:cq-minimal
-suite:complementary
 suite:cros-av-analysis
 suite:cros-hwsec_nightly
 suite:cros-hwsec_per-week
@@ -721,9 +720,20 @@ suite:dpanel-end2end_per-build
 suite:drivefs-cq
 suite:dummy_server
 suite:dummy_server_nossp
+suite:duop_complementary_shard_0
+suite:duop_complementary_shard_1
+suite:duop_complementary_shard_2
+suite:duop_complementary_shard_3
+suite:duop_golden_shard_0
+suite:duop_golden_shard_1
+suite:duop_golden_shard_2
+suite:duop_golden_shard_3
 suite:duop_hardware_shard_0
 suite:duop_hardware_shard_1
 suite:duop_hardware_shard_2
+suite:duop_medium_low_tier_shard_0
+suite:duop_medium_low_tier_shard_1
+suite:duop_medium_low_tier_shard_2
 suite:enroll_retainment
 suite:enrollment_per-build
 suite:ent-nightly
@@ -780,7 +790,6 @@ suite:fwupd_downgrade
 suite:fwupd_install_file
 suite:fwupd_install_version
 suite:fwupd_update
-suite:golden-tier
 suite:graphics
 suite:graphics_browser
 suite:graphics_per-build
@@ -790,7 +799,6 @@ suite:graphics_system
 suite:gsc_dt_ab-sta
 suite:gsc_dt_ab-ti50
 suite:gts
-suite:hardware
 suite:healthd_per-build
 suite:hotrod
 suite:hotrod-remora
@@ -827,7 +835,6 @@ suite:launcher_search_quality_daily
 suite:link_perf
 suite:longevity
 suite:manual_platform_suite
-suite:medium-low-tier
 suite:memory_qual
 suite:memory_qual2
 suite:memory_qual_quick

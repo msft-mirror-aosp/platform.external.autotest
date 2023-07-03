@@ -293,7 +293,6 @@ CONFIG['SPLIT_SUITES'] = {
                 'CtsMediaStressTestCases': 18280,
                 'CtsMediaTestCases.32': 36732,
                 'CtsMediaTestCases.64': 36216,
-                'CtsMediaTestCases.audio': 8927,
                 'CtsMidiTestCases': 422,
                 'CtsMocking': 380,
                 'CtsMonkeyTestCases': 762,
@@ -370,7 +369,6 @@ CONFIG['MEDIA_MODULES'] = [
 
 CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
         'CtsMediaStressTestCases.camera',
-        'CtsMediaTestCases.audio',
 ]
 CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
@@ -510,11 +508,7 @@ CONFIG['PUBLIC_HARDWARE_MODULES'] = CONFIG['HARDWARE_MODULES'] + [
         'CtsCameraTestCases'
 ]
 
-CONFIG['EXTRA_MODULES'] = {
-        'CtsMediaTestCases': {
-                'CtsMediaTestCases.audio': ['suite:arc-cts'],
-        },
-}
+CONFIG['EXTRA_MODULES'] = {}
 
 # In addition to EXTRA_MODULES, these modules do require separate control files
 # requiring separate declaration.
@@ -821,54 +815,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'CtsMediaStressTestCases',
                 '--test',
                 'android.mediastress.cts.MediaRecorderStressTest',
-        ],
-        'CtsMediaTestCases.audio': [
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioAttributesTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioEffectTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioFocusTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioFormatTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioManagerTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioNativeTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioPlayRoutingNative',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioPlaybackConfigurationTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioPreProcessingTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioPresentationTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioRecordAppOpTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioRecordRoutingNative',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioRecordTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioRecord_BufferSizeTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioRecordingConfigurationTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioTrackLatencyTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioTrackSurroundTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioTrackTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioTrack_ListenerTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.SoundPoolAacTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.SoundPoolMidiTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.SoundPoolOggTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.VolumeShaperTest',
         ],
         'CtsPermissionTestCases.camera': [
                 '--include-filter',

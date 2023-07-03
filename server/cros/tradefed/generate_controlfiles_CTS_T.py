@@ -476,8 +476,8 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
         "+CtsNet.*",
         "+CtsOs.*",
         "+CtsProvider.*",
-        "+CtsSimpleperfTestCases",
-        "+CtsStatsdHost.*",
+        "+CtsSimpleperf.*",
+        "+CtsStatsd.*",
 
         # These tests has suspicious bug reports on R.
         '+CtsAccessibility.*',  # b/192310577, b/196934844
@@ -486,13 +486,13 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
         '+CtsAutoFillService.*',  # b/216897339
         '+CtsBionic.*',  # b/160851611
         '+CtsBlobStore.*',  # b/180681350
-        '+CtsBootStats.*',  # b/174224484
+        '+CtsBoot.*',  # b/174224484
         '+CtsDownloadManager.*',  # b/163729385
         '+CtsDropBoxManagerTestCases.*',  # b/177029550
         '+CtsDynamic.*',  # b/163121640
         '+CtsFragment.*',  # b/251276296
         '+CtsIke.*',  # b/160541882
-        '+CtsInputMethod.*',  # b/253540001, b/191413875
+        '+CtsInput.*',  # b/253540001, b/191413875
         '+CtsJni.*',  # b/160867403
         '+CtsJobScheduler.*',  # b/226422237
         '+CtsMidiTestCases.*',  # b/222242213
@@ -502,8 +502,8 @@ CONFIG['VM_UNSTABLE_MODULES_RULES'] = [
         '+CtsPerfetto.*',  # b/203614416
         '+CtsProvider.*',  # b/212194116
         '+CtsRs.*',  # b/166168119
-        '+CtsScopedStorageHostTest.*',  # b/232055847
-        '+CtsSimpleperfTestCases.*',  # b/247434877
+        '+CtsScopedStorage.*',  # b/232055847
+        '+CtsSimpleperf.*',  # b/247434877
         '+CtsTransition.*',  # b/160544400
         '+CtsWidget.*',  # b/214332007
         '+LegacyStorageTest.*',  # b/190457907

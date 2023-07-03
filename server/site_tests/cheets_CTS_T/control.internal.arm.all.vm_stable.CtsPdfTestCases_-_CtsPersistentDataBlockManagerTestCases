@@ -11,7 +11,7 @@ METADATA = {
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-vm-stable-arm-23'
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-vm-stable-arm-22'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

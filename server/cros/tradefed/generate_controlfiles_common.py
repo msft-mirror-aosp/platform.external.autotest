@@ -1072,7 +1072,7 @@ def get_controlfile_content(combined,
                 get_suite_split_shard_name(CONFIG['SPLIT_SUITES'], is_qual,
                                            test, abi, abi_bits))
 
-    attributes = ', '.join(suites)
+    attributes = ', '.join(sorted(suites))
     uri = {
             SourceType.MOBLAB: None,
             SourceType.LATEST: 'LATEST',

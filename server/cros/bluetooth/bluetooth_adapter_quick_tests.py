@@ -120,7 +120,9 @@ class BluetoothAdapterQuickTests(
                         start_browser=False,
                         floss=False,
                         llprivacy=False,
-                        floss_lm_quirk=False):
+                        floss_lm_quirk=False,
+                        enable_cellular=False,
+                        enable_ui=False):
         """Inits the test batch
 
         @param floss_lm_quirk True to enable the quirk for b/260539322 to
@@ -234,9 +236,9 @@ class BluetoothAdapterQuickTests(
 
         # Disable cellular services, as they can sometimes interfere with
         # suspend/resume, i.e. b/161920740
-        self.enable_disable_cellular(enable=False)
+        self.enable_disable_cellular(enable=enable_cellular)
 
-        self.enable_disable_ui(enable=False)
+        self.enable_disable_ui(enable=enable_ui)
 
         # Delete files created in previous run
         self.host.run('[ ! -d {0} ] || rm -rf {0} || true'.format(

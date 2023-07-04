@@ -28,24 +28,14 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    def au_run_method(self,
-                      device,
-                      test_method,
-                      test_profile,
-                      *,
-                      test_with_ui_enabled=False):
+    def au_run_method(self, device, test_method, test_profile):
         """audio procedure of running a specified test method.
 
         @param device: the bt peer device
         @param test_method: the audio test method to run
         @param test_profile: which test profile is used,
                              A2DP, HFP_WBS or HFP_NBS
-        @param test_with_ui_enabled: a bool indicating whether it should
-                enable ui before testing. If True, ui is enabled before
-                tests and disabled after tests. Otherwise, no effect.
         """
-        if test_with_ui_enabled is True:
-            self.test_enable_disable_ui(True)
         self.test_reset_on_adapter()
         self.test_bluetoothd_running()
         self.initialize_bluetooth_audio(device, test_profile)
@@ -57,8 +47,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.collect_audio_diagnostics()
         self.test_disconnection_by_adapter(device.address)
         self.cleanup_bluetooth_audio(device, test_profile)
-        if test_with_ui_enabled is True:
-            self.test_enable_disable_ui(False)
 
 
     def au_run_test_sequence(self, device, test_sequence, test_profile):
@@ -172,20 +160,12 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         test_sequence = lambda: self.pinned_playback(device, test_profile)
         self.au_run_test_sequence(device, test_sequence, test_profile)
 
-    def au_hfp_run_method(self,
-                          device,
-                          test_method,
-                          test_profile,
-                          *,
-                          test_with_ui_enabled=False):
+    def au_hfp_run_method(self, device, test_method, test_profile):
         """Run an HFP test with the specified test method.
 
         @param device: the bt peer device
         @param test_method: the specific HFP WBS test method
         @param test_profile: which test profile is used, HFP_WBS or HFP_NBS
-        @param test_with_ui_enabled: a bool indicating whether it should
-                enable ui before testing. If True, ui is enabled before
-                tests and disabled after tests. Otherwise, no effect.
         """
         if self.check_wbs_capability():
             if test_profile in (HFP_WBS, HFP_WBS_MEDIUM):
@@ -217,10 +197,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 # The audio team suggests a simple 2-second sleep.
                 time.sleep(2)
 
-        self.au_run_method(device,
-                           lambda: test_method(device, test_profile),
-                           test_profile,
-                           test_with_ui_enabled=test_with_ui_enabled)
+        self.au_run_method(device, lambda: test_method(device, test_profile),
+                           test_profile)
 
 
     @test_wrapper('HFP WBS sinewave test with dut as source',
@@ -256,11 +234,10 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_wbs_dut_as_sink_with_super_resolution_test(self):
         """HFP WBS test with sinewave and super_resolution streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        # Enabling ui is needed, or the downloading in dlc service won't work.
+        # cellular and ui is needed, or the dlc service won't work.
         self.au_hfp_run_method(device,
                                self.hfp_dut_as_sink_with_super_resolution,
-                               HFP_WBS,
-                               test_with_ui_enabled=True)
+                               HFP_WBS)
 
 
     @test_wrapper('HFP NBS sinewave test with dut as source',
@@ -299,8 +276,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         # Enabling ui is needed, or the downloading in dlc service won't work.
         self.au_hfp_run_method(device,
                                self.hfp_dut_as_sink_with_super_resolution,
-                               HFP_NBS,
-                               test_with_ui_enabled=True)
+                               HFP_NBS)
 
 
     @test_wrapper('HFP WBS VISQOL test with dut as sink',
@@ -484,7 +460,9 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                  args_dict=None,
                  test_name=None,
                  flag='Quick Health',
-                 floss=False):
+                 floss=False,
+                 enable_cellular=False,
+                 enable_ui=False):
         """Run the batch of Bluetooth stand health tests
 
         @param host: the DUT, usually a chromebook
@@ -497,6 +475,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                              use_btpeer=True,
                              flag=flag,
                              args_dict=args_dict,
-                             floss=floss)
+                             floss=floss,
+                             enable_cellular=enable_cellular,
+                             enable_ui=enable_ui)
         self.au_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -671,6 +671,7 @@ suite:cros-av-analysis
 suite:cros-hwsec_nightly
 suite:cros-hwsec_per-week
 suite:crosbolt_arc_perf_qual
+suite:crosbolt_fsi_check
 suite:crosbolt_perf_nightly
 suite:crosbolt_perf_parallels_nightly
 suite:crosbolt_perf_parallels_perbuild

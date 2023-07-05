@@ -1,0 +1,45 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Health Monitoring Team"
+NAME = "crosbolt_fsi_check"
+METADATA = {
+        "contacts": ["chromeos-performance-eng@google.com"],
+        "bug_component": "b:131602", # ChromeOS > Platform > System > HealthMonitoring > Crosbolt
+        "criteria": "Verify performance for FSI review"
+}
+PURPOSE = "Performance tests for FSI health check"
+
+TIME = "MEDIUM"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+Run the Tast tests used for FSI health check.
+
+FSI health check is part of the process for launching devices.
+
+See http://go/cros-fsi-overview to see the FSI health check process.
+
+@param build: The name of the image to test.
+              Ex: x86-mario-release/R17-1412.33.0-a1-b29
+@param board: The board to test on. Ex: x86-mario
+@param pool: The pool of machines to utilize for scheduling. If pool=None
+             board is used.
+@param check_hosts: require appropriate live hosts to exist in the lab.
+@param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['max_runtime_mins'] = 60
+args_dict['timeout_mins'] = 60
+args_dict['file_bugs'] = False
+args_dict['name'] = 'crosbolt_fsi_check'
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

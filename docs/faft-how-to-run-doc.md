@@ -195,7 +195,13 @@ FAFT tests are written in two different frameworks: Autotest and Tast.
 
 Autotest tests are run using the `test_that` command, described below. Tast tests are run using the `tast run` command, which is documented at [go/tast-running](http://chromium.googlesource.com/chromiumos/platform/tast/+/HEAD/docs/running_tests.md).
 
+Alternatively both Autotest and Tast tests can be run with PVS.  If running FAFT tests using PVS you do
+not need a chroot and can follow the [PVS - Partner Setup Guide] to get setup.
+
 ### Get tast private repo {#tast-tests-private}
+
+This setup step is for the chroot workflow if using PVS skip to
+[PVS Setup Confirmation].
 
 There is at least one test that needs a secret key to get access to the ChromeOS
 login screen, and that key will not be there if you only have the public manifest
@@ -229,6 +235,9 @@ result.
 
 ### Setup Confirmation {#setup-confirmation}
 
+This setup confirmation section is for the chroot workflow if using PVS skip to
+[PVS Setup Confirmation].
+
 To run Autotest tests, use the `test_that` tool, which does not automatically
 start a `servod` process for communicating with the servo board. Running FAFT
 is easiest with `servod` and `test_that` running in separate terminals inside
@@ -249,6 +258,18 @@ You can omit the --autotest_dir if you have built packages for the board and wan
 
 (chroot) `$ ./build_packages --board=$BOARD` where `$BOARD` is the code name of the board under test
 (chroot) `$ /usr/bin/test_that --board=$BOARD $DUT_IP firmware_FAFTSetup`
+
+### PVS Setup Confirmation {#pvs-setup-confirmation}
+
+This setup confirmation section is for the PVS workflow if using chroot go back
+to [Setup Confirmation].
+
+1. Ensure you have a PVS Host setup by following the [PVS - Partner Setup Guide]
+1. To get setup to run FAFT tests, on your PVS host run (for more info on PVS arguments see [PVS User Guide]):
+    1. `(outside container) shop unpack -d <DUT_IP> --servo-serial <servo serial> [--milestone <milestone> --chromeos-version <chromeOS version>]`
+    1. `(outside container) docker attach pvs`
+1. If you would like to automatically flash the DUT and thumb drive with the ChromeOS version passed to the `shop` command run: `(inside container) pvs run --qual-type firmware --test-plan-name RO/RW --filter sys-fw-0024,test:tast.firmware.Fixture.rec`
+1. Run `firmware_FAFTSetup` and `firmware.Fixture.rec` test to verify basic functionality and ensure that your setup is correct. `(inside container) pvs run --qual-type firmware --test-plan-name RO/RW --filter "sys-fw-0024,test:tast.firmware.Fixture.rec|firmware_FAFTSetup"`
 
 ### Sample Commands {#sample-commands}
 
@@ -273,14 +294,22 @@ To update the firmware using the shellball in the image, specify the argument fi
 Run the entire faft_bios suite
 
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_bios`
+- or with PVS: `(inside PVS) pvs run --qual-type firmware --test-plan-name RO/RW --filter sys-fw-0024`
 
 Run the entire faft_ec suite
 
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_ec`
+- or with PVS: `(inside PVS) pvs run --qual-type firmware --test-plan-name RO/RW --filter sys-fw-0022`
 
 Run the entire faft_pd suite
 
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_pd`
+- or with PVS: `(inside PVS) pvs run --qual-type firmware --test-plan-name RO/RW --filter sys-fw-0023`
+
+Run a firmware test not mapped to a requirement with PVS:
+
+- `(inside PVS) pvs run --test <test name>`
+- example for `power_SuspendStress/control.BareFSI`: `(inside PVS) pvs run --test power_SuspendStress.bareFSI`
 
 To run servod in a different host, specify the servo_host and servo_port arguments.
 
@@ -395,3 +424,7 @@ Q: My USB stick keeps getting corrupted and I can't get firmware_FAFTSetup to pa
 [servod]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servod.md
 [test that]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/test-that.md
 [CCD]: https://chromium.googlesource.com/chromiumos/platform/ec/+/cr50_stab/docs/case_closed_debugging_cr50.md
+[PVS - Partner Setup Guide]: https://chrome-internal.googlesource.com/chromeos/platform/pvs/+/refs/heads/main/docs/partner_user_guide.md#pvs-partner-setup-guide
+[PVS User Guide]: https://chrome-internal.googlesource.com/chromeos/platform/pvs/+/refs/heads/main/docs/pvs_user_guide.md
+[PVS Setup Confirmation]: #pvs-setup-confirmation
+[Setup Confirmation]: #setup-confirmation

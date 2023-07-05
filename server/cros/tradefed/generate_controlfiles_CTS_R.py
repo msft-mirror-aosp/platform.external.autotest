@@ -43,49 +43,6 @@ CONFIG['STABLE_VM_SUITE_NAME'] = 'suite:arc-cts-vm-stable'
 # Suite for rerunning failing camera test during qual
 CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-opendut'
 
-# Suite for distributed fleetland shards for automation purposes
-CONFIG['DISTRIBUTED_QUAL_SUITE'] = 'suite:distributed_arc_qual_cts_shard'
-
-#sharding arc-cts-qual for automation
-CONFIG['DISTRIBUTED_QUAL_SHARD'] = dict({
-        'CtsActivityManagerDeviceSdk25TestCases':
-        1,
-        'CtsAdminPackageInstallerTestCases':
-        1,
-        'CtsCarTestCases':
-        1,
-        'CtsShortcutHostTestCases':
-        2,
-        'CtsMidiTestCases':
-        2,
-        'CtsJvmtiAttachingHostTestCases':
-        2,
-        'CtsFileSystemTestCases':
-        3,
-        'tradefed-run-collect-tests-only-internal':
-        3,
-        'CtsMediaTestCases':
-        4,
-        'CtsMediaStressTestCases':
-        5,
-        'CtsAccessibilityServiceTestCases':
-        6,
-        'CtsViewTestCases':
-        7,
-        'CtsDeviceIdleHostTestCases':
-        7,
-        'CtsSecurityHostTestCases':
-        7,
-        'CtsSecurityTestCases':
-        7,
-        'CtsAbiOverrideHostTestCases':
-        7,
-        'CtsSensorTestCases':
-        7,
-        'CtsDeqpTestCases':
-        8,
-})
-
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
 CONFIG['CONTROLFILE_WRITE_CAMERA'] = True

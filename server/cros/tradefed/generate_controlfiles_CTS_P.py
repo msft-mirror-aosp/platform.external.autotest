@@ -40,9 +40,6 @@ CONFIG['INTERNAL_SUITE_NAMES'] = ['suite:arc-cts']
 CONFIG['QUAL_SUITE_NAMES'] = ['suite:arc-cts-qual']
 CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 
-# Suite for distributed fleetland shards for automation purposes
-CONFIG['DISTRIBUTED_QUAL_SUITE'] = 'suite:distributed_arc_qual_cts_shard'
-
 # Suite for rerunning failing camera test during qual
 CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-opendut'
 
@@ -156,54 +153,6 @@ CONFIG['CAMERA_MODULES'] = [
        # CONTAINS ONLY CAMERA TESTS
        'CtsCameraTestCases',
 ]
-
-#sharding arc-cts-qual for automation
-CONFIG['DISTRIBUTED_QUAL_SHARD'] = dict({
-        'CtsActivityManagerDeviceSdk25TestCases':
-        1,
-        'CtsAdminPackageInstallerTestCases':
-        1,
-        'CtsCarTestCases':
-        1,
-        'CtsShortcutHostTestCases':
-        2,
-        'CtsMidiTestCases':
-        2,
-        'CtsJvmtiAttachingHostTestCases':
-        2,
-        'CtsFileSystemTestCases':
-        3,
-        'tradefed-run-collect-tests-only-internal':
-        3,
-        'CtsMediaTestCases':
-        4,
-        'CtsMediaStressTestCases':
-        5,
-        'CtsMediaHostTestCases':
-        5,
-        'CtsMediaBitstreamsTestCases':
-        5,
-        'CtsAccessibilityServiceTestCases':
-        6,
-        'CtsAccessibilityTestCases':
-        6,
-        'CtsViewTestCases':
-        7,
-        'CtsDeviceIdleHostTestCases':
-        7,
-        'CtsSecurityHostTestCases':
-        7,
-        'CtsSecurityTestCases':
-        7,
-        'CtsAbiOverrideHostTestCases':
-        7,
-        'CtsSensorTestCases':
-        7,
-        'CtsVmTestCases':
-        8,
-        'CtsDeqpTestCases':
-        8,
-})
 
 CONFIG['SPLIT_SUITES'] = {
         'DEV_SUITE_FORMAT': 'suite:arc-cts-{abi}-{shard}',

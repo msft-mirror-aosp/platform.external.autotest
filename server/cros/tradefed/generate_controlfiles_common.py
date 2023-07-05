@@ -897,12 +897,6 @@ def get_camera_modules():
     return CONFIG.get('CAMERA_MODULES', [])
 
 
-# shard modules for arc-cts-qual
-def get_distributed_qual_modules():
-    """Gets a list of modules for distributed_qual_cts_shard."""
-    return CONFIG.get('DISTRIBUTED_QUAL_SHARD', [])
-
-
 def is_vm_modules(module):
     """Checks if module eligible for VM."""
     return is_in_rule(module, CONFIG.get('VM_MODULES_RULES', []))
@@ -1053,16 +1047,6 @@ def get_controlfile_content(combined,
         for regression_suite in CONFIG.get('INTERNAL_SUITE_NAMES', []):
             suites.remove(regression_suite)
         is_internal = False
-
-    #Adding shards to arc-cts-qual for automation purposes.
-    if is_qual and (set(get_distributed_qual_modules()) & set(modules)):
-        for module in CONFIG['DISTRIBUTED_QUAL_SHARD']:
-            for res in set(modules):
-                if res == module:
-                    #appending shards to distributed qual suite.
-                    suites.append(
-                            CONFIG.get('DISTRIBUTED_QUAL_SUITE') +
-                            str(CONFIG['DISTRIBUTED_QUAL_SHARD'].get(module)))
 
     # TODO(b/287160788): Decide what to do with collect-tests-only and waivers.
     # Now both goes to the long suite.

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'ChromeOS SW Performance Team'
-NAME = "cuj_experimental"
+NAME = "cuj_experimental_2"
 METADATA = {
     "contacts": ["cros-sw-perf@google.com"],
     "bug_component": 'b:1045832',  # ChromeOS > Software > Performance > TPS
@@ -15,16 +15,16 @@ TEST_CATEGORY = "General"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
-DOC = """
-This suite runs CUJ experimental tests.
-It runs on a limited smaller set of models comparing with CUJ tests.
-"""
+DOC = """ This suite runs CUJ experimental tests. """
 
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['max_runtime_mins'] = 960
-args_dict['timeout_mins'] = 1440
+# Each shard should complete within 3 hours.
+args_dict['max_runtime_mins'] = 180
+# We are willing to accept delays in results for this suite due to temporary
+# lab overload for up to 3 days.
+args_dict['timeout_mins'] = 1440 * 3
 args_dict['name'] = NAME
 args_dict['job'] = job
 

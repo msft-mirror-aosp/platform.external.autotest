@@ -1,0 +1,31 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'ChromeOS SW Performance Team'
+NAME = "cuj_experimental_6"
+METADATA = {
+    "contacts": ["cros-sw-perf@google.com"],
+    "bug_component": 'b:1045832',  # ChromeOS > Software > Performance > TPS
+}
+PURPOSE = "Suite to run CUJ experimental tests regularly on ChromeOS devices."
+
+TIME = "MEDIUM"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """ This suite runs CUJ experimental tests. """
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+# Each shard should complete within 3 hours.
+args_dict['max_runtime_mins'] = 180
+# We are willing to accept delays in results for this suite due to temporary
+# lab overload for up to 3 days.
+args_dict['timeout_mins'] = 1440 * 3
+args_dict['name'] = NAME
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

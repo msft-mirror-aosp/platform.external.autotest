@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 #
 AUTHOR = 'ChromeOS SW Performance Team'
-NAME = 'tast.cuj-experimental-shard-2'
+NAME = 'tast.cuj-experimental-0'
 METADATA = {
     "contacts": ["cros-sw-perf@google.com"],
     "bug_component": 'b:1045832',  # ChromeOS > Software > Performance > TPS
@@ -11,13 +11,13 @@ METADATA = {
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cuj_experimental'
+ATTRIBUTES = 'suite:cuj_experimental_0'
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
 DOC = '''
-Run the CUJ Experimental test suite.
+Run the CUJ Experimental test suite cuj_experimental_0.
 
 This test may only be run on a selected subset of models.
 
@@ -29,8 +29,8 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=['("group:cuj" && cuj_experimental)'],
                  ignore_test_failures=True,
-                 max_run_sec=21600,  # 6 hours.
-                 totalshards=4,
-                 shardindex=2,
+                 max_run_sec=3*60*60,  # 3 hours
+                 totalshards=7,
+                 shardindex=0,
                  command_args=args)
 parallel_simple(run, machines)

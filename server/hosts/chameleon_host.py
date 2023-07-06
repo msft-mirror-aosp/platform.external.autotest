@@ -11,6 +11,7 @@ import os
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib.utils import is_localhost
 from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.server.cros import dnsname_mangler
 from autotest_lib.server.cros.dynamic_suite import frontend_wrappers
@@ -284,7 +285,7 @@ def create_btpeer_host(dut, btpeer_args_list):
     btpeer_hosts = []
 
     if not is_moblab:
-        if ((not dnsname_mangler.is_ip_address(dut)
+        if ((not dnsname_mangler.is_ip_address(dut) and not is_localhost(dut)
              and _host_is_in_lab_zone(dut)) or _is_satlab_dut(dut)):
             # This is a device in the lab. Ignore any arguments passed and
             # derive peer hostnames from the DUT hostname

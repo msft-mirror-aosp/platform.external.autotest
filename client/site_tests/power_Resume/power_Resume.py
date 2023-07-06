@@ -8,7 +8,7 @@ import time
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.power import power_suspend
-
+from autotest_lib.client.cros.power import power_utils
 
 # In cases like crosbug.com/p/26289, we want results, but also want
 # to make sure we are suspending quickly enough. Retry with this amount
@@ -98,6 +98,10 @@ class power_Resume(test.test):
             reverse=True)[:max_devs_returned]
         for dev in slowest_devs:
             results[dev] = device_times[dev]
+
+        # get additional firmware resume stats if available
+        results.update(power_utils.get_stb_firmware_resume_stats(
+            results['seconds_system_resume_kernel']))
 
         self.write_perf_keyval(results)
         return (results['seconds_system_suspend'],

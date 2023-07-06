@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input.input_device import InputDevice
@@ -81,6 +82,87 @@ def get_x86_cpu_arch():
     logging.info(cpuinfo)
     return None
 
+def get_stb_firmware_resume_stats(kernel_resume_time):
+    """ Get additional data related to firmware resume stats using
+    Smart Trace Buffer(STB) method. It invokes amd stb tool i.e
+    amd-stb present in the device for better reporting of power
+    resume stats.
+
+    Args:
+      kernel_resume_time: kernel resume time info measured in sec.
+    Returns:
+      dictionary of stb firmware info
+    """
+    if not shutil.which('amd-stb'):
+        logging.warning('Could not find amd-stb tool in the device')
+        return dict()
+
+    in_path = '/sys/kernel/debug/amd_pmc/stb_read'
+    out_path = tempfile.mkdtemp(prefix='STB')
+
+    cmd = 'amd-stb --input=%s --output_folder=%s' % (in_path, out_path)
+    output = utils.run(cmd)
+
+    file_path = '%s/%s' % (out_path, 'stb_firmware_report.txt')
+    try:
+        stb_firmware_report_file = open(file_path, 'r')
+        lines = stb_firmware_report_file.readlines()
+    except IOError as err:
+        logging.warning(output)
+        logging.warning('Failed to retrieve Firmware '
+                        'Resume Latency Report %s: %s', file_path, str(err))
+        logging.warning('Returning without additional firmware resume stats')
+        return dict()
+    else:
+        logging.debug("Firmware Resume Latency Report File Path: %s", file_path)
+        stb_firmware_report_file.close()
+
+    # stb_firmware_report.txt has event name and time info like below
+    # S0i3 Exit(SMU part-1a)    :   0.37ms
+    # Extracting event name and time info from it.
+
+    stb_regex = r'''
+        S0i3[ ]Exit            # S0i3 followed a space and then Exit
+        (?P<event_name>(.*?))  # mark string as group event_name
+        [ \t]+                 # spaces or tabs before the colon
+        :                      # single colon :
+        [ \t]+                 # spaces or tabs after the colon
+        (?P<time>[0-9.]+)ms    # mark number before ms as group time
+        '''
+    matcher = re.compile(stb_regex, re.VERBOSE)
+
+    stb_dict = {}
+    event_count = 0
+    for line in lines:
+        match = matcher.match(line)
+        if not match:
+            continue
+        event_name = match.group('event_name')
+        event_count += 1
+        ordnum = str(event_count).zfill(2)
+        # event name "(SMU part-1a)" is converted as "SMUpart1a",
+        # Output is formatted as
+        # "system_resume_ms_<Ordering Number>_<Event Name>"
+        # As seen in example below -
+        # .../power_Resume  system_resume_ms_05_SMUpart1a  0.37
+        # .../power_Resume  system_resume_ms_06_DXIO       82.790000000000006
+        # .../...
+        # Ordering number is added to keep the order of events in FW.
+        # In power_Resume test, it does reporting in "sorted" string
+        # order for event entries in result dictionary
+        dispstring = re.sub('[^a-zA-Z0-9_]+', '', event_name)
+        dispstring = "system_resume_ms_" + ordnum + "_" + dispstring
+        time_ms = match.group('time')
+        stb_dict[dispstring] = float(time_ms)
+
+    last_event_time_sec = list(stb_dict.values())[-1]/1000
+    # add entries for total fw resume time, calulated using STB and
+    # also resume time calculated together from kernel and fw(using stb)
+    stb_dict['seconds_system_resume_firmware_stb'] = last_event_time_sec
+    stb_dict['seconds_system_resume_kernel_plus_fwstb'] = \
+            kernel_resume_time + last_event_time_sec
+
+    return stb_dict
 
 def has_rapl_support():
     """Identify if CPU microarchitecture supports RAPL energy profile.

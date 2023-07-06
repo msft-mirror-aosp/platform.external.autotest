@@ -26,4 +26,4 @@ METADATA = {
 ATTRIBUTES = ""
 TEST_TYPE = "client"
 
-job.run_test('power_ProbeDriver', test_which='Battery')
+job.run_test('power_ProbeDriver', test_which='Battery', tag='.'.join(NAME.split('.')[1:]))

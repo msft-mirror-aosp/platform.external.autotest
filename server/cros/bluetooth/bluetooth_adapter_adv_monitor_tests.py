@@ -1105,6 +1105,25 @@ class BluetoothAdapterAdvMonitorTests(
             return False
         return True
 
+    @test_retry_and_log(False)
+    def test_adv_and_found_in_btmon(self, adv_func, pattern, expect_found):
+        """Starts advertising and verifies if pattern appears in the btmon log.
+
+        @params adv_func: A function to start advertising on the peer.
+        @params pattern: The un/expected pattern in the btmon log.
+        @params expect_found: If True, the pattern is expected to be found in
+                              the btmon log. Otherwise it shouldn't be found.
+
+        @returns True on success, False otherwise.
+        """
+        self._get_btmon_log(adv_func)
+        found = self.bluetooth_facade.btmon_find(pattern)
+        self.results = {
+                'Advertisement found': found,
+                'Expect found': expect_found,
+        }
+        return found == expect_found
+
     def advmon_test_monitor_creation(self):
         """Test case: MONITOR_CREATION
 
@@ -2126,3 +2145,53 @@ class BluetoothAdapterAdvMonitorTests(
                 self.test_remove_monitor(monitor)
             self.test_unregister_app(app)
             self.test_exit_app(app)
+
+    def advmon_test_hci_events_filtered(self):
+        """Test cases for verifying HCI events are really filtered.
+
+        This test looks into btmon log and verifies whether the controller
+        reports the advertisements that should be filtered.
+        """
+        self.test_is_adv_monitoring_supported()
+        self.test_setup_peer_devices()
+
+        # Create a test app instance.
+        app1 = self.create_app()
+
+        monitor1 = TestMonitor(app1, self.floss)
+        monitor1.update_type('or_patterns')
+        monitor1.update_rssi([self.HIGH_RSSI, 3, self.LOW_RSSI, 3])
+
+        # Register the app, should not fail.
+        self.test_register_app(app1)
+
+        monitor1.update_patterns([
+                [0, 0x09, 'KEYBD_REF'],
+        ])
+        self.test_add_monitor(monitor1, expected_activate=True)
+
+        # Local name 'KEYBD_REF' should match and be found in btmon.
+        self.test_adv_and_found_in_btmon(
+                lambda: self.test_start_peer_device_adv(self.peer_keybd,
+                                                        duration=5),
+                pattern='KEYBD_REF',
+                expect_found=True)
+        self.test_device_found(monitor1, count=1)
+
+        # Local name 'MOUSE_REF' should not match and be found in btmon.
+        self.test_adv_and_found_in_btmon(
+                lambda: self.test_start_peer_device_adv(self.peer_mouse,
+                                                        duration=5),
+                pattern='MOUSE_REF',
+                expect_found=False)
+        self.test_device_found(monitor1, count=1)
+
+        self.test_stop_peer_device_adv(self.peer_keybd)
+        self.test_stop_peer_device_adv(self.peer_mouse)
+        self.test_remove_monitor(monitor1)
+
+        # Unregister the app, should not fail.
+        self.test_unregister_app(app1)
+
+        # Terminate the test app instance.
+        self.test_exit_app(app1)

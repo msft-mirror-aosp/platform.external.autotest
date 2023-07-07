@@ -2456,11 +2456,13 @@ class FirmwareTest(test.test):
         # If servo uses gsc_ec_reset to hold the EC in reset, it won't be
         # available when gsc is locked. Use gsc_reset to open ccd since that
         # works with locked ccd.
-        if (self.servo.has_control('cold_reset_select')
-                    and self.servo.get('cold_reset_select') == 'gsc_ec_reset'):
-            restore_cold_reset_select = self.servo.get('cold_reset_select')
-            self.servo.set('cold_reset_select', 'gsc_reset')
-
+        if self.servo.main_device_uses_gsc_drv():
+            if self.gsc.servo_drv_enabled():
+                logging.info('Using GSC EC reset')
+                self.servo.set('cold_reset_select', 'gsc_ec_reset')
+            else:
+                logging.info('GSC EC reset not enabled. Using GSC reset')
+                self.servo.set('cold_reset_select', 'gsc_reset')
         # Try to use testlab open first, so we don't have to wait for the
         # physical presence check.
         self.gsc.send_command('ccd testlab open')

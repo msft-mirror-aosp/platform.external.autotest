@@ -20,15 +20,16 @@ class firmware_Cr50DevMode(Cr50Test):
 
     def run_once(self):
         """Check cr50 can see dev mode correctly."""
-        # If the board uses ec-efs2, servo has to use gsc_reset for cold_reset.
+        # Make gsc ecrst available if the board uses EC-EFS2.
         if (self.servo.main_device_is_flex() and
             self.gsc.uses_board_property('BOARD_EC_CR50_COMM_SUPPORT')):
-            if (not self.servo.has_control('cold_reset_select') or
-                not self.servo.has_control('cold_reset_select')):
+            if not self.servo.has_control('cold_reset_select'):
                 raise error.TestError('Servo setup issue: board uses EC-EFS2, '
                         'but ec_efs2.xml was not included by servod')
-
-            self.servo.set_nocheck('cold_reset_select', 'gsc_reset')
+            self.fast_ccd_open(True)
+            self.gsc.enable_servo_control_caps()
+            self.servo.set_nocheck('cold_reset_select', 'gsc_ec_reset')
+            self.gsc.set_ccd_level('lock')
 
         self.enter_mode_after_checking_cr50_state('normal')
         self.check_dev_mode(False)

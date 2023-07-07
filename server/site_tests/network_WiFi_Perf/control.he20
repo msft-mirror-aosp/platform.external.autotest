@@ -23,16 +23,18 @@ from autotest_lib.server.cros.network import hostap_config
 
 
 def run(machine):
+    n_caps = [hostap_config.HostapConfig.N_CAPABILITY_HT20,
+              hostap_config.HostapConfig.N_CAPABILITY_LDPC]
     host = hosts.create_host(machine)
     configs = [hostap_config.HostapConfig(
                         channel=channel,
                         mode=hostap_config.HostapConfig.MODE_11AX_PURE,
-                        n_capabilities=[hostap_config.HostapConfig.N_CAPABILITY_HT20],
+                        n_capabilities=n_caps,
                         vht_channel_width=hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_20,
                         ac_capabilities=[],
                         ax_capabilities=[],
                         he_channel_width=hostap_config.HostapConfig.HE_CHANNEL_WIDTH_20)
-              for channel in (1, 36, 157)]
+              for channel in (36, 157)]
     use_iperf = True
     job.run_test('network_WiFi_Perf', tag=NAME.split('.')[1],
                  host=host, raw_cmdline_args=args,

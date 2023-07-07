@@ -24,6 +24,8 @@ from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
 
 
 def run(machine):
+    n_caps = [hostap_config.HostapConfig.N_CAPABILITY_HT40,
+              hostap_config.HostapConfig.N_CAPABILITY_LDPC]
     host = hosts.create_host(machine)
     wpa_config = xmlrpc_security_types.WPAConfig(
             psk='chromeos',
@@ -32,7 +34,7 @@ def run(machine):
     configs = [hostap_config.HostapConfig(
                         channel=channel,
                         mode=hostap_config.HostapConfig.MODE_11AX_PURE,
-                        n_capabilities=[hostap_config.HostapConfig.N_CAPABILITY_HT40],
+                        n_capabilities=n_caps,
                         vht_channel_width=hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40,
                         vht_center_channel=he_center_channel,
                         ac_capabilities=[hostap_config.HostapConfig.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP6],

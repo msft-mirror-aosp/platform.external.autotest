@@ -96,13 +96,15 @@ class HostapConfig(object):
     N_CAPABILITY_GREENFIELD = object()
     N_CAPABILITY_SGI20 = object()
     N_CAPABILITY_SGI40 = object()
+    N_CAPABILITY_LDPC = object()
     ALL_N_CAPABILITIES = [N_CAPABILITY_HT20,
                           N_CAPABILITY_HT40,
                           N_CAPABILITY_HT40_PLUS,
                           N_CAPABILITY_HT40_MINUS,
                           N_CAPABILITY_GREENFIELD,
                           N_CAPABILITY_SGI20,
-                          N_CAPABILITY_SGI40]
+                          N_CAPABILITY_SGI40,
+                          N_CAPABILITY_LDPC]
 
     AC_CAPABILITY_VHT160 = object()
     AC_CAPABILITY_VHT160_80PLUS80 = object()
@@ -322,6 +324,8 @@ class HostapConfig(object):
             ret.append('[SHORT-GI-20]')
         if self.N_CAPABILITY_SGI40 in self._n_capabilities:
             ret.append('[SHORT-GI-40]')
+        if self.N_CAPABILITY_LDPC in self._n_capabilities:
+            ret.append('[LDPC]')
         return ''.join(ret)
 
 
@@ -918,7 +922,8 @@ class HostapConfig(object):
             conf['ieee80211n'] = 1
             conf['ht_capab'] = self._hostapd_ht_capabilities
         if self.is_11ac or self.is_11ax:
-            conf['ieee80211ac'] = 1
+            if self.frequency > 5000:
+                conf['ieee80211ac'] = 1
             conf['vht_oper_chwidth'] = self._vht_oper_chwidth
             if self._vht_oper_centr_freq_seg0_idx is not None:
                 conf['vht_oper_centr_freq_seg0_idx'] = \
@@ -927,8 +932,8 @@ class HostapConfig(object):
         if self.is_11ax:
             conf['ieee80211ax'] = 1
             conf['he_oper_chwidth'] = self._he_oper_chwidth
-            conf['he_default_pe_duration'] = 0  # 0us value in PE (packet extension) field
-            conf['he_basic_mcs_nss_set'] = 2  # Enable MCS index 0-11
+            conf['he_default_pe_duration'] = 4  # 0us value in PE (packet extension) field
+            conf['he_basic_mcs_nss_set'] = '0xaaaa'  # Enable MCS index 0-11 on spatial streams 1-8
             conf['he_bss_color'] = 42  # Set default bss color
 
             if self._he_oper_centr_freq_seg0_idx is not None:

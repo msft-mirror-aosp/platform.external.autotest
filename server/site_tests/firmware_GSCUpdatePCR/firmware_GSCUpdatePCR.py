@@ -20,16 +20,11 @@ class firmware_GSCUpdatePCR(FirmwareTest):
     EXTEND_VALUE = 7
     CMD_READ_PCR = 'trunks_client --read_pcr --index=%d' % INDEX
     CMD_EXTEND_PCR = 'trunks_client --extend_pcr --index=%d --value=' % INDEX
-    CMD_USES_MEM_SLEEP = 'grep deep /sys/power/mem_sleep'
-    CMD_SETUP_MEM_SLEEP = 'echo deep > /sys/power/mem_sleep'
-    CMD_ENTER_S3 = 'echo mem > /sys/power/state &'
     ZERO_DIGEST = '0000000000000000000000000000000000000000000000000000000000000000'
 
     def initialize(self, host, cmdline_args):
-        """The test can only run if s3 is supported."""
+        """Initialize GSC."""
         self.host = host
-        if host.run('grep -q mem /sys/power/state', ignore_status=True).exit_status:
-            raise error.TestNAError('Nothing to do. S3 unsupported.')
         super(firmware_GSCUpdatePCR, self).initialize(host, cmdline_args)
         if 'ccd' in self.servo.get_servo_version():
             self.servo.disable_ccd_watchdog_for_test()
@@ -45,16 +40,8 @@ class firmware_GSCUpdatePCR(FirmwareTest):
         finally:
             super(firmware_GSCUpdatePCR, self).cleanup()
 
-    def enter_s3(self):
-        """Enter S3."""
-        if not self.host.run(self.CMD_USES_MEM_SLEEP, ignore_status=True).exit_status:
-            logging.info('setting up mem sleep')
-            self.host.run(self.CMD_SETUP_MEM_SLEEP)
-        logging.info('Enter S3')
-        self.faft_client.system.run_shell_command(self.CMD_ENTER_S3, False)
-
-    def resume_from_s3(self, enter_ds):
-        """Resume from S3."""
+    def resume(self, enter_ds):
+        """Resume from suspend."""
         self.gsc.get_ccdstate()
         if enter_ds:
             self.gsc.clear_deep_sleep_count()
@@ -62,15 +49,21 @@ class firmware_GSCUpdatePCR(FirmwareTest):
         else:
             time.sleep(10)
         ap_off = not self.gsc.ap_is_on()
-        logging.info('Pressing power button to resume from S3.')
+        logging.info('Pressing power button to resume')
+        self._power_state = self.get_power_state()
         self.servo.power_normal_press()
-        if not ap_off:
-            raise error.TestNAError('TPM_RST deasserted in S3')
-        if enter_ds and not self.gsc.get_deep_sleep_count():
-            raise error.TestFail('Did not enter deep sleep.')
+        entered_ds = not not self.gsc.get_deep_sleep_count()
+        logging.info('Entered DS: %s', entered_ds)
+        if enter_ds:
+            if not ap_off:
+                logging.info('AP did not turn off during suspend')
+            elif not entered_ds:
+                raise error.TestFail(
+                        'Did not enter deep sleep when ap was off')
+        return entered_ds
 
-    def suspend_and_resume_from_s3(self, enter_ds):
-        """Suspend and resume from S3."""
+    def suspend_and_resume(self, enter_ds):
+        """Suspend and resume."""
         if enter_ds:
             self.gsc.ccd_disable()
         elif self.gsc.NAME == 'cr50':
@@ -78,8 +71,8 @@ class firmware_GSCUpdatePCR(FirmwareTest):
             self.host.run('trunks_send --raw 80010000000c20000000003b')
         else:
             self.gsc.ccd_enable()
-        self.enter_s3()
-        self.resume_from_s3(enter_ds)
+        self.suspend()
+        return self.resume(enter_ds)
 
     def send_shutdown(self):
         """Send the tpm shutdown command to update the pcr value."""
@@ -125,17 +118,21 @@ class firmware_GSCUpdatePCR(FirmwareTest):
         updated_digest = self.assert_digest_is_non_zero('after second extend')
         # Enter S3 and resume without entering deep sleep. This should send shutdown
         # and trigger update pcr should be equal to updated_digest.
-        self.suspend_and_resume_from_s3(False)
+        self.suspend_and_resume(False)
         digest_after_resume = self.read_pcr()
-        logging.info('Before S3: %s', updated_digest)
-        logging.info('After S3: %s', digest_after_resume)
+        logging.info('Before %s suspend: %s', self._power_state,
+                     updated_digest)
+        logging.info('After %s resume: %s', self._power_state,
+                     digest_after_resume)
         if digest_after_resume != updated_digest:
-            raise error.TestFail('Digest changed after s3')
+            raise error.TestFail('Digest changed after suspend/resume')
         # Reboot device
         self.host.reboot()
         # pcr 5 should be back to 0
         self.assert_digest_is_zero('after second reboot')
-        # Enter S3 and resume. Make sure the device enters deep sleep.
-        self.suspend_and_resume_from_s3(True)
+        # Suspend and resume
+        entered_ds = self.suspend_and_resume(True)
         # The loaded pcr 5 digest should still be 0
-        self.assert_digest_is_zero('after S3 resume')
+        self.assert_digest_is_zero(
+                'after %s resume (%s ds)' %
+                (self._power_state, 'enetered' if entered_ds else 'no'))

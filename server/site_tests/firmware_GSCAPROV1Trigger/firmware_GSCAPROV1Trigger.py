@@ -31,7 +31,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
     # Regex to search for the end of the AP RO output. Every run should end with
     # "AP RO PASS!" or "AP RO FAIL! evt - status". Collect all output up until
     # that point.
-    APRO_OUTPUT_RE = r'.*AP RO ([\S]*)![^\n]*\n'
+    APRO_OUTPUT_RE = r'.*(AP RO ([\S]*)![^\n]|do_ap_ro_check: unsupported)'
 
     TIMEOUT_ALL_FLAGS = 240
     # If the flags are wrong, verification should fail quickly.
@@ -282,8 +282,13 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         if exit_status:
             logging.info('exit status: %d', exit_status)
 
-    def trigger_verification(self, exp_result, exp_calculations,
-                             timeout, exp_gbb, exp_flags):
+    def trigger_verification(self,
+                             exp_result,
+                             exp_calculations,
+                             timeout,
+                             exp_gbb,
+                             exp_flags,
+                             end_if_unsupported=True):
         """Trigger verification.
 
         Trigger verification. Verify the AP RO behavior by checking the result
@@ -300,6 +305,8 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
                         can take.
         @param exp_gbb: string that should be found in the ap_ro_info gbb field.
         @param exp_flags: None or the flag string if the gbbd is saved
+        @param end_if_unsupported: raise testNA if the device doesn't support
+                                   verification.
         """
         self._desc = ('%s: current flags(%s) ro(%s) saved hash(%s) - '
                       'expected result(%d)' %
@@ -332,6 +339,14 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         logging.info('Calculated (%d): %s', len(calculated),
                      pprint.pformat(calculated))
         logging.info('Results: %s', pprint.pformat(ap_ro_info))
+
+        if not ap_ro_info['supported']:
+            reason = ap_ro_info['reason']
+            if 'not programmed' not in reason:
+                if end_if_unsupported:
+                    raise error.TestNAError(reason)
+                raise error.TestFail('%s: verification unsupported: %s' %
+                                     (self._desc, reason))
 
         if len(calculated) != exp_calculations:
             raise error.TestFail('%s: Calculated %d digests instead of %d' %
@@ -381,10 +396,14 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         # Set the flags to a non-zero value. Make sure it fails almost
         # immediately because the flags are wrong.
         self.set_factory_gbb_flags()
-        self.trigger_verification(self.APRO_FAIL, 0,
+        # This is a pretty basic test. If the board says verification is
+        # unsupported, fail with TestNA.
+        self.trigger_verification(self.APRO_FAIL,
+                                  0,
                                   self.TIMEOUT_FLAG_FAILURE,
                                   self.GBBD_INVALID,
-                                  self.FLAGS_NONE)
+                                  self.FLAGS_NONE,
+                                  end_if_unsupported=True)
         # Modify RO. Cr50 should still fail immediately because the flags are
         # wrong.
         self.modify_ro()

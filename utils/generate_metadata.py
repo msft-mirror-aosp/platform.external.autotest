@@ -74,8 +74,10 @@ def serialize_contacts(data):
     serialized_contacts = []
     if hasattr(data, 'metadata') and 'contacts' in data.metadata:
         serialized_contacts = [tc_metadata_pb.Contact(email=e) for e in data.metadata['contacts']]
-    else:
+    elif hasattr(data, 'author'):
         serialized_contacts = [tc_metadata_pb.Contact(email=data.author)]
+    else:
+        raise Exception("Test had neither contacts nor (old) author field.")
 
     return serialized_contacts
 
@@ -109,14 +111,35 @@ def serialize_hw_agnostic(data):
         hw_agnostic = tc_metadata_pb.HwAgnostic(value=data.metadata['hw_agnostic'])
     return hw_agnostic
 
+
+def serialize_life_cycle_stage(data):
+    """Return a serialized LifeCycle obj"""
+    lc_pb = tc_metadata_pb.LifeCycleStage.LifeCycle
+    conversions = {
+            'production': lc_pb.LIFE_CYCLE_DISABLED,
+            'disabled': lc_pb.LIFE_CYCLE_DISABLED,
+            'in_development': lc_pb.LIFE_CYCLE_IN_DEVELOPMENT,
+            'manual_only': lc_pb.LIFE_CYCLE_MANUAL_ONLY,
+            'owner_monitored': lc_pb.LIFE_CYCLE_OWNER_MONITORED,
+    }
+    test_value = 'production'
+    if (hasattr(data, 'metadata') and 'life_cycle_stage' in data.metadata
+                and data.metadata['life_cycle_stage'] in conversions):
+        test_value = data.metadata['life_cycle_stage']
+
+    return tc_metadata_pb.LifeCycleStage(value=conversions[test_value])
+
+
 def serialize_test_case_info(data):
     """Return a serialized TestCaseInfo obj."""
 
-    return tc_metadata_pb.TestCaseInfo(owners=serialize_contacts(data),
-                                       requirements=serialize_requirements(data),
-                                       bug_component=serialize_bug_component(data),
-                                       criteria=serialize_criteria(data),
-                                       hw_agnostic=serialize_hw_agnostic(data))
+    return tc_metadata_pb.TestCaseInfo(
+            owners=serialize_contacts(data),
+            requirements=serialize_requirements(data),
+            bug_component=serialize_bug_component(data),
+            criteria=serialize_criteria(data),
+            hw_agnostic=serialize_hw_agnostic(data),
+            life_cycle_stage=serialize_life_cycle_stage(data))
 
 
 def serialized_deps(data):

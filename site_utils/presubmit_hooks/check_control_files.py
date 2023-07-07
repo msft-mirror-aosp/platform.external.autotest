@@ -196,6 +196,66 @@ def CheckDependencies(ctrl_data, test_name):
                     'DEPENDENCIES = \'arc\' for %s is needed' % test_name)
 
 
+def CheckMetadataFormatting(ctrl_data, ctrl_file_path):
+    """
+    Check if the METADATA fields have valid formats.
+
+    @param ctrl_data: The control_data object for a test.
+    @param ctrl_file_path: The path to the control file.
+
+    @raises: ControlFileCheckerError if check fails.
+    """
+    # Note: allowed metadata values should align with TestCaseMetadataInfo values.
+    ALLOWED_METADATA_VALS = set([
+            'contacts', 'doc', 'requirements', 'bug_component', 'criteria',
+            'hw_agnostic', 'life_cycle_stage'
+    ])
+    ALLOWED_LIFE_CYCLE_VALS = set([
+            'production_ready', 'disabled', 'in_development', 'manual_only',
+            'owner_monitored'
+    ])
+
+    # Flag unknown metadata fields, as it is probably a typo.
+    extra_metadata_fields = set(ctrl_data.metadata) - ALLOWED_METADATA_VALS
+    if extra_metadata_fields:
+        warning = ('WARNING: Unknown metadata fields were '
+                   'specified in %s.  Please remove '
+                   '%s.') % (ctrl_file_path, ', '.join(extra_metadata_fields))
+        raise ControlFileCheckerError(warning)
+
+    # Contacts should be formatted like email addresses.
+    EMAIL_REGEX = r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}'
+    if 'contacts' in ctrl_data.metadata:
+        values = ctrl_data.metadata['contacts']
+        for c in values:
+            if not re.fullmatch(EMAIL_REGEX, c):
+                warning = ('WARNING: %s is not a valid email format! '
+                           'Please fix %s.') % (c, ctrl_file_path)
+                raise ControlFileCheckerError(warning)
+
+    # Bug Components should only have an allowed prefix.
+    ALLOWED_BUG_COMPONENT_PREFIXES = ['b:', 'crbug:']
+    if 'bug_component' in ctrl_data.metadata:
+        c = ctrl_data.metadata['bug_component']
+        for prefix in ALLOWED_BUG_COMPONENT_PREFIXES:
+            if c.startswith(prefix):
+                break
+        else:
+            warning = ('WARNING: Bug components must start with [%s.] '
+                       'Please fix %s.') % (', '.join(
+                               ALLOWED_BUG_COMPONENT_PREFIXES), ctrl_file_path)
+            raise ControlFileCheckerError(warning)
+
+    # Life Cycle Stage should only have allowed values.
+    if 'life_cycle_stage' in ctrl_data.metadata:
+        value = ctrl_data.metadata['life_cycle_stage']
+        if value not in ALLOWED_LIFE_CYCLE_VALS:
+            warning = ('WARNING: %s is not an allowed '
+                       'life_cycle_stage value. '
+                       'Please fix %s.') % (value, ctrl_file_path)
+            raise ControlFileCheckerError(warning)
+
+
 def main(argv=None):
     """
     Checks if all control files that are a part of this commit conform to the
@@ -254,6 +314,7 @@ def main(argv=None):
                                            bvt_allowlist, test_name),
                     lambda: CheckRetry(ctrl_data, test_name),
                     lambda: CheckDependencies(ctrl_data, test_name),
+                    lambda: CheckMetadataFormatting(ctrl_data, ctrl_file_path),
             ]
             for check in checks:
                 try:

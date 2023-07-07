@@ -70,7 +70,7 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     ]
     CHIPSETS_UNSUPPORT_LEGACY_OPTIONAL = [
             'Intel-AC7265', 'Intel-AC9260', 'Intel-AC9560', 'Intel-AX200',
-            'Intel-AX201'
+            'Intel-AX201', 'Intel-AX211'
     ]
     CHIPSETS_UNSUPPORT_4_1 = ['MVL-8897', 'MVL-8997']
     CHIPSETS_UNSUPPORT_4_2 = ['MVL-8897', 'MVL-8997']

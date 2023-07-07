@@ -20,9 +20,6 @@ class firmware_Cr50Testlab(Cr50Test):
         """Initialize servo. Check that it can access cr50"""
         if host.servo.main_device_is_ccd():
             raise error.TestNAError('Use a flex cable instead of CCD cable.')
-        if host.servo.main_device_uses_gsc_drv():
-            raise error.TestNAError('Cannot run with c2d2 until cold_reset '
-                                    'issue is resolved')
         super(firmware_Cr50Testlab, self).initialize(host, cmdline_args,
                 full_args)
 
@@ -33,6 +30,10 @@ class firmware_Cr50Testlab(Cr50Test):
             self.BASIC_ERROR = 'Command \'ccd\' failed'
             self.INVALID_PARAM = 'Param2'
 
+        if (host.servo.main_device_uses_gsc_drv()
+                    and self.gsc.running_mp_image()):
+            raise error.TestNAError('Uses gsc for ecrst. Cannot run until '
+                                    'cold_reset issue is resolved')
         # Get the current reset count, so we can check that there haven't been
         # any cr50 resets at any point during the test.
         self.start_reset_count = self.gsc.get_reset_count()

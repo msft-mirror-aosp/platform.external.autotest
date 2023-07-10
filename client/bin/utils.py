@@ -31,6 +31,7 @@ import sys
 import tempfile
 import time
 import uuid
+import json
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import magic
@@ -260,10 +261,15 @@ def get_cpu_arch():
 
 
 def get_cpu_soc_family():
-    """Like get_cpu_arch, but for ARM, returns the SoC family name"""
-    cmd = '/usr/local/graphics/hardware_probe --cpu-soc-family'
-    output = utils.run(cmd, ignore_status=True).stdout
-    return output.split(":")[1].strip()
+    try:
+        cmd = '/usr/local/graphics/hardware_probe'
+        output = utils.run(cmd, ignore_status=True).stdout
+        return json.loads(output)['CPU_SOC_Family']
+    except json.decoder.JSONDecodeError:
+        """Like get_cpu_arch, but for ARM, returns the SoC family name"""
+        cmd = '/usr/local/graphics/hardware_probe --cpu-soc-family'
+        output = utils.run(cmd, ignore_status=True).stdout
+        return output.split(":")[1].strip()
 
 
 # When adding entries here, also add them at the right spot in the
@@ -2123,10 +2129,15 @@ def has_mali():
 
 
 def get_gpu_family():
-    """Returns the GPU family name."""
-    cmd = '/usr/local/graphics/hardware_probe --gpu-family'
-    output = utils.run(cmd, ignore_status=True).stdout
-    return output.split(":")[1].strip()
+    try:
+        cmd = '/usr/local/graphics/hardware_probe'
+        output = utils.run(cmd, ignore_status=True).stdout
+        return json.loads(output)['GPU_Family'][0]['Family']
+    except json.decoder.JSONDecodeError:
+        """Returns the GPU family name."""
+        cmd = '/usr/local/graphics/hardware_probe --gpu-family'
+        output = utils.run(cmd, ignore_status=True).stdout
+        return output.split(":")[1].strip()
 
 
 # TODO(ihf): Consider using /etc/lsb-release DEVICETYPE != CHROMEBOOK/CHROMEBASE

@@ -140,6 +140,12 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.default_suspend = default_suspend
         self.manual_suspend = manual_suspend
 
+        if self.faft_config.ec_forwards_short_pp_press and self.manual_suspend:
+            logging.warning(
+                    'manual suspend not supported with ec_forwards_short_pp_press'
+            )
+            self.manual_suspend = False
+
         self.INT_NAME = self.gsc.IRQ_DICT.copy()
         self.INT_NAME.update(self.GSC_STATUS_DICT)
         self.KEY_REGULAR_SLEEP = [k for k,v in self.INT_NAME.items()

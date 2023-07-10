@@ -20,9 +20,9 @@
   <Entry include="CtsOsTestCases[run-on-clone-profile] android.os.storage.cts.StorageManagerTest#testGetStorageVolumeUSB" />
   <Entry include="CtsPermission2TestCases android.permission2.cts.PermissionPolicyTest#platformPermissionPolicyIsUnaltered" />
   <Entry include="CtsSecurityTestCases android.security.cts.CertificateTest#testNoRemovedCertificates" />
-  <Entry include="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ForceDarkTests#testFgRect"/ >
-  <Entry include="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ForceDarkTests#testSiblings"/ >
-  <Entry include="CtsUiRenderingTestCases[instant] android.uirendering.cts.testclasses.ForceDarkTests#testFgRect"/ >
-  <Entry include="CtsUiRenderingTestCases[instant] android.uirendering.cts.testclasses.ForceDarkTests#testSiblings"/ >
+  <Entry include="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ForceDarkTests#testFgRect" />
+  <Entry include="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ForceDarkTests#testSiblings" />
+  <Entry include="CtsUiRenderingTestCases[instant] android.uirendering.cts.testclasses.ForceDarkTests#testFgRect" />
+  <Entry include="CtsUiRenderingTestCases[instant] android.uirendering.cts.testclasses.ForceDarkTests#testSiblings" />
   <Entry include="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testAppLaunchCount" />
 </SubPlan>

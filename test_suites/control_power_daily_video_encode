@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "power_daily_load_test_v10"
+NAME = "power_daily_video_encode"
 METADATA = { 'contacts': [ "chromeos-platform-power@google.com" ] }
 
 TIME = "LENGTHY"

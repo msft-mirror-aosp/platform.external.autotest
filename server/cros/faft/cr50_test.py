@@ -585,14 +585,11 @@ class Cr50Test(FirmwareTest):
             logging.info('Charge state is ok')
             return
 
-        if not self.servo.is_servo_v4_type_c():
-            raise error.TestError(
-                    'Cannot recover charging without Type C servo')
         # Disconnect the charger and reset the dut to recover charging.
         logging.info('Recovering charging')
         self.faft_client.system.run_shell_command('poweroff')
         time.sleep(self.gsc.SHORT_WAIT)
-        self.servo.set_nocheck('servo_v4_uart_cmd', 'fakedisconnect 100 20000')
+        self.host.power_cycle()
         time.sleep(self.gsc.SHORT_WAIT)
         self._try_to_bring_dut_up()
         charge_state = self.host.get_power_supply_info()['Battery']['state']

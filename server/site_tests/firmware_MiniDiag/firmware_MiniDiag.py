@@ -62,16 +62,18 @@ class firmware_MiniDiag(FirmwareTest):
         cbmem_loss_msg = ' cbmem logs may be lost or incomplete'
         verifier = CbmemVerifier(self.faft_client.system, 'cbmem -2')
 
-        # Verify storage health info by "<Storage health info>"
-        # or "<Health info>"
-        if not (verifier.find_word(
-                '<' + self.STORAGE_HEALTH_INFO_STR + '> menu')
-                or verifier.find_word('<Health info> menu')):
+        # Verify storage health info by "<Storage health info>" or "<Storage>"
+        if not (verifier.find_word('<' + self.STORAGE_HEALTH_INFO_STR +
+                                   '> menu')
+                or verifier.find_word('<Storage> menu')):
             raise error.TestError('No storage health info log found,' +
                                   cbmem_loss_msg)
 
-        # Verify quick memory test by "<Memory check (quick)>"
-        if not verifier.find_word('<' + self.MEMORY_CHECK_QUICK_STR + '> menu'):
+        # Verify quick memory test by "<Memory check (quick)> or
+        # <Quick memory check>"
+        if not (verifier.find_word('<' + self.MEMORY_CHECK_QUICK_STR +
+                                   '> menu')
+                or verifier.find_word('<Quick memory check> menu')):
             raise error.TestError('No quick memory test log found,' +
                                   cbmem_loss_msg)
 

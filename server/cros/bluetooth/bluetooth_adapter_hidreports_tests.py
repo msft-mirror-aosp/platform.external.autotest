@@ -130,14 +130,6 @@ class BluetoothAdapterHIDReportTests(
                 run_hid_test()
 
             if reboot:
-                # If we expect the DUT to automatically reconnect to the peer on
-                # boot, we reset the peer into a connectable state
-                if self.platform_will_reconnect_on_boot():
-                    logging.info(
-                            "Restarting peer to accept DUT connection on boot")
-                    device_type = self.get_peer_device_type(device)
-                    self.reset_emulated_device(device, device_type)
-
                 self.reboot()
 
                 time.sleep(self.HID_TEST_SLEEP_SECS)
@@ -150,12 +142,8 @@ class BluetoothAdapterHIDReportTests(
                     return
 
                 time.sleep(self.HID_TEST_SLEEP_SECS)
-                if not self.platform_will_reconnect_on_boot():
-                    if not self.test_connection_by_device(device):
-                        return
-                else:
-                    if not self.test_device_is_connected(device.address):
-                        return
+                if not self.test_connection_by_device(device):
+                    return
                 run_hid_test()
 
             if restart:

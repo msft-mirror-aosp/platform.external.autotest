@@ -835,6 +835,14 @@ class _Run(object):
         config = global_config.global_config.get_section_values('CLIENT')
         if client_log_prefix:
             config.set('CLIENT', 'default_logging_name', client_log_prefix)
+
+        # Allow fetching artifacts from non-default GCS bucket.
+        gs_bucket = global_config.global_config.get_config_value(
+                'CROS', 'image_storage_server', type=str, default=None)
+        if gs_bucket:
+            config.add_section('CROS')
+            config.set('CROS', 'image_storage_server', gs_bucket)
+
         return self._create_aux_file(config.write)
 
 

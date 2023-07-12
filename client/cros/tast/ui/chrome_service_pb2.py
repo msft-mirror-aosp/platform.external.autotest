@@ -19,9 +19,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='chrome_service.proto',
   package='tast.cros.browser',
   syntax='proto3',
-  serialized_options=b'Z chromiumos/tast/services/cros/ui',
+  serialized_options=b'Z0go.chromium.org/tast-tests/cros/services/cros/ui',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x14\x63hrome_service.proto\x12\x11tast.cros.browser\x1a\x1bgoogle/protobuf/empty.proto\"\xda\x05\n\nNewRequest\x12\x30\n\nlogin_mode\x18\x01 \x01(\x0e\x32\x1c.tast.cros.browser.LoginMode\x12>\n\x0b\x63redentials\x18\x02 \x01(\x0b\x32).tast.cros.browser.NewRequest.Credentials\x12\x17\n\x0f\x65nable_features\x18\x03 \x03(\t\x12\x18\n\x10\x64isable_features\x18\x04 \x03(\t\x12\x12\n\nextra_args\x18\x05 \x03(\t\x12\x12\n\nkeep_state\x18\x06 \x01(\x08\x12\x19\n\x11try_reuse_session\x18\x07 \x01(\x08\x12\x1e\n\x16lacros_enable_features\x18\x08 \x03(\t\x12\x1f\n\x17lacros_disable_features\x18\t \x03(\t\x12\x19\n\x11lacros_extra_args\x18\n \x03(\t\x12)\n\x06lacros\x18\x0b \x01(\x0b\x32\x19.tast.cros.browser.Lacros\x12,\n\x08\x61rc_mode\x18\x0c \x01(\x0e\x32\x1a.tast.cros.browser.ArcMode\x12!\n\x19\x65nable_hid_screen_on_oobe\x18\r \x01(\x08\x12(\n signin_profile_test_extension_id\x18\x0e \x01(\t\x12\x1b\n\x13unpacked_extensions\x18\x0f \x03(\t\x12\"\n\x1alacros_unpacked_extensions\x18\x10 \x03(\t\x12\x19\n\x11lacros_keep_alive\x18\x11 \x01(\x08\x1a\x85\x01\n\x0b\x43redentials\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0f\n\x07gaia_id\x18\x03 \x01(\t\x12\x0f\n\x07\x63ontact\x18\x04 \x01(\t\x12\x17\n\x0fparent_username\x18\x05 \x01(\t\x12\x17\n\x0fparent_password\x18\x06 \x01(\t\"\xa8\x02\n\x06Lacros\x12,\n\x04mode\x18\x01 \x01(\x0e\x32\x1e.tast.cros.browser.Lacros.Mode\x12\x36\n\tselection\x18\x02 \x01(\x0e\x32#.tast.cros.browser.Lacros.Selection\"e\n\x04Mode\x12\x14\n\x10MODE_UNSPECIFIED\x10\x00\x12\x13\n\x0fMODE_SIDEBYSIDE\x10\x01\x12\x10\n\x0cMODE_PRIMARY\x10\x02\x12\r\n\tMODE_ONLY\x10\x03\x12\x11\n\rMODE_DISABLED\x10\x04\"Q\n\tSelection\x12\x19\n\x15SELECTION_UNSPECIFIED\x10\x00\x12\x14\n\x10SELECTION_ROOTFS\x10\x01\x12\x13\n\x0fSELECTION_OMAHA\x10\x02*\x92\x01\n\tLoginMode\x12\x1a\n\x16LOGIN_MODE_UNSPECIFIED\x10\x00\x12\x17\n\x13LOGIN_MODE_NO_LOGIN\x10\x01\x12\x19\n\x15LOGIN_MODE_FAKE_LOGIN\x10\x02\x12\x19\n\x15LOGIN_MODE_GAIA_LOGIN\x10\x03\x12\x1a\n\x16LOGIN_MODE_GUEST_LOGIN\x10\x04*h\n\x07\x41rcMode\x12\x18\n\x14\x41RC_MODE_UNSPECIFIED\x10\x00\x12\x15\n\x11\x41RC_MODE_DISABLED\x10\x01\x12\x14\n\x10\x41RC_MODE_ENABLED\x10\x02\x12\x16\n\x12\x41RC_MODE_SUPPORTED\x10\x03\x32\x8a\x01\n\rChromeService\x12>\n\x03New\x12\x1d.tast.cros.browser.NewRequest\x1a\x16.google.protobuf.Empty\"\x00\x12\x39\n\x05\x43lose\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x00\x42\"Z chromiumos/tast/services/cros/uib\x06proto3'
+  serialized_pb=b'\n\x14\x63hrome_service.proto\x12\x11tast.cros.browser\x1a\x1bgoogle/protobuf/empty.proto\"\xda\x05\n\nNewRequest\x12\x30\n\nlogin_mode\x18\x01 \x01(\x0e\x32\x1c.tast.cros.browser.LoginMode\x12>\n\x0b\x63redentials\x18\x02 \x01(\x0b\x32).tast.cros.browser.NewRequest.Credentials\x12\x17\n\x0f\x65nable_features\x18\x03 \x03(\t\x12\x18\n\x10\x64isable_features\x18\x04 \x03(\t\x12\x12\n\nextra_args\x18\x05 \x03(\t\x12\x12\n\nkeep_state\x18\x06 \x01(\x08\x12\x19\n\x11try_reuse_session\x18\x07 \x01(\x08\x12\x1e\n\x16lacros_enable_features\x18\x08 \x03(\t\x12\x1f\n\x17lacros_disable_features\x18\t \x03(\t\x12\x19\n\x11lacros_extra_args\x18\n \x03(\t\x12)\n\x06lacros\x18\x0b \x01(\x0b\x32\x19.tast.cros.browser.Lacros\x12,\n\x08\x61rc_mode\x18\x0c \x01(\x0e\x32\x1a.tast.cros.browser.ArcMode\x12!\n\x19\x65nable_hid_screen_on_oobe\x18\r \x01(\x08\x12(\n signin_profile_test_extension_id\x18\x0e \x01(\t\x12\x1b\n\x13unpacked_extensions\x18\x0f \x03(\t\x12\"\n\x1alacros_unpacked_extensions\x18\x10 \x03(\t\x12\x19\n\x11lacros_keep_alive\x18\x11 \x01(\x08\x1a\x85\x01\n\x0b\x43redentials\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0f\n\x07gaia_id\x18\x03 \x01(\t\x12\x0f\n\x07\x63ontact\x18\x04 \x01(\t\x12\x17\n\x0fparent_username\x18\x05 \x01(\t\x12\x17\n\x0fparent_password\x18\x06 \x01(\t\"\x99\x01\n\x06Lacros\x12\x36\n\tselection\x18\x02 \x01(\x0e\x32#.tast.cros.browser.Lacros.Selection\"Q\n\tSelection\x12\x19\n\x15SELECTION_UNSPECIFIED\x10\x00\x12\x14\n\x10SELECTION_ROOTFS\x10\x01\x12\x13\n\x0fSELECTION_OMAHA\x10\x02J\x04\x08\x01\x10\x02*\x92\x01\n\tLoginMode\x12\x1a\n\x16LOGIN_MODE_UNSPECIFIED\x10\x00\x12\x17\n\x13LOGIN_MODE_NO_LOGIN\x10\x01\x12\x19\n\x15LOGIN_MODE_FAKE_LOGIN\x10\x02\x12\x19\n\x15LOGIN_MODE_GAIA_LOGIN\x10\x03\x12\x1a\n\x16LOGIN_MODE_GUEST_LOGIN\x10\x04*h\n\x07\x41rcMode\x12\x18\n\x14\x41RC_MODE_UNSPECIFIED\x10\x00\x12\x15\n\x11\x41RC_MODE_DISABLED\x10\x01\x12\x14\n\x10\x41RC_MODE_ENABLED\x10\x02\x12\x16\n\x12\x41RC_MODE_SUPPORTED\x10\x03\x32\xc9\x01\n\rChromeService\x12>\n\x03New\x12\x1d.tast.cros.browser.NewRequest\x1a\x16.google.protobuf.Empty\"\x00\x12\x39\n\x05\x43lose\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x00\x12=\n\tReconnect\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x00\x42\x32Z0go.chromium.org/tast-tests/cros/services/cros/uib\x06proto3'
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
 
@@ -60,8 +60,8 @@ _LOGINMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1105,
-  serialized_end=1251,
+  serialized_start=962,
+  serialized_end=1108,
 )
 _sym_db.RegisterEnumDescriptor(_LOGINMODE)
 
@@ -96,8 +96,8 @@ _ARCMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1253,
-  serialized_end=1357,
+  serialized_start=1110,
+  serialized_end=1214,
 )
 _sym_db.RegisterEnumDescriptor(_ARCMODE)
 
@@ -112,46 +112,6 @@ ARC_MODE_DISABLED = 1
 ARC_MODE_ENABLED = 2
 ARC_MODE_SUPPORTED = 3
 
-
-_LACROS_MODE = _descriptor.EnumDescriptor(
-  name='Mode',
-  full_name='tast.cros.browser.Lacros.Mode',
-  filename=None,
-  file=DESCRIPTOR,
-  create_key=_descriptor._internal_create_key,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='MODE_UNSPECIFIED', index=0, number=0,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='MODE_SIDEBYSIDE', index=1, number=1,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='MODE_PRIMARY', index=2, number=2,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='MODE_ONLY', index=3, number=3,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='MODE_DISABLED', index=4, number=4,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-  ],
-  containing_type=None,
-  serialized_options=None,
-  serialized_start=918,
-  serialized_end=1019,
-)
-_sym_db.RegisterEnumDescriptor(_LACROS_MODE)
 
 _LACROS_SELECTION = _descriptor.EnumDescriptor(
   name='Selection',
@@ -178,8 +138,8 @@ _LACROS_SELECTION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1021,
-  serialized_end=1102,
+  serialized_start=872,
+  serialized_end=953,
 )
 _sym_db.RegisterEnumDescriptor(_LACROS_SELECTION)
 
@@ -403,14 +363,7 @@ _LACROS = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='mode', full_name='tast.cros.browser.Lacros.mode', index=0,
-      number=1, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='selection', full_name='tast.cros.browser.Lacros.selection', index=1,
+      name='selection', full_name='tast.cros.browser.Lacros.selection', index=0,
       number=2, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -421,7 +374,6 @@ _LACROS = _descriptor.Descriptor(
   ],
   nested_types=[],
   enum_types=[
-    _LACROS_MODE,
     _LACROS_SELECTION,
   ],
   serialized_options=None,
@@ -431,7 +383,7 @@ _LACROS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=806,
-  serialized_end=1102,
+  serialized_end=959,
 )
 
 _NEWREQUEST_CREDENTIALS.containing_type = _NEWREQUEST
@@ -439,9 +391,7 @@ _NEWREQUEST.fields_by_name['login_mode'].enum_type = _LOGINMODE
 _NEWREQUEST.fields_by_name['credentials'].message_type = _NEWREQUEST_CREDENTIALS
 _NEWREQUEST.fields_by_name['lacros'].message_type = _LACROS
 _NEWREQUEST.fields_by_name['arc_mode'].enum_type = _ARCMODE
-_LACROS.fields_by_name['mode'].enum_type = _LACROS_MODE
 _LACROS.fields_by_name['selection'].enum_type = _LACROS_SELECTION
-_LACROS_MODE.containing_type = _LACROS
 _LACROS_SELECTION.containing_type = _LACROS
 DESCRIPTOR.message_types_by_name['NewRequest'] = _NEWREQUEST
 DESCRIPTOR.message_types_by_name['Lacros'] = _LACROS
@@ -481,8 +431,8 @@ _CHROMESERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=1360,
-  serialized_end=1498,
+  serialized_start=1217,
+  serialized_end=1418,
   methods=[
   _descriptor.MethodDescriptor(
     name='New',
@@ -498,6 +448,16 @@ _CHROMESERVICE = _descriptor.ServiceDescriptor(
     name='Close',
     full_name='tast.cros.browser.ChromeService.Close',
     index=1,
+    containing_service=None,
+    input_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
+    output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Reconnect',
+    full_name='tast.cros.browser.ChromeService.Reconnect',
+    index=2,
     containing_service=None,
     input_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,

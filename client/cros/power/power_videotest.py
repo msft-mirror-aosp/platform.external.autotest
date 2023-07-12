@@ -157,9 +157,8 @@ class power_VideoTest(power_test.power_Test):
                 arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
                             if self._arc_mode == arc_common.ARC_MODE_ENABLED
                             else chrome_service_pb2.ARC_MODE_DISABLED),
-                lacros = (chrome_service_pb2.Lacros(
-                    mode=chrome_service_pb2.Lacros.Mode.MODE_ONLY)
-                    if use_lacros else chrome_service_pb2.Lacros())
+                lacros = (chrome_service_pb2.Lacros()
+                    if use_lacros else None)
             ))
 
             if use_lacros:

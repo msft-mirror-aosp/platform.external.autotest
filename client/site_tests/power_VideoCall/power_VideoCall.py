@@ -121,9 +121,9 @@ class power_VideoCall(power_test.power_Test):
                 # b/228256145 to avoid powerd restart
                 disable_features = ['FirmwareUpdaterApp'],
                 extra_args = self.get_extra_browser_args_for_camera_test(),
+                lacros = chrome_service_pb2.Lacros() if use_lacros else None
             )
             if use_lacros:
-                new_request.lacros.mode = chrome_service_pb2.Lacros.Mode.MODE_ONLY
                 new_request.lacros_extra_args.extend(self.get_extra_browser_args_for_camera_test())
             # Connect to Ash Chrome and login.
             chrome_service.New(new_request)

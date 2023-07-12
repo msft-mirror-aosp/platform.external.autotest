@@ -27,6 +27,11 @@ class ChromeServiceStub(object):
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
+        self.Reconnect = channel.unary_unary(
+                '/tast.cros.browser.ChromeService/Reconnect',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
 
 
 class ChromeServiceServicer(object):
@@ -52,6 +57,19 @@ class ChromeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Reconnect(self, request, context):
+        """Reconnect reconnects to the current browser session.
+
+        This method is called when connection need to be re-established, e.g. after suspend/resume.
+        After the session is reconnected, all existing connections associated with chrome.Chrome instance also
+        needs to be re-established. For example, chrome.TestAPIConn(), chrome.NewConn().
+
+        Note that this method cannot be used to recover Chrome after crashes since the devtools port may change.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ChromeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -62,6 +80,11 @@ def add_ChromeServiceServicer_to_server(servicer, server):
             ),
             'Close': grpc.unary_unary_rpc_method_handler(
                     servicer.Close,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'Reconnect': grpc.unary_unary_rpc_method_handler(
+                    servicer.Reconnect,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
@@ -106,6 +129,23 @@ class ChromeService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/tast.cros.browser.ChromeService/Close',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Reconnect(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tast.cros.browser.ChromeService/Reconnect',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,

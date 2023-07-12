@@ -147,14 +147,15 @@ class _KeyboardBypasser(_BaseFwBypasser):
                                      'Switching usb key to DUT')
         self.check_vbus_and_pd_state()
         self.servo.switch_usbkey('dut')
-        logging.info('Enabled dut_sees_usb')
-        tries = 3
-        while tries > 0 and not self.client_host.wait_up(
-                timeout=self.faft_config.delay_reboot_to_ping,
+        logging.info('Enabled dut_sees_usb, connect timeout = %ds',
+                     self.faft_config.usb_image_boot_timeout)
+        # TODO(jbettis): Remove the retries and use
+        # broken_firmware_screen_requires_recovery to determine if
+        # power_state:rec is required or not.
+        if not self.client_host.wait_up(
+                timeout=self.faft_config.usb_image_boot_timeout,
                 host_is_down=True):
-            tries = tries - 1
-            logging.info('connect timed out, try REC_ON, retries left: %d',
-                         tries)
+            logging.info('connect timed out, try REC_ON')
             self.servo.switch_usbkey('off')
             psc = self.servo.get_power_state_controller()
             psc.power_on(psc.REC_ON)
@@ -163,6 +164,9 @@ class _KeyboardBypasser(_BaseFwBypasser):
             self.servo.switch_usbkey('dut')
             # Check Vbus after reboot again
             self.check_vbus_and_pd_state()
+            self.client_host.wait_up(
+                    timeout=self.faft_config.usb_image_boot_timeout,
+                    host_is_down=True)
         logging.info('bypass_rec_mode DONE')
 
 

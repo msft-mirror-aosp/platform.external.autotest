@@ -7,7 +7,7 @@ from autotest_lib.client.common_lib import utils
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.critical-cbx-enabled-stable'
 METADATA = {
-    "contacts": ["tast-core@google.com@google.com"],
+    "contacts": ["tast-core@google.com"],
     "bug_component": "b:1034522", # ChromeOS > Test > Harness > Tast > Examples
     'criteria': 'Tauto wrapper for specified tast tests',
     }

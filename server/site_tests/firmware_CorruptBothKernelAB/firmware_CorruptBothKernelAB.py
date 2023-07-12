@@ -21,20 +21,6 @@ class firmware_CorruptBothKernelAB(FirmwareTest):
     version = 1
     NEEDS_SERVO_USB = True
 
-    def ensure_kernel_on_non_recovery(self, part):
-        """Ensure the requested kernel part on normal/dev boot path.
-
-        If not, it may be a test failure during step 2, try to recover to
-        the requested kernel on normal/dev mode by recovering the whole OS
-        and rebooting.
-
-        @param part: the expected kernel partition number.
-        """
-        if not self.check_root_part_on_non_recovery(part):
-            logging.info('Recover the disk OS by running chromeos-install...')
-            self.faft_client.system.run_shell_command('chromeos-install --yes')
-            self.switcher.mode_aware_reboot()
-
     def initialize(self, host, cmdline_args, dev_mode=False):
         """Initialize the test"""
         super(firmware_CorruptBothKernelAB, self).initialize(host, cmdline_args)
@@ -47,7 +33,6 @@ class firmware_CorruptBothKernelAB(FirmwareTest):
     def cleanup(self):
         """Cleanup the test"""
         try:
-            self.ensure_kernel_on_non_recovery('a')
             self.restore_cgpt_attributes()
             self.restore_kernel()
         except Exception as e:

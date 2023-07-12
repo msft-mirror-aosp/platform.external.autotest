@@ -41,6 +41,9 @@ CONFIG['HARDWARE_SUITE_NAME'] = 'suite:arc-cts-hardware'
 CONFIG['VM_SUITE_NAME'] = 'suite:arc-cts-vm'
 CONFIG['STABLE_VM_SUITE_NAME'] = 'suite:arc-cts-vm-stable'
 
+# Suite for rerunning failing camera test during qual
+CONFIG['CAMERA_DUT_SUITE_NAME'] = 'suite:arc-cts-camera-opendut'
+
 CONFIG['CONTROLFILE_TEST_FUNCTION_NAME'] = 'run_TS'
 CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
 CONFIG['CONTROLFILE_WRITE_CAMERA'] = True
@@ -421,6 +424,11 @@ CONFIG['NEEDS_CTS_HELPERS'] = [
 CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases',
         'CtsDeqpTestCases.dEQP-VK',
+]
+
+CONFIG['CAMERA_MODULES'] = [
+        # CONTAINS ONLY CAMERA TESTS
+        'CtsCameraTestCases',
 ]
 
 # Specifies if the VM suite should include only a single ABI. If unspecified,

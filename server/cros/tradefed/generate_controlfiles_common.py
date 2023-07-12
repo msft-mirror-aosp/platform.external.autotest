@@ -1039,7 +1039,9 @@ def get_controlfile_content(combined,
             'STABLE_VM_SUITE_NAME'] in suites
 
     if is_qual and (set(get_camera_modules()) & set(modules)):
-        suites.append(CONFIG.get('CAMERA_DUT_SUITE_NAME'))
+        camera_dut_suite = CONFIG.get('CAMERA_DUT_SUITE_NAME')
+        if camera_dut_suite:
+            suites.append(camera_dut_suite)
         for qual_suite in CONFIG.get('QUAL_SUITE_NAMES', []):
             suites.remove(qual_suite)
         is_qual = False

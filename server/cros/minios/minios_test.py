@@ -176,17 +176,26 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         logs before MiniOS exits. This function should be called just before
         rebooting out of MiniOS.
         """
+
+        def CopyLog(filename):
+            try:
+                self._host.get_file(filename, self._minios_resultsdir)
+            except error.AutoservRunError:
+                logging.exception("Failed to copy %s during clean up",
+                                  filename)
+
         if self._host:
-            self._host.get_file(self._MESSAGES_LOG, self._minios_resultsdir)
-            if self._host.is_file_exists(self._MINIOS_LOG):
-                self._host.get_file(self._MINIOS_LOG, self._minios_resultsdir)
-            self._host.get_file(self._NET_LOG, self._minios_resultsdir)
-            self._host.get_file(self._UPDATE_ENGINE_LOG_DIR,
-                                self._minios_resultsdir)
-            self._host.get_file(self._UPSTART_LOG, self._minios_resultsdir)
+            for filename in (
+                    self._MESSAGES_LOG,
+                    self._NET_LOG,
+                    self._UPDATE_ENGINE_LOG_DIR,
+                    self._UPSTART_LOG,
+            ):
+                CopyLog(filename)
+
         if self._nebraska:
-            self._host.get_file(os.path.join('/tmp', self._NEBRASKA_LOG),
-                                self._minios_resultsdir)
+            nebraska_log_file = os.path.join("/tmp", self._NEBRASKA_LOG)
+            CopyLog(nebraska_log_file)
             self._nebraska = None
 
     def _is_running_minios(self):

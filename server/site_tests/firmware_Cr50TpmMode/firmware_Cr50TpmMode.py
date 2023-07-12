@@ -13,13 +13,15 @@ class firmware_Cr50TpmMode(Cr50Test):
     version = 1
 
     def init_tpm_mode(self):
-        """Reset the device."""
-        logging.info('Reset')
-        self.host.reset_via_servo()
+        """Reset the GSC to make sure the key ladder and tpm are enabled."""
+        logging.info('GSC Reset')
+        self.fast_ccd_open(True)
+        self.gsc.reboot()
         self.switcher.wait_for_client()
+        self.check_tpm_mode_is_reset('GSC', True)
 
     def cleanup(self):
-        """Initialize TPM mode by resetting CR50"""
+        """Reset the GSC to re-enable the tpm."""
         try:
             self.init_tpm_mode()
         finally:
@@ -52,6 +54,41 @@ class firmware_Cr50TpmMode(Cr50Test):
         logging.info('TPM Mode: %r', result)
         return result
 
+    def check_tpm_mode_is_reset(self, reset_type, long_opt):
+        """Verify the tpm and key ladder are enabled.
+
+        Args:
+            reset_type: string describing the method used to
+                        reset the tpm.
+            long_opt: Boolean to decide whether to use long opt
+                      for gsctool command.
+        """
+        # Check if TPM is enabled through console command.
+        logging.info('Get TPM Mode')
+        if not self.gsc.tpm_is_enabled():
+            raise error.TestFail('TPM is not enabled after %s reset' %
+                                 reset_type)
+
+        # Check if Key Ladder is enabled.
+        if self.gsc.keyladder_is_disabled():
+            raise error.TestFail(
+                    'Failed to restore GSC Key Ladder after %s reset' %
+                    reset_type)
+
+        # Check if TPM is enabled through gsctool.
+        output_log = self.get_tpm_mode(long_opt)
+        logging.info(output_log)
+        if not 'enabled (0)' in output_log.lower():
+            raise error.TestFail('Failed to read TPM mode after %s reset' %
+                                 reset_type)
+
+        # Check if CR50 responds to a TPM request.
+        if self.tpm_is_responsive():
+            logging.info('Checked TPM response')
+        else:
+            raise error.TestFail(
+                    'Failed to check TPM response after %s reset' % reset_type)
+
     def run_test_tpm_mode(self, disable_tpm, long_opt):
         """Run a test for the case of either disabling TPM or enabling.
 
@@ -63,29 +100,6 @@ class firmware_Cr50TpmMode(Cr50Test):
         Raises:
             TestFail: If test fails for unexpected TPM mode change.
         """
-        self.init_tpm_mode()
-
-        # Check if TPM is enabled through console command.
-        logging.info('Get TPM Mode')
-        if not self.gsc.tpm_is_enabled():
-            raise error.TestFail('TPM is not enabled after reset,')
-
-        # Check if Key Ladder is enabled.
-        if self.gsc.keyladder_is_disabled():
-            raise error.TestFail('Failed to restore H1 Key Ladder')
-
-        # Check if TPM is enabled through gsctool.
-        output_log = self.get_tpm_mode(long_opt)
-        logging.info(output_log)
-        if not 'enabled (0)' in output_log.lower():
-            raise error.TestFail('Failed to read TPM mode after reset')
-
-        # Check if CR50 responds to a TPM request.
-        if self.tpm_is_responsive():
-            logging.info('Checked TPM response')
-        else:
-            raise error.TestFail('Failed to check TPM response')
-
         # Change TPM Mode
         logging.info('Set TPM Mode')
 
@@ -128,10 +142,18 @@ class firmware_Cr50TpmMode(Cr50Test):
                     raise error.TestFail(
                         'Unexpected result in disabling TPM mode: %s'
                         % output_log)
+        boot_id = self.host.get_boot_id()
+        logging.info('AP Reset')
+        self.host.reboot()
+        self.switcher.wait_for_client()
+        if boot_id == self.host.get_boot_id():
+            raise error.TestFail('DUT did not reset')
+        self.check_tpm_mode_is_reset('AP', long_opt)
 
     def run_once(self):
         """Test Disabling TPM and Enabling TPM"""
         long_opts = [True, False]
+        self.init_tpm_mode()
 
         # One iteration runs with the short opt '-m',
         # and the other runs with the long opt '--tpm_mode'

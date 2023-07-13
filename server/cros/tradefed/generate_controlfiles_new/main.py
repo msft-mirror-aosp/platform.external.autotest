@@ -1,6 +1,7 @@
 # Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+"""Entry point of the generate_controlfiles script."""
 
 import argparse
 import collections
@@ -66,13 +67,11 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
 
     # yapf: disable
     passes = Concat([
+        # Camera tests are generated separately for camerabox.
+        # See gen_extra_camera()
         IfNot(
             has_modules(gcc.get_camera_modules()),
             [
-                If(
-                    filter_and(bundle.abi == 'arm', has_modules(config['BVT_PERBUILD'])),
-                    [AddSuites(['suite:bvt-perbuild'])],
-                ),
                 If(
                     has_modules(config['SPLIT_BY_BITS_MODULES']),
                     [SplitByBits()],
@@ -84,6 +83,10 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                     )
                     for module, shard_count in shard_config.items()
                 ]),
+
+                # Sets VM attributes including 'vm' (VM-eligible) and
+                # 'vm_stable' (HW-agnostic). Must run BEFORE applying
+                # AddSplitSuites.
                 If(
                     vm_config,
                     [SetVMAttrs(
@@ -114,6 +117,10 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                         ),
                     ],
                 ),
+
+                # These are not meant to be included in the full regression
+                # suites. Apply split AFTER AddSplitSuites to not interfere with
+                # split suite calculation.
                 If(
                     has_modules(config.get('SPLIT_BY_VM_FORCE_MAX_RESOLUTION', [])),
                     [SplitByAttr('vm_force_max_resolution', [False, True])],
@@ -122,7 +129,13 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                     has_modules(config.get('SPLIT_BY_VM_TABLET_MODE', [])),
                     [SplitByAttr('vm_tablet_mode', [False, True])],
                 ),
+
+                # Assign suites and handle special cases.
                 AddSuites(config['INTERNAL_SUITE_NAMES']),
+                If(
+                    filter_and(bundle.abi == 'arm', has_modules(config['BVT_PERBUILD'])),
+                    [AddSuites(['suite:bvt-perbuild'])],
+                ),
                 If(
                     lambda g: g.get('vm_stable'),
                     [
@@ -138,6 +151,8 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                     lambda g: vm_config.get('RUN_SINGLE_ABI', bundle.abi) == bundle.abi and g.get('vm'),
                     [AddSuites([vm_config.get('SUITE_NAME')])],
                 ),
+
+                # Apply extra attributes (suites).
                 Concat(
                     If(
                         has_modules([module]),
@@ -206,24 +221,25 @@ def gen_qual(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
             )
             for module, shard_count in shard_config.items()
         ]),
+
+        # Sets VM attributes including 'vm' (VM-eligible) and 'vm_stable'
+        # (HW-agnostic). Must run BEFORE applying MergeSplitSuites.
         If(
             vm_config,
-            [
-                SetVMAttrs(
-                    vm_config.get('MODULES_RULES'),
-                    vm_config.get('UNSTABLE_MODULES_RULES'),
-                ),
-                If(
-                    lambda g: g['vm_stable'],
-                    [MergeSplitSuites(
-                        split_config,
-                        split_config.get('QUAL_VM_STABLE_SUITE_FORMAT'),
-                        split_config.get('QUAL_VM_STABLE_SUITE_LONG'),
-                        bundle.abi,
-                        basename_prefix='all.vm_stable',
-                    )],
-                ),
-            ],
+            [SetVMAttrs(
+                vm_config.get('MODULES_RULES'),
+                vm_config.get('UNSTABLE_MODULES_RULES'),
+            )],
+        ),
+        If(
+            lambda g: g.get('vm_stable'),
+            [MergeSplitSuites(
+                split_config,
+                split_config.get('QUAL_VM_STABLE_SUITE_FORMAT'),
+                split_config.get('QUAL_VM_STABLE_SUITE_LONG'),
+                bundle.abi,
+                basename_prefix='all.vm_stable',
+            )],
         ),
         If(
             lambda g: 'merged' not in g,
@@ -234,14 +250,17 @@ def gen_qual(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                 bundle.abi,
             )],
         ),
+
+        # Assign qual suite; for camera tests, replace qual suite with camera
+        # DUT suite.
         AddSuites(config['QUAL_SUITE_NAMES']),
         If(
             has_modules(gcc.get_camera_modules()),
-            [RemoveSuites(config['QUAL_SUITE_NAMES'] + [split_config['QUAL_SUITE_LONG']])],
-        ),
-        If(
-            filter_and('CAMERA_DUT_SUITE_NAME' in config, has_modules(gcc.get_camera_modules())),
-            [AddSuites([config.get('CAMERA_DUT_SUITE_NAME')])],
+            [
+                RemoveSuites(config['QUAL_SUITE_NAMES'] +
+                             [split_config['QUAL_SUITE_LONG']]),
+                AddSuites([config.get('CAMERA_DUT_SUITE_NAME')] or []),
+            ],
         ),
     ])
     # yapf: enable

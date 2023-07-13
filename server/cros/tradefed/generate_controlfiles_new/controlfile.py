@@ -1,11 +1,20 @@
 # Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+"""Functions for generating the actual controlfile content.
+
+TODO(b/289468003): This still largely relies on the legacy script. Reimplement
+the logic here and clean up glue code.
+"""
 
 import generate_controlfiles_common as gcc
 
+from .bundle import Bundle
+from .common import *
 
-def _get_extension(group, abi, revision, is_public):
+
+def _get_extension(group: ModuleGroup, abi: str, revision: str,
+                   is_public: bool) -> str:
     return gcc.get_extension(group['basename'],
                              abi,
                              revision,
@@ -19,13 +28,33 @@ def _get_extension(group, abi, revision, is_public):
                              vm_tablet_mode=group.get('vm_tablet_mode', False))
 
 
-def get_controlfile_name(group, bundle):
+def get_controlfile_name(group: ModuleGroup, bundle: Bundle) -> str:
+    """Returns the name of the control file.
+
+    Args:
+        group: the module group corresponding to the control file.
+        bundle: the bundle corresponding to the control file.
+
+    Returns:
+        The name of the control file.
+    """
     extension = _get_extension(group, bundle.abi, bundle.revision,
                                bundle.source_type == 'MOBLAB')
     return f"control.{extension}"
 
 
-def get_controlfile_content(group, config, bundle):
+def get_controlfile_content(group: ModuleGroup, config: Config,
+                            bundle: Bundle) -> str:
+    """Returns the contents of the control file.
+
+    Args:
+        group: the module group corresponding to the control file.
+        config: the config dictionary.
+        bundle: the bundle corresponding to the control file.
+
+    Returns:
+        The contents of the control file.
+    """
     modules = group['modules']
     suites = sorted(group.get('suites', []))
     revision = bundle.revision

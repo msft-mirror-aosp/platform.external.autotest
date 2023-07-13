@@ -155,7 +155,8 @@ Details about FAFT PD's ServoV4 Type-C + servo micro setup (Figure 3):
     - Servo_v4: servo_v4_v2.3.30-b35860984
     - servo micro: servo_micro_v2.3.30-b35960984
 
-To check or upgrade the FW on the servo v4 and servo micro, respectively, before kicking off the FAFT PD suite:
+To check or upgrade the FW on the servo v4 and servo micro, respectively, before kicking off the FAFT PD suite
+(note for PVS instead see [PVS - Updating the Servo Firmware]):
 
 - Have the servo v4 connected to your workstation/labstation along with the servo micro connected to the servo.
 - Run the following commands on chroot one after the other:
@@ -265,6 +266,7 @@ This setup confirmation section is for the PVS workflow if using chroot go back
 to [Setup Confirmation].
 
 1. Ensure you have a PVS Host setup by following the [PVS - Partner Setup Guide]
+1. Ensure you have updated your servo and c2d2 or servo micro firmware by following [PVS - Updating the Servo Firmware]
 1. To get setup to run FAFT tests, on your PVS host run (for more info on PVS arguments see [PVS User Guide]):
     1. `(outside container) shop unpack -d <DUT_IP> --servo-serial <servo serial> [--milestone <milestone> --chromeos-version <chromeOS version>]`
     1. `(outside container) docker attach pvs`
@@ -428,3 +430,4 @@ Q: My USB stick keeps getting corrupted and I can't get firmware_FAFTSetup to pa
 [PVS User Guide]: https://chrome-internal.googlesource.com/chromeos/platform/pvs/+/refs/heads/main/docs/pvs_user_guide.md
 [PVS Setup Confirmation]: #pvs-setup-confirmation
 [Setup Confirmation]: #setup-confirmation
+[PVS - Updating the Servo Firmware]: https://chrome-internal.googlesource.com/chromeos/platform/pvs/+/refs/heads/main/docs/pvs_user_guide.md#updating-the-servo-firmware

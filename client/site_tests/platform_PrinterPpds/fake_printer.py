@@ -47,8 +47,17 @@ class FakePrinter():
         # Create a TCP/IP socket
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            # This is needed to reuse the port number for a new socket without
+            # delay.
+            self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             # Bind the socket to the port
-            self._socket.bind( ('localhost', port) )
+            try:
+                self._socket.bind(('localhost', port))
+            except Exception as ex:
+                # We loosing here the exception type, but more detailed
+                # message is more important.
+                raise Exception('Cannot bind socket at port %d: %s ' %
+                                (port, str(ex)))
             # Start thread
             self._thread = threading.Thread(target = self._thread_read_docs)
             self._thread.start();
@@ -56,7 +65,6 @@ class FakePrinter():
             # failure - the socket must be closed before exit
             self._socket.close()
             raise
-
 
     # These methods allow to use the 'with' statement to automaticaly stop
     # the printer

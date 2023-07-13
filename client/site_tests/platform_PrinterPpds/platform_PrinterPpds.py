@@ -10,6 +10,7 @@ import dbus
 import gzip
 import logging
 import os
+import queue
 import subprocess
 import shutil
 import tempfile
@@ -34,9 +35,8 @@ _FAKE_PRINTER_TIMEOUT = 200
 # Prefix for CUPS printer name
 _FAKE_PRINTER_ID = 'FakePrinter'
 
-# First port number to use, this test uses consecutive ports numbers,
-# different for every PPD file
-_FIRST_PORT_NUMBER = 9000
+# First port number to use, this test uses consecutive ports numbers.
+_FIRST_PORT_NUMBER = 9100
 
 # Values are from platform/system_api/dbus/debugd/dbus-constants.h.
 _CUPS_SUCCESS = 0
@@ -170,6 +170,13 @@ class platform_PrinterPpds(test.test):
         else:
             self._pipeline_dir = None
 
+        # Prepare the container with numbers of ports to use
+        self._ports_for_printers = queue.Queue()
+        # We do not want to reuse the same port number after immediately after
+        # closing the socket, so we reserve by average 2 ports number per one
+        # fake printer.
+        for i in range(threads_count * 2):
+            self._ports_for_printers.put(_FIRST_PORT_NUMBER + i)
 
     def cleanup(self):
         """
@@ -290,12 +297,16 @@ class platform_PrinterPpds(test.test):
         except BaseException as e:
             return 'MISSING PPD: ' + str(e)
 
+        # Choose the port for the printer
+        port = self._ports_for_printers.get()
+
         # Runs the test procedure
         try:
-            port = _FIRST_PORT_NUMBER + task_id
             self._PPD_test_procedure(ppd_file, ppd_content, port)
         except BaseException as e:
             return 'FAIL: ' + str(e)
+        finally:
+            self._ports_for_printers.put(port)
 
         return True
 

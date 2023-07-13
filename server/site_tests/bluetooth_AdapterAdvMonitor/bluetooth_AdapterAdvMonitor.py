@@ -143,6 +143,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
                   },
+                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS,
                   supports_floss=True,
                   flags=['Quick Health'])
     def advmon_hci_events_filtered_tests(self):

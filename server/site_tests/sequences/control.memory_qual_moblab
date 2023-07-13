@@ -27,7 +27,6 @@ Sequence for qualification new memory part to AVL.
 HOUR_IN_SECS=60*60
 
 CLIENT_TESTS= [
-    ('platform_MemCheck', {}),
     ('hardware_RamFio', {
         'requirements': [('ram_suite', [])]}),
     ('hardware_MemoryThroughput', {

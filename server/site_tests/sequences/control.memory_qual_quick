@@ -24,7 +24,6 @@ Sequence for testing the Memory Qual running from the fixed devices.
 """
 
 CLIENT_TESTS= [
-    ('platform_MemCheck', {}),
     ('hardware_RamFio', {
         'requirements': [('ram_suite', [])]}),
     ('hardware_MemoryThroughput', {

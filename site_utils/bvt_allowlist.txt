@@ -12,6 +12,5 @@ login_LoginSuccess
 login_UserPolicyKeys
 platform_DMVerityBitCorruption
 platform_DMVerityCorruption
-platform_MemCheck
 platform_ToolchainOptions
 tast

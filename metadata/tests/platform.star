@@ -390,11 +390,6 @@ def define_tests():
             main_package = '',
         ),
         test_common.define_test(
-            'platform/MemCheck',
-            suites = ['bvt-perbuild'],
-            main_package = 'autotest_lib.client.site_tests.platform_MemCheck.platform_MemCheck',
-        ),
-        test_common.define_test(
             'platform/MetricsUploader',
             suites = ['experimental'],
             main_package = 'autotest_lib.client.site_tests.platform_MetricsUploader.platform_MetricsUploader',

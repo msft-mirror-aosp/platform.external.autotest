@@ -1,8 +1,16 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/env vpython3
 # Copyright 2013 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# [VPYTHON:BEGIN]
+# python_version: "3.8"
+#
+# wheel: <
+#   name: "infra/python/wheels/six-py2_py3"
+#   version: "version:1.16.0"
+# >
+# [VPYTHON:END]
 """
 Check an autotest control file for required variables.
 
@@ -26,7 +34,7 @@ from autotest_lib.server.cros.dynamic_suite import reporting_utils
 
 def find_checkout() -> Path:
     """Find the base path of the chromiumos checkout."""
-    for path in Path(__file__).parent.parents:
+    for path in Path(__file__).resolve().parent.parents:
         if (path / ".repo").is_dir():
             return path
     raise OSError("Unable to locate chromiumos checkout.")

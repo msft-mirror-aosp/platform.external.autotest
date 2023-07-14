@@ -5230,6 +5230,12 @@ class BluetoothAdapterTests(test.test):
             orig_alias = ''
         self.bluetooth_facade.set_adapter_alias(orig_alias)
 
+        # 4. Sleep 3 seconds so that the original alias can be written to
+        # the bt_config.conf file before test_reset_on_adapter() is executed.
+        # Per packages/modules/Bluetooth/system/gd/storage/storage_module.h,
+        # SaveDelayed() may take up to 3 seconds to save the config file.
+        time.sleep(3)
+
         self.results = {'alias_found': alias_found}
         return all(self.results.values())
 

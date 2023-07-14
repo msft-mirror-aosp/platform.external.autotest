@@ -99,14 +99,7 @@ TELEMETRY_AFDO_BENCHMARKS = (
         #              '--story-tag-filter=intl_es_fr_pt_BR'),
         #     'archs': ('arm',)
         # },
-        {
-                'name': 'tab_switching.typical_25',
-                'archs': (
-                        'amd64',
-                        'arm',
-                )
-        },
-        # TODO(b:264935549): Replace loading.desktop.
+        # TODO(b:264935549): Replace rendering.desktop.
         # {
         #         'name': 'rendering.desktop',
         #         'args':

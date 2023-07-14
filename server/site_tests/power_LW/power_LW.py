@@ -53,8 +53,9 @@ class power_LW(test.test):
         if utils.host_is_in_power_lab(machine['hostname']):
             hostname = utils.get_power_lab_wlan_hostname(machine['hostname'])
 
-        machine['hostname'] = hostname
-        return factory.create_host(machine)
+        wlan_machine = machine.copy()
+        wlan_machine['hostname'] = hostname
+        return factory.create_host(wlan_machine)
 
     def _start_servo_usb_and_ethernet(self, host, wlan_host):
         if host.servo and host.servo.supports_usb_mux_control():

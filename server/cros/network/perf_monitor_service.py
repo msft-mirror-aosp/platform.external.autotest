@@ -6,6 +6,7 @@
 import time
 import datetime
 import threading
+import logging
 
 from server.cros.network.perf_monitor_data import PerfMonitorData
 from server.cros.network.perf_monitor_command_runner import PerfMonitorCommandRunner
@@ -101,7 +102,10 @@ class PerfMonitorService(object):
         self.monitoring_throughput = False
         self.thread.join()
         self._throughput_perf_analytics()
-        self._graph_throughput_metrics()
+        try:
+            self._graph_throughput_metrics()
+        except KeyError as k:
+            logging.error('KeyException observed: missing key: %s', str(k))
 
     def _throughput_perf_analytics(self):
         """

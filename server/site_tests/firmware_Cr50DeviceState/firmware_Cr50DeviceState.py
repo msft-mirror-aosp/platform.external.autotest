@@ -519,10 +519,9 @@ class firmware_Cr50DeviceState(Cr50Test):
             logging.info('runing suspend commands %s', cmds)
             self.faft_client.system.run_shell_command(cmds, False)
 
-    def stage_irq_add(self, irq_dict, name=''):
+    def stage_irq_add(self, name):
         """Add the current irq counts to the stored dictionary of irq info"""
-        if name:
-            logging.info('%s:', name.strip())
+        logging.info('%s:', name.strip())
         irq_dict = self.get_irq_counts()
         self.steps.append(irq_dict)
         self.step_names.append(name.center(12))

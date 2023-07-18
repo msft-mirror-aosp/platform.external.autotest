@@ -188,31 +188,31 @@ def resume_check_network_hook():
     pause_ethernet_file = None
 
 
-def do_suspend(wakeup_timeout, delay_seconds=0):
+def do_suspend(suspend_for_sec, delay_seconds=0):
     """Suspend using the power manager with a wakeup timeout.
 
     Wait for |delay_seconds|, suspend the system(S3/S0iX) using
     powerd_dbus_suspend program. powerd_dbus_suspend first sets a wakeup alarm
-    on the dut for |current_time + wakeup_timeout|. Thus the device tries to
-    resume at |current_time + wakeup_timeout| irrespective of when it suspended.
+    on the dut for |current_time + suspend_for_sec|. Thus the device tries to
+    resume at |current_time + suspend_for_sec| irrespective of when it suspended.
     This means that RTC can trigger an early resume and prevent suspend.
 
     Function will block until suspend/resume has completed or failed.
     Returns the wake alarm time from the RTC as epoch.
 
-    @param wakeup_timeout: time from now after which the device has to.
+    @param suspend_for_sec: time from now after which the device has to.
     @param delay_seconds: Number of seconds wait before suspending the DUT.
 
     """
     pause_check_network_hook()
     upstart.ensure_running('powerd')
-    estimated_alarm, wakeup_count = prepare_wakeup(wakeup_timeout)
+    estimated_alarm, wakeup_count = prepare_wakeup(suspend_for_sec)
     suspend_cmd_argv = [
             '/usr/bin/powerd_dbus_suspend',
             '--delay=%d' % delay_seconds,
             '--timeout=30',
             '--wakeup_count=%d' % wakeup_count,
-            '--suspend_for_sec=%d' % wakeup_timeout,
+            '--suspend_for_sec=%d' % suspend_for_sec,
     ]
     logging.info("Running '%s'", ' '.join(suspend_cmd_argv))
     result = subprocess.run(suspend_cmd_argv, stdout=subprocess.PIPE)
@@ -273,7 +273,7 @@ def suspend_bg_for_dark_resume(suspend_seconds, delay_seconds=0):
     os.system('echo 0 > /sys/class/rtc/rtc0/wakealarm')
     wakeup_count = read_wakeup_count()
     command = ('/usr/bin/powerd_dbus_suspend --delay=%d --timeout=30 '
-               '--wakeup_count=%d --wakeup_timeout=%d '
+               '--wakeup_count=%d --suspend_for_sec=%d '
                '--disable_dark_resume=false' %
                (delay_seconds, wakeup_count, suspend_seconds))
     logging.info("Running '%s'", command)

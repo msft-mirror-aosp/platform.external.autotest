@@ -12,6 +12,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
+ATTRIBUTES = "suite:lacros_power_dashboard"
 
 from autotest_lib.client.common_lib import utils
 

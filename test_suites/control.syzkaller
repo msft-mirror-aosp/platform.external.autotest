@@ -2,11 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "mwiitala, ChromeOS Kernel Team"
+AUTHOR = "zsm, ChromeOS Kernel Team"
 NAME = "syzkaller"
 PURPOSE = "Suite to run Syzkaller tests on ChromeOS devices."
-
-TIME = "SHORT"
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
+TIME = "LONG"
 TEST_CATEGORY = "General"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"

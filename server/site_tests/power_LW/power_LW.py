@@ -127,7 +127,12 @@ class power_LW(test.test):
                 logging.warning("ethernet connection did not return.")
                 host.servo.usb_mux_reset()
                 host.servo.usb3_control_reset()
-                force_discharge_utils.charge_control_by_ectool(True,
-                                                               host=wlan_host)
+                force_discharge_host = wlan_host
             else:
-                force_discharge_utils.charge_control_by_ectool(True, host=host)
+                force_discharge_host = host
+            try:
+                force_discharge_utils.charge_control_by_ectool(
+                        True, host=force_discharge_host)
+            except:
+                raise error.TestNAError(
+                        "Skip test: Force discharge not supported")

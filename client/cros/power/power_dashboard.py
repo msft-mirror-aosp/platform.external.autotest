@@ -272,7 +272,7 @@ class BaseDashboard(object):
         req = urllib.request.Request(uploadurl, encoded)
 
         @retry.retry(urllib.error.URLError,
-                     raiselist=[urllib.error.HTTPError],
+                     raiselist=None,
                      timeout_min=5.0,
                      delay_sec=1,
                      backoff=2)

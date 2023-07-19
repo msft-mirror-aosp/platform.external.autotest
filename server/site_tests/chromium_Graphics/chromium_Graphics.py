@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2022 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,7 +6,6 @@ import logging
 import os
 import sys
 import shutil
-import tempfile
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -26,9 +24,6 @@ class chromium_Graphics(test.test):
     """
     version = 1
 
-    # The path where TLS provisioned the lacros image.
-    CHROME_PROVISION = '/var/lib/imageloader/lacros'
-
     # The path where we install chromium/src. In this experimental
     # stage, we may use existing lacros image, which built at src.
     CHROME_BUILD = '/usr/local/lacros-build'
@@ -41,36 +36,21 @@ class chromium_Graphics(test.test):
 
     def initialize(self, host=None, args=None):
         self.host = host
-        assert self.host.path_exists(self.CHROME_PROVISION), (
-                'lacros artifact'
-                'is not provisioned by CTP. Please check the CTP request.')
 
         self.args_dict = utils.args_to_dict(args)
         self.test_args = chrome_sideloader.get_test_args(
                 self.args_dict, 'test_args').split(' ')
 
-        chrome_sideloader.setup_host(
-                self.host,
-                self.CHROME_BUILD,
-                self.CHROME_MOUNT_POINT
-                if self.is_cros_chrome else self.LACROS_MOUNT_POINT,
-                is_cros_chrome=self.is_cros_chrome,
-        )
+        # 'chromite_deploy_chrome' installs Ash/Lacros via chromite and leave
+        # chrome checkout on Drone, which contains the GPU test's server package.
+        archive_type = 'chrome' if self.is_cros_chrome else 'lacros'
+        self.server_pkg = chrome_sideloader.chromite_deploy_chrome(
+                self.host, self.args_dict.get('lacros_gcs_path'), archive_type)
 
         if not self.args_dict.get('run_private_tests',
                                   True) in [False, 'False']:
             tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
 
-        # Chromium graphics tests have its own server side packages and can be
-        # invoked directly on Drone server.
-        # We copy it from the DUT, because TLS can not provision server
-        # packages. Ideally, this should be built into the test driver
-        # docker, if we move to CFT(go/cros-cft-site).
-        self.server_pkg = tempfile.mkdtemp()
-        self.host.get_file('{}/'.format(self.CHROME_BUILD),
-                           '{}/'.format(self.server_pkg),
-                           preserve_perm=False,
-                           preserve_symlinks=True)
         # The test script needs to know it is running in Skylab environment.
         os.environ['RUNNING_IN_SKYLAB'] = '1'
 
@@ -80,12 +60,10 @@ class chromium_Graphics(test.test):
 
     def run_once(self):
         """Invoke run_gpu_integration_test."""
-        vpython3_spec = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), '.vpython3')
         cmd = [
                 'vpython3',
                 '-vpython-spec',
-                vpython3_spec,
+                '../../.vpython3',
                 os.path.join('../../testing', 'scripts',
                              'run_gpu_integration_test_as_googletest.py'),
                 os.path.join('../../content', 'test', 'gpu',
@@ -96,7 +74,7 @@ class chromium_Graphics(test.test):
                         os.path.join(self.resultsdir, 'output.json')),
                 # GPU team requires a bunch of tags with the results, and the
                 # gtest output does not suffice.
-                # GPUT test script exports each test result into a json string
+                # GPU test script exports each test result into a json string
                 # in sinkpb.TestResult, aka the native RDB format.
                 # Test runner recipe will call native result_adapter
                 # to upload them to RDB. See crrev.com/c/4081733.

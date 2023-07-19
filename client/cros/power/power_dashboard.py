@@ -277,7 +277,24 @@ class BaseDashboard(object):
                      delay_sec=1,
                      backoff=2)
         def _do_upload():
-            urllib.request.urlopen(req)
+            try:
+                urllib.request.urlopen(req)
+            except urllib.error.HTTPError as e:
+                logging.debug("Power Dashboard upload failed with error %s", e)
+                # Generate network info for the logs on HTTPErrors
+                utils.run('ifconfig',
+                          ignore_status=True,
+                          stdout_tee=utils.TEE_TO_LOGS)
+                utils.run('netstat -nr',
+                          ignore_status=True,
+                          stdout_tee=utils.TEE_TO_LOGS)
+                utils.run('traceroute chrome-power.appspot.com',
+                          ignore_status=True,
+                          stdout_tee=utils.TEE_TO_LOGS)
+                utils.run('host chrome-power.appspot.com',
+                          ignore_status=True,
+                          stdout_tee=utils.TEE_TO_LOGS)
+                raise e
 
         _do_upload()
 

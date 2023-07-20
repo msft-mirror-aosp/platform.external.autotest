@@ -16,7 +16,6 @@
 NAME = "power_ProbeDriver.probe_ac"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "ChromeOS Team",
     "bug_component": "b:167191",
     "criteria": "This test is a functional test",
     "hw_agnostic": False,
@@ -24,4 +23,4 @@ METADATA = {
 ATTRIBUTES = ("suite:power_build")
 TEST_TYPE = "client"
 
-job.run_test('power_ProbeDriver', test_which='Mains')
+job.run_test('power_ProbeDriver', test_which='Mains', tag='.'.join(NAME.split('.')[1:]))

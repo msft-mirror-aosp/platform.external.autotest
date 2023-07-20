@@ -100,11 +100,6 @@ def define_tests():
             main_package = 'autotest_lib.client.site_tests.hardware_ProbeComponents.hardware_ProbeComponents',
         ),
         test_common.define_test(
-            'hardware/RamFio',
-            suites = ['bvt-perbuild', 'crosbolt_perf_weekly'],
-            main_package = 'autotest_lib.client.site_tests.hardware_RamFio.hardware_RamFio',
-        ),
-        test_common.define_test(
             'hardware/RealtekCardReader',
             suites = [],
             main_package = 'autotest_lib.client.site_tests.hardware_RealtekCardReader.hardware_RealtekCardReader',

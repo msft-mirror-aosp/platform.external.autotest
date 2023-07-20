@@ -129,10 +129,6 @@
     "main_name": "ChromeOSPerf"
   },
   {
-    "autotest_name": "hardware_RamFio",
-    "main_name": "ChromeOSPerf"
-  },
-  {
     "autotest_name": "hardware_StorageFio",
     "main_name": "ChromeOSPerf"
   },

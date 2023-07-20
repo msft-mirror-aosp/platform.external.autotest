@@ -5,7 +5,6 @@
 NAME = "PowerQual.full"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "puthik",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
@@ -52,7 +51,8 @@ CLIENT_TESTS = [
         'loop_count' : 24, 'test_low_batt_p' : 5}),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 100, 'max_run_time': 5 * HOURS,
+        'percent_target_charge' : 100, 'test_for_charging_speed': True,
+        'percent_initial_charge_max': 5, 'max_run_time': 5 * HOURS,
         'tag' : 'powerqual'}),
     ('power_WaitForCoolDown', {}),
     ('power_VideoPlayback', {

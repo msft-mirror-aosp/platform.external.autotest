@@ -18,7 +18,6 @@ class power_BatteryCharge(power_test.power_Test):
 
     def initialize(self, pdash_note=''):
         """Perform necessary initialization prior to test run."""
-
         if not power_utils.has_battery():
             raise error.TestNAError('DUT has no battery. Test Skipped')
 
@@ -43,11 +42,13 @@ class power_BatteryCharge(power_test.power_Test):
         self._services_other = service_stopper.ServiceStopper(['ui'])
         self._services_other.stop_services()
 
-    def run_once(self, max_run_time=180, percent_charge_to_add=1,
+    def run_once(self,
+                 max_run_time=180,
+                 percent_charge_to_add=1,
                  percent_initial_charge_max=None,
                  percent_target_charge=None,
-                 use_design_charge_capacity=True):
-
+                 use_design_charge_capacity=True,
+                 test_for_charging_speed=False):
         """
         max_run_time: maximum time the test will run for
         percent_charge_to_add: percentage of the charge capacity charge to
@@ -57,12 +58,29 @@ class power_BatteryCharge(power_test.power_Test):
                   charge_full for calculations. charge_full represents
                   wear-state of battery, vs charge_full_design representing
                   ideal design state.
+        test_for_charging_speed: If set to true, the test will be used to measure
+                  charging speed rather than charge battery to the target percent.
         """
 
         time_to_sleep = 60
 
         self._backlight = power_utils.Backlight()
-        self._backlight.set_percent(0)
+        if test_for_charging_speed:
+            logging.info('Setting backlight to default linear percentage for'
+                         'measuring charging speed')
+            self._backlight.set_default()
+            logging.info(
+                    'Default linear percentage is %.2f, and current linear'
+                    'percentage is %.2f',
+                    self._backlight.default_brightness_percent,
+                    self._backlight.get_percent())
+            if round(self._backlight.get_percent(), 2) != round(
+                    self._backlight.default_brightness_percent, 2):
+                raise error.TestError('For charging speed measurement test, '
+                                      'current brightness should be equal to'
+                                      'default brightness')
+        else:
+            self._backlight.set_percent(0)
 
         self.remaining_time = self.max_run_time = max_run_time
 
@@ -79,10 +97,12 @@ class power_BatteryCharge(power_test.power_Test):
         self.initial_charge = self.status.battery.charge_now
         percent_initial_charge = self.initial_charge * 100 / \
                                  self.charge_capacity
-        if percent_initial_charge_max and percent_initial_charge > \
-                                          percent_initial_charge_max:
-            raise error.TestError('Initial charge (%f) higher than max (%f)'
-                      % (percent_initial_charge, percent_initial_charge_max))
+        if percent_initial_charge_max and round(percent_initial_charge, 2) > \
+                                          round(float(percent_initial_charge_max), 2):
+            raise error.TestError(
+                    'Initial charge (%.2f) higher than initial max(%.2f)' %
+                    (round(percent_initial_charge,
+                           2), round(float(percent_initial_charge_max), 2)))
 
         current_charge = self.initial_charge
         if percent_target_charge is None:

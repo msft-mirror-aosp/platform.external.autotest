@@ -23,6 +23,8 @@
 # percent_target_charge: percentage of the charge capacity target charge. The
 #                        target charge will be capped at the charge capacity.
 #                        Optional.
+# test_for_charging_speed: indicates if the test is used for measuring charging
+#                        speed or not
 
 NAME = "power_BatteryCharge.args"
 METADATA = {
@@ -41,10 +43,15 @@ time_limit = max_hours * 60 * 60
 # percent_target_charge is prioritized over percent_charge_to_add.
 percent_charge_to_add = args_dict.get('percent_charge_to_add', 1)
 percent_target_charge = args_dict.get('percent_target_charge', None)
+use_design_charge_capacity = args_dict.get('use_design_charge_capacity', True)
+test_for_charging_speed = args_dict.get('test_for_charging_speed', False)
+percent_initial_charge_max = args_dict.get('percent_initial_charge_max', None)
 
 job.run_test('power_BatteryCharge',
              tag=NAME.split('.')[1],
              max_run_time=time_limit,
              percent_charge_to_add=percent_charge_to_add,
              percent_target_charge=percent_target_charge,
-             use_design_charge_capacity=False)
+             use_design_charge_capacity=use_design_charge_capacity,
+             test_for_charging_speed=test_for_charging_speed,
+             percent_initial_charge_max=percent_initial_charge_max)

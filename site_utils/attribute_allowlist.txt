@@ -289,6 +289,7 @@ suite:arc-cts-x86-26
 suite:arc-cts-x86-27
 suite:arc-cts-x86-28
 suite:arcappgameperf
+suite:arcappmediaperf
 suite:arc-gts
 suite:arc-gts-1
 suite:arc-gts-2

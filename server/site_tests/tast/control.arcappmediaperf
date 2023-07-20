@@ -1,0 +1,38 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'The ChromiumOS Authors'
+NAME = 'tast.arcappmediaperf'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
+TIME = 'LONG'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:arcappmediaperf'
+MAX_RESULT_SIZE_KB = 50 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run the Tast arcappmediaperf test suite.
+
+Tast is an integration-testing framework analagous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+
+This runs the group of arcappmediaperf tests.
+'''
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['("group:arcappmediaperf")'],
+                 max_run_sec=9000,
+                 command_args=args)
+
+parallel_simple(run, machines)

@@ -9,6 +9,8 @@ from unittest import mock
 
 import common
 
+from autotest_lib.frontend import setup_django_readonly_environment
+from autotest_lib.frontend import setup_test_environment
 from autotest_lib.client.common_lib import time_utils
 from autotest_lib.site_utils import dut_status
 

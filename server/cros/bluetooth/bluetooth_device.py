@@ -664,19 +664,6 @@ class BluetoothDevice(object):
         return self._proxy.device_is_paired(address, identity_address)
 
 
-    # TODO(b:288636142) remove this once b/288636142 has been solved.
-    @proxy_thread_safe
-    def device_pairing_info_is_stored(self, address):
-        """ Check if the pairing info has been stored in a file
-
-        @param address: address of the device.
-
-        @returns: True if the device pairing info has been stored.
-            False otherwise
-
-        """
-        return self._proxy.device_pairing_info_is_stored(address)
-
     @proxy_thread_safe
     def device_services_resolved(self, address):
         """Checks if services are resolved for a device.

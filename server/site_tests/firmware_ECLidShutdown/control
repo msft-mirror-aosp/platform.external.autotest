@@ -2,6 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/290823172) Remove this file when the test is no longer in any
+# PVS plan
+
 from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
@@ -10,9 +13,7 @@ METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Verify functionality of DUT with GBB_FLAG_DISABLE_LID_SHUTDOWN",
-        "requirements": ["sys-fw-0022-v02"]
 }
-ATTRIBUTES = "suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot"
 TIME = "SHORT"
 TEST_TYPE = "server"
 JOB_RETRIES = 0

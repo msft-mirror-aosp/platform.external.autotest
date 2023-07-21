@@ -21,6 +21,7 @@ Run the Tast tests designed specifically for CMX500.
 "group:cellular" indicates that the test runs on DUTs with a Cellular modem.
 "cellular_cmx_callbox": Attribute used to select tests that specifically run on DUTs with CMX500 callbox.
 "cellular_unstable": Unstable tests that will be excluded from this suite.
+"cellular_run_isolated": Tests that should be run isolated to prevent interference.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
@@ -39,9 +40,10 @@ def run(machine):
                         json.dumps(host_info.labels)},
                         stream=temp_file)
         temp_file.flush()
+        host.reboot()
         job.run_test('tast',
                     host=host,
-                    test_exprs=['(("group:cellular" && "cellular_cmx_callbox" && !"cellular_unstable"))'],
+                    test_exprs=['(("group:cellular" && "cellular_cmx_callbox" && !"cellular_unstable" && !"cellular_run_isolated"))'],
                     ignore_test_failures=True, max_run_sec=20000,
                     command_args=args,
                     varsfiles=[temp_file.name])

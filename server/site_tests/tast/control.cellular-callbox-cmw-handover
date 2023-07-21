@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.cellular-callbox-cmw'
+NAME = 'tast.cellular-callbox-cmw-handover'
 METADATA = {
     "contacts": ["chromeos-cellular-team@google.com"],
     "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
@@ -20,8 +20,7 @@ Run the Tast tests designed specifically for CMW500.
 
 "group:cellular" indicates that the test runs on DUTs with a Cellular modem.
 "cellular_cmw_callbox": Attribute used to select tests that specifically run on DUTs with CMW500 callbox.
-"cellular_unstable": Unstable tests that will be excluded from this suite.
-"cellular_run_isolated": Tests that should be run isolated to prevent interference.
+"cellular_handover": Indicates that test involves a cellular handover.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
@@ -43,7 +42,7 @@ def run(machine):
         host.reboot()
         job.run_test('tast',
                     host=host,
-                    test_exprs=['(("group:cellular" && "cellular_cmw_callbox" && !"cellular_unstable" && !"cellular_run_isolated"))'],
+                    test_exprs=['(("group:cellular" && "cellular_cmw_callbox" && "cellular_handover"))'],
                     ignore_test_failures=True, max_run_sec=20000,
                     command_args=args,
                     varsfiles=[temp_file.name])

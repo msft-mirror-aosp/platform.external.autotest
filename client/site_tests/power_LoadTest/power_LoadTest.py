@@ -964,6 +964,18 @@ class power_LoadTest(arc.ArcTest):
         elif has_hover:
             logging.warning('Device has hover but no light sensor')
 
+        # For most boards, nonlinear/UI percentage is scaled linearly with the
+        # full range of keyboard backlight pwm, usually from min valid level(0) to
+        # max valid level(100). And usually levelToSet is >= minVisibleLevel.
+        # However, when only part of the pwm range is used on some boards, such
+        # as kohaku and nightfury, levelToSet ends up smaller than minVisibleLevel.
+        # KB backlight will be totally off. This doesn't align with user behavior.
+        # Set KB backlight to minVisiblelevel to at least reflect some reasonable
+        # power consumption. We are not implementing a more complex solution as
+        # kohaku and nightfury are the only boards with this issue.
+        minKBLevel = self._keyboard_backlight.nonlinear_to_linear(10.0)
+        if level_to_set < minKBLevel:
+            level_to_set = minKBLevel
         logging.info('Setting keyboard backlight to %d', level_to_set)
         self._keyboard_backlight.set_level(level_to_set)
         keyname = _loop_keyname(loop, 'percent_kbd_backlight')

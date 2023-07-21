@@ -185,6 +185,11 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     CCD_CONNECTED_RE = r'ccd.*: connected'
     # ===============================================================
     # AP_RO strings
+    # Specify the start of the output as ap_ro_check or result, so the timestamp
+    # of the ap_ro_check_unsupported message is ignored. This lets the test
+    # compare the output. Use '|' instead of '?', so the result format is the
+    # same whether or not ap_ro_check output shows up in the result.
+    GET_AP_RO_OUTPUT_RE = [r'(ap_ro_check.*|)result.*>']
     # Cr50 only supports v2
     AP_RO_VERSIONS = [1]
     # supported is a substring of ap_ro_check_unsupported. Make sure to check
@@ -1533,11 +1538,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Returns True if GSC supports the given version."""
         return version in self.AP_RO_VERSIONS
 
-    def ap_ro_supported(self):
-        """Returns True if the hash is saved and AP RO is supported."""
-        return self.send_command_retry_get_output(
-                'ap_ro_info', [self.AP_RO_SUPPORTED_RE])[0][2] == 'yes'
-
     def parse_ap_ro_line(self, line):
         """Returns the key and value from the AP RO info line."""
         # Remove ':' from the line.
@@ -1579,8 +1579,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # None, so they're always in the dictionary even when they're not in
         # the output.
         info.update(self.AP_RO_OPTIONAL_KEY_DICT)
-        rv = self.send_command_get_output('ap_ro_info', ['ap_ro_info.*>'])
-        for line in rv[0].strip().splitlines():
+        rv = self.send_command_retry_get_output('ap_ro_info',
+                                                self.GET_AP_RO_OUTPUT_RE,
+                                                compare_output=True)
+        for line in rv[0][0].strip().splitlines():
             item = self.parse_ap_ro_line(line)
             if not item:
                 logging.debug('Ignoring: %r', line)

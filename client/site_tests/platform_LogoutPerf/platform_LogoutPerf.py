@@ -36,7 +36,11 @@ class platform_LogoutPerf(arc.ArcTest):
 
 
     def _get_latest_uptime(self, ts_name):
-        pathname = '/tmp/uptime-' + ts_name
+        pathname = '/run/bootstat/uptime-' + ts_name
+        if not os.path.exists(pathname):
+            # TODO(b182094511): Remove the /tmp path, this is a temporary path
+            # to wait for Chrome fix.
+            pathname = '/tmp/uptime-' + ts_name
         if not os.path.exists(pathname):
             logging.info('timestamp %s is missing', ts_name)
             return 0

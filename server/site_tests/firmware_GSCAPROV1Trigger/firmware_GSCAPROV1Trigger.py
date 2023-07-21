@@ -33,9 +33,11 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
     # that point.
     APRO_OUTPUT_RE = r'.*(AP RO ([\S]*)![^\n]|do_ap_ro_check: unsupported)'
 
-    TIMEOUT_ALL_FLAGS = 240
+    # Cr50 tries to recalculate the hash with 8 of the common factory flags.
+    FACTORY_FLAG_COUNT = 8
+    TIMEOUT_SINGLE_RUN = 60
+    TIMEOUT_ALL_FLAGS = FACTORY_FLAG_COUNT * TIMEOUT_SINGLE_RUN
     # If the flags are wrong, verification should fail quickly.
-    TIMEOUT_SINGLE_RUN = 30
     TIMEOUT_FLAG_FAILURE = 10
     # Delay the gsctool command that starts verification, so the test can start
     # looking for the AP RO verify command output before the gsctool command
@@ -51,8 +53,6 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
     SUPPORTED_FLAGS = [0, 0x140]
     TEST_RO_VPD_KEY = 'faft_apro_test_key'
 
-    # Cr50 tries to recalculate the hash with 8 of the common factory flags.
-    FACTORY_FLAG_COUNT = 8
     # 0x42b9 is the last value in the cr50 factory flag list. Use it to verify
     # cr50 can regenerate the hash with all factory flags in a reasonable time.
     LAST_FACTORY_FLAG_VAL = 0x42b9

@@ -7,6 +7,7 @@ import os
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros.power import power_videotest
 
 
@@ -106,6 +107,7 @@ class power_VideoPlayback(power_videotest.power_VideoTest):
         ),
     ]
 
+    @retry.retry(Exception, timeout_min=2.0)
     def _prepare_video(self, url):
         """Prepare browser session before playing video.
 

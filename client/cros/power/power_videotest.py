@@ -7,6 +7,7 @@ import logging
 import time
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import arc_common
 from autotest_lib.client.cros import tast
 from autotest_lib.client.cros.tast.ui import chrome_service_pb2
@@ -101,6 +102,22 @@ class power_VideoTest(power_test.power_Test):
                                  check_interval)
             time.sleep(sleep_interval)
 
+    def _log_network_diagnosis(self):
+        """Generate network info to the logs when downloading videos from
+        storage takes too long.
+        """
+        storage_domain = "storage.googleapis.com"
+        utils.run('ifconfig', ignore_status=True, stdout_tee=utils.TEE_TO_LOGS)
+        utils.run('netstat -nr',
+                  ignore_status=True,
+                  stdout_tee=utils.TEE_TO_LOGS)
+        utils.run('traceroute ' + storage_domain,
+                  ignore_status=True,
+                  stdout_tee=utils.TEE_TO_LOGS)
+        utils.run('host ' + storage_domain,
+                  ignore_status=True,
+                  stdout_tee=utils.TEE_TO_LOGS)
+
     def _calculate_dropped_frame_percent(self, tab):
         """Calculate percent of dropped frame.
 
@@ -189,7 +206,13 @@ class power_VideoTest(power_test.power_Test):
 
             loop = 0
             for name, url in videos:
-                self._prepare_video(url)
+                try:
+                    self._prepare_video(url)
+                except Exception as e:
+                    logging.debug("Preparing video failed with error %s", e)
+                    self._log_network_diagnosis()
+                    raise error.TestError(e)
+
                 time.sleep(self._WAIT_FOR_IDLE)
 
                 logging.info('Playing video: %s', name)

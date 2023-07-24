@@ -28,19 +28,7 @@ HOUR_IN_SECS=60*60
 
 CLIENT_TESTS= [
     ('hardware_MemoryThroughput', {
-        'tag': 'memory_qual', 'test': 'bcopy', 'warmup': 100,
-        'num_iterations': 100, 'parallel': 2,
-        'sizes' : [ 1024, 2048, 4096, 8192,
-                    15360, 16384, 24576,
-                    30720, 32768, 33792,
-                    49152, 65536, 98304,
-                    130048, 131072, 256000,
-                    262144, 393216, 524288,
-                    1048576, 1468006, 1572864,
-                    1966080, 2097152, 2228224,
-                    2621440, 3072000, 3145728,
-                    3276800, 4194304, 8388608,
-                    16777216, 33554432, 67108864]}),
+        'tag': 'memory_qual'}),
     ('hardware_Memtester', {
         'tag' : 'memory_qual', 'loop' : 100}),
     ('hardware_SAT', {

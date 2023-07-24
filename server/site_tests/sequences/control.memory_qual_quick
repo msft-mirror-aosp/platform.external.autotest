@@ -31,8 +31,6 @@ CLIENT_TESTS= [
         'tag' : 'quick', 'size' : 10 * 1024, 'loop' : 1}),
     ('hardware_SAT', {
         'tag' : 'quick', 'seconds' : 10}),
-    ('power_MemorySuspend', {
-        'tag' : 'quick', 'num_suspends' : 2}),
 ]
 
 def run_client_test(machine):

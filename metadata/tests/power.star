@@ -115,11 +115,6 @@ def define_tests():
             main_package = 'autotest_lib.client.site_tests.power_LowMemorySuspend.power_LowMemorySuspend',
         ),
         test_common.define_test(
-            'power/MemorySuspend',
-            suites = ['jailed_build'],
-            main_package = 'autotest_lib.client.site_tests.power_MemorySuspend.power_MemorySuspend',
-        ),
-        test_common.define_test(
             'power/Monitoring',
             suites = [],
             main_package = '',

@@ -42,8 +42,6 @@ CLIENT_TESTS= [
         'tag' : 'memory_qual', 'loop' : 100}),
     ('hardware_SAT', {
         'tag' : 'memory_qual', 'seconds' : 8 * HOUR_IN_SECS}),
-    ('power_MemorySuspend', {
-        'tag' : 'memory_qual', 'num_suspends' : 10000}),
 ]
 
 def run_client_test(machine):

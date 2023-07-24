@@ -38,9 +38,10 @@ _DEFAULT_EXPECTED_PTD_PATH = 'some/extracted/dir/push_to_device.py'
 class PushArcImageTest(unittest.TestCase):
     """Unittest for push_arc_image."""
 
-    def createMockHost(self, version, abi):
+    def createMockHost(self, version, target, abi):
         mock_host = Mock()
         mock_host.get_arc_version.return_value = version
+        mock_host.get_arc_build_target.return_value = target
         mock_host.get_arc_primary_abi.return_value = abi
         mock_host.host_port = _TEST_HOST_PORT
         return mock_host
@@ -55,8 +56,56 @@ class PushArcImageTest(unittest.TestCase):
         mock_install_bundle_func.return_value = 'some/extracted/dir'
         return mock_install_bundle_func
 
+    def test_push_userdebug_image_bertha_arm64_autodetect(self):
+        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'bertha',
+                                        'arm64-v8a')
+        mock_download_func = self.createMockDownloadFunc()
+        mock_install_bundle_func = self.createMockInstallBundleFunc()
+        mock_run_func = Mock()
+
+        in_sequence = Mock()
+        in_sequence.attach_mock(mock_run_func, 'run')
+        in_sequence.attach_mock(mock_host.run, 'host_run')
+
+        self.assertTrue(
+                push_arc_image.push_userdebug_image(mock_host, 'rvc-arc', None,
+                                                    mock_download_func,
+                                                    mock_install_bundle_func,
+                                                    mock_run_func))
+
+        mock_host.get_arc_version.assert_called_once()
+        mock_host.get_arc_primary_abi.assert_called_once()
+        mock_host.get_arc_build_target.assert_called_once()
+        mock_download_func.assert_any_call(
+                'gs://chromeos-arc-images/builds/'
+                'git_rvc-arc-*linux-bertha_arm64-userdebug/'
+                '7750398/bertha_arm64-img-7750398.zip')
+
+        mock_download_func.assert_any_call(
+                'gs://chromeos-arc-images/builds/'
+                'git_rvc-arc-*linux-bertha_arm64-userdebug/'
+                '7750398/sepolicy.zip')
+
+        mock_install_bundle_func.assert_any_call(
+                'gs://chromeos-arc-images/builds/'
+                'git_rvc-arc-*linux-bertha_arm64-userdebug/'
+                '7750398/push_to_device.zip')
+
+        expected_calls = [
+                call.host_run(_MARK_DIRTY_PROVISION_COMMAND),
+                call.run(
+                        _DEFAULT_EXPECTED_PTD_PATH,
+                        args=_DEFAULT_EXPECTED_RUN_ARGS,
+                        ignore_status=ANY,
+                        verbose=ANY,
+                        nickname=ANY,
+                ),
+        ]
+        self.assertEqual(in_sequence.mock_calls, expected_calls)
+
     def test_push_userdebug_image_bertha_arm64(self):
-        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'arm64-v8a')
+        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'bertha',
+                                        'arm64-v8a')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()
@@ -102,7 +151,8 @@ class PushArcImageTest(unittest.TestCase):
         self.assertEqual(in_sequence.mock_calls, expected_calls)
 
     def test_push_userdebug_image_bertha_x86_64(self):
-        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'x86_64')
+        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'bertha',
+                                        'x86_64')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()
@@ -148,7 +198,7 @@ class PushArcImageTest(unittest.TestCase):
         self.assertEqual(in_sequence.mock_calls, expected_calls)
 
     def test_push_userdebug_image_cheets_arm(self):
-        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION,
+        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'cheets',
                                         'armeabi-v7a')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
@@ -195,7 +245,8 @@ class PushArcImageTest(unittest.TestCase):
         self.assertEqual(in_sequence.mock_calls, expected_calls)
 
     def test_push_userdebug_image_cheets_arm64(self):
-        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'arm64-v8a')
+        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'cheets',
+                                        'arm64-v8a')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()
@@ -241,7 +292,8 @@ class PushArcImageTest(unittest.TestCase):
         self.assertEqual(in_sequence.mock_calls, expected_calls)
 
     def test_push_userdebug_image_cheets_x86(self):
-        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'x86')
+        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'cheets',
+                                        'x86')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()
@@ -287,7 +339,8 @@ class PushArcImageTest(unittest.TestCase):
         self.assertEqual(in_sequence.mock_calls, expected_calls)
 
     def test_push_userdebug_image_cheets_x86_64(self):
-        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'x86_64')
+        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'cheets',
+                                        'x86_64')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()
@@ -336,7 +389,7 @@ class PushArcImageTest(unittest.TestCase):
     # Verify that the if the build ID on the device is old, it
     # downloads a newer ptd.py that has the necessary features.
     def test_push_userdebug_image_old_image_bertha(self):
-        mock_host = self.createMockHost('5985921', 'x86_64')
+        mock_host = self.createMockHost('5985921', 'bertha', 'x86_64')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()
@@ -358,7 +411,7 @@ class PushArcImageTest(unittest.TestCase):
 
     # Cheets has a different "minimum" version compared to bertha.
     def test_push_userdebug_image_old_image_cheets(self):
-        mock_host = self.createMockHost('5985921', 'x86_64')
+        mock_host = self.createMockHost('5985921', 'cheets', 'x86_64')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()
@@ -380,7 +433,7 @@ class PushArcImageTest(unittest.TestCase):
 
     # Even if the branch prefix is unknown, it should still try to get PTD tool.
     def test_push_userdebug_image_unknown_branch_prefix(self):
-        mock_host = self.createMockHost('123456789', 'x86_64')
+        mock_host = self.createMockHost('123456789', 'bertha', 'x86_64')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()
@@ -403,7 +456,7 @@ class PushArcImageTest(unittest.TestCase):
     # ARC version returned by the host could be None. Verify the function
     # returns False.
     def test_push_userdebug_image_failed_to_get_arc_version(self):
-        mock_host = self.createMockHost(None, 'x86_64')
+        mock_host = self.createMockHost(None, 'bertha', 'x86_64')
         mock_download_func = self.createMockDownloadFunc()
         mock_install_bundle_func = self.createMockInstallBundleFunc()
         mock_run_func = Mock()

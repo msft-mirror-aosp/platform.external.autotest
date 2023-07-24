@@ -52,6 +52,11 @@ def push_userdebug_image(host, branch_prefix, lunch_target, download_func,
         logging.error('Failed to determine ARC version.')
         return False
 
+    # TODO(kinaba): Remove the |lunch_target| parameter and
+    # always auto-detect after confirming it working.
+    if not lunch_target:
+        lunch_target = host.get_arc_build_target()
+
     # The split is necessary because push_to_device.py puts the whole image name
     # in CHROMEOS_ARC_VERSION, e.g. bertha_x86_64-img-7759413.
     # The split won't hurt even if it is just a number e.g.

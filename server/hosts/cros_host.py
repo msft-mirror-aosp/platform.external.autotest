@@ -1892,6 +1892,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Returns the security patch of the host."""
         return self._get_arc_build_info().get('ro.product.first_api_level')
 
+    def get_arc_build_target(self):
+        """Returns the ARC build target (cheets, bertha) of the host."""
+        return self._get_arc_build_info().get('ro.build.product').split('_')[0]
+
     def _get_lsb_release_content(self):
         """Return the content of lsb-release file of host."""
         return self.run('cat "%s"' % client_constants.LSB_RELEASE,

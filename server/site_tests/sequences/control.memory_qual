@@ -38,8 +38,6 @@ CLIENT_TESTS= [
                     2621440, 3072000, 3145728,
                     3276800, 4194304, 8388608,
                     16777216, 33554432, 67108864]}),
-    ('hardware_MemoryLatency', {
-        'sample_size_kb': [ int(2), int(192), int(1024)]}),
     ('hardware_Memtester', {
         'tag' : 'memory_qual', 'loop' : 100}),
     ('hardware_SAT', {

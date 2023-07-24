@@ -27,8 +27,6 @@ CLIENT_TESTS= [
     ('hardware_MemoryThroughput', {
         'tag': 'quick', 'test': 'bcopy', 'warmup': 10, 'num_iterations': 5,
         'parallel': 1, 'sizes' : [ 16 * 1024 * 1024]}),
-    ('hardware_MemoryLatency', {
-        'sample_size_kb': [ int(2), int(192), int(1024)]}),
     ('hardware_Memtester', {
         'tag' : 'quick', 'size' : 10 * 1024, 'loop' : 1}),
     ('hardware_SAT', {

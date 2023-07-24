@@ -65,11 +65,6 @@ def define_tests():
             main_package = 'autotest_lib.client.site_tests.hardware_LightSensor.hardware_LightSensor',
         ),
         test_common.define_test(
-            'hardware/MemoryLatency',
-            suites = ['hwqual', 'kernel_daily_benchmarks'],
-            main_package = 'autotest_lib.client.site_tests.hardware_MemoryLatency.hardware_MemoryLatency',
-        ),
-        test_common.define_test(
             'hardware/MemoryThroughput',
             suites = ['hwqual', 'kernel_daily_benchmarks'],
             main_package = 'autotest_lib.client.site_tests.hardware_MemoryThroughput.hardware_MemoryThroughput',

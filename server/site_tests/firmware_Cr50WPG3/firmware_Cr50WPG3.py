@@ -43,8 +43,9 @@ class firmware_Cr50WPG3(Cr50Test):
 
     def generate_futility_wp_cmd(self):
         """Use the cr50 serialname to generate the futility command."""
-        self._futility_cmd = 'sudo futility flash -p raiden_debug_spi:target=AP,serial=%s ' %
-            % self.gsc.get_serial()
+        self._futility_cmd = (
+                'sudo futility flash -p raiden_debug_spi:target=AP,serial=%s '
+                % self.gsc.get_serial())
 
     def get_wp_state(self):
         """Returns 'on' if write protect is enabled. 'off' if it's disabled."""

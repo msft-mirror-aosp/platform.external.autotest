@@ -1,0 +1,39 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'hardware_SAT.memory_qual'
+METADATA = {
+    "contacts": ["chromeos-memory-team@google.com"],
+    "bug_component": "b:167286",
+    "criteria": "Fails if memory pages do not match the original fill pattern.",
+}
+PURPOSE = 'Stress test hardware devices 8 hours'
+DOC = """
+System stress test is an open source stress tool that works by stressing
+system interfaces. It is good at catching memory signal integrity issues or
+setup/hold problems, memory controller and bus interface issues, and disk
+controller issues. It can also detect bad memory cells and cache coherency
+issues.
+
+Large amounts of memory is allocted in a single block, and memory is divided
+into chunks, each filled with a potentially stressful data pattern. Worker
+threads are spawned which draw pages from an empty queue and a valid queue, and
+copy data to the other.
+
+For more information, see:
+http://code.google.com/p/stressapptest/
+"""
+
+HOUR_IN_SECS=60*60
+
+TIME = 'LENGTHY'
+TEST_CLASS = 'hardware'
+TEST_CATEGORY = 'Stress'
+TEST_TYPE = 'client'
+ATTRIBUTES = "suite:memory_qual2"
+EXTENDED_TIMEOUT = 30600 # 8.5 hours
+PY_VERSION = 3
+
+job.run_test('hardware_SAT', tag='memory_qual', seconds=8 * HOUR_IN_SECS)
+

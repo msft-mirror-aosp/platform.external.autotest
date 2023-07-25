@@ -1,0 +1,52 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "yuanpengni, ChromiumOS"
+NAME = "autoupdate_Metered.delta"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests an N-to-N update over metered connection."
+}
+TIME = "MEDIUM"
+TEST_TYPE = "server"
+DEPENDENCIES = "wificell"
+ATTRIBUTES = "suite:au-perbuild"
+DOC = """
+This tests a N-to-N update over metered connection. It will try to update to
+the same version that the DUT was provisioned with, but it is expected to be
+blocked by metered connection.
+
+In the lab, a job_repo_url will be passed directly to the test. It contains
+information about the build to use and the IP address of lab cache server to
+download update payloads from.
+
+Example usage:
+
+test_that <DUT> autoupdate_Metered.delta --board=<board>
+- Payload origin will be automatically determined based on the DUTs network.
+- Version currently on the DUT will be used as the update's target version.
+
+test_that <DUT> autoupdate_Metered.delta --board=<board> --args="build=R102-14643.0.0"
+- Payload origin will be automatically determined based on the DUTs network.
+- R102-14643.0.0 will be used as the update's target version.
+
+test_that <DUT> autoupdate_Metered.delta --board=<board> --args="running_at_desk=True"
+- Public GS bucket will be used.
+- Version currently on the DUT will be used as the update's target version.
+
+"""
+
+from autotest_lib.client.common_lib import utils
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('autoupdate_Metered', host=host, full_payload=False,
+                 **args_dict)
+
+job.parallel_simple(run, machines)

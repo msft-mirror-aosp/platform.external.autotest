@@ -1,0 +1,37 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "yuanpengni, ChromiumOS"
+NAME = "autoupdate_Metered.full"
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Tests an N-to-N update over metered connection."
+}
+TIME = "MEDIUM"
+TEST_TYPE = "server"
+DEPENDENCIES = "wificell"
+ATTRIBUTES = "suite:au-perbuild"
+JOB_RETRIES = 2
+DOC = """
+This tests a N-to-N update over metered connection. It will try to update to
+the same version that the DUT was provisioned with, but it is expected to be
+blocked by metered connection.
+
+Refer to control.delta for instructions on how to run this test locally.
+
+"""
+
+from autotest_lib.client.common_lib import utils
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('autoupdate_Metered', host=host, full_payload=True,
+                 **args_dict)
+
+job.parallel_simple(run, machines)

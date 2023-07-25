@@ -102,6 +102,7 @@ class ShillProxy(object):
     SERVICE_PROPERTY_GUID = 'GUID'
     SERVICE_PROPERTY_HEX_SSID = 'WiFi.HexSSID'
     SERVICE_PROPERTY_HIDDEN = 'WiFi.HiddenSSID'
+    SERVICE_PROPERTY_METERED = 'Metered'
     SERVICE_PROPERTY_MODE = 'Mode'
     SERVICE_PROPERTY_NAME = 'Name'
     SERVICE_PROPERTY_PASSPHRASE = 'Passphrase'
@@ -161,6 +162,7 @@ class ShillProxy(object):
         SERVICE_PROPERTY_GUID: (dbus.String, {}),
         SERVICE_PROPERTY_HEX_SSID: (dbus.String, {}),
         SERVICE_PROPERTY_HIDDEN: (dbus.Boolean, {}),
+        SERVICE_PROPERTY_METERED: (dbus.Boolean, {}),
         SERVICE_PROPERTY_MODE: (dbus.String, {}),
         SERVICE_PROPERTY_NAME: (dbus.String, {}),
         SERVICE_PROPERTY_PASSPHRASE: (dbus.String, {}),
@@ -274,7 +276,7 @@ class ShillProxy(object):
         @param value: value to pass to constructor.
 
         """
-        if isinstance(dbus_class, dbus.Boolean):
+        if dbus_class == dbus.Boolean:
             return dbus_class(value.lower() in ('true','1'))
         else:
             return dbus_class(value)

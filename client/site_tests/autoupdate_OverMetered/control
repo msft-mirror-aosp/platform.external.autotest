@@ -1,0 +1,25 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+TIME='MEDIUM'
+AUTHOR = 'The ChromiumOS Authors'
+METADATA = {
+  "contacts": [
+    "chromeos-core-services@google.com",
+    "chromeos-sw-engprod@google.com"
+  ],
+  "bug_component": "b:908319",
+  "criteria": "Update client over metered connection."
+}
+DOC = """
+Client-side mechanism to update a DUT over metered connection. It is used
+in server-side tests.
+"""
+
+NAME = 'autoupdate_OverMetered'
+CRITERIA = 'Do not run this test.'
+TEST_TYPE = 'client'
+PY_VERSION = 3
+
+job.run_test('autoupdate_OverMetered')

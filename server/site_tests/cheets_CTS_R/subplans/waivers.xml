@@ -9,4 +9,5 @@
   <Entry include="CtsIkeTestCases android.net.ipsec.ike.cts.IkeSessionDigitalSignatureTest#testIkeSessionSetupAndChildSessionSetupWithTransportMode" />
   <Entry include="CtsIkeTestCases android.net.ipsec.ike.cts.IkeSessionMschapV2Test#testIkeSessionSetupAndChildSessionSetupWithTransportMode" />
   <Entry include="CtsSecurityTestCases android.security.cts.CertificateTest#testNoRemovedCertificates" />
+  <Entry include="CtsSecurityTestCases[instant] android.security.cts.CertificateTest#testNoRemovedCertificates" />
 </SubPlan>

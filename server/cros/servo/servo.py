@@ -1887,11 +1887,13 @@ class Servo(object):
     def disable_ccd_watchdog_for_test(self):
         """Prevent servo from enabling the watchdog."""
         self._ccd_watchdog_disabled = True
+        logging.info('Disable ccd watchdog for test.')
         self.ccd_watchdog_enable(False)
 
     def allow_ccd_watchdog_for_test(self):
         """Allow servo to enable the ccd watchdog."""
         self._ccd_watchdog_disabled = False
+        logging.info('Allow ccd watchdog for test.')
         self.ccd_watchdog_enable(True)
 
     def set_dts_mode(self, state):

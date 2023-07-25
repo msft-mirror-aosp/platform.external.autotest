@@ -76,6 +76,9 @@ class firmware_Cr50Keygen(FirmwareTest):
         """Check ECC and RSA Keygen times."""
         self.host = host
         self.key_type = key_type.upper()
+        # CCD gets disabled. Disable the watchdog.
+        if 'ccd' in self.servo.get_servo_version():
+            self.servo.disable_ccd_watchdog_for_test()
 
         # TODO(b/218492933) : find better way to disable rddkeepalive
         # Disable rddkeepalive, so the test can disable ccd.

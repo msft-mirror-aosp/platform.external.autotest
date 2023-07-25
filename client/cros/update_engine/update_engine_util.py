@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ctypes import c_size_t
+from ctypes import c_uint64
 import datetime
 import json
 import logging
@@ -880,9 +880,9 @@ class UpdateEngineUtil(object):
         @returns: The payload URL hash string as the exclusion name.
 
         """
-        result = c_size_t(0)
+        result = c_uint64(0)
         for c in payload_url:
-            result = c_size_t((result.value * 131) + ord(c))
+            result = c_uint64((result.value * 131) + ord(c))
         return str(result.value)
 
     def _apply_deferred_update(self, wait_for_idle=True):

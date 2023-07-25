@@ -87,14 +87,13 @@ class power_VideoTest(power_test.power_Test):
         """
         raise NotImplementedError()
 
-    def loop_sleep(self, loop, sleep_secs):
+    def _sleep_with_discharge_check(self, start_time, sleep_secs):
         """Jitter free sleep with a discharge check.
 
-        @param loop: integer of loop (1st is zero).
-        @param sleep_secs: integer of desired sleep seconds.
+        @param start_time: timestamp of when sleep starts.
+        @param sleep_secs: float of desired sleep seconds.
         """
-        next_time = self._start_time + (loop + 1) * (sleep_secs +
-                                                     self._WAIT_FOR_IDLE)
+        next_time = start_time + sleep_secs
         check_interval = self._seconds_period
         while time.time() < next_time:
             self.check_force_discharge()
@@ -204,7 +203,6 @@ class power_VideoTest(power_test.power_Test):
             self.start_measurements()
             idle_start = time.time()
 
-            loop = 0
             for name, url in videos:
                 try:
                     self._prepare_video(url)
@@ -220,13 +218,12 @@ class power_VideoTest(power_test.power_Test):
                 self.checkpoint_measurements('idle', idle_start)
 
                 loop_start = time.time()
-                self.loop_sleep(loop, secs_per_video)
+                self._sleep_with_discharge_check(loop_start, secs_per_video)
                 self.checkpoint_measurements(name, loop_start)
                 idle_start = time.time()
                 self.keyvals[name + '_dropped_frame_percent'] = \
                         self._calculate_dropped_frame_percent(tab)
                 self._teardown_video(url)
-                loop += 1
 
             # Re-enable multicast here instead of in the cleanup because Chrome
             # might re-enable it and we can't verify that multicast is off.

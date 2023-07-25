@@ -38,6 +38,8 @@ from autotest_lib.server.cros import filesystem_util
 from autotest_lib.server.cros import telemetry_runner
 from autotest_lib.site_utils import test_runner_utils
 
+from typing import Optional
+
 
 # These are arguments to the linux "perf" tool.
 # The -e value is processor specific and comes from the Intel SDM vol 3b
@@ -50,6 +52,15 @@ ETM_STROBING_PERIOD = 10000
 # In practice, it takes >2min to copy the perf.data back from the DUT, set
 # this timeout to 600 secs to be safe.
 WAIT_FOR_CMD_TIMEOUT_SECS = 600
+
+# Time threshold of the test setup in seconds.
+# The benchmarks running in this script typically take 60+ seconds.
+# Setup time is expected to be 5-10 seconds + extra room.
+# - If the test failed and duration was below this limit that would mean that
+# the benchmark wasn't started.
+# - If the test duration exceeded the setup limit then it is likely the benchmark
+# completed but failed in post-processing.
+TEST_SETUP_DURATION_LIMIT = 30
 
 # Reuse ssh and scp settings from telemetry_Crosperf
 RSA_KEY = '-i %s' % test_runner_utils.TEST_KEY_PATH
@@ -295,13 +306,7 @@ class telemetry_AFDOGenerate(test.test):
                         continue
                     benchmark = benchmark_info['name']
                     args = benchmark_info.setdefault('args', [])
-                    try:
-                        self._run_test_with_retry(tr, benchmark, *args)
-                    except error.TestBaseException:
-                        if not self._ignore_failures:
-                            raise
-                        logging.info('Ignoring failure from benchmark %s.',
-                                     benchmark)
+                    self._run_test(tr, benchmark, *args)
         self._passed = True
 
     def after_run_once(self):
@@ -351,8 +356,8 @@ class telemetry_AFDOGenerate(test.test):
         # the lab environment or not
         self._gs_test_location = not utils.host_is_in_lab_zone(
             self._host.hostname)
-        # Ignore individual test failures.
-        self._ignore_failures = False
+        # Ignore individual test failures unless they failed to start.
+        self._ignore_failures = True
         # Use local copy of telemetry instead of using the dev server copy.
         self._local = False
         # Chrome version to which the AFDO data corresponds.
@@ -394,6 +399,80 @@ class telemetry_AFDOGenerate(test.test):
         """Return true if arch is arm."""
         return self._arch == 'arm'
 
+    def _check_status(
+            self,
+            benchmark: str,
+            ex: Optional[error.TestBaseException],
+            status: str,
+            duration: float,
+    ) -> Optional[error.TestBaseException]:
+        """Convert benchmark status into the afdo generate exception or None.
+
+        Checks the test status based on return status, duration and
+        'ignore_failures option. Log any errors including suppressed.
+
+        @param benchmark: Name.
+        @param status: Result status from telemetry_runner.
+        @param ex: None, if no exception otherwise TestBaseException.
+        @param duration: Test duration.
+
+        @return error.TestFail or None
+        """
+
+        cant_ignore_format_message = (
+                '"%s" failed after %ds.\n'
+                'Can\'t ignore the failure with "ignore_failures" option set'
+                ' because the benchmark failed to start.\n'
+                'Fix setup or disable the benchmark if the problem persists.\n'
+        )
+        if ex:
+            logging.warning(
+                    'Got exception from Telemetry benchmark %s '
+                    'after %f seconds. Exception: %s', benchmark, duration, ex)
+            if not self._ignore_failures:
+                return ex
+
+            # 'ignore_failures' option is set.
+            if duration >= TEST_SETUP_DURATION_LIMIT:
+                # Ignore failures.
+                logging.info('Ignoring failure from benchmark %s.', benchmark)
+                return None
+
+            # Premature failure, can't ignore.
+            logging.error(cant_ignore_format_message, benchmark, duration)
+            return ex
+        else:
+            logging.info(
+                    'Completed Telemetry benchmark %s in %f seconds with status: %s',
+                    benchmark,
+                    duration,
+                    status,
+            )
+
+            if status == telemetry_runner.SUCCESS_STATUS:
+                return None
+
+            err = error.TestFail(
+                    f'An error occurred while executing benchmark: {benchmark}'
+            )
+            if not self._ignore_failures:
+                return err
+
+            # 'ignore_failures' option is set.
+            if duration >= TEST_SETUP_DURATION_LIMIT:
+                # Benchmark was launched, failed and ignored.
+                logging.info(
+                        "Ignoring failure with status '%s' returned by %s"
+                        " (due to set 'ignore_failures' option)",
+                        status,
+                        benchmark,
+                )
+                return None
+
+            # Failed prematurely.
+            logging.error(cant_ignore_format_message, benchmark, duration)
+            return err
+
     def _run_test(self, tr, benchmark, *args):
         """Run the benchmark using Telemetry.
 
@@ -401,60 +480,25 @@ class telemetry_AFDOGenerate(test.test):
         @param benchmark: Name of the benchmark to run.
         @param args: Additional arguments to pass to the telemetry execution
                      script.
-        @raises Raises error.TestFail if execution of test failed.
-                Also re-raise any exceptions thrown by run_telemetry benchmark.
+        @raises Raises error.TestBaseException if
+                - execution of the test failed and "ignore_failures is not set;
+                - "ignore_failures" is set but the test duration is below
+                  TEST_SETUP_DURATION_LIMIT meaning that the test wasn't started.
         """
+        logging.info('Starting Telemetry benchmark %s', benchmark)
+        start_time = time.time()
         try:
-            logging.info('Starting run for Telemetry benchmark %s', benchmark)
-            start_time = time.time()
             result = tr.run_telemetry_benchmark(benchmark, None, *args)
-            end_time = time.time()
-            logging.info('Completed Telemetry benchmark %s in %f seconds',
-                         benchmark, end_time - start_time)
+            duration = time.time() - start_time
+            err = self._check_status(benchmark, None, result.status, duration)
+            if err:
+                raise err
         except error.TestBaseException as e:
-            end_time = time.time()
-            logging.info(
-                'Got exception from Telemetry benchmark %s '
-                'after %f seconds. Exception: %s', benchmark,
-                end_time - start_time, str(e))
-            raise
-
-        # We dont generate any keyvals for this run. This is not
-        # an official run of the benchmark. We are just running it to get
-        # a profile from it.
-
-        if result.status is telemetry_runner.SUCCESS_STATUS:
-            logging.info('Benchmark %s succeeded', benchmark)
-        else:
-            raise error.TestFail(
-                f'An error occurred while executing benchmark: {benchmark}')
-
-    def _run_test_with_retry(self, tr, benchmark, *args):
-        """Run the benchmark using Telemetry. Retry in case of failure.
-
-        @param tr: An instance of the TelemetryRunner subclass.
-        @param benchmark: Name of the benchmark to run.
-        @param args: Additional arguments to pass to the telemetry execution
-                     script.
-        @raises Re-raise any exceptions thrown by _run_test.
-        """
-
-        tried = False
-        while True:
-            try:
-                self._run_test(tr, benchmark, *args)
-                logging.info('Benchmark %s succeeded on %s try', benchmark,
-                             'first' if not tried else 'second')
-                break
-            except error.TestBaseException:
-                if not tried:
-                    tried = True
-                    logging.info('Benchmark %s failed. Retrying ...',
-                                 benchmark)
-                else:
-                    logging.info('Benchmark %s failed twice. Not retrying',
-                                 benchmark)
-                    raise
+            duration = time.time() - start_time
+            err = self._check_status(benchmark, e,
+                                     telemetry_runner.FAILED_STATUS, duration)
+            if err:
+                raise err
 
     def _run_tests_minimal_telemetry(self):
         """Run the benchmarks using the minimal support from Telemetry.

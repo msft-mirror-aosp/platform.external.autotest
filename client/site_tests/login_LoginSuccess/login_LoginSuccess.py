@@ -14,7 +14,7 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import chrome, session_manager
 from autotest_lib.client.cros import asan
-from autotest_lib.client.cros import cryptohome
+from autotest_lib.client.cros import tpm
 
 
 class login_LoginSuccess(test.test):
@@ -64,7 +64,7 @@ class login_LoginSuccess(test.test):
         # Take ownership here to prevent auth errors in AU tests with earlier
         # source versions.
         if int(lsbrelease_utils.get_chromeos_release_milestone()) < 103:
-            cryptohome.take_tpm_ownership()
+            tpm.take_ownership()
         with chrome.Chrome(arc_mode=arc_mode,
                            username=username,
                            password=password,

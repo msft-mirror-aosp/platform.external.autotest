@@ -96,4 +96,5 @@ class fwupd_FirmwareDowngrade(test.test):
         self.fwupd_version = fwupd.get_fwupdmgr_version()
         if not self.fwupd_version:
             raise error.TestError("Error checking fwupd status")
+        fwupd.ensure_remotes()
         self.downgrade_firmware(device_id)

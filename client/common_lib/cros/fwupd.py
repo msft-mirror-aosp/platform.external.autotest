@@ -6,8 +6,10 @@ import json
 import logging
 import re
 import common
+import os
+import shutil
 
-from autotest_lib.client.bin import test, utils
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 
 
@@ -130,4 +132,67 @@ def get_fwupdmgr_version():
             return m.group(1)
     logging.error("Error parsing fwupd version info")
     logging.error(output)
+    return None
+
+
+def ensure_remotes():
+    """
+    Enable all downloadable remotes (lvfs, lvfs-testing) -- this is
+    needed for accessing CAB files on LVFS.
+    Refresh outdated metadata if needed.
+    """
+    try:
+        cmd = "fwupdmgr get-remotes --json"
+        output = utils.system_output(cmd)
+    except error.CmdError as e:
+        raise error.TestError(f"Unable to remount the root"
+                              "partition in R/W mode: %s" % e)
+    try:
+        json_data = json.loads(output)
+    except json.decoder.JSONDecodeError as e:
+        raise error.TestError(f"Error parsing <fwupdmgr get-remotes> "
+                              "output: %s" % e)
+    if 'Remotes' not in json_data:
+        raise error.TestError("No remotes found")
+
+    remotes = json_data['Remotes']
+    refresh_needed = False
+    for remote in remotes:
+        kind = remote.get('Kind')
+        if kind != 'download':
+            continue
+
+        rid = remote.get('Id')
+        enabled = remote.get('Enabled')
+        logging.info('Remote %s enabled: %s', rid, enabled)
+        if enabled == 'true':
+            continue
+
+        orig = remote.get('FilenameSource')
+        dest = os.path.join("/var/lib/fwupd/remotes.d/", \
+                                'test-' + os.path.basename(orig))
+        # Skip copying if already exists
+        if (os.path.isfile(dest) or \
+            os.path.dirname(orig) == os.path.dirname(dest)):
+            continue
+
+        shutil.copyfile(orig, dest)
+        logging.info('Enable remote %s in %s', rid, dest)
+        refresh_needed = True
+        try:
+            # Can't use `fwupdmgr enable-remote` since
+            #`fwupd` is running in jail.
+            cmd = "sed -i 's/Enabled=.*/Enabled=true/' " + dest
+            output = utils.system_output(cmd)
+        except error.CmdError as e:
+            raise error.TestError(f"Unable to enable remote %s" % rid)
+
+    # Refresh metadata if any remote has been enabled
+    if refresh_needed:
+        try:
+            cmd = "fwupdmgr refresh --force"
+            output = utils.system_output(cmd)
+        except error.CmdError as e:
+            raise error.TestError(f"Problem while refreshing metadata: %s" % e)
+
     return None

@@ -101,4 +101,5 @@ class fwupd_FirmwareInstallVersion(test.test):
         self.fwupd_version = fwupd.get_fwupdmgr_version()
         if not self.fwupd_version:
             raise error.TestError("Error checking fwupd status")
+        fwupd.ensure_remotes()
         self.install_firmware(device_id, version)

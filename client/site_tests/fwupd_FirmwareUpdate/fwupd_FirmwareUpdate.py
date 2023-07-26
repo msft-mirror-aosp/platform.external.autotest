@@ -76,4 +76,5 @@ class fwupd_FirmwareUpdate(test.test):
                     "No device id specified (test argument: device_id)")
         if not fwupd.get_fwupdmgr_version():
             raise error.TestError("Error checking fwupd status")
+        fwupd.ensure_remotes()
         self.update_firmware(device_id)

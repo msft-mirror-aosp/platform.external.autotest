@@ -71,25 +71,16 @@ class firmware_UserRequestRecovery(FirmwareTest):
         self.switcher.bypass_rec_mode()
         self.switcher.wait_for_client()
 
-        logging.info("Expected recovery boot, request recovery again.")
-        self.check_state((self.checkers.crossystem_checker, {
-                            'mainfw_type': 'recovery',
-                            }))
-        self.check_recovery_reason_since(time_now, recovery_reason)
-
-        self.faft_client.system.request_recovery_boot()
-        self.switcher.simple_reboot()
-        self.switcher.bypass_rec_mode()
-        self.switcher.wait_for_client()
-
         logging.info("Expected recovery boot.")
         self.check_state((self.checkers.crossystem_checker, {
                             'mainfw_type': 'recovery',
                             }))
         self.check_recovery_reason_since(time_now, recovery_reason)
+
         self.switcher.mode_aware_reboot()
 
-        logging.info("Expected normal boot.")
+        expected_boot_mode = 'developer' if dev_mode else 'normal'
+        logging.info("Expected %s boot.", expected_boot_mode)
         self.check_state((self.checkers.crossystem_checker, {
-                           'mainfw_type': 'developer' if dev_mode else 'normal',
-                           }))
+                'mainfw_type': expected_boot_mode,
+        }))

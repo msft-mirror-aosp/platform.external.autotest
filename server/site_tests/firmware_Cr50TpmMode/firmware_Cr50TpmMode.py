@@ -144,7 +144,10 @@ class firmware_Cr50TpmMode(Cr50Test):
                         % output_log)
         boot_id = self.host.get_boot_id()
         logging.info('AP Reset')
-        self.host.reboot()
+        self.host.reboot(wait=False)
+        # Cr50 reboots when TPM_RST_L is pulsed to re-enable the TPM.
+        if self.gsc.NAME == 'cr50':
+            self.gsc.wait_for_reboot()
         self.switcher.wait_for_client()
         if boot_id == self.host.get_boot_id():
             raise error.TestFail('DUT did not reset')

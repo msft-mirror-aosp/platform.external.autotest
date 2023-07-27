@@ -1,0 +1,49 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = "power_LW.power_VideoCall_lacros_v_ash"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com", "dbasehore@google.com"],
+    "bug_component": "b:167191",
+    "criteria": "This test is a power benchmark test.",
+    "hw_agnostic": False,
+    "doc" : "Control file for running power_VideoCall for Ash and Lacros "
+            "in power lab. This is done with one control file "
+            "instead of two to ensure that both runs of power_VideoCall are"
+            "executed on the same DUT, reducing variability. Even if two DUTs "
+            "are the same SKU, chip variability means that power consumption "
+            "characteristics will differ.",
+}
+TEST_TYPE = "server"
+DEPENDENCIES = "servo_state:WORKING"
+EXTENDED_TIMEOUT = 25200  # 2 hours VC + 4 hours charging + 1 hour guard.
+
+from autotest_lib.client.common_lib import utils
+
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+test = 'power_VideoCall'
+args_ash = {'pdash_note': args_dict.get('pdash_note', ''),
+            'min_run_time_percent': 75,
+            'tast_bundle_path': args_dict.get('tast_bundle_path'),}
+args_lacros = {'pdash_note': args_dict.get('pdash_note', ''),
+               'min_run_time_percent': 75,
+               'tast_bundle_path': args_dict.get('tast_bundle_path'),
+               'use_lacros': True}
+
+def run(machine):
+    host = hosts.create_host(machine, servo_args=servo_args)
+    job.run_test("power_BatteryChargeControl", host=host,
+                 percent_charge_to_add=None, percent_target_charge=95,
+                 tag="power_VideoCall_lacros")
+    job.run_test("power_LW", host=host, test=test, args=args_lacros,
+                 machine=machine, tag="power_VideoCall_lacros")
+    job.run_test("power_BatteryChargeControl", host=host,
+                 percent_charge_to_add=None, percent_target_charge=95,
+                 tag="power_VideoCall_ash")
+    job.run_test("power_LW", host=host, test=test, args=args_ash,
+                 machine=machine, tag="power_VideoCall_ash")
+
+
+parallel_simple(run, machines)

@@ -270,7 +270,6 @@ to [Setup Confirmation].
 1. To get setup to run FAFT tests, on your PVS host run (for more info on PVS arguments see [PVS User Guide]):
     1. `(outside container) shop unpack -d <DUT_IP> --servo-serial <servo serial> [--milestone <milestone> --chromeos-version <chromeOS version>]`
     1. `(outside container) docker attach pvs`
-1. If you would like to automatically flash the DUT and thumb drive with the ChromeOS version passed to the `shop` command run: `(inside container) pvs run --qual-type firmware --test-plan-name RO/RW --filter sys-fw-0024,test:tast.firmware.Fixture.rec`
 1. Run `firmware_FAFTSetup` and `firmware.Fixture.rec` test to verify basic functionality and ensure that your setup is correct. `(inside container) pvs run --qual-type firmware --test-plan-name RO/RW --filter "sys-fw-0024,test:tast.firmware.Fixture.rec|firmware_FAFTSetup"`
 
 ### Sample Commands {#sample-commands}

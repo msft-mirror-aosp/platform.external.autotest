@@ -32,7 +32,8 @@ def run(machine):
                     n_capabilities=n_caps,
                     vht_channel_width=channel_width_80_mhz,
                     vht_center_channel=42,
-                    ac_capabilities=ac_caps)
+                    ac_capabilities=ac_caps,
+                    spectrum_mgmt_required=True)
     attenuation_increment = 6
     final_attenuation = 100
     job.run_test('network_WiFi_AttenuatedPerf', tag=NAME.split('.')[1],

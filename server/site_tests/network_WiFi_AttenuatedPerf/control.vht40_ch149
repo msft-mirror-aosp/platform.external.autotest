@@ -26,7 +26,8 @@ def run(machine):
             mode=hostap_config.HostapConfig.MODE_11AC_PURE,
             n_capabilities=[hostap_config.HostapConfig.N_CAPABILITY_HT40],
             ac_capabilities=[hostap_config.HostapConfig.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7],
-            vht_channel_width=hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40)
+            vht_channel_width=hostap_config.HostapConfig.VHT_CHANNEL_WIDTH_40,
+            spectrum_mgmt_required=True)
     attenuation_increment = 6
     final_attenuation = 100
     job.run_test('network_WiFi_AttenuatedPerf',

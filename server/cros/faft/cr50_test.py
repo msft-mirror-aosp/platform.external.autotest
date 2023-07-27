@@ -254,6 +254,9 @@ class Cr50Test(FirmwareTest):
 
     def make_rootfs_writable(self):
         """Make rootfs writeable. Recover the dut if necessary."""
+        if filesystem_util.is_rootfs_writable(self.host):
+            logging.info('Rootfs is writable')
+            return
         path = None
         try:
             filesystem_util.make_rootfs_writable(self.host)
@@ -789,18 +792,15 @@ class Cr50Test(FirmwareTest):
 
         self._try_to_bring_dut_up()
         new_mismatch = self._check_running_image_and_board_id(state)
-        # Copy the original .prod and .prepvt images back onto the DUT.
-        if self._cleanup_required(new_mismatch, self.DEVICE_IMAGES):
-            if not filesystem_util.is_rootfs_writable(self.host):
-                self.make_rootfs_writable()
-            # Copy the .prod file onto the DUT.
-            if prod_path and 'prod_version' in new_mismatch:
-                cr50_utils.InstallImage(self.host, prod_path,
-                                        self.gsc.DUT_PROD)
-            # Copy the .prepvt file onto the DUT.
-            if prepvt_path and 'prepvt_version' in new_mismatch:
-                cr50_utils.InstallImage(self.host, prepvt_path,
-                                        self.gsc.DUT_PREPVT)
+        # Copy the .prod file onto the DUT.
+        if prod_path and 'prod_version' in new_mismatch:
+            self.make_rootfs_writable()
+            cr50_utils.InstallImage(self.host, prod_path, self.gsc.DUT_PROD)
+        # Copy the .prepvt file onto the DUT.
+        if prepvt_path and 'prepvt_version' in new_mismatch:
+            self.make_rootfs_writable()
+            cr50_utils.InstallImage(self.host, prepvt_path,
+                                    self.gsc.DUT_PREPVT)
 
         final_mismatch = self._check_running_image_and_board_id(state)
         if final_mismatch:

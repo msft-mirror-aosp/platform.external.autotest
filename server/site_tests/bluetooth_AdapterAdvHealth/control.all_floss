@@ -1,0 +1,40 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# A Batch of Bluetooth advertising health tests. This test is written as a
+# batch of tests in order to reduce test time, since auto-test ramp up time
+# is costy. The batch is using BluetoothAdapterQuickTests wrapper methods to
+# start and end a test and a batch of tests.
+#
+# Purpose: batch of Bluetooth advertising tests
+
+# Deprecated variables:
+#     TIME = 'LONG'  # ~25 minutes on Eve
+#     TEST_CATEGORY = 'Functional'
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterAdvHealth.all_floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Adapter should advertise with correct parameters',
+    'hw_agnostic': False,
+}
+
+
+ATTRIBUTES = '' # This control file is used to run all tests locally.
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterAdvHealth', host=host, num_iterations=1,
+                 args_dict=args_dict, floss=True)
+
+parallel_simple(run, machines)

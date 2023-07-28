@@ -130,9 +130,12 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         """Tests interleave scan."""
         self.advmon_test_interleaved_scan()
 
+    # TODO(b/267641212) - RTL8852 supports (1 + |address|) * |pattern| <= 20,
+    #                     but we have 5 addresses and 4 patterns here.
     @test_wrapper('Condition Device Count Tests',
                   devices={'BLE_MOUSE': 1},
-                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS,
+                  skip_chipsets=ADVMON_UNSUPPORTED_CHIPSETS +
+                  ['Realtek-RTL8852C-USB', 'Realtek-RTL8852A-USB'],
                   supports_floss=True)
     def advmon_condition_device_count_tests(self):
         """Tests minimum supported condition and device count."""

@@ -19,7 +19,6 @@ ADVMON_UNSUPPORTED_CHIPSETS = [
         'Intel-AC7265',
         'MVL-8897', 'MVL-8997',
         'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
-        'Realtek-RTL8852C-USB', 'Realtek-RTL8852A-USB',
         'QCA-6174A-3-UART', 'QCA-6174A-5-USB',
 ]
 

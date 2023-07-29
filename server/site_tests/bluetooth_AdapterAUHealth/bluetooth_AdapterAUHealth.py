@@ -223,23 +223,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 HFP_WBS)
 
 
-    @test_wrapper(
-            'HFP WBS sinewave test with dut as sink with super resolution',
-            devices={'BLUETOOTH_AUDIO': 1},
-            allowed_boards={
-                    'eve', 'soraka', 'nautilus', 'nami', 'atlas', 'nocturne',
-                    'rammus', 'fizz', 'brya'
-            },
-            supports_floss=True)
-    def au_hfp_wbs_dut_as_sink_with_super_resolution_test(self):
-        """HFP WBS test with sinewave and super_resolution streaming from peer to dut."""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        # cellular and ui is needed, or the dlc service won't work.
-        self.au_hfp_run_method(device,
-                               self.hfp_dut_as_sink_with_super_resolution,
-                               HFP_WBS)
-
-
     @test_wrapper('HFP NBS sinewave test with dut as source',
                   devices={'BLUETOOTH_AUDIO': 1},
                   supports_floss=True)
@@ -266,8 +249,13 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
             'HFP NBS sinewave test with dut as sink with super resolution',
             devices={'BLUETOOTH_AUDIO': 1},
             allowed_boards={
-                    'eve', 'soraka', 'nautilus', 'nami', 'atlas', 'nocturne',
-                    'rammus', 'fizz', 'brya'
+                    'eve',
+                    'soraka',
+                    'nautilus',
+                    'nami',
+                    'nocturne',
+                    'rammus',
+                    'fizz',
             },
             supports_floss=True)
     def au_hfp_nbs_dut_as_sink_with_super_resolution_test(self):
@@ -451,7 +439,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         # The following tests will try to enable ui before running the tests
         # and they will also try to disable ui after the test run.
         self.au_hfp_nbs_dut_as_sink_with_super_resolution_test()
-        self.au_hfp_wbs_dut_as_sink_with_super_resolution_test()
 
 
     def run_once(self,

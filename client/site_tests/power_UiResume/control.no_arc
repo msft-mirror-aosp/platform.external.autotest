@@ -14,7 +14,7 @@ NAME = "power_UiResume.no_arc"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a benchnark test",
     "hw_agnostic": False,
 }

@@ -9,7 +9,7 @@ NAME = "power_VideoDetector"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "sque",
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a functional test",
     "hw_agnostic": False,
 }

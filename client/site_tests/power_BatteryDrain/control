@@ -11,7 +11,7 @@
 NAME = "power_BatteryDrain"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": """ DUT must not be on AC power, and battery must drop to
                     or below the specified threshold within the given timeout
                     in seconds.""",

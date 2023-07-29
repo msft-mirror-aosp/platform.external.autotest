@@ -25,7 +25,7 @@
 NAME = "power_BatteryChargeControl.args"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "",
     "hw_agnostic": False
 }

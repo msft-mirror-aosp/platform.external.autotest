@@ -12,7 +12,7 @@
 NAME = "power_CPUFreq"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": """ This test will fail under the following conditions:
                     - cpu frequencies are not supported
                     - no more than 1 frequency is supported

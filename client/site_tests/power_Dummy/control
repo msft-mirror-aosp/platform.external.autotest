@@ -12,7 +12,7 @@
 NAME = "power_Dummy"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a benchmark.",
     "hw_agnostic": False
 }

@@ -19,7 +19,7 @@ NAME = "power_Idle.lacros"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a benchmark",
     "requirements": ["pwr-batLife-0009-v01", "pwr-batLife-0009-v02"],
     "hw_agnostic": False,

@@ -8,7 +8,7 @@
 NAME = "power_ServoChargeStress.3loops"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com", "mqg@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "",
     "hw_agnostic": False
 }

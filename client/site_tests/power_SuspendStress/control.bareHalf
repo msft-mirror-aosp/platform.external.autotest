@@ -11,7 +11,7 @@ NAME = "power_SuspendStress.bareHalf"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "chromeos-power",
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a functional test",
     "hw_agnostic": False,
     "requirements": ["pwr-susp-0001-v01"]

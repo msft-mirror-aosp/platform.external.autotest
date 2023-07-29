@@ -8,7 +8,7 @@
 NAME = "power_AudioDetector"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": """
                 Fail if any of the following occur:
                 - The system suspends during audio playback.

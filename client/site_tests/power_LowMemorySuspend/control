@@ -11,7 +11,7 @@ NAME = "power_LowMemorySuspend"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "Vovo Yang",
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "Fails if system hang or reboot during this test",
     "hw_agnostic": False,
 }

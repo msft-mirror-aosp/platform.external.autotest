@@ -8,7 +8,7 @@
 NAME = "power_HotCPUSuspend"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "hw_agnostic": False
 }
 ATTRIBUTES = "suite:kernel_daily_regression"

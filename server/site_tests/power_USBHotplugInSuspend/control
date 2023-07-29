@@ -15,7 +15,7 @@
 NAME = "power_USBHotplugInSuspend"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com", "abrestic", "tbroch"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "Fails if hotplug of a USB device during suspend is not detected.",
     "hw_agnostic": False
 }

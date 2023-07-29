@@ -53,7 +53,7 @@
 NAME = "power_ServodWrapper"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com", "mqg@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a wrapper for a client test.",
     "hw_agnostic": False
 }

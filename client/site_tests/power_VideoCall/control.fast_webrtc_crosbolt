@@ -13,7 +13,7 @@ NAME = "power_VideoCall.fast_webrtc_crosbolt"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "puthik",
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }

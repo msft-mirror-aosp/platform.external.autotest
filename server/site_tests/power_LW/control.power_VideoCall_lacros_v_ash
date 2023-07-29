@@ -5,7 +5,7 @@
 NAME = "power_LW.power_VideoCall_lacros_v_ash"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com", "dbasehore@google.com"],
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a power benchmark test.",
     "hw_agnostic": False,
     "doc" : "Control file for running power_VideoCall for Ash and Lacros "

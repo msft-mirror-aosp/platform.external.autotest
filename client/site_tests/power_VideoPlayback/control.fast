@@ -5,7 +5,7 @@ NAME = "power_VideoPlayback.fast"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "author": "ChromeOS Team",
-    "bug_component": "b:167191",
+    "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }

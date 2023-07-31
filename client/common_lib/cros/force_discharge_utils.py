@@ -63,6 +63,16 @@ def _wait_for_battery_discharge(status):
     return False
 
 
+def chargeoverride_not_supported():
+    """
+    Jacuzzi/Kukui have a single type-C port and no PPC switch, so the
+    'ectool chargeoverride dontcharge' command has no effect.
+
+    @return: boolean indicating if chargeoverride has no effect.
+    """
+    return utils.get_board().startswith(('jacuzzi', 'kukui'))
+
+
 def _charge_control_by_ectool(is_charge, ignore_status, host=None):
     """execute ectool commands.
 
@@ -93,10 +103,7 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
             run_func(ec_cmd_charge)
             run_func(ec_cmd_normal)
         else:
-            # Jacuzzi/Kukui have a single type-C port and no PPC switch, so the
-            # 'chargeoverride dontcharge' command has no effect.
-            if utils.get_board().startswith('jacuzzi') or \
-               utils.get_board().startswith('kukui'):
+            if chargeoverride_not_supported():
                 # This will be overwritten by ec_cmd_sustain once is supported
                 # on Jacuzzi/Kukui, and the latter will handle the discharge.
                 run_func('ectool chargecontrol discharge')

@@ -26,6 +26,7 @@ import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import force_discharge_utils
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.utils import poll_for_condition_ex
 from autotest_lib.client.cros import kernel_trace
@@ -578,6 +579,10 @@ class SysStat(object):
         if not self.battery_path:
             logging.warning('Unable to determine battery discharge status')
             return False
+
+        if force_discharge_utils.chargeoverride_not_supported():
+            return self.battery.read_val('status',
+                                         str).startswith('Discharging')
 
         return self.battery.status.startswith('Discharging')
 

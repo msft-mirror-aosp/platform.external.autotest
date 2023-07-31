@@ -11,7 +11,8 @@ METADATA = {
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Verify cr50 can open ccd when TPM_RST_L is getting debounced"
 }
-ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
+# TODO(b/233319621): reenable after bug is fixed
+#ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"

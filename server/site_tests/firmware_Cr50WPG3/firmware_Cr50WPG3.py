@@ -15,7 +15,7 @@ class firmware_Cr50WPG3(Cr50Test):
     version = 1
 
     WAIT_FOR_STATE = 10
-    WP_REGEX = r'WP status: ((en|dis)abled)\.'
+    WP_REGEX = r'WP status: ((en|dis)abled)'
     STATUS_CMD = '--wp-status --ignore-hw'
     WP_ENABLE_CMD = '--wp-enable'
     WP_DISABLE_CMD = '--wp-disable'

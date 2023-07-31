@@ -5,8 +5,8 @@
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
 NAME = 'tast.nearby-share-cb2cb'
 METADATA = {
-    'contacts': ['tauto-core@google.com'],
-    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'contacts': ['chromeos-sw-engprod@google.com', 'chromeos-cross-device-eng@google.com'],
+    'bug_component': 'b:1131838',
     'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'MEDIUM'
@@ -25,7 +25,7 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['("group:cross-device-remote" && !"cross-device-remote_floss")'],
-                 ignore_test_failures=False, max_run_sec=3600,
+                 ignore_test_failures=False, max_run_sec=10800,
                  companion_duts={'cd1':companions[0]},
 		 command_args=args)
 parallel_simple(run, machines)

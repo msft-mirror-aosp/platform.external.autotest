@@ -5,8 +5,8 @@
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
 NAME = 'tast.cross-device-cellular'
 METADATA = {
-    'contacts': ['tauto-core@google.com'],
-    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'contacts': ['chromeos-sw-engprod@google.com', 'chromeos-cross-device-eng@google.com'],
+    'bug_component': 'b:1131837',
     'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'MEDIUM'

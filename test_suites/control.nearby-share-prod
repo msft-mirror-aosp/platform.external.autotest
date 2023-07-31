@@ -11,9 +11,15 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 DOC = """ This suite runs Nearby Share tests. """
 
+METADATA = {
+    'contacts': ['chromeos-sw-engprod@google.com', 'chromeos-cross-device-eng@google.com'],
+    'bug_component': 'b:1131838',
+    'criteria': 'Tauto wrapper for Tast Nearby Share suite.'
+}
+
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
-args_dict['max_runtime_mins'] = 60
+args_dict['max_runtime_mins'] = 180
 args_dict['name'] = NAME
 args_dict['job'] = job
 dynamic_suite.reimage_and_run(**args_dict)

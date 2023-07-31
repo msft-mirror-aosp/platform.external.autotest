@@ -11,7 +11,8 @@ METADATA = {
     "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
     "criteria": "Verify flashing firmware through ccd_cr50",
 }
-ATTRIBUTES = "suite:faft_cr50_tot"
+# TODO(b/284990558): re-enable after issue downloading firmware is fixed.
+#ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"

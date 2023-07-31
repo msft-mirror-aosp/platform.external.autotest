@@ -374,6 +374,8 @@ class platform_PrinterPpds(test.test):
                                         self._location_of_test_docs, doc_name)
                         # Sends test document to printer
                         argv = ['lp', '-d', cups_printer_id]
+                        # This is a workaround for a bug b/292551154.
+                        argv += ['-o', 'print-color-mode=rgb']
                         argv += [path_doc]
                         subprocess.call(argv)
                         # Prepare a workdir for the pipeline (if needed)

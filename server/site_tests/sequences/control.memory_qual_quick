@@ -25,7 +25,9 @@ Sequence for testing the Memory Qual running from the fixed devices.
 
 CLIENT_TESTS= [
     ('hardware_MemoryThroughput', {
-        'tag': 'memory_qual'}),
+        'tag': 'memory_qual', 'test': 'rd', 'warmup': 100,
+        'num_iterations': 5, 'parallel': 4, 'sizes': [67108864,],
+        'criteria': 25*1024}),
     ('hardware_Memtester', {
         'tag' : 'quick', 'size' : 10 * 1024, 'loop' : 1}),
     ('hardware_SAT', {

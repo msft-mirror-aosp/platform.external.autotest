@@ -28,7 +28,9 @@ HOUR_IN_SECS=60*60
 
 CLIENT_TESTS= [
     ('hardware_MemoryThroughput', {
-        'tag': 'memory_qual'}),
+        'tag': 'memory_qual', 'test': 'rd', 'warmup': 100,
+        'num_iterations': 5, 'parallel': 4, 'sizes': [67108864,],
+        'criteria': 25*1024}),
     ('hardware_Memtester', {
         'tag' : 'memory_qual', 'loop' : 100}),
     ('hardware_SAT', {

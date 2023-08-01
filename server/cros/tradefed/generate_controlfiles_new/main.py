@@ -222,33 +222,13 @@ def gen_qual(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
             for module, shard_count in shard_config.items()
         ]),
 
-        # Sets VM attributes including 'vm' (VM-eligible) and 'vm_stable'
-        # (HW-agnostic). Must run BEFORE applying MergeSplitSuites.
-        If(
-            vm_config,
-            [SetVMAttrs(
-                vm_config.get('MODULES_RULES'),
-                vm_config.get('UNSTABLE_MODULES_RULES'),
-            )],
-        ),
-        If(
-            lambda g: g.get('vm_stable'),
-            [MergeSplitSuites(
-                split_config,
-                split_config.get('QUAL_VM_STABLE_SUITE_FORMAT'),
-                split_config.get('QUAL_VM_STABLE_SUITE_LONG'),
-                bundle.abi,
-                basename_prefix='all.vm_stable',
-            )],
-        ),
-        If(
-            lambda g: 'merged' not in g,
-            [MergeSplitSuites(
-                split_config,
-                split_config.get('QUAL_SUITE_FORMAT'),
-                split_config.get('QUAL_SUITE_LONG'),
-                bundle.abi,
-            )],
+        # Calculate split suites, and merge modules of the same suite into a
+        # single test.
+        MergeSplitSuites(
+            split_config,
+            split_config.get('QUAL_SUITE_FORMAT'),
+            split_config.get('QUAL_SUITE_LONG'),
+            bundle.abi,
         ),
 
         # Assign qual suite; for camera tests, replace qual suite with camera

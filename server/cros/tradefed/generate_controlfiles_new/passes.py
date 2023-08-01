@@ -274,6 +274,7 @@ class MergeSplitSuites(Pass):
                 self._config['MAX_RUNTIME_SECS'],
                 self._config['PER_TEST_OVERHEAD_SECS'],
                 self._config['RUNTIME_HINT_SECS'],
+                merge_tests=True,
         )
         shard_groups = collections.defaultdict(list)
         new_groups = []

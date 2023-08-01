@@ -69,10 +69,6 @@ CONFIG['SPLIT_SUITES'] = {
         'DEV_VM_STABLE_SUITE_LONG': 'suite:arc-cts-vm-stable-long',
         'QUAL_SUITE_FORMAT': 'suite:arc-cts-qual-{abi}-{shard}',
         'QUAL_SUITE_LONG': 'suite:arc-cts-qual-long',
-        'QUAL_VM_STABLE_SUITE_FORMAT':
-        'suite:arc-cts-qual-vm-stable-{abi}-{shard}',
-        # For qual, no need to make a separate long suite for VM-stable tests.
-        'QUAL_VM_STABLE_SUITE_LONG': 'suite:arc-cts-qual-long',
         'MAX_RUNTIME_SECS': 9000,  # 2.5hr; hard limit is 3hr
         'PER_TEST_OVERHEAD_SECS': 600,  # 10min for DUT provisioning etc.
         # P95 runtime from PASS/WARN runs between 20230515-20230615.

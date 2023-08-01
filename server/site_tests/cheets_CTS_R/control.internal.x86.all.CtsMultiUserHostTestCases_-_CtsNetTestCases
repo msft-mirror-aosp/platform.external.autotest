@@ -1,0 +1,39 @@
+# Copyright 2020 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file has been automatically generated. Do not edit!
+
+AUTHOR = 'n/a'
+NAME = 'cheets_CTS_R.internal.x86.all.CtsMultiUserHostTestCases_-_CtsNetTestCases'
+METADATA = {
+    "contacts": ["arc-cts-eng@google.com"],
+    "bug_component": "b:183644",
+    "criteria": "A part of Android CTS",
+}
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-x86-13'
+DEPENDENCIES = 'arc, cts_abi_x86'
+JOB_RETRIES = 1
+TEST_TYPE = 'server'
+TIME = 'MEDIUM'
+MAX_RESULT_SIZE_KB = 512000
+DOC = 'n/a'
+
+def run_TS(machine):
+    host_list = [hosts.create_host(machine)]
+    job.run_test(
+        'cheets_CTS_R',
+        hosts=host_list,
+        iterations=1,
+        max_retry=9,
+        tag='internal.x86.all.CtsMultiUserHostTestCases_-_CtsNetTestCases',
+        test_name='cheets_CTS_R.internal.x86.all.CtsMultiUserHostTestCases_-_CtsNetTestCases',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMultiUserHostTestCases', '--include-filter', 'CtsMultiUserHostTestCases[instant]', '--include-filter', 'CtsMultiUserHostTestCases[secondary_user]', '--include-filter', 'CtsMultiUserTestCases', '--include-filter', 'CtsMultiUserTestCases[instant]', '--include-filter', 'CtsMultiUserTestCases[secondary_user]', '--include-filter', 'CtsNNAPIBenchmarkTestCases', '--include-filter', 'CtsNNAPIBenchmarkTestCases[instant]', '--include-filter', 'CtsNNAPIBenchmarkTestCases[secondary_user]', '--include-filter', 'CtsNNAPITestCases', '--include-filter', 'CtsNNAPITestCases[secondary_user]', '--include-filter', 'CtsNativeEncryptionTestCases', '--include-filter', 'CtsNativeEncryptionTestCases[instant]', '--include-filter', 'CtsNativeEncryptionTestCases[secondary_user]', '--include-filter', 'CtsNativeHardwareTestCases', '--include-filter', 'CtsNativeHardwareTestCases[secondary_user]', '--include-filter', 'CtsNativeMediaAAudioTestCases', '--include-filter', 'CtsNativeMediaAAudioTestCases[instant]', '--include-filter', 'CtsNativeMediaAAudioTestCases[secondary_user]', '--include-filter', 'CtsNativeMediaMetricsTestCases', '--include-filter', 'CtsNativeMediaMetricsTestCases[instant]', '--include-filter', 'CtsNativeMediaMetricsTestCases[secondary_user]', '--include-filter', 'CtsNativeMediaSlTestCases', '--include-filter', 'CtsNativeMediaSlTestCases[instant]', '--include-filter', 'CtsNativeMediaSlTestCases[secondary_user]', '--include-filter', 'CtsNativeMediaXaTestCases', '--include-filter', 'CtsNativeMediaXaTestCases[instant]', '--include-filter', 'CtsNativeMediaXaTestCases[secondary_user]', '--include-filter', 'CtsNativeMidiTestCases', '--include-filter', 'CtsNativeMidiTestCases[secondary_user]', '--include-filter', 'CtsNativeNetDnsTestCases', '--include-filter', 'CtsNativeNetDnsTestCases[instant]', '--include-filter', 'CtsNativeNetDnsTestCases[secondary_user]', '--include-filter', 'CtsNativeNetTestCases', '--include-filter', 'CtsNativeNetTestCases[instant]', '--include-filter', 'CtsNativeNetTestCases[secondary_user]', '--include-filter', 'CtsNdefTestCases', '--include-filter', 'CtsNdefTestCases[secondary_user]', '--include-filter', 'CtsNdkBinderTestCases', '--include-filter', 'CtsNdkBinderTestCases[instant]', '--include-filter', 'CtsNdkBinderTestCases[secondary_user]', '--include-filter', 'CtsNetApi23TestCases', '--include-filter', 'CtsNetApi23TestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigAttributeTestCases', '--include-filter', 'CtsNetSecConfigAttributeTestCases[instant]', '--include-filter', 'CtsNetSecConfigAttributeTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigBasicDebugDisabledTestCases', '--include-filter', 'CtsNetSecConfigBasicDebugDisabledTestCases[instant]', '--include-filter', 'CtsNetSecConfigBasicDebugDisabledTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigBasicDebugEnabledTestCases', '--include-filter', 'CtsNetSecConfigBasicDebugEnabledTestCases[instant]', '--include-filter', 'CtsNetSecConfigBasicDebugEnabledTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigBasicDomainConfigTestCases', '--include-filter', 'CtsNetSecConfigBasicDomainConfigTestCases[instant]', '--include-filter', 'CtsNetSecConfigBasicDomainConfigTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigCleartextTrafficTestCases', '--include-filter', 'CtsNetSecConfigCleartextTrafficTestCases[instant]', '--include-filter', 'CtsNetSecConfigCleartextTrafficTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigDownloadManagerTestCases', '--include-filter', 'CtsNetSecConfigDownloadManagerTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigInvalidPinTestCases', '--include-filter', 'CtsNetSecConfigInvalidPinTestCases[instant]', '--include-filter', 'CtsNetSecConfigInvalidPinTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigNestedDomainConfigTestCases', '--include-filter', 'CtsNetSecConfigNestedDomainConfigTestCases[instant]', '--include-filter', 'CtsNetSecConfigNestedDomainConfigTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigPrePCleartextTrafficTestCases', '--include-filter', 'CtsNetSecConfigPrePCleartextTrafficTestCases[secondary_user]', '--include-filter', 'CtsNetSecConfigResourcesSrcTestCases', '--include-filter', 'CtsNetSecConfigResourcesSrcTestCases[instant]', '--include-filter', 'CtsNetSecConfigResourcesSrcTestCases[secondary_user]', '--include-filter', 'CtsNetSecPolicyUsesCleartextTrafficFalseTestCases', '--include-filter', 'CtsNetSecPolicyUsesCleartextTrafficFalseTestCases[secondary_user]', '--include-filter', 'CtsNetSecPolicyUsesCleartextTrafficTrueTestCases', '--include-filter', 'CtsNetSecPolicyUsesCleartextTrafficTrueTestCases[secondary_user]', '--include-filter', 'CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases', '--include-filter', 'CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases[secondary_user]', '--include-filter', 'CtsNetTestCases', '--include-filter', 'CtsNetTestCasesInternetPermission', '--include-filter', 'CtsNetTestCasesInternetPermission[instant]', '--include-filter', 'CtsNetTestCasesInternetPermission[secondary_user]', '--include-filter', 'CtsNetTestCasesLegacyApi22', '--include-filter', 'CtsNetTestCasesLegacyApi22[secondary_user]', '--include-filter', 'CtsNetTestCasesLegacyPermission22', '--include-filter', 'CtsNetTestCasesLegacyPermission22[secondary_user]', '--include-filter', 'CtsNetTestCasesUpdateStatsPermission', '--include-filter', 'CtsNetTestCasesUpdateStatsPermission[instant]', '--include-filter', 'CtsNetTestCasesUpdateStatsPermission[secondary_user]', '--include-filter', 'CtsNetTestCases[instant]', '--include-filter', 'CtsNetTestCases[secondary_user]', '--logcat-on-failure'],
+        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        target_module='all.CtsMultiUserHostTestCases_-_CtsNetTestCases',
+        target_plan=None,
+        bundle='x86',
+        uri='LATEST',
+        timeout=172800)
+
+parallel_simple(run_TS, machines)

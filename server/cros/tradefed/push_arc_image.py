@@ -23,7 +23,7 @@ _PTD_MIN_VERSION_MAP = {
 }
 
 
-def push_userdebug_image(host, branch_prefix, lunch_target, download_func,
+def push_userdebug_image(host, branch_prefix, download_func,
                          install_bundle_func, run_func):
     """This pushes a userdebug android image to the host.
 
@@ -36,7 +36,6 @@ def push_userdebug_image(host, branch_prefix, lunch_target, download_func,
                           (e.g. rvc-arc, pi-arc). This does not have to be
                           the exact branch name for a particular release
                           (e.g. rvc-arc-m91).
-    @param lunch_target: the target lunch name (e.g. cheets, bertha)
     @param download_func: function for downloading an object. This shall be
                           self._download_to_cache when invoking from TradefedTest class.
     @param install_bundle_func: function for downloading and unarchiving files.
@@ -52,10 +51,7 @@ def push_userdebug_image(host, branch_prefix, lunch_target, download_func,
         logging.error('Failed to determine ARC version.')
         return False
 
-    # TODO(kinaba): Remove the |lunch_target| parameter and
-    # always auto-detect after confirming it working.
-    if not lunch_target:
-        lunch_target = host.get_arc_build_target()
+    lunch_target = host.get_arc_build_target()
 
     # The split is necessary because push_to_device.py puts the whole image name
     # in CHROMEOS_ARC_VERSION, e.g. bertha_x86_64-img-7759413.

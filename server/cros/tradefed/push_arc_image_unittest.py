@@ -56,53 +56,6 @@ class PushArcImageTest(unittest.TestCase):
         mock_install_bundle_func.return_value = 'some/extracted/dir'
         return mock_install_bundle_func
 
-    def test_push_userdebug_image_bertha_arm64_autodetect(self):
-        mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'bertha',
-                                        'arm64-v8a')
-        mock_download_func = self.createMockDownloadFunc()
-        mock_install_bundle_func = self.createMockInstallBundleFunc()
-        mock_run_func = Mock()
-
-        in_sequence = Mock()
-        in_sequence.attach_mock(mock_run_func, 'run')
-        in_sequence.attach_mock(mock_host.run, 'host_run')
-
-        self.assertTrue(
-                push_arc_image.push_userdebug_image(mock_host, 'rvc-arc', None,
-                                                    mock_download_func,
-                                                    mock_install_bundle_func,
-                                                    mock_run_func))
-
-        mock_host.get_arc_version.assert_called_once()
-        mock_host.get_arc_primary_abi.assert_called_once()
-        mock_host.get_arc_build_target.assert_called_once()
-        mock_download_func.assert_any_call(
-                'gs://chromeos-arc-images/builds/'
-                'git_rvc-arc-*linux-bertha_arm64-userdebug/'
-                '7750398/bertha_arm64-img-7750398.zip')
-
-        mock_download_func.assert_any_call(
-                'gs://chromeos-arc-images/builds/'
-                'git_rvc-arc-*linux-bertha_arm64-userdebug/'
-                '7750398/sepolicy.zip')
-
-        mock_install_bundle_func.assert_any_call(
-                'gs://chromeos-arc-images/builds/'
-                'git_rvc-arc-*linux-bertha_arm64-userdebug/'
-                '7750398/push_to_device.zip')
-
-        expected_calls = [
-                call.host_run(_MARK_DIRTY_PROVISION_COMMAND),
-                call.run(
-                        _DEFAULT_EXPECTED_PTD_PATH,
-                        args=_DEFAULT_EXPECTED_RUN_ARGS,
-                        ignore_status=ANY,
-                        verbose=ANY,
-                        nickname=ANY,
-                ),
-        ]
-        self.assertEqual(in_sequence.mock_calls, expected_calls)
-
     def test_push_userdebug_image_bertha_arm64(self):
         mock_host = self.createMockHost(_TEST_DEFAULT_ARC_VERSION, 'bertha',
                                         'arm64-v8a')
@@ -116,7 +69,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host, 'rvc-arc',
-                                                    'bertha',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -163,7 +115,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host, 'rvc-arc',
-                                                    'bertha',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -210,7 +161,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host, 'pi-arc',
-                                                    'cheets',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -257,7 +207,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host, 'pi-arc',
-                                                    'cheets',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -304,7 +253,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host, 'pi-arc',
-                                                    'cheets',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -351,7 +299,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host, 'pi-arc',
-                                                    'cheets',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -396,7 +343,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host, 'rvc-arc',
-                                                    'bertha',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -418,7 +364,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host, 'pi-arc',
-                                                    'cheets',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -440,7 +385,6 @@ class PushArcImageTest(unittest.TestCase):
         self.assertTrue(
                 push_arc_image.push_userdebug_image(mock_host,
                                                     'myspecialbranch',
-                                                    'bertha',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))
@@ -463,7 +407,6 @@ class PushArcImageTest(unittest.TestCase):
 
         self.assertFalse(
                 push_arc_image.push_userdebug_image(mock_host, 'rvc-arc',
-                                                    'bertha',
                                                     mock_download_func,
                                                     mock_install_bundle_func,
                                                     mock_run_func))

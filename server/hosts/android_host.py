@@ -6,12 +6,13 @@
 # Expects to be run in an environment with sudo and no interactive password
 # prompt, such as within the Chromium OS development chroot.
 
+import time
 import logging
 import socket
 
 import common
 
-from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import error, utils
 from autotest_lib.server.hosts import host_info
 from autotest_lib.server.hosts import attached_device_host
 from autotest_lib.server.hosts import android_constants
@@ -46,9 +47,11 @@ class AndroidHost(base_classes.Host):
         self.associated_hostname = None
         self.serial_number = None
         self.phone_station_ssh_port = None
+        self.phone_station_ip_addr = None
         # For local test, android_args are passed in.
         if android_args:
             self._read_essential_data_from_args_dict(android_args)
+            self._read_optional_data_from_args_dict(android_args)
         else:
             self._read_essential_data_from_host_info_store()
         # Since we won't be ssh into an Android device directly, all the
@@ -60,6 +63,9 @@ class AndroidHost(base_classes.Host):
         self.adb_tcp_mode = False
         self.usb_dev_path = None
         self.closed = False
+        # In order to expose the forwarded adb port to outside machines we start
+        # socat in the background, cache the PID to clean up on close.
+        self.socat_process_id = None
 
     def _create_phone_station_host_proxy(self):
         logging.info('Creating host for phone station %s',
@@ -76,6 +82,10 @@ class AndroidHost(base_classes.Host):
                 android_constants.ANDROID_PHONE_STATION_SSH_PORT_ATTR)
         self.serial_number = android_args.get(
                 android_constants.ANDROID_SERIAL_NUMBER_ATTR)
+
+    def _read_optional_data_from_args_dict(self, android_args):
+        self.phone_station_ip_addr = android_args.get(
+                android_constants.ANDROID_PHONE_STATION_IP_ATTR, None)
 
     def _read_essential_data_from_host_info_store(self):
         info = self.host_info_store.get()
@@ -113,6 +123,70 @@ class AndroidHost(base_classes.Host):
         self.run_adb_command('tcpip %s' % port)
         self.adb_tcp_mode = True
 
+    def get_free_port(self, start_port, end_port):
+        """Attempts to find a free port on the labstation in provided range.
+
+        Args:
+            start_port: Start port of search range.
+            end_port: End of port search range.
+        """
+        for port in range(start_port, end_port):
+            try:
+                self.phone_station.run('lsof -i:%d' % port)
+            except:
+                return port
+
+        raise error.AutoservError('Failed to find free labstation port')
+
+    def forward_device_port(self, phone_port=5555, duration=3600):
+        """Forwards a port on the phone to one on the labstation.
+
+        Args:
+            phone_port: TCP port on phone to be forwarded.
+            duration: The maximum length of time to forward the ports for.
+
+        Returns:
+            host_port: TCP port on the labstation that the phone port is forwarded to.
+        """
+        # Forward an intermediate port from the phone to the host.
+        intermediate_port = self.get_free_port(phone_port, phone_port + 100)
+
+        # Retry as it may take a few seconds for the adb server to start up on
+        # the phone.
+        for _ in range(5):
+            try:
+                self.run_adb_command('forward tcp:%s tcp:%s' %
+                                     (intermediate_port, phone_port))
+                break
+            except:
+                time.sleep(1)
+        else:
+            raise error.AutoservError(
+                    'Failed to enable forwarding on labstation')
+
+        # Create a new port listening on all interfaces (0.0.0.0) and redirect
+        # to the intermediate port since the port opened by ADB will only
+        # listen on the loopback interface and can't be easily accessed
+        # externally.
+        host_port = self.get_free_port(intermediate_port,
+                                       intermediate_port + 100)
+        res = self.phone_station.run_background(
+                'timeout %ds socat tcp-listen:%d,bind=0.0.0.0,tcp-nodelay,fork,forever tcp:127.0.0.1:%d'
+                % (duration, host_port, intermediate_port))
+
+        # Since we launched using timeout, get the PID of the underlying socat
+        # process otherwise we'll just orphan it.
+        res = self.phone_station.run('ps -o pid= --ppid %s' %
+                                     res).stdout.strip()
+
+        # Cache the process_id for cleanup later.
+        if res.isdigit():
+            self.socat_process_id = int(res)
+        else:
+            logging.warning('Failed to parse socat process id from: %s', res)
+
+        return host_port
+
     def cache_usb_dev_path(self):
         """
         Read and cache usb devpath for the Android device.
@@ -143,6 +217,10 @@ class AndroidHost(base_classes.Host):
         version = res.stdout.strip()
         logging.info('GMSCore Version on phone: %s', version)
         return version
+
+    def get_phone_station_ip_address(self):
+        """Get ipv4 address of the connected labstation."""
+        return utils.get_ip_address(self.phone_station.hostname)
 
     def get_wifi_ip_address(self):
         """Get ipv4 address from the Android device"""
@@ -238,6 +316,39 @@ class AndroidHost(base_classes.Host):
         self.adb_over_tcp(persist_reboot=adb_persist_reboot)
         return ip_address
 
+    def setup_for_adb_over_lab_network(self):
+        """
+        Setup the Android phone for testing using adb over the lab network.
+
+        Ensures the phone can connect to its labstation and sets up
+        adb-over-tcp and forwards the port to the labstation so adb can be  used
+        on the labstation without requiring a separate local network to
+        control the phone.
+
+        Note: This configuration does not persist device reboots.
+
+        Returns:
+            IP Address of labstation.
+            Port on labstation to connect to.
+        """
+        dut_out = self.phone_station.run('echo True').stdout.strip()
+        if dut_out != 'True':
+            raise error.TestError('phone station stdout != True (got: %s)',
+                                  dut_out)
+
+        self.restart_adb_server()
+        self.cache_usb_dev_path()
+        self.ensure_device_connectivity()
+        self.get_gmscore_version()
+        self.adb_over_tcp(persist_reboot=False)
+        port = self.forward_device_port()
+
+        # If IP address was not explicitly provided, get it from the labstation
+        # host itself.
+        ip_address = (self.phone_station_ip_addr
+                      or self.get_phone_station_ip_address())
+        return (ip_address, port)
+
     def close(self):
         """Clean up Android host and its phone station proxy host."""
         if self.closed:
@@ -250,6 +361,9 @@ class AndroidHost(base_classes.Host):
                 # to usb mode before teardown.
                 self.run_adb_command('usb', ignore_status=True)
             self.stop_adb_server()
+            if self.socat_process_id:
+                self.phone_station.run('kill -9 %d' % self.socat_process,
+                                       ignore_status=True)
             if self.phone_station:
                 self.phone_station.close()
             self.closed = True

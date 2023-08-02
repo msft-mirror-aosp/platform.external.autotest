@@ -76,9 +76,11 @@ class firmware_Cr50DeviceState(Cr50Test):
             # collects taskinfo counts. Just verify that it does enter deep sleep
             'S3' + DEEP_SLEEP_STEP_SUFFIX: [1, 2],
             'G3' + DEEP_SLEEP_STEP_SUFFIX: [1, 2],
+            'S5' + DEEP_SLEEP_STEP_SUFFIX: [1, 2],
             # ARM devices don't enter deep sleep in S3
             ARM + 'S3' + DEEP_SLEEP_STEP_SUFFIX: [0, 0],
             ARM + 'G3' + DEEP_SLEEP_STEP_SUFFIX: [1, 2],
+            ARM + 'S5' + DEEP_SLEEP_STEP_SUFFIX: [1, 2],
             ARM + 'lid_close' + DEEP_SLEEP_STEP_SUFFIX: [0, 2],
             ARM + 'default_suspend' + DEEP_SLEEP_STEP_SUFFIX: [0, 2],
             # Regular sleep is calculated based on the cr50 time

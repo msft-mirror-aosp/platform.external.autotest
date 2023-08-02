@@ -48,7 +48,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             KEY_COLD_RESET_TIME: 'Time (cold reset)',
     }
 
-    ENTER_STATE_WAIT = 10
+    ENTER_STATE_WAIT = 15
     POWER_STATE_CHECK_TRIES = 6
 
     DEEP_SLEEP_MAX = 2

@@ -510,6 +510,12 @@ class TradefedTest(test.test):
                                      'verifier_verify_adb_installs', '0'))
         logging.info('Disable adb dialog: %s', result.stdout)
 
+        result = self._adb.run(host,
+                               verbose=True,
+                               args=('shell', 'settings', 'put', 'global',
+                                     'verifier_engprod', '1'))
+        logging.info('Disable Play Protect dialog: %s', result.stdout)
+
         # Android "RescueParty" feature can reset the above settings when the
         # device crashes often. Disable the rescue during testing.
         # Keeping only for P and below since R has SELinux restrictions.

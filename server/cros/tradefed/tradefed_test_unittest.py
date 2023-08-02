@@ -9,7 +9,7 @@ import tempfile
 import shutil
 import stat
 
-from unittest.mock import Mock, ANY, patch
+from unittest.mock import Mock, ANY, patch, call
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.tradefed import tradefed_test
 
@@ -153,10 +153,12 @@ class TradefedTestTest(unittest.TestCase):
         mock_host = Mock()
         self.tradefed._disable_adb_install_dialog(mock_host)
 
-        mock_run.assert_called_with(mock_host,
-                                    args=('shell', 'settings', 'put', 'global',
-                                          'verifier_verify_adb_installs', '0'),
-                                    verbose=ANY)
+        mock_run.assert_has_calls([
+                call(mock_host,
+                     args=('shell', 'settings', 'put', 'global',
+                           'verifier_verify_adb_installs', '0'),
+                     verbose=ANY)
+        ])
 
     def test_disable_adb_install_dialog_android_version_under_29(self):
         mock_run = self.mock_adb.run
@@ -167,10 +169,12 @@ class TradefedTestTest(unittest.TestCase):
         mock_host = Mock()
         self.tradefed._disable_adb_install_dialog(mock_host)
 
-        mock_run.assert_called_with(mock_host,
-                                    args=('shell', 'settings', 'put', 'global',
-                                          'verifier_verify_adb_installs', '0'),
-                                    verbose=ANY)
+        mock_run.assert_has_calls([
+                call(mock_host,
+                     args=('shell', 'settings', 'put', 'global',
+                           'verifier_verify_adb_installs', '0'),
+                     verbose=ANY)
+        ])
 
         mock_host.run.assert_called_with(
                 'android-sh -c \'setprop persist.sys.disable_rescue true\'')

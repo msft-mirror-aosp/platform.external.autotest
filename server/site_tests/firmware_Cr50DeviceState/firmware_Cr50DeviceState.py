@@ -48,16 +48,8 @@ class firmware_Cr50DeviceState(Cr50Test):
             KEY_COLD_RESET_TIME: 'Time (cold reset)',
     }
 
-    # Cr50 won't enable any form of sleep until it has been up for 20 seconds.
-    SLEEP_DELAY = 20
-    # The time in seconds to wait in each state. Wait one minute so it's long
-    # enough for cr50 to settle into whatever state. 60 seconds is also long
-    # enough that cr50 has enough time to enter deep sleep twice, so we can
-    # catch extra wakeups.
-    SLEEP_TIME = 60
     ENTER_STATE_WAIT = 10
     POWER_STATE_CHECK_TRIES = 6
-    CONSERVATIVE_WAIT_TIME = SLEEP_TIME * 2
 
     DEEP_SLEEP_MAX = 2
     ARM = 'ARM '
@@ -68,7 +60,6 @@ class firmware_Cr50DeviceState(Cr50Test):
     EXPECTED_IRQ_COUNT_RANGE = {
             KEY_RESET: [0, 0],
             KEY_DEEP_SLEEP: [0, DEEP_SLEEP_MAX],
-            KEY_TIME: [0, CONSERVATIVE_WAIT_TIME],
             'lid_close' + DEEP_SLEEP_STEP_SUFFIX: [0, 2],
             'default_suspend' + DEEP_SLEEP_STEP_SUFFIX: [0, 2],
             'S0ix' + DEEP_SLEEP_STEP_SUFFIX: [0, 0],
@@ -148,6 +139,12 @@ class firmware_Cr50DeviceState(Cr50Test):
             )
             self.manual_suspend = False
 
+        # The time in seconds to wait in each state. Wait enough time for gsc
+        # to settle into whatever state. Make sure it's significantly longer
+        # than it takes for gsc to enable sleep. Wait long enough for gsc to
+        # enter deep sleep twice, so the test can catch extra wakeups.
+        self.sleep_time = (self.gsc.DEEP_SLEEP_DELAY * 2) + 10
+
         self.INT_NAME = self.gsc.IRQ_DICT.copy()
         self.INT_NAME.update(self.GSC_STATUS_DICT)
         self.KEY_REGULAR_SLEEP = [k for k,v in self.INT_NAME.items()
@@ -167,6 +164,9 @@ class firmware_Cr50DeviceState(Cr50Test):
         max_tpm_init = (getattr(self.faft_config, 'custom_max_tpm_init_us',
                                 None) or self.gsc.TPM_INIT_MAX)
         self.EXPECTED_IRQ_COUNT_RANGE[self.KEY_TPM_INIT] = [0, max_tpm_init]
+        # Multiply sleep time by 2 in case it takes a long time for the device
+        # to boot. It's supposed to be a conservative maximum.
+        self.EXPECTED_IRQ_COUNT_RANGE[self.KEY_TIME] = [0, self.sleep_time * 2]
 
     def get_tpm_init_time(self):
         """If the AP is on, return the time it took the tpm to initialize."""
@@ -261,11 +261,11 @@ class firmware_Cr50DeviceState(Cr50Test):
             # Only enforce the minimum regular sleep count if the device is
             # idle. Cr50 may not enter regular sleep during power state
             # transitions.
-            if idle and cr50_time > self.SLEEP_DELAY:
+            if idle and cr50_time > self.gsc.DEEP_SLEEP_DELAY:
                 if self.gsc.SLEEP_RATE == 0:
                     min_count = 1
                 else:
-                    min_count = cr50_time - self.SLEEP_DELAY
+                    min_count = cr50_time - self.gsc.DEEP_SLEEP_DELAY
             else:
                 min_count = 0
             # Check that cr50 isn't continuously entering and exiting sleep.
@@ -552,18 +552,18 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.enter_state(state)
         self.stage_irq_add('entered %s' % (self._found_state or state))
 
-        logging.info('waiting %d seconds', self.SLEEP_TIME)
-        time.sleep(self.SLEEP_TIME)
+        logging.info('waiting %d seconds', self.sleep_time)
+        time.sleep(self.sleep_time)
         # Nothing is really happening. Cr50 should basically be idle during
-        # SLEEP_TIME.
+        # sleep_time.
         self.stage_irq_add('idle in %s' % (self._found_state or state))
 
         # Return to S0
         self.enter_state('S0')
         self.stage_irq_add('entered S0')
 
-        logging.info('waiting %d seconds', self.SLEEP_TIME)
-        time.sleep(self.SLEEP_TIME)
+        logging.info('waiting %d seconds', self.sleep_time)
+        time.sleep(self.sleep_time)
 
         self.stage_irq_add('idle in S0')
 

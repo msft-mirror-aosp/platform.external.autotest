@@ -1,0 +1,30 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "cbx_enabled_all"
+METADATA = {
+    "contacts": ["tast-core@google.com"],
+    "bug_component": "b:1034522", # ChromeOS > Test > Harness > Tast > Examples
+    }
+PURPOSE = "Tests X for CBX devices."
+
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite runs all X tests for CBX enabled devices.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['max_runtime_mins'] = 20
+args_dict['timeout_mins'] = 1440
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

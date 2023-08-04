@@ -7,7 +7,7 @@ from autotest_lib.client.common_lib import utils
 AUTHOR = 'cros-engprod-muc'
 NAME = 'tast.medium-low-tier-shard-0'
 METADATA = {
-    "contacts": ["kamilszarek@google.com", "cros-engprod-muc@google.com"],
+    'contacts': ['kamilszarek@google.com', 'cros-engprod-muc@google.com'],
     'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
     'criteria': 'Tauto wrapper for specified tast tests',
 }
@@ -32,7 +32,7 @@ def run(machine):
                  host=hosts.create_host(machine, servo_args=servo_args),
                  test_exprs=['("group:medium_low_tier")'],
                  ignore_test_failures=True,
-                 max_run_sec=3*60*60,
+                 max_run_sec=3*60*60 - 15*60,
                  totalshards=3,
                  shardindex=0,
                  command_args=args)

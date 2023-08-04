@@ -10,7 +10,6 @@ METADATA = {
     'contacts': ['kamilszarek@google.com', 'cros-engprod-muc@google.com'],
     'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
     'criteria': 'Tauto wrapper for specified tast tests',
-
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'
@@ -33,7 +32,7 @@ def run(machine):
                  host=hosts.create_host(machine, servo_args=servo_args),
                  test_exprs=['("group:complementary")'],
                  ignore_test_failures=True,
-                 max_run_sec=3*60*60,
+                 max_run_sec=3*60*60 - 15*60,
                  totalshards=4,
                  shardindex=1,
                  command_args=args)

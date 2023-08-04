@@ -583,7 +583,6 @@ suite:camerabox_facing-back
 suite:camerabox_facing-front
 suite:cbx_disabled_critical
 suite:cbx_disabled_unstable
-suite:cbx_enabled_all
 suite:cbx_enabled_critical
 suite:cbx_enabled_unstable
 suite:cellular-cq

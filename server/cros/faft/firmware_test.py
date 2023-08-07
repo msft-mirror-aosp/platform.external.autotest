@@ -2453,16 +2453,25 @@ class FirmwareTest(test.test):
             enable_testlab = False
 
         restore_cold_reset_select = None
-        # If servo uses gsc_ec_reset to hold the EC in reset, it won't be
-        # available when gsc is locked. Use gsc_reset to open ccd since that
-        # works with locked ccd.
-        if self.servo.main_device_uses_gsc_drv():
-            if self.gsc.servo_drv_enabled():
-                logging.info('Using GSC EC reset')
-                self.servo.set('cold_reset_select', 'gsc_ec_reset')
-            else:
-                logging.info('GSC EC reset not enabled. Using GSC reset')
-                self.servo.set('cold_reset_select', 'gsc_reset')
+        if self.servo.has_control('cold_reset_select'):
+            restore_cold_reset_select = self.servo.get('cold_reset_select')
+            # `ecrst pulse` is always available. Use it to reset the EC. It
+            # will reset the EC and keep the EC-EFS2 boot mode in sync with the
+            # system state.
+            if self.servo.has_control('gsc_ecrst_pulse'):
+                self.servo.set('cold_reset_select', 'gsc_ecrst_pulse')
+            elif self.servo.main_device_uses_gsc_drv():
+                # TODO(b/294426380): remove this after servod has support for
+                # using `ecrst pulse` in the lab.
+                # `ecrst pulse` is always available. It will let tests enter
+                # dev mode even when ccd is locked.
+                if self.gsc.servo_drv_enabled():
+                    logging.info('Using GSC EC reset')
+                    self.servo.set('cold_reset_select', 'gsc_ec_reset')
+                else:
+                    logging.info('GSC EC reset not enabled. Using GSC reset')
+                    self.servo.set('cold_reset_select', 'gsc_reset')
+
         # Try to use testlab open first, so we don't have to wait for the
         # physical presence check.
         self.gsc.send_command('ccd testlab open')

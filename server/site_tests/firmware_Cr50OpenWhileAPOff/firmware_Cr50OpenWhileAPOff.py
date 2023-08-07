@@ -70,7 +70,12 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         if self.servo.has_control('cold_reset_select'):
             # Use the servo micro cold reset signal to hold the EC in reset.
             if self.reset_ec:
-                self.servo.set('cold_reset_select', 'cold_reset_default')
+                if self.servo.has_control('default_cold_reset'):
+                    self.servo.set('cold_reset_select', 'default_cold_reset')
+                else:
+                    # TODO(b/294426380): remove when default_cold_reset is in
+                    # the lab.
+                    self.servo.set('cold_reset_select', 'cold_reset_default')
                 logging.info('Using servo cold_reset signal')
             logging.info('using %s for cold reset',
                          self.servo.get('cold_reset_select'))

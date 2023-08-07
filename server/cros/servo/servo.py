@@ -1503,6 +1503,9 @@ class Servo(object):
         get restricted with ccd capabilities. This returns true if some of
         the servo functionality will be disabled if ccd is restricted.
         """
+        # TODO(b/294426380): remove has_control('cold_reset_select') check
+        # after labstation updates to servod controls that support using
+        # 'ecrst pulse' to reset the EC.
         return (self.get_main_servo_device() in self.GSC_DRV_SERVOS
                 or self.has_control('cold_reset_select'))
 

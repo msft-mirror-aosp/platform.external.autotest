@@ -26,10 +26,14 @@ class firmware_Cr50DevMode(Cr50Test):
             if not self.servo.has_control('cold_reset_select'):
                 raise error.TestError('Servo setup issue: board uses EC-EFS2, '
                         'but ec_efs2.xml was not included by servod')
-            self.fast_ccd_open(True)
-            self.gsc.enable_servo_control_caps()
-            self.servo.set_nocheck('cold_reset_select', 'gsc_ec_reset')
-            self.gsc.set_ccd_level('lock')
+            if self.servo.has_control('gsc_ecrst_pulse'):
+                self.servo.set_nocheck('cold_reset_select', 'gsc_ecrst_pulse')
+            else:
+                # TODO(b/294426380): remove when gsc_ecrst_pulse is in the lab.
+                self.fast_ccd_open(True)
+                self.gsc.enable_servo_control_caps()
+                self.servo.set_nocheck('cold_reset_select', 'gsc_ec_reset')
+                self.gsc.set_ccd_level('lock')
 
         self.enter_mode_after_checking_cr50_state('normal')
         self.check_dev_mode(False)

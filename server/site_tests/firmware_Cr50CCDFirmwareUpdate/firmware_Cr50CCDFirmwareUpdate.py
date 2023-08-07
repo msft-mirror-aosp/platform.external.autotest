@@ -146,9 +146,13 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
 
         # Make sure to use the GSC ec_reset command for cold reset snce that's
         # what normal ccd devices will use.
-        if (self.servo.has_control('cold_reset_select')
-                    and self.servo.has_control('gsc_ec_reset')):
-            self.servo.set('cold_reset_select', 'gsc_ec_reset')
+        if self.servo.has_control('cold_reset_select'):
+            if self.servo.has_control('gsc_ecrst_pulse'):
+                self.servo.set('cold_reset_select', 'gsc_ecrst_pulse')
+            elif self.servo.has_control('gsc_ec_reset'):
+                # TODO(b/294426380): remove when the labstation servod image
+                # supports gsc_ecrst_pulse.
+                self.servo.set('cold_reset_select', 'gsc_ec_reset')
         # TODO(b/196824029): remove when servod supports using the power state
         # controller with the ccd device.
         try:

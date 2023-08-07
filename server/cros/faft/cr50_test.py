@@ -63,9 +63,11 @@ class Cr50Test(FirmwareTest):
         if 'ccd' in self.servo.get_servo_version():
             self.servo.disable_ccd_watchdog_for_test()
 
-        if ((restore_cr50_image or restore_cr50_board_id) and
-            self.servo.main_device_uses_gsc_drv() and
-            self.gsc.running_mp_image()):
+        if ((restore_cr50_image or restore_cr50_board_id)
+                    and self.servo.main_device_uses_gsc_drv()
+                    and self.gsc.running_mp_image()
+                    and not self.servo.has_control('gsc_ecrst_pulse')
+                    and not self.servo.has_control('cold_reset_select')):
             # Tests that restore the image or the board id have to update
             # to the DBG image. This clears testlab mode. If a board relies
             # on ccd for basic servo functionality, this could make the dut

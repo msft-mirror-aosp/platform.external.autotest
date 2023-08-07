@@ -30,8 +30,17 @@ class firmware_Cr50Testlab(Cr50Test):
             self.BASIC_ERROR = 'Command \'ccd\' failed'
             self.INVALID_PARAM = 'Param2'
 
-        if (host.servo.main_device_uses_gsc_drv()
-                    and self.gsc.running_mp_image()):
+        # 'ecrst pulse' is always available. This test is going to lock ccd.
+        # use 'ecrst pulse' for cold reset, so the test can enter dev mode
+        # when ccd is locked.
+        if (self.servo.has_control('gsc_ecrst_pulse')
+                    and self.servo.has_control('cold_reset_select')):
+            logging.info('Using ecrst pulse for cold reset')
+            self.servo.set('cold_reset_select', 'gsc_ecrst_pulse')
+        elif (self.servo.main_device_uses_gsc_drv()
+              and self.gsc.running_mp_image()):
+            # TODO(b/294426380): remove this after servod has support for
+            # using `ecrst pulse` in the lab.
             raise error.TestNAError('Uses gsc for ecrst. Cannot run until '
                                     'cold_reset issue is resolved')
         # Get the current reset count, so we can check that there haven't been

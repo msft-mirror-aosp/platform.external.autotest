@@ -1,0 +1,48 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+
+AUTHOR = 'The ChromiumOS Authors'
+NAME = 'tast.hmr_daily'
+METADATA = {
+    "contacts": ["chromeos-tango@google.com"],
+    "bug_component": "b:167212", # ChromeOS > Platform > System > Input
+    }
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+# This suite will assume the the correct model has been scheduled.
+# DEPENDENCIES = ''
+ATTRIBUTES = "suite:hmr_daily"
+MAX_RESULT_SIZE_KB = 256 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run the Tast HMR tests on HMR-equipped devices.
+
+Tast is an integration-testing framework analagous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+
+This test runs HMR Tast-based tests against a HMR-equipped DUT.
+It fails if any individual Tast tests fail.
+
+
+See http://go/tast-failures for information about investigating failures.
+'''
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['("group:human_motion_robot")'],
+                 ignore_test_failures=False, max_run_sec=3600,
+                 command_args=args,
+                 retries=2)
+
+parallel_simple(run, machines)

@@ -778,6 +778,7 @@ suite:gsc_dt_ab-sta
 suite:gsc_dt_ab-ti50
 suite:gts
 suite:healthd_per-build
+suite:hmr_daily
 suite:hotrod
 suite:hotrod-remora
 suite:hps_perf_perbuild

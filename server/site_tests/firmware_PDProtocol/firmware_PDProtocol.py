@@ -132,7 +132,8 @@ class firmware_PDProtocol(FirmwareTest):
         # TODO(b:152148025): Directly set role as pdsnkdts might fail the
         # PD communication. In short term, we could use PR SWAP instead, and
         # should also fix the TCPM for handling SRCDTS -> SNKDTS case.
-        self.set_servo_v4_role_to_snk(pd_comm=True)
+        if host.has_battery():
+            self.set_servo_v4_role_to_snk(pd_comm=True)
         self.boot_to_recovery()
 
         # Check PD is not negotiated

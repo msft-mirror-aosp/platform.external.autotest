@@ -38,6 +38,7 @@ class firmware_InvalidUSB(FirmwareTest):
         self.corrupt_usb_kernel(usb_dev)
         self.switcher.setup_mode('normal')
         self.servo.switch_usbkey('dut')
+        self.has_battery = host.has_battery()
 
     def cleanup(self):
         """Cleanup the test"""
@@ -58,7 +59,9 @@ class firmware_InvalidUSB(FirmwareTest):
                           }))
 
         # Switch servo v4 (if present) as a SNK. Make sure USB key is bootable.
-        self.set_servo_v4_role_to_snk()
+        # Only do this when the battery is presented on the DUT.
+        if self.has_battery:
+          self.set_servo_v4_role_to_snk()
 
         self.switcher.reboot_to_mode(to_mode='rec', wait_for_dut_up=False)
         logging.info('Wait to ensure the USB image is unable to boot...')

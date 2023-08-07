@@ -188,6 +188,9 @@ class platform_ServoPowerStateController(test.test):
             # Skip on Grunt to avoid breaking CCD (b/170167166).
             # TODO: Remove this once Grunt FW is fixed.
             logging.info('Grunt: Do not put servo_v4 into snk role')
+        elif not self.host.has_battery():
+            # Do not put servo_v4 into snk role for Chromebox devices.
+            logging.info('Do not put servo_v4 into snk role')
         else:
             logging.info('Put servo_v4 into snk role')
             self.host.servo.set_servo_v4_role('snk')

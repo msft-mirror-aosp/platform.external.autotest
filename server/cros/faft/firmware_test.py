@@ -774,7 +774,8 @@ class FirmwareTest(test.test):
             #
             # TODO(waihong): Add a check to see if the battery level is too
             # low and sleep for a while for charging.
-            self.set_servo_v4_role_to_snk()
+            if self._client.has_battery():
+              self.set_servo_v4_role_to_snk()
 
             # Force reconnection; otherwise, the next RPC call will timeout
             logging.info('Waiting for reconnection after power role swap...')

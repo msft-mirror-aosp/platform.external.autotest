@@ -202,7 +202,7 @@ class OutputRecorder(object):
                 contents.append(line.strip())
 
                 # start_pattern == end_pattern
-                if end_pattern.search(line):
+                if end_pattern and end_pattern.search(line):
                     break
 
         return contents

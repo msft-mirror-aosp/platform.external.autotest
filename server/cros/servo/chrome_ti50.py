@@ -199,3 +199,17 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         """Set the chip board id type and flags."""
         # Ti50 doesn't use '0x' at the start of the bid args.
         self.send_command('bid %x %x' % (chip_bid, chip_flags))
+
+    def gettime_since_deep_sleep(self):
+        """Get the time since deep sleep"""
+        rv = self.send_gettime_cmd_get_output(self.TIME_SINCE_DS_RE)
+        logging.info('Time since deep sleep reset: %r', rv)
+        return rv
+
+    def gettime(self):
+        """Get the time since any sort of reset"""
+        ds_time = self.gettime_since_deep_sleep()
+        cr_time = self.gettime_since_cold_reset()
+        min_time = min(ds_time, cr_time)
+        logging.info('Min reset time: %s', min_time)
+        return min_time

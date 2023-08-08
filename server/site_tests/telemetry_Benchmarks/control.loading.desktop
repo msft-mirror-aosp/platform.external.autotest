@@ -15,7 +15,7 @@ METADATA = {
                  'server.'),
     'hw_agnostic': False
 }
-ATTRIBUTES = 'suite:crosbolt_perf_perbuild'
+ATTRIBUTES = 'suite:crosbolt_perf_perbuild, suite:crosbolt_fsi_check'
 TEST_TYPE = 'server'
 
 def run_benchmark(machine):

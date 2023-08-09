@@ -80,3 +80,4 @@ class fwupd_FirmwareUpdate(test.test):
         fwupd.ensure_remotes()
         fwupd.ensure_certificate(cert_id)
         self.update_firmware(device_id)
+        fwupd.send_signed_report()

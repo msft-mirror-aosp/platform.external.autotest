@@ -105,3 +105,4 @@ class fwupd_FirmwareInstallVersion(test.test):
         fwupd.ensure_remotes()
         fwupd.ensure_certificate(cert_id)
         self.install_firmware(device_id, version)
+        fwupd.send_signed_report()

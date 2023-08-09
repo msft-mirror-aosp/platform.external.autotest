@@ -89,3 +89,4 @@ class fwupd_FirmwareInstallFile(test.test):
             raise error.TestError("Error checking fwupd status")
         fwupd.ensure_certificate(cert_id)
         self.install_firmware(device_id, fwfile)
+        fwupd.send_signed_report()

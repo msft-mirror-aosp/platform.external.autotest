@@ -164,7 +164,6 @@ def ensure_remotes():
         raise error.TestError("No remotes found")
 
     remotes = json_data['Remotes']
-    refresh_needed = False
     for remote in remotes:
         kind = remote.get('Kind')
         if kind != 'download':
@@ -186,7 +185,6 @@ def ensure_remotes():
 
         shutil.copyfile(orig, dest)
         logging.info('Enable remote %s in %s', rid, dest)
-        refresh_needed = True
         try:
             # Can't use `fwupdmgr enable-remote` since
             #`fwupd` is running in jail.
@@ -195,13 +193,12 @@ def ensure_remotes():
         except error.CmdError as e:
             raise error.TestError(f"Unable to enable remote %s" % rid)
 
-    # Refresh metadata if any remote has been enabled
-    if refresh_needed:
-        try:
-            cmd = "fwupdmgr refresh --force"
-            output = utils.system_output(cmd)
-        except error.CmdError as e:
-            raise error.TestError(f"Problem while refreshing metadata: %s" % e)
+    # Refresh metadata if any remote has been enabled or have outdated metadata
+    try:
+        cmd = "fwupdmgr refresh"
+        output = utils.system_output(cmd)
+    except error.CmdError as e:
+        pass
 
     return None
 
@@ -327,3 +324,22 @@ def ensure_certificate(req_serial=''):
                 f"drive have incorrect serial ID {serial}")
 
     return True
+
+
+def send_signed_report():
+    """Send signed report.
+
+    Try to sign the report from the successful update and send it to LVFS.
+    See https://lvfs.readthedocs.io/en/latest/testing.html?highlight=report#signed-reports
+    """
+
+    # Ignore the result -- should not affect to test
+    try:
+        cmd = "fwupdmgr report-history --assume-yes --sign --json"
+        output = utils.system_output(cmd)
+        logging.info('Report sent successfully')
+    except Exception as e:
+        logging.error("Unable to sign the report")
+        logging.error(e)
+
+    return None

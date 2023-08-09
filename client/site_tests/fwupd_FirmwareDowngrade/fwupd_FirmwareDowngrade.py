@@ -100,3 +100,4 @@ class fwupd_FirmwareDowngrade(test.test):
         fwupd.ensure_remotes()
         fwupd.ensure_certificate(cert_id)
         self.downgrade_firmware(device_id)
+        fwupd.send_signed_report()

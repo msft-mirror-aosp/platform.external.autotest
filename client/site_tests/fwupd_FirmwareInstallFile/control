@@ -28,7 +28,10 @@ normally. Exceptional cases are treated as test errors.
 # the fwupd instance id of the device or any of its GUIDs, 'file' is
 # the URL of the firmware binary or its path in an external drive
 # labeled as FWUPDTESTS
+# Argument 'cert_id' is the Certificate ID used for signing reports,
+# could be omitted.
 args_dict = utils.args_to_dict(args)
+cert_id = args_dict.get('cert_id', '')
 try:
     device_id = args_dict.get('device_id', device_id)
 except NameError:
@@ -37,4 +40,4 @@ try:
     fwfile = args_dict.get('fwfile', fwfile)
 except NameError:
     fwfile = args_dict.get('fwfile', '')
-job.run_test('fwupd_FirmwareInstallFile', device_id=device_id, fwfile=fwfile)
+job.run_test('fwupd_FirmwareInstallFile', device_id=device_id, fwfile=fwfile, cert_id=cert_id)

@@ -82,11 +82,12 @@ class fwupd_FirmwareDowngrade(test.test):
                                  "the FW release version hasn't changed "
                                  f"({dev_post['Version']})")
 
-    def run_once(self, device_id):
+    def run_once(self, device_id, cert_id):
         """Downgrade a device FW and check the result.
 
         Args:
           device_id: the instance id of the device or any of its GUIDs (string)
+          cert_id: the serial ID of the certificate for reports signing
 
         Fails if fwupd is not working properly.
         """
@@ -97,4 +98,5 @@ class fwupd_FirmwareDowngrade(test.test):
         if not self.fwupd_version:
             raise error.TestError("Error checking fwupd status")
         fwupd.ensure_remotes()
+        fwupd.ensure_certificate(cert_id)
         self.downgrade_firmware(device_id)

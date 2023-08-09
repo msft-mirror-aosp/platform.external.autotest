@@ -8,9 +8,17 @@ import re
 import common
 import os
 import shutil
+import stat
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from cryptography import x509
+
+EXTERNAL_DRIVE_LABEL = "FWUPDTESTS"
+TEMP_FW_DIR = "/tmp/fwupd_fw"
+PKI_DIR = "/var/lib/fwupd/pki"
+CERT_NAME = "client.pem"
+PRIVATE_KEY_NAME = "secret.key"
 
 
 def get_devices():
@@ -196,3 +204,126 @@ def ensure_remotes():
             raise error.TestError(f"Problem while refreshing metadata: %s" % e)
 
     return None
+
+
+def copy_file_from_external_storage(filename, dst):
+    """Copies a specified file from an external drive to /tmp.
+
+    The external drive connected to the DUT must have
+    label=<EXTERNAL_DRIVE_LABEL> and must contain a file with
+    name=<filename>. This function copies the file to the <dst> folder
+    in the DUT.
+
+    Args:
+      filename: name of the file contained in the external drive
+      dst: target directory
+
+    Returns:
+      If successful, the full path of the copied file to be used by
+      fwupdmgr
+
+    Raises:
+      error.TestError if anything failed
+
+    """
+    def _cleanup():
+        utils.system(f'umount {TEMP_FW_DIR}', ignore_status=True)
+        shutil.rmtree(TEMP_FW_DIR)
+
+    if not os.path.isdir(dst):
+        raise error.TestError(f"The directory {dst} doesn't exist.")
+
+    cmd = f'lsblk -rnpo NAME,LABEL | grep {EXTERNAL_DRIVE_LABEL}'
+    out = utils.system_output(cmd, ignore_status=True)
+    # Output is expected to be something like this:
+    # <device_file>            <drive_label>
+    # Capture the device_file in m.group(1)
+    m = re.search(f'([\w/]+)\s+{EXTERNAL_DRIVE_LABEL}', out)
+    if m:
+        # Create a temp mountpoint for the drive, mount it, copy the
+        # fw file to /tmp, unmount and clean up
+        try:
+            os.mkdir(TEMP_FW_DIR)
+        except FileNotFoundError:
+            raise error.TestError(f"Can't create directory {TEMP_FW_DIR}: "
+                                  "Parent directory doesn't exist.")
+        except FileExistsError:
+            _cleanup()
+            os.mkdir(TEMP_FW_DIR)
+        utils.system(f'mount {m.group(1)} {TEMP_FW_DIR}')
+        try:
+            dest = shutil.copyfile(os.path.join(TEMP_FW_DIR, filename),
+                                   os.path.join(dst, filename))
+        except FileNotFoundError:
+            raise error.TestError(
+                    f"File {filename} not found in external drive")
+        finally:
+            _cleanup()
+        return dest
+    else:
+        raise error.TestError("No external drive with label = "
+                              f"{EXTERNAL_DRIVE_LABEL} found.")
+
+
+def ensure_certificate(req_serial=''):
+    """Ensures the installed certificate matches serial.
+
+    If serial not passed, skip the check, otherwise check the local certificate.
+    Try to copy 'secret.key' and 'client.pem' files from an external drive in case
+    if requested certificate's serial is not installed.
+
+    The external drive connected to the DUT must have
+    label=<EXTERNAL_DRIVE_LABEL> and must contain files 'secret.key' and 'client.pem'.
+    This function copies the file to the <dst> folder in the DUT.
+
+    Args:
+      req_serial: requested serial ID in hex format as shown on LVFS.
+
+    Returns:
+      True, if serial not required or proper serial found and installed
+
+    Raises:
+      error.TestError if anything failed
+
+    """
+    def _read_serial():
+        with open(os.path.join(PKI_DIR, CERT_NAME), "rb") as f:
+            cert = x509.load_pem_x509_certificate(f.read())
+            read_serial = '{0:x}'.format(int(cert.serial_number))
+            return read_serial
+
+    serial = _read_serial()
+    logging.info('fwupd certificate serial ID: %s', serial)
+
+    # Using the existing certificate for reports signing
+    if not req_serial:
+        return True
+
+    # If already installed the expected cert/key
+    if req_serial.lower() == serial.lower():
+        return True
+
+    # Try to copy from external drive
+    try:
+        private_key = copy_file_from_external_storage(PRIVATE_KEY_NAME,
+                                                      PKI_DIR)
+        cert = copy_file_from_external_storage(CERT_NAME, PKI_DIR)
+    except:
+        raise error.TestError(f"Put 'secret.key' and 'client.pem' with serial "
+                              f"{req_serial} to external drive")
+
+    # Set proper ownership and permissions
+    shutil.chown(private_key, "fwupd", "fwupd")
+    os.chmod(private_key, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP)
+    shutil.chown(cert, "fwupd", "fwupd")
+    os.chmod(cert, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+
+    serial = _read_serial()
+    logging.info('New fwupd certificate installed with serial ID: %s', serial)
+
+    if req_serial.lower() != serial.lower():
+        raise error.TestError(
+                f"Files 'secret.key' and 'client.pem' from external "
+                f"drive have incorrect serial ID {serial}")
+
+    return True

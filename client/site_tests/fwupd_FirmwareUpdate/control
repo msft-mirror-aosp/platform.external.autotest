@@ -24,9 +24,12 @@ normally. Exceptional cases are treated as test errors.
 
 # Argument 'device_id' is mandatory. It can be the fwupd instance id of
 # the device or any of its GUIDs
+# Argument 'cert_id' is the Certificate ID used for signing reports,
+# could be omitted.
 args_dict = utils.args_to_dict(args)
+cert_id = args_dict.get('cert_id', '')
 try:
     device_id = args_dict.get('device_id', device_id)
 except NameError:
     device_id = args_dict.get('device_id', '')
-job.run_test('fwupd_FirmwareUpdate', device_id=device_id)
+job.run_test('fwupd_FirmwareUpdate', device_id=device_id, cert_id=cert_id)

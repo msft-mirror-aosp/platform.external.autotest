@@ -26,7 +26,10 @@ work normally. Exceptional cases are treated as test errors.
 # Arguments 'device_id' and 'version' are mandatory. 'device_id' can be
 # the fwupd instance id of the device or any of its GUIDs, 'version' is
 # the FW version string as defined by the FW release
+# Argument 'cert_id' is the Certificate ID used for signing reports,
+# could be omitted.
 args_dict = utils.args_to_dict(args)
+cert_id = args_dict.get('cert_id', '')
 try:
     device_id = args_dict.get('device_id', device_id)
 except NameError:
@@ -35,4 +38,4 @@ try:
     version = args_dict.get('version', version)
 except NameError:
     version = args_dict.get('version', '')
-job.run_test('fwupd_FirmwareInstallVersion', device_id=device_id, version=version)
+job.run_test('fwupd_FirmwareInstallVersion', device_id=device_id, version=version, cert_id=cert_id)

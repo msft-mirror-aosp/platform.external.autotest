@@ -82,13 +82,14 @@ class fwupd_FirmwareInstallVersion(test.test):
                     f"on {device_id} ({dev_name}): "
                     f"Current FW version: {dev_post['Version']}")
 
-    def run_once(self, device_id, version):
+    def run_once(self, device_id, version, cert_id):
         """Install a FW version in a device FW and check the result.
 
         Args:
           device_id: the instance id of the device or any of its GUIDs (string)
           version: version string of the FW release to install, as
               specified in the release
+          cert_id: the serial ID of the certificate for reports signing
 
         Fails if fwupd is not working properly.
         """
@@ -102,4 +103,5 @@ class fwupd_FirmwareInstallVersion(test.test):
         if not self.fwupd_version:
             raise error.TestError("Error checking fwupd status")
         fwupd.ensure_remotes()
+        fwupd.ensure_certificate(cert_id)
         self.install_firmware(device_id, version)

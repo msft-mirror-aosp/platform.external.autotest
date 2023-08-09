@@ -52,6 +52,7 @@ class fwupd_FirmwareUpdate(test.test):
             raise error.TestFail("Error updating firmware for device "
                                  f"{device_id} ({dev_name}): {output}")
         logging.info("Firmware flashing: done")
+
         # Verify that the device FW version has changed
         devices = fwupd.get_devices()
         dev_post = fwupd.check_device(device_id, devices)
@@ -61,7 +62,7 @@ class fwupd_FirmwareUpdate(test.test):
                                  "the FW release version hasn't changed "
                                  f"({dev_post['Version']})")
 
-    def run_once(self, device_id):
+    def run_once(self, device_id, cert_id):
         """Update a device FW and check the result.
 
         Runs the test on the device specified by device_id. The
@@ -77,4 +78,5 @@ class fwupd_FirmwareUpdate(test.test):
         if not fwupd.get_fwupdmgr_version():
             raise error.TestError("Error checking fwupd status")
         fwupd.ensure_remotes()
+        fwupd.ensure_certificate(cert_id)
         self.update_firmware(device_id)

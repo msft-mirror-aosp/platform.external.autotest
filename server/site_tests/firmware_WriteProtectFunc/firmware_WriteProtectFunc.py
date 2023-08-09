@@ -270,5 +270,5 @@ class firmware_WriteProtectFunc(FirmwareTest):
             # The DUT's WP_RO section should be the same as the test firmware.
             cmp_output = self.run_cmd('cmp %s %s' % (ro_test, ro_after))
             if ''.join(cmp_output) != '':
-                raise error.TestFail('%s RO is not flashed correctly'
+                raise error.TestFail('%s RO is not flashed correctly '
                                      'when WP is off!' % target.upper())

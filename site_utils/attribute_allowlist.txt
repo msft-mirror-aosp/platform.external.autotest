@@ -863,7 +863,6 @@ suite:policy
 suite:power_build
 suite:power_check
 suite:power_cpd
-suite:power_daily_load_test_v10
 suite:power_daily_load_test_v11
 suite:power_daily_load_test_v11_lacros
 suite:power_daily_misc
@@ -882,6 +881,7 @@ suite:power_qual_full
 suite:power_qual_webrtc_fast
 suite:power_qual_webrtc_full
 suite:power_requirements
+suite:power_weekly_load_test_v10
 suite:printscan
 suite:push_to_prod
 suite:pvs-audio

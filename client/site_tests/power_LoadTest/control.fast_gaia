@@ -20,12 +20,11 @@
 NAME = "power_LoadTest.fast_gaia"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:power_build")
+ATTRIBUTES = ("suite:power_weekly_load_test_v10")
 TEST_TYPE = "client"
 
 # TODO (bleung): Find a way to do automatic Facebook login for test account.

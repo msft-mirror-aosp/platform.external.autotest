@@ -116,7 +116,7 @@ def serialize_life_cycle_stage(data):
     """Return a serialized LifeCycle obj"""
     lc_pb = tc_metadata_pb.LifeCycleStage.LifeCycle
     conversions = {
-            'production': lc_pb.LIFE_CYCLE_DISABLED,
+            'production': lc_pb.LIFE_CYCLE_PRODUCTION_READY,
             'disabled': lc_pb.LIFE_CYCLE_DISABLED,
             'in_development': lc_pb.LIFE_CYCLE_IN_DEVELOPMENT,
             'manual_only': lc_pb.LIFE_CYCLE_MANUAL_ONLY,

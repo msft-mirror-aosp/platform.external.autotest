@@ -55,6 +55,7 @@ class firmware_FwScreenCloseLid(FirmwareTest):
             # Corrupt the kernel of USB stick. It is needed for triggering a
             # yuck screen later.
             self.corrupt_usb_kernel(usb_dev)
+        self.servo.disable_ccd_watchdog_for_test()
 
     def cleanup(self):
         """Cleanup the test"""

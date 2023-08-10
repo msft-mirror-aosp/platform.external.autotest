@@ -1805,7 +1805,8 @@ def run(source_contents, cache_dir, bundle_password=''):
                 download(uri, bundle)
             logging.info('Extracting %s.', bundle)
             unzip(bundle, tmp, bundle_password)
-            modules, build, revision = get_tradefed_data(tmp)
+            modules, build, revision = get_tradefed_data(
+                    tmp, extra_executables=CONFIG.get('EXECUTABLE_PATH_LIST'))
             if not revision:
                 raise Exception('Could not determine revision.')
 

@@ -26,6 +26,7 @@ class firmware_RollbackFirmware(FirmwareTest):
         self.backup_firmware()
         self.switcher.setup_mode('dev' if dev_mode else 'normal')
         self.setup_usbkey(usbkey=True, host=False)
+        self.servo.disable_ccd_watchdog_for_test()
 
     def cleanup(self):
         """Cleanup the test"""

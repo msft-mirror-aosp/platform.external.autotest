@@ -12,12 +12,11 @@
 NAME = "power_Resume"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:crosbolt_perf_perbuild")
+ATTRIBUTES = ("suite:crosbolt_perf_perbuild, suite:crosbolt_fsi_check")
 TEST_TYPE = "client"
 
 job.add_sysinfo_command('cbmem -c', logfile='bios_log', on_every_test=True)

@@ -72,6 +72,11 @@ class firmware_Fingerprint(FingerprintTest):
                     'Flash protect flags: 0x00000407 ro_at_boot ro_now rollback_now all_now\n'
                     'Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR\n'
                     'Writable flags:      0x00000000\n')
+        elif self.get_fp_board() == 'helipilot':
+            _HW_WP_OFF_AND_SW_WP_ON = (
+                    'Flash protect flags: 0x00000007 ro_at_boot ro_now all_now\n'
+                    'Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR\n'
+                    'Writable flags:      0x00000000\n')
         else:
             _HW_WP_OFF_AND_SW_WP_ON = (
                     'Flash protect flags: 0x00000003 ro_at_boot ro_now\n'
@@ -96,8 +101,9 @@ class firmware_Fingerprint(FingerprintTest):
         if not self.is_rollback_set_to_initial_val():
             raise error.TestFail('Rollback is not set to initial value')
 
-        self.test_rdp1_without_modifying_rdp_level()
-        self.test_rdp1_while_setting_rdp_level_0()
+        if self.get_fp_board() != 'helipilot':
+            self.test_rdp1_without_modifying_rdp_level()
+            self.test_rdp1_while_setting_rdp_level_0()
 
     def test_rdp0(self):
         """

@@ -74,26 +74,31 @@ test_read_from_flash_in_bootloader_mode_while_setting_RDP_to_level_0() {
   rm -rf "${file_read_from_flash}"
 }
 
-echo "Running test to validate RDP level 1"
+# Skip Test for helipilot, RDP functionality not present
+if [[ "${_BOARD}" == "helipilot" ]]; then
+  echo "Skipping test to validate RDP level 1"
+else
+  echo "Running test to validate RDP level 1"
 
-readonly ORIGINAL_FW_FILE="$1"
+  readonly ORIGINAL_FW_FILE="$1"
 
-check_file_exists "${ORIGINAL_FW_FILE}"
+  check_file_exists "${ORIGINAL_FW_FILE}"
 
-echo "Making sure hardware write protect is DISABLED and software write \
-protect is ENABLED"
-check_hw_write_protect_disabled_and_sw_write_protect_enabled
+  echo "Making sure hardware write protect is DISABLED and software write \
+  protect is ENABLED"
+  check_hw_write_protect_disabled_and_sw_write_protect_enabled
 
-echo "Validating initial state"
-check_has_mp_rw_firmware
-check_has_mp_ro_firmware
-check_running_rw_firmware
-check_is_rollback_set_to_initial_val
+  echo "Validating initial state"
+  check_has_mp_rw_firmware
+  check_has_mp_ro_firmware
+  check_running_rw_firmware
+  check_is_rollback_set_to_initial_val
 
-echo "Checking that firmware is functional"
-check_firmware_is_functional
+  echo "Checking that firmware is functional"
+  check_firmware_is_functional
 
-test_read_from_flash_in_bootloader_mode_without_modifying_RDP_level
+  test_read_from_flash_in_bootloader_mode_without_modifying_RDP_level
 
-test_read_from_flash_in_bootloader_mode_while_setting_RDP_to_level_0 \
-  "${ORIGINAL_FW_FILE}"
+  test_read_from_flash_in_bootloader_mode_while_setting_RDP_to_level_0 \
+    "${ORIGINAL_FW_FILE}"
+fi

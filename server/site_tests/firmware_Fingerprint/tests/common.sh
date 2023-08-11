@@ -10,29 +10,51 @@ set -e
 # with error and not print a board.
 readonly _BOARD="$(cros_config /fingerprint board || true)"
 
-# TODO(b/149590275): remove once fixed
-if [[ "${_BOARD}" == "bloonchipper" ]]; then
+case "${_BOARD}" in
+  bloonchipper)
   readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x0000040f wp_gpio_asserted ro_at_boot ro_now rollback_now all_now
 Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000000
 SETVAR
   )"
-else
+  ;;
+  helipilot)
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
+Flash protect flags: 0x0000000f wp_gpio_asserted ro_at_boot ro_now all_now
+Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
+Writable flags:      0x00000000
+SETVAR
+  )"
+  ;;
+  dartmonkey|nocturne_fp|nami_fp|*)
   readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x0000000b wp_gpio_asserted ro_at_boot ro_now
 Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000004 all_now
 SETVAR
   )"
-fi
+  ;;
+esac
 
-readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="$(cat <<SETVAR
+case "${_BOARD}" in
+  helipilot)
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="$(cat <<SETVAR
+Flash protect flags: 0x0000000b wp_gpio_asserted ro_at_boot ro_now
+Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
+Writable flags:      0x00000004 all_now
+SETVAR
+)"
+  ;;
+  bloonchipper|dartmonkey|nocturne_fp|nami_fp|*)
+  readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_ENABLED_RO="$(cat <<SETVAR
 Flash protect flags: 0x0000000b wp_gpio_asserted ro_at_boot ro_now
 Valid flags:         0x0000003f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT
 Writable flags:      0x00000004 all_now
 SETVAR
 )"
+  ;;
+esac
 
 readonly _FLASHPROTECT_OUTPUT_HW_AND_SW_WRITE_PROTECT_DISABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000000
@@ -41,22 +63,32 @@ Writable flags:      0x00000001 ro_at_boot
 SETVAR
 )"
 
-# TODO(b/149590275): remove once fixed
-if [[ "${_BOARD}" == "bloonchipper" ]]; then
+case "${_BOARD}" in
+  bloonchipper)
   readonly _FLASHPROTECT_OUTPUT_HW_WRITE_PROTECT_DISABLED_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000407 ro_at_boot ro_now rollback_now all_now
 Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000000
 SETVAR
 )"
-else
+  ;;
+  helipilot)
+  readonly _FLASHPROTECT_OUTPUT_HW_WRITE_PROTECT_DISABLED_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
+Flash protect flags: 0x00000007 ro_at_boot ro_now all_now
+Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
+Writable flags:      0x00000000
+SETVAR
+)"
+  ;;
+  dartmonkey|nocturne_fp|nami_fp|*)
   readonly _FLASHPROTECT_OUTPUT_HW_WRITE_PROTECT_DISABLED_AND_SW_WRITE_PROTECT_ENABLED="$(cat <<SETVAR
 Flash protect flags: 0x00000003 ro_at_boot ro_now
 Valid flags:         0x0000083f wp_gpio_asserted ro_at_boot ro_now all_now STUCK INCONSISTENT UNKNOWN_ERROR
 Writable flags:      0x00000000
 SETVAR
   )"
-fi
+  ;;
+esac
 
 # SYSTEM_IS_LOCKED
 # SYSTEM_JUMP_ENABLED
@@ -64,11 +96,14 @@ fi
 # See https://chromium.googlesource.com/chromiumos/platform/ec/+/10fe09bf9aaf59213d141fc1d479ed259f786049/include/ec_commands.h#1865
 readonly _SYSINFO_SYSTEM_IS_LOCKED_FLAGS="0x0000000d"
 
-if [[ "${_BOARD}" == "bloonchipper" ]]; then
-  readonly _ROLLBACK_FLASH_OFFSET="0x20000"
-else
-  readonly _ROLLBACK_FLASH_OFFSET="0xe0000"
-fi
+case "${_BOARD}" in
+  bloonchipper|helipilot)
+    readonly _ROLLBACK_FLASH_OFFSET="0x20000"
+    ;;
+  dartmonkey|nocturne_fp|nami_fp|*)
+    readonly _ROLLBACK_FLASH_OFFSET="0xe0000"
+    ;;
+esac
 
 readonly _FP_FRAME_RAW_ACCESS_DENIED_ERROR="$(cat <<SETVAR
 EC result 4 (ACCESS_DENIED)

@@ -64,6 +64,7 @@ class FingerprintTest(test.test):
     # EC board names for FPMCUs
     _FP_BOARD_NAME_BLOONCHIPPER = 'bloonchipper'
     _FP_BOARD_NAME_DARTMONKEY = 'dartmonkey'
+    _FP_BOARD_NAME_HELIPILOT = 'helipilot'
     _FP_BOARD_NAME_NOCTURNE = 'nocturne_fp'
     _FP_BOARD_NAME_NAMI = 'nami_fp'
 
@@ -84,7 +85,10 @@ class FingerprintTest(test.test):
 
         # nami
         '754aea623d69975a22998f7b97315dd53115d723': _KEY_TYPE_PRE_MP,
-        '35486c0090ca390408f1fbbf2a182966084fe2f8': _KEY_TYPE_MP
+        '35486c0090ca390408f1fbbf2a182966084fe2f8': _KEY_TYPE_MP,
+
+        # helipilot
+        'ff60ba1fe2cf13f60d0debfb350f7c321115e59a': _KEY_TYPE_PRE_MP,
 
     }
 
@@ -101,6 +105,7 @@ class FingerprintTest(test.test):
                     'rex': 'bloonchipper_v2.0.5938-197506c1',
             },
             _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
+            _FP_BOARD_NAME_HELIPILOT: 'helipilot_v2.0.22861-6d50c1e39d',
             _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
             _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
     }
@@ -178,6 +183,19 @@ class FingerprintTest(test.test):
                             'dartmonkey_v2.0.22080-23c953957',
                             _FIRMWARE_VERSION_KEY_ID:
                             '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
+                    },
+            },
+            _FP_BOARD_NAME_HELIPILOT: {
+                    'helipilot_v2.0.22861-6d50c1e39d.bin':
+                    {
+                            _FIRMWARE_VERSION_SHA256SUM:
+                            '0506e8378917fd3b32ac65c3e1337f19aba98f0295b3398def212cb2000fd28f',
+                            _FIRMWARE_VERSION_RO_VERSION:
+                            'helipilot_v2.0.22861-6d50c1e39d',
+                            _FIRMWARE_VERSION_RW_VERSION:
+                            'helipilot_v2.0.22861-6d50c1e39d',
+                            _FIRMWARE_VERSION_KEY_ID:
+                            'ff60ba1fe2cf13f60d0debfb350f7c321115e59a',
                     },
             },
     }

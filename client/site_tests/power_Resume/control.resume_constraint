@@ -17,7 +17,6 @@ METADATA = {
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:hwqual")
 TEST_TYPE = "client"
 
 job.add_sysinfo_command('cbmem -c', logfile='bios_log', on_every_test=True)

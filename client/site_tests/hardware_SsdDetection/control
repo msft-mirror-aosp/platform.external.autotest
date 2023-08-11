@@ -12,7 +12,6 @@ METADATA = {
 AUTHOR = 'The ChromiumOS Authors'
 PURPOSE = 'Determine if main disk is a solid state device.'
 CRITERIA = 'Fails if the main disk is not a solid state device.'
-ATTRIBUTES = "suite:hwqual"
 TIME='SHORT'
 TEST_CATEGORY = 'Functional'
 TEST_CLASS = "hardware"

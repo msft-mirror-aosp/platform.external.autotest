@@ -18,7 +18,6 @@ METADATA = {
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:hwqual")
 TEST_TYPE = "client"
 
 job.run_test('power_UiResume', constraints=['seconds_system_resume <= 1.0'])

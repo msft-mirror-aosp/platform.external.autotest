@@ -3,7 +3,6 @@ AUTHOR = 'adrianbg@google.com'
 TIME = 'MEDIUM'
 PURPOSE = 'Measure system level performance.'
 CRITERIA = 'This test is a benchmark.'
-ATTRIBUTES = "suite:hwqual"
 TEST_CLASS = 'Kernel'
 TEST_CATEGORY = 'Benchmark'
 TEST_TYPE = 'client'

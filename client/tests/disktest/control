@@ -12,7 +12,6 @@ controller for corruption issues.
 
 It writes 50MB/s of 500KB size ops.
 '''
-ATTRIBUTES = "suite:hwqual"
 TIME = 'MEDIUM'
 TEST_CATEGORY = 'Kernel'
 TEST_TYPE = 'client'

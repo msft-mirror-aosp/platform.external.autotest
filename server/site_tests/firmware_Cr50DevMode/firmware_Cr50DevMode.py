@@ -11,12 +11,14 @@ class firmware_Cr50DevMode(Cr50Test):
     version = 1
 
 
-    def check_dev_mode(self, dev_mode):
-        """Verify the cr50 tpm info matches the devmode state."""
-        if self.gsc.in_dev_mode() != dev_mode:
-            raise error.TestFail('Cr50 should%s think dev mode is active' %
-                    ('' if dev_mode else "n't"))
+    def switch_to_mode(self, mode):
+        """Switch to the given mode (dev or normal)."""
+        to_dev = mode == 'dev'
+        self.switcher.reboot_to_mode(to_mode=mode)
 
+        if to_dev != self.gsc.in_dev_mode():
+            raise error.TestFail('Cr50 should%s think dev mode is active' %
+                                 ('' if to_dev else "n't"))
 
     def run_once(self):
         """Check cr50 can see dev mode correctly."""
@@ -35,9 +37,6 @@ class firmware_Cr50DevMode(Cr50Test):
                 self.servo.set_nocheck('cold_reset_select', 'gsc_ec_reset')
                 self.gsc.set_ccd_level('lock')
 
-        self.enter_mode_after_checking_cr50_state('normal')
-        self.check_dev_mode(False)
-        self.enter_mode_after_checking_cr50_state('dev')
-        self.check_dev_mode(True)
-        self.enter_mode_after_checking_cr50_state('normal')
-        self.check_dev_mode(False)
+        self.switch_to_mode('normal')
+        self.switch_to_mode('dev')
+        self.switch_to_mode('normal')

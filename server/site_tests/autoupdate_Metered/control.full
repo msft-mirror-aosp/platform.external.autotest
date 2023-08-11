@@ -15,7 +15,7 @@ METADATA = {
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "wificell"
-ATTRIBUTES = "suite:au-perbuild"
+ATTRIBUTES = "suite:au-wifi"
 JOB_RETRIES = 2
 DOC = """
 This tests a N-to-N update over metered connection. It will try to update to

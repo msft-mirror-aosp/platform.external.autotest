@@ -303,6 +303,7 @@ suite:au-perbuild-chrome
 suite:au-perbuild-interrupt
 suite:au-perbuild-omaha-response
 suite:au-perbuild-tast
+suite:au-wifi
 suite:au_fsi
 suite:audio
 suite:audio_advanced

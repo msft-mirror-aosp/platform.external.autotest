@@ -22,7 +22,7 @@ class bluetooth_WiFiCoexHealth(BluetoothAdapterQuickTests):
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    @test_wrapper('Independent reset test')
+    @test_wrapper('Independent reset test', supports_floss=True)
     def independent_reset_test(self):
         """Verify the adapter can be reset without affecting WiFi component"""
 

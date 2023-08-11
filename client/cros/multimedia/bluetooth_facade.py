@@ -4474,7 +4474,6 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.adapter_client.register_callback_observer(
                     'DiscoveryObserver', self)
             self.discovering = None
-            self.enable_floss_debug = False
 
         def __del__(self):
             if self.adapter_client:
@@ -4549,6 +4548,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.floss_logger = FlossLogger(self.bus, self.DEFAULT_ADAPTER)
         self.gatt_client = FlossGattClient(self.bus, self.DEFAULT_ADAPTER)
         self.is_clean = False
+        self.enable_floss_debug = False
 
         # Discovery needs to last longer than the default 12s. Keep an observer
         # that re-enables discovery up to some timeout.

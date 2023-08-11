@@ -1,0 +1,43 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This test verifies the adapter can be reset without affecting WiFi component.
+#
+# Steps:
+# 1. Connect the DUT to the AP
+# 2. Verify the connection with ping
+# 3. Spawn an asynchronous ping to the background
+# 4. Reset the BT adapter
+# 5. Verify the background ping doesn't fail
+#
+# Purpose: Verify the adapter can be reset without affecting WiFi component
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_WiFiCoexHealth.independent_reset_test.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': (
+        'The Bluetooth adapter can be reset without affecting WiFi component'),
+    'hw_agnostic': False,
+    'requirements': ['bt-phy-0011-v01']
+}
+
+
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'wificell, bluetooth'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_WiFiCoexHealth', host=host, num_iterations=1,
+                 args_dict=args_dict, test_name=NAME.split('.')[1],
+                 tag='.'.join(NAME.split('.')[1:]), floss=True)
+
+parallel_simple(run, machines)

@@ -1,0 +1,6 @@
+dEQP-VK.api.info.format_properties#r10x6_unorm_pack16: [guybrush, skyrim, zork]
+dEQP-VK.api.info.format_properties#r10x6g10x6_unorm_2pack16: [guybrush, skyrim, zork]
+dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.512_512_1#joint: [guybrush, skyrim, zork]
+dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.1024_128_1#joint: [guybrush, skyrim, zork]
+dEQP-VK.ycbcr.storage_image_write.r10x6g10x6_unorm_2pack16.512_512_1#joint: [guybrush, skyrim, zork]
+dEQP-VK.ycbcr.storage_image_write.r10x6g10x6_unorm_2pack16.1024_128_1#joint: [guybrush, skyrim, zork]

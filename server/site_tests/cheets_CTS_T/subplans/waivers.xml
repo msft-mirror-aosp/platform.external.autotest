@@ -25,4 +25,5 @@
   <Entry include="CtsUiRenderingTestCases[instant] android.uirendering.cts.testclasses.ForceDarkTests#testFgRect" />
   <Entry include="CtsUiRenderingTestCases[instant] android.uirendering.cts.testclasses.ForceDarkTests#testSiblings" />
   <Entry include="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testAppLaunchCount" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.MultiDisplayPolicyTests#testStackFocusSwitchOnDisplayRemoved3" />
 </SubPlan>

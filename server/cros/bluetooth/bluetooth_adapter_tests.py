@@ -4459,14 +4459,12 @@ class BluetoothAdapterTests(test.test):
         rec_key_events = [ev for ev in rec_events if ev.type == EV_KEY]
 
         # Fail if we didn't record the correct number of events
-        if len(rec_key_events) != len(input_scan_codes):
-            logging.info('Expected {} events, received {}'.format(
-                    len(input_scan_codes), len(rec_key_events)))
+        if len(rec_key_events) != len(predicted_events):
+            logging.error('Expected %d events, received %d',
+                          len(predicted_events), len(rec_key_events))
             length_correct = False
 
-        for idx, predicted in enumerate(predicted_events):
-            recorded = rec_key_events[idx]
-
+        for predicted, recorded in zip(predicted_events, rec_key_events):
             if not predicted == recorded:
                 content_correct = False
                 break
@@ -4477,7 +4475,7 @@ class BluetoothAdapterTests(test.test):
             'content_correct': content_correct,
         }
 
-        return all(self.results)
+        return all(self.results.values())
 
 
     def is_newer_kernel_version(self, version, minimum_version):

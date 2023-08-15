@@ -570,7 +570,9 @@ IPV6_MODULES = [
 CONFIG['WIFI_MODULES'] = [
         'CtsNetApi23TestCases',
         'CtsNetTestCases',
+        'CtsNetTestCasesMaxTargetSdk31',
         'CtsJobSchedulerTestCases',
+        'CtsStatsdAtomHostTestCases',
         'CtsStatsdHostTestCases',
         'CtsWifiTestCases',
 ]

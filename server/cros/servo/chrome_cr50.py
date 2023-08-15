@@ -432,6 +432,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         time.sleep(self.SHORT_WAIT)
         return self.get_wp_state()
 
+    def fwmp_forcing_wp(self):
+        """Returns True if the FWMP is forcing WP."""
+        return self.get_wp_state()[4]
+
     def in_dev_mode(self):
         """Return True if cr50 thinks the device is in dev mode"""
         return 'dev_mode' in self.get_ccd_info('TPM')

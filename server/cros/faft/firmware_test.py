@@ -2215,6 +2215,8 @@ class FirmwareTest(test.test):
 
     def fwmp_is_cleared(self):
         """Return True if the FWMP has been created"""
+        if self.gsc and self.gsc.fwmp_forcing_wp():
+            return False
         res = self.host.run('cryptohome '
                             '--action=get_firmware_management_parameters',
                             ignore_status=True)
@@ -2244,6 +2246,11 @@ class FirmwareTest(test.test):
         self.host.run('tpm_manager_client take_ownership')
         if not utils.wait_for_value(self._tpm_is_owned, expected_value=True):
             raise error.TestError('Unable to own tpm while clearing fwmp.')
+        self.host.run('cryptohome '
+                      '--action=remove_firmware_management_parameters')
+        # Set the flags to 0, so the fwmp wp enable gets cleared.
+        self.host.run('cryptohome '
+                      '--action=set_firmware_management_parameters --flags=0')
         self.host.run('cryptohome '
                       '--action=remove_firmware_management_parameters')
 

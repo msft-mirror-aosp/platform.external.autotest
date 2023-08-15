@@ -80,6 +80,8 @@ class BluetoothAdapterLLPrivacyTests(
                                              expect_bt_wake=True)
                 start_time = self.bluetooth_facade.get_device_utc_time()
 
+                self.test_device_wake_allowed(device.init_paired_addr,
+                                              identity_address=device.address)
                 # Also wait until powerd marks adapter as wake enabled
                 self.test_adapter_wake_enabled()
 
@@ -89,6 +91,10 @@ class BluetoothAdapterLLPrivacyTests(
 
                 def _action_device_connect():
                     time.sleep(5)
+                    # Set discoverable causes a short advertisement with public address
+                    # this may lead to false positive test result.
+                    # TODO: Uprev chameleon set address as random when set discoverable
+                    # if privacy is enabled.
                     device.SetDiscoverable(True)
                     device.SetAdvertising(True)
 
@@ -217,7 +223,7 @@ class BluetoothAdapterLLPrivacyTests(
                                         device.address)
 
         self.test_stop_device_advertise_with_rpa(device)
-        self.test_hid_device_created(device.address)
+        self.test_hid_device_created(self._input_dev_uniq_addr(device))
         check_connected_method(device)
 
         try:
@@ -240,7 +246,7 @@ class BluetoothAdapterLLPrivacyTests(
                 end_time = time.time()
                 time_diff = end_time - start_time
 
-                self.test_hid_device_created(device.address)
+                self.test_hid_device_created(self._input_dev_uniq_addr(device))
                 check_connected_method(device)
                 logging.info('reconnect time %s', str(time_diff))
                 self.test_stop_device_advertise_with_rpa(device)

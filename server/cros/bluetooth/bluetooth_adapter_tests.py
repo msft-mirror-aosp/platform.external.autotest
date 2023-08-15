@@ -1739,12 +1739,12 @@ class BluetoothAdapterTests(test.test):
         return any(self.results.values())
 
     @test_retry_and_log(False)
-    def test_device_wake_allowed(self, device_address):
+    def test_device_wake_allowed(self, device_address, identity_address=None):
         """Test that given device can wake the system."""
         self.results = {
                 'Wake allowed':
                 self.bluetooth_facade.get_device_property(
-                        device_address, 'WakeAllowed')
+                        device_address, 'WakeAllowed', identity_address)
         }
 
         return all(self.results.values())

@@ -2716,7 +2716,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return num_connected_devices
 
     @dbus_safe(None)
-    def get_device_property(self, address, prop_name):
+    def get_device_property(self, address, prop_name, identity_address=None):
         """Read a property of BT device by directly querying device dbus object
 
         @param address: Address of the device to query
@@ -2732,7 +2732,7 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         prop_val = None
 
         # Grab dbus object, _find_device will catch any thrown dbus error
-        device_obj = self._find_device(address)
+        device_obj = self._find_device(address, identity_address)
 
         if device_obj:
             # Query dbus object for property
@@ -4959,7 +4959,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Disconnect a specific address."""
         return self.adapter_client.disconnect_device(address)
 
-    def get_device_property(self, address, prop_name):
+    def get_device_property(self, address, prop_name, identity_address=None):
         """Read a property from a remote device.
 
         @param address: Address of the device to query

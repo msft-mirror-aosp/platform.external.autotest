@@ -560,16 +560,19 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def get_device_property(self, address, prop_name):
+    def get_device_property(self, address, prop_name, identity_address=None):
         """Read a property of BT device by directly querying device dbus object
 
         @param address: Address of the device to query
         @param prop_name: Property to be queried
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @return The property if device is found and has property, None otherwise
         """
 
-        prop_val = self._proxy.get_device_property(address, prop_name)
+        prop_val = self._proxy.get_device_property(address, prop_name,
+                                                   identity_address)
 
         # Handle dbus error case returned by dbus_safe decorator
         if prop_val is None:

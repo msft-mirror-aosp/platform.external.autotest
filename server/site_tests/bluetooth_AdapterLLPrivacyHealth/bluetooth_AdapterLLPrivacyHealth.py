@@ -50,7 +50,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
     def _test_mouse(self, device):
-        return (self.test_hid_device_created(device.address)
+        return (self.test_hid_device_created(
+                device.init_paired_addr if self.floss else device.address)
                 and self.test_mouse_left_click(device)
                 and self.test_mouse_move_in_xy(device, -60, 100)
                 and self.test_mouse_scroll_down(device, 70)
@@ -261,7 +262,9 @@ class bluetooth_AdapterLLPrivacyHealth(
         device = self.devices[device_type][0]
         self.run_reconnect_device([(device_type, device, self._test_mouse)])
 
-    @test_wrapper('Reconnect LE HID', devices={'BLE_MOUSE': 1})
+    @test_wrapper('Reconnect LE HID',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def sr_reconnect_le_hid_with_rpa(self):
         """ Reconnects a LE HID device in privacy mode after suspend/resume. """
         device_type = 'BLE_MOUSE'
@@ -540,7 +543,9 @@ class bluetooth_AdapterLLPrivacyHealth(
                 check_connected_method=self.test_mouse_left_click,
                 disconnect_by_device=True)
 
-    @test_wrapper('HID Wakeup from Suspend Test', devices={"BLE_MOUSE": 1})
+    @test_wrapper('HID Wakeup from Suspend Test',
+                  devices={"BLE_MOUSE": 1},
+                  supports_floss=True)
     def sr_peer_wake_le_hid_with_rpa(self):
         """Use LE HID to wake from suspend."""
         device = self.devices['BLE_MOUSE'][0]

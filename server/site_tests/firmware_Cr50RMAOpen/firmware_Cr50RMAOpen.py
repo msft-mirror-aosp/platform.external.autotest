@@ -29,7 +29,7 @@ class firmware_Cr50RMAOpen(Cr50Test):
     version = 1
 
     # Tuple representing WP state when it is force disabled
-    WP_PERMANENTLY_DISABLED = (False, False, False, False)
+    WP_PERMANENTLY_DISABLED = (False, False, False, False, False)
 
     # Various Error Messages from the command line and AP RMA failures
     MISMATCH_CLI = 'Auth code does not match.'

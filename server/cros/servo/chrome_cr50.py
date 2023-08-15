@@ -395,7 +395,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def wp_is_reset(self):
         """Returns True if wp is reset to follow batt pres at all times"""
-        follow_batt_pres, _, follow_batt_pres_atboot, _ = self.get_wp_state()
+        wp_state = self.get_wp_state()
+        follow_batt_pres = wp_state[0]
+        follow_batt_pres_atboot = wp_state[2]
         return follow_batt_pres and follow_batt_pres_atboot
 
 
@@ -411,15 +413,18 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 (True if current state is to follow batt presence,
                  True if write protect is enabled,
                  True if current state is to follow batt presence atboot,
-                 True if write protect is enabled atboot)
+                 True if write protect is enabled atboot,
+                 True if the fwmp is forcing wp)
         """
-        rv = self.send_command_retry_get_output('wp',
-                ['Flash WP: (forced )?(enabled|disabled).*at boot: (forced )?'
-                 '(follow|enabled|disabled)'], safe=True)[0]
-        _, forced, enabled, _, atboot = rv
-        logging.info(rv[0])
-        return (not forced, enabled =='enabled',
-                atboot == 'follow', atboot == 'enabled')
+        rv = self.send_command_retry_get_output('wp', [
+                'Flash WP: (fwmp )?(forced )?(enabled|disabled).*at boot: (fwmp )?(forced )?'
+                '(follow|enabled|disabled)'
+        ],
+                                                safe=True)[0]
+        _, fwmp, forced, enabled, _, _, atboot = rv
+        logging.info(rv)
+        return (not forced, enabled == 'enabled', atboot == 'follow',
+                atboot == 'enabled', not not fwmp)
 
     def set_wp_state(self, setting):
         """Set the WP state."""

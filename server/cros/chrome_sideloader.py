@@ -11,7 +11,6 @@ import re
 import requests
 import stat
 import string
-import sys
 import tempfile
 import zipfile
 
@@ -626,7 +625,11 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
     # change file permissions to allow for script execution
     cmd = ['chmod', '-R', '755', chrome_dir]
     try:
-        common_utils.run(cmd, stdout_tee=sys.stdout, stderr_tee=sys.stderr)
+        common_utils.run(cmd,
+                         stdout_tee=utils.TEE_TO_LOGS,
+                         stderr_tee=utils.TEE_TO_LOGS,
+                         stdout_level=logging.INFO,
+                         stderr_level=logging.DEBUG)
     except error.CmdError as e:
         raise Exception('Error changing file permissions', e)
 
@@ -660,8 +663,10 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
 
     try:
         common_utils.run(cmd,
-                         stdout_tee=sys.stdout,
-                         stderr_tee=sys.stderr,
+                         stdout_tee=utils.TEE_TO_LOGS,
+                         stderr_tee=utils.TEE_TO_LOGS,
+                         stdout_level=logging.INFO,
+                         stderr_level=logging.DEBUG,
                          timeout=1200,
                          extra_paths=[os.path.join(chromite_dir, 'bin')])
     except error.CmdError as e:
@@ -724,8 +729,10 @@ def download_gs(gs_path, dest_dir):
         ]
         file_path = os.path.join(dest_dir, file_name)
         common_utils.run(cmd,
-                         stdout_tee=sys.stdout,
-                         stderr_tee=sys.stderr,
+                         stdout_tee=utils.TEE_TO_LOGS,
+                         stderr_tee=utils.TEE_TO_LOGS,
+                         stdout_level=logging.INFO,
+                         stderr_level=logging.DEBUG,
                          timeout=1200,
                          extra_paths=['/opt/infra-tools'])
 
@@ -792,8 +799,10 @@ def unsquashfs(file_path, dest_dir):
         ]
         try:
             common_utils.run(cmd,
-                             stdout_tee=sys.stdout,
-                             stderr_tee=sys.stderr,
+                             stdout_tee=utils.TEE_TO_LOGS,
+                             stderr_tee=utils.TEE_TO_LOGS,
+                             stdout_level=logging.INFO,
+                             stderr_level=logging.DEBUG,
                              extra_paths=['/opt/infra-tools'])
         except error.CmdError as e:
             raise Exception('Error downloading squashfs from CIPD', e)
@@ -806,8 +815,10 @@ def unsquashfs(file_path, dest_dir):
         ]
         try:
             common_utils.run(cmd,
-                             stdout_tee=sys.stdout,
-                             stderr_tee=sys.stderr,
+                             stdout_tee=utils.TEE_TO_LOGS,
+                             stderr_tee=utils.TEE_TO_LOGS,
+                             stdout_level=logging.INFO,
+                             stderr_level=logging.DEBUG,
                              env=env_dict,
                              extra_paths=['/opt/infra-tools'])
         except error.CmdError as e:

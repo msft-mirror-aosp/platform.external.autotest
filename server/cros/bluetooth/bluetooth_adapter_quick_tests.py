@@ -409,6 +409,15 @@ class BluetoothAdapterQuickTests(
         if self.floss and self.llprivacy:
             raise error.TestError('LL Privacy is not yet supported on Floss')
 
+        # Every test_method should pass by default.
+        self._expected_result = True
+
+        # Bluetoothd could have crashed behind the scenes; check to see if
+        # everything is still ok and recover if needed.
+        # This also ensures BT daemon is running prior to setting LL privacy.
+        self.test_is_facade_valid()
+        self.test_is_adapter_valid()
+
         # Explicitly enable/disable LL Privacy if we are not running Floss.
         #
         # The test_set_ll_privacy() call will persist the LL privacy status in
@@ -416,19 +425,8 @@ class BluetoothAdapterQuickTests(
         # is explicitly updated, the new LL privacy status is still valid.
         if not self.floss:
             if not self.test_set_ll_privacy(self.llprivacy):
-                raise error.TestError('Failed to set LL privacy to %s.'.format(
+                raise error.TestError('Failed to set LL privacy to {}'.format(
                         self.llprivacy))
-            else:
-                logging.info('Set LL privacy status to %r for this test.',
-                             self.llprivacy)
-
-        # Every test_method should pass by default.
-        self._expected_result = True
-
-        # Bluetoothd could have crashed behind the scenes; check to see if
-        # everything is still ok and recover if needed.
-        self.test_is_facade_valid()
-        self.test_is_adapter_valid()
 
         # Reset the adapter
         self.test_reset_on_adapter()

@@ -99,7 +99,7 @@ class power_LW(test.test):
             self._start_servo_usb_and_ethernet(host, wlan_host)
             raise e
 
-    def run_once(self, host, test, args, machine):
+    def run_once(self, host, test, args, machine, server_test=False):
         """Prepare DUT for power test then run the client test.
 
         The DUT will
@@ -111,6 +111,7 @@ class power_LW(test.test):
         @param test: testname
         @param args: arguments of the test in a dict.
         @param machine: machine dict of the host.
+        @param server_test: if the wrapped test is a server test.
         """
         wlan_host = self._get_wlan_host(host, machine)
         self._stop_servo_usb_and_ethernet(host, wlan_host)
@@ -119,8 +120,13 @@ class power_LW(test.test):
             args['force_discharge'] = True
             args['tag'] = args.get('tag', 'PLW')
 
-            autotest_client = autotest.Autotest(wlan_host)
-            autotest_client.run_test(test, check_client_result=True, **args)
+            if server_test:
+                self.job.run_test(test, host=wlan_host, **args)
+            else:
+                autotest_client = autotest.Autotest(wlan_host)
+                autotest_client.run_test(test,
+                                         check_client_result=True,
+                                         **args)
         finally:
             self._start_servo_usb_and_ethernet(host, wlan_host)
             if not host.wait_up(timeout=30):

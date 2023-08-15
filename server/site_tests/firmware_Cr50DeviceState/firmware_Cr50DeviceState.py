@@ -8,7 +8,6 @@ import time
 import re
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import tpm_utils
 from autotest_lib.server import autotest
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
@@ -686,9 +685,6 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.fast_ccd_open(True)
         self.gsc.send_command('ccd lock')
         self.clear_fwmp()
-
-        # Clear the TPM owner, so we can set the fwmp.
-        tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
 
         self.print_fwmp('cleared tpm owner. Not initialized.',
                         initialized=False)

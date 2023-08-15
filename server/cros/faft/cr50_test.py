@@ -156,9 +156,11 @@ class Cr50Test(FirmwareTest):
             self.ensure_qual_image_is_running(release_ver_arg,
                                               release_path_arg)
         logging.info('Clear TPM owner and fwmp')
-        tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
-        # Clear the FWMP, so it can't disable CCD.
-        self.clear_fwmp()
+        if self.fwmp_is_cleared():
+            tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
+        else:
+            # Clear the FWMP, so it can't disable CCD.
+            self.clear_fwmp()
 
 
     def running_cr50_release_suite(self):
@@ -866,9 +868,12 @@ class Cr50Test(FirmwareTest):
         self.enter_mode_after_checking_cr50_state('normal')
 
         self._try_to_bring_dut_up()
-        tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
-        self.clear_fwmp()
-
+        logging.info('Clear TPM owner and fwmp')
+        if self.fwmp_is_cleared():
+            tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
+        else:
+            # Clear the FWMP, so it can't disable CCD.
+            self.clear_fwmp()
         # Restore the ccd privilege level
         self._reset_ccd_settings()
 

@@ -1495,6 +1495,21 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
     with similar names and run these in the same job (alphabetically).
     """
 
+    combined = combine_modules_by_common_word(set(modules))
+    for key in combined:
+        write_controlfile(key, combined[key], abi, revision, build, uri,
+                          None, source_type)
+
+
+def write_qualification_controlfiles(modules, abi, revision, build, uri,
+                                     source_type):
+    """Write all control files to run "all" tests for qualification.
+
+    Qualification was performed on N by running all tests using tradefed
+    sharding (specifying SYNC_COUNT=2) in the control files. In skylab
+    this is currently not implemented, so we fall back to autotest sharding
+    all CTS tests into 10-20 hand chosen shards.
+    """
     if CONFIG.get('SINGLE_CONTROL_FILE'):
         module_set = set(modules)
         write_controlfile('all',
@@ -1507,25 +1522,10 @@ def write_regression_controlfiles(modules, abi, revision, build, uri,
                           source_type,
                           whole_module_set=module_set)
     else:
-        combined = combine_modules_by_common_word(set(modules))
+        combined = combine_modules_by_bookmark(set(modules))
         for key in combined:
-            write_controlfile(key, combined[key], abi, revision, build, uri,
-                              None, source_type)
-
-
-def write_qualification_controlfiles(modules, abi, revision, build, uri,
-                                     source_type):
-    """Write all control files to run "all" tests for qualification.
-
-    Qualification was performed on N by running all tests using tradefed
-    sharding (specifying SYNC_COUNT=2) in the control files. In skylab
-    this is currently not implemented, so we fall back to autotest sharding
-    all CTS tests into 10-20 hand chosen shards.
-    """
-    combined = combine_modules_by_bookmark(set(modules))
-    for key in combined:
-        write_controlfile('all.' + key, combined[key], abi, revision, build,
-                          uri, CONFIG.get('QUAL_SUITE_NAMES'), source_type)
+            write_controlfile('all.' + key, combined[key], abi, revision, build,
+                              uri, CONFIG.get('QUAL_SUITE_NAMES'), source_type)
 
 
 def write_qualification_suite_split_controlfiles(modules, abi, revision, build,

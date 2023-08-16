@@ -40,7 +40,7 @@ class firmware_EventLog(FirmwareTest):
 
     def _gather_events(self):
         entries = self.faft_client.system.run_shell_command_get_output(
-                'elogtool list')
+                'env TZ=UTC elogtool list')
         now = self._now()
         self._events = []
         for line in reversed(entries):
@@ -62,7 +62,7 @@ class firmware_EventLog(FirmwareTest):
     # timestamps in localtime, and so do we (by calling date without --utc).
     def _now(self):
         time_string = self.faft_client.system.run_shell_command_get_output(
-                'date +"%s"' % self._TIME_FORMAT)[0]
+                'env TZ=UTC date +"%s"' % self._TIME_FORMAT)[0]
         logging.debug('Current local system time on DUT is "%s"', time_string)
         return time.strptime(time_string, self._TIME_FORMAT)
 

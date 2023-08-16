@@ -32,6 +32,7 @@ class firmware_EventLog(FirmwareTest):
         self.host = host
         self.switcher.setup_mode('normal')
         self.setup_usbkey(usbkey=True, host=False)
+        self.servo.disable_ccd_watchdog_for_test()
 
     def _has_event(self, pattern):
         # list since bool() casts empty filter objs to True in py3

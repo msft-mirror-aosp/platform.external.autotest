@@ -12,8 +12,4 @@
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.1024_128_1#joint" />
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6g10x6_unorm_2pack16.512_512_1#joint" />
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6g10x6_unorm_2pack16.1024_128_1#joint" />
-  <Entry include="CtsIkeTestCases android.net.ipsec.ike.cts.IkeSessionDigitalSignatureTest#testIkeSessionSetupAndChildSessionSetupWithTransportMode" />
-  <Entry include="CtsIkeTestCases android.net.ipsec.ike.cts.IkeSessionMschapV2Test#testIkeSessionSetupAndChildSessionSetupWithTransportMode" />
-  <Entry include="CtsSecurityTestCases android.security.cts.CertificateTest#testNoRemovedCertificates" />
-  <Entry include="CtsSecurityTestCases[instant] android.security.cts.CertificateTest#testNoRemovedCertificates" />
 </SubPlan>

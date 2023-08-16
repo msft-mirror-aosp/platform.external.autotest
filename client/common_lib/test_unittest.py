@@ -12,9 +12,10 @@ import json
 import tempfile
 import unittest
 import common
-import mock as pymock
 import os
 import shutil
+from unittest import mock as pymock
+
 import six
 from six.moves import range
 

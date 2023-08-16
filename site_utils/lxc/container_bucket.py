@@ -25,7 +25,7 @@ try:
     from autotest_lib.utils.frozen_chromite.lib import metrics
     from infra_libs import ts_mon
 except ImportError:
-    import mock
+    from unittest import mock
     metrics = utils.metrics_mock
     ts_mon = mock.Mock()
 

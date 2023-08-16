@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 
 from autotest_lib.tko import models
-import datetime, time, unittest, mock
+import datetime
+import time
+import unittest
+from unittest import mock
 
 import common
 from autotest_lib.client.common_lib import utils

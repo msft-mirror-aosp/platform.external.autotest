@@ -36,7 +36,7 @@ try:
 except ImportError as e:
     from autotest_lib.client.common_lib import utils as common_utils
     metrics = common_utils.metrics_mock
-    import mock
+    from unittest import mock
     cloud_trace = mock.MagicMock()
 
 # Number of seconds to wait before returning if testing mode is enabled

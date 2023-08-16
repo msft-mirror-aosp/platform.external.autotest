@@ -351,7 +351,7 @@ class TestRunnerUnittests(unittest.TestCase):
                 host_labels=test_labels,
                 label=None)
 
-        from mock import call
+        from unittest.mock import call
 
         calls = []
         for name in self.suite_control_files[1:]:

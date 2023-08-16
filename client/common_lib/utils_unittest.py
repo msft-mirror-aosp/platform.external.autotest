@@ -14,11 +14,8 @@ import socket
 import subprocess
 import time
 import unittest
+from unittest import mock as pymock
 
-# mock 1.0.0 (in site-packages/chromite/third_party/mock.py)
-# which is an ancestor of Python's default library starting from Python 3.3.
-# See https://docs.python.org/3/library/unittest.mock.html
-import mock as pymock
 import six
 from six.moves import range, urllib
 

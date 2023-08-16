@@ -6,24 +6,5 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
-  <Entry include="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityMagnificationTest#testListener_magnificationConfigChangedWithoutAnimation_notifyConfigChanged" />
-  <Entry include="CtsAppCompatHostTestCases com.android.cts.appcompat.CompatChangesValidConfigTest#testDeviceContainsExpectedConfig" />
-  <Entry include="CtsAppCompatHostTestCases[instant] com.android.cts.appcompat.CompatChangesValidConfigTest#testDeviceContainsExpectedConfig" />
-  <Entry include="CtsContentTestCases android.content.pm.cts.PackageManagerTest#testEnforceIntentToMatchIntentFilter" />
-  <Entry include="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testAudioFocusDelayedByCall" />
-  <Entry include="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testAudioFocusTransientDelayedByCall" />
-  <Entry include="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioFocusTest#testAudioFocusDelayedByCall" />
-  <Entry include="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioFocusTest#testAudioFocusTransientDelayedByCall" />
-  <Entry include="CtsOsTestCases android.os.storage.cts.StorageManagerTest#testGetStorageVolumeSDCard" />
-  <Entry include="CtsOsTestCases android.os.storage.cts.StorageManagerTest#testGetStorageVolumeUSB" />
-  <Entry include="CtsOsTestCases[run-on-clone-profile] android.os.storage.cts.StorageManagerTest#testGetStorageVolumeSDCard" />
-  <Entry include="CtsOsTestCases[run-on-clone-profile] android.os.storage.cts.StorageManagerTest#testGetStorageVolumeUSB" />
-  <Entry include="CtsPermission2TestCases android.permission2.cts.PermissionPolicyTest#platformPermissionPolicyIsUnaltered" />
-  <Entry include="CtsSecurityTestCases android.security.cts.CertificateTest#testNoRemovedCertificates" />
-  <Entry include="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ForceDarkTests#testFgRect" />
-  <Entry include="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ForceDarkTests#testSiblings" />
-  <Entry include="CtsUiRenderingTestCases[instant] android.uirendering.cts.testclasses.ForceDarkTests#testFgRect" />
-  <Entry include="CtsUiRenderingTestCases[instant] android.uirendering.cts.testclasses.ForceDarkTests#testSiblings" />
-  <Entry include="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testAppLaunchCount" />
   <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.MultiDisplayPolicyTests#testStackFocusSwitchOnDisplayRemoved3" />
 </SubPlan>

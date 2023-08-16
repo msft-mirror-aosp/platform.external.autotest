@@ -32,6 +32,8 @@ class firmware_FWupdate(FirmwareTest):
         if value is anything but 'false', once the test ends, the firmware will
         be restored to the backup that was made at the start of the test.
     """
+    # Region to use for flashrom wp-region commands
+    WP_REGION = 'WP_RO'
 
     MODE = 'recovery'
 
@@ -92,7 +94,7 @@ class firmware_FWupdate(FirmwareTest):
         self._original_hw_wp = 'on' in self.servo.get('fw_wp_state')
 
         self.set_ap_write_protect_and_reboot(False)
-        self.faft_client.bios.enable_write_protect()
+        self.faft_client.bios.set_write_protect_region(self.WP_REGION, True)
         self.set_ap_write_protect_and_reboot(True)
 
     def cleanup(self):
@@ -112,9 +114,10 @@ class firmware_FWupdate(FirmwareTest):
         try:
             # Restore the old write-protection value at the end of the test.
             if self._orig_sw_wp:
-                self.faft_client.bios.enable_write_protect()
-            else:
-                self.faft_client.bios.disable_write_protect()
+                self.faft_client.bios.set_write_protect_range(
+                        self._orig_sw_wp['start'],
+                        self._orig_sw_wp['length'],
+                        self._orig_sw_wp['enabled'])
         except (EnvironmentError, six.moves.xmlrpc_client.Fault,
                 error.AutoservError, error.TestBaseException):
             logging.error("Problem restoring software write-protect:",
@@ -219,10 +222,12 @@ class firmware_FWupdate(FirmwareTest):
         self.set_ap_write_protect_and_reboot(False)
 
         if wp:
-            self.faft_client.bios.enable_write_protect()
+            self.faft_client.bios.set_write_protect_region(
+                    self.WP_REGION, True)
             self.set_ap_write_protect_and_reboot(True)
         else:
-            self.faft_client.bios.disable_write_protect()
+            self.faft_client.bios.set_write_protect_region(
+                    self.WP_REGION, False)
 
         cmd_desc = ['chromeos-firmwareupdate-%s' % append,
                     '--mode=%s' % self.MODE]

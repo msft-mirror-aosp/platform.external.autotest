@@ -15,6 +15,7 @@ class firmware_FWupdateWP(FirmwareTest):
     """
 
     # Region to use for flashrom wp-region commands
+    WP_REGION = 'WP_RO'
     MODE = 'recovery'
 
     def initialize(self, host, cmdline_args):
@@ -41,7 +42,7 @@ class firmware_FWupdateWP(FirmwareTest):
         self.backup_firmware()
 
         self.set_ap_write_protect_and_reboot(False)
-        self.faft_client.bios.enable_write_protect()
+        self.faft_client.bios.set_write_protect_region(self.WP_REGION, True)
         self.set_ap_write_protect_and_reboot(True)
 
     def get_installed_versions(self):
@@ -73,10 +74,11 @@ class firmware_FWupdateWP(FirmwareTest):
         self.set_ap_write_protect_and_reboot(False)
 
         if write_protected:
-            self.faft_client.bios.enable_write_protect()
+            self.faft_client.bios.set_write_protect_region(self.WP_REGION, True)
             self.set_ap_write_protect_and_reboot(True)
         else:
-            self.faft_client.bios.disable_write_protect()
+            self.faft_client.bios.set_write_protect_region(
+                    self.WP_REGION, False)
 
         expected_written = {}
 
@@ -167,17 +169,16 @@ class firmware_FWupdateWP(FirmwareTest):
         with the "new" firmware.
         """
         self.set_ap_write_protect_and_reboot(False)
-        self.faft_client.bios.disable_write_protect_range()
+        self.faft_client.bios.set_write_protect_range(0, 0, False)
 
         if self.flashed:
             logging.info("Restoring firmware")
             self.restore_firmware()
 
         # Restore the old write-protection value at the end of the test.
-
-        if self._old_bios_wp:
-            self.faft_client.bios.enable_write_protect()
-        else:
-            self.faft_client.bios.disable_write_protect()
+        self.faft_client.bios.set_write_protect_range(
+                self._old_bios_wp['start'],
+                self._old_bios_wp['length'],
+                self._old_bios_wp['enabled'])
 
         super(firmware_FWupdateWP, self).cleanup()

@@ -24,6 +24,8 @@ class firmware_CsmeFwUpdate(FirmwareTest):
     version = 1
     ORIGINAL_BIOS = "/usr/local/tmp/bios_original.bin"
     DOWNGRADE_BIOS = "/usr/local/tmp/bios_downgrade.bin"
+    # Region to use for flashrom wp-region commands
+    WP_REGION = 'WP_RO'
     MODE = 'recovery'
     CBFSTOOL = 'cbfstool'
     CMPTOOL = 'cmp'
@@ -62,7 +64,7 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         self._orig_sw_wp = self.faft_client.bios.get_write_protect_status()
         self._original_hw_wp = 'on' in self.servo.get('fw_wp_state')
         self.set_ap_write_protect_and_reboot(False)
-        self.faft_client.bios.enable_write_protect()
+        self.faft_client.bios.set_write_protect_region(self.WP_REGION, True)
         self.set_ap_write_protect_and_reboot(True)
 
         # Make sure that the shellball is retained over subsequent power cycles
@@ -88,11 +90,11 @@ class firmware_CsmeFwUpdate(FirmwareTest):
         try:
             # Restore the old write-protection value at the end of the test.
             logging.info("Restoring write protection configuration")
-
             if self._orig_sw_wp:
-                self.faft_client.bios.enable_write_protect()
-            else:
-                self.faft_client.bios.disable_write_protect()
+                self.faft_client.bios.set_write_protect_range(
+                        self._orig_sw_wp['start'],
+                        self._orig_sw_wp['length'],
+                        self._orig_sw_wp['enabled'])
         except (EnvironmentError, six.moves.xmlrpc_client.Fault,
                 error.AutoservError, error.TestBaseException):
             logging.error("Problem restoring software write-protect:",

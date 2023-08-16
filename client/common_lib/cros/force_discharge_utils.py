@@ -73,6 +73,17 @@ def chargeoverride_not_supported():
     return utils.get_board().startswith(('jacuzzi', 'kukui'))
 
 
+def _skip_battery_sustainer():
+    """
+    Jacuzzi does not behave as expected with battery sustainer yet.
+    TODO: b/293358575 - Modify/Delete this function when battery sustainer on
+    Jacuzzi is fixed.
+
+    @return: boolean indicating if battery sustainer command should be skipped.
+    """
+    return utils.get_board().startswith(('jacuzzi'))
+
+
 def _charge_control_by_ectool(is_charge, ignore_status, host=None):
     """execute ectool commands.
 
@@ -109,10 +120,12 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
                 run_func('ectool chargecontrol discharge')
             else:
                 run_func(ec_cmd_discharge)
-            try:
-                run_func(ec_cmd_sustain)
-            except error.CmdError as e:
-                logging.info('Battery sustainer maybe not supported: %s', e)
+            if not _skip_battery_sustainer():
+                try:
+                    run_func(ec_cmd_sustain)
+                except error.CmdError as e:
+                    logging.info('Battery sustainer maybe not supported: %s',
+                                 e)
     except error.CmdError as e:
         logging.warning('Unable to use ectool: %s', e)
         if ignore_status:

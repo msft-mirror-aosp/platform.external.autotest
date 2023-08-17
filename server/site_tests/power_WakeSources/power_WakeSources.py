@@ -238,6 +238,11 @@ class power_WakeSources(test.test):
                               'capability.')
             return True
         if wake_source in ['AC_CONNECTED', 'AC_DISCONNECTED']:
+            if not self._host.has_battery():
+                logging.info("%s is not supported on devices without battery",
+                             wake_source)
+                return False
+
             arch = self._host.get_architecture()
             wake_mask = 0
             if not self._chg_manager:

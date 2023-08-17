@@ -367,9 +367,10 @@ class flashrom_util(object):
         status_pattern = re.compile(
                 r'WP: status: (.*)')
         enabled_pattern = re.compile(
-                r'WP: write protect is (\w+)\.?')
+                r'(WP: write protect is |Protection mode: )(\w+)\.?')
         range_pattern = re.compile(
-                r'WP: write protect range: start=(\w+), len=(\w+)')
+                r'(WP: write protect range|Protection range): start=(\w+),? (len|length)=(\w+)'
+        )
         range_err_pattern = re.compile(
                 r'WP: write protect range: (.+)')
 
@@ -380,18 +381,15 @@ class flashrom_util(object):
 
         wp_status = {}
         for line in output:
-            if not line.startswith('WP: '):
-                continue
-
             found_enabled = re.match(enabled_pattern, line)
             if found_enabled:
-                status_word = found_enabled.group(1)
-                wp_status['enabled'] = (status_word == 'enabled')
+                status_word = found_enabled.group(2)
+                wp_status['enabled'] = (status_word in ['enabled', 'hardware'])
                 continue
 
             found_range = re.match(range_pattern, line)
             if found_range:
-                (start, length) = found_range.groups()
+                (_, start, _, length) = found_range.groups()
                 wp_status['start'] = int(start, 16)
                 wp_status['length'] = int(length, 16)
                 continue

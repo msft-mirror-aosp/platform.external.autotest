@@ -14,7 +14,7 @@ import time
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error, utils
-from autotest_lib.client.common_lib.cros import cr50_utils, tpm_utils
+from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros import filesystem_util, gsutil_wrapper
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.servo import chrome_ti50, firmware_programmer
@@ -155,12 +155,8 @@ class Cr50Test(FirmwareTest):
             release_path_arg = full_args.get('release_path', '')
             self.ensure_qual_image_is_running(release_ver_arg,
                                               release_path_arg)
-        logging.info('Clear TPM owner and fwmp')
-        if self.fwmp_is_cleared():
-            tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
-        else:
-            # Clear the FWMP, so it can't disable CCD.
-            self.clear_fwmp()
+        # Clear the FWMP, so it can't disable CCD.
+        self.clear_tpm_owner_and_fwmp()
 
 
     def running_cr50_release_suite(self):
@@ -869,11 +865,8 @@ class Cr50Test(FirmwareTest):
 
         self._try_to_bring_dut_up()
         logging.info('Clear TPM owner and fwmp')
-        if self.fwmp_is_cleared():
-            tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
-        else:
-            # Clear the FWMP, so it can't disable CCD.
-            self.clear_fwmp()
+        # Clear the FWMP, so it can't disable CCD.
+        self.clear_tpm_owner_and_fwmp()
         # Restore the ccd privilege level
         self._reset_ccd_settings()
 

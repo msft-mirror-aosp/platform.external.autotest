@@ -2233,11 +2233,12 @@ class FirmwareTest(test.test):
         logging.debug(result)
         return result.exit_status == 0 and 'is_owned: true' in result.stdout
 
-    def clear_fwmp(self):
+    def clear_tpm_owner_and_fwmp(self):
         """Clear the FWMP"""
+        logging.info('Clear TPM owner and fwmp')
+        tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
         if self.fwmp_is_cleared():
             return
-        tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
         # wait for cryptohome.
         self.host.run('/usr/bin/gdbus wait --system --timeout 15 '
                       'org.chromium.UserDataAuth')

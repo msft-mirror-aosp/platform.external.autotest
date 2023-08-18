@@ -172,7 +172,7 @@ class firmware_Cr50FactoryResetVC(Cr50Test):
         self.host.reboot()
         self._try_to_bring_dut_up()
         # Clear the FWMP
-        self.clear_fwmp()
+        self.clear_tpm_owner_and_fwmp()
         # make sure all of the ccd stuff is reset
         self.gsc.send_command('ccd testlab open')
         # Run ccd reset to make sure all ccd state is cleared

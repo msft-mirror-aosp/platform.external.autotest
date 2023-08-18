@@ -122,7 +122,7 @@ class firmware_FWMPDisableCCD(Cr50Test):
             check_lock: Check ccd open
         """
         if clear_fwmp:
-            self.clear_fwmp()
+            self.clear_tpm_owner_and_fwmp()
 
         logging.info('setting flags to %s', flags)
         if flags:

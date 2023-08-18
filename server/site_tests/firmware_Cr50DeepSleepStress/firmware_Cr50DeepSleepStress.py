@@ -74,7 +74,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         """Clear the fwmp."""
         try:
             self._try_to_bring_dut_up()
-            self.clear_fwmp()
+            self.clear_tpm_owner_and_fwmp()
         finally:
             super(firmware_Cr50DeepSleepStress, self).cleanup()
 
@@ -83,7 +83,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         """Create the FWMP."""
         self.fast_ccd_open(True)
         self.gsc.send_command('ccd lock')
-        self.clear_fwmp()
+        self.clear_tpm_owner_and_fwmp()
         logging.info('Setting FWMP flags to %s', self.fwmp)
         autotest.Autotest(self.host).run_test('firmware_SetFWMP',
                                               flags=self.fwmp,

@@ -1,3 +1,7 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 AUTHOR = "chromeos-kernel-wifi@google.com"
 NAME = "wifi_cross_device_sap"
 PURPOSE = "Run WiFi SoftAP test on nearbyshare fixtures."

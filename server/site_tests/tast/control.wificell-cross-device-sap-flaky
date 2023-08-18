@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'chromeos-kernel-wifi@google.com'
-NAME = 'tast.wificell-coss-device-sap-unstable'
+NAME = 'tast.wificell-cross-device-sap-flaky'
 METADATA = {
     'contacts': ['tauto-core@google.com'],
     'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
@@ -11,7 +11,7 @@ METADATA = {
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:wifi_cross_device_sap'
+ATTRIBUTES = 'suite:wifi_cross_device_sap_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

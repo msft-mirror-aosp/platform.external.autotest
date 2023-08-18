@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'chromeos-kernel-wifi@google.com'
-NAME = 'tast.wificell-coss-device-sap-stable'
+NAME = 'tast.wificell-cross-device-sap-stable'
 METADATA = {
     'contacts': ['tauto-core@google.com'],
     'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto

@@ -1,3 +1,7 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 AUTHOR = "chromeos-kernel-wifi@google.com"
 NAME = "wifi_cross_device_p2p"
 PURPOSE = "Run WiFi P2P test on nearbyshare fixtures."
@@ -18,7 +22,7 @@ This is an example of a dynamic test suite.
 @param check_hosts: require appropriate live hosts to exist in the lab.
 @param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
 @param file_bugs: If True your suite will file bugs on failures.
-@param max_run_time: Amount of time each test shoud run in minutes.
+@param max_run_time: Amount of time each test should run in minutes.
 """
 
 import common

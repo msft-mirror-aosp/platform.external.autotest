@@ -1,10 +1,10 @@
-# Copyright 2023 The ChromiumOS Authors. All rights reserved.
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = "chromeos-kernel-wifi@google.com"
-NAME = "wifi_cross_device_tdls_flaky"
-PURPOSE = "Run flaky WiFi TDLS tests on nearbyshare fixtures."
+NAME = "wifi_cross_device_sap_flaky"
+PURPOSE = "Run WiFi SoftAP test on nearbyshare fixtures."
 
 TIME = "SHORT"
 TEST_CATEGORY = "General"
@@ -22,14 +22,14 @@ This is an example of a dynamic test suite.
 @param check_hosts: require appropriate live hosts to exist in the lab.
 @param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
 @param file_bugs: If True your suite will file bugs on failures.
-@param max_run_time: Amount of time each test shoud run in minutes.
+@param max_run_time: Amount of time each test should run in minutes.
 """
 
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
 args_dict['add_experimental'] = True
-args_dict['max_runtime_mins'] = 180
+args_dict['max_runtime_mins'] = 60
 args_dict['name'] = NAME
 args_dict['job'] = job
 

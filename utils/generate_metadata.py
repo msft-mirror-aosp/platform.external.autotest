@@ -97,6 +97,15 @@ def serialize_bug_component(data):
     return bug_component
 
 
+def serialize_variant_category(data):
+    """Return a serialized VariantCategory obj"""
+    variant_category = None
+    if hasattr(data, 'metadata') and 'variant_category' in data.metadata:
+        variant_category = tc_metadata_pb.DDDVariantCategory(
+                value=data.metadata['variant_category'])
+    return variant_category
+
+
 def serialize_criteria(data):
     """Return a serialized Criteria obj"""
     criteria = None
@@ -139,7 +148,8 @@ def serialize_test_case_info(data):
             bug_component=serialize_bug_component(data),
             criteria=serialize_criteria(data),
             hw_agnostic=serialize_hw_agnostic(data),
-            life_cycle_stage=serialize_life_cycle_stage(data))
+            life_cycle_stage=serialize_life_cycle_stage(data),
+            variant_category=serialize_variant_category(data))
 
 
 def serialized_deps(data):

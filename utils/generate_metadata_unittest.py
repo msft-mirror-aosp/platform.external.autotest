@@ -70,6 +70,7 @@ METADATA = {
     'hw_agnostic': False,
     'life_cycle_stage': 'in_development',
     'requirements': ['req1', 'req2'],
+    'variant_category': 'xyz123'
 }
 DOC = '''
 a doc
@@ -173,6 +174,11 @@ class MetadataTest(unittest.TestCase):
         expected_bug_component = 'xyz123'
         actual_bug_component = metadata.test_case_info.bug_component.value
         self.assertEqual(expected_bug_component, actual_bug_component)
+
+        # Verify variant_category.
+        expected_variant_category = 'xyz123'
+        actual_variant_category = metadata.test_case_info.variant_category.value
+        self.assertEqual(expected_variant_category, actual_variant_category)
 
         # Verify criteria.
         expected_criteria = 'overriding purpose'

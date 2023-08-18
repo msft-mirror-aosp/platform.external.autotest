@@ -35,6 +35,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     # ratio of difference the test tolerates. If the difference/total suspend
     # count is greater than this ratio, fail the test.
     TOLERATED_ERROR = 0.05
+    MEM_DISABLE_DS_PATH = '/etc/init/cr50-disable-sleep.conf'
 
     def initialize(self,
                    host,
@@ -337,6 +338,13 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                         'Invalid configuration, S0ix not supported, but '
                         'deep_sleep_in_s0i3 is true')
 
+            if (self.faft_config.s3_override_to_unsupported
+                        or not self.s3_supported):
+                logging.info(
+                        'S3 unsupported. Switching suspend type from "mem" '
+                        'to "freeze"')
+                suspend_type = 'freeze'
+
             if self.check_cr50_capability(['deep_sleep_in_s0i3']) or not \
                self.s3_supported:
                 logging.info('Switching suspend type from "mem" to "freeze"')
@@ -348,9 +356,18 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             # Cr50 does not deep sleep on ARM
             # Cr50 does deep sleep in S3
             # Cr50 will only deep sleep in S0i3 on select systems.
-            self._enters_deep_sleep = not is_arm and \
-                ((suspend_type != 'freeze' or \
-                self.check_cr50_capability(['deep_sleep_in_s0i3'])))
+            self._enters_deep_sleep = False
+            if (suspend_type != 'freeze'
+                        or self.check_cr50_capability(['deep_sleep_in_s0i3'])):
+                logging.info('Check for deep sleep disable script')
+                # On suspend some systems send a deep sleep disable command.
+                # GSC won't enter deep sleep if that file exists.
+                self._enters_deep_sleep = (not self.host.path_exists(
+                        self.MEM_DISABLE_DS_PATH))
+
+        logging.info('Requested reset: %s', reset_type)
+        logging.info('Running with: %s', suspend_type)
+        logging.info('DS: %s', 'yes' if self._enters_deep_sleep else 'no')
 
         self.create_fwmp()
 

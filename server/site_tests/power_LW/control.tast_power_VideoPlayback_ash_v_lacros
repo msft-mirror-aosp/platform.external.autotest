@@ -1,0 +1,51 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = "power_LW.tast_power_VideoPlayback_ash_v_lacros"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com", "yanyeli@google.com"],
+    "bug_component": "b:1361410",
+    "criteria": "This test is a power benchmark test.",
+    "hw_agnostic": False,
+    "doc" : "Control file for running tast.power.VideoPlayback for Ash and"
+            "Lacros in power lab. This is done with one control file "
+            "instead of two to ensure that both runs of power.VideoPlayback are"
+            "executed on the same DUT, reducing variability. Even if two DUTs "
+            "are the same SKU, chip variability means that power consumption "
+            "characteristics will differ.",
+}
+TEST_TYPE = "server"
+DEPENDENCIES = "servo_state:WORKING"
+EXTENDED_TIMEOUT = 30000  # 3.3 hours of VPB + 4 hours charging + 1 hour guard.
+
+from autotest_lib.client.common_lib import utils
+
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+test = 'tast'
+args_ash = {'test_exprs': ["meta.PowerQualV2.videoplayback_ash_test"],
+            'max_run_sec': 13000,
+            'clear_tpm': False,
+            'tag': 'ash'}
+args_lacros = {'test_exprs': ["meta.PowerQualV2.videoplayback_lacros_test"],
+            'max_run_sec': 13000,
+            'clear_tpm': False,
+            'tag': 'lacros'}
+
+def run(machine):
+    host = hosts.create_host(machine, servo_args=servo_args)
+    job.run_test("power_BatteryChargeControl", host=host,
+                 percent_charge_to_add=None, percent_target_charge=75,
+                 tag="power.VideoPlayback.ash")
+    job.run_test("power_LW", host=host, test=test, args=args_ash,
+                 machine=machine, server_test=True,
+                 tag="power.VideoPlayback.ash")
+    job.run_test("power_BatteryChargeControl", host=host,
+                 percent_charge_to_add=None, percent_target_charge=75,
+                 tag="power.VideoPlayback.lacros")
+    job.run_test("power_LW", host=host, test=test, args=args_lacros,
+                 machine=machine, server_test=True,
+                 tag="power.VideoPlayback.lacros")
+
+parallel_simple(run, machines)

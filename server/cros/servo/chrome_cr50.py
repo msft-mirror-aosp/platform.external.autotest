@@ -1315,8 +1315,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         @return an integer 1 or 0 based on the gpioget value
         """
-        result = self.send_command_retry_get_output('gpioget',
-                    ['(0|1)[ \S]*%s' % signal_name], safe=True)
+        result = self.send_command_retry_get_output(
+                'gpioget', ['(0|1)[ *]+%s' % signal_name], safe=True)
         return int(result[0][1])
 
 
@@ -1624,7 +1624,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         self.reboot()
 
     def get_taskinfo_output(self):
-        """Return a dict with the irq numbers as keys and counts as values"""
+        """Get output from taskinfo command"""
         output = self.send_command_retry_get_output('taskinfo',
                                                     self.GET_TASKINFO,
                                                     safe=True,
@@ -1638,7 +1638,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                          count)
 
     def get_irq_counts(self):
-        """Return a dict with the irq counts."""
+        """Return a dict with the irq numbers as keys and counts as values"""
         irq_counts = {}
         output = self.get_taskinfo_output()
         irq_list = re.findall('\d+\s+\d+[\r\n]', output)

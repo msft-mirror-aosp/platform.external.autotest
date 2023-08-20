@@ -20,7 +20,6 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     This class is to abstract these interfaces.
     """
 
-    WAKE_RESPONSE = ['(>|ti50_common)']
     START_STR = ['ti50_common']
     NAME = CHIP_NAME
     BID_RE = r'Board ID: (\S{8}):?(|\S{8}), flags: (\S{8})\s'
@@ -84,19 +83,15 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     CCD_IRQS = [ 115 ]
     # Rdd and timer sof overflow irqs
     CCD_CHANGE_IRQS = [5, 116]
-    # Each line relevant taskinfo output should be 13 characters long with only
-    # digits or spaces. Use this information to make sure every taskinfo command
-    # gets the full relevant output. There are 4 characters for the irq number
-    # and 9 for the count.
-    GET_TASKINFO = ['IRQ counts by type:\s+(([\d ]{13}[\r\n]+)+)>']
+    GET_TASKINFO = ['IRQ counts by type:(.*)(>|Stack sizes)']
     # Ti50 has no periodic wake from regular sleep
     SLEEP_RATE = 0
     # Ti50 inhibits deep sleep for 60 seconds after AP power on.
     DEEP_SLEEP_DELAY = 60
     # Maximum TPM init time.
     TPM_INIT_MAX = 40000
-    TIMESTAMP_RE = '[\n\^\[ 0-9\.]*\] '
-    INVALID_RE_CHARS = r'[\n\^]'
+    TIMESTAMP_RE = r'\[[ 0-9.]+.\] '
+    WAKE_RESPONSE = [r'\n(|%s)> ' % TIMESTAMP_RE]
     TIME_RE = r'Since %s: [x0-9a-f]* = ([0-9\.]*) s'
     TIME_SINCE_DS_RE = TIME_RE % 'deep sleep'
     TIME_SINCE_COLD_RESET_RE = TIME_RE % 'reset'
@@ -107,7 +102,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     ERROR_DESC_LIST = []
 
     def strip_timestamp(self, result):
-        """Remove the timstamp from the result output.
+        """Remove the timestamp from the result output.
 
         Tests expect a certain format from the command result. Timestamps add
         random noise to the output that tests can't handle. Strip the timestamp
@@ -124,7 +119,10 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
             for part in result:
                 new_result.append(self.strip_timestamp(part))
         elif isinstance(result, str):
-            new_result = re.sub(self.TIMESTAMP_RE, '\n', result)
+            new_result = re.sub('^' + self.TIMESTAMP_RE,
+                                '',
+                                result,
+                                flags=re.MULTILINE)
         else:
             new_result = result
         return new_result
@@ -141,12 +139,11 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         """
         rv = super(ChromeTi50,
                    self).send_command_get_output(command, regexp_list)
-        logging.debug('old: %s', pprint.pformat(rv))
         if regexp_list:
             # Remove the timestamps from the ti50 output since tests can't
             # handle it.
             rv = self.strip_timestamp(rv)
-        logging.debug('no timestamps: %s', pprint.pformat(rv))
+            logging.debug('no timestamps: %s', pprint.pformat(rv))
         return rv
 
     def set_ccd_level(self, level, password=''):
@@ -215,3 +212,16 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         min_time = min(ds_time, cr_time)
         logging.info('Min reset time: %s', min_time)
         return min_time
+
+    def get_taskinfo_output(self):
+        """Get output from taskinfo command"""
+        output = self.send_command_get_output('taskinfo',
+                                              self.GET_TASKINFO)[0][1]
+        # For Ti50 check each line of output after any timestamps have been
+        # removed by send_command_get_output. Each line should be 13 characters
+        # long with only digits or spaces. There are 4 characters for the irq
+        # number and 9 for the count.
+        m = re.match(r'\s+(([\d ]{13}\r\n)+)', output)
+        if m is None:
+            raise error.TestError('Wrong taskinfo output', output)
+        return output

@@ -357,8 +357,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
             # Cr50 does deep sleep in S3
             # Cr50 will only deep sleep in S0i3 on select systems.
             self._enters_deep_sleep = False
-            if (suspend_type != 'freeze'
-                        or self.check_cr50_capability(['deep_sleep_in_s0i3'])):
+            if not is_arm and (suspend_type != 'freeze'
+                               or self.check_cr50_capability(
+                                       ['deep_sleep_in_s0i3'])):
                 logging.info('Check for deep sleep disable script')
                 # On suspend some systems send a deep sleep disable command.
                 # GSC won't enter deep sleep if that file exists.

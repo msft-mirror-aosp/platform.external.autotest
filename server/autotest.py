@@ -1109,7 +1109,10 @@ class _Run(object):
                         self._strip_stderr_prologue(result.stderr,
                                                     monitor_cmd))
 
-                if result.exit_status is not None:
+                # When error is 255, the SSH connection is probably dropped.
+                # Waiting up for `client_disconnect_timeout` seconds before
+                # aborting the test.
+                if result.exit_status is not None and result.exit_status != 255:
                     # TODO (crosbug.com/38224)- sbasi: Remove extra logging.
                     logging.debug('Result exit status is %d.',
                                   result.exit_status)

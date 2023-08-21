@@ -173,14 +173,15 @@ class ServoV4ChargeManager(object):
                      delay_sec=_DELAY_SEC, backoff=_BACKOFF)
         def check_ac_connected(connected):
             """Check if the EC believes an AC charger is connected."""
-            if not self._servo.has_control('charger_connected'):
+            if not self._servo.has_control('charger_attached'):
                 # TODO(coconutruben): remove this check once labs have the
                 # latest hdctools with the required control.
-                logging.warning('Could not verify %r control as the '
-                              'control is not available on servod.',
-                              'charger_connected')
+                logging.warning(
+                        'Could not verify %r control as the '
+                        'control is not available on servod.',
+                        'charger_attached')
                 return
-            ec_opinion = self._servo.get('charger_connected')
+            ec_opinion = self._servo.get('charger_attached')
             if ec_opinion != connected:
                 str_lookup = {True: 'connected', False: 'disconnected'}
                 msg = ('EC thinks charger is %s but it should be %s.'

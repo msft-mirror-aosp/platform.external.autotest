@@ -293,12 +293,14 @@ class ChromeEC(ChromeConsole):
         Args:
           keyname: Key name, one of the keys of KEYMATRIX.
         """
-        self.send_command([
+        self.send_command(
                 'kbpress %d %d 1' %
-                    (ec.KEYMATRIX[keyname][1], ec.KEYMATRIX[keyname][0]),
+                    (ec.KEYMATRIX[keyname][1], ec.KEYMATRIX[keyname][0]))
+        # Delay to ensure the keypress doesn't get debounced.
+        time.sleep(50/1000)
+        self.send_command(
                 'kbpress %d %d 0' %
-                    (ec.KEYMATRIX[keyname][1], ec.KEYMATRIX[keyname][0]),
-                ])
+                    (ec.KEYMATRIX[keyname][1], ec.KEYMATRIX[keyname][0]))
         # Don't spam the EC console as fast as we can; leave some recovery time
         # in between commands.
         time.sleep(KEYPRESS_RECOVERY_TIME)

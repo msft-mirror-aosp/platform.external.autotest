@@ -27,7 +27,10 @@ normally. Exceptional cases are treated as test errors.
 # Argument 'cert_id' is the Certificate ID used for signing reports,
 # could be omitted.
 args_dict = utils.args_to_dict(args)
-cert_id = args_dict.get('cert_id', '')
+try:
+    cert_id = args_dict.get('cert_id', cert_id)
+except NameError:
+    cert_id = args_dict.get('cert_id', '')
 try:
     device_id = args_dict.get('device_id', device_id)
 except NameError:

@@ -1149,7 +1149,6 @@ class ModelExtensions(rdb_model_extensions.ModelValidators):
             'for type %s' % type(self))
 
 
-    @transaction.commit_on_success
     def update_from_serialized(self, serialized):
         """Updates local fields of an existing object from a serialized form.
 
@@ -1174,6 +1173,8 @@ class ModelExtensions(rdb_model_extensions.ModelValidators):
                              'objects: %s' % related)
 
         self._deserialize_local(local)
+        with transaction.atomic():
+            transaction.commit()
 
 
     def custom_deserialize_relation(self, link, data):

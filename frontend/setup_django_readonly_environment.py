@@ -6,7 +6,10 @@ Django will then use this file for configuration.
 """
 
 import os
+import django
+import django.setup
 
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE',
                       'autotest_lib.frontend.settings_readonly')
+django.setup()

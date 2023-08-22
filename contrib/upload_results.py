@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright 2020 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
@@ -24,8 +24,6 @@ from google.api_core import exceptions as cloud_exceptions
 # pylint: disable=no-name-in-module, import-error
 
 import common
-from autotest_lib.frontend import setup_django_readonly_environment
-from autotest_lib.frontend import setup_test_environment
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import mail, pidfile
 from autotest_lib.tko.parse import parse_one, export_tko_job_to_file

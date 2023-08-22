@@ -137,14 +137,14 @@ def _get_database_config(getter):
     @return A dictionary that can be used in the Django DATABASES setting.
     """
     config = {
-        'ENGINE': 'autotest_lib.frontend.db.backends.afe',
-        'PORT': getter('port', default=''),
-        'HOST': getter('host'),
-        'NAME': getter('database'),
-        'USER': getter('user'),
-        'PASSWORD': getter('password', default=''),
-        'READONLY_HOST': getter('readonly_host', default=getter('host')),
-        'READONLY_USER': getter('readonly_user', default=getter('user')),
+            'ENGINE': 'autotest_lib.frontend.db.backends.afe_sqlite',
+            'PORT': getter('port', default=''),
+            'HOST': getter('host'),
+            'NAME': getter('database'),
+            'USER': getter('user'),
+            'PASSWORD': getter('password', default=''),
+            'READONLY_HOST': getter('readonly_host', default=getter('host')),
+            'READONLY_USER': getter('readonly_user', default=getter('user')),
     }
     if config['READONLY_USER'] != config['USER']:
         config['READONLY_PASSWORD'] = getter('readonly_password', default='')

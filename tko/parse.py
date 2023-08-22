@@ -25,7 +25,7 @@ from autotest_lib.client.common_lib import mail, pidfile
 from autotest_lib.client.common_lib import utils
 try:
     from autotest_lib.frontend import setup_django_environment
-    from autotest_lib.frontend.tko import models as tko_models
+    from frontend.tko import models as tko_models
 except ImportError:
     tko_models = None
 from autotest_lib.server import site_utils

@@ -131,6 +131,7 @@ class Machine(dbmodels.Model):
     class Meta:
         """Metadata for class Machine."""
         db_table = 'tko_machines'
+        app_label = 'frontend.tko'
 
 
 class Kernel(dbmodels.Model):
@@ -147,7 +148,9 @@ class Kernel(dbmodels.Model):
 
 class Patch(dbmodels.Model):
     """Models a patch."""
-    kernel = dbmodels.ForeignKey(Kernel, db_column='kernel_idx')
+    kernel = dbmodels.ForeignKey(Kernel,
+                                 db_column='kernel_idx',
+                                 on_delete=dbmodels.CASCADE)
     name = dbmodels.CharField(blank=True, max_length=240)
     url = dbmodels.CharField(blank=True, max_length=900)
     the_hash = dbmodels.CharField(blank=True, max_length=105, db_column='hash')
@@ -173,7 +176,9 @@ class Job(dbmodels.Model, model_logic.ModelExtensions):
     tag = dbmodels.CharField(unique=True, max_length=100)
     label = dbmodels.CharField(max_length=300)
     username = dbmodels.CharField(max_length=240)
-    machine = dbmodels.ForeignKey(Machine, db_column='machine_idx')
+    machine = dbmodels.ForeignKey(Machine,
+                                  db_column='machine_idx',
+                                  on_delete=dbmodels.CASCADE)
     queued_time = dbmodels.DateTimeField(null=True, blank=True)
     started_time = dbmodels.DateTimeField(null=True, blank=True)
     finished_time = dbmodels.DateTimeField(null=True, blank=True)
@@ -188,7 +193,7 @@ class Job(dbmodels.Model, model_logic.ModelExtensions):
 
 class JobKeyval(dbmodels.Model):
     """Models a job keyval."""
-    job = dbmodels.ForeignKey(Job)
+    job = dbmodels.ForeignKey(Job, on_delete=dbmodels.CASCADE)
     key = dbmodels.CharField(max_length=90)
     value = dbmodels.CharField(blank=True, max_length=300)
 
@@ -201,19 +206,29 @@ class Test(dbmodels.Model, model_logic.ModelExtensions,
            model_logic.ModelWithAttributes):
     """Models a test."""
     test_idx = dbmodels.AutoField(primary_key=True)
-    job = dbmodels.ForeignKey(Job, db_column='job_idx')
+    job = dbmodels.ForeignKey(Job,
+                              db_column='job_idx',
+                              on_delete=dbmodels.CASCADE)
     test = dbmodels.CharField(max_length=300)
     subdir = dbmodels.CharField(blank=True, max_length=300)
-    kernel = dbmodels.ForeignKey(Kernel, db_column='kernel_idx')
-    status = dbmodels.ForeignKey(Status, db_column='status')
+    kernel = dbmodels.ForeignKey(Kernel,
+                                 db_column='kernel_idx',
+                                 on_delete=dbmodels.CASCADE)
+    status = dbmodels.ForeignKey(Status,
+                                 db_column='status',
+                                 on_delete=dbmodels.CASCADE)
     reason = dbmodels.CharField(blank=True, max_length=3072)
-    machine = dbmodels.ForeignKey(Machine, db_column='machine_idx')
+    machine = dbmodels.ForeignKey(Machine,
+                                  db_column='machine_idx',
+                                  on_delete=dbmodels.CASCADE)
     finished_time = dbmodels.DateTimeField(null=True, blank=True)
     started_time = dbmodels.DateTimeField(null=True, blank=True)
     invalid = dbmodels.BooleanField(default=False)
-    invalidates_test = dbmodels.ForeignKey(
-            'self', null=True, db_column='invalidates_test_idx',
-            related_name='invalidates_test_set')
+    invalidates_test = dbmodels.ForeignKey('self',
+                                           null=True,
+                                           db_column='invalidates_test_idx',
+                                           related_name='invalidates_test_set',
+                                           on_delete=dbmodels.CASCADE)
 
     objects = model_logic.ExtendedManager()
 
@@ -239,7 +254,9 @@ class Test(dbmodels.Model, model_logic.ModelExtensions,
 
 class TestAttribute(dbmodels.Model, model_logic.ModelExtensions):
     """Models a test attribute."""
-    test = dbmodels.ForeignKey(Test, db_column='test_idx')
+    test = dbmodels.ForeignKey(Test,
+                               db_column='test_idx',
+                               on_delete=dbmodels.CASCADE)
     attribute = dbmodels.CharField(max_length=90)
     value = dbmodels.CharField(blank=True, max_length=300)
     user_created = dbmodels.BooleanField(default=False)
@@ -255,7 +272,10 @@ class IterationAttribute(dbmodels.Model, model_logic.ModelExtensions):
     """Models an iteration attribute."""
     # This isn't really a primary key, but it's necessary to appease Django
     # and is harmless as long as we're careful.
-    test = dbmodels.ForeignKey(Test, db_column='test_idx', primary_key=True)
+    test = dbmodels.ForeignKey(Test,
+                               db_column='test_idx',
+                               primary_key=True,
+                               on_delete=dbmodels.CASCADE)
     iteration = dbmodels.IntegerField()
     attribute = dbmodels.CharField(max_length=90)
     value = dbmodels.CharField(blank=True, max_length=300)
@@ -270,7 +290,10 @@ class IterationAttribute(dbmodels.Model, model_logic.ModelExtensions):
 class IterationResult(dbmodels.Model, model_logic.ModelExtensions):
     """Models an iteration result."""
     # See comment on IterationAttribute regarding primary_key=True.
-    test = dbmodels.ForeignKey(Test, db_column='test_idx', primary_key=True)
+    test = dbmodels.ForeignKey(Test,
+                               db_column='test_idx',
+                               primary_key=True,
+                               on_delete=dbmodels.CASCADE)
     iteration = dbmodels.IntegerField()
     attribute = dbmodels.CharField(max_length=256)
     value = dbmodels.FloatField(null=True, blank=True)

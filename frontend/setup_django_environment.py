@@ -1,9 +1,12 @@
 import logging
 import os
+import django
 
 import common
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'autotest_lib.frontend.settings')
+django.setup()
+
 
 def _enable_autocommit_by_name(name):
     """Enable autocommit for the connection with matching name.

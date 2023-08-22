@@ -8,5 +8,7 @@ from autotest_lib.frontend.afe import readonly_connection
 readonly_connection.set_globally_disabled(True)
 
 import django.core.management
+import django.setup
 
 django.core.management.call_command('syncdb', interactive=False, verbosity=0)
+django.setup()

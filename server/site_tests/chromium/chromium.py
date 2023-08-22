@@ -1,15 +1,18 @@
-# Lint as: python2, python3
 # Copyright 2021 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
 import logging
 import os
+import sys
+import tempfile
+import shutil
 
-from autotest_lib.client.common_lib.error import TestFail
+from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import utils
 from autotest_lib.server import test
-from autotest_lib.server import utils
+
+from autotest_lib.server.cros import chrome_sideloader
 
 
 class chromium(test.test):
@@ -17,70 +20,66 @@ class chromium(test.test):
 
     version = 1
 
-    PROVISION_POINT = '/var/lib/imageloader/lacros'
-    MOUNT_POINT = '/usr/local/tmp/chromium'
-    CHRONOS_RES_DIR = '/home/chronos/user/results'
-
     def initialize(self, host=None, args=None):
         self.host = host
-        assert host.path_exists(self.PROVISION_POINT), (
-                'chromium test artifact is not provisioned by CTP. '
-                'Please check the CTP request.')
-        self._mount_runtime()
         args_dict = utils.args_to_dict(args)
         self.exe_rel_path = args_dict.get('exe_rel_path', '')
-        path_to_executable = os.path.join(self.MOUNT_POINT, self.exe_rel_path)
-        assert self.host.path_exists(path_to_executable), (
-                'chromium test executable is not mounted at the '
-                'expected path, %s' % path_to_executable)
+        self.server_pkg = tempfile.mkdtemp()
+        self.executable = os.path.join(self.server_pkg, self.exe_rel_path)
+        self.test_args = chrome_sideloader.get_test_args(
+                self.args_dict, 'test_args')
 
-        test_args = args_dict.get('test_args')
-        if not test_args:
-            test_args_b64 = args_dict.get('test_args_b64')
-            if test_args_b64:
-                test_args = base64.b64decode(test_args_b64)
-        if isinstance(test_args, bytes):
-            test_args = test_args.decode()
-        self.test_args = test_args
+        with tempfile.TemporaryDirectory() as tmp_archive_dir:
+            archive_file_path = chrome_sideloader.download_gs(
+                    args_dict.get('lacros_gcs_path'), tmp_archive_dir)
+            chrome_sideloader.unsquashfs(archive_file_path, self.server_pkg)
+            cmd = ['chmod', '-R', '755', self.server_pkg]
+            try:
+                utils.run(cmd, stdout_tee=sys.stdout, stderr_tee=sys.stderr)
+            except error.CmdError as e:
+                raise Exception('Error changing file permissions', e)
 
         self.shard_number = args_dict.get('shard_number', 1)
         self.shard_index = args_dict.get('shard_index', 0)
-
-    def _mount_runtime(self):
-        try:
-            self.host.run(
-                    'mkdir -p {mount} && '
-                    'imageloader --mount --mount_component=lacros'
-                    ' --mount_point={mount}'.format(mount=self.MOUNT_POINT))
-        except Exception as e:
-            raise TestFail('Exception while mount test artifact: %s', e)
+        self.max_run_sec = int(args_dict.get('max_run_sec', 3600))
 
     def cleanup(self):
-        try:
-            self.host.run('imageloader --unmount --mount_point={mount};'
-                          'rm -rf {mount} {chronos_res}'.format(
-                                  chronos_res=self.CHRONOS_RES_DIR,
-                                  mount=self.MOUNT_POINT))
-        except Exception as e:
-            logging.exception('Exception while clear test files: %s', e)
+        shutil.rmtree(self.server_pkg)
 
     def run_once(self):
-        cmd = ('{mount}/{exe} '
-               '--test-launcher-summary-output {chronos_res}/output.json '
-               '--test-launcher-shard-index {idx} '
-               '--test-launcher-total-shards {num} '.format(
-                       mount=self.MOUNT_POINT,
-                       exe=self.exe_rel_path,
-                       chronos_res=self.CHRONOS_RES_DIR,
-                       idx=self.shard_index,
-                       num=self.shard_number))
+        cmd = ' '.join([
+                'vpython3',
+                '-vpython-spec',
+                f'{self.server_pkg}/.vpython3',
+                self.executable,
+                '--test-launcher-summary-output',
+                f'{self.resultsdir}/output.json',
+                '--test-launcher-shard-index',
+                f'{self.shard_index}',
+                '--test-launcher-total-shards',
+                f'{self.shard_number}',
+                '--device',
+                self.host.hostname,
+                '--board',
+                self.host.host_info_store.get().board,
+                '--path-to-outdir',
+                f'{self.server_pkg}/out/Release',
+        ])
         if self.test_args:
-            cmd += '-- %s' % self.test_args
+            cmd.extend(self.test_args.split(' '))
+        logging.debug('Running: %s', cmd)
+        exit_code = 0
         try:
-            self.host.run('su chronos -c -- "%s"' % cmd)
-        except Exception as e:
-            raise TestFail('Exception while execute test: %s', e)
-        finally:
-            self.host.get_file('%s/*' % self.CHRONOS_RES_DIR,
-                               self.resultsdir,
-                               delete_dest=True)
+            result = utils.run(cmd,
+                               stdout_tee=sys.stdout,
+                               stderr_tee=sys.stderr,
+                               timeout=self.max_run_sec,
+                               extra_paths=['/opt/infra-tools'])
+            exit_code = result.exit_status
+        except error.CmdError as e:
+            logging.debug('Error occurred executing gtest tests.')
+            exit_code = e.result_obj.exit_status
+
+        if exit_code:
+            raise error.TestFail(
+                    f'Chromium Test failed to run. Exit code: {exit_code}')

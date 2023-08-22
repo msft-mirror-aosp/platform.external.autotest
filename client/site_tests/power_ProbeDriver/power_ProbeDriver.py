@@ -6,6 +6,7 @@
 import logging
 
 from autotest_lib.client.bin import test
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.power import power_status, power_utils
 
@@ -23,6 +24,12 @@ class power_ProbeDriver(test.test):
         if power_utils.is_charge_limit_enabled():
             prefs = {'charge_limit_enabled': 0}
             self.power_pref_changer = power_utils.PowerPrefChanger(prefs)
+
+            # Charge Limit may take slightly longer to disable, so poll for it.
+            utils.poll_for_condition(condition=power_status.get_status().on_ac,
+                                     timeout=10,
+                                     sleep_interval=1.0,
+                                     desc='Charge Limit disabled')
 
     def run_once(self, test_which='Mains'):
         # Gather power supplies

@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 import logging, time
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros import service_stopper
 from autotest_lib.client.cros.power import power_status
@@ -26,11 +27,14 @@ class power_BatteryCharge(power_test.power_Test):
             prefs = {'charge_limit_enabled': 0}
             self.power_pref_changer = power_utils.PowerPrefChanger(prefs)
 
-        self.status = power_status.get_status()
+        # Charge Limit may take slightly longer to disable, so poll for AC
+        # charging.
+        utils.poll_for_condition(condition=power_status.get_status().on_ac,
+                                 timeout=10,
+                                 sleep_interval=1.0,
+                                 desc='Charging enabled')
 
-        if not self.status.on_ac():
-            raise error.TestNAError(
-                  'This test needs to be run with the AC power online')
+        self.status = power_status.get_status()
 
         super(power_BatteryCharge, self).initialize(seconds_period=20,
                                                     pdash_note=pdash_note,

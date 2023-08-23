@@ -170,19 +170,24 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     SERVO_DRV_CAPS = ['OverrideWP', 'GscFullConsole', 'RebootECAP']
     # Cr50 may have flash operation errors during the test. Here's an example
     # of one error message.
-    # do_flash_op:245 errors 20 fsh_pe_control 40720004
-    # The stuff after the ':' may change, but all flash operation errors
-    # contain do_flash_op. do_flash_op is only ever printed if there is an
-    # error during the flash operation. Just search for do_flash_op to simplify
-    # the search string and make it applicable to all flash op errors.
-    FLASH_OP_ERROR_MSG = 'do_flash_op'
-    # USB issues may show up with the timer sof calibration overflow interrupt.
-    # Count these during cleanup.
-    USB_ERROR = 'timer_sof_calibration_overflow_int'
-    # Message printed during watchdog reset.
-    WATCHDOG_RST = 'WATCHDOG PC'
-    # Message printed when there's an invalid EPS seed size.
-    EPS_INVALID_SIZE = ': seed size'
+    # List of errors to search for. The first element is the string to look
+    # for. The second is a bool that tells whether the error should be fatal.
+    ERROR_DESC_LIST = [
+            # do_flash_op:245 errors 20 fsh_pe_control 40720004
+            # The stuff after the ':' may change, but all flash operation errors
+            # contain do_flash_op. do_flash_op is only ever printed if there is an
+            # error during the flash operation. Just search for do_flash_op to
+            # simplify the search string and make it applicable to all flash op
+            # errors.
+            ['do_flash_op', False],
+            # USB issues may show up with the timer sof calibration overflow
+            # interrupt. Count these during cleanup.
+            ['timer_sof_calibration_overflow_int', False],
+            # Message printed during watchdog reset.
+            ['WATCHDOG PC', True],
+            # Message printed when there's an invalid EPS seed size.
+            [': seed size', True]
+    ]
     # Regex for checking if the ccd device is connected.
     CCD_CONNECTED_RE = r'ccd.*: connected'
     # ===============================================================
@@ -1525,32 +1530,25 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             logging.info('There is not a cr50 uart file')
             return
 
-        flash_error_count = 0
-        usb_error_count = 0
-        watchdog_count = 0
-        eps_invalid_size_count = 0
+        error_counts = [0 for i in range(len(self.ERROR_DESC_LIST))]
         with open(cr50_uart_file, 'r') as f:
             for line in f:
-                if self.FLASH_OP_ERROR_MSG in line:
-                    flash_error_count += 1
-                if self.USB_ERROR in line:
-                    usb_error_count += 1
-                if self.WATCHDOG_RST in line:
-                    watchdog_count += 1
-                if self.EPS_INVALID_SIZE in line:
-                    eps_invalid_size_count += 1
+                for i, gsc_err in enumerate(self.ERROR_DESC_LIST):
+                    srch_str = gsc_err[0]
+                    if srch_str in line:
+                        error_counts[i] += 1
 
-        # Log any flash operation errors.
-        logging.info('do_flash_op count: %d', flash_error_count)
-        logging.info('usb error count: %d', usb_error_count)
-        logging.info('watchdog count: %d', watchdog_count)
-        logging.info('eps invalid size count: %d', eps_invalid_size_count)
-        if eps_invalid_size_count:
-            raise error.TestFail('Found %r %d times in logs after %s' %
-                                 (self.EPS_INVALID_SIZE, eps_invalid_size_count, desc))
-        if watchdog_count:
-            raise error.TestFail('Found %r %d times in logs after %s' %
-                                 (self.WATCHDOG_RST, watchdog_count, desc))
+        error_msg = []
+        for i, count in enumerate(error_counts):
+            error_str, is_fatal = self.ERROR_DESC_LIST[i]
+            fatal_str = ''
+            if is_fatal and count:
+                error_msg.append('Found %r %d times in logs' %
+                                 (error_str, count))
+                fatal_str = '(fatal)'
+            logging.info('%r count%s: %d', error_str, fatal_str, count)
+        if error_msg:
+            raise error.TestFail('%s: %s' % (desc, ','.join(error_msg)))
 
     def ap_ro_version_is_supported(self, version):
         """Returns True if GSC supports the given version."""

@@ -103,6 +103,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
 
     # Ti50 doesn't configure PLT_RST vs SYS_RST. All boards use PLT_RST
     BOARD_PROP_ALWAYS_TRUE = ['BOARD_USE_PLT_RESET']
+    # Ti50 doesn't have any errors to track right now.
+    ERROR_DESC_LIST = []
 
     def strip_timestamp(self, result):
         """Remove the timstamp from the result output.

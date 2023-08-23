@@ -15,6 +15,7 @@ from autotest_lib.client.cros.chameleon import audio_widget_link
 from autotest_lib.client.cros.chameleon import chameleon_audio_helper
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server.cros.audio import audio_test
+from autotest_lib.client.cros.chameleon.chameleon import ChameleonPort
 
 
 class audio_AudioAfterReboot(audio_test.AudioTest):
@@ -117,12 +118,16 @@ class audio_AudioAfterReboot(audio_test.AudioTest):
                 logging.info('Disconnecting audio bus before reboot')
                 self.widget_link.disconnect_audio_bus()
 
+            if self.host.chameleon.get_platform() == "RASPI":
+                ChameleonPort(self.host.chameleon._chameleond_proxy, 9).unplug()
             self.host.reboot()
             utils.poll_for_condition(
                     condition=self.factory.ready,
                     timeout=self.PRC_RECONNECT_TIMEOUT,
             )
             logging.debug('After reboot')
+            if self.host.chameleon.get_platform() == "RASPI":
+                ChameleonPort(self.host.chameleon._chameleond_proxy, 9).plug()
 
             audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
                                                   self.resultsdir,

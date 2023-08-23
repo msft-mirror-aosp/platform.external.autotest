@@ -24,9 +24,15 @@ chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, chameleon_args=chameleon_args)
+
+    # TODO(b/279861793): use the correct binder after migration is completed.
+    use_pi_testbed = host.chameleon.get_platform() == "RASPI"
+    bind_from_arg = (chameleon_audio_ids.ChameleonIds.USBOUT if use_pi_testbed
+                   else chameleon_audio_ids.ChameleonIds.LINEOUT)
+
     job.run_test("audio_AudioAfterReboot", host=host,
                  golden_data=(audio_test_data.SIMPLE_FREQUENCY_TEST_FILE, 2000),
-                 bind_from=chameleon_audio_ids.ChameleonIds.LINEOUT,
+                 bind_from=bind_from_arg,
                  bind_to=chameleon_audio_ids.CrosIds.EXTERNAL_MIC,
                  audio_nodes=([audio_test_utils.get_headphone_node(host)],
                               ['MIC']),

@@ -181,6 +181,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     USB_ERROR = 'timer_sof_calibration_overflow_int'
     # Message printed during watchdog reset.
     WATCHDOG_RST = 'WATCHDOG PC'
+    # Message printed when there's an invalid EPS seed size.
+    EPS_INVALID_SIZE = ': seed size'
     # Regex for checking if the ccd device is connected.
     CCD_CONNECTED_RE = r'ccd.*: connected'
     # ===============================================================
@@ -1526,6 +1528,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         flash_error_count = 0
         usb_error_count = 0
         watchdog_count = 0
+        eps_invalid_size_count = 0
         with open(cr50_uart_file, 'r') as f:
             for line in f:
                 if self.FLASH_OP_ERROR_MSG in line:
@@ -1534,11 +1537,17 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                     usb_error_count += 1
                 if self.WATCHDOG_RST in line:
                     watchdog_count += 1
+                if self.EPS_INVALID_SIZE in line:
+                    eps_invalid_size_count += 1
 
         # Log any flash operation errors.
         logging.info('do_flash_op count: %d', flash_error_count)
         logging.info('usb error count: %d', usb_error_count)
         logging.info('watchdog count: %d', watchdog_count)
+        logging.info('eps invalid size count: %d', eps_invalid_size_count)
+        if eps_invalid_size_count:
+            raise error.TestFail('Found %r %d times in logs after %s' %
+                                 (self.EPS_INVALID_SIZE, eps_invalid_size_count, desc))
         if watchdog_count:
             raise error.TestFail('Found %r %d times in logs after %s' %
                                  (self.WATCHDOG_RST, watchdog_count, desc))

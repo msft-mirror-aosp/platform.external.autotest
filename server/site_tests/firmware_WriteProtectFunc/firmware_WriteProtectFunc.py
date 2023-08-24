@@ -125,6 +125,48 @@ class firmware_WriteProtectFunc(FirmwareTest):
                                  (checkfor, command, '\n\t'.join(output)))
         return output
 
+    def _generate_modified_ro(self, target, ro_before, ro_test):
+        """
+        Read RO into ro_before and generate a modified (broken) ro_test.
+
+        @param target: Which firmware to get the relative path to,
+                       either 'bios' or 'ec'.
+        @param ro_before: Path to ro_before.
+        @param ro_test: Path to ro_test.
+        """
+        # Fetch firmware from flash. This serves as the base of ro_test
+        self.run_cmd(
+                'flashrom -p %s -r -i WP_RO:%s ' %
+                (self._flashrom_targets[target], ro_before), 'SUCCESS')
+
+        lines = self.run_cmd('dump_fmap -p %s' % ro_before)
+        FMAP_AREA_NAMES = ['name', 'offset', 'size']
+
+        modified = False
+        wpro_offset = -1
+        for line in lines:
+            region = dict(zip(FMAP_AREA_NAMES, line.split()))
+            if region['name'] == 'WP_RO':
+                wpro_offset = int(region['offset'])
+        if wpro_offset == -1:
+            raise error.TestFail('WP_RO not found in fmap')
+        for line in lines:
+            region = dict(zip(FMAP_AREA_NAMES, line.split()))
+            if region['name'] == 'RO_FRID':
+                modified = True
+                self.run_cmd('cp %s %s' % (ro_before, ro_test))
+                self.run_cmd(
+                        'dd if=%s bs=1 count=%d skip=%d '
+                        '| tr "[a-zA-Z]" "[A-Za-z]" '
+                        '| dd of=%s bs=1 count=%d seek=%d conv=notrunc' %
+                        (ro_test, int(region['size']), int(region['offset']) -
+                         wpro_offset, ro_test, int(region['size']),
+                         int(region['offset']) - wpro_offset))
+
+        if not modified:
+            raise error.TestFail('Could not find RO_FRID in %s' %
+                                 target.upper())
+
     def get_wp_ro_firmware_section(self, firmware_file, wp_ro_firmware_file):
         """
         Read out WP_RO section from the firmware file.
@@ -200,39 +242,7 @@ class firmware_WriteProtectFunc(FirmwareTest):
             # Firmware as read after writing flash
             ro_after = os.path.join(work_path, '%s_ro_after.bin' % target)
 
-            # Fetch firmware from flash. This serves as the base of ro_test
-            self.run_cmd(
-                    'flashrom -p %s -r -i WP_RO:%s ' %
-                    (self._flashrom_targets[target], ro_before), 'SUCCESS')
-
-            lines = self.run_cmd('dump_fmap -p %s' % ro_before)
-            FMAP_AREA_NAMES = ['name', 'offset', 'size']
-
-            modified = False
-            wpro_offset = -1
-            for line in lines:
-                region = dict(zip(FMAP_AREA_NAMES, line.split()))
-                if region['name'] == 'WP_RO':
-                    wpro_offset = int(region['offset'])
-            if wpro_offset == -1:
-                raise error.TestFail('WP_RO not found in fmap')
-            for line in lines:
-                region = dict(zip(FMAP_AREA_NAMES, line.split()))
-                if region['name'] == 'RO_FRID':
-                    modified = True
-                    self.run_cmd('cp %s %s' % (ro_before, ro_test))
-                    self.run_cmd(
-                            'dd if=%s bs=1 count=%d skip=%d '
-                            '| tr "[a-zA-Z]" "[A-Za-z]" '
-                            '| dd of=%s bs=1 count=%d seek=%d conv=notrunc' %
-                            (ro_test, int(region['size']),
-                             int(region['offset']) - wpro_offset, ro_test,
-                             int(region['size']),
-                             int(region['offset']) - wpro_offset))
-
-            if not modified:
-                raise error.TestFail('Could not find RO_FRID in %s' %
-                                     target.upper())
+            self._generate_modified_ro(target, ro_before, ro_test)
 
             # Writing WP_RO section is expected to fail.
             self.run_cmd('flashrom -p %s -w -i WP_RO:%s' %
@@ -258,6 +268,8 @@ class firmware_WriteProtectFunc(FirmwareTest):
         for target in self._targets:
             ro_after = os.path.join(work_path, '%s_ro_after.bin' % target)
             ro_test = os.path.join(work_path, '%s_ro_test.bin' % target)
+
+            self._generate_modified_ro(target, ro_test, ro_test)
 
             # Writing WP_RO section is expected to succeed.
             self.run_cmd('flashrom -p %s -w -i WP_RO:%s' %

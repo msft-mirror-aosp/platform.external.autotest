@@ -4651,6 +4651,24 @@ class BluetoothAdapterTests(test.test):
         """
         return self.bluetooth_facade.policy_get_device_affected(device.address)
 
+    def poll_policy_result(self, device):
+        """Polls the policy result for device
+
+        @param device: the peripheral device
+
+        @returns: True if the device is affected by the enterprise policy.
+                  False if not. None if the device is not found.
+        """
+        result = [None]
+
+        def poll_func():
+            result[0] = self.policy_is_affected(device)
+            return result[0] is not None
+
+        self._wait_for_condition(poll_func,
+                                 'policy applied on %s' % device.address)
+
+        return result[0]
 
     @test_retry_and_log(False)
     def test_affected_by_policy(self, device):
@@ -4659,7 +4677,7 @@ class BluetoothAdapterTests(test.test):
         @param device: the peripheral device
         @returns: True if the device is affected; False otherwise.
         """
-        result = self.policy_is_affected(device)
+        result = self.poll_policy_result(device)
         logging.debug('policy_is_affected(%s): %s', device.address, result)
         self.results = {
                 'expected_result': 'True (affected)',
@@ -4675,7 +4693,7 @@ class BluetoothAdapterTests(test.test):
         @param device: the peripheral device
         @returns: True if the device is not affected; False otherwise.
         """
-        result = self.policy_is_affected(device)
+        result = self.poll_policy_result(device)
         logging.debug('policy_is_affected(%s): %s', device.address, result)
         self.results = {
                 'expected_result': 'False (not affected)',

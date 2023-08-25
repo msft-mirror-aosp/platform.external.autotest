@@ -25,7 +25,8 @@ check_running_rw_firmware
 check_is_rollback_set_to_initial_val
 
 echo "Flashing RO firmware (expected to fail)"
-flash_ro_cmd="flashrom --noverify-all -V -p ec:type=fp -i EC_RO -w ${fw_file}"
+# TODO: b/138782393 - Replace subprocessing with libec ASAP!
+flash_ro_cmd="/opt/sbin/crosec-legacy-drv --noverify-all -V -p ec:type=fp -i EC_RO -w ${fw_file}"
 if ${flash_ro_cmd}; then
   echo "Expected flashing of read-only firmware to fail"
   exit 1

@@ -11,4 +11,5 @@ if [[ ! -f "${FW_FILE}" ]]; then
   exit 1
 fi
 
-flashrom --noverify-all -V -p ec:type=fp -i EC_RW -w "${FW_FILE}"
+# TODO: b/138782393 - Replace subprocessing with libec ASAP!
+/opt/sbin/crosec-legacy-drv --noverify-all -V -p ec:type=fp -i EC_RW -w "${FW_FILE}"

@@ -38,6 +38,8 @@ class firmware_Cr50FIPSDS(Cr50Test):
 
     def run_once(self, host):
         """Verify FIPS after deep sleep."""
+        if not self.check_ec_capability(suppress_warning=True):
+            raise error.TestNAError('Only supported on devices with ECs')
         if not self.gsc.has_command('fips'):
             raise error.TestNAError('Cr50 does not support fips')
 

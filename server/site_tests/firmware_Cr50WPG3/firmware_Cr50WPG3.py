@@ -14,7 +14,7 @@ class firmware_Cr50WPG3(Cr50Test):
     """Verify WP in G3."""
     version = 1
 
-    WAIT_FOR_STATE = 10
+    WAIT_FOR_STATE = 20
     WP_REGEX = r'WP status: ((en|dis)abled)'
     STATUS_CMD = '--wp-status --ignore-hw'
     WP_ENABLE_CMD = '--wp-enable'
@@ -125,9 +125,6 @@ class firmware_Cr50WPG3(Cr50Test):
 
         self.faft_client.system.run_shell_command('poweroff')
         time.sleep(self.WAIT_FOR_STATE)
-        if hasattr(self, 'ec'):
-            self.ec.send_command('hibernate')
-            time.sleep(self.WAIT_FOR_STATE)
 
         # SW WP can be enabled at any time.
         logging.info('Check enabling SW WP with HW WP enabled')

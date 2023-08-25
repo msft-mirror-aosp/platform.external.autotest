@@ -754,6 +754,9 @@ class firmware_Cr50DeviceState(Cr50Test):
         if skip_s0ix and self.s0ix_supported:
             logging.info('S0ix faft_config override')
             self.s0ix_supported = False
+        logging.info('arm: %s', 'yes' if self.is_arm else 'no')
+        logging.info('dts: %ssupported', '' if supports_dts_control else 'un')
+        logging.info('ccd: %sabled', 'en' if self.ccd_enabled else 'dis')
         logging.info('S0ix: %s', self.s0ix_supported)
         # Check if the device supports S3.
         self.s3_supported = self.is_s3_supported()

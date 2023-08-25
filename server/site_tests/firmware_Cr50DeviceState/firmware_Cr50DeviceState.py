@@ -116,7 +116,8 @@ class firmware_Cr50DeviceState(Cr50Test):
                    fwmp=None,
                    pcr_extend=False,
                    default_suspend=True,
-                   manual_suspend=True):
+                   manual_suspend=True,
+                   ccd_en=None):
         if not host.servo or host.servo.main_device_is_ccd():
             raise error.TestNAError(
                     "Test can't run with ccd. Run with servo micro or c2d2")
@@ -131,6 +132,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.pcr_extend = pcr_extend
         self.default_suspend = default_suspend
         self.manual_suspend = manual_suspend
+        self.test_ccd_en = ccd_en
 
         if self.faft_config.ec_forwards_short_pp_press and self.manual_suspend:
             logging.warning(
@@ -741,9 +743,21 @@ class firmware_Cr50DeviceState(Cr50Test):
         supports_dts_control = self.gsc.servo_dts_mode_is_valid()
 
         if supports_dts_control:
-            self.gsc.ccd_disable(raise_error=True)
+            if self.test_ccd_en:
+                logging.info('Enable CCD for test')
+                self.gsc.ccd_enable(raise_error=True)
+            else:
+                logging.info('Disable CCD for test')
+                self.gsc.ccd_disable(raise_error=True)
 
         self.ccd_enabled = self.gsc.ccd_is_enabled()
+
+        # If a ccd state was requested and the ccd state doesn't match, fail
+        # with test na.
+        if self.test_ccd_en != None and self.test_ccd_en != self.ccd_enabled:
+            raise error.TestNAError('Setup does not support dts mode. Cannot '
+                                    'verify state with ccd %sabled' %
+                                    ('en' if self.test_ccd_en else 'dis'))
         # Check if the device supports S0ix.
         self.s0ix_supported = not self.host.run(
                 'check_powerd_config --suspend_to_idle',
@@ -789,24 +803,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.host.set_default_run_timeout(60)
         self.run_through_power_states()
 
-        if supports_dts_control and not self.fwmp:
-            ccd_was_enabled = self.ccd_enabled
-            self.gsc.ccd_enable(raise_error=supports_dts_control)
-            self.ccd_enabled = self.gsc.ccd_is_enabled()
-            # If the first run had ccd disabled, and the test was able to enable
-            # ccd, run through the states again to make sure there are no issues
-            # come up when ccd is enabled.
-            if not ccd_was_enabled and self.ccd_enabled:
-                self.run_through_power_states()
-        else:
-            logging.info('Current setup only supports test with ccd %sabled.',
-                    'en' if self.ccd_enabled else 'dis')
-
         self.trigger_s0()
         if self.all_errors:
             raise error.TestFail('Unexpected Device State (fwmp %r): %s' %
                                  (self.fwmp, self.all_errors))
-        if not supports_dts_control:
-            raise error.TestNAError('Verified device state with %s. Please '
-                    'run with type c servo v4 to test full device state.' %
-                    self.ccd_str)

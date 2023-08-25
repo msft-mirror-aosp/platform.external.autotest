@@ -145,8 +145,18 @@ class firmware_Cr50ECReset(Cr50Test):
 
     def check_basic_ecrst(self):
         """Verify cr50 can hold the EC in reset"""
+        if not self.gsc.get_sleepmask():
+            logging.info('Sleepmask is 0. gsc will probably enter deep sleep.')
+        ds_count = self.gsc.get_deep_sleep_count()
         self.cr50_ecrst('on')
         if self.ec_is_up():
+            if ds_count != self.gsc.get_deep_sleep_count():
+                logging.info('Asserting ecrst put gsc in deep sleep')
+                logging.info(
+                        'Resume releases ec reset. Cannot check ecrst behavior'
+                )
+                self.guarantee_ec_is_up()
+                return
             raise error.TestFail('Could not use cr50 ecrst to hold the EC in '
                                  'reset')
         # Verify cr50 can release the EC from reset

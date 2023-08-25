@@ -27,7 +27,7 @@ class chromium(test.test):
         self.server_pkg = tempfile.mkdtemp()
         self.executable = os.path.join(self.server_pkg, self.exe_rel_path)
         self.test_args = chrome_sideloader.get_test_args(
-                self.args_dict, 'test_args')
+                args_dict, 'test_args')
 
         with tempfile.TemporaryDirectory() as tmp_archive_dir:
             archive_file_path = chrome_sideloader.download_gs(

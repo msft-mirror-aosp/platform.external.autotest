@@ -51,7 +51,7 @@ class firmware_Cr50WPG3(Cr50Test):
         """Returns 'on' if write protect is enabled. 'off' if it's disabled."""
         output = self.servo.system_output(self._futility_cmd + self.STATUS_CMD)
         m = re.search(self.WP_REGEX, output)
-        logging.info('WP is %s', m.group(1) if m else 'UKNOWN')
+        logging.info('SW WP is %s', m.group(1) if m else 'UKNOWN')
         logging.info('futility output\n%s', output)
         if not m:
             raise error.TestError(
@@ -63,7 +63,7 @@ class firmware_Cr50WPG3(Cr50Test):
         time.sleep(self.gsc.SHORT_WAIT)
         output = self.servo.system_output(self._futility_cmd + cmd,
                                           ignore_status=True)
-        logging.debug('output: %r', output)
+        logging.debug('SW WP output: %r', output)
         time.sleep(self.gsc.SHORT_WAIT)
         return self.get_wp_state()
 
@@ -72,7 +72,7 @@ class firmware_Cr50WPG3(Cr50Test):
         if not self.servo.get_ccd_servo_device():
             raise error.TestNAError('Only supported with dual-v4')
         if self.check_cr50_capability(['wp_on_in_g3'], suppress_warning=True):
-            raise error.TestNAError('WP not pulled up in G3')
+            raise error.TestNAError('config: WP not pulled up in G3')
         try:
             self.gsc.ccd_enable(True)
         except:
@@ -114,12 +114,12 @@ class firmware_Cr50WPG3(Cr50Test):
         # doesn't, it may be a setup issue.
         logging.info('Checking WP from DUT')
         if not self.checkers.crossystem_checker({'wpsw_cur': '0'}):
-            raise error.TestError("WP isn't disabled in S0")
+            raise error.TestError("HW WP isn't disabled in S0")
 
         # Enable HW WP.
         self.gsc.set_wp_state('enable atboot')
         if not self.checkers.crossystem_checker({'wpsw_cur': '1'}):
-            raise error.TestError("WP isn't enabled in S0")
+            raise error.TestError("HW WP isn't enabled in S0")
 
         self.faft_client.system.run_shell_command('poweroff')
         time.sleep(self.WAIT_FOR_STATE)
@@ -132,7 +132,7 @@ class firmware_Cr50WPG3(Cr50Test):
         if self.set_sw_wp(self.WP_ENABLE_CMD) != self.ENABLED:
             self.gsc.reboot()
             self._try_to_bring_dut_up()
-            raise error.TestFail('Unable to enable wp in G3')
+            raise error.TestFail('Unable to enable SW WP in G3')
 
         # It shouldn't be possible to disable SW WP with HW WP enabled.
         logging.info('Check disabling SW WP with HW WP enabled')

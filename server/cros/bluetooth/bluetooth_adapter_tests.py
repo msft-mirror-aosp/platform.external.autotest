@@ -29,6 +29,8 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.server.cros.bluetooth import bluetooth_test_utils
+from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
+        A2DP, CODEC_DICT)
 from autotest_lib.server import test
 
 from autotest_lib.client.bin.input.linux_input import (
@@ -2666,6 +2668,82 @@ class BluetoothAdapterTests(test.test):
             logging.error('test_cancel_pairing: unexpected error %s', e)
 
         return False
+
+    def get_codec_from_btmon(self):
+        """Get the media codec from the recorded btmon log.
+
+        The self._get_btmon_log() should be invoked before calling this method.
+
+        An example AVDTP configuration packet for the AAC codec looks like
+        < ACL Data TX: Handle 256 flags 0x00 dlen 22   #7227 [hci0]
+          Channel: 64 len 18 [PSM 25 mode Basic (0x00)] {chan 0}
+          AVDTP: Set Configuration (0x03) Command (0x00) type 0x00 label 3 nosp
+            ACP SEID: 1
+            INT SEID: 2
+            Service Category: Media Transport (0x01)
+            Service Category: Media Codec (0x07)
+              Media Type: Audio (0x00)
+              Media Codec: MPEG-2,4 AAC (0x02)
+                Object Type: MPEG-2 AAC LC (0x80)
+                Frequency: 44100 (0x100)
+                Channels: 2 (0x04)
+                Bitrate: 320000bps
+                VBR: No
+            Service Category: Delay Reporting (0x08)
+
+        @returns: the codec number if found; None otherwise.
+
+        """
+        start_str = 'AVDTP: Set Configuration'
+        search_str = 'Media Codec:'
+        pattern = r'%s .*?\((0x[0-9a-fA-F]{2})\)' % search_str
+        config_output = self.bluetooth_facade.btmon_get(search_str, start_str)
+        for line in config_output:
+            match = re.search(pattern, line)
+            if match:
+                codec_num = int(match.group(1), 16)
+                codec = CODEC_DICT.get(codec_num)
+                logging.debug('codec: %s (codec number: %s)',
+                              codec, hex(codec_num))
+                break
+        else:
+            logging.warn('failed to find Media Codec in the btmon log')
+            codec = None
+        return codec
+
+    @test_retry_and_log(False)
+    def test_audio_codec(self, device):
+        """Test that the expected audio codec is configured successfully.
+
+        The btmon thread started at test_pairing_for_audio should be
+        stopped here.
+
+        @param device: the meta device containing a Bluetooth device
+
+        @returns: True if the expected codec is configured correctly.
+                  False otherwise.
+
+        """
+        try:
+            codec_found = utils.poll_for_condition(
+                    condition=self.get_codec_from_btmon,
+                    sleep_interval=self.ADAPTER_POLLING_DEFAULT_SLEEP_SECS,
+                    desc='get codec from btmon')
+        except utils.TimeoutError as e:
+            logging.error('get_codec_from_btmon: %s', e)
+            codec_found = None
+        except:
+            logging.error('get_codec_from_btmon: unexpected error')
+            codec_found = None
+
+        self.bluetooth_facade.btmon_stop()
+
+        codec_expected = self.get_a2dp_codec_name()
+        logging.info('codec configured: %s (expected %s)',
+                     codec_found, codec_expected)
+        self.results = dict()
+        self.results['codec'] = (codec_expected == codec_found)
+        return all(self.results.values())
 
     @test_retry_and_log
     def test_remove_pairing(self, device_address, identity_address=None):

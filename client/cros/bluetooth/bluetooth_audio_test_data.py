@@ -67,6 +67,25 @@ HFP_WBS = 'hfp_wbs'
 HFP_WBS_MEDIUM = 'hfp_wbs_medium'
 VISQOL_BUFFER_LENGTH = 10.0
 
+# Audio servers
+PULSEAUDIO = 'pulseaudio'
+AUDIO_SERVER = 'audio_server'
+
+# Audio codecs
+A2DP_CODEC = 'a2dp_codec'
+SBC = 'sbc'
+AAC = 'aac'
+A2DP_CODEC_VENDOR = 'vendor'
+
+# Refer to
+# https://source.chromium.org/chromiumos/chromiumos/codesearch/+/
+#         main:src/third_party/bluez/current/profiles/audio/a2dp-codecs.h
+CODEC_DICT = {
+        0x00: SBC,
+        0x02: AAC,
+        0xff: A2DP_CODEC_VENDOR,
+}
+
 
 def download_file_from_bucket(dir, file_address, verify_download):
     """Extract tarball specified by tar_path to directory dir.

@@ -32,7 +32,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                       device,
                       test_method,
                       test_profile,
-                      collect_audio_files=False):
+                      collect_audio_files=False,
+                      audio_config={}):
         """audio procedure of running a specified test method.
 
         @param device: the bt peer device
@@ -41,15 +42,31 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                              A2DP, HFP_WBS or HFP_NBS
         @param collect_audio_files: set to True to collect the recorded audio
                                     files.
+        @param audio_config: the test specific audio config
         """
         self.test_reset_on_adapter()
         self.test_bluetoothd_running()
-        self.initialize_bluetooth_audio(device, test_profile)
+        self.initialize_bluetooth_audio(device,
+                                        test_profile,
+                                        audio_config=audio_config)
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
+
+        # Capture the btmon log to determine the codec used.
+        # This is performed for the A2DP profile for now.
+        # The HFP profile will be covered later.
+        if self.is_a2dp_profile(test_profile):
+            self.bluetooth_facade.btmon_start()
+
         self.test_pairing(device.address, device.pin, trusted=True)
         self.test_connection_by_adapter(device.address)
         test_method()
+
+        # Stop the btmon log and verify the codec.
+        if self.is_a2dp_profile(test_profile):
+            self.bluetooth_facade.btmon_stop()
+            self.test_audio_codec(device)
+
         self.collect_audio_diagnostics()
         if collect_audio_files:
             self.collect_audio_files()
@@ -61,7 +78,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                              device,
                              test_sequence,
                              test_profile,
-                             collect_audio_files=False):
+                             collect_audio_files=False,
+                             audio_config={}):
         """Audio procedure of running a specified test sequence.
 
         @param device: The Bluetooth peer device.
@@ -70,11 +88,14 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                              A2DP, A2DP_MEDIUM, HFP_WBS or HFP_NBS.
         @param collect_audio_files: set to True to collect the recorded audio
                             files.
+        @param audio_config: the test specific audio config
         """
         # Setup the Bluetooth device.
         self.test_reset_on_adapter()
         self.test_bluetoothd_running()
-        self.initialize_bluetooth_audio(device, test_profile)
+        self.initialize_bluetooth_audio(device,
+                                        test_profile,
+                                        audio_config=audio_config)
         test_sequence()
         self.collect_audio_diagnostics()
         if collect_audio_files:
@@ -82,18 +103,20 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.cleanup_bluetooth_audio(device, test_profile)
 
 
-    def _au_a2dp_test(self, test_profile, duration=0):
+    def _au_a2dp_test(self, test_profile, duration=0, audio_config={}):
         """A2DP test with sinewaves on the two channels.
 
         @param test_profile: which test profile is used, A2DP or A2DP_LONG.
         @param duration: the duration to test a2dp. The unit is in seconds.
                 if duration is 0, use the default duration in test_profile.
+        @param audio_config: the test specific audio config
         """
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_run_method(device,
                            lambda: self.test_a2dp_sinewaves(
                                    device, test_profile, duration),
-                           test_profile)
+                           test_profile,
+                           audio_config=audio_config)
 
 
     @test_wrapper('A2DP sinewave test',
@@ -475,6 +498,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         @param test_name: the test to run, or None for all tests
         """
         self.host = host
+        self.cleanup_audio_config()
 
         self.quick_test_init(host,
                              use_btpeer=True,

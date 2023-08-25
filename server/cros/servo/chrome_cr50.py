@@ -429,7 +429,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         ],
                                                 safe=True)[0]
         _, fwmp, forced, enabled, _, _, atboot = rv
-        logging.info(rv)
+        logging.info(rv[0])
         return (not forced, enabled == 'enabled', atboot == 'follow',
                 atboot == 'enabled', not not fwmp)
 

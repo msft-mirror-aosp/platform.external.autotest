@@ -28,16 +28,14 @@ class firmware_Cr50WPG3(Cr50Test):
         try:
             # Reset the WP state.
             if hasattr(self, '_start_fw_wp_vref'):
-                self.gsc.send_command('ccdblock IGNORE_SERVO enable')
-                self.gsc.set_wp_state('disable atboot')
-                self.set_sw_wp(self.WP_DISABLE_CMD)
-                self.gsc.set_wp_state('follow_batt_pres atboot')
+                self.set_gsc_hw_wp('disable atboot')
+                self.ccd_set_sw_wp(self.WP_DISABLE_CMD)
+                self.set_gsc_hw_wp('follow_batt_pres atboot')
                 self.servo.set_nocheck('fw_wp_state', self._start_fw_wp_state)
                 if self._start_fw_wp_vref:
                     self.servo.set_nocheck('fw_wp_vref', self._start_fw_wp_vref)
             self.gsc.send_command('rddkeepalive disable')
-            self.gsc.send_command('ccdblock IGNORE_SERVO disable')
-            self.servo.enable_main_servo_device()
+            self.enable_servo_ec_uart()
         finally:
             super(firmware_Cr50WPG3, self).cleanup()
 
@@ -47,7 +45,7 @@ class firmware_Cr50WPG3(Cr50Test):
                 'sudo futility flash -p raiden_debug_spi:target=AP,serial=%s '
                 % self.gsc.get_serial())
 
-    def get_wp_state(self):
+    def ccd_get_sw_wp(self):
         """Returns 'on' if write protect is enabled. 'off' if it's disabled."""
         output = self.servo.system_output(self._futility_cmd + self.STATUS_CMD)
         m = re.search(self.WP_REGEX, output)
@@ -58,21 +56,49 @@ class firmware_Cr50WPG3(Cr50Test):
                     'Unable to find WP status in futility output')
         return m.group(1)
 
-    def set_sw_wp(self, cmd):
+    def ccd_set_sw_wp(self, cmd):
         """Set SW WP."""
+        self.enable_ccd_spi()
         time.sleep(self.gsc.SHORT_WAIT)
         output = self.servo.system_output(self._futility_cmd + cmd,
                                           ignore_status=True)
         logging.debug('SW WP output: %r', output)
         time.sleep(self.gsc.SHORT_WAIT)
-        return self.get_wp_state()
+        sw_wp = self.ccd_get_sw_wp()
+        # Done with ccd spi access. Reenable servo ec uart access.
+        self.enable_servo_ec_uart()
+        return sw_wp
+
+    def find_ec_wp_gpio_name(self):
+        """Find the EC WP gpio name from ectool gpioget."""
+        self.wp_gpio = None
+        result = self.host.run('ectool gpioget | grep WP').stdout.strip()
+        logging.info('WP gpio output: %s', result)
+        if len(result.splitlines()) > 1:
+            logging.info('Too many wp lines.')
+            return
+        self.wp_gpio = result.split()[1]
+        logging.info('WP GPIO: %s', self.wp_gpio)
+
+    def get_ec_hw_wp(self):
+        """Check the WP GPIO from the EC console."""
+        if not self.wp_gpio:
+            return
+        for i in range(3):
+            try:
+                rv = self.ec.send_command_get_output(
+                        'gpioget %s' % self.wp_gpio,
+                        ['gpioget.*([01]).*%s.*>' % self.wp_gpio])[0][1]
+                logging.info('EC %s: %s', self.wp_gpio, rv)
+                return
+            except Exception as e:
+                logging.info('Issue getting ec wp: %s', e)
 
     def enable_ccd_spi(self):
         """Enable ccd spi access.
 
         Make GSC ignore servo, so it can enable CCD SPI access.
         """
-        self.fast_ccd_open(enable_testlab=True, reset_ccd=False)
         self.servo.set('ec_uart_en', 'off')
         self.gsc.send_command('ccdblock IGNORE_SERVO enable')
         self.gsc.send_command('rddkeepalive enable')
@@ -83,14 +109,20 @@ class firmware_Cr50WPG3(Cr50Test):
         """Enable servo control of ec uart."""
         self.servo.set('ec_uart_en', 'on')
         self.servo.enable_main_servo_device()
+        time.sleep(2)
+        self.gsc.get_ccdstate()
 
-    def check_ec_state(self):
-        """Check power state on the EC."""
-        self.enable_servo_ec_uart()
+    def check_state_from_consoles(self):
+        """Log device state from EC and GSC consoles."""
         self.gsc.get_ccdstate()
         logging.info('EC Power State: %s', self.get_power_state())
-        # Set the main device back to ccd.
-        self.enable_ccd_spi()
+        self.get_ec_hw_wp()
+        self.gsc.get_wp_state()
+
+    def set_gsc_hw_wp(self, state):
+        """Open GSC. Set GSC wp."""
+        logging.info('Set GSC WP: %s', state)
+        self.gsc.set_wp_state(state)
 
     def run_once(self):
         """Verify WP in G3."""
@@ -104,9 +136,11 @@ class firmware_Cr50WPG3(Cr50Test):
             self.gsc.ccd_enable(True)
         except:
             raise error.TestNAError('CCD required to check wp.')
+        self.find_ec_wp_gpio_name()
         self.generate_futility_wp_cmd()
-
-        self.enable_ccd_spi()
+        self.fast_ccd_open(enable_testlab=True)
+        self.gsc.send_command('ccd set OverrideWP Always')
+        self.gsc.send_command('ccd set FlashAP Always')
 
         if self.servo.main_device_is_flex():
             self._start_fw_wp_state = self.servo.get('fw_wp_state')
@@ -122,10 +156,10 @@ class firmware_Cr50WPG3(Cr50Test):
                 self.servo.set_nocheck('fw_wp_vref', 'off')
 
         # Disable HW WP.
-        self.gsc.set_wp_state('disable atboot')
+        self.set_gsc_hw_wp('disable atboot')
 
         # Disable SW WP.
-        wp_state = self.set_sw_wp(self.WP_DISABLE_CMD)
+        wp_state = self.ccd_set_sw_wp(self.WP_DISABLE_CMD)
         # Bring the DUT up since futility commands put the EC in reset.
         self._try_to_bring_dut_up()
         if wp_state != self.DISABLED:
@@ -134,28 +168,31 @@ class firmware_Cr50WPG3(Cr50Test):
         # Verify we can see it's disabled. This should always work. If it
         # doesn't, it may be a setup issue.
         logging.info('Checking WP from DUT')
+        self.check_state_from_consoles()
         if not self.checkers.crossystem_checker({'wpsw_cur': '0'}):
             raise error.TestError("HW WP isn't disabled in S0")
 
         # Enable HW WP.
-        self.gsc.set_wp_state('enable atboot')
+        self.set_gsc_hw_wp('enable atboot')
+        self.check_state_from_consoles()
         if not self.checkers.crossystem_checker({'wpsw_cur': '1'}):
             raise error.TestError("HW WP isn't enabled in S0")
 
         self.faft_client.system.run_shell_command('poweroff')
         time.sleep(self.WAIT_FOR_STATE)
-        self.check_ec_state()
+        self.check_state_from_consoles()
 
         # SW WP can be enabled at any time.
         logging.info('Check enabling SW WP with HW WP enabled')
-        if self.set_sw_wp(self.WP_ENABLE_CMD) != self.ENABLED:
+        if self.ccd_set_sw_wp(self.WP_ENABLE_CMD) != self.ENABLED:
             self.gsc.reboot()
             self._try_to_bring_dut_up()
             raise error.TestFail('Unable to enable SW WP in G3')
 
         # It shouldn't be possible to disable SW WP with HW WP enabled.
         logging.info('Check disabling SW WP with HW WP enabled')
-        if self.set_sw_wp(self.WP_DISABLE_CMD) == self.DISABLED:
+        self.check_state_from_consoles()
+        if self.ccd_set_sw_wp(self.WP_DISABLE_CMD) == self.DISABLED:
             self.gsc.reboot()
             self._try_to_bring_dut_up()
             raise error.TestFail('Disabled SW WP with HW WP enabled')
@@ -163,9 +200,10 @@ class firmware_Cr50WPG3(Cr50Test):
         # It should be possible to disable SW WP after HW WP is disabled.
         logging.info('Check disabling SW WP with HW WP disabled')
         # Disable HW WP.
-        self.gsc.set_wp_state('disable atboot')
+        self.set_gsc_hw_wp('disable atboot')
+        self.check_state_from_consoles()
         # Verify setting SW WP.
-        if self.set_sw_wp(self.WP_DISABLE_CMD) != self.DISABLED:
+        if self.ccd_set_sw_wp(self.WP_DISABLE_CMD) != self.DISABLED:
             self.gsc.reboot()
             self._try_to_bring_dut_up()
             raise error.TestFail('Disabled SW WP with HW WP enabled')

@@ -67,6 +67,31 @@ class firmware_Cr50WPG3(Cr50Test):
         time.sleep(self.gsc.SHORT_WAIT)
         return self.get_wp_state()
 
+    def enable_ccd_spi(self):
+        """Enable ccd spi access.
+
+        Make GSC ignore servo, so it can enable CCD SPI access.
+        """
+        self.fast_ccd_open(enable_testlab=True, reset_ccd=False)
+        self.servo.set('ec_uart_en', 'off')
+        self.gsc.send_command('ccdblock IGNORE_SERVO enable')
+        self.gsc.send_command('rddkeepalive enable')
+        time.sleep(2)
+        self.gsc.get_ccdstate()
+
+    def enable_servo_ec_uart(self):
+        """Enable servo control of ec uart."""
+        self.servo.set('ec_uart_en', 'on')
+        self.servo.enable_main_servo_device()
+
+    def check_ec_state(self):
+        """Check power state on the EC."""
+        self.enable_servo_ec_uart()
+        self.gsc.get_ccdstate()
+        logging.info('EC Power State: %s', self.get_power_state())
+        # Set the main device back to ccd.
+        self.enable_ccd_spi()
+
     def run_once(self):
         """Verify WP in G3."""
         if not self.servo.get_ccd_servo_device():
@@ -81,13 +106,7 @@ class firmware_Cr50WPG3(Cr50Test):
             raise error.TestNAError('CCD required to check wp.')
         self.generate_futility_wp_cmd()
 
-        self.fast_ccd_open(True)
-        # faft-cr50 runs with servo micro and type c servo v4. Use ccdblock to
-        # get cr50 to ignore the fact servo is connected and allow the test to
-        # use ccd to check wp status.
-        self.gsc.send_command('ccdblock IGNORE_SERVO enable')
-        self.gsc.send_command('rddkeepalive enable')
-        self.gsc.get_ccdstate()
+        self.enable_ccd_spi()
 
         if self.servo.main_device_is_flex():
             self._start_fw_wp_state = self.servo.get('fw_wp_state')
@@ -125,6 +144,7 @@ class firmware_Cr50WPG3(Cr50Test):
 
         self.faft_client.system.run_shell_command('poweroff')
         time.sleep(self.WAIT_FOR_STATE)
+        self.check_ec_state()
 
         # SW WP can be enabled at any time.
         logging.info('Check enabling SW WP with HW WP enabled')

@@ -71,6 +71,8 @@ class firmware_Cr50WPG3(Cr50Test):
         """Verify WP in G3."""
         if not self.servo.get_ccd_servo_device():
             raise error.TestNAError('Only supported with dual-v4')
+        if not self.check_ec_capability(suppress_warning=True):
+            raise error.TestNAError('Only supported on boards with ECs')
         if self.check_cr50_capability(['wp_on_in_g3'], suppress_warning=True):
             raise error.TestNAError('config: WP not pulled up in G3')
         try:

@@ -1179,7 +1179,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return rv
 
     def gettime(self):
-        """Return current cr50 system time."""
+        """Get the time since the last wake from deep sleep or reset"""
         rv = self.send_gettime_cmd_get_output(self.TIME_SINCE_DS_RE)
         logging.info('Time since last reset: %r', rv)
         return rv

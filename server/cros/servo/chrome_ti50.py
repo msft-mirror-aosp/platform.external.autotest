@@ -94,6 +94,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     WAKE_RESPONSE = [r'\n(|%s)> ' % TIMESTAMP_RE]
     TIME_RE = r'Since %s: [x0-9a-f]* = ([0-9\.]*) s'
     TIME_SINCE_DS_RE = TIME_RE % 'deep sleep'
+    # Ti50 tracks 3 times (hard reset, soft reset, deep sleep wake).
+    # To align with Cr50 FAFT, use Ti50's "soft reset" for TIME_SINCE_COLD_RESET_RE.
     TIME_SINCE_COLD_RESET_RE = TIME_RE % 'reset'
 
     # Ti50 doesn't configure PLT_RST vs SYS_RST. All boards use PLT_RST
@@ -200,13 +202,15 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         self.send_command('bid %x %x' % (chip_bid, chip_flags))
 
     def gettime_since_deep_sleep(self):
-        """Get the time since deep sleep"""
+        """Get the time since wake from deep sleep"""
         rv = self.send_gettime_cmd_get_output(self.TIME_SINCE_DS_RE)
-        logging.info('Time since deep sleep reset: %r', rv)
+        logging.info('Time since wake from deep sleep: %r', rv)
         return rv
 
     def gettime(self):
-        """Get the time since any sort of reset"""
+        """Get the time since the last wake from deep sleep or reset"""
+        # Ti50 had a bug with reporting too large "since deep sleep" after a
+        # reset, so check both and take the min as workaround (b/294762695).
         ds_time = self.gettime_since_deep_sleep()
         cr_time = self.gettime_since_cold_reset()
         min_time = min(ds_time, cr_time)

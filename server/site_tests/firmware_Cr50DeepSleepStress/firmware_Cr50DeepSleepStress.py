@@ -37,6 +37,15 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     TOLERATED_ERROR = 0.05
     MEM_DISABLE_DS_PATH = '/etc/init/cr50-disable-sleep.conf'
 
+    # Dictionary used to temporarily disable tests on certain devices. Used
+    # to disable a test until a bug is resolved.
+    # Key is the suspend type. The value is a list of board names to skip.
+    TMP_SKIP_DEVICES = {
+            'mem': [],
+            'freeze': [],
+            'reboot': [],
+    }
+
     def initialize(self,
                    host,
                    cmdline_args,
@@ -280,7 +289,6 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         else:
             logging.info('No new FLOG output')
 
-
     def run_once(self, host, suspend_count, reset_type):
         """Verify deep sleep after suspending for the given number of cycles
 
@@ -365,6 +373,10 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                 # GSC won't enter deep sleep if that file exists.
                 self._enters_deep_sleep = (not self.host.path_exists(
                         self.MEM_DISABLE_DS_PATH))
+
+        if self.faft_config.platform in self.TMP_SKIP_DEVICES[suspend_type]:
+            raise error.TestNAError('%s skipped for %s' %
+                                    (suspend_type, self.faft_config.platform))
 
         logging.info('Requested reset: %s', reset_type)
         logging.info('Running with: %s', suspend_type)

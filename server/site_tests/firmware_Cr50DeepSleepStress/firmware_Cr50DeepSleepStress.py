@@ -41,7 +41,10 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     # to disable a test until a bug is resolved.
     # Key is the suspend type. The value is a list of board names to skip.
     TMP_SKIP_DEVICES = {
-            'mem': [],
+            'mem': [
+                    # TODO(b/297884848): reenable after bug is resolved.
+                    'rammus',
+            ],
             'freeze': [],
             'reboot': [],
     }

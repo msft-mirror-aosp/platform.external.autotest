@@ -3,6 +3,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from autotest_lib.server.cros.update_engine import update_engine_test
 
 
@@ -46,6 +48,13 @@ class autoupdate_DataPreserved(update_engine_test.UpdateEngineTest):
                                                payload_url=payload_url,
                                                tag='before_update')
         self._host.reboot()
+
+        # Bring stateful version to the same version as rootfs.
+        # This is because the test dependencies (i.e. Python) on the source
+        # version may not be aligned with the target version, which can lead
+        # to Python execution failures and break the test.
+        logging.info('Restoring stateful partition to ToT version')
+        self._update_stateful()
 
         # Ensure preferences and downloads are the same as before the update.
         self._run_client_test_and_check_result(self._USER_DATA_TEST,

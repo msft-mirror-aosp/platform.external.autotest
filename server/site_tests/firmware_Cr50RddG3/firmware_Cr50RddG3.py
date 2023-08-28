@@ -23,7 +23,7 @@ class firmware_Cr50RddG3(Cr50Test):
         # can't verify cr50 behavior while the EC is hibernate.
         if 'c2d2' in host.servo.get_servo_type():
             raise error.TestNAError('Cannot run test with c2d2')
-        if not self.servo.is_servo_v4_type_c():
+        if not host.servo.is_servo_v4_type_c():
             raise error.TestNAError('Need type-c servo v4 to run test')
         super(firmware_Cr50RddG3, self).initialize(host, cmdline_args,
                                                    full_args)

@@ -29,4 +29,4 @@ class bluetooth_PeerUpdate(test.test):
         @param host: the DUT, usually a chromebook
         """
         host.initialize_btpeer(btpeer_args=btpeer_args)
-        bluetooth_peer_update.update_all_peers(host, raise_error=True)
+        bluetooth_peer_update.update_all_btpeers(host, raise_error=True)

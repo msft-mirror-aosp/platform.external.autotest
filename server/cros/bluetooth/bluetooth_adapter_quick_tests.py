@@ -198,7 +198,7 @@ class BluetoothAdapterQuickTests(
 
             # Check the chameleond version on the peer and update if necessary
             if update_btpeers:
-                if not bluetooth_peer_update.update_all_peers(self.host):
+                if not bluetooth_peer_update.update_all_btpeers(self.host):
                     logging.error('Updating btpeers failed. Ignored')
             else:
                 logging.info('No attempting peer update.')

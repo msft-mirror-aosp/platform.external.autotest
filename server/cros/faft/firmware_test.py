@@ -1903,11 +1903,15 @@ class FirmwareTest(test.test):
         self._client.send_file(bios_local, bios_remote)
         self.faft_client.bios.write_whole(bios_remote)
 
+        it83xx = self.servo.get('ec_chip') == 'it83xx'
         if self.faft_config.chrome_ec and restore_ec:
             ec_local = os.path.join(self.tmpdir, 'ec%s' % suffix)
             ec_remote = os.path.join(remote_temp_dir, 'ec%s' % suffix)
             self._client.send_file(ec_local, ec_remote)
             ec_cmd = self.faft_client.ec.get_write_cmd(ec_remote)
+            if not self._client.has_battery() and it83xx:
+                logging.warning("ITE EC and no battery, add -i WP_RO option")
+                ec_cmd += ' -i WP_RO'
             try:
                 self._client.run(ec_cmd, timeout=300)
             except error.AutoservSSHTimeout:

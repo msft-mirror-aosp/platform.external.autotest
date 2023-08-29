@@ -3201,6 +3201,26 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return self._is_paired(device) and self._is_connected(device)
 
     @dbus_safe(False)
+    def cancel_pairing(self, address, identity_address=None):
+        """Cancel the ongoing pairing to the remote device
+
+        @param address: Address of the device to cancel pairing.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
+
+        @returns: True on success. False otherwise.
+        """
+        device = self._find_device(address, identity_address)
+        if not device:
+            logging.error('Device not found')
+            return False
+        if self._is_paired(device):
+            logging.info('Device is already paired')
+            return False
+        device.CancelPairing()
+        return not self._is_paired(device) and not self._is_connected(device)
+
+    @dbus_safe(False)
     def remove_device_object(self, address, identity_address=None):
         """Removes a device object and the pairing information.
 

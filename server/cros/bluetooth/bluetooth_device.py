@@ -714,6 +714,18 @@ class BluetoothDevice(object):
         return self._proxy.pair_legacy_device(address, pin, trusted, timeout,
                                               identity_address)
 
+    @proxy_thread_safe
+    def cancel_pairing(self, address, identity_address=None):
+        """Cancel the ongoing pairing to the remote device
+
+        @param address: Address of the device to cancel pairing.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
+
+        @returns: True on success. False otherwise.
+
+        """
+        return self._proxy.cancel_pairing(address, identity_address)
 
     @proxy_thread_safe
     def remove_device_object(self, address, identity_address=None):

@@ -2598,6 +2598,57 @@ class BluetoothAdapterTests(test.test):
 
         return all(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_cancel_pairing(self, device_address, pin, identity_address=None):
+        """Test that the adapter could cancel the pair with the device
+           successfully.
+
+        @param device_address: Address of the device.
+        @param pin: pin code to pair with the device.
+        @param identity_address: When using RPA, the device_address is not the
+                                 identity address.
+
+        @returns: True if pairing cancel succeeds.
+                  Raise TestNAError if the pairing succeed before calling
+                  pairing cancel.
+                  False otherwise.
+
+        """
+        def _is_paired():
+            """Test if device is paired.
+
+            @returns: True if device is paired. False otherwise.
+
+            """
+            return self.bluetooth_facade.device_is_paired(device_address)
+
+        self.bluetooth_facade.pair_legacy_device(
+                device_address,
+                pin,
+                trusted=True,
+                timeout=self.ADAPTER_PAIRING_TIMEOUT_SECS,
+                identity_address=identity_address)
+
+        if _is_paired():
+            msg = 'Pairing completed before canceling'
+            logging.info(msg)
+            raise error.TestNAError(msg)
+
+        self.bluetooth_facade.cancel_pairing(device_address, identity_address)
+        try:
+            utils.poll_for_condition(
+                    condition=_is_paired,
+                    timeout=self.ADAPTER_WAIT_DEFAULT_TIMEOUT_SECS,
+                    sleep_interval=self.ADAPTER_POLLING_DEFAULT_SLEEP_SECS)
+        except utils.TimeoutError as e:
+            logging.info('Confirmed device is not paired for %d seconds',
+                         self.ADAPTER_WAIT_DEFAULT_TIMEOUT_SECS)
+            return True
+        except Exception as e:
+            logging.error('test_cancel_pairing: unexpected error %s', e)
+
+        return False
+
     @test_retry_and_log
     def test_remove_pairing(self, device_address, identity_address=None):
         """Test that the adapter could remove the paired device.

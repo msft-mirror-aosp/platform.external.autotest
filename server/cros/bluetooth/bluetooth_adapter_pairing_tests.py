@@ -17,6 +17,7 @@ import time
 
 import common
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from autotest_lib.client.common_lib import error
 from six.moves import range
 
 
@@ -392,3 +393,26 @@ class BluetoothAdapterPairingTests(
                 check_connected_method=self.test_hid_device_created_speed)
         if duration is not None:
             self.test_hid_device_reconnect_time(duration, device_type)
+
+    def pairing_cancel_loop(self, device, iterations=10):
+        """Running a loop to verify the pairing can be reliably canceled
+
+        @param device: the meta data with the peer device
+        @param iterations: number of iterations in the loop
+        """
+        testNA = 0
+        testPass = 0
+        testFail = 0
+
+        for i in range(iterations):
+            logging.info('Running iterations %d/%d', i + 1, iterations)
+            try:
+                if self.test_cancel_pairing(device.address, device.pin):
+                    testPass += 1
+                else:
+                    testFail += 1
+            except error.TestNAError as e:
+                testNA += 1
+
+        logging.info('Total results: [NA: %d, Pass: %d, Fail: %d]', testNA,
+                     testPass, testFail)

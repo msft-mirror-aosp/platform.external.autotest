@@ -66,6 +66,15 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                           self.test_mouse_right_click)
 
 
+    @test_wrapper('Pairing Cancel Test',
+                  devices={"MOUSE": 1},
+                  flags=['Quick Health'],
+                  supports_floss=False)
+    def cl_adapter_pairing_cancel_test(self):
+        """Performs pairing cancel test with mouse peripheral"""
+        device = self.devices['MOUSE'][0]
+        self.pairing_cancel_loop(device)
+
     @test_wrapper('keyboard Pairing Test',
                   devices={"KEYBOARD": 1},
                   supports_floss=True)
@@ -325,6 +334,7 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         self.cl_adapter_keyboard_pairing_in_standard_inq_mode_test()
         self.cl_adapter_pairing_suspend_resume_test()
         self.cl_adapter_pairing_test()
+        self.cl_adapter_pairing_cancel_test()
         self.cl_adapter_pairing_twice_test()
         self.cl_connect_disconnect_by_device_loop_test()
         self.cl_connect_disconnect_loop_test()

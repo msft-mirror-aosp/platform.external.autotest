@@ -25,8 +25,6 @@ MOUNT_RETRY_COUNT = 20
 TEMP_MOUNT_PATTERN = '/home/.shadow/%s/temporary_mount'
 VAULT_PATH_PATTERN = '/home/.shadow/%s/vault'
 
-DBUS_PROTOS_DEP = 'dbus_protos'
-
 LEC_KEY = 'low_entropy_credentials_supported'
 
 

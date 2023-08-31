@@ -117,7 +117,12 @@ CLIENT_TESTS = [
 ]
 
 # Workaround to make it compatible with moblab autotest UI.
-global args_dict
+try:
+  # args_dict maybe declare before. It will cause SyntaxError
+  global args_dict
+except SyntaxError:
+  pass
+
 try:
     args_dict
 except NameError:

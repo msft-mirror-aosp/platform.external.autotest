@@ -11,7 +11,6 @@ import unittest
 from unittest.mock import patch
 
 import common
-from autotest_lib.frontend import setup_django_lite_environment
 from autotest_lib.server import frontend
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.dynamic_suite import tools

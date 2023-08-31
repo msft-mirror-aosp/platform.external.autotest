@@ -65,7 +65,8 @@ from autotest_lib.client.cros.bluetooth.floss.advertising_client import (
         FlossAdvertisingClient)
 from autotest_lib.client.cros.bluetooth.floss.floss_enums import (BondState,
                                                                   SspVariant,
-                                                                  Transport)
+                                                                  Transport,
+                                                                  SdpType)
 from autotest_lib.client.cros.bluetooth.floss.gatt_client import FlossGattClient
 from autotest_lib.client.cros.bluetooth.floss.logger import FlossLogger
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
@@ -5326,27 +5327,29 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             return 'Failed to reset advertisement sets'
         return ''
 
-    def unregister_profile(self, socket_id):
-        """Unregisters Floss service with specific socket id.
+    def unregister_profile(self, handle):
+        """Unregisters Floss SDP record with specific handle.
 
-        @param socket_id: Socket id.
+        @param handle: SDP handle.
 
         @return: True on success, False otherwise.
         """
-        return self.socket_client.close_sync(socket_id)
+        return self.adapter_client.remove_sdp_record(handle)
 
     def unregister_all_profile(self):
-        """Unregisters all active Floss service.
+        """Unregisters all custom Floss SDP records.
 
         @return: True on success, False otherwise.
         """
-        return self.socket_client.close_all()
+        return self.adapter_client.remove_all_sdp_record()
 
     def register_profile(self, name, uuid, option):
-        """Registers Floss service with specific name and uuid.
+        """Registers Floss SDP record with specific name and uuid.
 
-        This function registers the UUID to the Floss SDP server by listening
-        to an RFCOMM channel with the UUID as the service record.
+        This function registers the UUID to the Floss SDP server.
+
+        Note: Due to the restriction of libbluetooth API this function assigns
+              a RFCOMM channel to the record.
 
         Note: Return value is different from BlueZ facade
 
@@ -5354,17 +5357,22 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @param uuid: Service uuid as string.
         @param option: Unused by Floss.
 
-        @return: BluetoothServerSocket on success, None otherwise.
+        @return: SDP record handle on success, None otherwise.
         """
         try:
-            uuid_value = UUID(uuid).bytes
+            uuid = UUID(uuid)
         except ValueError:
             logging.exception('Unable to create uuid with value: %s', uuid)
             return False
-        socket_result = (self.socket_client.
-                         listen_using_rfcomm_with_service_record_sync(
-                                 name, uuid_value))
-        return socket_result
+
+        record = self.adapter_client.make_default_sdp_record_header_dict()
+        record['sdp_type'] = SdpType.RAW
+        record['uuid'] = uuid
+        record['service_name'] = name
+        record['service_name_length'] = len(name)
+        record['rfcomm_channel_number'] = 7
+
+        return self.adapter_client.create_sdp_record_sync(record)
 
     def get_advertisement_property(self, adv_path, prop_name):
         """Grabs property of an advertisement registered on the DUT.

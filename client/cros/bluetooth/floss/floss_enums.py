@@ -146,3 +146,16 @@ class SspVariant(IntEnum):
     PASSKEY_ENTRY = 1
     CONSENT = 2
     PASSKEY_NOTIFICATION = 3
+
+
+class SdpType(IntEnum):
+    """Bluetooth SDP type."""
+    RAW = 0
+    MAP_MAS = 1
+    MAP_MNS = 2
+    PBAP_PSE = 3
+    PBAP_PCE = 4
+    OPP_SERVER = 5
+    SAP_SERVER = 6
+    DIP = 7
+    MPS = 8

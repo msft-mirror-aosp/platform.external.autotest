@@ -13,7 +13,8 @@ from uuid import UUID
 import logging
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.cros.bluetooth.floss.floss_enums import BondState
+from autotest_lib.client.cros.bluetooth.floss.floss_enums import (BondState,
+                                                                  SdpType)
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         generate_dbus_cb_objpath, glib_call, glib_callback, PropertySet)
@@ -65,6 +66,14 @@ class BluetoothCallbacks:
         """
         pass
 
+    def on_sdp_record_created(self, record, handle):
+        """SDP record is created successfully with a handle.
+
+        @param record: The record that is created.
+        @param handle: The handle for removing the record.
+        """
+        pass
+
 
 class BluetoothConnectionCallbacks:
     """Callbacks for the Device Connection interface.
@@ -101,6 +110,20 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
     QA_LEGACY_INTERFACE = 'org.chromium.bluetooth.BluetoothQALegacy'
 
     DISCONNECTION_TIMEOUT = 5
+    SDP_CREATE_TIMEOUT = 2
+    SDP_RECORD_HEADER_FIELDS = {
+            'sdp_type',
+            'uuid',
+            'service_name_length',
+            'service_name',
+            'rfcomm_channel_number',
+            'l2cap_psm',
+            'profile_version',
+            'user1_len',
+            'user1_data',
+            'user2_len',
+            'user2_data',
+    }
 
     @staticmethod
     def parse_dbus_device(remote_device_dbus):
@@ -115,6 +138,66 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                           str(remote_device_dbus['name']))
 
         return False, None
+
+    @staticmethod
+    def check_sdp_record_header_fields(header):
+        """Returns whether the header fields exactly match the API.
+
+        @param header: The SDP record header dict. Only the keys will be used.
+        """
+        missing_fields = FlossAdapterClient.SDP_RECORD_HEADER_FIELDS - set(
+                header.keys())
+        redundant_fields = set(
+                header.keys()) - FlossAdapterClient.SDP_RECORD_HEADER_FIELDS
+        if missing_fields or redundant_fields:
+            logging.error(
+                    'SDP header fields mismatch: missing=%s, redundant=%s',
+                    missing_fields, redundant_fields)
+            return False
+        return True
+
+    @staticmethod
+    def parse_dbus_sdp_record(sdp_record_dbus):
+        """Parses and converts specific fields to the preferred types.
+
+        @param sdp_record_dbus: Variant dict with signature a{sv}.
+
+        @return: Parsed SDP record dict; None if failed.
+        """
+        if '0' not in sdp_record_dbus:
+            logging.error('Invalid record received from DBus')
+            return None
+
+        record = {k: v for k, v in sdp_record_dbus['0'].items()}
+        hdr = None
+        sdp_type = None
+        if 'hdr' in record:
+            hdr = record['hdr']
+            sdp_type = record['hdr'].get('sdp_type')
+            if sdp_type == SdpType.RAW:
+                logging.error('Invalid SDP record: Raw header is wrapped')
+                return None
+            # So far we only support RAW record in the test.
+            logging.error('Unsupported SDP type: %s', sdp_type)
+            return None
+        else:
+            # If no 'hdr' field, assume it's a raw header.
+            hdr = record
+            sdp_type = record.get('sdp_type')
+            if sdp_type != SdpType.RAW:
+                logging.error(
+                        'Invalid SDP record: '
+                        'Unwrapped record but sdp_type is %s', sdp_type)
+                return None
+
+        if not FlossAdapterClient.check_sdp_record_header_fields(hdr):
+            return None
+        hdr = {k: v for k, v in hdr.items()}
+        hdr['sdp_type'] = SdpType(hdr['sdp_type'])
+        hdr['uuid'] = UUID(bytes=bytes(hdr['uuid']))
+        hdr['user1_data'] = bytes(hdr['user1_data'])
+        hdr['user2_data'] = bytes(hdr['user2_data'])
+        return hdr
 
     class ExportedAdapterCallbacks(ObserverBase):
         """
@@ -139,6 +222,10 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                     <arg type="u" name="status" direction="in" />
                     <arg type="s" name="address" direction="in" />
                     <arg type="u" name="state" direction="in" />
+                </method>
+                <method name="OnSdpRecordCreated">
+                    <arg type="a{sv}" name="record" direction="in" />
+                    <arg type="i" name="handle" direction="in" />
                 </method>
             </interface>
         </node>
@@ -189,6 +276,14 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             """Handle bond state changed callbacks."""
             for observer in self.observers.values():
                 observer.on_bond_state_changed(status, address, state)
+
+        def OnSdpRecordCreated(self, record, handle):
+            """Handle SDP record created callbacks."""
+            record = FlossAdapterClient.parse_dbus_sdp_record(record)
+            if record is None:
+                return
+            for observer in self.observers.values():
+                observer.on_sdp_record_created(record, handle)
 
     class ExportedConnectionCallbacks(ObserverBase):
         """
@@ -256,6 +351,15 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         # valid at this point).
         self.properties = None
         self.remote_properties = None
+
+        # The created SDP (record, handle) tuples, which are inserted by
+        # on_sdp_record_created and consumed by wait_for_sdp_record_created.
+        # Note that the callers are ALLOWED to register the same records
+        # multiple times. Due to the Floss API restriction we are not able to
+        # distinguish them in on_sdp_record_created.
+        self.created_sdp_records = []
+        # The created SDP handles. Used by remove_all_sdp_record.
+        self.sdp_handles = set()
 
     def __del__(self):
         """Destructor"""
@@ -338,6 +442,14 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                                                             connected=False)
         else:
             self.known_devices[address]['connected'] = False
+
+    @glib_callback()
+    def on_sdp_record_created(self, record, handle):
+        """SDP record is created successfully."""
+        logging.debug('SDP record created: handle=%d record=%s', handle,
+                      record)
+        self.created_sdp_records.append((record, handle))
+        self.sdp_handles.add(handle)
 
     def _make_dbus_device(self, address, name):
         return {
@@ -767,3 +879,161 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         """Disconnect a specific address."""
         return self.disconnect_all_enabled_profiles(
                 address) and self.wait_for_device_disconnected(address)
+
+    def make_default_sdp_record_header_dict(self):
+        """Returns the default SDP record header with all required fields."""
+        return {
+                'sdp_type': 0,
+                'uuid': UUID(bytes=bytes([0x00] * 16)),
+                'service_name_length': 0,
+                'service_name': '',
+                'rfcomm_channel_number': 0,
+                'l2cap_psm': 0,
+                'profile_version': 0,
+                'user1_len': 0,
+                'user1_data': bytes(),
+                'user2_len': 0,
+                'user2_data': bytes(),
+        }
+
+    def _make_dbus_sdp_record(self, record):
+        """Converts SDP record into DBus variant dict."""
+        sdp_type = None
+        hdr = None
+        if 'hdr' in record:
+            hdr = record['hdr']
+            sdp_type = record['hdr'].get('sdp_type')
+            if sdp_type == SdpType.RAW:
+                logging.error('Invalid SDP record: Raw header is wrapped')
+                return None
+            # So far we only support RAW record in the test.
+            logging.error('Unsupported SDP type: %s', sdp_type)
+            return None
+        else:
+            # If no 'hdr' field, assume it's a raw header.
+            hdr = record
+            sdp_type = record.get('sdp_type')
+            if sdp_type != SdpType.RAW:
+                logging.error(
+                        'Invalid SDP record: '
+                        'Unwrapped record but sdp_type is %s', sdp_type)
+                return None
+
+        # Build header
+        if not FlossAdapterClient.check_sdp_record_header_fields(hdr):
+            return None
+        hdr_dbus = {
+                'sdp_type':
+                GLib.Variant('u', hdr['sdp_type']),
+                'uuid':
+                GLib.Variant('ay', hdr['uuid'].bytes),
+                'service_name_length':
+                GLib.Variant('u', hdr['service_name_length']),
+                'service_name':
+                GLib.Variant('s', hdr['service_name']),
+                'rfcomm_channel_number':
+                GLib.Variant('i', hdr['rfcomm_channel_number']),
+                'l2cap_psm':
+                GLib.Variant('i', hdr['l2cap_psm']),
+                'profile_version':
+                GLib.Variant('i', hdr['profile_version']),
+                'user1_len':
+                GLib.Variant('i', hdr['user1_len']),
+                'user1_data':
+                GLib.Variant('ay', hdr['user1_data']),
+                'user2_len':
+                GLib.Variant('i', hdr['user2_len']),
+                'user2_data':
+                GLib.Variant('ay', hdr['user2_data']),
+        }
+        return {
+                'type': GLib.Variant('u', sdp_type),
+                '0': GLib.Variant('a{sv}', hdr_dbus),
+        }
+
+    @glib_call(False)
+    def create_sdp_record(self, record):
+        """Registers an SDP record to Floss.
+
+        @param record: The record dict with all required fields.
+                       Header field specification:
+                           'sdp_type': SdpType
+                           'uuid': UUID
+                           'service_name': str
+                           'user1_data': bytes
+                           'user2_data': bytes
+                           others: int
+
+        @returns: True on success; False otherwise
+        """
+        record = self._make_dbus_sdp_record(record)
+        if record is None:
+            return False
+        return bool(self.proxy().CreateSdpRecord(record))
+
+    def wait_for_sdp_record_created(self, record):
+        """Waits for the record to be created and returns the handle.
+
+        @param record: Same param format as create_sdp_record
+
+        @returns: The SDP record handle
+        """
+        logging.debug('Waiting for record to be created: %s', record)
+        poll_result = [None]
+
+        def is_record_created():
+            for idx, (r, _) in enumerate(self.created_sdp_records):
+                if r == record:
+                    poll_result[0] = idx
+                    return True
+            return False
+
+        try:
+            utils.poll_for_condition(condition=is_record_created,
+                                     timeout=self.SDP_CREATE_TIMEOUT)
+            idx = poll_result[0]
+            _, h = self.created_sdp_records.pop(idx)
+            return h
+        except utils.TimeoutError:
+            logging.error('on_device_disconnected not called')
+            return None
+
+    def create_sdp_record_sync(self, record):
+        """Registers and waits until the SDP record is created.
+
+        @param record: Same param format as create_sdp_record
+
+        @returns: The SDP record handle
+        """
+        success = self.create_sdp_record(record)
+        if not success:
+            logging.error('Failed to create SDP record')
+            return None
+        return self.wait_for_sdp_record_created(record)
+
+    @glib_call(False)
+    def remove_sdp_record(self, handle):
+        """Removes the SDP record with the handle.
+
+        @param handle: The SDP handle
+
+        @returns: True on success; False otherwise
+        """
+        if handle not in self.sdp_handles:
+            logging.error('Removing unknown SDP handle')
+            return False
+        self.sdp_handles.remove(handle)
+        return bool(self.proxy().RemoveSdpRecord(handle))
+
+    def remove_all_sdp_record(self):
+        """Removes all SDP records.
+
+        @returns: True if all removal succeeded; False otherwise
+        """
+        success = True
+        for h in self.sdp_handles:
+            if not self.remove_sdp_record(h):
+                logging.error('Failed to remove SDP handle=%d', h)
+                success = False
+        self.sdp_handles.clear()
+        return success

@@ -7,7 +7,7 @@ from autotest_lib.server import utils
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_DevMode"
 METADATA = {
-    "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+    "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org", "peep-fleet-infra-sw@google.com"],
     "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
     "criteria": "Servo based developer firmware boot test",
     "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],

@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 
 NAME = "servo_LabControlVerification"
 METADATA = {
-    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "contacts": ["peep-fleet-infra-sw@google.com"],
     "bug_component": "b:1032353",
     "criteria": "Validate basic, critical servo controls for the lab work.",
 }

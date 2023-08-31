@@ -4,7 +4,7 @@
 
 NAME = 'infra_MultiDutsWithAndroid'
 METADATA = {
-    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "contacts": ["peep-fleet-infra-sw@google.com"],
     "bug_component": "b:1121531",
     "criteria": "Sample test for cross device tests with Android devices.",
 }

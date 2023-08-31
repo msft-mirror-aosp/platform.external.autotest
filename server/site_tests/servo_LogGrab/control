@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 
 NAME = "servo_LogGrab"
 METADATA = {
-    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "contacts": ["peep-fleet-infra-sw@google.com"],
     "bug_component": "b:1032353",
     "criteria": "Validate ServoHost grabs all the right logs on the labstation.",
 }

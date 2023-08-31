@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 
 NAME = "servo_Verification.local"
 METADATA = {
-    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "contacts": ["peep-fleet-infra-sw@google.com"],
     "bug_component": "b:1032353",
     "criteria": "Ensure a dut/servo pair provide required lab functionality.",
 }

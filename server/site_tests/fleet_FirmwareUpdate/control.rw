@@ -4,7 +4,7 @@
 
 NAME = "fleet_FirmwareUpdate"
 METADATA = {
-    "contacts": ["chrome-fleet-software@google.com", "xianuowang@google.com"],
+    "contacts": ["peep-fleet-infra-sw@google.com"],
     "bug_component": "b:916058",
     "criteria": "Check if regular firmware update workflow works correctly.",
 }

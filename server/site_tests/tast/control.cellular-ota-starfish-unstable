@@ -57,8 +57,11 @@ def run(machine):
                             stream=temp_file)
             temp_file.flush()
             testgroups = {"0_is_modem_up":["cellular.IsModemUp"],
-                          "1_dut_check":["cellular.IsConnected."+carrier,"cellular.Identifiers."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
-                          "2_autoconnect_enable":["cellular.Autoconnect."+carrier,"cellular.ShillEnableDisable."+carrier]}
+                          "1_dut_check":["cellular.Identifiers","cellular.IsConnected."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
+                          "2_autoconnect_enable":["cellular.ShillAutoconnect","cellular.ShillEnableDisable"],
+                          "3_platform":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e")'],
+                          "4_suspend_resume": ['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")'],
+                          "5_modem_fw": ['("group:cellular" && "cellular_modem_fw")']}
             for testsession in sorted(testgroups):
                 sessiontag = testsession+"_"+carrier
                 tast_test_expr = testgroups[testsession]

@@ -7,19 +7,18 @@
 # workload. Follows this by a few short checks to make sure the system is still in
 # a good state (work in progress, feel free to add some more).
 
-NAME = "power_SuspendStress.bare"
+NAME = "power_SuspendStress.bareDaily"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "chromeos-platform-power",
     "bug_component": "b:1361410",
     "criteria": "This test is a functional test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:power_daily_misc")
+ATTRIBUTES = ("suite:power_daily_misc", "suite:faft_stress")
 TEST_TYPE = "client"
 
 job.run_test('power_SuspendStress', duration=None, suspend_iterations=250,
-             tag='bare')
+             tag='bareDaily')
 
 job.run_test('hardware_EC', tag='power_SuspendStress')
 job.run_test('login_LoginSuccess', tag='power_SuspendStress')

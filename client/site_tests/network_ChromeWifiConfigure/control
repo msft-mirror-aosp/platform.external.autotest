@@ -4,7 +4,7 @@
 
 NAME = "network_ChromeWifiConfigure"
 METADATA = {
-    'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'contacts': ['cros-connectivity@google.com','chromeos-connectivity-engprod@google.com'],
     'bug_component': 'b:1131912',
     'criteria': 'Verify that chrome.networkingPrivate can configure a wifi network. '
                 'The test will fail if the Chrome fails to configure the wifi network, '

@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 AUTHOR = 'ChromeOS Graphics Team (chromeos-gfx@google.com)'
-NAME = 'tast.graphics_satlab_vc_borealis_trace'
+NAME = 'tast.graphics-satlab-vc-borealis-shard-2'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:graphics_satlab_vc'
@@ -19,15 +19,16 @@ METADATA = {
 REQUIRE_SSP = True
 
 DOC = '''
-This suite is used to run trace_replay tests against graphics vc satlab.
+This suite is used to run borealis_perbuild tests against graphics vc satlab.
 '''
 
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 # This includes borealis.TraceReplay.* and borealis.TraceReplayProton.* minus the problematic graphics_weekly traces.
-                 test_exprs=['("group:graphics" && !graphics_weekly && graphics_trace && graphics_av_analysis)'],
+                 test_exprs=['("group:borealis" && !informational)'],
                  ignore_test_failures=True,
-                 max_run_sec=10500,  # 6 hours.
+                 max_run_sec=21600,  # 6 hours.
+                 totalshards=4,
+                 shardindex=2,
                  command_args=args)
 parallel_simple(run, machines)

@@ -73,7 +73,7 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
             has_modules(gcc.get_camera_modules()),
             [
                 If(
-                    has_modules(config['SPLIT_BY_BITS_MODULES']),
+                    has_modules(config.get('SPLIT_BY_BITS_MODULES', [])),
                     [SplitByBits()],
                 ),
                 Concat([
@@ -211,7 +211,7 @@ def gen_qual(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
     # yapf: disable
     passes = Concat([
         If(
-            has_modules(config['SPLIT_BY_BITS_MODULES']),
+            has_modules(config.get('SPLIT_BY_BITS_MODULES', [])),
             [SplitByBits()],
         ),
         Concat([
@@ -311,7 +311,7 @@ def gen_internal_hardwaresuite(bundle: Bundle,
 
     passes = Concat([
             If(
-                    has_modules(config['SPLIT_BY_BITS_MODULES']),
+                    has_modules(config.get('SPLIT_BY_BITS_MODULES', [])),
                     [SplitByBits()],
             ),
             AddSuites([config['HARDWARE_SUITE_NAME']]),

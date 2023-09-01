@@ -162,8 +162,11 @@ To check or upgrade the FW on the servo v4 and servo micro, respectively, before
 
 - Have the servo v4 connected to your workstation/labstation along with the servo micro connected to the servo.
 - Run the following commands on chroot one after the other:
-    - sudo servo_updater -b servo_v4
+    - sudo servo_updater -b servo_v4 (or server_v4p1 if you have a v4p1 servo)
     - sudo servo_updater -b servo_micro
+
+If you forget, servod will remind you when it starts, if you look carefully
+through its output.
 
 ### (Deprecated) ServoV2 {#servov2-deprecated}
 

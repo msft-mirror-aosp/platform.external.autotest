@@ -250,8 +250,18 @@ To run Autotest tests, use the `test_that` tool, which does not automatically
 start a `servod` process for communicating with the servo board. Running FAFT
 is easiest with `servod` and `test_that` running in separate terminals inside
 the SDK, using either multiple SDK instances (`cros_sdk --enter --no-ns-pid`)
-or a tool such as `screen` inside an SDK instance. Before running any tests, go
-into the chroot:
+or a tool such as `screen` inside an SDK instance.
+
+Set the `DUT_IP` environment variable to the IP address of your DUT. Since it is
+connected to the network via the servo board, it should obtain an IP address when
+it starts up. To find it, click on the system tray, and then click on Network
+or Ethernet, then click on Ethernet, and it will show you the IP address. You
+can also find it on using `ifconfig` on the DUT command line (E.g. Ctrl-Alt-F3).
+Do not use a WiFi address.
+```
+   DUT_IP=100.107.108.230       (change to the correct value)
+```
+Before running any tests, go into the chroot:
 
 1.  Make sure your tools are up to date.
     1.  Run `repo sync -j8`

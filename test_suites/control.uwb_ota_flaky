@@ -1,0 +1,31 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "Chrome OS Team"
+NAME = "uwb_ota_flaky"
+METADATA = {
+        "contacts": ["chromeos-uwb-team@google.com"],
+        "bug_component": "b:1133455", # ChromeOS > Platform > Connectivity > UWB
+}
+PURPOSE = "Automated testing of stable OTA UWB exploration tests."
+
+TIME = "Medium"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite runs the set of flaky OTA UWB related tests.
+initially deployed in the flaky suite and moved to uwb_ota as they are fixed and
+become stable.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

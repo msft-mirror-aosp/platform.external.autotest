@@ -965,6 +965,8 @@ suite:typec_lab
 suite:unowned
 suite:usb_detect
 suite:usb_detect_stress
+suite:uwb_ota
+suite:uwb_ota_flaky
 suite:vdi-limited
 suite:video
 suite:video-conference-cq-critical

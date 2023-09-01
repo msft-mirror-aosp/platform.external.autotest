@@ -131,7 +131,7 @@ for you, so you will want to
 Details of servoV4 Type-C connections in Figure 2:
 
 1. Connect the USB Type-C cable of the servoV4 to the DUT.
-2. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the diagram.
+2. Prepare a USB flash drive with valid ChromeOS image and plug into the top USB port of the servo as shown in the diagram.
 3. Connect the micro USB (servo_v4) or USB-C (servo_v4_p1) port (labelled `host`) of the servo to the host machine (typically your workstation).
 4. Connect an Ethernet cable to the Ethernet jack of the servo that goes to the a network reachable from the network that your host machine is on.
 5. Connect a USB-C charger to the connector under the `DUT Power` text.

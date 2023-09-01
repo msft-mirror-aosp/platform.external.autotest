@@ -6,7 +6,7 @@ AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.cellular-ota-multisim-unstable'
 METADATA = {
     "contacts": ["cros-connectivity@google.com"],
-    "bug_component": "b:1226026", # ChromeOS > Software > System Services > Connectivity
+    "bug_component": "b:1131774", # ChromeOS > Software > System Services > Connectivity > Cellular
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

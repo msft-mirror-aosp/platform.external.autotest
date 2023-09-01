@@ -97,11 +97,11 @@ before plugging in cables and components to the servo.
 Details of servoV4 Type-A with micro connections:
 
 1. Connect one end (micro USB) of the servo micro to servoV4 using a micro USB to USB cable.
-2. Connect the servo micro to the debug header on the chrome device.
-3. Connect the USB type A cable of the servoV4 to the DUT.
-4. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the diagram.
-5. Connect the micro USB port of the servo to the host machine (typically your workstation).
-6. Connect an Ethernet cable to the Ethernet jack of the servo that goes to the a network reachable from the network that your host machine is on.
+1. Connect the servo micro to the debug header on the chrome device.
+1. Connect the USB type A cable of the servoV4 to the DUT.
+1. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the diagram.
+1. Connect the micro USB port of the servo to the host machine (typically your workstation).
+1. Connect an Ethernet cable to the Ethernet jack of the servo that goes to the a network reachable from the network that your host machine is on.
 
 ### ServoV4 Type-C {#servov4-typec}
 
@@ -131,10 +131,10 @@ for you, so you will want to
 Details of servoV4 Type-C connections in Figure 2:
 
 1. Connect the USB Type-C cable of the servoV4 to the DUT.
-2. Prepare a USB flash drive with valid ChromeOS image and plug into the top USB port of the servo as shown in the diagram.
-3. Connect the micro USB (servo_v4) or USB-C (servo_v4_p1) port (labelled `host`) of the servo to the host machine (typically your workstation).
-4. Connect an Ethernet cable to the Ethernet jack of the servo that goes to the a network reachable from the network that your host machine is on.
-5. Connect a USB-C charger to the connector under the `DUT Power` text.
+1. Prepare a USB flash drive with valid ChromeOS image and plug into the top USB port of the servo as shown in the diagram.
+1. Connect the micro USB (servo_v4) or USB-C (servo_v4_p1) port (labelled `host`) of the servo to the host machine (typically your workstation).
+1. Connect an Ethernet cable to the Ethernet jack of the servo that goes to the a network reachable from the network that your host machine is on.
+1. Connect a USB-C charger to the connector under the `DUT Power` text.
 
 ### ServoV4 Type-C with servo micro {#servov4-typec-micro}
 
@@ -180,10 +180,10 @@ deprecated servo v2 board to the test controller, test device, and network.
 Details of servo v2 connections:
 
 1. Connect one end(ribbon cable) of the flex cable to servoV2 and the other end to the debug header on the chrome device.
-2. Connect DUT_HUB_IN(micro USB port) of the servo to the DUT.
-3. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the photo.
-4. Connect the micro USB port of the servo to the host machine(workstation or a labstation).
-5. Connect an Ethernet cable to the Ethernet jack of the servo.
+1. Connect DUT_HUB_IN(micro USB port) of the servo to the DUT.
+1. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the photo.
+1. Connect the micro USB port of the servo to the host machine(workstation or a labstation).
+1. Connect an Ethernet cable to the Ethernet jack of the servo.
 
 ### Installing Test Image onto USB Stick {#image-onto-usb}
 
@@ -255,12 +255,12 @@ into the chroot:
 
 1.  Make sure your tools are up to date.
     1.  Run `repo sync -j8`
-    2.  Run `./update_chroot`
-2.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code name of the board you are testing. For example: `$ sudo servod --board=eve`
-3.  Go into a second chroot
-4.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
-5.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP firmware_FAFTSetup`
-6.  Run the `firmware.Fixture.normal` test to verify tast tests are working also. `tast run --var=servo=localhost:9999 $DUT_IP firmware.Fixture.normal`
+    1.  Run `./update_chroot`
+1.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code name of the board you are testing. For example: `$ sudo servod --board=eve`
+1.  Go into a second chroot
+1.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
+1.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP firmware_FAFTSetup`
+1.  Run the `firmware.Fixture.normal` test to verify tast tests are working also. `tast run --var=servo=localhost:9999 $DUT_IP firmware.Fixture.normal`
 
 You can omit the --autotest_dir if you have built packages for the board and want to use the build version of the tests, i.e.:
 

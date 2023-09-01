@@ -114,6 +114,7 @@ The hardware configuration for running FAFT with a servo v4 type-C includes:
     - USB type-A to USB micro cable for test controller connection (~ 4' - 6' in length)
     - Ethernet cable
     - USB drive (flashed with the appropriate OS image)
+    - USB-C Power supply
 
 Figure 2 shows a diagram of how to connect a servoV4 Type-C, to the test
 controller, DUT, and network. It is important to ensure the DUT is powered off
@@ -133,6 +134,7 @@ Details of servoV4 Type-C connections in Figure 2:
 2. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the diagram.
 3. Connect the micro USB (servo_v4) or USB-C (servo_v4_p1) port (labelled `host`) of the servo to the host machine (typically your workstation).
 4. Connect an Ethernet cable to the Ethernet jack of the servo that goes to the a network reachable from the network that your host machine is on.
+5. Connect a USB-C charger to the connector under the `DUT Power` text.
 
 ### ServoV4 Type-C with servo micro {#servov4-typec-micro}
 

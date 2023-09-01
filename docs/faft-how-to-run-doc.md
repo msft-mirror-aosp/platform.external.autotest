@@ -271,6 +271,9 @@ Before running any tests, go into the chroot:
     If you forget to do that, or use the wrong board, some tests may fail. There
     is also a `model` option that is needed by some models.
 1.  Go into a second chroot
+1.  Try to ssh to your board (`ssh $DUT_IP) within the chroot and make sure it
+    works. If it doesn't, figure that out first. Googlers look at [SshHelp].
+
 1.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
 1.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP firmware_FAFTSetup`
 1.  Run the `firmware.Fixture.normal` test to verify tast tests are working also. `tast run --var=servo=localhost:9999 $DUT_IP firmware.Fixture.normal`
@@ -450,3 +453,4 @@ Q: My USB stick keeps getting corrupted and I can't get firmware_FAFTSetup to pa
 [PVS Setup Confirmation]: #pvs-setup-confirmation
 [Setup Confirmation]: #setup-confirmation
 [PVS - Updating the Servo Firmware]: https://chrome-internal.googlesource.com/chromeos/platform/pvs/+/refs/heads/main/docs/pvs_user_guide.md#updating-the-servo-firmware
+[SshHelp]: https://go/faft-help

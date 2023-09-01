@@ -204,6 +204,8 @@ not need a chroot and can follow the [PVS - Partner Setup Guide] to get setup.
 This setup step is for the chroot workflow if using PVS skip to
 [PVS Setup Confirmation].
 
+This step is not needed if you did `repo init` with the internal manifest.
+
 There is at least one test that needs a secret key to get access to the ChromeOS
 login screen, and that key will not be there if you only have the public manifest
 checked out in your chroot.  To get the missing key create the file

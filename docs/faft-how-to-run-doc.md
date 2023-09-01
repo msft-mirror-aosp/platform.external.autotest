@@ -256,7 +256,10 @@ into the chroot:
 1.  Make sure your tools are up to date.
     1.  Run `repo sync -j8`
     1.  Run `./update_chroot`
-1.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code name of the board you are testing. For example: `$ sudo servod --board=eve`
+1.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code
+    name of the board you are testing. For example: `$ sudo servod --board=eve`.
+    If you forget to do that, or use the wrong board, some tests may fail. There
+    is also a `model` option that is needed by some models.
 1.  Go into a second chroot
 1.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
 1.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP firmware_FAFTSetup`

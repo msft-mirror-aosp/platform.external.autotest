@@ -519,6 +519,21 @@ class BluetoothBaseFacadeLocal(object):
             matches.append(patterns_match)
         return matches
 
+    def set_force_hfp_offload_on_support(self, enabled):
+        """Sets whether CRAS forces HFP offload path usage if supported.
+
+        @param enabled: True to force HFP offload path usage; False otherwise.
+
+        """
+        cras_utils.set_force_bt_hfp_offload_on_support(enabled)
+
+    def get_hfp_offload_supported(self):
+        """Checks if the DUT supports BT HFP offload.
+
+        @return: True if supported.
+        """
+        return cras_utils.get_bt_hfp_offload_supported()
+
     def log_message(self, msg):
         """ log a message to /var/log/messages."""
         try:

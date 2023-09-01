@@ -230,6 +230,14 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         @param test_profile: which test profile is used, HFP_SWB, HFP_WBS, or HFP_NBS
         @param audio_config: the test specific audio config
         """
+        apply_offload = self.will_apply_hfp_offload_path(self.force_offload)
+        if self.force_offload and not apply_offload:
+            raise error.TestNAError(
+                    'The DUT does not support offload path. Skip the test.')
+
+        logging.info('Test is running with {} path in use.'.format(
+                'offload' if apply_offload else 'non-offload'))
+
         if self.check_wbs_capability():
             if test_profile in (HFP_WBS, HFP_WBS_MEDIUM, HFP_SWB):
                 # Restart cras to ensure that cras goes back to the default
@@ -269,14 +277,23 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
             # the DUT should always choose the best codec reported by the peer
             self.test_set_force_hfp_swb_enabled(True)
 
-        self.au_run_method(device,
-                           lambda: test_method(device, test_profile),
-                           test_profile,
-                           audio_config=audio_config)
+        if self.force_offload:
+            self.set_force_hfp_offload_on_support(True)
 
-        # remove this flag toggle once it is enabled by default (b/308859926)
-        # the DUT should always choose the best codec reported by the peer
-        self.test_set_force_hfp_swb_enabled(False)
+        try:
+            self.au_run_method(device,
+                               lambda: test_method(device, test_profile),
+                               test_profile,
+                               audio_config=audio_config)
+        finally:
+            # unset flags for testing purposes by finally clause to ensure they
+            # will be executed under all circumstances.
+            if self.force_offload:
+                self.set_force_hfp_offload_on_support(False)
+
+            # remove this flag toggle once it is enabled by default (b/308859926)
+            # the DUT should always choose the best codec reported by the peer
+            self.test_set_force_hfp_swb_enabled(False)
 
     @test_wrapper('HFP SWB sinewave test with dut as source',
                   devices={'BLUETOOTH_AUDIO': ((CAP_PIPEWIRE), )},
@@ -635,7 +652,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                  flag='Quick Health',
                  floss=False,
                  enable_cellular=False,
-                 enable_ui=False):
+                 enable_ui=False,
+                 force_offload=False):
         """Run the batch of Bluetooth stand health tests
 
         @param host: the DUT, usually a chromebook
@@ -644,6 +662,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         """
         self.host = host
         self.cleanup_audio_config()
+        self.force_offload = force_offload
 
         self.quick_test_init(host,
                              use_btpeer=True,

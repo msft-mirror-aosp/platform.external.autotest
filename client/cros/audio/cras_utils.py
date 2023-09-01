@@ -810,6 +810,22 @@ def set_floss_enabled(enabled):
     get_cras_control_interface().SetFlossEnabled(enabled)
 
 
+def set_force_bt_hfp_offload_on_support(enabled):
+    """Sets whether CRAS forces BT HFP offload path usage if supported.
+
+    @param enabled: True to force BT HFP offload path usage; False otherwise.
+    """
+    get_cras_control_interface().SetForceBtHfpOffloadOnSupport(enabled)
+
+
+def get_bt_hfp_offload_supported():
+    """Checks if DUT supports BT HFP offload.
+
+    @returns: True if supported.
+    """
+    return bool(get_cras_control_interface().GetBtHfpOffloadSupported())
+
+
 class CrasTestClient(object):
     """An object to perform cras_test_client functions."""
 

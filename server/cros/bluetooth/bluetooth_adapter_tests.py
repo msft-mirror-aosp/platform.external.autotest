@@ -1998,6 +1998,23 @@ class BluetoothAdapterTests(test.test):
         return self.bluetooth_facade.restart_cras()
 
 
+    def set_force_hfp_offload_on_support(self, enabled):
+        """Set whether CRAS forces HFP offload path usage if supported.
+
+        @param enabled: True to force HFP offload path usage; False otherwise.
+        """
+        self.bluetooth_facade.set_force_hfp_offload_on_support(enabled)
+
+    def get_hfp_offload_supported(self):
+        """Get the support state of HFP offload path.
+
+        The support state is static and determined by device config. i.e. if the
+        offload path is expected to support by device.
+
+        @returns: True if offload is supported, else False.
+        """
+        return self.bluetooth_facade.get_hfp_offload_supported()
+
     def enable_disable_debug_log(self, enable):
         """Enable or disable debug log in DUT
         @param enable: True to enable all of the debug log,

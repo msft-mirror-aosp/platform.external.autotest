@@ -80,6 +80,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     A2DP_PEER_NOTIFICATION_REGEX = (
             r"ACL Data RX: (?:Handle {}|H.*\.\.) .*\[hci\d+\] ("
             r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM 25")
+
+    # Boards which only have the offload path available for BT HFP.
+    BOARDS_OFFLOAD_ONLY_FOR_HFP = ['kukui', 'jacuzzi', 'corsola', 'staryu']
+
     # The real IP replacent when used in ssh tunneling environment
     real_ip = None
 
@@ -713,6 +717,28 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             raise error.TestError('Failed to handle chunk (%s)', e)
 
         return recorded_file
+
+
+    def will_apply_hfp_offload_path(self, force_offload):
+        """Whether the DUT is going to apply HFP offload path.
+
+        @param force_offload: A bool for the given flag state.
+
+        @returns: A bool indicating whether to apply HFP offload path.
+                True for offload path, False for non-offload path.
+        """
+        if self.get_board() in self.BOARDS_OFFLOAD_ONLY_FOR_HFP:
+            # support offload path only.
+            # contain all MT8183/MT8186 devices, e.g. Steelix, Krane, and Kukui.
+            return True
+        elif self.get_hfp_offload_supported():
+            # support both non-offload and offload paths.
+            # include some Intel TGL+ devices such as Redrix, Kano, Volmar, etc.
+            return force_offload
+        else:
+            # support non-offload path only.
+            # contain the rest does not support HFP offload.
+            return False
 
 
     # ---------------------------------------------------------------

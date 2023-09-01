@@ -1,0 +1,68 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+AUTHOR = 'Chromium OS team'
+NAME = 'tast.uwb.flaky'
+METADATA = {
+        "contacts": ["chromeos-uwb-team@google.com"],
+        "bug_component": "b:1133455", # ChromeOS > Platform > Connectivity > UWB
+        "criteria": "Run Tast tests for UWB devices"
+}
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:uwb_ota_flaky'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+DOC = '''
+Unstable tests that run in testbeds containing peer devices which support UWB.
+
+See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+
+See http://go/tast-failures for information about investigating failures.
+'''
+
+from autotest_lib.server import utils
+from autotest_lib.server.cros.crossdevice import cross_device_util
+from autotest_lib.server.site_tests.tast import tast
+
+def run(machine):
+    command_args, varslist = tast.split_arguments(args)
+
+    # Get host objects for each device.
+    host = hosts.create_host(machine)
+    companions = hosts.create_companion_hosts(companion_hosts)
+
+    phone_hosts = []
+    cros_hosts = []
+    for companion in companions:
+        if isinstance(companion, hosts.AndroidHost):
+            phone_hosts.append(companion)
+        else:
+            cros_hosts.append(companion)
+
+    # Get test attributes expression.
+    host_attrs = cross_device_util.get_multi_companion_attributes(
+        len(cros_hosts), 'uwb_cros_peers_',
+        len(phone_hosts), 'uwb_android_peers_', 3)
+    attrs = f'("group:uwb" && "uwb_unstable" && {host_attrs})'
+
+    varslist.append("uwb.mainHost=" + host.hostname)
+    if phone_hosts:
+        phone_vars = ["%s:%s:model" % (p.associated_hostname, p.serial_number) for p in phone_hosts]
+        varslist.append("android.companions=" + ",".join(phone_vars))
+        varslist.append("uwb.phoneHosts=" + ','.join([p.hostname for p in phone_hosts]))
+    if cros_hosts:
+        varslist.append("uwb.crosHosts=" + ','.join([c.hostname for c in cros_hosts]))
+
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=[attrs],
+                 ignore_test_failures=True, max_run_sec=10800,
+                 companion_duts={f'cd{i+1}' : c for i, c in enumerate(cros_hosts)},
+                 command_args=command_args,
+                 varslist=varslist)
+
+parallel_simple(run, machines)

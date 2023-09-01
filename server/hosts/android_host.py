@@ -362,7 +362,7 @@ class AndroidHost(base_classes.Host):
                 self.run_adb_command('usb', ignore_status=True)
             self.stop_adb_server()
             if self.socat_process_id:
-                self.phone_station.run('kill -9 %d' % self.socat_process,
+                self.phone_station.run('kill -9 %d' % self.socat_process_id,
                                        ignore_status=True)
             if self.phone_station:
                 self.phone_station.close()

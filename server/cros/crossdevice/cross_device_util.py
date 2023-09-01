@@ -28,3 +28,48 @@ def connect_to_wifi(host, ssid, password):
             logging.debug('Already connected to network. Ignoring error.')
         else:
             raise
+
+
+def get_multi_companion_attributes(cros_hosts, cros_prefix, android_hosts,
+                                   android_prefix, max_hosts):
+    """Returns all valid attribute combinations for mixed android/CrOS testbeds.
+
+        Example:
+            get_multi_companion_attributes(2, 'cros_peers_', 1, 'android_peers_')
+
+            ((("cros_peers_1" || "cros_peers_2") && !("android_peers_1" || "android_peers_2" || "android_peers_3"))
+            || (("cros_peers_1" || "cros_peers_2") && ("android_peers_1"))
+            || (("android_peers_1") && !("cros_peers_1" || "cros_peers_2" || "cros_peers_3")))
+
+        Args:
+            cros_hosts: The number of CrOS hosts.
+            cros_prefix: The attribute prefix to use for CrOS peers.
+            android_hosts: The number of android hosts.
+            android_prefix: The attribute prefix to use for Android peers.
+            max_hosts: The maximum number hosts supported.
+    """
+    def create_attr(count, prefix):
+        attrs = ['"%s%d"' % (prefix, i + 1) for i in range(count)]
+        return '(' + ' || '.join(attrs) + ')'
+
+    if not cros_hosts and not android_hosts:
+        raise ValueError(
+                'Either cros_hosts or android_hosts must be greater than 0')
+
+    has_cros = create_attr(cros_hosts, cros_prefix)
+    no_cros = "!" + create_attr(max_hosts, cros_prefix)
+    has_android = create_attr(android_hosts, android_prefix)
+    no_android = '!' + create_attr(max_hosts, android_prefix)
+
+    attrs = []
+    # CrOS hosts with no android hosts.
+    if cros_hosts:
+        attrs.append('(%s && %s)' % (has_cros, no_android))
+    # Android and CrOS hosts.
+    if cros_hosts and android_hosts:
+        attrs.append('(%s && %s)' % (has_cros, has_android))
+    # Android hosts with no CrOS hosts.
+    if android_hosts:
+        attrs.append('(%s && %s)' % (has_android, no_cros))
+
+    return '(' + ' || '.join(attrs) + ')'

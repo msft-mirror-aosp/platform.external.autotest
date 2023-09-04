@@ -1414,6 +1414,28 @@ class TradefedTest(test.test):
                     bundle_utils.make_bundle_url(url_config, uri, bundle),
                     bundle_password)
 
+    def _wait_cpu_cooldown(self, timeout):
+        crosvm_cpu_usage_cmd = "top -bn1 | awk '{if ($12 == \"crosvm\") print $9;}'"
+        cpu_temperature_cmd = "cat /sys/class/thermal/thermal_zone0/temp"
+        check_cnt = 2
+        deadline = time.time() + timeout
+        while check_cnt and time.time() < deadline:
+            crosvm_cpu_usage = float(self._hosts[0].run(crosvm_cpu_usage_cmd,
+                                                        ignore_status=True,
+                                                        verbose=False).stdout)
+            cpu_temperature = int(self._hosts[0].run(cpu_temperature_cmd,
+                                                     ignore_status=True,
+                                                     verbose=False).stdout)
+            if crosvm_cpu_usage > 10 or cpu_temperature > 45000:
+                check_cnt = 2
+            else:
+                check_cnt -= 1
+            logging.info(
+                    "cpu is busy, wait 10s, crosvm cpu utlization percent = %2f, cpu_temperature = %d, check_cnt = %d, timeout = %ds",
+                    crosvm_cpu_usage, cpu_temperature, check_cnt,
+                    deadline - time.time())
+            time.sleep(10)
+
     def _tradefed_retry_command(self, template, session_id):
         raise NotImplementedError('Subclass should override this function')
 
@@ -1585,6 +1607,14 @@ class TradefedTest(test.test):
                 if use_helpers:
                     self._fetch_helpers_from_dut()
 
+                # On drawcia, CPU is too busy during CTS and cause RecordingTest easy to fail.
+                # Wait until CPU cool down before running CtsCameraTestCases.See b/270081260.
+                test_model = self._get_model_name()
+                if test_model == 'drawcia' and 'CtsCameraTestCases' in test_name:
+                    try:
+                        self._wait_cpu_cooldown(1800)
+                    except:
+                        logging.exception('Wait cpu cool down failed.')
                 # Run tradefed.
                 if session_id == None:
                     if target_plan is not None:

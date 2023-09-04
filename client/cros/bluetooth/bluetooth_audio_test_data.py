@@ -42,7 +42,7 @@ VISQOL_SIMILARITY_MODEL = os.path.join(
 VISQOL_TEST_DIR = os.path.join(VISQOL_FOLDER, 'bt-test-output')
 
 
-AUDIO_TARBALL = os.path.join(DIST_FILES, 'chameleon-bundle',
+AUDIO_TARBALL = os.path.join(DIST_FILES, 'chameleon-bundle/test-data/v1',
                              'audio-test-data.tar.gz')
 AUDIO_TEST_DIR = '/usr/local/autotest/cros/audio/test_data'
 AUDIO_RECORD_DIR = os.path.join(DATA_DIR, 'audio')
@@ -65,6 +65,7 @@ HFP_NBS = 'hfp_nbs'
 HFP_NBS_MEDIUM = 'hfp_nbs_medium'
 HFP_WBS = 'hfp_wbs'
 HFP_WBS_MEDIUM = 'hfp_wbs_medium'
+HFP_SWB = 'hfp_swb'
 VISQOL_BUFFER_LENGTH = 10.0
 
 # Audio servers
@@ -77,6 +78,8 @@ A2DP_CODEC = 'a2dp_codec'
 SBC = 'sbc'
 AAC = 'aac'
 A2DP_CODEC_VENDOR = 'vendor'
+HFP_CODEC = 'hfp_codec'
+LC3 = 'lc3'
 
 # Refer to
 # https://source.chromium.org/chromiumos/chromiumos/codesearch/+/
@@ -292,6 +295,33 @@ hfp_nbs_test_data = {
     ]
 }
 
+# Audio test data for hfp super wide band speech
+hfp_swb_test_data = {
+    'rate': 32000,
+    'channels': 1,
+
+    'frequencies': (14000,),
+    'file': os.path.join(AUDIO_TEST_DIR,
+                         'sine_14000hz_rate32000_ch1_5secs.raw'),
+    'recorded_by_peer': os.path.join(AUDIO_RECORD_DIR,
+                                     'hfp_swb_recorded_by_peer.wav'),
+    'recorded_by_dut': os.path.join(AUDIO_RECORD_DIR,
+                                    'hfp_swb_recorded_by_dut.raw'),
+    'chunk_in_secs': 1,
+    'bit_width': 16,
+    'format': 'S16_LE',
+    'duration': 5,
+    'chunk_checking_duration': 5,
+
+    # Device side data used by StartPlayingAudioSubprocess function in
+    # bluetooth_audio.py.
+    'device_file': os.path.join(DEVICE_AUDIO_DATA_DIR,
+                                'sine_14000hz_rate32000_ch1_5secs.wav'),
+
+    # Device side data used by HandleOneChunk function in bluetooth_audio.py.
+    'chunk_file': os.path.join(DEVICE_AUDIO_RECORD_DIR,
+                               'hfp_swb_recorded_by_peer_%d.raw'),
+}
 
 # Audio test data for hfp wide band speech
 hfp_wbs_test_data = {
@@ -510,4 +540,5 @@ audio_test_data = {
         HFP_WBS_MEDIUM: hfp_wbs_medium_test_data,
         HFP_NBS: hfp_nbs_test_data,
         HFP_NBS_MEDIUM: hfp_nbs_medium_test_data,
+        HFP_SWB: hfp_swb_test_data,
 }

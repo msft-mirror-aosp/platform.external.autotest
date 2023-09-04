@@ -5534,6 +5534,20 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         return self.advertising_client.get_tx_power(adv_id)
 
+    def is_wbs_supported(self):
+        """ Queries whether WBS is supported.
+
+        @returns: True if supported, False otherwise.
+        """
+        return self.adapter_client.is_wbs_supported()
+
+    def is_swb_supported(self):
+        """ Queries whether SWB is supported.
+
+        @returns: True if supported, False otherwise.
+        """
+        return self.adapter_client.is_swb_supported()
+
     def set_player_playback_status(self, status):
         """Sets player playback status.
 

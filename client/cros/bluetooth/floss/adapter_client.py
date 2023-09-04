@@ -852,6 +852,24 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 address].get('connected', False)
 
     @glib_call(False)
+    def is_wbs_supported(self):
+        """Gets whether WBS is supported by the adapter.
+
+        @return: True if supported, false otherwise.
+
+        """
+        return self.proxy().IsWbsSupported()
+
+    @glib_call(False)
+    def is_swb_supported(self):
+        """Gets whether SWB is supported by the adapter.
+
+        @return: True if supported, false otherwise.
+
+        """
+        return self.proxy().IsSwbSupported()
+
+    @glib_call(False)
     def connect_all_enabled_profiles(self, address):
         """Connect all enabled profiles for target address."""
         device = self._make_dbus_device(

@@ -412,8 +412,9 @@ class FlossMediaClient(BluetoothMediaCallbacks):
 
         @param address: Device address to get the HFP state.
 
-        @return: The negotiated codec (CVSD=1, mSBC=2) to use if HFP audio has
-                 started; 0 if HFP audio hasn't started. None on DBus error.
+        @return: The negotiated codec (CVSD=1, mSBC=2, LC3=3) to use if HFP
+                 audio has started; 0 if HFP audio hasn't started.
+                 None on DBus error.
         """
         return self.proxy().GetHfpAudioStarted(address)
 

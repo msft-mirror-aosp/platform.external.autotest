@@ -67,8 +67,11 @@ class firmware_ECWakeFromULP(FirmwareTest):
         # wake system
         wake_func()
         if not self.wait_power_state(wake_state, self.POWER_STATE_RETRY_COUNT):
-            raise error.TestFail('Platform failed to reach %s state.' %
-                                 wake_state)
+            raise error.TestFail(
+                    f'Platform failed to reach {wake_state} state. If this is '
+                    'an old device you may need to set '
+                    'ac_on_can_wake_ap_from_ulp in '
+                    f'{self.faft_config.platform}.json')
         if wake_state == self.POWER_STATE_S0:
             self.switcher.wait_for_client()
 

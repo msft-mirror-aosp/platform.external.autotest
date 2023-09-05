@@ -31,7 +31,7 @@ class firmware_WriteProtectFunc(FirmwareTest):
             self._targets = (BIOS, )
         self._rpcs = {BIOS: self.faft_client.bios,
                 EC: self.faft_client.ec}
-        self._flashrom_targets = {BIOS: 'host', EC: 'ec'}
+        self._flashrom_targets = {BIOS: 'internal', EC: 'ec'}
         self._original_sw_wps = {}
         for target in self._targets:
             sw_wp = self._rpcs[target].get_write_protect_status()

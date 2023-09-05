@@ -1129,7 +1129,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
             if not rw_only and self.is_up():
                 logging.info('Disabling software WP')
-                for fprom in ['host', 'ec']:
+                for fprom in ['internal', 'ec']:
                     self.run('flashrom -p %s --wp-disable --wp-range=0,0' %
                              fprom,
                              ignore_status=True)

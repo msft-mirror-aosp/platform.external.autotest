@@ -62,7 +62,7 @@ class firmware_RecoveryCacheBootKeys(FirmwareTest):
         logging.info("Checking if device has RECOVERY_MRC_CACHE")
 
         # If flashrom can read the section, this means it exists.
-        command = ('flashrom -p host -r -i %s:/dev/null'
+        command = ('flashrom -p internal -r -i %s:/dev/null'
                    % self.RECOVERY_CACHE_SECTION)
 
         return self.faft_client.system.run_shell_command_check_output(

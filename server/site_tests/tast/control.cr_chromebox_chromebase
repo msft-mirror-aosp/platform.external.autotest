@@ -1,0 +1,48 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+from autotest_lib.server.site_tests.tast import tast
+
+
+AUTHOR = 'ChromiumOS team'
+NAME = 'tast.cr_chromebox_chromebase'
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:cr_chromebox_chromebase'
+CRITERIA = 'Tests that need chromeboxes/bases'
+DEPENDENCIES = ''
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+REQUIRE_SSP = True
+
+METADATA = {
+    'contacts': ['cros-connectivity@google.com'],
+    # ChromeOS>Software>System Services>Connectivity
+    'bug_component': 'b:1318544',
+    'criteria': 'All connectivity OOBE tests that needs to run on chromebox/base ',
+    'hw_agnostic': False,
+}
+
+DOC = '''
+This suite for tests owned by ChromeOS Connectivity System Services team
+(cros-connectivity@google.com) that needs to run on chromeboxes or chromebases.
+Creating a separate suite since running in group:informational does not
+yield enough number of results. Context:b/288948506
+
+Contact: cros-connectivity@google.com  or
+         cros-conn-test-team@google.com
+'''
+
+def run(machine):
+    host = hosts.create_host(machine)
+    tast_test_expr = '("group:cr_oobe" && "cr_oobe_chromebox_chromebase")'
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=[tast_test_expr],
+                 ignore_test_failures=False,
+                 max_run_sec=10800,
+                 command_args=args)
+
+parallel_simple(run, machines)

@@ -8,8 +8,52 @@ import logging
 import os
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.server import autotest
 from autotest_lib.server.cros.tradefed import tradefed_constants as constants
+
+
+class MulticastDisabler(object):
+    """Support class for disabling multicast on the test device.
+
+    This is for stabilizing the cpu load by suppressing excessive
+    network activities in the test lab network. The functionality
+    is similar to common_lib.cros.network.MulticastDisabler, but
+    this class works from the remote host.
+    """
+    SERVICE_CONTROL_TIMELIMIT = 10  # seconds
+
+    def __init__(self, host):
+        self._host = host
+        self._disabled_iface = None
+
+    def disable(self):
+        """Disables mutlicast and remembers info for reenabling later."""
+        try:
+            # Avahi-deamon might reenable multicast. Disabling the service.
+            self._host.run('stop avahi',
+                           ignore_status=True,
+                           timeout=MulticastDisabler.SERVICE_CONTROL_TIMELIMIT)
+
+            iface = interface.Interface.get_connected_ethernet_interface(
+                    host=self._host)
+            if iface.is_multicast_enabled:
+                iface.disable_multicast()
+                self._disabled_iface = iface
+        except Exception as e:
+            logging.error('Failed to disable multicast.', exc_info=e)
+
+    def reenable(self):
+        """Reenables the multicast disabled by disable()."""
+        try:
+            if self._disabled_iface != None:
+                self._disabled_iface.enable_multicast()
+                self._disabled_iface = None
+
+            self._host.run('start avahi',
+                           timeout=MulticastDisabler.SERVICE_CONTROL_TIMELIMIT)
+        except Exception as e:
+            logging.error('Failed to re-enable multicast.', exc_info=e)
 
 
 class ChromeLogin(object):
@@ -52,6 +96,7 @@ class ChromeLogin(object):
         self._vm_force_max_resolution = vm_force_max_resolution
         self._log_dir = log_dir
         self._feature = feature
+        self._multicast_disabler = MulticastDisabler(self._host)
 
     def _cmd_builder(self, verbose=False):
         """Gets remote command to start browser with ARC enabled."""
@@ -143,6 +188,10 @@ class ChromeLogin(object):
                 logging.error('Failed to login to Chrome', exc_info=e2)
                 raise error.TestError('Failed to login to Chrome')
 
+        # Disable multicast for stable testing. This is done after the login,
+        # because Chrome boot can reenable multicast.
+        self._multicast_disabler.disable()
+
     def exit(self):
         """On exit restart the browser or reboot the machine.
 
@@ -152,6 +201,9 @@ class ChromeLogin(object):
         """
         if self._log_dir:
             self._write_kernel_log()
+
+        # Recover the disabled multicast
+        self._multicast_disabler.reenable()
 
         if not self._need_reboot:
             try:

@@ -107,6 +107,7 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
     ec_cmd_discharge = 'ectool chargeoverride dontcharge'
     ec_cmd_charge = 'ectool chargeoverride off'
     ec_cmd_sustain = 'ectool chargecontrol normal 4 5'
+    ec_cmd_sustain_disable = 'ectool chargecontrol normal -1 -1'
     ec_cmd_normal = 'ectool chargecontrol normal'
     run_func = host.run if host else utils.run
     try:
@@ -122,6 +123,11 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
                 run_func(ec_cmd_discharge)
             if not _skip_battery_sustainer():
                 try:
+                    # TODO(b/222620437): Make sure battery sustainer is disabled
+                    # before setting new values, since setting new values when
+                    # it's already enabled will disable the battery sustainer
+                    # due to an implementation bug.
+                    run_func(ec_cmd_sustain_disable)
                     run_func(ec_cmd_sustain)
                 except error.CmdError as e:
                     logging.info('Battery sustainer maybe not supported: %s',

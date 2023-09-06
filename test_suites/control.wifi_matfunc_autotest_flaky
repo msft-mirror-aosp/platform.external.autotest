@@ -1,0 +1,33 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "chromeos-kernel-wifi@google.com"
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    # ChromeOS > Platform > Connectivity > WiFi
+    'bug_component': 'b:893827',
+    'criteria': 'Test basic WiFi functionalities on a flaky autotest suite',
+}
+NAME = "wifi_matfunc_autotest_flaky"
+PURPOSE = "Test basic WiFi functionalities in a flaky suite."
+
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+The suite is a placeholder for autotest tests that have a high fail
+rate and no path towards stabilization.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['add_experimental'] = True
+args_dict['max_runtime_mins'] = 60
+args_dict['name'] = NAME
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

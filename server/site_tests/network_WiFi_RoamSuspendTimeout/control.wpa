@@ -15,7 +15,7 @@ METADATA = {
     'hw_agnostic': False,
 }
 TEST_TYPE = 'Server'
-ATTRIBUTES = "suite:wifi_matfunc_flaky"
+ATTRIBUTES = "suite:wifi_matfunc_autotest_flaky"
 DEPENDENCIES = 'wificell'
 
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes

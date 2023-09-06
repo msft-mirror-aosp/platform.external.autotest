@@ -15,6 +15,7 @@ class firmware_Cr50WPG3(Cr50Test):
     version = 1
 
     WAIT_FOR_STATE = 20
+    CMD_FIND_WP_GPIO = 'ectool gpioget | grep -i wp | grep -vi cbi'
     WP_REGEX = r'WP status: ((en|dis)abled)'
     STATUS_CMD = '--wp-status --ignore-hw'
     WP_ENABLE_CMD = '--wp-enable'
@@ -72,7 +73,7 @@ class firmware_Cr50WPG3(Cr50Test):
     def find_ec_wp_gpio_name(self):
         """Find the EC WP gpio name from ectool gpioget."""
         self.wp_gpio = None
-        result = self.host.run('ectool gpioget | grep WP').stdout.strip()
+        result = self.host.run(self.CMD_FIND_WP_GPIO).stdout.strip()
         logging.info('WP gpio output: %s', result)
         if len(result.splitlines()) > 1:
             logging.info('Too many wp lines.')

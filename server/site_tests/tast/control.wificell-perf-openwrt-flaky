@@ -6,6 +6,7 @@ AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.wificell-perf-openwrt-flaky'
 METADATA = {
     'contacts': ['chromeos-wifi-champs@google.com'],
+    'bug_component': 'b:893827',
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

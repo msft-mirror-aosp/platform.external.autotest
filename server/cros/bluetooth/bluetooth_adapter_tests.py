@@ -63,6 +63,7 @@ RESUME_DELTA = -5
 SUPPORTED_DEVICE_TYPES = {
         'MOUSE': lambda btpeer: btpeer.get_bluetooth_hid_mouse,
         'KEYBOARD': lambda btpeer: btpeer.get_bluetooth_hid_keyboard,
+        'GAMEPAD': lambda btpeer: btpeer.get_bluetooth_hid_gamepad,
         'BLE_MOUSE': lambda btpeer: btpeer.get_ble_mouse,
         'BLE_KEYBOARD': lambda btpeer: btpeer.get_ble_keyboard,
         # Tester allows us to test DUT's discoverability, etc. from a peer

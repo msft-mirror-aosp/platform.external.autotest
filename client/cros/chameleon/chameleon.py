@@ -527,6 +527,13 @@ class ChameleonBoard(object):
         """
         return self._chameleond_proxy.bluetooth_keyboard
 
+    def get_bluetooth_hid_gamepad(self):
+        """Gets the emulated Bluetooth (BR/EDR) HID gamepad on Chameleon.
+
+        @return: A BluetoothHIDGamepadFlow object.
+        """
+        return self._chameleond_proxy.bluetooth_gamepad
+
     def get_ble_fast_pair(self):
         """Gets the emulated Bluetooth Fast Pair device on Chameleon.
 

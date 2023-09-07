@@ -348,8 +348,8 @@ class power_WakeSources(test.test):
             elif is_success:
                 logging.info('%s caused a dark resume.', wake_source)
 
-        # Press power button to ensure a full resume instead of dark resume
-        self._trigger_wake('PWR_BTN')
+        # Press <ctrl_l> button to ensure a full resume instead of dark resume
+        self._ec.key_press('<ctrl_l>')
 
         self._after_resume(wake_source)
         if not is_success:

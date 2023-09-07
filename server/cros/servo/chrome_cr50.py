@@ -1295,6 +1295,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return ccdstate
 
 
+    def ccdstate_ds_disabled(self):
+        """Returns True if "DS Dis" is on.
+
+        @return: True if ds is disabled; False otherwise.
+        """
+        # This will return false if "DS Dis" isn't the dictionary. If "DS Dis"
+        # isn't in the dictionary, then that feature isn't supported and the
+        # AP can't disable deep sleep.
+        return self.get_ccdstate().get('DS Dis', '').lower() == 'on'
+
     def ap_is_on(self):
         """Get the power state of the AP.
 

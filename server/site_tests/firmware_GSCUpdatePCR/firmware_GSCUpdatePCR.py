@@ -42,7 +42,7 @@ class firmware_GSCUpdatePCR(FirmwareTest):
 
     def resume(self, enter_ds):
         """Resume from suspend."""
-        self.gsc.get_ccdstate()
+        ds_disabled = self.gsc.ccdstate_ds_disabled()
         if enter_ds:
             self.gsc.clear_deep_sleep_count()
             time.sleep(self.gsc.DEEP_SLEEP_DELAY)
@@ -57,6 +57,8 @@ class firmware_GSCUpdatePCR(FirmwareTest):
         if enter_ds:
             if not ap_off:
                 logging.info('AP did not turn off during suspend')
+            elif ds_disabled:
+                logging.info('AP disabled deep sleep')
             elif not entered_ds:
                 raise error.TestFail(
                         'Did not enter deep sleep when ap was off')

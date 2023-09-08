@@ -121,7 +121,10 @@ class power_LW(test.test):
             args['tag'] = args.get('tag', 'PLW')
 
             if server_test:
-                self.job.run_test(test, host=wlan_host, **args)
+                server_job_rt = self.job.run_test_with_exception(
+                        test, host=wlan_host, **args)
+                if not server_job_rt[0]:
+                    raise error.TestFail("Wrapped server test failed.")
             else:
                 autotest_client = autotest.Autotest(wlan_host)
                 autotest_client.run_test(test,

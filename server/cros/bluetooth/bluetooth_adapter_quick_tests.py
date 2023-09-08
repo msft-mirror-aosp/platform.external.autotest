@@ -14,6 +14,7 @@ from __future__ import print_function
 
 import functools
 import logging
+import multiprocessing
 import tempfile
 import threading
 import time
@@ -25,6 +26,7 @@ from autotest_lib.server import site_utils
 from autotest_lib.server.cros.bluetooth import bluetooth_peer_update
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.bluetooth import bluetooth_attenuator
+from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 from autotest_lib.client.bin import utils
 from six.moves import range
@@ -140,6 +142,14 @@ class BluetoothAdapterQuickTests(
         self.llprivacy = llprivacy
         self.floss_lm_quirk = floss_lm_quirk
         self.args_dict = args_dict if args_dict else {}
+
+        logging.info("Initialize dark resume utils.")
+        self._dr_utils = DarkResumeUtils(self.host)
+        # Bluetooth should lead to a full resume, but if dark resume is on,
+        # it may go into dark suspend again in case the test fails, so the
+        # DUT may not wake up.
+        # This function is to prevent the DUT from dark suspend.
+        self._dr_utils.stop_resuspend_on_dark_resume()
 
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
@@ -535,6 +545,10 @@ class BluetoothAdapterQuickTests(
     def quick_test_cleanup(self):
         """ Cleanup any state test server and all device"""
 
+        logging.info("Clean up dark resume utils.")
+        self._dr_utils.stop_resuspend_on_dark_resume(False)
+        self._dr_utils.teardown()
+
         # Clear any raspi devices at very end of test
         for device_list in self.active_test_devices.values():
             for device in device_list:
@@ -649,6 +663,16 @@ class BluetoothAdapterQuickTests(
     # Wake from suspend tests
     # ---------------------------------------------------------------
 
+    def suspend_dr_async(self, suspend_time):
+        """Suspend with dark resume enabled."""
+        def _action_suspend():
+            self._dr_utils.suspend(suspend_time)
+            return 0
+
+        proc = multiprocessing.Process(target=_action_suspend)
+        proc.daemon = True
+        return proc
+
     def run_peer_wakeup_device(self,
                                device_type,
                                device,
@@ -656,7 +680,8 @@ class BluetoothAdapterQuickTests(
                                iterations=1,
                                should_wake=True,
                                should_pair=True,
-                               keep_paired=False):
+                               keep_paired=False,
+                               dark_resume=False):
         """ Uses paired peer device to wake the device from suspend.
 
         @param device_type: the device type (used to determine if it's LE)
@@ -670,6 +695,7 @@ class BluetoothAdapterQuickTests(
         @param should_pair: Pair and connect the device first before running
                             the wakeup test.
         @param keep_paired: Keep the paried devices after test.
+        @param dark_resume: Enable dark resume.
         """
         boot_id = self.host.get_boot_id()
 
@@ -714,8 +740,12 @@ class BluetoothAdapterQuickTests(
                                 it + 1, iterations))
 
                 # Start a new suspend instance
-                suspend = self.suspend_async(suspend_time=sleep_time,
-                                             expect_bt_wake=should_wake)
+                if dark_resume:
+                    suspend = self.suspend_dr_async(sleep_time)
+                else:
+                    suspend = self.suspend_async(suspend_time=sleep_time,
+                                                 expect_bt_wake=should_wake)
+
                 start_time = self.bluetooth_facade.get_device_utc_time()
 
                 if should_wake:
@@ -724,6 +754,9 @@ class BluetoothAdapterQuickTests(
                     self.test_adapter_wake_enabled()
                 else:
                     self.test_device_wake_not_allowed(device.address)
+
+                if dark_resume:
+                    dark_resume_before = self._dr_utils.count_dark_resumes()
 
                 # Trigger suspend, asynchronously wake and wait for resume
                 adapter_address = self.bluetooth_facade.address
@@ -752,6 +785,15 @@ class BluetoothAdapterQuickTests(
 
                 # Finish peer wake process
                 peer_wake.join()
+
+                if dark_resume:
+                    dark_resume_after = self._dr_utils.count_dark_resumes()
+                    logging.info("Dark resume before %d after %d",
+                                 dark_resume_before, dark_resume_after)
+                    if dark_resume_after != dark_resume_before:
+                        raise error.TestFail(
+                                "Dark resume detected while full resume expected."
+                        )
 
                 # Only check peer device connection state if we expected to wake
                 # from it. Otherwise, we may or may not be connected based on

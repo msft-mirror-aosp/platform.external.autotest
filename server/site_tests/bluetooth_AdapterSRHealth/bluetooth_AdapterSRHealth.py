@@ -283,6 +283,20 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                                     device,
                                     device_test=self._test_mouse)
 
+    @test_wrapper('Peer wakeup dark resume Classic HID',
+                  devices={'MOUSE': 1},
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
+                  ['bob'],
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
+    def sr_peer_wake_dark_resume_classic_hid(self):
+        """ Use classic HID device to wake from suspend with dark resume enabled. """
+        device = self.devices['MOUSE'][0]
+        self.run_peer_wakeup_device('MOUSE',
+                                    device,
+                                    device_test=self._test_mouse,
+                                    dark_resume=True)
+
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID',
@@ -298,6 +312,19 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                                     device,
                                     device_test=self._test_mouse)
 
+    @test_wrapper('Peer wakeup dark resume LE HID',
+                  devices={'BLE_MOUSE': 1},
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
+                  ['bob'],
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
+    def sr_peer_wake_dark_resume_le_hid(self):
+        """ Use LE HID device to wake from suspend with dark resume enabled. """
+        device = self.devices['BLE_MOUSE'][0]
+        self.run_peer_wakeup_device('BLE_MOUSE',
+                                    device,
+                                    device_test=self._test_mouse,
+                                    dark_resume=True)
 
     # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
     # TODO(b/150897528) - Dru is powered down during suspend, won't wake up

@@ -1,0 +1,47 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The test verifies that a classic HID device should wake the DUT up when dark resume is enabled.
+# This test is for bluez.
+#
+# Steps:
+# 1. The DUT pairs and connects to a classic HID device.
+# 2. Suspend the DUT with dark resume enabled.
+# 3. Use the HID device to try waking up the DUT.
+# 4. Expect the DUT resumes in time.
+#
+# Purpose: Verify classic HID peer device can wake the DUT from suspend with dark resume enabled
+
+# Deprecated variables:
+#     TIME = 'SHORT'
+#     TEST_CATEGORY = 'Functional'
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterSRHealth.sr_peer_wake_dark_resume_classic_hid'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass test',
+    'hw_agnostic': False,
+    'requirements': ['bt-phy-0005-v01', 'bt-phy-0007-v01', 'bt-phy-0008-v01',
+                     'bt-phy-0010-v01', 'bt-drv-0014-v01']
+}
+
+
+ATTRIBUTES = 'suite:bluetooth_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterSRHealth', host=host, num_iterations=1,
+                 args_dict=args_dict, test_name=NAME.split('.')[1], tag='.'.join(NAME.split('.')[1:]),
+                 floss_lm_quirk=True)
+
+parallel_simple(run, machines)

@@ -135,6 +135,9 @@ class network_WiFi_UpdateRouter(test.test):
                                         host_class=hosts.CrosHost,
                                         allow_failure=True)
 
+        # This process is only supported for specific ChromeOS router models.
+        self.validate_is_supported_chromeos_router(device_host)
+
         # Stop recover_duts now, for cases where we don't go through a full
         # update below.
         self.stop_recover_duts(device_host)
@@ -146,6 +149,25 @@ class network_WiFi_UpdateRouter(test.test):
         # Stop recover_duts again, in case provisioning re-enabled it.
         self.stop_recover_duts(device_host)
 
+    def validate_is_supported_chromeos_router(self, device_host):
+        """Validates that the router host a supported ChromeOS router.
+
+        @raises Exception if it is not identified as a supported host.
+        """
+        try:
+            device_board = self.get_chromeos_router_board(device_host)
+            if not device_board in self.STABLE_VERSIONS:
+                raise Exception('Unsupported ChromeOS router board "{}"' %
+                                device_board)
+        except Exception as e:
+            raise error.TestFail(
+                    'Router not identified as a supported ChromeOS router'
+            ) from e
+
+    def get_chromeos_router_board(self, device_host):
+        """Fetch the router board name from the device."""
+        return device_host.get_board().split(':', 1)[1]
+
     def update_device(self, device_host):
         """Update router and pcap associated with host.
 
@@ -153,7 +175,7 @@ class network_WiFi_UpdateRouter(test.test):
         @param device_board: router / pcap board name
 
         """
-        device_board = device_host.get_board().split(':', 1)[1]
+        device_board = self.get_chromeos_router_board(device_host)
         desired = self.STABLE_VERSIONS.get(device_board, None)
         if desired is None:
             raise error.TestFail('No stable version found for %s with board=%s.'

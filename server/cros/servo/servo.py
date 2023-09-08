@@ -622,6 +622,7 @@ class Servo(object):
         self._prev_log_inode = None
         self._prev_log_size = 0
         self._ccd_watchdog_disabled = False
+        self._ccd_servo = None
         if not delay_init:
             self._servo_type = self.get_servo_version()
             self._power_state = _PowerStateController(self)
@@ -1466,10 +1467,12 @@ class Servo(object):
 
     def get_ccd_servo_device(self):
         """Return the ccd servo device or '' if no ccd devices are connected."""
-        servo_type = self.get_servo_type()
-        if 'ccd' not in servo_type:
-            return ''
-        return servo_type.split('_with_')[-1].split('_and_')[-1]
+        if self._ccd_servo == None:
+            servo_type = self.get_servo_type()
+            if 'ccd' not in servo_type:
+                self._ccd_servo = ''
+            self._ccd_servo = servo_type.split('_with_')[-1].split('_and_')[-1]
+        return self._ccd_servo
 
     def active_device_is_ccd(self):
         """Returns True if a ccd device is active."""
@@ -1877,15 +1880,35 @@ class Servo(object):
             return
         return self.get('servo_dts_mode')
 
+    def ccd_watchdog_enabled(self):
+        """Returns True if the ccd watchdog is enabled."""
+        ccd_servo = self.get_ccd_servo_device()
+        if not ccd_servo:
+            return
+        watchdog_output = self.get('watchdog')
+        state = not re.search('%s.*disconnect ok' % ccd_servo, watchdog_output)
+        logging.info('CCD watchdog: %sabled', 'en' if state else 'dis')
+        return state
+
     def ccd_watchdog_enable(self, enable):
         """Control the ccd watchdog."""
-        if 'ccd' not in self.get_servo_type():
+        ccd_servo = self.get_ccd_servo_device()
+        if not ccd_servo:
             return
         if self._ccd_watchdog_disabled and enable:
             logging.info('CCD watchdog disabled for test')
             return
         control = 'watchdog_add' if enable else 'watchdog_remove'
-        self.set_nocheck(control, 'ccd')
+        # Try different ccd names for backwards compatibility.
+        try:
+            self.set_nocheck(control, ccd_servo)
+        except Exception as e:
+            logging.info('Setting %r %r failed. Trying plain ccd', control,
+                         ccd_servo)
+            self.set_nocheck(control, 'ccd')
+        if self.ccd_watchdog_enabled() != enable:
+            logging.info('Unable to %sable ccd watchdog',
+                         'en' if enable else 'dis')
 
     def disable_ccd_watchdog_for_test(self):
         """Prevent servo from enabling the watchdog."""

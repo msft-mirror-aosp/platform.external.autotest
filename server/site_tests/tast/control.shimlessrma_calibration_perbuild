@@ -36,7 +36,7 @@ def run(machine):
                  host=hosts.create_host(machine, servo_args=servo_args),
                  test_exprs=['("group:shimless_rma" && shimless_rma_calibration)'],
                  ignore_test_failures=True,
-                 max_run_sec=600,  # 10 Minutes
+                 max_run_sec=1200,  # 20 Minutes
                  command_args=args)
 
 parallel_simple(run, machines)

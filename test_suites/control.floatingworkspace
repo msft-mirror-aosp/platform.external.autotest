@@ -1,0 +1,26 @@
+# Copyright 2023 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "zhumatthew"
+NAME = "floatingworkspace"
+PURPOSE = "Automated floating workspace tests that needs multiple duts to run"
+METADATA = {'contacts': [ "cros-commercial-productivity-eng@google.com" ] }
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite for floating workspace tests that needs multiple chromeos DUTs to run.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

@@ -1,0 +1,40 @@
+# Copyright 2023 The ChromiumOS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'cros-commercial-productivity-eng@google.com'
+NAME = 'tast.floatingworkspace'
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
+TIME = 'LONG'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:floatingworkspace'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run Tast tests related to floating workspace.
+
+Tast is an integration-testing framework analagous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
+more information.
+
+See http://go/tast-failures for information about investigating failures.
+'''
+
+def run(machine):
+    companions = hosts.create_companion_hosts(companion_hosts)
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['("group:floatingworkspace)'],
+                 ignore_test_failures=False, max_run_sec=10800,
+                 companion_duts={'cd1':companions[0]},
+                 command_args=args)
+
+parallel_simple(run, machines)

@@ -764,6 +764,7 @@ suite:fleet_firmware_update
 suite:flashrom
 suite:flex-criticalstaging
 suite:flex-perbuild
+suite:floatingworkspace
 suite:fwupd_downgrade
 suite:fwupd_install_file
 suite:fwupd_install_version

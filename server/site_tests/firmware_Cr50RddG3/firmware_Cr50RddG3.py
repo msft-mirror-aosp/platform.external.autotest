@@ -13,7 +13,7 @@ class firmware_Cr50RddG3(Cr50Test):
     """Verify Rdd connect and disconnect in G3."""
     version = 1
 
-    WAIT_FOR_STATE = 10
+    WAIT_FOR_STATE = 20
     # Cr50 debounces disconnects. We need to wait before checking Rdd state
     RDD_DEBOUNCE = 3
 

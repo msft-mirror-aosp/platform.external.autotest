@@ -859,7 +859,7 @@ class PDPortPartner(object):
                      " they aren't considered a pair.")
         return False
 
-    def identify_pd_devices(self):
+    def identify_pd_devices(self, desired_pd_port_idx=None):
         """Instantiate PD devices present in test setup
 
         @return: list of 2 PD devices if a DUT <-> PDTester found.
@@ -899,6 +899,12 @@ class PDPortPartner(object):
             logging.error('The specified consoles did not contain any'
                           ' DUTs: %s', self.consoles)
 
+        if desired_pd_port_idx is not None and desired_pd_port_idx >= len(
+                dut_devports):
+            raise error.TestNAError(
+                    "test does not apply pd port %d not a valid port for this device"
+                    % (desired_pd_port_idx))
+
         # Determine PD port partners in the list of PD devices. Note that
         # there can be PD devices which are not accessible via a uart console,
         # but are connected to a PD port which is accessible.
@@ -909,6 +915,11 @@ class PDPortPartner(object):
                     continue
                 if self._verify_pdtester_connection(tester, dut):
                     dut_devports.remove(dut)
+                    got_port = int(dut.port)
+                    if desired_pd_port_idx is not None and got_port != desired_pd_port_idx:
+                        raise error.TestError(
+                                "wrong PD port: %s, please re-run on PD port %s"
+                                % (got_port, desired_pd_port_idx))
                     return [tester, dut]
 
         return []

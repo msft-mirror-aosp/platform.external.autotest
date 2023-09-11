@@ -204,8 +204,13 @@ class firmware_PDDataSwap(FirmwareTest):
         if curr_dr != dut_data_role:
             raise error.TestFail('Unexpected PD data role change')
 
-    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
-                   init_power_mode=None):
+    def initialize(self,
+                   host,
+                   cmdline_args,
+                   flip_cc=False,
+                   dts_mode=False,
+                   init_power_mode=None,
+                   desired_pd_port_idx=None):
         super(firmware_PDDataSwap, self).initialize(host, cmdline_args)
         self.setup_pdtester(flip_cc, dts_mode, min_batt_level=10)
         # Only run in normal mode
@@ -214,6 +219,7 @@ class firmware_PDDataSwap(FirmwareTest):
             # Set the DUT to suspend or shutdown mode
             self.set_ap_off_power_mode(init_power_mode)
         self.usbpd.send_command('chan 0')
+        self.desired_pd_port_idx = desired_pd_port_idx
 
     def cleanup(self):
         self.usbpd.send_command('chan 0xffffffff')
@@ -237,7 +243,7 @@ class firmware_PDDataSwap(FirmwareTest):
         port_partner = pd_device.PDPortPartner(consoles)
 
         # Identify a valid test port pair
-        port_pair = port_partner.identify_pd_devices()
+        port_pair = port_partner.identify_pd_devices(self.desired_pd_port_idx)
         if not port_pair:
             raise error.TestFail('No PD connection found!')
 

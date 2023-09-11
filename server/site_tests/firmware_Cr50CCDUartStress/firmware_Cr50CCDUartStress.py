@@ -5,6 +5,7 @@
 
 """The autotest performing uart_stress_tester on EC uart port. """
 import logging
+import re
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
@@ -18,6 +19,10 @@ CR50_LOAD_GEN_CMD = 'while [ -f %s ]; do %s; done &' % (FLAG_FILENAME, TPM_CMD)
 
 # Character generator
 CHARGEN_CMD = 'chargen'
+
+# The uart stress tester failure line will start with FAIL.
+ERR_RE = r'(FAIL|ERROR).*'
+
 
 class firmware_Cr50CCDUartStress(FirmwareTest):
     """A test that checks character loss with a UART and TPM stress workload."""
@@ -118,7 +123,16 @@ class firmware_Cr50CCDUartStress(FirmwareTest):
         logging.info(testcmd)
         try:
             self.servo.system(testcmd, timeout=duration*2)
-        except error.AutoservRunError:
-            raise error.TestFail('Uart stress tester failed.')
+        except error.AutoservRunError as e:
+            msg = ''
+            if e and e.result_obj:
+                m = re.search(ERR_RE, e.result_obj.stderr)
+                if m:
+                    err = m.group(0)
+                else:
+                    # Use the error if 'FAIL', didn't show up in stderr.
+                    err = e
+                msg = ' (%d): %r' % (e.result_obj.exit_status, err)
+            raise error.TestFail('Uart stress tester failed %s' % msg)
 
         logging.info('Uart stress tester passed.')

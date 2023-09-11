@@ -19,10 +19,6 @@ class firmware_Cr50RddG3(Cr50Test):
 
     def initialize(self, host, cmdline_args, full_args):
         """Initialize the test"""
-        # TODO(b/186535695): EC hibernate puts cr50 into reset, so the test
-        # can't verify cr50 behavior while the EC is hibernate.
-        if 'c2d2' in host.servo.get_servo_type():
-            raise error.TestNAError('Cannot run test with c2d2')
         if not host.servo.get_ccd_servo_device():
             raise error.TestNAError('Need ccd to run test')
         super(firmware_Cr50RddG3, self).initialize(host, cmdline_args,
@@ -92,14 +88,21 @@ class firmware_Cr50RddG3(Cr50Test):
         self.servo.set_dts_mode('off')
         self.check_rdd_status('off', 'Cr50 did not detect Rdd disconnect in S0')
 
-        logging.info('Checking Rdd is disconnected with the EC in hibernate')
+        logging.info('Checking Rdd is disconnected with the EC in G3')
         self.faft_client.system.run_shell_command('poweroff')
         time.sleep(self.WAIT_FOR_STATE)
-        self.ec.send_command('hibernate')
-        time.sleep(self.WAIT_FOR_STATE)
-
-        self.check_rdd_status('off', 'Rdd connected after EC hibernate',
+        self.check_rdd_status('off', 'Rdd connected after poweroff',
                               ['rdd_leakage', 'ec_hibernate_breaks_rdd'])
+
+        # Can't check hibernate if the board doesn't support it or if it powers
+        # off the GSC.
+        if self.faft_config.hibernate and not self.faft_config.gsc_off_in_ulp:
+            logging.info(
+                    'Checking Rdd is disconnected with the EC in hibernate')
+            self.ec.send_command('hibernate')
+            time.sleep(self.WAIT_FOR_STATE)
+            self.check_rdd_status('off', 'Rdd connected after EC hibernate',
+                                  ['rdd_leakage', 'ec_hibernate_breaks_rdd'])
 
         logging.info('Checking Rdd can be connected in G3.')
         self.servo.set_dts_mode('on')
@@ -110,14 +113,20 @@ class firmware_Cr50RddG3(Cr50Test):
         self._try_to_bring_dut_up()
         self.check_rdd_status('on', 'Rdd disconnected entering S0')
 
-        logging.info('Checking Rdd is connected with the EC in hibernate.')
+        logging.info('Checking Rdd is connected with the EC in G3')
         self.faft_client.system.run_shell_command('poweroff')
         time.sleep(self.WAIT_FOR_STATE)
-        self.ec.send_command('hibernate')
-        time.sleep(self.WAIT_FOR_STATE)
-
-        self.check_rdd_status('on', 'Rdd disconnected after EC hibernate',
+        self.check_rdd_status('on', 'Rdd disconnected after poweroff',
                               ['rdd_off_in_g3', 'ec_hibernate_breaks_rdd'])
+
+        # Can't check hibernate if the board doesn't support it or if it powers
+        # off the GSC.
+        if self.faft_config.hibernate and not self.faft_config.gsc_off_in_ulp:
+            logging.info('Checking Rdd is connected with the EC in hibernate.')
+            self.ec.send_command('hibernate')
+            time.sleep(self.WAIT_FOR_STATE)
+            self.check_rdd_status('on', 'Rdd disconnected after EC hibernate',
+                                  ['rdd_off_in_g3', 'ec_hibernate_breaks_rdd'])
 
         logging.info('Checking Rdd can be disconnected in G3.')
         self.servo.set_dts_mode('off')

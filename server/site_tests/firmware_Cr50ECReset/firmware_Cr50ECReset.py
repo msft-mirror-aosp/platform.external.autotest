@@ -30,12 +30,15 @@ class firmware_Cr50ECReset(Cr50Test):
     def initialize(self, host, cmdline_args, full_args):
         """Verify the setups supports EC reset."""
         self.ran_test = False
-        # TODO(b/186535695): EC hibernate puts cr50 into reset, so the test
-        # can't verify cr50 behavior while the EC is hibernate.
-        if 'c2d2' in host.servo.get_servo_type():
-            raise error.TestNAError('Cannot run test with c2d2')
         super(firmware_Cr50ECReset, self).initialize(host, cmdline_args,
                                                      full_args)
+
+        if not self.faft_config.hibernate:
+            raise error.TestNAError('Hibernate not supported')
+        # EC hibernate puts gsc into reset. The test can't verify gsc
+        # behavior in ULP.
+        if self.faft_config.gsc_off_in_ulp:
+            raise error.TestNAError('Cannot verify GSC behavior in ULP')
         if not self.faft_config.gsc_can_wake_ec_with_reset:
             raise error.TestNAError("This DUT has a hardware limitation that "
                                     "prevents cr50 from waking the EC with "

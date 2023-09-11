@@ -134,5 +134,8 @@ class firmware_Cr50CCDUartStress(FirmwareTest):
                     err = e
                 msg = ' (%d): %r' % (e.result_obj.exit_status, err)
             raise error.TestFail('Uart stress tester failed %s' % msg)
+        finally:
+            # Reboot the GSC to kill the chargen command on the EC.
+            self.gsc.reboot()
 
         logging.info('Uart stress tester passed.')

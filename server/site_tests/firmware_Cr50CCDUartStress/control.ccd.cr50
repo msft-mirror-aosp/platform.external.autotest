@@ -31,11 +31,12 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
+    duration = int(args_dict.get("uart_duration", "600"))
     job.run_test(
         "firmware_Cr50CCDUartStress",
         host=host,
         cmdline_args=args,
-        duration=600,
+        duration=duration,
         use_ccd=True,
         console="cr50",
         tag="ccd.cr50",

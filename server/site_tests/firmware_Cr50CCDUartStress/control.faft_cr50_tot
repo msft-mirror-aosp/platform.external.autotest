@@ -38,11 +38,12 @@ args_dict["tot_test_run"] = "true"
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
+    duration = int(args_dict.get("uart_duration", "600"))
     job.run_test(
         "firmware_Cr50CCDUartStress",
         host=host,
         cmdline_args=args,
-        duration=600,
+        duration=duration,
         use_ccd=True,
         console="ec",
         tag="faft_cr50_tot",

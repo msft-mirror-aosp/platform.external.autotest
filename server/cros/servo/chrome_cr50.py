@@ -121,6 +121,41 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # start with some whitespace, so account for that too.
     CAP_FORMAT = r'\s+(Y|-) \d\=(%s[\S ]*)[\r\n]+\s*' % CAP_STATES
 
+    # If any capabilities are used by all servo types, add them to this list.
+    UNIVERSAL_SERVO_REQ_CAPS = []
+    SERVO_SPECIFIC_REQ_CAPS = {
+            # CCD Capabilities used for c2d2 control drivers. C2D2 just needs
+            # console command access.
+            'c2d2': [
+                    'OverrideWP',
+                    'RebootECAP',
+                    'GscFullConsole',
+            ],
+            # CCD needs most stuff.
+            'ccd': [
+                    # Open without physical presence. Being able to reopen ccd
+                    # is the most important part.
+                    'UnlockNoShortPP',
+                    'OpenNoLongPP',
+                    'OpenNoDevMode',
+                    'OpenFromUSB',
+                    # UART
+                    'UartGscRxAPTx',
+                    'UartGscTxAPRx',
+                    'UartGscRxECTx',
+                    'UartGscTxECRx',
+                    # Flash access
+                    'FlashAP',
+                    'FlashEC',
+                    # Console commands
+                    'OverrideWP',
+                    'RebootECAP',
+                    'GscFullConsole',
+            ],
+            # servo_* servos don't need any ccd capabilities.
+            'servo': [],
+    }
+
     BOARD_PROP_ALWAYS_TRUE = []
     # CR50 Board Properties as defined in platform/ec/board/cr50/scratch-reg1.h
     BOARD_PROP = {
@@ -166,8 +201,6 @@ class ChromeCr50(chrome_ec.ChromeConsole):
            'RESET_FLAG_SECURITY'         : 1 << 17,
     }
     FIPS_RE = r' ([^ ]*)approved.*allowed: (1|0)'
-    # CCD Capabilities used for c2d2 control drivers.
-    SERVO_DRV_CAPS = ['OverrideWP', 'GscFullConsole', 'RebootECAP']
     # Cr50 may have flash operation errors during the test. Here's an example
     # of one error message.
     # List of errors to search for. The first element is the string to look
@@ -296,6 +329,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """
         super(ChromeCr50, self).__init__(servo, 'cr50_uart')
         self.faft_config = faft_config
+        self.init_gsc_servo_caps()
         version = servo.get('gsc_version')
         if self.NAME not in version:
             raise error.TestError('%r not found in %r' % (self.NAME, version))
@@ -1487,11 +1521,19 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         # "Always" must show up in the capability line.
         return self.CAP_ALWAYS in rv[0]
 
+    def init_gsc_servo_caps(self):
+        """Save a list of the capabilities needed for servo to work."""
+        servo_class = self._servo.get_main_servo_device().split('_')[0]
+        logging.info('Looking up %r gsc capabilities', servo_class)
+        self._gsc_servo_caps = self.UNIVERSAL_SERVO_REQ_CAPS
+        self._gsc_servo_caps.extend(self.SERVO_SPECIFIC_REQ_CAPS[servo_class])
+        logging.info('Required caps: %s', self._gsc_servo_caps)
+
     def servo_drv_enabled(self):
         """Check if the caps  are accessible on boards wigh gsc controls."""
-        if not self._servo.main_device_uses_gsc_drv():
+        if not self._gsc_servo_caps:
             return True
-        for cap in self.SERVO_DRV_CAPS:
+        for cap in self._gsc_servo_caps:
             # If any capability isn't accessible, return False.
             if not self.cap_is_always_on(cap):
                 return False
@@ -1500,11 +1542,11 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     def enable_servo_control_caps(self):
         """Set all servo control capabilities to Always."""
         # Nothing do do if servo doesn't use gsc for any controls.
-        if not self._servo.main_device_uses_gsc_drv():
+        if not self._gsc_servo_caps:
             return
         logging.info('Setting servo caps to Always')
         self.send_command('ccd testlab open')
-        for cap in self.SERVO_DRV_CAPS:
+        for cap in self._gsc_servo_caps:
             self.send_command('ccd set %s Always' % cap)
         return self.servo_drv_enabled()
 

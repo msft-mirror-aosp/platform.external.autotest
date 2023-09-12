@@ -109,7 +109,7 @@ class firmware_FWMPDisableCCD(Cr50Test):
 
         # Clear the password.
         self.open_cr50_and_setup_ccd()
-        self.gsc.send_command('ccd lock')
+        self.gsc.set_ccd_level('lock')
 
 
     def check_fwmp(self, flags, clear_fwmp, check_lock=True):

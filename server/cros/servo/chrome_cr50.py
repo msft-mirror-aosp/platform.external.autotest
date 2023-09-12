@@ -1668,7 +1668,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
         self.send_command('ccd set OpenNoTPMWipe IfOpened')
         time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
-        self.send_command('ccd lock')
+        self.gsc.set_ccd_level('lock')
         time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
         self.send_command('ccd open')
         time.sleep(self.CCD_PASSWORD_RATE_LIMIT)

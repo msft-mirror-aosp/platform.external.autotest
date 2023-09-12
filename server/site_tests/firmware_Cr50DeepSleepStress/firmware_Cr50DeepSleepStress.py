@@ -95,7 +95,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
     def create_fwmp(self):
         """Create the FWMP."""
         self.fast_ccd_open(True)
-        self.gsc.send_command('ccd lock')
+        self.gsc.set_ccd_level('lock')
         self.clear_tpm_owner_and_fwmp()
         logging.info('Setting FWMP flags to %s', self.fwmp)
         autotest.Autotest(self.host).run_test('firmware_SetFWMP',

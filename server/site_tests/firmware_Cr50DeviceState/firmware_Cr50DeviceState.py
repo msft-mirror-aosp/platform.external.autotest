@@ -685,7 +685,7 @@ class firmware_Cr50DeviceState(Cr50Test):
     def init_fwmp(self):
         """Create the FWMP."""
         self.fast_ccd_open(True)
-        self.gsc.send_command('ccd lock')
+        self.gsc.set_ccd_level('lock')
         self.clear_tpm_owner_and_fwmp()
 
         self.print_fwmp('cleared tpm owner. Not initialized.',

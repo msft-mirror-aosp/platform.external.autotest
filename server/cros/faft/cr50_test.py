@@ -93,7 +93,9 @@ class Cr50Test(FirmwareTest):
         # individiual tests don't need to care that much.
         self.gsc.enable_servo_control_caps()
 
-        if self.can_set_ccd_level:
+        if self.servo.main_device_is_ccd():
+            logging.info('Running with ccd unlocked')
+        elif self.can_set_ccd_level:
             # Lock cr50 so the console will be restricted
             self.gsc.set_ccd_level('lock')
         elif self.original_ccd_level != 'lock':

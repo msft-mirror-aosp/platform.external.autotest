@@ -1,0 +1,37 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+AUTHOR = 'ChromeOS Experimentation Working Group (cros-exp-wg+weeklyrun@google.com)'
+NAME = 'tast.fieldtrial-testing-config-on-weekly'
+METADATA = {
+    'contacts': ['cros-exp-wg+weeklyrun@google.com'],
+    'bug_component': 'b:1427888', # ChromeOS > Data > Engineering > Experimentation > Test Failures
+    'criteria': 'Tauto wrapper for Tast Experimentation weekly suite.'
+}
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:fieldtrial-testing-config-on-weekly'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''Run the Experimentation weekly suite.'''
+
+from autotest_lib.server.cros.crossdevice import cross_device_util
+
+def run(machine):
+    # Get host objects for each device.
+    host = hosts.create_host(machine)
+
+    experiments_enabled = "setup.FieldTrialConfig=enable"
+
+    job.run_test('tast',
+                 host=host,
+                 test_exprs=['("group:mainline")'],
+                 ignore_test_failures=True, max_run_sec=10800,
+                 command_args=args,
+                 varslist=[experiments_enabled])
+parallel_simple(run, machines)

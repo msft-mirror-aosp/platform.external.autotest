@@ -1,0 +1,26 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Experimentation Working Group (cros-exp-wg+weeklyrun@google.com)"
+NAME = "fieldtrial-testing-config-on-weekly"
+PURPOSE = "Suite to run all CrOS tests with FieldTrialConfig enabled weekly."
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+DOC = """ This suite runs all CrOS tests with experimentation enabled. """
+
+METADATA = {
+    'contacts': ['cros-exp-wg+weeklyrun@google.com'],
+    'bug_component': 'b:1427888', # ChromeOS > Data > Engineering > Experimentation > Test Failures
+    'criteria': 'Tauto wrapper for Tast Experimentation weekly suite.'
+}
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+args_dict['max_runtime_mins'] = 180
+args_dict['name'] = NAME
+args_dict['job'] = job
+dynamic_suite.reimage_and_run(**args_dict)
+

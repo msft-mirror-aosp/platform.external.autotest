@@ -103,6 +103,9 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     # Ti50 doesn't have any errors to track right now.
     ERROR_DESC_LIST = []
 
+    # Ti50 has to have AlowUnverifiedRo enabled to boot the dev ap firmware.
+    UNIVERSAL_SERVO_REQ_CAPS = ['AllowUnverifiedRo']
+
     def strip_timestamp(self, result):
         """Remove the timestamp from the result output.
 

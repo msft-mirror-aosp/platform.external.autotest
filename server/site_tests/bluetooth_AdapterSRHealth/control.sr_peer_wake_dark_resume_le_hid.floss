@@ -33,12 +33,13 @@ METADATA = {
 
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
+DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1, servo_state:WORKING'
 
 args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
-    host = hosts.create_host(machine)
+    host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test('bluetooth_AdapterSRHealth', host=host, num_iterations=1,
                  args_dict=args_dict, test_name=NAME.split('.')[1], tag='.'.join(NAME.split('.')[1:]), floss=True)
 

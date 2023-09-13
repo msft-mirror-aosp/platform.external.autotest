@@ -28,6 +28,7 @@ from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.bluetooth import bluetooth_attenuator
 from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
 from autotest_lib.server.cros.multimedia import remote_facade_factory
+from autotest_lib.server.cros.servo import chrome_ec
 from autotest_lib.client.bin import utils
 from six.moves import range
 
@@ -150,6 +151,7 @@ class BluetoothAdapterQuickTests(
         # DUT may not wake up.
         # This function is to prevent the DUT from dark suspend.
         self._dr_utils.stop_resuspend_on_dark_resume()
+        self._ec = chrome_ec.ChromeEC(self.host.servo)
 
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
@@ -788,6 +790,8 @@ class BluetoothAdapterQuickTests(
 
                 if dark_resume:
                     dark_resume_after = self._dr_utils.count_dark_resumes()
+                    # Apply key press to guarantee full resume
+                    self._ec.key_press('<ctrl_l>')
                     logging.info("Dark resume before %d after %d",
                                  dark_resume_before, dark_resume_after)
                     if dark_resume_after != dark_resume_before:

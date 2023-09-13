@@ -1,0 +1,39 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'tast.pvs.perbuild'
+METADATA = {
+    'contacts': ['chromeos-pvs-eng@google.com'],
+    # ChromeOS > Platform > Enablement > PVS Framework
+    'bug_component': 'b:1110659',
+    'criteria': 'Tauto wrapper for pvs scenario tast tests'
+}
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:pvs-perbuild'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+REQUIRE_SSP = True
+
+from autotest_lib.client.common_lib import utils
+from autotest_lib.server.site_tests.tast import tast
+
+command_args, varslist = tast.split_arguments(args)
+
+def run(machine):
+    pvs_host = hosts.create_host(machine)
+    companions = hosts.create_companion_hosts(companion_hosts)
+    companion_dut = companions[0]
+    tast_test_expr = '("group:pvs" && pvs_perbuild)'
+    varslist.append("pvs.shop_ref=latest")
+    varslist.append("pvs.force_dlm_sku_id=1")
+    varslist.append("pvs.feature_flags=automated_release=1")
+    varslist.append("pvs.ignore_git_access_failures=1")
+    job.run_test('tast',
+                 host=pvs_host,
+                 test_exprs=[tast_test_expr],
+                 max_run_sec=6000,
+                 companion_duts={'dut':companion_dut},
+                 command_args=command_args,
+                 varslist=varslist)
+
+parallel_simple(run, machines)

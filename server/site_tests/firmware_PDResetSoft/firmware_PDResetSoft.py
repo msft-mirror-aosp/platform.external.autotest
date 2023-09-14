@@ -39,8 +39,13 @@ class firmware_PDResetSoft(FirmwareTest):
                     logging.warning('Device cant soft reset ... skipping')
                     break
 
-    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
-                   init_power_mode=None):
+    def initialize(self,
+                   host,
+                   cmdline_args,
+                   flip_cc=False,
+                   dts_mode=False,
+                   init_power_mode=None,
+                   desired_pd_port_idx=None):
         super(firmware_PDResetSoft, self).initialize(host, cmdline_args)
         self.setup_pdtester(flip_cc, dts_mode, min_batt_level=10)
         # Only run in normal mode
@@ -50,6 +55,7 @@ class firmware_PDResetSoft(FirmwareTest):
             self.set_ap_off_power_mode(init_power_mode)
         # Turn off console prints, except for USBPD.
         self.usbpd.enable_console_channel('usbpd')
+        self.desired_pd_port_idx = desired_pd_port_idx
 
     def cleanup(self):
         self.usbpd.send_command('chan 0xffffffff')
@@ -73,7 +79,7 @@ class firmware_PDResetSoft(FirmwareTest):
         port_partner = pd_device.PDPortPartner(consoles)
 
         # Identify a valid test port pair
-        port_pair = port_partner.identify_pd_devices()
+        port_pair = port_partner.identify_pd_devices(self.desired_pd_port_idx)
         if not port_pair:
             raise error.TestFail('No PD connection found!')
 

@@ -80,8 +80,13 @@ class firmware_PDVbusRequest(FirmwareTest):
         """
         self.usbpd.send_command('dps %s' % ('en' if en else 'dis'))
 
-    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False,
-                   init_power_mode=None):
+    def initialize(self,
+                   host,
+                   cmdline_args,
+                   flip_cc=False,
+                   dts_mode=False,
+                   init_power_mode=None,
+                   desired_pd_port_idx=None):
         super(firmware_PDVbusRequest, self).initialize(host, cmdline_args)
         # Only run on DUTs that can supply battery power.
         if not self._client.has_battery():
@@ -102,6 +107,7 @@ class firmware_PDVbusRequest(FirmwareTest):
         self.pdtester.allow_pr_swap(False)
         # Disable dynamic PDO selection for voltage testing
         self._enable_dps(False)
+        self.desired_pd_port_idx = desired_pd_port_idx
 
     def cleanup(self):
         logging.info('Allow PR_SWAP request from DUT')
@@ -123,7 +129,7 @@ class firmware_PDVbusRequest(FirmwareTest):
         port_partner = pd_device.PDPortPartner(consoles)
 
         # Identify a valid test port pair
-        port_pair = port_partner.identify_pd_devices()
+        port_pair = port_partner.identify_pd_devices(self.desired_pd_port_idx)
         if not port_pair:
             raise error.TestFail('No PD connection found!')
 

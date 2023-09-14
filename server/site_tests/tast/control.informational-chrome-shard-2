@@ -47,6 +47,7 @@ def run(machine):
                              '"group:mainline" && '
                              'informational && '
                              '!"name:crostini.*" && '
+                             '!"group:golden_tier" && '  # Execution in the DUOP suites takes precedence go/g3-duop.
                              '"dep:chrome" && '
                              '!"dep:android*"'
                              ')'],

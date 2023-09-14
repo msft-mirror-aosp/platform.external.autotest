@@ -837,6 +837,7 @@ suite:nearby-share-floss
 suite:nearby-share-prod
 suite:nearby-share-remote
 suite:nearby-share-remote-floss
+suite:network_cq
 suite:network_endtoend
 suite:network_endtoend_flaky
 suite:network_platform

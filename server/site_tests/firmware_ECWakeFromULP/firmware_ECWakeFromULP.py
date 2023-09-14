@@ -9,6 +9,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.power import servo_charger
 from autotest_lib.server.cros.servo import servo
+from autotest_lib.server.cros.servo import pd_device
 
 
 class firmware_ECWakeFromULP(FirmwareTest):
@@ -20,15 +21,14 @@ class firmware_ECWakeFromULP(FirmwareTest):
     # Retries allowed for reaching designed states.
     POWER_STATE_RETRY_COUNT = 10
 
-    def initialize(self, host, cmdline_args):
+    def initialize(self, host, cmdline_args, desired_pd_port_idx=None):
         super(firmware_ECWakeFromULP, self).initialize(host, cmdline_args)
         self.setup_pdtester(min_batt_level=10)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
         self.charge_manager = servo_charger.ServoV4ChargeManager(
                 host, host.servo)
-        # stop charging to test hibernate
-        self.charge_manager.stop_charging()
+        self.desired_pd_port_idx = desired_pd_port_idx
 
     def cleanup(self):
         # The DUT might be still hibernated. Force the reboot.
@@ -91,6 +91,19 @@ class firmware_ECWakeFromULP(FirmwareTest):
 
     def run_once(self, host):
         """Runs a single iteration of the test."""
+
+        # validate that we are on the correct PD port
+        consoles = [self.usbpd, self.pdtester]
+        port_partner = pd_device.PDPortPartner(consoles)
+
+        # Identify a valid test port pair
+        port_pair = port_partner.identify_pd_devices(self.desired_pd_port_idx)
+        if not port_pair:
+            raise error.TestFail('No PD connection found!')
+
+        # stop charging to test hibernate
+        self.charge_manager.stop_charging()
+
         if not self.check_ec_capability():
             raise error.TestNAError(
                     "Nothing needs to be tested on this device")

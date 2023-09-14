@@ -44,12 +44,18 @@ class firmware_PDConnect(FirmwareTest):
                     logging.warning('Device does not support disconnect/connect')
                     break
 
-    def initialize(self, host, cmdline_args, flip_cc=False, dts_mode=False):
+    def initialize(self,
+                   host,
+                   cmdline_args,
+                   flip_cc=False,
+                   dts_mode=False,
+                   desired_pd_port_idx=None):
         super(firmware_PDConnect, self).initialize(host, cmdline_args)
         self.setup_pdtester(flip_cc, dts_mode)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
         self.usbpd.enable_console_channel('usbpd')
+        self.desired_pd_port_idx = desired_pd_port_idx
 
 
     def cleanup(self):
@@ -66,7 +72,7 @@ class firmware_PDConnect(FirmwareTest):
         consoles = [self.usbpd, self.pdtester]
         port_partner = pd_device.PDPortPartner(consoles)
         # Identify a valid test port pair
-        port_pair = port_partner.identify_pd_devices()
+        port_pair = port_partner.identify_pd_devices(self.desired_pd_port_idx)
         if not port_pair:
             raise error.TestFail('No PD connection found!')
 

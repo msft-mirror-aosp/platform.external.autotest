@@ -5,13 +5,13 @@
 from autotest_lib.server import utils
 
 AUTHOR = "ChromeOS Team"
-NAME = "firmware_PDTrySrc"
+NAME = "firmware_PDTrySrc.port0"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Servo based PD Try.SRC protocol test",
+        "criteria": "Servo based PD Try.SRC protocol test on USB-C port 0",
+        "requirements": ["sys-fw-0023-v01"],
 }
-ATTRIBUTES = "suite:faft_pd"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
 TEST_TYPE = "server"
@@ -33,6 +33,8 @@ def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args,
                              pdtester_args=pdtester_args)
     job.run_test("firmware_PDTrySrc", host=host, cmdline_args=args,
-                 disable_sysinfo=True, flip_cc=False)
+                 disable_sysinfo=True, flip_cc=False,
+                 tag='.'.join(NAME.split('.')[1:]),
+                 desired_pd_port_idx=0)
 
 parallel_simple(run, machines)

@@ -76,13 +76,18 @@ class firmware_PDTrySrc(FirmwareTest):
                      stats[0], stats[1], self.CONNECT_ITERATIONS)
         return stats
 
-    def initialize(self, host, cmdline_args, flip_cc=False):
+    def initialize(self,
+                   host,
+                   cmdline_args,
+                   flip_cc=False,
+                   desired_pd_port_idx=None):
         super(firmware_PDTrySrc, self).initialize(host, cmdline_args)
         self.setup_pdtester(flip_cc, min_batt_level=10)
         # Only run in normal mode
         self.switcher.setup_mode('normal')
         # Turn off console prints, except for USBPD.
         self.usbpd.enable_console_channel('usbpd')
+        self.desired_pd_port_idx = desired_pd_port_idx
 
     def cleanup(self):
         self.usbpd.send_command('chan 0xffffffff')
@@ -106,7 +111,7 @@ class firmware_PDTrySrc(FirmwareTest):
         original_drp = [None, None]
         port_partner = pd_device.PDPortPartner(consoles)
         # Identify PDTester <-> DUT PD device pair
-        port_pair = port_partner.identify_pd_devices()
+        port_pair = port_partner.identify_pd_devices(self.desired_pd_port_idx)
         if not port_pair:
             raise error.TestFail('No DUT to PDTester connection found!')
 

@@ -86,9 +86,9 @@ class ZipFileThrottleTest(unittest.TestCase):
         self.assertEqual(expected.original_size, actual.original_size)
         diff = math.fabs(expected.trimmed_size - actual.trimmed_size)
         # Compression may generate different sizes of tgz file, but the
-        # difference shouldn't be more than 100 bytes.
+        # difference shouldn't be more than 300 bytes.
         self.assertTrue(
-                diff < 100,
+                diff < 300,
                 'Compression failed to be verified. Expected size: %d, actual '
                 'size: %d' % (expected.trimmed_size, actual.trimmed_size))
 

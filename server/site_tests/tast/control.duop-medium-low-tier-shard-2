@@ -20,7 +20,7 @@ PY_VERSION = 3
 JOB_RETRIES = 0
 
 DOC = '''
-This suite runs the tests in Tast on medium and low tier devices.
+This suite runs the tests in Tast on medium and low tier devices. go/g3-duop
 '''
 
 args_dict = utils.args_to_dict(args)
@@ -30,7 +30,11 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine, servo_args=servo_args),
-                 test_exprs=['("group:medium_low_tier")'],
+                 test_exprs=['('
+                 '"group:medium_low_tier" && '
+                 '!"group:criticalstaging" && '  # The critical staging suite takes precedence.
+                 '!("group:mainline" && !informational)'  # The critical-chrome suite takes precedence.
+                 ')'],
                  ignore_test_failures=True,
                  max_run_sec=3*60*60 - 15*60,
                  totalshards=4,

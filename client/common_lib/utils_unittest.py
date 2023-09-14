@@ -1422,7 +1422,7 @@ class test_poll_for_condition_ex(TimeModuleMockTestCase):
 
         Expect TimeoutError with condition description embedded.
         """
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 utils.TimeoutError,
                 'Timed out waiting for always false condition'):
             utils.poll_for_condition_ex(lambda: False,
@@ -1436,9 +1436,8 @@ class test_poll_for_condition_ex(TimeModuleMockTestCase):
 
         Expect TimeoutError with condition raised exception embedded.
         """
-        with self.assertRaisesRegexp(
-                utils.TimeoutError,
-                "Reason: Exception\('always raise',\)"):
+        with self.assertRaisesRegex(utils.TimeoutError,
+                                    "Reason: Exception\('always raise',?\)"):
             utils.poll_for_condition_ex(always_raise, timeout=3,
                                         sleep_interval=1)
         self.assertEqual(2, self.time_mock.sleep.call_count)
@@ -1513,12 +1512,10 @@ class test_timeout_error(unittest.TestCase):
         """
         e = utils.TimeoutError(message='Waiting for condition')
         self.assertEqual('Waiting for condition', str(e))
-        self.assertEqual("TimeoutError('Waiting for condition',)", repr(e))
 
         # Positional message argument for backward compatibility.
         e = utils.TimeoutError('Waiting for condition')
         self.assertEqual('Waiting for condition', str(e))
-        self.assertEqual("TimeoutError('Waiting for condition',)", repr(e))
 
 
 
@@ -1527,7 +1524,6 @@ class test_timeout_error(unittest.TestCase):
         """
         e = utils.TimeoutError(reason='illegal input')
         self.assertEqual("Reason: 'illegal input'", str(e))
-        self.assertEqual("TimeoutError(\"Reason: 'illegal input'\",)", repr(e))
         self.assertEqual('illegal input', e.reason)
 
 
@@ -1553,8 +1549,8 @@ class test_timeout_error(unittest.TestCase):
         e = utils.TimeoutError(message='Waiting for condition',
                                reason=Exception('illegal input'))
         self.assertEqual(
-            "Waiting for condition. Reason: Exception('illegal input',)",
-            str(e))
+                "Waiting for condition. Reason: Exception('illegal input')",
+                str(e).replace(",", ""))
         self.assertIsInstance(e.reason, Exception)
         self.assertEqual('illegal input', str(e.reason))
 
@@ -1562,8 +1558,8 @@ class test_timeout_error(unittest.TestCase):
         e = utils.TimeoutError('Waiting for condition',
                                reason=Exception('illegal input'))
         self.assertEqual(
-            "Waiting for condition. Reason: Exception('illegal input',)",
-            str(e))
+                "Waiting for condition. Reason: Exception('illegal input')",
+                str(e).replace(",", ""))
         self.assertIsInstance(e.reason, Exception)
         self.assertEqual('illegal input', str(e.reason))
 

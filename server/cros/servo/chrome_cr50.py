@@ -1576,6 +1576,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         operation. Open the cr50 uart file and count the number of times this is
         printed. Log the number of errors.
         """
+        self.dump_nvmem()
         self._servo.record_uart_capture()
         cr50_uart_file = self._servo.get_uart_logfile('cr50')
         if not cr50_uart_file:

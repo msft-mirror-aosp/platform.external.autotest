@@ -8,6 +8,7 @@
   -->
   <Entry include="CtsDeqpTestCases dEQP-VK.api.info.format_properties#r10x6_unorm_pack16" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.info.format_properties#r10x6g10x6_unorm_2pack16" />
+  <Entry include="CtsDeqpTestCases dEQP-VK.synchronization.basic.timeline_semaphore#multi_queue" />
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.512_512_1#joint" />
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.1024_128_1#joint" />
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6g10x6_unorm_2pack16.512_512_1#joint" />

@@ -90,8 +90,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.test_pairable()
 
 
-    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
-    @test_wrapper('Stand Alone power reset test', flags=['Quick Health'])
+    @test_wrapper('Stand Alone power reset test')
     def sa_power_reset(self):
         """Adapter power reset test
 

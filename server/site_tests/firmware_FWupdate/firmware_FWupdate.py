@@ -5,10 +5,13 @@
 import logging
 import os
 import six
+import tempfile
+import shutil
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
+from autotest_lib.client.common_lib.cros import dev_server
 
 
 class firmware_FWupdate(FirmwareTest):
@@ -50,7 +53,9 @@ class firmware_FWupdate(FirmwareTest):
             self._want_restore = True
 
         self.images = {}
-
+        self._tmpdir = None
+        cache_endpoint = dict_args.get('cache_endpoint')
+        image_file_name = dict_args.get('image_file_name')
         for old_or_new in ('old', 'new'):
             for target in ('bios', 'bios_ro', 'bios_rw', 'ec', 'pd'):
                 arg_name = '%s_%s' % (old_or_new, target)
@@ -58,14 +63,19 @@ class firmware_FWupdate(FirmwareTest):
                 if arg_value:
                     logging.info('%s=%s', arg_name, arg_value)
                     image_path = os.path.expanduser(arg_value)
+                    if image_path.startswith('gs://'):
+                        # attempt fetch the image from cacheserver
+                        image_path = self._fetch_image_from_cacheserver(
+                                arg_name, image_path, image_file_name,
+                                cache_endpoint)
                     if not os.path.isabs(image_path):
                         raise error.TestError(
-                            'Specified path must be absolute: %s=%s'
-                            % (arg_name, arg_value))
+                                'Specified path must be absolute: %s=%s' %
+                                (arg_name, image_path))
                     if not os.path.isfile(image_path):
                         raise error.TestError(
-                            'Specified file does not exist: %s=%s'
-                            % (arg_name, arg_value))
+                                'Specified file does not exist: %s=%s' %
+                                (arg_name, image_path))
                     self.images[arg_name] = image_path
 
         self.old_bios = self.images.get('old_bios')
@@ -401,7 +411,39 @@ class firmware_FWupdate(FirmwareTest):
         else:
             logging.warning("No 'new_bios_ro' given, skipping: %s",
                          self.test_new.__doc__)
+        if self._tmpdir is not None:
+            shutil.rmtree(self._tmpdir)
         if errors:
             if len(errors) > 1:
                 errors.insert(0, "%s RO+RW combinations failed." % len(errors))
             raise error.TestFail('\n'.join(errors))
+
+    def _fetch_image_from_cacheserver(self, image_type, image_path,
+                                      image_file_name, cache_endpoint):
+        """"Fetch the image from gs bucket using cacheserver"""
+        if cache_endpoint is None:
+            raise error.TestError(
+                    'this test requires cache_endpoint arg please ensure you are running the test with CFT or PVS'
+            )
+        if image_file_name is None:
+            raise error.TestError(
+                    'Must specify an image_file_name argument to extract, if fetching images from cacheserver'
+            )
+        if not self._tmpdir:
+            self._tmpdir = tempfile.mkdtemp()
+        remote_file = 'http://%s/extract/%s/firmware_from_source.tar.bz2?file=%s' % (
+                cache_endpoint, image_path.replace('gs://',
+                                                   ''), image_file_name)
+        local_file_name = os.path.join(self._tmpdir,
+                                       image_type + '_' + image_file_name)
+        if os.path.exists(local_file_name):
+            raise error.TestError('File already exists: %s' %
+                                  (local_file_name))
+        logging.info('Downloading: %s to: %s', remote_file, local_file_name)
+        try:
+            dev_server.ImageServer.download_file(remote_file, local_file_name)
+        except Exception as e:
+            raise error.TestError(
+                    'failed to download remote firmware file %s: %s' %
+                    (remote_file, e))
+        return local_file_name

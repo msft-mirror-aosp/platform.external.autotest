@@ -13,7 +13,6 @@ import six.moves.urllib.parse
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server import autotest
@@ -66,9 +65,6 @@ _REBOOT_FAILURE_MESSAGE = 'Host did not return from reboot'
 
 # _MINIOS_IMAGE - The miniOS image name used for provisioning.
 _MINIOS_IMAGE = 'full_dev_part_MINIOS.bin.gz'
-
-DEVSERVER_PORT = '8082'
-GS_CACHE_PORT = '8888'
 
 
 class _AttributedUpdateError(error.TestFail):
@@ -401,75 +397,49 @@ class ChromiumOSProvisioner(object):
         else:
             logging.info('Verified the existence of URL: %s', url)
 
-    def _quick_provision_with_gs_cache(self, provision_command, devserver_name,
-                                       image_name):
-        """Run quick_provision using GsCache server.
+    def _quick_provision_with_cache(self, provision_command, cache_server_name,
+                                    image_name):
+        """Run quick_provision using a cache server.
 
         @param provision_command: The path of quick_provision command.
-        @param devserver_name: The devserver name and port (optional).
+        @param cache_server_name: The cache server name and port (optional).
         @param image_name: The image to be installed.
         """
-        logging.info('Try quick provision with gs_cache.')
-        # If enabled, GsCache server listion on different port on the
-        # devserver.
-        gs_cache_server = devserver_name.replace(DEVSERVER_PORT, GS_CACHE_PORT)
+        logging.info('Try quick provision with "%s".', cache_server_name)
         bucket = ('chromeos-releases'
                   if self._is_release_bucket else 'chromeos-image-archive')
         swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
         BBID = os.getenv('BUILD_BUCKET_ID', default='None')
-        gs_cache_url = (f'http://{gs_cache_server}/swarming/{swarming_id}/bbid'
-                        f'/{BBID}/download/{bucket}')
 
-        # Check if GS_Cache server is enabled on the server.
-        self._run('curl -s -o /dev/null %s' % gs_cache_url)
-        with_minios = ""
-        if self._with_minios:
-            with_minios = " --minios"
-            self._url_exists('%s/%s/%s' %
-                             (gs_cache_url, image_name, _MINIOS_IMAGE))
-
-        command = '%s --noreboot%s %s %s' % (provision_command, with_minios,
-                                             image_name, gs_cache_url)
-        self._run(command)
-        metrics.Counter(
-                _metric_name('quick_provision')).increment(fields={
-                        'devserver': devserver_name,
-                        'gs_cache': True
-                })
-
-    def _quick_provision_with_devserver(self, provision_command,
-                                        devserver_name, image_name):
-        """Run quick_provision using legacy devserver.
-
-        @param provision_command: The path of quick_provision command.
-        @param devserver_name: The devserver name and port (optional).
-        @param image_name: The image to be installed.
-        """
-        logging.info('Try quick provision with devserver.')
-        ds = dev_server.ImageServer('http://%s' % devserver_name)
-
-        if lsbrelease_utils.is_moblab():
-            static_url = 'http://%s/static' % devserver_name
+        is_gs_cache = self._is_gs_cache(cache_server_name)
+        if is_gs_cache:
+            cache_url = (f'http://{cache_server_name}/swarming/{swarming_id}/'
+                         f'bbid/{BBID}/download/{bucket}')
         else:
-            swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
-            BBID = os.getenv('BUILD_BUCKET_ID', default='None')
-            static_url = (f'http://{devserver_name}/swarming/{swarming_id}/'
-                          f'bbid/{BBID}/static')
+            cache_url = 'http://%s/static' % cache_server_name
 
         with_minios = ""
         if self._with_minios:
             with_minios = " --minios"
             self._url_exists('%s/%s/%s' %
-                             (static_url, image_name, _MINIOS_IMAGE))
+                             (cache_url, image_name, _MINIOS_IMAGE))
 
         command = '%s --noreboot%s %s %s' % (provision_command, with_minios,
-                                             image_name, static_url)
+                                             image_name, cache_url)
         self._run(command)
         metrics.Counter(
                 _metric_name('quick_provision')).increment(fields={
-                        'devserver': devserver_name,
-                        'gs_cache': False
+                        'devserver': cache_server_name,
+                        'gs_cache': is_gs_cache
                 })
+
+    def _is_gs_cache(self, server_name):
+        """Check if the specified server is a GS cache server."""
+        try:
+            self._url_exists(f'http://{server_name}/gscache')
+            return True
+        except error.TestNAError:
+            return False
 
     def _quick_provision_with_public_bucket(self, provision_command,
                                             image_name):
@@ -514,15 +484,8 @@ class ChromiumOSProvisioner(object):
                 self._quick_provision_with_public_bucket(
                         provision_command, image_name)
             else:
-                try:
-                    self._quick_provision_with_gs_cache(
-                            provision_command, server_name, image_name)
-                except Exception as e:
-                    logging.error(
-                            'Failed to quick-provision with gscache with '
-                            'error %s', e)
-                    self._quick_provision_with_devserver(
-                            provision_command, server_name, image_name)
+                self._quick_provision_with_cache(
+                        provision_command, server_name, image_name)
 
             self._set_target_version()
             return kernel_utils.verify_kernel_state_after_update(self.host)

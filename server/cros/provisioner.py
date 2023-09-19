@@ -324,7 +324,7 @@ class ChromiumOSProvisioner(object):
 
         Determine whether the script is present or must be downloaded
         and download if necessary.  Then, return a command fragment
-        sufficient to run the script from whereever it now lives on the
+        sufficient to run the script from wherever it now lives on the
         DUT.
 
         @param script_name  The name of the script as expected in
@@ -443,8 +443,6 @@ class ChromiumOSProvisioner(object):
         """
         logging.info('Try quick provision with devserver.')
         ds = dev_server.ImageServer('http://%s' % devserver_name)
-        archive_url = ('gs://chromeos-releases/%s' %
-                       image_name if self._is_release_bucket else None)
 
         if lsbrelease_utils.is_moblab():
             static_url = 'http://%s/static' % devserver_name

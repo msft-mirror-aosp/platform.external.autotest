@@ -35,6 +35,8 @@ _ROLE_SETTLING_DELAY_SEC = 1
 # queried. This delay has proven sufficient to overcome this in the current
 # implementation.
 _ETH_REENUMERATE_TIMEOUT_MIN = 1
+# Delay for whether the charger has been attached successfully.
+_CHARGER_STATE_DELAY_SEC = 1
 
 
 def _invert_role(role):
@@ -181,6 +183,9 @@ class ServoV4ChargeManager(object):
                         'control is not available on servod.',
                         'charger_attached')
                 return
+            # Wake from hibernate will need some delay time to wait EC to
+            # be able to handle the charge_state command.
+            time.sleep(_CHARGER_STATE_DELAY_SEC)
             ec_opinion = self._servo.get('charger_attached')
             if ec_opinion != connected:
                 str_lookup = {True: 'connected', False: 'disconnected'}

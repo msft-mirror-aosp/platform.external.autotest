@@ -32,7 +32,7 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['('
-                     '"group:mainline" && '
+                 '"group:mainline" && '
                  '!"group:crostini_slow" &&'
                  '!"group:hw_agnostic" &&'
                  '!informational'

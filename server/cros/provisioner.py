@@ -338,9 +338,13 @@ class ChromiumOSProvisioner(object):
         self.host.run('mkdir -p -m 1777 /usr/local/tmp')
         remote_tmp_script = '/usr/local/tmp/%s' % script_name
         server_name = six.moves.urllib.parse.urlparse(self.update_url)[1]
+
+        swarming_id = os.getenv('SWARMING_TASK_ID', default='None')
+        BBID = os.getenv('BUILD_BUCKET_ID', default='None')
         script_url = 'http://%s/static/%s' % (server_name, script_name)
-        fetch_script = 'curl -Ss -o %s %s && head -1 %s' % (
-                remote_tmp_script, script_url, remote_tmp_script)
+        fetch_script = (f'curl -Ss -H X-SWARMING-TASK-ID:{swarming_id} '
+                        f'-H X-BBID:{BBID} -o {remote_tmp_script} '
+                        f'{script_url} && head -1 {remote_tmp_script}')
 
         first_line = self._run(fetch_script).stdout.strip()
 

@@ -14,7 +14,7 @@ METADATA = {
 }
 TEST_TYPE = 'Server'
 ATTRIBUTES = "suite:wifi_matfunc"
-DEPENDENCIES = 'wificell'
+DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING'
 
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types

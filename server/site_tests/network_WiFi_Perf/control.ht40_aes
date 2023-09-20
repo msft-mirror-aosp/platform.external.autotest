@@ -17,7 +17,7 @@ ATTRIBUTES = 'suite:wifi_perf, suite:wifi_perf_openwrt'
 TIME = 'SHORT'
 MAX_RESULT_SIZE_KB = 512000
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'wificell'
+DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING'
 
 
 from autotest_lib.server.cros.network import hostap_config

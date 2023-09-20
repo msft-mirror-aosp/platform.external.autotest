@@ -14,7 +14,7 @@ METADATA = {
 }
 ATTRIBUTES = "suite:wifi_atten_perf"
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'wificell'
+DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING'
 
 from autotest_lib.server.cros.network import hostap_config
 

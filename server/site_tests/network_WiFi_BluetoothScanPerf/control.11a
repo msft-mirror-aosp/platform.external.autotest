@@ -15,7 +15,7 @@ METADATA = {
 }
 ATTRIBUTES = 'suite:bluetooth_wifi_coex'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'wificell'
+DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING'
 
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config

@@ -15,7 +15,7 @@ METADATA = {
 }
 ATTRIBUTES = ''
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'wificell, working_bluetooth_btpeer:1'
+DEPENDENCIES = 'wificell, working_bluetooth_btpeer:1, peripheral_wifi_state:WORKING'
 
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config

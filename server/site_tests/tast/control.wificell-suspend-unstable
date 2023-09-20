@@ -17,6 +17,7 @@ DEPENDENCIES = 'servo_state:WORKING'
 ATTRIBUTES = 'suite:wifi_func_tast'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
+DEPENDENCIES = 'peripheral_wifi_state:WORKING'
 
 DOC = '''
 Run the unstable Tast tests which verify basic WiFi behavior related to

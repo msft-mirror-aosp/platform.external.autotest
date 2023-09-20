@@ -17,7 +17,7 @@ ATTRIBUTES = 'suite:bluetooth_wifi_coex'
 # This test is flaky but adding to  'suite:bluetooth_flaky' will use up
 # a lot of lab capacity
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'wificell, working_bluetooth_btpeer:1'
+DEPENDENCIES = 'wificell, working_bluetooth_btpeer:1, peripheral_wifi_state:WORKING'
 
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config

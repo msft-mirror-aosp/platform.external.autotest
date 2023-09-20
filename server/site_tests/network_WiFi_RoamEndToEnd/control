@@ -7,8 +7,7 @@ TIME = 'SHORT'
 NAME = 'network_WiFi_RoamEndToEnd'
 TEST_TYPE = 'Server'
 ATTRIBUTES = ''
-DEPENDENCIES = 'wificell'
-
+DEPENDENCIES = 'wificell,peripheral_wifi_state:WORKING'
 DOC = """
 WiFi_RoamEndToEnd test configures two APs with the same ssid and runs the
 client side network_RoamWifiEndToEnd test which uses these APs to test

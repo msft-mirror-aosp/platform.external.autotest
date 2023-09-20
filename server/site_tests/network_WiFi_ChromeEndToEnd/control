@@ -6,7 +6,7 @@ AUTHOR = 'harpreet, krisr, wiley'
 TIME = 'SHORT'
 NAME = 'network_WiFi_ChromeEndToEnd'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'wificell'
+DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING'
 
 DOC = """
 WiFi_ChromeEndToEnd test configures two APs and runs the client side

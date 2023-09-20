@@ -22,29 +22,31 @@ Run the Tast tests designed specifically for CMW500.
 "cellular_cmw_callbox": Attribute used to select tests that specifically run on DUTs with CMW500 callbox.
 "cellular_unstable": Unstable tests that will be excluded from this suite.
 "cellular_run_isolated": Tests that should be run isolated to prevent interference.
-
-Tast is an integration-testing framework analagous to the test-running portion
-of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
-more information.
-See http://go/tast-failures for information about investigating failures.
 '''
 import json
 import tempfile
 import yaml
+from autotest_lib.server.site_tests.tast import tast
 
 def run(machine):
     host = hosts.create_host(machine)
-    with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
-        host_info = host.host_info_store.get()
-        yaml.safe_dump({'autotest_host_info_labels':
-                        json.dumps(host_info.labels)},
-                        stream=temp_file)
-        temp_file.flush()
-        host.reboot()
-        job.run_test('tast',
-                    host=host,
-                    test_exprs=['(("group:cellular" && "cellular_cmw_callbox" && !"cellular_unstable" && !"cellular_run_isolated"))'],
-                    ignore_test_failures=True, max_run_sec=20000,
-                    command_args=args,
-                    varsfiles=[temp_file.name])
+    # companion_hosts will only be available in control file if testbed contains
+    # them, else we will get a NameError.
+    try:
+        companions = hosts.create_companion_hosts(companion_hosts)
+    except NameError:
+        companions = []
+
+    command_args, varslist = tast.split_arguments(args)
+    varslist.append("companionCount=%d" % len(companions))
+
+    host.reboot()
+    job.run_test('tast',
+                host=host,
+                test_exprs=['(("group:cellular" && "cellular_cmw_callbox" && !"cellular_unstable" && !"cellular_run_isolated"))'],
+                ignore_test_failures=True, max_run_sec=20000,
+                companion_duts={f'cd{i+1}' : c for i, c in enumerate(companions)},
+                command_args=command_args,
+                varslist=varslist)
+
 parallel_simple(run, machines)

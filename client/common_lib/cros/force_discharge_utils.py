@@ -119,6 +119,12 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
                 # This will be overwritten by ec_cmd_sustain once is supported
                 # on Jacuzzi/Kukui, and the latter will handle the discharge.
                 run_func('ectool chargecontrol discharge')
+                # TODO(b/295239614): Workaround for the battery sustainer not
+                # discharging when the battery is full. We can bypass this issue
+                # by force discharging for 1 second first. This only matters on
+                # platforms that rely on chargecontrol, not chargeoverride, to
+                # force discharge.
+                time.sleep(1)
             else:
                 run_func(ec_cmd_discharge)
             if not _skip_battery_sustainer():

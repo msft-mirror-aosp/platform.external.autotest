@@ -32,7 +32,7 @@ def run(machine):
     companions = hosts.create_companion_hosts(companion_hosts)
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:floatingworkspace)'],
+                 test_exprs=['("group:floatingworkspace")'],
                  ignore_test_failures=False, max_run_sec=10800,
                  companion_duts={'cd1':companions[0]},
                  command_args=args)

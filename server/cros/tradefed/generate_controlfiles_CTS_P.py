@@ -128,21 +128,6 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
 ])
 
 CONFIG['BVT_PERBUILD'] = [
-    'CtsAccountManagerTestCases',
-    'CtsGraphicsTestCases',
-    'CtsJankDeviceTestCases',
-    'CtsOpenGLTestCases',
-    'CtsOpenGlPerf2TestCases',
-    'CtsPermission2TestCases',
-    'CtsSimpleperfTestCases',
-    'CtsSpeechTestCases',
-    'CtsTelecomTestCases',
-    'CtsTelephonyTestCases',
-    'CtsThemeDeviceTestCases',
-    'CtsTransitionTestCases',
-    'CtsTvTestCases',
-    'CtsUsbTests',
-    'CtsVoiceSettingsTestCases',
 ]
 
 CONFIG['NEEDS_POWER_CYCLE'] = [

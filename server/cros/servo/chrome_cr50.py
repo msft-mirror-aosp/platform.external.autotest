@@ -981,6 +981,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             time.sleep(self._servo.USB_DETECTION_DELAY)
         self.wait_for_ccd_enable(raise_error=raise_error)
 
+    def open_req_physical_presence(self):
+        """Returns False if physical presence capabilities are set to Always."""
+        return (not self.cap_is_always_on('UnlockNoShortPP')
+                or not self.cap_is_always_on('OpenNoLongPP'))
 
     def _get_physical_presence_duration(self, level):
         """Returns the amount of time to press the power button"""
@@ -1088,15 +1092,16 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         testlab_on = self._state_to_bool(self._servo.get('cr50_testlab'))
         batt_is_connected = self.get_batt_pres_state()[1]
         pp_duration = self._get_physical_presence_duration(level)
-        has_pp = not self._servo.main_device_is_ccd()
+        can_reopen = (not self._servo.main_device_is_ccd()
+                      or not self.open_req_physical_presence())
         logging.info('setting ccd %r', level)
         logging.info('physical presence: %d', pp_duration)
 
-        if pp_duration and not has_pp:
+        if pp_duration and not can_reopen:
             raise error.TestError("Can't change privilege level to '%s' "
                 "without physical presence." % level)
 
-        if not testlab_on and not has_pp:
+        if not testlab_on and not can_reopen:
             raise error.TestError("Wont change privilege level without "
                 "physical presence or testlab mode enabled")
 

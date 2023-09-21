@@ -680,22 +680,8 @@ class Cr50Test(FirmwareTest):
 
     def _reset_ccd_settings(self):
         """Reset the ccd lock and capability states."""
-        # Testlab has to be enabled if servo relies on ccd.
-        if self.servo.main_device_uses_gsc_drv():
-            self.fast_ccd_open(True)
-
-        if not self.gsc.ccd_is_reset():
-            # Try to open cr50 and enable testlab mode if it isn't enabled.
-            try:
-                self.fast_ccd_open(True)
-            except:
-                # Even if we can't open cr50, do our best to reset the rest of
-                # the system state. Log a warning here.
-                logging.warning('Unable to Open ccd', exc_info=True)
-            self.gsc.ccd_reset(servo_en=False)
-            if not self.gsc.ccd_is_reset():
-                raise error.TestFail('Could not reset ccd')
-
+        if not self.gsc:
+            return
         current_settings = self.gsc.get_cap_dict(info=self.gsc.CAP_SETTING)
         if self.original_ccd_settings != current_settings:
             if not self.can_set_ccd_level:
@@ -703,10 +689,14 @@ class Cr50Test(FirmwareTest):
                                       "restore it")
             self.fast_ccd_open(True)
             self.gsc.set_caps(self.original_ccd_settings)
+        # Make sure servo caps are enabled, so repair will behave normally.
+        if self.gsc.has_servo_control_caps():
+            self.fast_ccd_open(True, reset_ccd=False)
+            self.gsc.enable_servo_control_caps()
 
-        # First try using testlab open to open the device
+        # Restore the original ccd level.
         if self.original_ccd_level == 'open':
-            self.fast_ccd_open(True)
+            self.fast_ccd_open(True, reset_ccd=False)
         elif self.original_ccd_level != self.gsc.get_ccd_level():
             self.gsc.set_ccd_level(self.original_ccd_level)
 

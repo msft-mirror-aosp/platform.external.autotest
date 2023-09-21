@@ -1539,10 +1539,14 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 return False
         return True
 
+    def has_servo_control_caps(self):
+        """Returns True if any capabilities are required to run the test."""
+        return not not self._gsc_servo_caps
+
     def enable_servo_control_caps(self):
         """Set all servo control capabilities to Always."""
         # Nothing do do if servo doesn't use gsc for any controls.
-        if not self._gsc_servo_caps:
+        if not self.has_servo_control_caps():
             return
         logging.info('Setting servo caps to Always')
         self.send_command('ccd testlab open')
@@ -1556,10 +1560,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def ccd_reset(self, servo_en=True):
         """Reset ccd capabilities."""
-        servo_uses_gsc = self._servo.main_device_uses_gsc_drv()
+        req_caps = self.has_servo_control_caps()
         # If testlab mode is enabled, capabilities can be restored. It's
         # ok to reset ccd.
-        if not servo_en and servo_uses_gsc and not self.testlab_is_on():
+        if not servo_en and req_caps and not self.testlab_is_on():
             raise error.TestError(
                     'Board uses ccd drivers. Enable testlab mode '
                     'before ccd reset')

@@ -68,6 +68,9 @@ class ServoV4ChargeManager(object):
         super(ServoV4ChargeManager, self).__init__()
         self._host = host
         self._servo = servo
+        if not self._host.has_battery():
+            raise error.TestNAError(
+                    'Charge manager not needed for devices without a battery.')
         if not self._servo.supports_built_in_pd_control():
             raise error.TestNAError('Servo setup does not support PD control. '
                                     'Check logs for details.')

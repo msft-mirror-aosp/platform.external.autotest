@@ -195,6 +195,8 @@ class FirmwareTest(test.test):
         self._use_sync_script = global_config.global_config.get_config_value(
                 'CROS', 'enable_fs_sync_script', type=bool, default=False)
 
+        self._ignore_testlab = args.get('ignore_testlab', '').lower() == 'true'
+
         self.servo.initialize_dut()
         self.faft_client = RPCProxy(host)
         self.faft_config = FAFTConfig(
@@ -775,7 +777,7 @@ class FirmwareTest(test.test):
             # TODO(waihong): Add a check to see if the battery level is too
             # low and sleep for a while for charging.
             if self._client.has_battery():
-              self.set_servo_v4_role_to_snk()
+                self.set_servo_v4_role_to_snk()
 
             # Force reconnection; otherwise, the next RPC call will timeout
             logging.info('Waiting for reconnection after power role swap...')
@@ -2453,7 +2455,12 @@ class FirmwareTest(test.test):
         if self.servo.main_device_is_ccd() and not self.gsc.testlab_is_on():
             error_txt = 'because the main servo device is CCD.'
             if enable_testlab:
-                raise error.TestNAError('Cannot enable testlab: %s' % error_txt)
+                if self._ignore_testlab:
+                    logging.info('Ignoring enable testlab request.')
+                    enable_testlab = False
+                else:
+                    raise error.TestNAError('Cannot enable testlab: %s' %
+                                            error_txt)
             elif reset_ccd:
                 raise error.TestNAError('CCD reset not allowed: %s' % error_txt)
 

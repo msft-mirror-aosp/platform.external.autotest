@@ -764,6 +764,10 @@ class _Run(object):
 
     def get_background_cmd(self, section):
         cmd = [
+                'SWARMING_TASK_ID=%s' % os.getenv('SWARMING_TASK_ID',
+                                                  default='none'),
+                'BUILD_BUCKET_ID=%s' % os.getenv('BUILD_BUCKET_ID',
+                                                 default='none'),
                 'nohup',
                 os.path.join(self.autodir, 'bin/autotest_client'),
                 _set_py_version()
@@ -775,6 +779,10 @@ class _Run(object):
 
     def get_daemon_cmd(self, section, monitor_dir):
         cmd = [
+                'SWARMING_TASK_ID=%s' % os.getenv('SWARMING_TASK_ID',
+                                                  default='none'),
+                'BUILD_BUCKET_ID=%s' % os.getenv('BUILD_BUCKET_ID',
+                                                 default='none'),
                 'nohup',
                 os.path.join(self.autodir, 'bin/autotestd'), monitor_dir,
                 '-H autoserv',
@@ -787,6 +795,10 @@ class _Run(object):
 
     def get_monitor_cmd(self, monitor_dir, stdout_read, stderr_read):
         cmd = [
+                'SWARMING_TASK_ID=%s' % os.getenv('SWARMING_TASK_ID',
+                                                  default='none'),
+                'BUILD_BUCKET_ID=%s' % os.getenv('BUILD_BUCKET_ID',
+                                                 default='none'),
                 os.path.join(self.autodir, 'bin', 'autotestd_monitor'),
                 monitor_dir,
                 str(stdout_read),

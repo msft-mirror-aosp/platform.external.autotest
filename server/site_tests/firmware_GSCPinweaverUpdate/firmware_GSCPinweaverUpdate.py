@@ -63,8 +63,12 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
                     '%r is unsupported. Add image version to OLD_VERSIONS' %
                     self.gsc.NAME)
         self.remove_gsc_firmware_images()
-        self._old_release_path = self.download_cr50_release_image(
-                self.OLD_VERSIONS[self.gsc.NAME])[0]
+        old_path = full_args.get('old_pinweaver_gsc_path', None)
+        if old_path:
+            self._old_release_path = old_path
+        else:
+            self._old_release_path = self.download_cr50_release_image(
+                    self.OLD_VERSIONS[self.gsc.NAME])[0]
 
     def create_user(self, session):
         """Create a persistent user in the given session."""

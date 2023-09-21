@@ -232,3 +232,12 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         if m is None:
             raise error.TestError('Wrong taskinfo output', output)
         return output
+
+    def dump_nvmem(self):
+        """Ti50 doesn't have dump_nvmem. fsinfo will print some file info."""
+        # nvmem is only on ti50 dev images.
+        rv = self.send_safe_command_get_output('nvmem', ['nvmem(.*)>'])[0][1]
+        logging.info('nvmem output:\n%s', rv.strip())
+        # fsinfo is in all ti50 images.
+        rv = self.send_safe_command_get_output('fsinfo', ['fsinfo(.*)>'])[0][1]
+        logging.info('fsinfo output:\n%s', rv.strip())

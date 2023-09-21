@@ -104,6 +104,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
             logging.info('Restricting console')
             self.fast_ccd_open(enable_testlab=True)
             self.gsc.set_cap('GscFullConsole', 'IfOpened')
+            self.gsc.set_cap('UartGscTxAPRx', 'IfOpened')
+            self.gsc.set_cap('UartGscTxECRx', 'IfOpened')
             time.sleep(self.CCD_HOOK_WAIT)
             self.gsc.set_ccd_level('lock')
         self.is_tot_run = (full_args.get('tot_test_run', '').lower() == 'true')

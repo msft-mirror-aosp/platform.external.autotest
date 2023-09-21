@@ -49,7 +49,9 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
     def initialize(self, host, cmdline_args, full_args):
         """Setup the test to restore the release image."""
         self.ran_test = False
-        if not host.servo or host.servo.main_device_is_ccd():
+        if not host.servo:
+            raise error.TestNAError('No valid servo found')
+        if host.servo.main_device_is_ccd():
             raise error.TestNAError('Use a flex cable instead of CCD cable.')
         # Restore the original image and board id during cleanup.
         super().initialize(host,

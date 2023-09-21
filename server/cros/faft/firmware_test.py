@@ -1777,6 +1777,15 @@ class FirmwareTest(test.test):
         return time.strptime(time_string, self._TIME_FORMAT)
 
     def check_recovery_reason_since(self, time_since, expected_rec_reason):
+        """Check if the recovery reason matches the expected recovery reason.
+
+        @param time_since: a timestamp. Ignore recovery reasons before
+                            time_since.
+        @param expected_rec_reason: A list or tuple of vboot RECOVERY_REASONs
+        @returns None if the recovery reason was found in expected_rec_reason
+        @raises TestError if the recovery reason is not found in
+                expected_rec_reason
+        """
         entries = self.faft_client.system.run_shell_command_get_output(
                 'elogtool list')
         for line in reversed(entries):

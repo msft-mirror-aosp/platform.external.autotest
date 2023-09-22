@@ -1229,6 +1229,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.bluetooth_facade.set_player_playback_status(expected_status)
         self.bluetooth_facade.set_player_position(expected_position)
 
+        # Give the DUT some chance to propagate the media info to the peer.
+        # The propagation should be instant, so just have a short sleep.
+        time.sleep(1)
+
         received_media_info = device.GetMediaPlayerMediaInfo()
         logging.debug(received_media_info)
 

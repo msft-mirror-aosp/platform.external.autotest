@@ -44,60 +44,120 @@ HOURS=60*60
 
 CLIENT_TESTS = [
     ('power_BatteryCharge', {
-        'percent_target_charge' : 100, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 100,
+        'max_run_time': 5 * HOURS
+        }
+    ),
     ('power_WaitForCoolDown', {}),
     ('power_LoadTest', {
-        'tag' : 'powerqual', 'force_discharge' : True, 'loop_time' : HOURS,
-        'loop_count' : 24, 'test_low_batt_p' : 5}),
+        'tag' : 'powerqual',
+        'force_discharge' : True,
+        'loop_time' : HOURS,
+        'loop_count' : 24,
+        'test_low_batt_p' : 5
+        }
+    ),
+    ('power_BatteryDrain', {
+        'force_discharge' : True,
+            'drain_to_percent' : 5,
+            'drain_timeout': HOURS,
+        }
+    ),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 100, 'test_for_charging_speed': True,
-        'percent_initial_charge_max': 5, 'max_run_time': 5 * HOURS,
-        'tag' : 'powerqual'}),
+        'percent_target_charge' : 100,
+        'test_for_charging_speed': True,
+        'percent_initial_charge_max': 10,
+        'max_run_time': 5 * HOURS,
+        'tag' : 'powerqual'
+        }
+    ),
     ('power_WaitForCoolDown', {}),
     ('power_VideoPlayback', {
-        'tag' : 'powerqual', 'force_discharge' : True, 'secs_per_video' : 3600,
-        'videos' : [('h264_1080_30fps', ''), ('vp9_1080_30fps', '')]}),
+        'tag' : 'powerqual',
+        'force_discharge' : True,
+        'secs_per_video' : 3600,
+        'videos' : [('h264_1080_30fps', ''), ('vp9_1080_30fps', '')]
+        }
+    ),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 80, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 80,
+        'max_run_time': 5 * HOURS
+        }
+    ),
     ('power_WaitForCoolDown', {}),
     ('power_VideoCall', {
-        'tag' : 'powerqual', 'force_discharge' : True,
-        'min_run_time_percent': 75}),
+        'tag' : 'powerqual',
+        'force_discharge' : True,
+        'min_run_time_percent': 75
+        }
+    ),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 40, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 40,
+        'max_run_time': 5 * HOURS
+        }
+    ),
     ('power_WaitForCoolDown', {}),
     ('power_Idle', {
-        'tag' : 'powerqual', 'force_discharge' : True}),
+        'tag' : 'powerqual',
+        'force_discharge' : True
+        }
+    ),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 35, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 35,
+        'max_run_time': 5 * HOURS
+        }
+    ),
     ('power_WaitForCoolDown', {}),
     ('power_VideoPlayback', {
-        'tag' : 'powerqual_info', 'force_discharge' : True}),
+        'tag' : 'powerqual_info',
+        'force_discharge' : True
+        }
+    ),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 30, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 30,
+        'max_run_time': 5 * HOURS
+        }
+    ),
     ('power_WaitForCoolDown', {}),
     ('power_VideoEncode', {
-        'tag' : 'powerqual', 'force_discharge' : True}),
+        'tag' : 'powerqual',
+        'force_discharge' : True
+        }
+    ),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 25, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 25,
+        'max_run_time': 5 * HOURS
+        }
+    ),
     ('power_WaitForCoolDown', {}),
     ('power_Display', {
-        'tag' : 'powerqual_brightness', 'force_discharge' : True,
-        'brightness' : 'all', 'pages' : ['white', 'black', 'checker1'],
-        'secs_per_page' : 20, 'seconds_period' : 1}),
+        'tag' : 'powerqual_brightness',
+        'force_discharge' : True,
+        'brightness' : 'all',
+        'pages' : ['white', 'black', 'checker1'],
+        'secs_per_page' : 20,
+        'seconds_period' : 1
+        }
+    ),
 
     ('power_BatteryCharge', {
-        'percent_target_charge' : 20, 'max_run_time': 5 * HOURS}),
+        'percent_target_charge' : 20,
+        'max_run_time': 5 * HOURS
+        }
+    ),
     ('power_WaitForCoolDown', {}),
     ('power_Display', {
-        'tag' : 'powerqual_cabc', 'force_discharge' : True,
-        'brightness' : 'max', 'secs_per_page' : 20, 'seconds_period' : 1,
+        'tag' : 'powerqual_cabc',
+        'force_discharge' : True,
+        'brightness' : 'max',
+        'secs_per_page' : 20,
+        'seconds_period' : 1,
         'pages' : ['white', 'black',
                    'white', 'grey10',
                    'white', 'grey20',
@@ -109,11 +169,15 @@ CLIENT_TESTS = [
                    'white', 'checker80',
                    'white', 'checker70',
                    'white', 'checker60',
-                   'white', 'checker50']}),
+                   'white', 'checker50']
+        }
+    ),
 
     ('power_WaitForCoolDown', {}),
     ('power_UiResume', {
-        'tag' : 'powerqual'}),
+        'tag' : 'powerqual'
+        }
+    ),
 ]
 
 # Workaround to make it compatible with moblab autotest UI.

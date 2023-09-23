@@ -220,6 +220,10 @@ class power_WakeSources(test.test):
             return self._ec.has_command('basestate')
         if wake_source in ['TABLET_MODE_ON', 'TABLET_MODE_OFF']:
             return self._ec.has_command('tabletmode')
+        if wake_source == 'PWR_BTN':
+            # Chromebox with no external display will shutdown on PWR_BTN.
+            return self._host.has_internal_display(
+            ) or self._host.has_external_display()
         if wake_source == 'LID_OPEN':
             return self._dr_utils.host_has_lid()
         if wake_source == 'INTERNAL_KB':

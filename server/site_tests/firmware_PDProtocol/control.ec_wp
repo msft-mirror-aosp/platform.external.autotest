@@ -12,7 +12,7 @@ METADATA = {
         "criteria": "Verify PD protocol negotiation",
         "requirements": ["sys-fw-0022-v02"]
 }
-ATTRIBUTES = "suite:faft_ec_fw_qual, suite:faft_ec_wp"
+ATTRIBUTES = "suite:faft_ec_fw_qual, suite:faft_ec"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
 TIME = "SHORT"
 TEST_TYPE = "server"

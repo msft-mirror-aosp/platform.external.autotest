@@ -739,7 +739,6 @@ suite:faft_dev
 suite:faft_ec
 suite:faft_ec_fw_qual
 suite:faft_ec_tot
-suite:faft_ec_wp
 suite:faft_experimental
 suite:faft_lab
 suite:faft_lv1

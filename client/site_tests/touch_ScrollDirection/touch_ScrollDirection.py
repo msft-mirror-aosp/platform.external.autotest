@@ -98,9 +98,8 @@ class touch_ScrollDirection(touch_playback_test_base.touch_playback_test_base):
             self._emulate_mouse()
             self._center_cursor()
 
-            # Check default scroll - Australian only for samus and link.
-            # See crbug.com/528083 for details.
-            self._australian_state = self._platform in ['link' , 'samus']
+            # Check default scroll
+            self._australian_state = False
             logging.info('Expecting Australian=%s', self._australian_state)
             self._verify_scrolling()
 

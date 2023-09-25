@@ -5,8 +5,6 @@
 import logging
 import re
 
-from collections import defaultdict
-
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.servo import pd_console
@@ -35,16 +33,10 @@ class firmware_PDProtocol(FirmwareTest):
 
     PD_NOT_SUPPORTED_PATTERN = 'INVALID_COMMAND'
 
-    ECTOOL_CMD_DICT = defaultdict(lambda: 'ectool usbpdpower')
-
     def initialize(self, host, cmdline_args, ec_wp=None):  # ec_wp used!
         """Initialize the test"""
         super(firmware_PDProtocol, self).initialize(host, cmdline_args)
         self._setup_ec_write_protect(ec_wp)
-
-        self.ECTOOL_CMD_DICT['samus'] = 'ectool --dev=1 usbpdpower'
-
-        self.current_board = self.servo.get_board();
 
         self.check_if_pd_supported()
         self.switcher.setup_mode('dev')
@@ -117,7 +109,7 @@ class firmware_PDProtocol(FirmwareTest):
         """ Checks if the DUT responds to ectool usbpdpower and skips the test
         if it isn't supported on the device.
         """
-        output = self.run_command(self.ECTOOL_CMD_DICT[self.current_board])
+        output = self.run_command('ectool usbpdpower')
 
         if (not output or
             self.check_ec_output(output, self.PD_NOT_SUPPORTED_PATTERN)):

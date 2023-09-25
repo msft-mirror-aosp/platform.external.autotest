@@ -2057,10 +2057,7 @@ class FirmwareTest(test.test):
         fwids['bios'] = self.faft_client.updater.get_image_fwids('bios')
 
         if include_ec is None:
-            if self.faft_config.platform.lower() == 'samus':
-                include_ec = False  # no ec.bin in shellball
-            else:
-                include_ec = self.faft_config.chrome_ec
+            include_ec = self.faft_config.chrome_ec
 
         if include_ec:
             fwids['ec'] = self.faft_client.updater.get_image_fwids('ec')

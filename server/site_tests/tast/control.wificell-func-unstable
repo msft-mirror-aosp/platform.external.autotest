@@ -14,7 +14,6 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:wifi_matfunc_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = 'peripheral_wifi_state:WORKING'
 
 DOC = '''
 Run the unstable Tast tests which verify basic WiFi functions using wificell fixture.

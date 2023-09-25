@@ -37,10 +37,10 @@ class firmware_PDProtocol(FirmwareTest):
 
     ECTOOL_CMD_DICT = defaultdict(lambda: 'ectool usbpdpower')
 
-    def initialize(self, host, cmdline_args, ec_wp=None):
+    def initialize(self, host, cmdline_args, ec_wp=None):  # ec_wp used!
         """Initialize the test"""
-        super(firmware_PDProtocol, self).initialize(host, cmdline_args,
-                                                    ec_wp=ec_wp)
+        super(firmware_PDProtocol, self).initialize(host, cmdline_args)
+        self._setup_ec_write_protect(ec_wp)
 
         self.ECTOOL_CMD_DICT['samus'] = 'ectool --dev=1 usbpdpower'
 
@@ -65,7 +65,53 @@ class firmware_PDProtocol(FirmwareTest):
         """Cleanup the test"""
         if hasattr(self, 'original_dev_boot_usb'):
             self.ensure_dev_internal_boot(self.original_dev_boot_usb)
+        self._restore_ec_write_protect()
         super(firmware_PDProtocol, self).cleanup()
+
+    def _setup_ec_write_protect(self, ec_wp):
+        """Setup for EC write-protection.
+
+        It makes sure the EC in the requested write-protection state. If not, it
+        flips the state. Flipping the write-protection requires DUT reboot.
+
+        @param ec_wp: True to request EC write-protected; False to request EC
+                      not write-protected; None to do nothing.
+        """
+        if ec_wp is None:
+            return
+        self._old_wpsw_cur = self.checkers.crossystem_checker(
+                {'wpsw_cur': '1'}, suppress_logging=True)
+        if ec_wp != self._old_wpsw_cur:
+            if not self.faft_config.ap_access_ec_flash:
+                raise error.TestNAError(
+                        "Cannot change EC write-protect for this device")
+
+            logging.info(
+                    'The test required EC is %swrite-protected. Reboot '
+                    'and flip the state.', '' if ec_wp else 'not ')
+            self.switcher.mode_aware_reboot(
+                    'custom',
+                    lambda: self.set_ec_write_protect_and_reboot(ec_wp))
+        wpsw_cur = '1' if ec_wp else '0'
+        self.check_state((self.checkers.crossystem_checker, {
+                'wpsw_cur': wpsw_cur
+        }))
+
+    def _restore_ec_write_protect(self):
+        """Restore the original EC write-protection."""
+        if (not hasattr(self,
+                        '_old_wpsw_cur')) or (self._old_wpsw_cur is None):
+            return
+        if not self.checkers.crossystem_checker(
+                {'wpsw_cur': '1' if self._old_wpsw_cur else '0'},
+                suppress_logging=True):
+            logging.info('Restore original EC write protection and reboot.')
+            self.switcher.mode_aware_reboot(
+                    'custom', lambda: self.set_ec_write_protect_and_reboot(
+                            self._old_wpsw_cur))
+        self.check_state((self.checkers.crossystem_checker, {
+                'wpsw_cur': '1' if self._old_wpsw_cur else '0'
+        }))
 
     def check_if_pd_supported(self):
         """ Checks if the DUT responds to ectool usbpdpower and skips the test

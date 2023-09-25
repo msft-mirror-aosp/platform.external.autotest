@@ -147,7 +147,7 @@ class FirmwareTest(test.test):
         """
         cls._global_setup_done[label] = False
 
-    def initialize(self, host, cmdline_args, ec_wp=None):
+    def initialize(self, host, cmdline_args):
         """Initialize the FirmwareTest.
 
         This method interacts with the Servo, FAFT RPC client, FAFT Config,
@@ -299,7 +299,6 @@ class FirmwareTest(test.test):
         self._setup_gbb_flags()
         self.faft_client.updater.stop_daemon()
         self._create_faft_lockfile()
-        self._setup_ec_write_protect(ec_wp)
         # See chromium:239034 regarding needing this sync.
         self.blocking_sync()
         logging.info('FirmwareTest initialize done (id=%s)', self.run_id)
@@ -405,7 +404,6 @@ class FirmwareTest(test.test):
         if hasattr(self, 'switcher'):
             self.switcher.restore_mode()
 
-        self._restore_ec_write_protect()
         self._restore_servo_v4_role()
 
         if hasattr(self, 'faft_client'):
@@ -1137,48 +1135,6 @@ class FirmwareTest(test.test):
             # no software-initiated reset will do.
             self.sync_and_ec_reboot(flags='cold')
             self.ec.set_flash_write_protect(enable)
-
-    def _setup_ec_write_protect(self, ec_wp):
-        """Setup for EC write-protection.
-
-        It makes sure the EC in the requested write-protection state. If not, it
-        flips the state. Flipping the write-protection requires DUT reboot.
-
-        @param ec_wp: True to request EC write-protected; False to request EC
-                      not write-protected; None to do nothing.
-        """
-        if ec_wp is None:
-            return
-        self._old_wpsw_cur = self.checkers.crossystem_checker(
-                                    {'wpsw_cur': '1'}, suppress_logging=True)
-        if ec_wp != self._old_wpsw_cur:
-            if not self.faft_config.ap_access_ec_flash:
-                raise error.TestNAError(
-                        "Cannot change EC write-protect for this device")
-
-            logging.info('The test required EC is %swrite-protected. Reboot '
-                         'and flip the state.', '' if ec_wp else 'not ')
-            self.switcher.mode_aware_reboot(
-                    'custom',
-                     lambda:self.set_ec_write_protect_and_reboot(ec_wp))
-        wpsw_cur = '1' if ec_wp else '0'
-        self.check_state((self.checkers.crossystem_checker, {
-                               'wpsw_cur': wpsw_cur}))
-
-    def _restore_ec_write_protect(self):
-        """Restore the original EC write-protection."""
-        if (not hasattr(self, '_old_wpsw_cur')) or (self._old_wpsw_cur is
-                                                    None):
-            return
-        if not self.checkers.crossystem_checker({'wpsw_cur': '1' if
-                       self._old_wpsw_cur else '0'}, suppress_logging=True):
-            logging.info('Restore original EC write protection and reboot.')
-            self.switcher.mode_aware_reboot(
-                    'custom',
-                    lambda:self.set_ec_write_protect_and_reboot(
-                            self._old_wpsw_cur))
-        self.check_state((self.checkers.crossystem_checker, {
-                          'wpsw_cur': '1' if self._old_wpsw_cur else '0'}))
 
     def _record_uart_capture(self):
         """Record the CPU/EC/PD UART output stream to files."""

@@ -31,9 +31,9 @@ class firmware_UserRequestRecovery(FirmwareTest):
                 {'mainfw_type': ('normal', 'developer')}):
             self.switcher.mode_aware_reboot()
 
-    def initialize(self, host, cmdline_args, dev_mode=False, ec_wp=None):
-        super(firmware_UserRequestRecovery, self).initialize(host, cmdline_args,
-                                                             ec_wp=ec_wp)
+    def initialize(self, host, cmdline_args, dev_mode=False):
+        super(firmware_UserRequestRecovery,
+              self).initialize(host, cmdline_args)
         self.switcher.setup_mode('dev' if dev_mode else 'normal')
         self.setup_usbkey(usbkey=True, host=True)
 

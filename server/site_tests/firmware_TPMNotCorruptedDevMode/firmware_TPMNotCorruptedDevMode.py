@@ -52,11 +52,11 @@ class firmware_TPMNotCorruptedDevMode(FirmwareTest):
     TPM_NVRAM_V10_HEADER = '10 28 '
     TPM_NVRAM_V10_CRC_OFFSET = 2
 
-    def initialize(self, host, cmdline_args, ec_wp=None):
+    def initialize(self, host, cmdline_args):
         """Initialize the test"""
         dict_args = utils.args_to_dict(cmdline_args)
-        super(firmware_TPMNotCorruptedDevMode, self).initialize(
-                host, cmdline_args, ec_wp=ec_wp)
+        super(firmware_TPMNotCorruptedDevMode,
+              self).initialize(host, cmdline_args)
 
         self.switcher.setup_mode('dev')
         # Use the USB key for Ctrl-U dev boot, not recovery.

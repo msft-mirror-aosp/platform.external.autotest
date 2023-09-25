@@ -23,9 +23,8 @@ class firmware_SelfSignedBoot(FirmwareTest):
     version = 1
     NEEDS_SERVO_USB = True
 
-    def initialize(self, host, cmdline_args, ec_wp=None):
-        super(firmware_SelfSignedBoot, self).initialize(host, cmdline_args,
-                                                        ec_wp=ec_wp)
+    def initialize(self, host, cmdline_args):
+        super(firmware_SelfSignedBoot, self).initialize(host, cmdline_args)
         self.switcher.setup_mode('dev')
         self.setup_usbkey(usbkey=True, host=False)
 

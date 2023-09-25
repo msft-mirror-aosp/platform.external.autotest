@@ -19,10 +19,9 @@ class firmware_DevDefaultBoot(FirmwareTest):
     version = 1
     NEEDS_SERVO_USB = True
 
-    def initialize(self, host, cmdline_args, ec_wp=None):
+    def initialize(self, host, cmdline_args):
         """Initialize the test"""
-        super(firmware_DevDefaultBoot, self).initialize(host, cmdline_args,
-                                                        ec_wp=ec_wp)
+        super(firmware_DevDefaultBoot, self).initialize(host, cmdline_args)
         self.switcher.setup_mode('dev')
         # Use the USB key for Ctrl-U dev boot, not recovery.
         self.setup_usbkey(usbkey=True, host=False, used_for_recovery=False)

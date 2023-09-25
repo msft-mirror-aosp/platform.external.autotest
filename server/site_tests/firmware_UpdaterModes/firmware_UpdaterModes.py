@@ -18,12 +18,12 @@ class firmware_UpdaterModes(FirmwareTest):
 
     SHELLBALL = '/usr/sbin/chromeos-firmwareupdate'
 
-    def initialize(self, host, cmdline_args, ec_wp=None):
+    def initialize(self, host, cmdline_args):
         """
         During initialization, back up the firmware, in case --emulate ever
         breaks in a way that causes real writes.
         """
-        super(firmware_UpdaterModes, self).initialize(host, cmdline_args, ec_wp)
+        super(firmware_UpdaterModes, self).initialize(host, cmdline_args)
         self.backup_firmware()
 
     def cleanup(self):

@@ -15,9 +15,8 @@ class firmware_DevMode(FirmwareTest):
     """
     version = 1
 
-    def initialize(self, host, cmdline_args, ec_wp=None):
-        super(firmware_DevMode, self).initialize(
-                host, cmdline_args, ec_wp=ec_wp)
+    def initialize(self, host, cmdline_args):
+        super(firmware_DevMode, self).initialize(host, cmdline_args)
         self.switcher.setup_mode('normal')
         self.setup_usbkey(usbkey=False)
 

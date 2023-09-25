@@ -26,10 +26,12 @@ class power_ProbeDriver(test.test):
             self.power_pref_changer = power_utils.PowerPrefChanger(prefs)
 
             # Charge Limit may take slightly longer to disable, so poll for it.
-            utils.poll_for_condition(condition=power_status.get_status().on_ac,
-                                     timeout=10,
-                                     sleep_interval=1.0,
-                                     desc='Charge Limit disabled')
+            utils.poll_for_condition(
+                    condition=power_status.get_status().battery_charging
+                    or power_status.get_status().battery_discharge_ok_on_ac(),
+                    timeout=10,
+                    sleep_interval=1.0,
+                    desc='Charge Limit disabled')
 
     def run_once(self, test_which='Mains'):
         # Gather power supplies

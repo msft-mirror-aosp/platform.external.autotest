@@ -33,7 +33,7 @@ class firmware_PDProtocol(FirmwareTest):
 
     PD_NOT_SUPPORTED_PATTERN = 'INVALID_COMMAND'
 
-    def initialize(self, host, cmdline_args, ec_wp=None):  # ec_wp used!
+    def initialize(self, host, cmdline_args, ec_wp=None):
         """Initialize the test"""
         super(firmware_PDProtocol, self).initialize(host, cmdline_args)
         self._setup_ec_write_protect(ec_wp)
@@ -58,6 +58,9 @@ class firmware_PDProtocol(FirmwareTest):
         if hasattr(self, 'original_dev_boot_usb'):
             self.ensure_dev_internal_boot(self.original_dev_boot_usb)
         self._restore_ec_write_protect()
+        if (self.servo.has_control('cold_reset_select')
+                    and hasattr(self, 'cold_reset_select')):
+            self.servo.set('cold_reset_select', self.cold_reset_select)
         super(firmware_PDProtocol, self).cleanup()
 
     def _setup_ec_write_protect(self, ec_wp):
@@ -71,19 +74,24 @@ class firmware_PDProtocol(FirmwareTest):
         """
         if ec_wp is None:
             return
+        # The default c2d2 cold_reset will reboot GSC, and this breaks the
+        # hardware write protect.  If available, set cold_reset to
+        # gsc_ecrst_pulse. This should always be available on c2d2 platforms.
+        if (self.servo.has_control('cold_reset_select')
+                    and self.servo.has_control('gsc_ecrst_pulse')):
+            self.cold_reset_select = self.servo.get('cold_reset_select')
+            self.servo.set('cold_reset_select', 'gsc_ecrst_pulse')
         self._old_wpsw_cur = self.checkers.crossystem_checker(
                 {'wpsw_cur': '1'}, suppress_logging=True)
-        if ec_wp != self._old_wpsw_cur:
-            if not self.faft_config.ap_access_ec_flash:
-                raise error.TestNAError(
-                        "Cannot change EC write-protect for this device")
+        if not self.faft_config.ap_access_ec_flash:
+            raise error.TestNAError(
+                    "Cannot change EC write-protect for this device")
 
-            logging.info(
-                    'The test required EC is %swrite-protected. Reboot '
-                    'and flip the state.', '' if ec_wp else 'not ')
-            self.switcher.mode_aware_reboot(
-                    'custom',
-                    lambda: self.set_ec_write_protect_and_reboot(ec_wp))
+        logging.info(
+                'The test required EC is %swrite-protected. Reboot '
+                'and flip the state.', '' if ec_wp else 'not ')
+        self.switcher.mode_aware_reboot(
+                'custom', lambda: self.set_ec_write_protect_and_reboot(ec_wp))
         wpsw_cur = '1' if ec_wp else '0'
         self.check_state((self.checkers.crossystem_checker, {
                 'wpsw_cur': wpsw_cur

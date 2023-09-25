@@ -20,6 +20,9 @@ DOC = """
 This test checks:
   - That the DUT negotiated PD in dev mode from SSD boot
   - That the DUT did not negotiate PD when booted from test image from recovery
+
+This test will fail step 2, which is why it is not in any suite.  It is really
+just to verify that the test can correctly detect a failure case as expected.
 """
 
 args_dict = utils.args_to_dict(args)
@@ -30,6 +33,6 @@ def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args,
                              pdtester_args=pdtester_args)
     job.run_test("firmware_PDProtocol", host=host, cmdline_args=args,
-                 disable_sysinfo=True)
+                 disable_sysinfo=True, ec_wp=False)
 
 parallel_simple(run, machines)

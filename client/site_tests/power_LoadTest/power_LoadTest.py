@@ -1048,13 +1048,23 @@ class power_LoadTest(arc.ArcTest):
         min_ts = None
         process_dict = {}
         process_id = 1
-        with open(os.path.join(self.resultsdir, 'task-monitor.json'), 'r',
-                  **power_utils.encoding_kwargs()) as f:
+        with open(os.path.join(self.resultsdir, 'task-monitor.json'),
+                  'r',
+                  **power_utils.encoding_kwargs(),
+                  errors='ignore') as f:
             json_strs = f.read().splitlines()
             for json_str in json_strs[1:]:
                 if len(json_str) < 10:
                     continue
-                entry_dict, _ = json_decoder.raw_decode(json_str, 0)
+                try:
+                    entry_dict, _ = json_decoder.raw_decode(json_str, 0)
+                except:
+                    logging.debug('json line decode error: %s\n', json_str)
+                    continue
+                if (type(entry_dict) is not dict
+                            or 'timestamp' not in entry_dict):
+                    logging.debug('unexpected json line: %s\n', json_str)
+                    continue
                 if not min_ts:
                     min_ts = entry_dict['timestamp']
                 ts = (entry_dict['timestamp'] - min_ts) / 1000

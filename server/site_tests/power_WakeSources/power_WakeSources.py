@@ -299,12 +299,17 @@ class power_WakeSources(test.test):
         if wake_source == 'RTC':
             rtc_wake = RTC_WAKE_SECS
         self._dr_utils.suspend(SECS_FOR_SUSPENDING + rtc_wake)
-        suspended = power_utils.wait_power_state(
-            self._ec, 'S0ix|S3', retries=SECS_FOR_SUSPENDING, retry_delay=1)
-        if not suspended:
-            logging.error('DUT failed to suspend for %s', wake_source)
-            self._after_resume(wake_source)
-            raise error.TestFail('DUT failed to suspend for %s.' % wake_source)
+        if self._ec.has_command('powerinfo'):
+            suspended = power_utils.wait_power_state(
+                    self._ec,
+                    'S0ix|S3',
+                    retries=SECS_FOR_SUSPENDING,
+                    retry_delay=1)
+            if not suspended:
+                logging.error('DUT failed to suspend for %s', wake_source)
+                self._after_resume(wake_source)
+                raise error.TestFail('DUT failed to suspend for %s.' %
+                                     wake_source)
         logging.info('DUT suspended! Waiting to resume...')
         # Leave the DUT suspended for a short while before triggering resume,
         # so that there is a clear separation in the logs.

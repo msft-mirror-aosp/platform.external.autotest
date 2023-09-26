@@ -109,7 +109,18 @@ class firmware_FWupdateThenSleep(FirmwareTest):
         @param wp: is the flash write protected (--wp)?
         @return: a list of failure messages for the case
         """
-        options = ['--wp=%s' % wp, '--quirks=ec_partial_recovery=0']
+        # due to b/282591058, we cannot update EC RW FW when the device is with
+        # ITE it83xx EC and powered by USB-C (e.g. Dibbi Chromebox). The reason
+        # is ITE EC needs to sysjump to RO when it updates the RW FW, but when
+        # the EC sysjumps to RO, the PD contract needs to be renegotiated, which
+        # involves a hard reset. So the EC briefly loses power and reboots. For
+        # ITE it83xx EC Chromebox devices, we always rely on EC software sync to
+        # update the RW FW
+        it83xx = self.servo.get('ec_chip') == 'it83xx'
+        if not self._client.has_battery() and it83xx:
+            options = ['--wp=%s' % wp, '--quirks=ec_partial_recovery=1']
+        else:
+            options = ['--wp=%s' % wp, '--quirks=ec_partial_recovery=0']
 
         if append:
             cmd_desc = ['chromeos-firmwareupdate-%s' % append]
@@ -126,7 +137,10 @@ class firmware_FWupdateThenSleep(FirmwareTest):
             ec_written = []  # EC write is all-or-nothing
         else:
             bios_written = ['ro', 'a', 'b']
-            ec_written = ['ro', 'rw']
+            if not self._client.has_battery() and it83xx:
+                ec_written = ['ro']
+            else:
+                ec_written = ['ro', 'rw']
 
         expected_written['bios'] = bios_written
 

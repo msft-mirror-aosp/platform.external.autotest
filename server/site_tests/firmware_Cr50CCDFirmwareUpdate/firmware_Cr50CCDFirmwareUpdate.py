@@ -27,6 +27,8 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
             TestNAError: If the dut is not proper for this test for its RDD
                          recognition problem.
         """
+        if not host.servo:
+            raise error.TestNAError('Unable to start servod')
         servo_type = host.servo.get_servo_version()
         if 'ccd' not in servo_type:
             raise error.TestNAError('unsupported servo type: %s' % servo_type)

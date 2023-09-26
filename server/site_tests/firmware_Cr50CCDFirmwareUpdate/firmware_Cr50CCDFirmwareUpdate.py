@@ -5,6 +5,7 @@
 
 """The autotest performing FW update, both EC and AP in CCD mode."""
 import logging
+import os
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
@@ -19,6 +20,9 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
 
     version = 1
     should_restore_fw = False
+
+    BIOS_NAME = 'ccd.image.bin'
+    EC_NAME = 'ccd.ec.bin'
 
     def initialize(self, host, cmdline_args, full_args, fw_path=None):
         """Initialize the test and check if cr50 exists.
@@ -39,8 +43,12 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         if not self.check_ec_capability():
             raise error.TestNAError('Nothing needs to be tested on this device')
 
+        self.install_ec = full_args.get('skip_ec_fw_update',
+                                        '').lower() != 'true'
         self.fw_path = fw_path
-        self.b_ver = ''
+        self.fw_build = full_args.get('fw_build', '')
+        self.ec_fw_path = full_args.get('ec_fw_path', None)
+        self.bios_fw_path = full_args.get('bios_fw_path', None)
 
         if eval(full_args.get('backup_fw', 'False')):
             self.backup_firmware()
@@ -81,6 +89,8 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
 
     def verify_ec_response(self):
         """ Verify the EC is responsive."""
+        if not self.install_ec:
+            return
         # Try to reflash EC a couple of times to see if it's possible to recover
         # the device now.
         for _ in range(MAX_EC_CLEANUP_TRIES):
@@ -93,13 +103,40 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
                     logging.error('EC console is unresponsive: %s', str(e))
 
             try:
-                self.cros_host.firmware_install(build=self.b_ver,
+                self.cros_host.firmware_install(build=self.fw_build,
                                                 local_tarball=self.fw_path,
-                                                install_bios=False)
+                                                install_bios=False,
+                                                ec_image=self.ec_fw_path)
             except Exception as e:
                 logging.error('firmware_install failed: %s', str(e))
 
         logging.error('DUT likely needs a manual recovery.')
+
+    def _download_firmware_from_host(self):
+        """Download the ap and ec image from the dut.
+
+        Save the ec and ap firmware image locally, so the test can use them to
+        verify flashing the ec and ap with ccd.
+        """
+        if self.ec_fw_path and self.bios_fw_path:
+            logging.info('User supplied ec and ap fw images')
+            return
+        self.setup_firmwareupdate_shellball()
+        work_path = self.faft_client.updater.get_work_path()
+
+        if not self.bios_fw_path:
+            self.bios_fw_path = os.path.join(self.resultsdir, self.BIOS_NAME)
+            bios_name = self.faft_client.updater.get_bios_relative_path()
+            bios_path = os.path.join(work_path, bios_name)
+            logging.info('Using DUT bios image %s', bios_path)
+            self._client.get_file(bios_path, self.bios_fw_path)
+
+        if not self.ec_fw_path:
+            self.ec_fw_path = os.path.join(self.resultsdir, self.EC_NAME)
+            ec_name = self.faft_client.updater.get_ec_relative_path()
+            ec_path = os.path.join(work_path, ec_name)
+            logging.info('Using DUT ec image %s', ec_path)
+            self._client.get_file(ec_path, self.ec_fw_path)
 
     def run_once(self, host, rw_only=False):
         """The method called by the control file to start the test.
@@ -125,23 +162,22 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
         # get_latest_release_version().
         config_fw_build = getattr(self.faft_config, 'fw_update_build', None)
 
-        if not self.fw_path:
-            if config_fw_build:
-                logging.info('Using faft_config.fw_update_build %s',
-                        config_fw_build)
-                self.b_ver = config_fw_build
-            else:
-                self.b_ver = host.get_latest_release_version(
-                        self.faft_config.platform, parent)
-            if not self.b_ver:
-                raise error.TestError(
-                        'Cannot locate the latest release for %s' %
-                        self.faft_config.platform)
+        if self.fw_build:
+            logging.info('using fw build: %s', self.fw_build)
+        elif self.fw_path:
+            logging.info('using fw tarball: %s', self.fw_path)
+        else:
+            self._download_firmware_from_host()
+            logging.info('using EC image: %s', self.ec_fw_path)
+            logging.info('using bios image: %s', self.bios_fw_path)
 
         # Fast open cr50 and check if testlab is enabled.
         self.fast_ccd_open(enable_testlab=True)
         if not self.servo.enable_ccd_servo_device():
             raise error.TestNAError('Cannot make ccd active')
+        # Add support for downloading npcx_monitor.bin without a tarball.
+        if not self.fw_path and self.servo.get('ec_chip').startswith('npcx'):
+            self.install_ec = False
         # If it is ITE EC, then allow CCD I2C access for flashing EC.
         if self.servo.get('ec_chip').startswith('it8'):
             self.gsc.set_cap('I2C', 'Always')
@@ -168,12 +204,17 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
                     'gsc_ec_reset')
 
         self.should_restore_fw = True
+        if not self.install_ec:
+            self.ec_fw_path = None
         try:
-            self.cros_host.firmware_install(build=self.b_ver,
+            self.cros_host.firmware_install(build=self.fw_build,
                                             rw_only=rw_only,
                                             local_tarball=self.fw_path,
                                             dest=self.resultsdir,
-                                            verify_version=True)
+                                            verify_version=True,
+                                            install_ec=self.install_ec,
+                                            ec_image=self.ec_fw_path,
+                                            bios_image=self.bios_fw_path)
         except Exception as e:
             # The test failed to flash the firmware.
             raise error.TestFail('firmware_install failed with CCD: %s' %

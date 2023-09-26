@@ -980,7 +980,9 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                          try_scp=False,
                          install_ec=True,
                          install_bios=True,
-                         corrupt_ec=False):
+                         corrupt_ec=False,
+                         ec_image=None,
+                         bios_image=None):
         """Install firmware to the DUT.
 
         Use stateful update if the DUT is already running the same build.
@@ -1008,6 +1010,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param install_ec: True to install EC FW, and False to skip it.
         @param install_bios: True to install BIOS, and False to skip it.
         @param corrupt_ec: True to flash EC with a false image (for test purpose).
+        @param ec_image: Path to local ec image.
+        @param bios_image: Path to local bios image.
 
         TODO(dshi): After bug 381718 is fixed, update here with corresponding
                     exceptions that could be raised.
@@ -1040,9 +1044,13 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             install_ec = False
 
         tmpd = None
-        ec_image = None
-        bios_image = None
-        if not local_tarball:
+
+        need_ec = install_ec and not ec_image
+        need_bios = install_bios and not bios_image
+        # If the test did not supply a local tarball or local ec and bios
+        # images, download the build from the devserver.
+        download_fw = not local_tarball and (need_ec or need_bios)
+        if download_fw:
             logging.info('Will install firmware from build %s.', build)
 
             try:
@@ -1054,7 +1062,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     dest = tmpd.name
 
                 # Download EC firmware image
-                if install_ec:
+                if install_ec and not ec_image:
                     for filename in ec_candidates:
                         local_filename = os.path.join(dest, filename)
                         ec_image = self._download_fw_file(
@@ -1072,7 +1080,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         raise error.TestError(
                                 'Failed to download EC from any of %s from %s'
                                 % (ec_candidates, build))
-                if install_bios:
+                if install_bios and not bios_image:
                     for filename in bios_candidates:
                         local_filename = os.path.join(dest, filename)
                         bios_image = self._download_fw_file(
@@ -1092,7 +1100,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         if install_ec and not ec_image:
             # Extract EC image from tarball
-            logging.info('Extracting EC image.')
+            logging.info('Extracting EC image from %s.', local_tarball)
             start = time.time()
             ec_image = self.servo.extract_ec_image(board, model, local_tarball)
             logging.info('Extracted %s in %s', ec_image,
@@ -1109,12 +1117,24 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         if install_bios and not bios_image:
             # Extract BIOS image from tarball
-            logging.info('Extracting BIOS image.')
+            logging.info('Extracting BIOS image from %s.', local_tarball)
             start = time.time()
             bios_image = self.servo.extract_bios_image(board, model,
                                                        local_tarball)
             logging.info('Extracted %s in %s', bios_image,
                          self._elapsed_time(start))
+
+        if ec_image:
+            logging.info('Using local EC image: %s', ec_image)
+            if not try_scp and 'npcx' in self.servo.get('ec_chip'):
+                logging.info('Check npcx monitor exists')
+                npcx_path = os.path.join(os.path.dirname(ec_image),
+                                         'npcx_monitor.bin')
+                if not os.path.exists(npcx_path):
+                    raise error.TestError('npcx monitor not found at %s' %
+                                          npcx_path)
+        if bios_image:
+            logging.info('Using local bios image: %s', bios_image)
 
         if not bios_image and not ec_image:
             raise error.TestError('No firmware installation was processed.')

@@ -180,7 +180,14 @@ class FlashromProgrammer(_BaseProgrammer):
                 programmer = servo_v4_with_micro_programmer
                 programmer += ':serial=%s' % servo_micro_serial
             elif 'with_ccd' in self._servo_version:
-                ccd_serial = self._servo_serials.get('ccd')
+                # This is messy because servod doesn't provide a common prefix
+                # for CCD servo devices, see b/275748017.
+                # The name used in the servo type should always work.
+                ccd_name = 'ccd_' + self._servo_version.rpartition('_ccd_')[-1]
+                ccd_serial = self._servo_serials.get(ccd_name)
+                if not ccd_serial:
+                    raise Exception('Unable to find ccd serial')
+                logging.info('ccd serial: %s', ccd_serial)
                 programmer = servo_v4_with_ccd_programmer
                 programmer += ',serial=%s' % ccd_serial
             else:

@@ -27,6 +27,10 @@ class firmware_Cr50RddG3(Cr50Test):
     def rdd_is_connected(self):
         """Return True if Cr50 detects Rdd."""
         time.sleep(2)
+        if (
+                self.servo.main_device_is_ccd()
+                and not self.ccd_programmer_connected_to_servo_host(False)):
+            return False
         return self.gsc.get_ccdstate()['Rdd'] == 'connected'
 
     def check_capabilities(self, capabilities):
@@ -82,6 +86,10 @@ class firmware_Cr50RddG3(Cr50Test):
         if not self.servo.dts_mode_is_valid():
             raise error.TestNAError('Run with type-c servo v4.')
 
+        # Disable rddkeepalive.
+        self.gsc.send_command('ccd testlab open')
+        self.gsc.send_command('rddkeepalive disable')
+
         self.servo.set_dts_mode('on')
         self.check_rdd_status('on', 'Cr50 did not detect Rdd with dts mode on')
 
@@ -96,7 +104,8 @@ class firmware_Cr50RddG3(Cr50Test):
 
         # Can't check hibernate if the board doesn't support it or if it powers
         # off the GSC.
-        if self.faft_config.hibernate and not self.faft_config.gsc_off_in_ulp:
+        if (self.faft_config.hibernate and not self.faft_config.gsc_off_in_ulp
+                    and not self.servo.main_device_is_ccd()):
             logging.info(
                     'Checking Rdd is disconnected with the EC in hibernate')
             self.ec.send_command('hibernate')
@@ -121,7 +130,8 @@ class firmware_Cr50RddG3(Cr50Test):
 
         # Can't check hibernate if the board doesn't support it or if it powers
         # off the GSC.
-        if self.faft_config.hibernate and not self.faft_config.gsc_off_in_ulp:
+        if (self.faft_config.hibernate and not self.faft_config.gsc_off_in_ulp
+                    and not self.servo.main_device_is_ccd()):
             logging.info('Checking Rdd is connected with the EC in hibernate.')
             self.ec.send_command('hibernate')
             time.sleep(self.WAIT_FOR_STATE)
@@ -133,6 +143,7 @@ class firmware_Cr50RddG3(Cr50Test):
         self.check_rdd_status('off',
                               'Cr50 did not detect Rdd disconnect in G3',
                               ['rdd_leakage'])
+        self.servo.set_dts_mode('on')
         self._try_to_bring_dut_up()
         if self.rdd_failures:
             raise error.TestFail('Found Rdd issues: %s' % (self.rdd_failures))

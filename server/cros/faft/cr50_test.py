@@ -1061,12 +1061,13 @@ class Cr50Test(FirmwareTest):
         logging.info('RUNNING %s after %s', expected_rw,
                      'rollback' if expect_rollback else 'update')
 
-    def ccd_programmer_connected_to_servo_host(self):
+    def ccd_programmer_connected_to_servo_host(self, enable_ccd=True):
         """Returns True if the ccd programmer is connected to the labstation"""
         if not hasattr(self, '_ccd_programmer'):
             self._ccd_programmer = firmware_programmer.FlashGSCCCDProgrammer(
                 self.servo, self.gsc.get_serial())
-        self.gsc.ccd_enable()
+        if enable_ccd:
+            self.gsc.ccd_enable()
         return self._ccd_programmer.is_connected()
 
     def _update_gsc_with_ccd(self, path):

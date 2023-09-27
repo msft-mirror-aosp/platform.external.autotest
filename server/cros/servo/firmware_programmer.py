@@ -322,6 +322,7 @@ class FlashGSCCCDProgrammer(_BaseProgrammer):
         # gsctool will return 0 if nothing was done or 1 if the image was
         # updated.
         self._ok_exit_status = [0, self.IMAGE_UPDATED]
+        logging.info('Init CCD programmer: %s', self._ccd_serialname)
 
     def is_connected(self):
         """Returns True if the ccd device is connected."""

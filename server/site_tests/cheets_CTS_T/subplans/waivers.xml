@@ -6,6 +6,7 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <Entry include="CtsAutoFillServiceTestCases android.autofillservice.cts.MultiWindowLoginActivityTest#testSplitWindow" />
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.512_512_1#joint" />
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.1024_128_1#joint" />
   <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6g10x6_unorm_2pack16.512_512_1#joint" />

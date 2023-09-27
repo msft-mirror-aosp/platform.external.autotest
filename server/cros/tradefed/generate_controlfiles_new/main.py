@@ -367,62 +367,15 @@ def gen_moblab_collect(bundle: Bundle,
     """Generates moblab collect controlfiles."""
     logging.info('Generating moblab collect controlfiles')
 
-    COLLECT = 'tradefed-run-collect-tests-only'
-    CTSHARDWARE_COLLECT = 'tradefed-run-collect-tests-only-hardware'
+    basename = 'tradefed-run-collect-tests-only'
 
-    for_hardware_suite = [False]
-    if 'HARDWARE_MODULES' in config:
-        for_hardware_suite.append(True)
-
-    groups = []
-    for hardware_suite in for_hardware_suite:
-        if hardware_suite:
-            suites = frozenset([config['MOBLAB_HARDWARE_SUITE_NAME']])
-        else:
-            suites = frozenset([config['MOBLAB_SUITE_NAME']])
-        basename = CTSHARDWARE_COLLECT if hardware_suite else COLLECT
-        subplan = 'cts-hardware' if hardware_suite else None
-        groups.append(
-                ModuleGroup(
-                        basename=basename,
-                        # TODO clean up the semantics of "modules"
-                        modules=set([basename]),
-                        suites=suites,
-                        hardware_suite=hardware_suite,
-                        subplan=subplan,
-                ))
-    return groups
-
-
-@generate_from_source_type('MOBLAB')
-def gen_moblab_hardwaresuite(bundle: Bundle,
-                             config: Config) -> Iterable[ModuleGroup]:
-    """Generates moblab hardware suite controlfiles."""
-    modules = config.get('PUBLIC_HARDWARE_MODULES', [])
-    extra_modules = config.get('HARDWAREONLY_EXTRA_MODULES', {})
-    if not modules and not extra_modules:
-        return []
-
-    logging.info('Generating moblab hardware suite controlfiles')
-    groups = [
-            ModuleGroup(basename=module, modules=frozenset([module]))
-            for module in modules
-    ] + [
-            ModuleGroup(basename=submodule, modules=frozenset([submodule]))
-            for module in extra_modules for submodule in extra_modules[module]
+    return [
+            ModuleGroup(
+                    basename=basename,
+                    # TODO clean up the semantics of "modules"
+                    modules=set([basename]),
+                    suites=frozenset([config['MOBLAB_SUITE_NAME']]))
     ]
-
-    passes = Concat([
-            If(
-                    has_modules(config.get('PUBLIC_SPLIT_BY_BITS_MODULES',
-                                           [])),
-                    [SplitByBits()],
-            ),
-            AddSuites([config['MOBLAB_HARDWARE_SUITE_NAME']]),
-            SetAttr('hardware_suite', True),
-    ])
-
-    return passes.process_all_groups(groups)
 
 
 @generate_from_source_type('MOBLAB')

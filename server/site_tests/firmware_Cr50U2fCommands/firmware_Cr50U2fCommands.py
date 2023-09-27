@@ -586,6 +586,11 @@ class firmware_Cr50U2fCommands(FirmwareTest):
 
     def run_once(self, host=None):
         """Run the tests."""
+        if not host.servo:
+            raise error.TestNAError('Test requires servo.')
+        # Test needs to control the GSC power button input.
+        if not host.servo.main_device_is_flex():
+            raise error.TestNAError('Run with c2d2 or servo micro.')
 
         self.client = host
 

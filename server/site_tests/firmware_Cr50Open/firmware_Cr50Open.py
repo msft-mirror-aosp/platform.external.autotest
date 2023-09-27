@@ -21,6 +21,11 @@ class firmware_Cr50Open(Cr50Test):
 
     def initialize(self, host, cmdline_args, ccd_open_restricted, full_args):
         """Initialize the test"""
+        if not host.servo:
+            raise error.TestNAError('Test requires servo.')
+        # Test needs to control the GSC power button input.
+        if not host.servo.main_device_is_flex():
+            raise error.TestNAError('Run with c2d2 or servo micro.')
         super(firmware_Cr50Open, self).initialize(host, cmdline_args,
                 full_args)
 

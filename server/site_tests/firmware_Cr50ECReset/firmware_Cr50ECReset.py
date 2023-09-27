@@ -30,6 +30,10 @@ class firmware_Cr50ECReset(Cr50Test):
     def initialize(self, host, cmdline_args, full_args):
         """Verify the setups supports EC reset."""
         self.ran_test = False
+        if not host.servo:
+            raise error.TestNAError('Test requires servo')
+        if not host.servo.main_device_is_flex():
+            raise error.TestNAError('Run with c2d2 or servo micro.')
         super(firmware_Cr50ECReset, self).initialize(host, cmdline_args,
                                                      full_args)
 

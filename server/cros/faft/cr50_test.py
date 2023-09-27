@@ -682,6 +682,13 @@ class Cr50Test(FirmwareTest):
         """Reset the ccd lock and capability states."""
         if not self.gsc:
             return
+
+        # CCD devices should be left in factory mode.
+        if self.servo.main_device_is_ccd():
+            self.fast_ccd_open(reset_ccd=False)
+            self.gsc.ccd_reset_factory()
+            return
+
         current_settings = self.gsc.get_cap_dict(info=self.gsc.CAP_SETTING)
         if self.original_ccd_settings != current_settings:
             if not self.can_set_ccd_level:

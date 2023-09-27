@@ -71,7 +71,11 @@ class firmware_Cr50CCDUartStress(FirmwareTest):
                 raise error.TestNAError('Cannot make ccd active')
         self.active_dev = self.servo.get_active_device_prefix()
         self.interp_control = self.console + '_ec3po_interp_connect'
-        self._interp_name = '.'.join([self.active_dev, self.interp_control])
+        if self.active_dev:
+            self._interp_name = '%s.%s' % (self.active_dev,
+                                           self.interp_control)
+        else:
+            self._interp_name = self.interp_control
         logging.info('Checking %s %s uart', self.servo.get_servo_version(True),
                      self.console)
         logging.info('Device prefix %r', self.active_dev)

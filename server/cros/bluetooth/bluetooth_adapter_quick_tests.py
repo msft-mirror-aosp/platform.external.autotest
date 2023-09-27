@@ -548,8 +548,23 @@ class BluetoothAdapterQuickTests(
         """ Cleanup any state test server and all device"""
 
         logging.info("Clean up dark resume utils.")
-        self._dr_utils.stop_resuspend_on_dark_resume(False)
-        self._dr_utils.teardown()
+        try:
+            self._dr_utils.stop_resuspend_on_dark_resume(False)
+            self._dr_utils.teardown()
+        # Unhandled exception would cause test failure.
+        except (OSError, ConnectionRefusedError) as e:
+            # The error "errno 99" means "Cannot assign requested address".
+            # The error "errno 111" means "Connection Refused".
+            if e.errno != 99 and e.errno != 111:
+                logging.error("Unexpected OSError with code ", e.errno)
+            else:
+                logging.error(
+                        "Safe to ignore connection error for cleaning dark resume."
+                )
+        except Exception as e:
+            logging.error(
+                    "Unknown error while restart resuspend on dark resume: ",
+                    str(e))
 
         # Clear any raspi devices at very end of test
         for device_list in self.active_test_devices.values():

@@ -42,6 +42,10 @@ class NoVersionNameException(Exception):
     pass
 
 
+class NoSuiteNameException(Exception):
+    """Raised when it fails to find valid suite name in url_config."""
+
+
 # TODO(b/256107709): Use class whose constructor is url_config to avoid to return arbitrary dictionary.
 def load_config(config_path: str) -> Dict[str, str]:
     """Function to load a config json file and return the content as a dictionary.
@@ -72,6 +76,21 @@ def load_config(config_path: str) -> Dict[str, str]:
         url_config = json.load(json_object)
 
     return url_config
+
+
+def get_suite_name(url_config: Dict[str, str]) -> str:
+    """Returns the suite name for unzipping the bundle.
+
+    Returns:
+        The suite name (cts/gts/sts) obtained from offcial_url_pattern.
+    """
+    url_pattern = url_config[_OFFICIAL_URL_PATTERN]
+    suite_name = url_pattern.split('-', 2)[1]
+    valid_suites_set = {'cts', 'gts', 'sts', 'vts'}
+    if suite_name in valid_suites_set:
+        return suite_name
+    raise NoSuiteNameException(f'Invalid suite name {suite_name}')
+
 
 def get_bundle_password(url_config: Dict[str, str]) -> str:
     """Returns the password for unzipping the bundle.

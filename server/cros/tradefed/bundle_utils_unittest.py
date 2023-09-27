@@ -70,6 +70,11 @@ class BundelUtilsTest(unittest.TestCase):
         url_config = bundle_utils.load_config(self.cts_config_path)
         self.assertEquals(CTS_URL_CONFIG, url_config)
 
+    def test_get_suite_name(self):
+        """Test for get_suite_name."""
+        suite_name = bundle_utils.get_suite_name(url_config=CTS_URL_CONFIG)
+        self.assertEquals('cts', suite_name)
+
     def test_get_official_version_cts(self):
         """Test for cts get_official_version."""
 

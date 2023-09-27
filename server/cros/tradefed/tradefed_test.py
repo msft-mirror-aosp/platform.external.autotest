@@ -49,19 +49,27 @@ from autotest_lib.server.autotest import OFFLOAD_ENVVAR
 # TODO(kinaba): Move to tradefed_utils together with the setup/cleanup methods.
 MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
 
+_GCS_WAIVERS_PATH = 'gs://chromeos-arc-images/waivers/'
+
+
 class BundleSpecification:
     """Class containing xTS bundle information."""
 
-    def __init__(self, uri, password):
+    def __init__(self, uri, password, official_version_name, suite_name):
         """Construct BundleSpecification
 
         Args:
             uri is the uri of the bundle.
             password is the password for extracting the bundle. Empty string means
                 no password.
+            official_version_name is the official release version for xTS.
+            suite_name is the suite name (CTS/GTS/STS).
         """
         self.uri = uri
         self.password = password
+        self.official_version_name = official_version_name
+        self.suite_name = suite_name
+
 
 class ETagNotFoundException(Exception):
     """Raised when it fails to find the ETag."""
@@ -133,6 +141,9 @@ class TradefedTest(test.test):
     # A job will be aborted after 16h. Subtract 30m for setup/teardown.
     _MAX_LAB_JOB_LENGTH_IN_SEC = 16 * 60 * 60 - 30 * 60
     _job_deadline = None
+
+    # Map only the versions that ARC releases care.
+    _SDK_VER_MAP = {28: 'P', 30: 'R', 33: 'T'}
 
     # Currently this is only used for dependency injection for testing.
     def __init__(self, *args, **kwargs):
@@ -238,14 +249,16 @@ class TradefedTest(test.test):
         self._waivers = set()
         is_dev = uri and uri.startswith('DEV')
         self._waivers.update(
-                self._get_expected_failures('expectations', bundle, is_dev))
+                self._get_expected_failures('expectations', bundle_spec,
+                                            bundle, is_dev))
         if not retry_manual_tests:
             self._waivers.update(
-                    self._get_expected_failures('manual_tests', bundle))
+                    self._get_expected_failures('manual_tests', bundle_spec,
+                                                bundle))
 
         # Load modules with no tests.
-        self._notest_modules = self._get_expected_failures('notest_modules',
-                bundle)
+        self._notest_modules = self._get_expected_failures(
+                'notest_modules', bundle_spec, bundle)
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
 
@@ -998,10 +1011,30 @@ class TradefedTest(test.test):
         logging.info('Using cache_root = %s', cache_root)
         return cache_root
 
-    def _get_expected_failures(self, directory, bundle_abi, is_dev=False):
+    def _get_version_tuple(self, version):
+        """Split version like 9_r14 to format (9, 14)."""
+        return tuple(map(float, version.split('_r', 1)))
+
+    def _get_valid_waivers(self, waivers_result, release_version):
+        """Filter waivers by current CTS release version."""
+        valid_waivers = []
+        release_version_tuple = self._get_version_tuple(release_version)
+        return [
+                gcs_path for target_fixed_version, gcs_path in waivers_result
+                if self._get_version_tuple(target_fixed_version) >
+                release_version_tuple
+        ]
+
+    def _get_expected_failures(self,
+                               directory,
+                               bundle_spec,
+                               bundle_abi,
+                               is_dev=False):
         """Return a list of expected failures or no test module.
 
         @param directory: A directory with expected no tests or failures files.
+        @param bundle_spec: Bundle specific information, including version name,
+                            suite name, etc.
         @param bundle_abi: 'arm' or 'x86' if the test is for the particular ABI.
                            None otherwise (like GTS, built for multi-ABI.)
         @param is_dev: Check if it's DEV runner we only apply default waivers.
@@ -1025,8 +1058,51 @@ class TradefedTest(test.test):
             else:
                 expected_fail_files += glob.glob(expected_fail_dir + '/*.yaml')
 
-        waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
-            expected_fail_files)
+        expected_gcs_fail_files = []
+        # For now we only handle CTS.
+        # TODO(ruki): Will support GTS/STS later.
+        # Not support moblab for now since each moblab uses multiple service
+        # accounts, so if set proper ACLs we need to maintain a list of moblab
+        # service accounts.
+        # TODO(ruki): potentially will support moblab if needed.
+        if bundle_spec.suite_name == 'cts' and not client_utils.is_moblab():
+            waivers_list = []
+            # List waiver files from GCS bucket.
+            result = utils.run('gsutil',
+                               args=('ls', _GCS_WAIVERS_PATH),
+                               verbose=True)
+            waiver_files = result.stdout
+
+            # Filter out waivers for current sdk_ver.
+            # Default waivers will be put into expected_gcs_fail_files directly.
+            # Non-default waivers will be filtered by TargetFixedVersion.
+            # Waivers file name example : 9_r14-CTS-R.yaml
+            for wf in waiver_files.splitlines():
+                f = os.path.basename(wf)
+                target_fixed_version, _, dessert = f[:-len('.yaml')].split(
+                        '-', 2)
+                if dessert == self._SDK_VER_MAP[sdk_ver]:
+                    if target_fixed_version == 'expected':
+                        expected_gcs_fail_files.append(wf)
+                    else:
+                        waivers_list.append([target_fixed_version, wf])
+
+            if not is_dev:
+                current_version = bundle_spec.official_version_name
+                expected_gcs_fail_files.extend(
+                        self._get_valid_waivers(waivers_list, current_version))
+
+        with tempfile.TemporaryDirectory(prefix='cts-waivers_') as tmp:
+            for failure_file in expected_gcs_fail_files:
+                local_file_path = os.path.join(tmp,
+                                               os.path.basename(failure_file))
+                utils.run('gsutil',
+                          args=('cp', failure_file, local_file_path),
+                          verbose=True)
+                expected_fail_files.append(local_file_path)
+            waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
+                    expected_fail_files)
+
         return waivers.find_waivers(test_arch, test_board, test_model,
                                     bundle_abi, sdk_ver, first_api_level)
 
@@ -1409,10 +1485,13 @@ class TradefedTest(test.test):
             config_path = os.path.abspath(os.path.join(cheets_path, '..', config_file))
             url_config = bundle_utils.load_config(config_path)
             bundle_password = bundle_utils.get_bundle_password(url_config)
+            official_version_name = bundle_utils.get_official_version(
+                    url_config)
+            suite_name = bundle_utils.get_suite_name(url_config)
 
             return BundleSpecification(
                     bundle_utils.make_bundle_url(url_config, uri, bundle),
-                    bundle_password)
+                    bundle_password, official_version_name, suite_name)
 
     def _wait_cpu_cooldown(self, timeout):
         crosvm_cpu_usage_cmd = "top -bn1 | awk '{if ($12 == \"crosvm\") print $9;}'"

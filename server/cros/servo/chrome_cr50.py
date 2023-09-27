@@ -1486,6 +1486,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def check_servo_monitor(self):
         """Returns True if cr50 can detect servo connect/disconnect"""
+        # CCD devices can't simulate servo disconnect, because they cant access
+        # the servo EC uart signal.
+        if self._servo.main_device_is_ccd():
+            return False
         orig_dts = self._servo.get('servo_dts_mode')
         # Detach ccd so EC uart won't interfere with servo detection
         self._servo.set_dts_mode('off')

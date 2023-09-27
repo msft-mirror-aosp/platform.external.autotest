@@ -100,6 +100,9 @@ class firmware_Cr50WPG3(Cr50Test):
 
         Make GSC ignore servo, so it can enable CCD SPI access.
         """
+        # There's no need to switch servo control if the main device is ccd.
+        if self.servo.main_device_is_ccd():
+            return
         self.servo.set('ec_uart_en', 'off')
         self.gsc.send_command('ccdblock IGNORE_SERVO enable')
         self.gsc.send_command('rddkeepalive enable')
@@ -108,6 +111,9 @@ class firmware_Cr50WPG3(Cr50Test):
 
     def enable_servo_ec_uart(self):
         """Enable servo control of ec uart."""
+        # There's no need to switch servo control if the main device is ccd.
+        if self.servo.main_device_is_ccd():
+            return
         self.servo.set('ec_uart_en', 'on')
         self.servo.enable_main_servo_device()
         time.sleep(2)

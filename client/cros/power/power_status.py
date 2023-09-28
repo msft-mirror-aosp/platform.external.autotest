@@ -397,13 +397,9 @@ class BatteryStat(DevStat):
         if voltage_nominal == 0:
             raise error.TestError('Failed to determine battery voltage')
 
-        battery_design_full_scale = 1
-
         # Since charge data is present, calculate parameters based upon
         # reported charge data.
         if battery_type == BatteryDataReportType.CHARGE:
-            self.charge_full_design *= battery_design_full_scale
-
             self.energy = voltage_nominal * self.charge_now
             self.energy_full = voltage_nominal * self.charge_full
             self.energy_full_design = voltage_nominal * self.charge_full_design
@@ -413,8 +409,6 @@ class BatteryStat(DevStat):
         # Charge data not present, so calculate parameters based upon
         # reported energy data.
         elif battery_type == BatteryDataReportType.ENERGY:
-            self.energy_full_design *= battery_design_full_scale
-
             self.charge_now = self.energy / voltage_nominal
             self.charge_full = self.energy_full / voltage_nominal
             self.charge_full_design = self.energy_full_design / voltage_nominal
@@ -610,7 +604,7 @@ class SysStat(object):
         """Returns current charge compare to design capacity in percent.
         """
         return self.battery.charge_now * 100 / \
-               self.battery.charge_full_design
+               self.battery.charge_full
 
 
     def percent_display_charge(self):

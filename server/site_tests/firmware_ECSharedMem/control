@@ -4,15 +4,16 @@
 
 from autotest_lib.server import utils
 
+
+# TODO(b/290823172) Remove this control file when the test is no longer in any
+# PVS plan
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_ECSharedMem"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Servo based EC shared memory test",
-        "requirements": ["sys-fw-0022-v02"]
 }
-ATTRIBUTES = "suite:faft_ec, suite:faft_ec_fw_qual, suite:faft_ec_tot"
 TIME = "SHORT"
 TEST_TYPE = "server"
 JOB_RETRIES = 0

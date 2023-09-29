@@ -1469,9 +1469,10 @@ class Servo(object):
         """Return the ccd servo device or '' if no ccd devices are connected."""
         if self._ccd_servo == None:
             servo_type = self.get_servo_type()
-            if 'ccd' not in servo_type:
-                self._ccd_servo = ''
-            self._ccd_servo = servo_type.split('_with_')[-1].split('_and_')[-1]
+            self._ccd_servo = ''
+            if 'ccd' in servo_type:
+                self._ccd_servo = 'ccd_' + servo_type.rpartition('_ccd_')[-1]
+            logging.info('saved CCD servo name: %r', self._ccd_servo)
         return self._ccd_servo
 
     def active_device_is_ccd(self):

@@ -920,6 +920,15 @@ class Cr50Test(FirmwareTest):
             if ignore_error:
                 logging.info('%s does not exist', gsurl)
                 return None
+            is_dbg = 'dbg' in gsurl
+            is_efi = 'Unknown_NodeLocked' in gsurl
+            # Replace the board wildcard with the platform name to make the
+            # error more helpful.
+            if is_dbg or is_efi:
+                gsurl = gsurl.replace('*', self.faft_config.platform, 1)
+            # DBG images have a wildcard to match any sha. Replace that.
+            if is_dbg:
+                gsurl = gsurl.replace('*', 'GSC_SHA', 1)
             raise error.TestFail('Could not find %s' % gsurl)
         bucket, fn = file_info
 
@@ -973,6 +982,7 @@ class Cr50Test(FirmwareTest):
         devid = self._devid.replace(' ', '-').replace('0x', '')
         gsurl = os.path.join(self.gsc.GS_PRIVATE_DBG,
                              self.gsc.ERASEFLASHINFO_FILE % devid)
+        logging.info('Downloading EFI image: %s', gsurl)
         return self.download_cr50_gs_image(gsurl, None, None)
 
     def download_cr50_debug_image(self, devid='', image_bid=''):
@@ -993,6 +1003,7 @@ class Cr50Test(FirmwareTest):
         devid = devid if devid else self._devid
         dbg_file = self.gsc.DEBUG_FILE % (devid.replace(' ', '_'), bid_ext)
         gsurl = os.path.join(self.gsc.GS_PRIVATE_DBG, dbg_file)
+        logging.info('Downloading DBG image: %s', gsurl)
         return self.download_cr50_gs_image(gsurl, None, image_bid)
 
     def download_cr50_tot_image(self):

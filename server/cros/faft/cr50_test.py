@@ -829,9 +829,10 @@ class Cr50Test(FirmwareTest):
         self.gsc.send_command('ccd testlab open')
         self.gsc.send_command('ccd open')
 
-        # Try to enable testlab mode before resetting ccd.
+        # Try to enable testlab mode before resetting ccd on flex devices.
         try:
-            if self.gsc.get_ccd_level() == self.gsc.OPEN:
+            if (self.servo.main_device_is_flex()
+                        and self.gsc.get_ccd_level() == self.gsc.OPEN):
                 self.gsc.set_ccd_testlab('on')
         except Exception as e:
             logging.warning('Unable to enable testlab mode %r', e)

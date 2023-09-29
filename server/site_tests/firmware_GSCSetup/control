@@ -1,0 +1,45 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+AUTHOR = "ChromeOS Team"
+NAME = "firmware_GSCSetup"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Verify FAFT GSC hardware setup"
+}
+# This isn't run in a suite. It's just used to verify the device setup is good
+# to run the complete faft-gsc suite.
+ATTRIBUTES = ""
+DEPENDENCIES = "servo_state:WORKING"
+TIME = "SHORT"
+TEST_TYPE = "server"
+JOB_RETRIES = 0
+
+DOC = """
+This test checks the following FAFT GSC hardware requirements
+
+Universal:
+  - Servo v4 connected
+  - Cr50 console is accessible
+
+Servo Micro / C2D2:
+  - EFI image is google storage
+  - Dev image is google storage
+
+CCD:
+  - Testlab mode is enabled
+"""
+
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+def run_faftsetup(machine):
+    host = hosts.create_host(machine, servo_args=servo_args)
+    job.run_test("firmware_GSCSetup", host=host, cmdline_args=args,
+                 full_args=args_dict)
+
+parallel_simple(run_faftsetup, machines)

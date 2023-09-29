@@ -13,7 +13,6 @@ CONFIG['BUNDLE_CONFIG_PATH'] = os.path.abspath(os.path.join(os.path.dirname(__fi
         '..', '..', 'site_tests', CONFIG['TEST_NAME'], 'bundle_url_config.json'))
 CONFIG['DOC_TITLE'] = 'Android Compatibility Test Suite (CTS)'
 CONFIG['MOBLAB_SUITE_NAME'] = 'suite:cts'
-CONFIG['MOBLAB_HARDWARE_SUITE_NAME'] = 'suite:cts-hardware'
 CONFIG['COPYRIGHT_YEAR'] = 2022
 CONFIG['AUTHKEY'] = ''
 

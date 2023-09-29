@@ -54,6 +54,9 @@ class Cr50Test(FirmwareTest):
         self._raise_error_on_mismatch = not restore_cr50_image
         self._provision_update = provision_update
         self.tot_test_run = full_args.get('tot_test_run', '').lower() == 'true'
+        if not host.servo and 'servo_v4' not in host.servo.get_servo_version():
+            raise error.TestNAError('Run with servo v4 and ccd, servo micro, '
+                                    'or c2d2')
         super(Cr50Test, self).initialize(host, cmdline_args)
 
         if not hasattr(self, 'gsc'):

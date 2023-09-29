@@ -6,7 +6,7 @@ AUTHOR = 'harpreet, krisr, wiley'
 TIME = 'SHORT'
 NAME = 'network_WiFi_ChromeEndToEnd.autoconnectWiFi'
 TEST_TYPE = 'Server'
-ATTRIBUTES = ('suite:wifi_endtoend, suite:wifi_release')
+ATTRIBUTES = ''
 DEPENDENCIES = 'wificell'
 
 DOC = """

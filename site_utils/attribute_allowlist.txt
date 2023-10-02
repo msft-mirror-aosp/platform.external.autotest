@@ -636,7 +636,6 @@ suite:crostini-slow-cq
 suite:crostini-slow-informational
 suite:cr_chromebox_chromebase
 suite:cts
-suite:cts-hardware
 suite:cts_P
 suite:cuj_0
 suite:cuj_1

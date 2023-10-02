@@ -643,35 +643,82 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
         raise Exception(
                 'chromite is not packaged in the lacros_gcs_path archive')
 
+    kill_proc_timeout = 180
+    deploy_chrome_timeout = 600
     if archive_type == 'chrome':
         board = _remove_prefix(host.get_board(), 'board:')
         cmd = [
                 'deploy_chrome', '--force', '--build-dir',
                 os.path.join(chrome_dir, 'out/Release/'), '--process-timeout',
-                '180', '--device', host.host_port, '--board', board, '--mount',
-                '--nostrip'
+                str(kill_proc_timeout), '--device', host.host_port, '--board',
+                board, '--mount', '--nostrip'
         ]
+        try:
+            common_utils.run(cmd,
+                             stdout_tee=utils.TEE_TO_LOGS,
+                             stderr_tee=utils.TEE_TO_LOGS,
+                             stdout_level=logging.INFO,
+                             stderr_level=logging.DEBUG,
+                             timeout=deploy_chrome_timeout,
+                             extra_paths=[os.path.join(chromite_dir, 'bin')])
+        except error.CmdError as e:
+            logging.debug(
+                    'Error occurred executing chromite.deploy_chrome for Chrome'
+            )
+            raise e
+
+        # During the transition phase, since not all the builders have Lacros packaged,
+        # if the archive also contains lacros_clang, lacros will be deployed. If not,
+        # a warning will be given.
+        lacros_dir = os.path.join(chrome_dir, 'out/Release/lacros_clang/')
+        if os.path.exists(lacros_dir):
+            cmd = [
+                    'deploy_chrome', '--force', '--build-dir', lacros_dir,
+                    '--process-timeout',
+                    str(kill_proc_timeout), '--device', host.host_port,
+                    '--lacros', '--nostrip', '--skip-modifying-config-file'
+            ]
+            try:
+                common_utils.run(
+                        cmd,
+                        stdout_tee=utils.TEE_TO_LOGS,
+                        stderr_tee=utils.TEE_TO_LOGS,
+                        stdout_level=logging.INFO,
+                        stderr_level=logging.DEBUG,
+                        timeout=deploy_chrome_timeout,
+                        extra_paths=[os.path.join(chromite_dir, 'bin')])
+            except error.CmdError as e:
+                logging.debug(
+                        'Error occurred executing chromite.deploy_chrome for Lacros'
+                )
+                raise e
+        else:
+            logging.warning(
+                    '%s does not contain lacros_clang. Skip deploying Lacros.',
+                    gs_path)
+
     elif archive_type == 'lacros':
         cmd = [
                 'deploy_chrome', '--build-dir',
-                os.path.join(chrome_dir, 'out/Release/'), '--device',
-                host.host_port, '--lacros', '--nostrip', '--force',
-                '--skip-modifying-config-file'
+                os.path.join(chrome_dir, 'out/Release/'), '--process-timeout',
+                str(kill_proc_timeout), '--device', host.host_port, '--lacros',
+                '--nostrip', '--force', '--skip-modifying-config-file'
         ]
+        try:
+            common_utils.run(cmd,
+                             stdout_tee=utils.TEE_TO_LOGS,
+                             stderr_tee=utils.TEE_TO_LOGS,
+                             stdout_level=logging.INFO,
+                             stderr_level=logging.DEBUG,
+                             timeout=deploy_chrome_timeout,
+                             extra_paths=[os.path.join(chromite_dir, 'bin')])
+        except error.CmdError as e:
+            logging.debug(
+                    'Error occurred executing chromite.deploy_chrome for Lacros'
+            )
+            raise e
     else:
         raise Exception('Unknown archive_type:%s' % archive_type)
-
-    try:
-        common_utils.run(cmd,
-                         stdout_tee=utils.TEE_TO_LOGS,
-                         stderr_tee=utils.TEE_TO_LOGS,
-                         stdout_level=logging.INFO,
-                         stderr_level=logging.DEBUG,
-                         timeout=1200,
-                         extra_paths=[os.path.join(chromite_dir, 'bin')])
-    except error.CmdError as e:
-        logging.debug('Error occurred executing chromite.deploy_chrome')
-        raise e
 
     logging.info('After deploy_chrome')
     _log_chrome_version(host)

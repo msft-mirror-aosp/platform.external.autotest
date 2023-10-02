@@ -1,0 +1,37 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Commercial Flex Team"
+NAME = "flex-enrollment-daily"
+METADATA = {
+  "contacts": [
+    "cros-onboarding-team@google.com"
+  ],
+  "bug_component": "b:1271043", # ChromeOS Server Projects > Enterprise Management > Chrome Commercial Backend > Onboarding > Enterprise Enrollment
+}
+PURPOSE = "DMServer Flex enrollment tests"
+
+TIME = "MEDIUM"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This is the part of the DMServer Flex enrollment test suite which should run daily.
+
+This is similar to the dmserver-enrollment-daily suite, but runs on multiple
+reven models, and doesn't clear the TPM before running the tests.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['file-bugs'] = False
+args_dict['max_runtime_mins'] = 240
+args_dict['timeout_mins'] = 1440
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

@@ -767,6 +767,7 @@ suite:fingerprint-mcu-dragonclaw
 suite:fleet_firmware_update
 suite:flashrom
 suite:flex-criticalstaging
+suite:flex-enrollment-daily
 suite:flex-perbuild
 suite:floatingworkspace
 suite:fwupd_downgrade

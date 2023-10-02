@@ -2256,7 +2256,6 @@ class FirmwareTest(test.test):
                                     'access to the GSC console')
         logging.info('Bringing DUT up')
 
-        self.gsc.ccd_enable()
         self.servo.set_nocheck('cold_reset', 'off')
         self.servo.set_nocheck('warm_reset', 'off')
 

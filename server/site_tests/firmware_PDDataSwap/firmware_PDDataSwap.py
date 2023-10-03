@@ -78,10 +78,10 @@ class firmware_PDDataSwap(FirmwareTest):
         if self.dut_port.is_src():
             # DUT is currently a SRC, so change to SNK
             # Use PDTester method to ensure power role change
-            self.pdtester.charge(PDTESTER_SRC_VOLTAGE)
+            self.charge(PDTESTER_SRC_VOLTAGE)
         else:
             # DUT is currently a SNK, so change it to a SRC.
-            self.pdtester.charge(PDTESTER_SNK_VOLTAGE)
+            self.charge(PDTESTER_SNK_VOLTAGE)
         # Wait for change to take place
         time.sleep(self.PD_CONNECT_DELAY)
         pdtester_state = self.pdtester_port.get_pd_state()

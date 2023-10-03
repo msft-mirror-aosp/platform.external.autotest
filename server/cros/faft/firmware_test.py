@@ -174,6 +174,7 @@ class FirmwareTest(test.test):
         self._backup_dev_mode = None
         self._restore_power_mode = None
         self._uart_file_dict = {}
+        self._dts_mode = False
 
         logging.info('FirmwareTest initialize begin (id=%s)', self.run_id)
 
@@ -714,6 +715,7 @@ class FirmwareTest(test.test):
 
         # Servo v4 by default has dts_mode enabled. Enabling dts_mode affects
         # the behaviors of what PD FAFT tests. So we want it disabled.
+        self._dts_mode = dts_mode
         pd_tester_device = self.pdtester.servo_type.split('_with_')[0]
         if pd_tester_device in self.pdtester.FIRST_PD_SETUP_ELEMENT:
             self.servo.set_dts_mode('on' if dts_mode else 'off')
@@ -723,7 +725,7 @@ class FirmwareTest(test.test):
 
         self.pdtester.set('usbc_polarity', 'cc2' if flip_cc else 'cc1')
         # Make it sourcing max voltage.
-        self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
+        self.charge(self.pdtester.USBC_MAX_VOLTAGE)
 
         time.sleep(self.PD_RESYNC_DELAY)
 
@@ -737,6 +739,22 @@ class FirmwareTest(test.test):
                         '"DUT POWER" port is connected to a working charger. '
                         'servo_pd_role:%s' % (pd_tester_device, role))
         self.servo.disable_ccd_watchdog_for_test()
+
+    def charge(self, voltage):
+        """Sets PDTester to provide power at specific voltage.
+
+        This is a wrapper around PDTester.charge() which also re-enables DTS
+        mode if needed.
+
+        @param voltage: Specified charging voltage in volts.
+        """
+        self.pdtester.charge(voltage)
+
+        # Workaround for b/284216847. Currently the servo usbc_action command
+        # unconditionally disables DTS mode, so re-enable it if needed.
+        # TODO(b/284216847): Remove this once the servo FW fix is ready and has
+        # been rolled out.
+        self.servo.set_dts_mode('on' if self._dts_mode else 'off')
 
     def setup_usbkey(self, usbkey, host=None, used_for_recovery=None):
         """Setup the USB disk for the test.

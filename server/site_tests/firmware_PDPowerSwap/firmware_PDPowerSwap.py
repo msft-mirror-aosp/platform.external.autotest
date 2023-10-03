@@ -32,7 +32,7 @@ class firmware_PDPowerSwap(FirmwareTest):
         @returns True if PDTester power role is source, false otherwise
         """
         PDTESTER_SRC_VOLTAGE = 20
-        self.pdtester.charge(PDTESTER_SRC_VOLTAGE)
+        self.charge(PDTESTER_SRC_VOLTAGE)
         # Wait for change to take place
         time.sleep(self.PD_CONNECT_DELAY)
         # Current PDTester power role should be source

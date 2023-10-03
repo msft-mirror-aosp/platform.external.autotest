@@ -115,7 +115,7 @@ class firmware_PDVbusRequest(FirmwareTest):
         # Re-enable DPS
         self._enable_dps(True)
         # Set back to the max 20V SRC mode at the end.
-        self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
+        self.charge(self.pdtester.USBC_MAX_VOLTAGE)
 
         self.usbpd.send_command('chan 0xffffffff')
         self.restore_ap_on_power_mode()
@@ -217,7 +217,7 @@ class firmware_PDVbusRequest(FirmwareTest):
         for voltage in charging_voltages:
             logging.info('********* %r *********', voltage)
             # Set charging voltage
-            self.pdtester.charge(voltage)
+            self.charge(voltage)
             # Wait for new PD contract to be established
             time.sleep(self.PD_SETTLE_DELAY)
             # Get current PDTester PD state
@@ -245,7 +245,7 @@ class firmware_PDVbusRequest(FirmwareTest):
                 pdtester_failures.append(result_str)
 
         # PDTester is set back to 20V SRC mode.
-        self.pdtester.charge(self.pdtester.USBC_MAX_VOLTAGE)
+        self.charge(self.pdtester.USBC_MAX_VOLTAGE)
         time.sleep(self.PD_SETTLE_DELAY)
 
         if pdtester_failures:

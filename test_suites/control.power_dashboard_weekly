@@ -1,0 +1,26 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "power_dashboard_weekly"
+METADATA = { 'contacts': [ "chromeos-platform-power@google.com" ] }
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+Run Automated power tests on DUTs weekly to upload data to power dashboard.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['max_runtime_mins'] = 720
+args_dict['add_experimental'] = True
+args_dict['name'] = NAME
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

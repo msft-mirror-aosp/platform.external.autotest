@@ -13,12 +13,11 @@
 NAME = "power_VideoPlayback.FDO_10min_lacros"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:power_daily_video_playback")
+ATTRIBUTES = ("suite:power_weekly_video_playback")
 TEST_TYPE = "client"
 
 videos = [('h264_1080_30fps', ''), ('vp9_1080_30fps', ''),

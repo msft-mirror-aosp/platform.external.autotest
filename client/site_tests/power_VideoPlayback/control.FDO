@@ -8,13 +8,12 @@
 NAME = "power_VideoPlayback.FDO"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
     "requirements": ["pwr-batLife-0010-v01", "pwr-batLife-0010-v02"]
 }
-ATTRIBUTES = ("suite:power_daily_video_playback")
+ATTRIBUTES = ("suite:power_weekly_video_playback")
 TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)

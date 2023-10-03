@@ -875,6 +875,7 @@ suite:power_daily_video_call
 suite:power_daily_video_encode
 suite:power_daily_video_playback
 suite:power_dashboard
+suite:power_dashboard_weekly
 suite:power_idle
 suite:power_loadtest
 suite:power_loadtest_1hour
@@ -887,6 +888,7 @@ suite:power_qual_webrtc_fast
 suite:power_qual_webrtc_full
 suite:power_requirements
 suite:power_weekly_load_test_v10
+suite:power_weekly_video_playback
 suite:printscan
 suite:push_to_prod
 suite:pvs-audio

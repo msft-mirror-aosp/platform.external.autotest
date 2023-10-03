@@ -27,7 +27,7 @@ METADATA = {
     'requirements': ['bt-spec-0019-v01', 'bt-spec-0020-v01']
 }
 
-ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_fw'
+ATTRIBUTES = 'suite:bluetooth_fw'
 TEST_TYPE = 'client'
 
 

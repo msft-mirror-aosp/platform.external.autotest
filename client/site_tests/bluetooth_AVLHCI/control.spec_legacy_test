@@ -34,7 +34,7 @@ METADATA = {
                      'bt-spec-0009-v01']
 }
 
-ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_fw'
+ATTRIBUTES = 'suite:bluetooth_fw'
 TEST_TYPE = 'client'
 
 

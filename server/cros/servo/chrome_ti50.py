@@ -231,7 +231,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         m = re.match(r'\s+(([\d ]{13}\r\n)+)', output)
         if m is None:
             raise error.TestError('Wrong taskinfo output', output)
-        return output
+        return m.group(1)
 
     def dump_nvmem(self):
         """Ti50 doesn't have dump_nvmem. fsinfo will print some file info."""

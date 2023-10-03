@@ -711,6 +711,13 @@ class Servo(object):
                     # shouldn't interfere with the test.
                     logging.exception(e)
         self._uart.start_capture()
+        # https://issuetracker.google.com/302370064 Use gsc_ec_reset instead of
+        # gsc_reset for c2d2 devices.
+        # This is faft ccd should be open and in factory mode, so gsc_ec_reset
+        # should be accessible.
+        if 'c2d2' in self.get_servo_version():
+            logging.info('Setup cold_reset_select on c2d2')
+            self.set_nocheck('cold_reset_select', 'gsc_ec_reset')
         # Run testlab open if servo relies on ccd to control the dut.
         if self.main_device_uses_gsc_drv():
             self.set_nocheck('cr50_testlab', 'open')

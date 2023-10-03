@@ -1,0 +1,56 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "faft_stress"
+PURPOSE = "Firmware stress tests"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "shchen@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Firmware stress tests"
+}
+
+TIME = "LENGTHY"
+TEST_CATEGORY = "Stress"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+The tests in the faft_stress suite are all slow tests that check various
+stress scenarios. In general, outside of the lab, you probablty want to run
+the tests individually.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+# Values specified in this bug template will override default values when
+# filing bugs on tests that are a part of this suite. If left unspecified
+# the bug filer will fallback to it's defaults.
+_BUG_TEMPLATE = {
+    'labels': ['FW-labblocker', 'Restrict-View-Google'],
+    'owner': '',
+    'status': None,
+    'summary': None,
+    'title': None,
+}
+
+def predicate(test):
+  if not hasattr(test, 'suite') or not hasattr(test, 'name'):
+    return False
+  if not NAME in test.suite.split(','):
+    return False
+  name = test.name
+  if 'tests' in args_dict and name not in args_dict['tests']:
+    return False
+  return True
+
+args_dict['file_bugs'] = False
+args_dict['name'] = 'faft_stress'
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+args_dict['bug_template'] = _BUG_TEMPLATE
+args_dict['predicate'] = predicate
+
+dynamic_suite.reimage_and_run(**args_dict)

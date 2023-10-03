@@ -61,7 +61,7 @@ class firmware_GSCSetup(Cr50Test):
         logging.info('DBG image ok')
 
     def check_flex_setup(self):
-        """Verify testlab mode is enabled."""
+        """Verify the necessary DBG and EFI images exist for the dut."""
         logging.info('Verify flex setup')
         self.validate_efi_image()
         self.validate_dbg_image()
@@ -75,14 +75,13 @@ class firmware_GSCSetup(Cr50Test):
         logging.info('Testlab mode enabled')
 
     def check_ccd_setup(self):
-        """Verify testlab mode is enabled."""
+        """CCD devices just need testlab mode enabled. Verify it is."""
         logging.info('Verify ccd setup')
         self.check_testlab_enabled()
         logging.info('ccd setup is ok')
 
     def run_once(self):
         """Main test logic"""
-
         logging.info('Check GSC console works')
         if not self.gsc:
             raise error.TestFail('GSC console does not work')

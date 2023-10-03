@@ -262,6 +262,10 @@ class FirmwareTest(test.test):
         if not self.faft_client.system.dev_tpm_present():
             raise error.TestError('/dev/tpm0 does not exist on the client')
 
+        # Disable the ccd watchdog if ccd is the secondary device.
+        if (self.servo.main_device_is_flex()
+                    and self.servo.get_ccd_servo_device()):
+            self.servo.disable_ccd_watchdog_for_test()
         # Initialize servo role to src
         self.servo.set_servo_v4_role('src')
 

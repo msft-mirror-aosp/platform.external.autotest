@@ -150,7 +150,7 @@ class _KeyboardBypasser(_BaseFwBypasser):
         logging.info('Enabled dut_sees_usb, connect timeout = %ds',
                      self.faft_config.usb_image_boot_timeout)
         # TODO(jbettis): Remove the retries and use
-        # broken_firmware_screen_requires_recovery to determine if
+        # no_broken_screen_in_dev to determine if
         # power_state:rec is required or not.
         if not self.client_host.wait_up(
                 timeout=self.faft_config.usb_image_boot_timeout,
@@ -1071,27 +1071,6 @@ class _KeyboardDevSwitcher(_MenuSwitcher):
     FW_BYPASSER_CLASS = _LegacyKeyboardBypasser
 
 
-class _JetstreamSwitcher(_BaseModeSwitcher):
-    """Mode switcher for Jetstream devices."""
-
-    FW_BYPASSER_CLASS = _JetstreamBypasser
-
-    def _enable_dev_mode_and_reboot(self):
-        """Switch to developer mode and reboot."""
-        logging.info("Enabling Jetstream developer mode")
-        self.enable_rec_mode_and_reboot(usb_state='host')
-        self.wait_for_client_offline()
-        self.bypasser.trigger_rec_to_dev()
-
-    def _enable_normal_mode_and_reboot(self):
-        """Switch to normal mode and reboot."""
-        logging.info("Disabling Jetstream developer mode")
-        self.servo.disable_development_mode()
-        self.enable_rec_mode_and_reboot(usb_state='host')
-        self.faft_framework.wait_for('firmware_screen', 'Disabling rec and rebooting')
-        self.disable_rec_mode_and_reboot(usb_state='host')
-
-
 class _TabletDetachableSwitcher(_BaseModeSwitcher):
     """Mode switcher for legacy menu UI."""
 
@@ -1138,7 +1117,6 @@ class _TabletDetachableSwitcher(_BaseModeSwitcher):
 _SWITCHER_CLASSES = {
     'menu_switcher': _MenuSwitcher,
     'keyboard_dev_switcher': _KeyboardDevSwitcher,
-    'jetstream_switcher': _JetstreamSwitcher,
     'tablet_detachable_switcher': _TabletDetachableSwitcher,
 }
 

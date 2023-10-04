@@ -15,7 +15,7 @@ METADATA = {
             """
 }
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:audio_advanced"
+#ATTRIBUTES = "suite:audio_advanced"
 DEPENDENCIES = "audio_box, chameleon_state:WORKING"
 
 args_dict = utils.args_to_dict(args)

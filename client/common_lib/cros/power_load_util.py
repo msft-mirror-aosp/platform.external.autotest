@@ -8,8 +8,8 @@ import tempfile
 
 from autotest_lib.client.common_lib import file_utils
 
-_URL_BASE = ('https://sites.google.com/a/chromium.org/dev/chromium-os'
-             '/testing/power-testing/pltp')
+_URL_BASE = ('https://storage.googleapis.com/chromiumos-test-assets-public'
+             '/power_LoadTest/account')
 _PLTG_URL = _URL_BASE + '/pltg'
 _PLTU_URL = _URL_BASE + '/pltu_rand'
 _PLTP_URL = _URL_BASE + '/pltp_rand'

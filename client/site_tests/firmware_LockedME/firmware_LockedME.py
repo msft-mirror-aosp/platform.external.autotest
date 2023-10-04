@@ -33,8 +33,8 @@ class firmware_LockedME(test.test):
         flashrom_result = self.flashrom(args=('--wp-status',))
         logging.info('The above flashrom command returns.... %s',
                 flashrom_result.stdout)
-        if (("disabled" in flashrom_result.stdout) and
-                ("start=0x00000000, len=0x0000000" in flashrom_result.stdout)):
+        if (("disabled" in flashrom_result.stdout) and re.search(
+                'start=0x0*0,? length=0x0*0', flashrom_result.stdout)):
             return False
         else:
             return True

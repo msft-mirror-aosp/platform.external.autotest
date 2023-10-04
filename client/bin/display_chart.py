@@ -13,7 +13,7 @@ import select
 import signal
 import sys
 import tempfile
-
+import time
 # Set chart process preferred logging format before overridden by importing
 # common package.
 logging.basicConfig(
@@ -96,19 +96,22 @@ def control_brightness():
     original_display_level = utils.system_output(
             'backlight_tool --get_brightness_percent')
     logging.info('Save original display brightness %r', original_display_level)
-
     # Killing powerd to prevent screen dimming is not reliable, as it could be
     # restarted when we're restarting the UI. Override the default powerd
     # settings instead for the duration of the script.
+    # Some devices have ambient light sensors, which will auto adjust the
+    # brightness, so set has_ambient_light_sensor to 0 to disable it.
     dim_ms = 0  # 0 means no limit
-    prefs = { 'disable_idle_suspend'   : 1,
-              'ignore_external_policy' : 1,
-              'plugged_dim_ms'         : dim_ms,
-              'plugged_off_ms'         : dim_ms,
-              'plugged_suspend_ms'     : dim_ms,
-              'unplugged_dim_ms'       : dim_ms,
-              'unplugged_off_ms'       : dim_ms,
-              'unplugged_suspend_ms'   : dim_ms }
+    prefs = {
+            'disable_idle_suspend': 1,
+            'has_ambient_light_sensor': 0,
+            'plugged_dim_ms': dim_ms,
+            'plugged_off_ms': dim_ms,
+            'plugged_suspend_ms': dim_ms,
+            'unplugged_dim_ms': dim_ms,
+            'unplugged_off_ms': dim_ms,
+            'unplugged_suspend_ms': dim_ms
+    }
     try:
         pref_change = power_utils.PowerPrefChanger(prefs)
     except FileExistsError:
@@ -117,6 +120,21 @@ def control_brightness():
         # aren't normally being rebooted.
         power_utils.PowerPrefChanger.finalize()
         pref_change = power_utils.PowerPrefChanger(prefs)
+
+    # Wait until brightness is stable.
+    previous_display_level = original_display_level
+    start_time_sec = time.time()
+    timeout_sec = 10
+    while True:
+        time.sleep(0.5)
+        current_time = time.time()
+        current_display_level = utils.system_output(
+                'backlight_tool --get_brightness_percent')
+        logging.info('Current birghtness %r', current_display_level)
+        if (current_time - start_time_sec >= timeout_sec
+                    or current_display_level == previous_display_level):
+            break
+        previous_display_level = current_display_level
 
     yield set_brightness
 

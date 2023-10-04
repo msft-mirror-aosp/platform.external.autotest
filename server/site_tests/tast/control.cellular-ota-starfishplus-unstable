@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.cellular-ota-starfish-unstable'
+NAME = 'tast.cellular-ota-starfishplus-unstable'
 METADATA = {
     "contacts": ["chromeos-cellular-team@google.com"],
     "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
@@ -13,7 +13,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:starfish, cellular_modem_state:NORMAL"
+DEPENDENCIES = "carrier:starfishplus, cellular_modem_state:NORMAL"
 
 DOC = '''
 Run the unstable Tast tests which verify basic Cellular functionality.
@@ -41,7 +41,7 @@ def run(machine):
     slotMapping = labellib.LabelsMapping(labels).get('starfish_slot_mapping')
     # slotMapping = "1_verizon,3_att"
     if not slotMapping:
-        # any setup that has the label 'carrier:starfish' should have
+        # any setup that has the label 'carrier:starfishplus' should have
         # the starfish_slot_mapping label populated.
         raise error.TestError('starfish_slot_mapping label not set.')
     slots = slotMapping.split(',')

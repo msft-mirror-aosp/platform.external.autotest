@@ -420,18 +420,24 @@ class BluetoothQuickTestsBase(object):
             self._print_delimiter()
             if self.pkg_is_running is False:
                 raise error.TestFail(self.bat_tests_results)
-        elif self.bat_testna_count > 0:
-            logging.error('===> Test Batch Passed! Some TestNA results')
-            self._print_delimiter()
-            if self.pkg_is_running is False:
-                raise error.TestNAError(self.bat_tests_results)
         elif self.bat_warn_count > 0:
             logging.error('===> Test Batch Passed! Some WARN results')
             self._print_delimiter()
             if self.pkg_is_running is False:
                 raise error.TestWarn(self.bat_tests_results)
+        elif self.bat_testna_count > 0 and self.bat_pass_count == 0:
+            # Raise TEST_NA only if all tests return TEST_NA
+            logging.error(
+                    '===> Test Batch Skipped! All tests have TestNA results')
+            self._print_delimiter()
+            if self.pkg_is_running is False:
+                raise error.TestNAError(self.bat_tests_results)
+        elif self.bat_testna_count > 0:
+            # If there are only Pass and TESTNA, result is a Pass
+            logging.error('===> Test Batch Passed! Some TestNA results')
+            self._print_delimiter()
         else:
-            logging.info('===> Test Batch Passed! zero failures')
+            logging.info('===> Test Batch Passed! zero failures or TestNA')
             self._print_delimiter()
 
     def quick_test_package_start(self, pkg_name):
@@ -475,14 +481,19 @@ class BluetoothQuickTestsBase(object):
             logging.error('===> Test Package Failed! More than one failure')
             self._print_delimiter()
             raise error.TestFail(self.pkg_tests_results)
-        elif self.pkg_testna_count > 0:
-            logging.error('===> Test Package Passed! Some TestNA results')
-            self._print_delimiter()
-            raise error.TestNAError(self.pkg_tests_results)
         elif self.pkg_warn_count > 0:
             logging.error('===> Test Package Passed! Some WARN results')
             self._print_delimiter()
             raise error.TestWarn(self.pkg_tests_results)
+        elif self.pkg_testna_count > 0 and self.pkg_pass_count == 0:
+            # Raise TEST_NA only if all tests return TEST_NA
+            logging.error('===> Test Package Skipped! All Test_NA results')
+            self._print_delimiter()
+            raise error.TestNAError(self.pkg_tests_results)
+        elif self.pkg_testna_count > 0:
+            # If there are only Pass and TEST_NA, result is a Pass
+            logging.error('===> Test Package Passed! Some Test_NA results')
+            self._print_delimiter()
         else:
             logging.info('===> Test Package Passed! zero failures')
             self._print_delimiter()

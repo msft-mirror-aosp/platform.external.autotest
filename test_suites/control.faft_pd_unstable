@@ -1,0 +1,59 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "faft_pd_unstable"
+PURPOSE = "Unstable suite to test USB PD behaviors."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Run Tast tests USB PD validation"
+}
+
+TIME = "LONG"
+TEST_CATEGORY = "Stress"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This is the faft_pd_unstable test suite.
+
+This suite is a proving ground for USB PD tests before the tests are promoted
+to the faft_pd suite. Flaky test should also be moved here while they're being
+worked on.
+
+This suite only tests a single Type-C port connecting to the PDTester device
+(Servo v4 or Servo v4p1). This test suite is configured to run against the
+faft-cr50 pool in the lab, because that pool has the required servo debug
+connection. Only port 0 is tested in the lab.
+
+@param build: The name of the image to test.
+              Ex: x86-mario-release/R17-1412.33.0-a1-b29
+@param board: The board to test on.  Ex: x86-mario
+@param pool: The pool of machines to utilize for scheduling. If pool=None
+             board is used.
+@param check_hosts: require appropriate live hosts to exist in the lab.
+@param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+# Values specified in this bug template will override default values when
+# filing bugs on tests that are a part of this suite. If left unspecified
+# the bug filer will fallback to it's defaults.
+_BUG_TEMPLATE = {
+    'labels': ['FW-labblocker', 'Restrict-View-Google'],
+    'owner': '',
+    'status': None,
+    'summary': None,
+    'title': None,
+}
+
+args_dict['file_bugs'] = False
+args_dict['name'] = 'faft_pd_unstable'
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+args_dict['bug_template'] = _BUG_TEMPLATE
+dynamic_suite.reimage_and_run(**args_dict)

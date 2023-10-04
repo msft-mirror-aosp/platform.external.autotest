@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 import glob
+import json
 import logging
 import os
 import re
@@ -1238,3 +1239,21 @@ def is_charge_limit_enabled():
         'check_powerd_config --charge_limit_enabled'
     result = utils.run(_CHECK_CHARGE_LIMIT_ENABLED_CMD_, ignore_status=True)
     return (result.exit_status == 0)
+
+
+hdrnet_path = "/run/camera/hdrnet_config.json"
+
+
+def disable_camera_hdrnet():
+    """Disable camera hdrnet feature by creating a override config file."""
+    content = {
+            "hdrnet_enable": False,
+    }
+    with open(hdrnet_path, 'w') as f:
+        json.dump(content, f, indent=4)
+
+
+def remove_camera_hdrnet_override():
+    """Remove camera hdrnet override by deleting the config file."""
+    if os.path.isfile(hdrnet_path):
+        os.remove(hdrnet_path)

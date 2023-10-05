@@ -66,6 +66,9 @@ class StaticRunner(object):
 
         with host_lock_manager.HostsLockedBy(lock_manager):
             capture_host = utils.allocate_packet_capturer(lock_manager)
+
+            # Cleanup and reboot packet capturer before the test.
+            utils.sanitize_client(capture_host)
             capturer = site_linux_system.LinuxSystem(capture_host, {},
                                                      'packet_capturer')
 

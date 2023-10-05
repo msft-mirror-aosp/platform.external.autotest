@@ -1,0 +1,38 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "chromeos-commercial-networking@google.com"
+METADATA = {
+    'contacts': ['chromeos-commercial-networking@google.com'],
+    'bug_component': 'b:1000044', # ChromeOS > Software > Commercial (Enterprise) > Commercial Networking
+    'criteria': 'Tauto wrapper for wifi_commercial tast tests',
+}
+
+NAME = "wifi_commercial_flaky"
+PURPOSE = "Verify enterprise/commercial functionality w.r.t WiFi Connectivity."
+
+TIME = "SHORT"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This suite consists of flaky tests that validate enterprise settings like proxy,
+certs etc, on client (DUT) by connecting to WiFi network.
+
+It is also the landing suite for new/ported WiFi_Commercial Tast tests.
+After a test is stable enough the test can be moved to suite:wifi_commercial.
+
+Refer to https://goto.google.com/cros-wifi-tast-suites for detail.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['add_experimental'] = True
+args_dict['max_runtime_mins'] = 60
+args_dict['name'] = NAME
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

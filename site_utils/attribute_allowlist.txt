@@ -979,6 +979,8 @@ suite:vmtest-informational2
 suite:vmtest-informational3
 suite:wifi_atten_perf
 suite:wifi_atten_roam_perf
+suite:wifi_commercial
+suite:wifi_commercial_flaky
 suite:wifi_cross_device_p2p
 suite:wifi_cross_device_p2p_flaky
 suite:wifi_cross_device_sap

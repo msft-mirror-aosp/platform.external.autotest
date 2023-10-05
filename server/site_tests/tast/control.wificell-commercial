@@ -1,0 +1,37 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'The ChromiumOS Authors'
+NAME = 'tast.wificell-commercial'
+METADATA = {
+    "contacts": ["chromeos-commercial-networking@google.com"],
+    'bug_component': 'b:1000044', # ChromeOS > Software > Commercial (Enterprise) > Commercial Networking
+    'criteria': 'Tauto wrapper for wifi_commercial tast tests',
+}
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:wifi_commercial'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+DEPENDENCIES = 'peripheral_wifi_state:WORKING'
+
+DOC = '''
+Unstable Tast tests that validate enterprise settings like proxy,
+certs etc, on client (DUT) by connecting to WiFi network using wificell fixture.
+
+"group:wificell" indicates that the test runs on a wificell fixture. Its
+sub-attributes:
+  * "wificell_commercial": Stable tast tests that validate enterprise settings on DUT.
+
+See http://go/tast-failures for information about investigating failures.
+'''
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['("group:wificell" && wificell_commercial)'],
+                 ignore_test_failures=True, max_run_sec=10800,
+                 command_args=args)
+
+parallel_simple(run, machines)

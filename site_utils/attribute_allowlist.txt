@@ -775,6 +775,7 @@ suite:graphics_browser
 suite:graphics_per-build
 suite:graphics_per-day
 suite:graphics_per-week
+suite:graphics_power_per-build
 suite:graphics_system
 suite:gsc_dt_ab-sta
 suite:gsc_dt_ab-ti50

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'The ChromiumOS Authors'
-NAME = 'tast.av-trace-nightly-shard-3'
+NAME = 'tast.av-trace-nightly-shard-8'
 METADATA = {
     'contacts': ['tauto-core@google.com'],
     'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
@@ -37,7 +37,7 @@ def run(machine):
                  test_exprs=['("group:graphics" && graphics_nightly && graphics_trace && graphics_av_analysis)'],
                  ignore_test_failures=True, max_run_sec=10500,
                  totalshards=10,
-                 shardindex=3,
+                 shardindex=8,
                  command_args=args,
                  clear_tpm=False)
 

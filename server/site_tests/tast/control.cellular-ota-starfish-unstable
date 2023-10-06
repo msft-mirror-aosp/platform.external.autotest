@@ -39,7 +39,7 @@ def run(machine):
     host.reboot()
     labels = host.host_info_store.get().labels
     slotMapping = labellib.LabelsMapping(labels).get('starfish_slot_mapping')
-    # slotMapping = "1_verizon,3_att"
+    # slotMapping = "0_att,1_fi,2_tmobile,3_verizon"
     if not slotMapping:
         # any setup that has the label 'carrier:starfish' should have
         # the starfish_slot_mapping label populated.
@@ -55,17 +55,19 @@ def run(machine):
         index.strip()
         carrier.strip()
         with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
-            svars = ['starfish.carrier='+carrier,'starfish.index='+index]
+            svars = ['starfish.type=starfish','starfish.carrier='+carrier,'starfish.index='+index]
             yaml.safe_dump({'autotest_host_info_labels':
                             json.dumps(labels)},
                             stream=temp_file)
             temp_file.flush()
-            testgroups = {"0_is_modem_up":["cellular.IsModemUp"],
+            testgroups = {
+                          "0_is_modem_up":["cellular.IsModemUp"],
                           "1_dut_check":["cellular.Identifiers","cellular.IsConnected."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
                           "2_autoconnect_enable":["cellular.ShillAutoconnect","cellular.ShillEnableDisable"],
                           "3_platform":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e")'],
-                          "4_suspend_resume": ['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")'],
-                          "5_modem_fw": ['("group:cellular" && "cellular_modem_fw")']}
+                          "4_suspend_resume":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")'],
+                          "5_modem_fw":['("group:cellular" && "cellular_modem_fw")']
+                         }
             for testsession in sorted(testgroups):
                 sessiontag = testsession+"_"+carrier
                 tast_test_expr = testgroups[testsession]

@@ -881,7 +881,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param public_bucket: True to return archive on a public bucket.
 
         """
-        if public_bucket:
+        if public_bucket or not self._cache_server_url:
             statefuldev_url = self._get_stateful_url_on_public_bucket()
         else:
             _, _, statefuldev_url = self._get_payload_url_on_cache_server(

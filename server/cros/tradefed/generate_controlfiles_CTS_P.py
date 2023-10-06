@@ -756,6 +756,14 @@ CONFIG['EXTRA_COMMANDLINE'] = {
 }
 
 CONFIG['EXTRA_ATTRIBUTES'] = {
+    # We used to have coverage via suite:bvt-perbuild, but CFT migration broke P
+    # CTS (b/300685992) and we had to remove those tests for the time being.
+    # Here we set up our own perbuild suite:arc-cts-perbuild, to be run with CFT
+    # disabled. This coverage is required for pre-unibuild "follower" boards;
+    # see b/303561124 for context.
+    'CtsEdiHostTestCases': ['suite:arc-cts-perbuild'],
+    'CtsGraphicsTestCases': ['suite:arc-cts-perbuild'],
+
     'CtsDeqpTestCases': ['suite:arc-cts', 'suite:arc-cts-deqp'],
     _COLLECT: ['suite:arc-cts-qual', 'suite:arc-cts'],
 }

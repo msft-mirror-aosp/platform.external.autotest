@@ -65,8 +65,7 @@ def run(machine):
                           "1_dut_check":["cellular.Identifiers","cellular.IsConnected."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
                           "2_autoconnect_enable":["cellular.ShillAutoconnect","cellular.ShillEnableDisable"],
                           "3_platform":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e")'],
-                          "4_suspend_resume":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")'],
-                          "5_modem_fw":['("group:cellular" && "cellular_modem_fw")']
+                          "4_suspend_resume":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")']
                          }
             for testsession in sorted(testgroups):
                 sessiontag = testsession+"_"+carrier

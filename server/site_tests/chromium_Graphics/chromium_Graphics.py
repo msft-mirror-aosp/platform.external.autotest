@@ -41,15 +41,15 @@ class chromium_Graphics(test.test):
         self.test_args = chrome_sideloader.get_test_args(
                 self.args_dict, 'test_args').split(' ')
 
+        if not self.args_dict.get('run_private_tests',
+                                  True) in [False, 'False']:
+            tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
+
         # 'chromite_deploy_chrome' installs Ash/Lacros via chromite and leave
         # chrome checkout on Drone, which contains the GPU test's server package.
         archive_type = 'chrome' if self.is_cros_chrome else 'lacros'
         self.server_pkg = chrome_sideloader.chromite_deploy_chrome(
                 self.host, self.args_dict.get('lacros_gcs_path'), archive_type)
-
-        if not self.args_dict.get('run_private_tests',
-                                  True) in [False, 'False']:
-            tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
 
         # The test script needs to know it is running in Skylab environment.
         os.environ['RUNNING_IN_SKYLAB'] = '1'

@@ -792,6 +792,15 @@ class DevServer(object):
                  used. For example, if hostname is in a restricted subnet,
                  can_retry will be False.
         """
+        _F20_CONTAINER_BREADCRUMB = '/usr/local/f20container'
+        if os.path.exists(_F20_CONTAINER_BREADCRUMB):
+            devserver = os.getenv("CACHE_SERVER")
+            if devserver:
+                if not devserver.startswith("http://"):
+                    devserver = ("http://%s" % devserver)
+                logging.info("Using Devserver %s. From CFT Args.", devserver)
+                return [devserver]
+
         logging.info('Getting devservers for host: %s', hostname)
         metrics.Counter(
                 'chromeos/autotest/devserver/get_available_devservers'

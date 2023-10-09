@@ -116,6 +116,33 @@ def _get_dutservers(parser):
         dut_servers.sort()
     return dut_servers
 
+def _get_cache_endpoint(command_args):
+    """Get the cacheaddress from command line arg --cache_endpoint.
+
+    @param parser: Parser for the command line arguments.
+
+    @return: A cacheserver addresses from command line arg
+             --cache_endpoint.
+    """
+    server_str = "cache_endpoint"
+    server_arg = None
+    server = None
+    for arg in command_args:
+        if f'{server_str}=' in arg:
+            server_arg = arg
+            break
+    if not server_arg:
+        return
+    server = server_arg.split('=')[1]
+
+    # In case servers are passed...
+    # e.g.: f"{server_str}=localhost:1343,localhost:5678"
+
+    # Currently only support the first
+    server = server.split(',')[0]
+
+    return server
+
 
 def _get_libs_server(parser):
     """Get the libs server addresses from command line arg --libs_server.
@@ -523,9 +550,13 @@ def run_autoserv(pid_file_manager, results, parser, ssp_url, use_ssp):
     companion_hosts = _get_companions(parser)
     dut_servers = _get_dutservers(parser)
     libs_server = _get_libs_server(parser)
+    cache_server = _get_cache_endpoint(parser.args)
     is_cft = parser.options.cft
     force_full_log_collection = parser.options.force_full_log_collection
 
+
+    if cache_server:
+        os.environ["CACHE_SERVER"] = str(cache_server)
     # can't be both a client and a server side test
     if client and server:
         parser.parser.error("Can not specify a test as both server and client!")

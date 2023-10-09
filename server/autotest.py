@@ -48,11 +48,6 @@ _CONFIG = global_config.global_config
 AUTOSERV_PREBUILD = _CONFIG.get_config_value(
         'AUTOSERV', 'enable_server_prebuild', type=bool, default=False)
 
-# Match on a line like this:
-# FAIL test_name  test_name timestamp=1 localtime=Nov 15 12:43:10 <fail_msg>
-_FAIL_STATUS_RE = re.compile(
-    r'\s*FAIL.*localtime=.*\s*.*\s*[0-9]+:[0-9]+:[0-9]+\s*(?P<fail_msg>.*)')
-
 LOG_BUFFER_SIZE_BYTES = 64
 
 
@@ -596,22 +591,25 @@ class Autotest(installable_object.InstallableObject):
 
 
     @staticmethod
-    def extract_test_failure_msg(failure_status_line):
-        """Extract the test failure message from the status line.
+    def extract_test_failure_msg(test_name, status_file_contents):
+        """Extract the test failure message from the status file.
 
-        @param failure_status_line:  String of test failure status line, it will
-            look like:
-          FAIL <test name>  <test name> timestamp=<ts> localtime=<lt> <reason>
+        @param test_name: test name to look for when extracting failure reason
+        @param status_file_contents:  String of contents of entire status file
 
         @returns String of the reason, return empty string if we can't regex out
             reason.
         """
         fail_msg = ''
-        match = _FAIL_STATUS_RE.match(failure_status_line)
+        # Match on a line like this:
+        # <status> <test_name>  <test_name> timestamp=1 localtime=Nov 15 12:43:10 <fail_msg>
+        fail_status_re = re.compile(
+                r'\s*.*%s.*localtime=.*\s*.*\s*[0-9]+:[0-9]+:[0-9]+\s*(?P<fail_msg>.*)'
+                % (test_name))
+        match = fail_status_re.search(status_file_contents)
         if match:
             fail_msg = match.group('fail_msg')
         return fail_msg
-
 
     @classmethod
     def _check_client_test_result(cls, host, test_name):
@@ -627,15 +625,12 @@ class Autotest(installable_object.InstallableObject):
         status = host.run(command).stdout.strip()
         logging.info(status)
         if status[:8] != 'END GOOD':
-            test_fail_status_line_cmd = (
-                    'grep "^\s*FAIL\s*%s" %s/status | tail -n 1' %
-                    (test_name, client_result_dir))
-            test_fail_msg = cls.extract_test_failure_msg(
-                    host.run(test_fail_status_line_cmd).stdout.strip())
-            test_fail_msg_reason = ('' if not test_fail_msg
-                                    else ' (reason: %s)' % test_fail_msg)
-            test_fail_status = '%s client test did not pass%s.' % (
-                    test_name, test_fail_msg_reason)
+            test_status_file_cmd = ('cat %s/status' % (client_result_dir))
+            reason = cls.extract_test_failure_msg(
+                    test_name,
+                    host.run(test_status_file_cmd).stdout.strip())
+            test_fail_status = '%s client test did not pass: %s.' % (test_name,
+                                                                     reason)
             raise error.TestFail(test_fail_status)
 
 

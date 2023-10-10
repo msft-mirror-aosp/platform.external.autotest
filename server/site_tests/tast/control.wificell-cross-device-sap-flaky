@@ -14,7 +14,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:wifi_cross_device_sap_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = 'peripheral_wifi_state:WORKING'
+DEPENDENCIES = ''
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True

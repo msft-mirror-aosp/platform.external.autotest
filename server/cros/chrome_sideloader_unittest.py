@@ -81,6 +81,26 @@ class TestGetTastExpr(unittest.TestCase):
                 TestGetTastExpr.MockHost(), args_dict, 'mock/path/')
             self.assertEqual('("group:mainline" && !informational)', expr)
 
+    def testVersionSkew(self):
+        self.assertTrue(
+                chrome_sideloader.is_lacros_version_skew_valid(
+                        "100.0.1000.0", "100.0.1000.0"))
+        self.assertTrue(
+                chrome_sideloader.is_lacros_version_skew_valid(
+                        "100.0.1000.0", "100.0.1000.9"))
+        self.assertTrue(
+                chrome_sideloader.is_lacros_version_skew_valid(
+                        "100.0.9999.0", "100.0.1000.0"))
+        self.assertTrue(
+                chrome_sideloader.is_lacros_version_skew_valid(
+                        "102.0.1000.0", "100.0.1000.0"))
+        self.assertFalse(
+                chrome_sideloader.is_lacros_version_skew_valid(
+                        "103.0.1000.0", "100.0.1000.0"))
+        self.assertFalse(
+                chrome_sideloader.is_lacros_version_skew_valid(
+                        "99.0.1000.0", "100.0.9999.0"))
+
 
 def _base64_encode_str(s):
     return base64.b64encode(s.encode('utf-8')).decode('ascii')

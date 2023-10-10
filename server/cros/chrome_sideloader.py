@@ -19,6 +19,8 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as common_utils
 from autotest_lib.client.common_lib.cros import dev_server
 
+from distutils import version
+
 
 # Shell command to force unmount a mount point if it is mounted
 FORCED_UMOUNT_DIR_IF_MOUNTPOINT_CMD = (
@@ -498,6 +500,8 @@ def _lookup_lacros_latest_version(channel, platform):
         res = requests.get(api_url)
     except requests.exceptions.RequestException as e:
         raise Exception('Failed when call versionhistory api.') from e
+    logging.debug('Lacros version history lookup for platform %s: %s',
+                  platform, res.text)
 
     release_prefix = 'chrome/platforms/%s/channels/%s/' % (platform, channel)
     json_object = json.loads(res.text)
@@ -553,6 +557,15 @@ def deploy_lacros(host,
         raise Exception(
             'Please specify either channel or gs_path to locate Lacros artifacts.')
 
+    # Check lacros version skew
+    ash_version, _ = host.get_chrome_version()
+    if not is_lacros_version_skew_valid(lacros_version, ash_version):
+        raise Exception('Lacros version skew is invalid for Lacros:%s Ash:%s' %
+                        (lacros_version, ash_version))
+    else:
+        logging.debug('Lacros version skew is valid for Lacros:%s Ash:%s',
+                      lacros_version, ash_version)
+
     # Create directories from scratch
     tmp_dir = '/tmp/lacros_%s' % _gen_random_str(8)
     host.run(['rm', '-rf', lacros_dir])
@@ -587,12 +600,41 @@ def deploy_lacros(host,
 
     # Write ash_version and lacros_version into keyval to be included in RDB
     keyvals = {}
-    ash_version, _ = host.get_chrome_version()
     keyvals['ash_version'] = ash_version
     keyvals['lacros_version'] = lacros_version
     logging.info('deploy_lacros successful. ash_version: %s  lacros_version: %s',
                  ash_version, lacros_version)
     utils.write_keyval(host.job.resultdir, keyvals)
+
+
+def is_lacros_version_skew_valid(lacros_version_str, ash_version_str):
+    """
+    Returns whether Lacros and Ash are within valid supported skews by comparing
+    versions based on the version skew policy.
+    Ash and Lacros version is in the format of "(major).(minor).(build).(patch)".
+
+    @param lacros_version_str: Lacros version number in string. e.g. 120.0.6051.2
+    @param ash_version_str: Ash version number in string. e.g. 120.0.6051.2
+
+    @return: True if version skew is valid. False otherwise.
+    """
+    lacros_version = version.LooseVersion(lacros_version_str)
+    ash_version = version.LooseVersion(ash_version_str)
+
+    # Lacros should not be older, ignoring the patch level.
+    versions_to_compare = 3
+    if lacros_version.version[:
+                              versions_to_compare] < ash_version.version[:
+                                                                         versions_to_compare]:
+        return False
+
+    # Lacros should be within 2 major version of Ash.
+    max_major_version_skew = 2
+    if int(lacros_version.version[0]) > int(
+            ash_version.version[0]) + max_major_version_skew:
+        return False
+
+    return True
 
 
 def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):

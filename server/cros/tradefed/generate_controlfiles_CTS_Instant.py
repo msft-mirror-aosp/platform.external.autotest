@@ -91,9 +91,6 @@ CONFIG['QUAL_BOOKMARKS'] = [
         'zzzzz'  # A bookend to simplify algorithm.
 ]
 
-CONFIG['BVT_PERBUILD'] = [
-]
-
 CONFIG['NEEDS_POWER_CYCLE'] = [
 ]
 

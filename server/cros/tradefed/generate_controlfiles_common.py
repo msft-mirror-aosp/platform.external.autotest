@@ -435,9 +435,10 @@ def get_suites(modules,
                 has_unstable_vm_modules = True
         else:
             nonvm_modules.append(module)
-        # A few fast modules can run in suite:bvt-perbuild.
-        if module in CONFIG['BVT_PERBUILD'] and (abi == 'arm' or abi == ''):
-            suites.add('suite:bvt-perbuild')
+        # A few fast modules can run in suite:arc-cts-perbuild.
+        if module in CONFIG.get('PERBUILD_TESTS', []) and (
+                abi == 'arm' or abi == ''):
+            suites.add('suite:arc-cts-perbuild')
 
     if hardware_suite:
         suites = set([CONFIG['HARDWARE_SUITE_NAME']])

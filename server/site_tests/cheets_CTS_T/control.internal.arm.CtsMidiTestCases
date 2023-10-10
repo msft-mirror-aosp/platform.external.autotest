@@ -11,7 +11,7 @@ METADATA = {
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-arm-11, suite:bvt-perbuild'
+ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-arm-11'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
@@ -25,7 +25,6 @@ def run_TS(machine):
         'cheets_CTS_T',
         hosts=host_list,
         iterations=1,
-        max_retry=3,
         tag='internal.arm.CtsMidiTestCases',
         test_name='cheets_CTS_T.internal.arm.CtsMidiTestCases',
         run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMidiTestCases', '--logcat-on-failure'],

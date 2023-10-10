@@ -11,7 +11,7 @@ METADATA = {
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-vm, suite:arc-cts-vm-stable, suite:arc-cts-vm-stable-arm-1, suite:bvt-perbuild'
+ATTRIBUTES = 'suite:arc-cts-vm, suite:arc-cts-vm-stable, suite:arc-cts-vm-stable-arm-1'
 DEPENDENCIES = 'arc'
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
@@ -25,7 +25,6 @@ def run_TS(machine):
         'cheets_CTS_R',
         hosts=host_list,
         iterations=1,
-        max_retry=3,
         tag='internal.arm.CtsAcceleration',
         test_name='cheets_CTS_R.internal.arm.CtsAcceleration',
         run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsAccelerationTestCases', '--include-filter', 'CtsAccelerationTestCases[instant]', '--include-filter', 'CtsAccelerationTestCases[secondary_user]', '--logcat-on-failure'],

@@ -393,9 +393,10 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
         'zzzzz'  # A bookend to simplify algorithm.
 ])
 
-CONFIG['BVT_PERBUILD'] = [
-        'CtsAccelerationTestCases',
-        'CtsMidiTestCases',
+# Tests to run against each release build via suite:arc-cts-perbuild.
+CONFIG['PERBUILD_TESTS'] = [
+        'CtsEdiHostTestCases',
+        'CtsGraphicsTestCases',
 ]
 
 CONFIG['NEEDS_POWER_CYCLE'] = [

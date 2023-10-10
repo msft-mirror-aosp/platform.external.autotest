@@ -15,14 +15,18 @@ import subprocess
 import time
 
 import common
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.cros import rtc
 from autotest_lib.client.cros import upstart
 
 SYSFS_POWER_STATE = '/sys/power/state'
 SYSFS_WAKEUP_COUNT = '/sys/power/wakeup_count'
 
+FLASHROM_LOCK_FILE = '/run/lock/power_override/flashrom.lock'
 PAUSE_ETHERNET_HOOK_FILE = '/run/autotest_pause_ethernet_hook'
 pause_ethernet_file = None
+
+LOCK_WAIT_TIME = 120  # Seconds
 
 
 class SuspendFailure(Exception):
@@ -155,6 +159,24 @@ def check_wakeup(estimated_alarm):
         raise SpuriousWakeupError('Woke from suspend early')
 
 
+def wait_for_suspend_lock():
+    """Wait for suspend lock file to disappear.
+
+    Wait for at most LOCK_WAIT_TIME time before processing suspend command.
+    """
+    def flashrom_clear():
+        return not os.path.exists(FLASHROM_LOCK_FILE)
+
+    try:
+        utils.poll_for_condition(flashrom_clear,
+                                 timeout=LOCK_WAIT_TIME,
+                                 sleep_interval=1)
+    except utils.TimeoutError:
+        logging.warning(
+                'Still attempt suspend after waiting lock for %d seconds',
+                LOCK_WAIT_TIME)
+
+
 def pause_check_network_hook():
     """Stop check_ethernet.hook from running.
 
@@ -206,6 +228,7 @@ def do_suspend(suspend_for_sec, delay_seconds=0):
     """
     pause_check_network_hook()
     upstart.ensure_running('powerd')
+    wait_for_suspend_lock()
     estimated_alarm, wakeup_count = prepare_wakeup(suspend_for_sec)
     suspend_cmd_argv = [
             '/usr/bin/powerd_dbus_suspend',
@@ -250,6 +273,7 @@ def suspend_for(time_in_suspend, delay_seconds=0):
 
     wakeup_count = read_wakeup_count()
     upstart.ensure_running('powerd')
+    wait_for_suspend_lock()
     command = ('/usr/bin/powerd_dbus_suspend --delay=%d --timeout=30 '
                '--wakeup_count=%d --suspend_for_sec=%d' %
                (delay_seconds, wakeup_count, time_in_suspend))
@@ -269,6 +293,7 @@ def suspend_bg_for_dark_resume(suspend_seconds, delay_seconds=0):
 
     """
     upstart.ensure_running('powerd')
+    wait_for_suspend_lock()
     # Disarm any existing wake alarms so as to prevent early wakeups.
     os.system('echo 0 > /sys/class/rtc/rtc0/wakealarm')
     wakeup_count = read_wakeup_count()

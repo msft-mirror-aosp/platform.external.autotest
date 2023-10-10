@@ -663,6 +663,9 @@ suite:cuj_weekly_1
 suite:cuj_weekly_2
 suite:cuj_weekly_3
 suite:cuj_weekly_4
+suite:cuj_loginperf_0
+suite:cuj_loginperf_1
+suite:cuj_loginperf_2
 suite:cups_weekly
 suite:data-leak-prevention-dmserver-enrollment-daily
 suite:debug_kernel_testing

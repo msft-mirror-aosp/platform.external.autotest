@@ -3,28 +3,28 @@
 # found in the LICENSE file.
 #
 AUTHOR = 'ChromeOS SW Performance Team'
-NAME = 'tast.cuj-4'
+NAME = 'tast.cuj-loginperf-0'
 METADATA = {
     "contacts": ["cros-sw-perf@google.com"],
     "bug_component": 'b:1045832',  # ChromeOS > Software > Performance > TPS
-    'criteria': 'Tauto wrapper for specified tast tests',
+    'criteria': 'Run ui.LoginPerf',
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cuj_4'
+ATTRIBUTES = 'suite:cuj_loginperf_0'
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.
 REQUIRE_SSP = True
 
-DOC = "Run the CUJ test suite cuj_4. This suite is used to run CUJ tast tests against a remote DUT."
+DOC = "Run the test suite cuj_loginperf_0. This suite is used to run ui.LoginPerf against a remote DUT."
 
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:cuj" && !cuj_experimental && !cuj_weekly && !cuj_loginperf)'],
+                 test_exprs=['("group:cuj" && cuj_loginperf)'],
                  ignore_test_failures=True,
                  max_run_sec=(3*60-15)*60,  # 2h45m
-                 totalshards=13,
-                 shardindex=4,
+                 totalshards=3,
+                 shardindex=0,
                  command_args=args)
 parallel_simple(run, machines)

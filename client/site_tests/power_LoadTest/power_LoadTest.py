@@ -26,6 +26,7 @@ from autotest_lib.client.common_lib.cros.network import multicast_disabler
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.common_lib.cros.network import xmlrpc_security_types
 from autotest_lib.client.cros import backchannel
+from autotest_lib.client.cros import ec
 from autotest_lib.client.cros import httpd
 from autotest_lib.client.cros import memory_bandwidth_logger
 from autotest_lib.client.cros import tast
@@ -163,13 +164,16 @@ class power_LoadTest(arc.ArcTest):
                 self._force_discharge, self._power_status)
         if self._force_discharge_success:
             self._ac_ok = True
-
-        if not self._power_status.battery:
+        else:
             if ac_ok and (power_utils.has_powercap_support() or
                           power_utils.has_rapl_support()):
-                logging.info("Device has no battery but has powercap data.")
-            else:
+                logging.info(
+                        "Device cannot be on battery but has powercap data.")
+            elif not self._power_status.battery:
                 rsp = "Skipping test for device without battery and powercap."
+                raise error.TestNAError(rsp)
+            elif not ec.has_cros_ec():
+                rsp = "Skipping test for device without Cros EC and powercap."
                 raise error.TestNAError(rsp)
 
         self._tmp_keyvals['b_on_ac'] = int(not self._force_discharge_success

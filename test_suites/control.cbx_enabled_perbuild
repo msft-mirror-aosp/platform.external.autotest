@@ -3,9 +3,9 @@
 # found in the LICENSE file.
 
 AUTHOR = "ChromeOS Team"
-NAME = "cbx_enabled_unstable"
+NAME = "cbx_enabled_perbuild"
 METADATA = {
-    "contacts": ["tast-core@google.com@google.com"],
+    "contacts": ["tast-core@google.com"],
     "bug_component": "b:1034522", # ChromeOS > Test > Harness > Tast > Examples
     }
 PURPOSE = "Tests X for CBX devices."

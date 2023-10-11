@@ -13,7 +13,7 @@ METADATA = {
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'cbx:True'
-ATTRIBUTES = "suite:cbx_enabled_unstable"
+ATTRIBUTES = "suite:cbx_enabled_perbuild"
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

@@ -584,9 +584,9 @@ suite:camera-usb-qual
 suite:camerabox_facing-back
 suite:camerabox_facing-front
 suite:cbx_disabled_critical
-suite:cbx_disabled_unstable
+suite:cbx_disabled_perbuild
 suite:cbx_enabled_critical
-suite:cbx_enabled_unstable
+suite:cbx_enabled_perbuild
 suite:cellular-cq
 suite:cellular_au
 suite:cellular_au_nightly

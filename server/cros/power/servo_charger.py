@@ -101,11 +101,13 @@ class ServoV4ChargeManager(object):
 
         @returns: number of retries needed for success
         """
+        last_error = None
         for retry in range(_RETRYS):
             try:
                 self._change_role(role, verify)
                 return retry
             except error.TestError as e:
+                last_error = e
                 if retry < _RETRYS - 1:
                     # Ensure this retry loop and logging isn't run on the
                     # last iteration.
@@ -119,7 +121,7 @@ class ServoV4ChargeManager(object):
                     self._change_role(_invert_role(role), verify=False)
                     time.sleep(_RECOVERY_WAIT_SEC)
         logging.error('Giving up on %s.', role)
-        raise e
+        raise last_error
 
     def stop_charging(self, verify=True):
         """Cut off AC power supply to DUT with Servo.

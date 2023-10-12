@@ -1065,32 +1065,32 @@ class CPUPackageStats(CPUCStateStats):
             cpu_uarch = utils.get_intel_cpu_uarch()
 
             return {
-                # model groups pulled from Intel SDM, volume 4
-                # Group same package cstate using the older uarch name
-                #
-                # TODO(harry.pan): As the keys represent microarchitecture
-                # names, we could consider to rename the PC state groups
-                # to avoid ambiguity.
-                'Airmont':      self.SILVERMONT,
-                'Atom':         self.ATOM,
-                'Broadwell':    self.BROADWELL,
-                'Comet Lake':   self.BROADWELL,
-                'Goldmont':     self.GOLDMONT,
-                'Haswell':      self.SANDY_BRIDGE,
-                'Ice Lake':     self.BROADWELL,
-                'Ivy Bridge':   self.SANDY_BRIDGE,
-                'Ivy Bridge-E': self.SANDY_BRIDGE,
-                'Kaby Lake':    self.BROADWELL,
-                'Nehalem':      self.NEHALEM,
-                'Sandy Bridge': self.SANDY_BRIDGE,
-                'Silvermont':   self.SILVERMONT,
-                'Skylake':      self.BROADWELL,
-                'Tiger Lake':   self.BROADWELL,
-                'Alder Lake':   self.BROADWELL,
-                'Raptor Lake':  self.BROADWELL,
-                'Tremont':      self.GOLDMONT,
-                'Westmere':     self.NEHALEM,
-                }.get(cpu_uarch, None)
+                    # model groups pulled from Intel SDM, volume 4
+                    # Group same package cstate using the older uarch name
+                    #
+                    # TODO(harry.pan): As the keys represent microarchitecture
+                    # names, we could consider to rename the PC state groups
+                    # to avoid ambiguity.
+                    'Airmont': self.SILVERMONT,
+                    'Atom': self.ATOM,
+                    'Broadwell': self.BROADWELL,
+                    'Comet Lake': self.BROADWELL,
+                    'Goldmont': self.GOLDMONT,
+                    'Haswell': self.SANDY_BRIDGE,
+                    'Ice Lake': self.BROADWELL,
+                    'Ivy Bridge': self.SANDY_BRIDGE,
+                    'Ivy Bridge-E': self.SANDY_BRIDGE,
+                    'Kaby Lake': self.BROADWELL,
+                    'Nehalem': self.NEHALEM,
+                    'Sandy Bridge': self.SANDY_BRIDGE,
+                    'Silvermont': self.SILVERMONT,
+                    'Skylake': self.BROADWELL,
+                    'Tiger Lake': self.BROADWELL,
+                    'Alder Lake': self.BROADWELL,
+                    'Raptor Lake': self.BROADWELL,
+                    'Tremont': self.BROADWELL,
+                    'Westmere': self.NEHALEM,
+            }.get(cpu_uarch, None)
 
         self._platform_states = _get_platform_states()
         super(CPUPackageStats, self).__init__(name='cpupkg',

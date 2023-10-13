@@ -687,10 +687,13 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
 
     kill_proc_timeout = 180
     deploy_chrome_timeout = 600
+    vpython_spec = os.path.join(chrome_dir, '.vpython3')
+    deploy_chrome_bin = os.path.join(chromite_dir, 'bin', 'deploy_chrome')
     if archive_type == 'chrome':
         board = _remove_prefix(host.get_board(), 'board:')
         cmd = [
-                'deploy_chrome', '--force', '--build-dir',
+                'vpython3', '-vpython-spec', vpython_spec, deploy_chrome_bin,
+                '--force', '--build-dir',
                 os.path.join(chrome_dir, 'out/Release/'), '--process-timeout',
                 str(kill_proc_timeout), '--device', host.host_port, '--board',
                 board, '--mount', '--nostrip'
@@ -702,7 +705,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
                              stdout_level=logging.INFO,
                              stderr_level=logging.DEBUG,
                              timeout=deploy_chrome_timeout,
-                             extra_paths=[os.path.join(chromite_dir, 'bin')])
+                             extra_paths=['/opt/infra-tools'])
         except error.CmdError as e:
             logging.debug(
                     'Error occurred executing chromite.deploy_chrome for Chrome'
@@ -715,20 +718,20 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
         lacros_dir = os.path.join(chrome_dir, 'out/Release/lacros_clang/')
         if os.path.exists(lacros_dir):
             cmd = [
-                    'deploy_chrome', '--force', '--build-dir', lacros_dir,
+                    'vpython3', '-vpython-spec', vpython_spec,
+                    deploy_chrome_bin, '--force', '--build-dir', lacros_dir,
                     '--process-timeout',
                     str(kill_proc_timeout), '--device', host.host_port,
                     '--lacros', '--nostrip', '--skip-modifying-config-file'
             ]
             try:
-                common_utils.run(
-                        cmd,
-                        stdout_tee=utils.TEE_TO_LOGS,
-                        stderr_tee=utils.TEE_TO_LOGS,
-                        stdout_level=logging.INFO,
-                        stderr_level=logging.DEBUG,
-                        timeout=deploy_chrome_timeout,
-                        extra_paths=[os.path.join(chromite_dir, 'bin')])
+                common_utils.run(cmd,
+                                 stdout_tee=utils.TEE_TO_LOGS,
+                                 stderr_tee=utils.TEE_TO_LOGS,
+                                 stdout_level=logging.INFO,
+                                 stderr_level=logging.DEBUG,
+                                 timeout=deploy_chrome_timeout,
+                                 extra_paths=['/opt/infra-tools'])
             except error.CmdError as e:
                 logging.debug(
                         'Error occurred executing chromite.deploy_chrome for Lacros'
@@ -741,7 +744,8 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
 
     elif archive_type == 'lacros':
         cmd = [
-                'deploy_chrome', '--build-dir',
+                'vpython3', '-vpython-spec', vpython_spec, deploy_chrome_bin,
+                '--build-dir',
                 os.path.join(chrome_dir, 'out/Release/'), '--process-timeout',
                 str(kill_proc_timeout), '--device', host.host_port, '--lacros',
                 '--nostrip', '--force', '--skip-modifying-config-file'
@@ -753,7 +757,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
                              stdout_level=logging.INFO,
                              stderr_level=logging.DEBUG,
                              timeout=deploy_chrome_timeout,
-                             extra_paths=[os.path.join(chromite_dir, 'bin')])
+                             extra_paths=['/opt/infra-tools'])
         except error.CmdError as e:
             logging.debug(
                     'Error occurred executing chromite.deploy_chrome for Lacros'

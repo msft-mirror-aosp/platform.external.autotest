@@ -58,6 +58,7 @@ class power_Display(power_test.power_Test):
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
             self._services.stop_services()
+            self.notify_ash_discharge_status()
             self._multicast_disabler.disable_network_multicast()
 
             if brightness not in ['', 'all', 'max']:

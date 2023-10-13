@@ -202,6 +202,17 @@ class power_Test(test.test):
             elif self._force_discharge == 'true':
                 raise error.TestError('Running on AC power now.')
 
+    def notify_ash_discharge_status(self):
+        """Notify current discharge status to ash
+        """
+
+        # PowerSupplyProperties_ExternalPower: AC = 0, DISCONNECTED = 2
+        property = 0
+        if self.status.battery_discharging():
+            property = 2
+        utils.run('sudo -u power send_debug_power_status --external_power=%d' %
+                  property)
+
     def checkpoint_measurements(self, name, start_time=None):
         """Checkpoint measurements.
 

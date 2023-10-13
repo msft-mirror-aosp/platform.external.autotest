@@ -71,6 +71,7 @@ class power_ThermalLoad(power_test.power_Test):
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
             self._services.stop_services()
+            self.notify_ash_discharge_status()
             self._multicast_disabler.disable_network_multicast()
 
             self.backlight.set_percent(100)

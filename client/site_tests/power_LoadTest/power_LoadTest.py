@@ -412,6 +412,7 @@ class power_LoadTest(arc.ArcTest):
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
             self._services.stop_services()
+            self.notify_ash_discharge_status()
             self._multicast_disabler.disable_network_multicast()
 
             # This opens a trap start page to capture tabs opened for first login.

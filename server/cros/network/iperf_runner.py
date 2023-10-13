@@ -253,6 +253,9 @@ class IperfResult(object):
 class IperfConfig(object):
     """ Defines the configuration for an iperf run. """
     DEFAULT_TEST_TIME = 10
+    # NB: If you plan to adjust these values for testing purposes, note that max
+    # bandwidth is the maximum bandwidth for each port, so the maximum total
+    # throughput will be DEFAULT_MAX_BANDWIDTH * DEFAULT_NUM_PORTS.
     DEFAULT_MAX_BANDWIDTH = '10000M'
     DEFAULT_NUM_PORTS = 4
 

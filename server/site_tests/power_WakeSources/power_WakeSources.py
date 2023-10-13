@@ -78,12 +78,20 @@ class power_WakeSources(test.test):
 
         @param wake_source: Wake source that has been tested.
         """
+        usb_count = self._get_usb_count()
         if wake_source in ['BASE_ATTACH', 'BASE_DETACH']:
             self._force_base_state(BASE_STATE.RESET)
+        elif wake_source == 'USB_KB':
+            self._host.servo.set_nocheck('init_usb_keyboard', 'off')
+            usb_count -= 1
         elif wake_source in ['TABLET_MODE_ON', 'TABLET_MODE_OFF']:
             self._force_tablet_mode(TABLET_MODE.RESET)
         elif wake_source in ['AC_CONNECTED', 'AC_DISCONNECTED']:
             self._chg_manager.start_charging()
+        # Servo PD role change may cause Servo's USB devices reset.
+        # Ensure any PD role change in previous wake source test will not
+        # interrupt the next suspension.
+        self._wait_until_usb_count_match(usb_count)
 
     def _before_suspend(self, wake_source):
         """Prep before suspend.

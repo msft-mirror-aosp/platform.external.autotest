@@ -17,6 +17,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
+ATTRIBUTES = "suite:lacros_power_dashboard"
 
 EXTENDED_TIMEOUT = 18000  # 40 mins of Idle + 4 hours charging + 20 mins guard.
 

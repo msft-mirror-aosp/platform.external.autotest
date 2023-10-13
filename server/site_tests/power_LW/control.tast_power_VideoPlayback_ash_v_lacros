@@ -18,6 +18,7 @@ METADATA = {
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 EXTENDED_TIMEOUT = 30000  # 3.3 hours of VPB + 4 hours charging + 1 hour guard.
+ATTRIBUTES = "suite:lacros_power_dashboard"
 
 from autotest_lib.client.common_lib import utils
 

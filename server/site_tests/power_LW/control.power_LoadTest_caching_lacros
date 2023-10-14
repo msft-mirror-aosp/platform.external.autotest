@@ -14,6 +14,8 @@ TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 ATTRIBUTES = "suite:lacros_power_dashboard"
 
+EXTENDED_TIMEOUT = 57600  # 3 hours charging + 12 hours of PLT + 1 hour guard.
+
 from autotest_lib.client.common_lib import utils
 
 args_dict = utils.args_to_dict(args)

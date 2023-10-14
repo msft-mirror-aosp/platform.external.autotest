@@ -1,0 +1,49 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description
+# Use force discharge to drain the DUT battery.
+
+# Sample usage:
+# test_that <ip address of DUT> power_BatteryDrainControl.args \
+# --args 'drain_to_percent=90'
+
+# test_that <ip address of DUT> power_BatteryChargeControl.args \
+# --args 'drain_to_percent=90 --drain_timeout=3600'
+
+# What are the parameters:
+# drain_to_percent: percent of charge capacity to drain to. Default value of 75.
+#                   Optional.
+# drain_timeout: seconds after which to timeout. Default value of 14400 (4
+#                hours). Optional.
+
+NAME = "power_BatteryChargeControl.args"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:1361410",
+    "criteria": "",
+    "hw_agnostic": False
+}
+ATTRIBUTES = ""
+TEST_TYPE = "server"
+
+from autotest_lib.server import utils
+
+args_dict = utils.args_to_dict(args)
+# drain to percent defaults to 75, as that's the most common discharge target.
+drain_to_percent = args_dict.get('drain_to_percent', 75)
+# default to 4 hours of draining, which is a good compromise between not
+# draining for too long and timing out if draining the battery is taking too
+# long.
+percent_target_charge = args_dict.get('drain_timeout', 4 * 60 * 60)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test("power_BatteryDrainControl",
+                 tag=NAME.split('.')[1],
+                 host=host,
+                 drain_to_percent=drain_to_percent,
+                 drain_timeout=drain_timeout)
+
+parallel_simple(run, machines)

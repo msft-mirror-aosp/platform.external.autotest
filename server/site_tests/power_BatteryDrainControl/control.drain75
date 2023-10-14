@@ -1,0 +1,33 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Description
+# Use force discharge to drain the battery to 75%. Times out after 4 hours.
+
+# Sample usage:
+# test_that <ip address of DUT> power_BatteryChargeControl.drain75
+
+NAME = "power_BatteryDrainControl.drain75"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com"],
+    "bug_component": "b:1361410",
+    "criteria": "",
+    "hw_agnostic": False
+}
+TEST_TYPE = "server"
+
+from autotest_lib.server import utils
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+
+    job.run_test("power_BatteryDrainControl",
+                 tag=NAME.split('.')[1],
+                 host=host,
+                 drain_to_percent=75,
+                 drain_timeout=4*60*60)
+
+parallel_simple(run, machines)

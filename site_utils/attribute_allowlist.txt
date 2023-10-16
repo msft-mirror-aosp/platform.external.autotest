@@ -852,6 +852,8 @@ suite:network_nightly
 suite:offloads
 suite:omaha_per-week
 suite:partners
+suite:pasit_fast
+suite:pasit_full
 suite:perfalerts
 suite:performance_cuj
 suite:performance_cuj_benchmarks

@@ -423,6 +423,8 @@ CONFIG['SPLIT_BY_BITS_MODULES'] = [
         'CtsDeqpTestCases.dEQP-VK',
 ]
 
+CONFIG['SHARD_COUNT'] = {'CtsDeqpTestCases': 10}
+
 CONFIG['CAMERA_MODULES'] = [
         # CONTAINS ONLY CAMERA TESTS
         'CtsCameraTestCases',

@@ -51,6 +51,9 @@ class chromium_Graphics(test.test):
         self.server_pkg = chrome_sideloader.chromite_deploy_chrome(
                 self.host, self.args_dict.get('lacros_gcs_path'), archive_type)
 
+        os.environ['GTEST_TOTAL_SHARDS'] = self.args_dict.get('total_shards', 1)
+        os.environ['GTEST_SHARD_INDEX'] = self.args_dict.get('shard_index', 0)
+
         # The test script needs to know it is running in Skylab environment.
         os.environ['RUNNING_IN_SKYLAB'] = '1'
 

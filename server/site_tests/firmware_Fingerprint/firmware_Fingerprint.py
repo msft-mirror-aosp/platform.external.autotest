@@ -54,6 +54,9 @@ class firmware_Fingerprint(FingerprintTest):
                 self.test_rdp1()
             elif self._test_exe == 'rdp0.sh':
                 self.test_rdp0()
+            else:
+                logging.info('Running test: %s', self._test_exe)
+                self.run_test(self._test_exe, *self._test_exe_args)
         else:
             logging.info('Running test: %s', self._test_exe)
             self.run_test(self._test_exe, *self._test_exe_args)

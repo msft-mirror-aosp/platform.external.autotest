@@ -25,6 +25,7 @@ Run the Tast tests designed specifically for CMW500.
 import json
 import tempfile
 import yaml
+from autotest_lib.server.site_tests.tast import tast
 
 def run(machine):
     host = hosts.create_host(machine)

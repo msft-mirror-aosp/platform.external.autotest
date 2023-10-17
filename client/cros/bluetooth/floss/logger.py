@@ -47,3 +47,8 @@ class FlossLogger:
         """
         self.proxy().SetDebugLogging(enable)
         return True
+
+    @glib_call(False)
+    def has_proxy(self):
+        """Checks whether logger proxy can be acquired."""
+        return bool(self.proxy())

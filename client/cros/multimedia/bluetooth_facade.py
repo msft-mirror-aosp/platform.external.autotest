@@ -4689,11 +4689,27 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self._restart_cras(enable_floss=True)
 
     def is_bluetoothd_proxy_valid(self):
-        """Checks whether the proxy objects for Floss are ok."""
-        return all([
+        """Checks whether the proxy objects for Floss are ok and registers
+        client callbacks.
+        """
+        proxy_ready = all([
                 self.manager_client.has_proxy(),
-                self.adapter_client.has_proxy()
+                self.adapter_client.has_proxy(),
+                self.advertising_client.has_proxy(),
+                self.gatt_client.has_proxy(),
+                self.media_client.has_proxy(),
+                self.socket_client.has_proxy(),
+                self.admin_client.has_proxy(),
+                self.scanner_client.has_proxy(),
+                self.battery_client.has_proxy(),
+                self.floss_logger.has_proxy()
         ])
+
+        if not proxy_ready:
+            logging.info('some proxy has not yet ready')
+            return False
+
+        return self.register_clients_callback()
 
     def is_bluetoothd_running(self):
         """Checks whether Floss daemon is running."""
@@ -4712,7 +4728,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @param kernel_vb: verbosity of kernel debug log (ignored in Floss).
         """
         self.enable_floss_debug = bool(floss_vb)
-        if self.is_bluetoothd_proxy_valid():
+        if self.floss_logger.has_proxy():
             self.floss_logger.set_debug_logging(self.enable_floss_debug)
         return
 
@@ -4753,6 +4769,39 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Check if adapter is discovering."""
         return self.adapter_client.is_discovering()
 
+    def register_clients_callback(self):
+        """Register callback for all interfaces.
+
+        @return True on success, False otherwise.
+
+        """
+        if not self.adapter_client.register_callbacks():
+            logging.error('adapter_client: Failed to register callbacks')
+            return False
+        if not self.advertising_client.register_advertiser_callback():
+            logging.error('advertising_client: Failed to register '
+                          'advertiser callbacks')
+            return False
+        if not self.media_client.register_callback():
+            logging.error('media_client: Failed to register callbacks')
+            return False
+        if not self.socket_client.register_callbacks():
+            logging.error('socket_client: Failed to register callbacks')
+            return False
+        if not self.gatt_client.register_client(self.FAKE_GATT_APP_ID, False):
+            logging.error('gatt_client: Failed to register callbacks')
+            return False
+        if not self.admin_client.register_admin_policy_callback():
+            logging.error('admin_client: Failed to register callbacks')
+            return False
+        if not self.scanner_client.register_scanner_callback():
+            logging.error('scanner_client: Failed to register callbacks')
+            return False
+        if not self.battery_client.register_battery_callback():
+            logging.error('battery_client: Failed to register callbacks')
+            return False
+        return True
+
     def is_powered_on(self):
         """Gets whether the default adapter is enabled."""
         default_adapter = self.manager_client.get_default_adapter()
@@ -4764,9 +4813,6 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         def _is_adapter_down(client):
             return lambda: not client.has_proxy()
-
-        def _is_adapter_ready(client):
-            return lambda: client.has_proxy() and client.get_address()
 
         if powered and not self.manager_client.has_default_adapter():
             logging.warning('set_powered: Default adapter not available.')
@@ -4790,7 +4836,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
             try:
                 utils.poll_for_condition(
-                        condition=_is_adapter_ready(self.adapter_client),
+                        condition=lambda: self.is_bluetoothd_proxy_valid(
+                        ) and self.adapter_client.get_address(),
                         desc='Wait for adapter start',
                         sleep_interval=self.ADAPTER_CLIENT_POLL_INTERVAL,
                         timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
@@ -4800,35 +4847,6 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 return False
 
             self.floss_logger.set_debug_logging(self.enable_floss_debug)
-
-            # We need to observe callbacks for proper operation.
-            if not self.adapter_client.register_callbacks():
-                logging.error('adapter_client: Failed to register callbacks')
-                return False
-            if not self.advertising_client.register_advertiser_callback():
-                logging.error('advertising_client: Failed to register '
-                              'advertiser callbacks')
-                return False
-            if not self.media_client.register_callback():
-                logging.error('media_client: Failed to register callbacks')
-                return False
-
-            if not self.socket_client.register_callbacks():
-                logging.error('socket_client: Failed to register callbacks')
-                return False
-            if not self.gatt_client.register_client(self.FAKE_GATT_APP_ID,
-                                                    False):
-                logging.error('gatt_client: Failed to register callbacks')
-                return False
-            if not self.admin_client.register_admin_policy_callback():
-                logging.error('admin_client: Failed to register callbacks')
-                return False
-            if not self.scanner_client.register_scanner_callback():
-                logging.error('scanner_client: Failed to register callbacks')
-                return False
-            if not self.battery_client.register_battery_callback():
-                logging.error('battery_client: Failed to register callbacks')
-                return False
         else:
             self.manager_client.stop(default_adapter)
             try:

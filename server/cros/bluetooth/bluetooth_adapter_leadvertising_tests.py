@@ -509,8 +509,8 @@ class bluetooth_AdapterLEAdvertising(
         discover_time = self.get_host_discovery_time(num_adv)
 
         for i in range(0, num_adv):
-            res = self.test_peer_received_correct_adv(peer, advertisements[i],
-                                                      discover_time)
+            self.test_peer_received_correct_adv(peer, advertisements[i],
+                                                discover_time)
 
         # Clean up the advertising sets so that next test won't be affected.
         self.test_reset_advertising()
@@ -549,8 +549,8 @@ class bluetooth_AdapterLEAdvertising(
 
         # Verify they can all be discovered
         for i in range(0, num_adv):
-            res = self.test_peer_received_correct_adv(peer, advertisements[i],
-                                                      discover_time)
+            self.test_peer_received_correct_adv(peer, advertisements[i],
+                                                discover_time)
 
         # Enter suspend long enough to verify none of the registered
         # advertisements are discoverable. Give a few extra seconds in suspend
@@ -568,8 +568,8 @@ class bluetooth_AdapterLEAdvertising(
 
         # Verify they can not be discovered
         for i in range(0, num_adv):
-            res = self.test_peer_failed_received_correct_adv(
-                    peer, advertisements[i], discover_time)
+            self.test_peer_failed_received_correct_adv(peer, advertisements[i],
+                                                       discover_time)
 
         # Wait for device to come out of suspend
         logging.debug('test_wait_for_resume(resume_timeout=%d, start_time=%s)',
@@ -581,9 +581,11 @@ class bluetooth_AdapterLEAdvertising(
 
         # Verify reception of advertisements again
         for i in range(0, num_adv):
-            res = self.test_peer_received_correct_adv(peer, advertisements[i],
-                                                      discover_time)
+            self.test_peer_received_correct_adv(peer, advertisements[i],
+                                                discover_time)
 
+        # Clean up the advertising sets so that next test won't be affected.
+        self.test_reset_advertising()
 
     @test_case_log
     def test_case_SI200_RA3_CD_UA3(self):

@@ -23,7 +23,6 @@ from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS, HFP_WBS_MEDIUM,
         AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH, DATA_DIR, VISQOL_PATH,
         VISQOL_SIMILARITY_MODEL, VISQOL_TEST_DIR, AUDIO_RECORD_DIR,
-        AUDIO_SERVER, PULSEAUDIO, A2DP_CODEC,
         audio_test_data, get_audio_test_data, get_visqol_binary)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
     BluetoothAdapterTests, test_retry_and_log)
@@ -287,75 +286,15 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             logging.warn('failed to call dump_diagnostics()')
 
 
-    def generate_audio_config(self, test_specific_audio_config):
-        """Generate the audio config.
-
-        Generate a default audio config. Update the config with any test
-        specific audio config.
-
-        @param test_specific_audio_config: the test specific audio config
-                that will be used to update the default one.
-        """
-        if A2DP_CODEC in test_specific_audio_config:
-            codec = test_specific_audio_config[A2DP_CODEC]
-            audio_server = self.AUDIO_SERVER_CHOICE.get(codec)
-            if audio_server:
-                test_specific_audio_config[AUDIO_SERVER] = audio_server
-
-        self._audio_config = self.DEFAULT_ADUIO_CONFIG.copy()
-        self._audio_config.update(test_specific_audio_config)
-        logging.debug("audio_config: %s", self._audio_config)
-
-
-    def cleanup_audio_config(self):
-        """Clean up the audio config.
-
-        Clean up both self._audio_config.
-        """
-        self._audio_config = {}
-
-
-    def get_audio_server_name(self):
-        """Get the audio server name from the audio config.
-
-        @returns: the audio server name
-        """
-        return self._audio_config.get(AUDIO_SERVER)
-
-
-    def get_a2dp_codec_name(self):
-        """Get the audio a2dp codec from the audio config.
-
-        @returns: the a2dp codec
-        """
-        return self._audio_config.get(A2DP_CODEC)
-
-
-    def is_a2dp_profile(self, test_profile):
-        """Is the test_profile an A2DP profile?
-
-        @returns: True if the test_profile is an A2DP profile.
-        """
-        return test_profile.startswith(A2DP)
-
-
-    def initialize_bluetooth_audio(self, device, test_profile, audio_config):
+    def initialize_bluetooth_audio(self, device, test_profile):
         """Initialize the Bluetooth audio task.
 
         Note: pulseaudio is not stable. Need to restart it in the beginning.
 
         @param device: the bluetooth peer device
         @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
-        @param audio_config: the test specific audio config that will be used
-                to update the default one
 
         """
-        self.generate_audio_config(audio_config)
-
-        audio_server = self.get_audio_server_name()
-        if audio_server != PULSEAUDIO:
-            raise error.TestError('%s not supported' % audio_server)
-
         if not self.bluetooth_facade.create_audio_record_directory(
                 AUDIO_RECORD_DIR):
             raise error.TestError('Failed to create %s on the DUT' %
@@ -386,8 +325,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param test_profile: the test profile used, A2DP, HFP_WBS or HFP_NBS
 
         """
-        self.cleanup_audio_config()
-
         if device.StopPulseaudio():
             logging.debug('pulseaudio is stopped.')
         else:

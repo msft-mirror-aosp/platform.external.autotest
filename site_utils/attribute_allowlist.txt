@@ -809,6 +809,7 @@ suite:kernel_per-build_benchmarks
 suite:kernel_per-build_regression
 suite:kiosk_longevity
 suite:labqual
+suite:labqual_informational
 suite:labstation_verification
 suite:lacros_power_dashboard
 suite:lacros-version-skew-beta

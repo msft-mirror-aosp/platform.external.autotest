@@ -1,0 +1,41 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "Fleet Infra Software team"
+NAME = "labqual informational"
+METADATA = {
+        "contacts": ["peep-fleet-infra-sw@google.com"],
+        "bug_component": "b:1032353", # Chrome Operations > Fleet > Software > OS Fleet Automation
+        "criteria": "Run Tast tests for Labqual"
+}
+PURPOSE = "Suite which contains new experimental tests to qualify os and firmware for low-touch lab"
+
+TIME = "MEDIUM"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This is the labqual2 test suite whcih is currently in informational stages.
+
+It will be used to qualify DUTs for low-touch lab deployment in the future.
+This suite focuses on updating and recovery since these are critical for the low-touch lab. In the future DUTs must pass these tests 100% before entering the lab, so only tests that are critical should be included.
+
+@param build: The name of the image to test.
+              Ex: x86-mario-release/R17-1412.33.0-a1-b29
+@param board: The board to test on.  Ex: x86-mario
+@param pool: The pool of machines to utilize for scheduling. If pool=None
+             board is used.
+@param check_hosts: require appropriate live hosts to exist in the lab.
+@param SKIP_IMAGE: (optional) If present and True, don't re-image devices.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = 'labqual_informational'
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

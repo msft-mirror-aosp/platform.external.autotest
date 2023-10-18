@@ -104,6 +104,7 @@ def control_brightness():
     dim_ms = 0  # 0 means no limit
     prefs = {
             'disable_idle_suspend': 1,
+            'ignore_external_policy': 1,
             'has_ambient_light_sensor': 0,
             'plugged_dim_ms': dim_ms,
             'plugged_off_ms': dim_ms,

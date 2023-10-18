@@ -95,9 +95,12 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
             return ('Signal too weak on at least one antenna (%s dBm)' %
                     antenna_signal_levels)
 
+        # Raise TestWarning when signal variance is high.
         if max_signal - min_signal > self.ANTENNA_VARIANCE_THRESHOLD:
-            return ('Antenna signals vary significantly (%s dBm)' %
+            raise error.TestWarn(
+                    'Antenna signals vary significantly (%s dBm)' %
                     antenna_signal_levels)
+            return None
 
         return None
 

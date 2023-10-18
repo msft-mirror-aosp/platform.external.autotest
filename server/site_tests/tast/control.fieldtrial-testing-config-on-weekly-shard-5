@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 #
 AUTHOR = 'ChromeOS Experimentation Working Group (cros-exp-wg+weeklyrun@google.com)'
-NAME = 'tast.fieldtrial-testing-config-on-weekly-shard-0'
+NAME = 'tast.fieldtrial-testing-config-on-weekly-shard-5'
 METADATA = {
     'contacts': ['cros-exp-wg+weeklyrun@google.com'],
     'bug_component': 'b:1427888', # ChromeOS > Data > Engineering > Experimentation > Test Failures
@@ -33,7 +33,7 @@ def run(machine):
                  test_exprs=['("group:mainline" && !informational)'],
                  ignore_test_failures=True, max_run_sec=10800,
                  totalshards=10,
-                 shardindex=0,
+                 shardindex=5,
                  command_args=args,
                  varslist=[experiments_enabled])
 parallel_simple(run, machines)

@@ -11,10 +11,9 @@ import logging
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, A2DP_MEDIUM, A2DP_LONG, A2DP_RATE_44100, AVRCP,
-        HFP_WBS, HFP_NBS, HFP_WBS_MEDIUM, HFP_NBS_MEDIUM,
-        AUDIO_SERVER, PULSEAUDIO, PIPEWIRE, A2DP_CODEC, AAC, SBC,
-        CAP_PIPEWIRE)
+        A2DP, A2DP_MEDIUM, A2DP_LONG, A2DP_RATE_44100, AVRCP, HFP_WBS, HFP_NBS,
+        HFP_WBS_MEDIUM, HFP_NBS_MEDIUM,
+        AUDIO_SERVER, PULSEAUDIO, A2DP_CODEC, SBC)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -33,7 +32,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     DEFAULT_ADUIO_CONFIG = {AUDIO_SERVER : PULSEAUDIO, A2DP_CODEC : SBC}
 
     # This is temporary. All codecs will be served by PIPEWIRE eventually.
-    AUDIO_SERVER_CHOICE = {SBC : PULSEAUDIO, AAC : PIPEWIRE}
+    AUDIO_SERVER_CHOICE = {SBC : PULSEAUDIO}
 
     def au_run_method(self, device, test_method, test_profile, audio_config={}):
         """audio procedure of running a specified test method.
@@ -113,13 +112,6 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         """A2DP test with sinewaves on the two channels."""
         self._au_a2dp_test(A2DP)
 
-
-    @test_wrapper('A2DP sinewave test with the AAC codec',
-                  devices={'BLUETOOTH_AUDIO': ((CAP_PIPEWIRE),)},
-                  supports_floss=True)
-    def au_a2dp_aac_test(self):
-        """A2DP test with sinewaves with the AAC codec."""
-        self._au_a2dp_test(A2DP, audio_config={A2DP_CODEC: AAC})
 
     # The A2DP long test is a stress test. Exclude it from the AVL.
     @test_wrapper('A2DP sinewave long test',

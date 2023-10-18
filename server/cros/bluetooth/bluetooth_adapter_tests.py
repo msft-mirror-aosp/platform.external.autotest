@@ -30,7 +30,7 @@ from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.cros.chameleon import chameleon
 from autotest_lib.server.cros.bluetooth import bluetooth_test_utils
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, CODEC_DICT, CAP_PIPEWIRE)
+        A2DP, CODEC_DICT)
 from autotest_lib.server import test
 
 from autotest_lib.client.bin.input.linux_input import (
@@ -133,42 +133,6 @@ LE_HID_RECONNECT_TIME_MAX_SEC = 3
 ADV_TX_POWER_NO_PREFERENCE = 127
 
 
-def get_num_devices(cap_reqs):
-    """Get the number of devices.
-
-    cap_reqs may look like
-    - 1
-    - (('PIPEWIRE'),)
-
-    In the 1st case, one device is needed.
-    In the 2nd case, len(('PIPEWIRE'),) indicates one device,
-            which supports `PIPEWIRE`, is needed.
-
-    @param cap_reqs: capability requirements
-
-    @returns: the number of devices
-
-    """
-    return len(cap_reqs) if type(cap_reqs) is tuple else cap_reqs
-
-
-def calc_total_num_devices(devices):
-    """Compute the total number of devices.
-
-    Case 1:
-      devices={"KEYBOARD": 1, "MOUSE": 1}
-      returns 2 in this case
-
-    Case 2:
-      devices={'BLUETOOTH_AUDIO': (('PIPEWIRE'),)},
-      returns 1 in this case
-
-    @returns: the number of devices
-
-    """
-    return sum([get_num_devices(cap_reqs) for cap_reqs in devices.values()])
-
-
 def method_name():
     """Get the method name of a class.
 
@@ -210,8 +174,7 @@ def get_bluetooth_emulated_device(btpeer, device_type):
     @param btpeer: the Bluetooth peer device
     @param device_type : the bluetooth device type, e.g., 'MOUSE'
 
-    @returns: the device object if the btpeer can emulate the device type;
-              or None if the btpeer does not meet the capability requirements
+    @returns: the bluetooth device object
 
     """
 
@@ -1078,15 +1041,11 @@ class BluetoothAdapterTests(test.test):
         else:
             device.AdapterPowerOff()
 
-    def get_device_rasp(self, device_configs, on_start=True):
+    def get_device_rasp(self, device_num, on_start=True):
         """Get all bluetooth device objects from Bluetooth peer devices
         This method should be called only after group_btpeers_type
-        @param device_configs: a dict which specifies either the number of
-                devices needed for each device_type, or the capability
-                requirements of the btpeer. Hence, the `key: value` pair can be
-                - `device_type: number`, or
-                - `device_type: cap_reqs`, where cap_reqs represents the
-                  capability requirements
+        @param device_num : dict of {device_type:number}, to specify the number
+                            of device needed for each device_type.
 
         @param on_start: boolean describing whether the requested clear is for a
                             new test, or in the middle of a current one
@@ -1094,10 +1053,8 @@ class BluetoothAdapterTests(test.test):
         @returns: True if Success.
         """
 
-        logging.info("in get_device_rasp %s onstart %s",
-                     device_configs, on_start)
-        total_num_devices = calc_total_num_devices(device_configs)
-        logging.info('total_num_devices: %d', total_num_devices)
+        logging.info("in get_device_rasp %s onstart %s", device_num, on_start)
+        total_num_devices = sum(device_num.values())
         if total_num_devices > len(self.host.btpeer_list):
             logging.error(
                     'Total number of devices %s is greater than the'
@@ -1105,23 +1062,17 @@ class BluetoothAdapterTests(test.test):
                     len(self.host.btpeer_list))
             return False
 
-        # TODO: the device types with special cap_reqs, i.e., capability
-        # requirements, should be allocated first.
-        for device_type, cap_reqs in device_configs.items():
-            number = get_num_devices(cap_reqs)
+        for device_type, number in device_num.items():
+            total_num_devices += number
             if len(self.btpeer_group[device_type]) < number:
                 logging.error('Number of Bluetooth peers with device type'
                       '%s is %d, which is less then needed %d', device_type,
                       len(self.btpeer_group[device_type]), number)
                 return False
 
-            for btpeer in self.btpeer_group[device_type]:
+            for btpeer in self.btpeer_group[device_type][:number]:
                 logging.info("getting emulated %s", device_type)
                 device = self.reset_btpeer(btpeer, device_type, on_start)
-                # If device is None, the btpeer does not meet the
-                # capability requirements.
-                if device is None:
-                    continue
 
                 self.devices[device_type].append(device)
 
@@ -1130,17 +1081,6 @@ class BluetoothAdapterTests(test.test):
                 for temp_device in SUPPORTED_DEVICE_TYPES:
                     if btpeer in self.btpeer_group[temp_device]:
                         self.btpeer_group[temp_device].remove(btpeer)
-
-                emulated_count = len(self.devices[device_type])
-                if emulated_count >= number:
-                    break
-            else:
-                logging.info("Emulated devices: %s", self.devices)
-                raise error.TestNAError('No sufficient %s peers supporting %s' %
-                                        (device_type, cap_reqs))
-            logging.info("Number of emulated %s: %d", device_type,
-                         emulated_count)
-        logging.info("getting emulated devices %s", self.devices)
 
         return True
 
@@ -1167,6 +1107,7 @@ class BluetoothAdapterTests(test.test):
         """Get the bluetooth device object.
 
         @param device_type : the bluetooth device type, e.g., 'MOUSE'
+
         @param on_start: boolean describing whether the requested clear is for a
                             new test, or in the middle of a current one
 

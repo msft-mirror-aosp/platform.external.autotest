@@ -39,10 +39,6 @@ EXPECT_PEER_WAKE_SUSPEND_SEC = 60
 EXPECT_PEER_WAKE_RESUME_BY = 30
 
 
-get_num_devices = bluetooth_adapter_tests.get_num_devices
-calc_total_num_devices = bluetooth_adapter_tests.calc_total_num_devices
-
-
 class BluetoothAdapterQuickTests(
         bluetooth_adapter_tests.BluetoothAdapterTests,
         bluetooth_quick_tests_base.BluetoothQuickTestsBase):
@@ -52,13 +48,7 @@ class BluetoothAdapterQuickTests(
 
 
     def restart_peers(self):
-        """Restart and clear peer devices
-
-        This method is called when the peers have to be restarted in
-        the middle of a test. For example, auto_reconnect_loop() in
-        bluetooth_adapter_pairing_tests.py calls this method to
-        restart peers to verify reconnection.
-        """
+        """Restart and clear peer devices"""
         # Restart the link to device
         logging.info('Restarting peer devices...')
 
@@ -73,19 +63,12 @@ class BluetoothAdapterQuickTests(
                     self.get_device(device_type, on_start=False)
 
 
-    def start_peers(self, device_configs):
-        """Start peer devices
-
-        This method is called when a test is just started in the beginning.
-
-        @param device_configs: a dict which specifies either the number of
-                devices needed for each device_type, or the capability
-                requirements of the btpeer.
-        """
+    def start_peers(self, devices):
+        """Start peer devices"""
         # Start the link to devices
         if self.use_btpeer:
             logging.info('Starting peer devices...')
-            self.get_device_rasp(device_configs)
+            self.get_device_rasp(devices)
 
             # Grab all the devices to verify RSSI
             devices = []
@@ -383,22 +366,15 @@ class BluetoothAdapterQuickTests(
 
     def quick_test_test_pretest(self,
                                 test_name=None,
-                                device_configs={},
+                                devices={},
                                 use_all_peers=False,
                                 supports_floss=False):
         """Runs pretest checks and resets DUT's adapter and peer devices.
 
            @param test_name: the name of the test to log.
-           @param device_configs: map of the device types and values
-                           There are two possibilities of the values
-                           (1) the quantities needed for the test.
-                               For example, {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
-                           (2) a tuple of tuples of required capabilities, e.g.,
-                               devices={'BLUETOOTH_AUDIO':
-                                            (('PIPEWIRE', 'LE_AUDIO'),)}
-                               which requires a BLUETOOTH_AUDIO device with
-                               the capabilities of support PIPEWIRE and LE_AUDIO
-                               adapter.
+           @param devices: map of the device types and the quantities needed for
+                           the test.
+                           For example, {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
            @param use_all_peers: Set number of devices to be used to the
                                  maximum available. This is used for tests
                                  like bluetooth_PeerVerify which uses all
@@ -411,8 +387,7 @@ class BluetoothAdapterQuickTests(
             """Checks if enough peer devices are available."""
 
             # Check that btpeer has all required devices before running
-            for device_type, cap_reqs in device_configs.items():
-                number = get_num_devices(cap_reqs)
+            for device_type, number in devices.items():
                 if self.available_devices.get(device_type, 0) < number:
                     logging.info('SKIPPING TEST %s', test_name)
                     logging.info('%s not available', device_type)
@@ -420,7 +395,7 @@ class BluetoothAdapterQuickTests(
                     return False
 
             # Check if there are enough peers
-            total_num_devices = calc_total_num_devices(device_configs)
+            total_num_devices = sum(devices.values())
             if total_num_devices > len(self.host.btpeer_list):
                 logging.info('SKIPPING TEST %s', test_name)
                 logging.info(
@@ -432,9 +407,8 @@ class BluetoothAdapterQuickTests(
             return True
 
         if use_all_peers:
-            if device_configs != {}:
-                device_configs[list(device_configs.keys())[0]] = len(
-                        self.host.btpeer_list)
+            if devices != {}:
+                devices[list(devices.keys())[0]] = len(self.host.btpeer_list)
 
         if not _is_enough_peers_present(self):
             logging.info('Not enough peer available')
@@ -472,7 +446,7 @@ class BluetoothAdapterQuickTests(
         # Initialize bluetooth_adapter_tests class (also clears self.fails)
         self.initialize()
         # Start and peer HID devices
-        self.start_peers(device_configs)
+        self.start_peers(devices)
 
         time.sleep(self.TEST_SLEEP_SECS)
         self.log_message('Starting test: %s' % test_name)

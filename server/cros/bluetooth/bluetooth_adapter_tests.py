@@ -169,28 +169,6 @@ def calc_total_num_devices(devices):
     return sum([get_num_devices(cap_reqs) for cap_reqs in devices.values()])
 
 
-def get_device_capability_requirements(cap_reqs):
-    """Get the capability requirements of devices.
-
-    cap_reqs may look like
-    - 1
-    - (('PIPEWIRE'),)
-
-    In the 1st case, 1 means one device without capability requirements.
-            returns () in this case.
-
-    In the 2nd case, len(('PIPEWIRE'),) indicates one device,
-            which supports `PIPEWIRE`, is needed.
-            returns (('PIPEWIRE'),) in this case.
-
-    @param cap_reqs: capability requirements
-
-    @returns: the number of devices
-
-    """
-    return cap_reqs if type(cap_reqs) is tuple else ()
-
-
 def method_name():
     """Get the method name of a class.
 
@@ -226,12 +204,11 @@ def _run_method(method, method_name, *args, **kwargs):
     return result
 
 
-def get_bluetooth_emulated_device(btpeer, device_type, cap_reqs):
+def get_bluetooth_emulated_device(btpeer, device_type):
     """Get the bluetooth emulated device object.
 
     @param btpeer: the Bluetooth peer device
     @param device_type : the bluetooth device type, e.g., 'MOUSE'
-    @param cap_reqs: capability requirements
 
     @returns: the device object if the btpeer can emulate the device type;
               or None if the btpeer does not meet the capability requirements
@@ -328,15 +305,6 @@ def get_bluetooth_emulated_device(btpeer, device_type, cap_reqs):
 
     device.address = _retry_device_method('GetLocalBluetoothAddress')
     logging.info('address: %s', device.address)
-
-    device.cap_reqs = get_device_capability_requirements(cap_reqs)
-    if CAP_PIPEWIRE in device.cap_reqs:
-        device.pipewire = device._capabilities.get(CAP_PIPEWIRE)
-        logging.info('device pipewire: %s', device.pipewire)
-        if device.pipewire is None:
-            logging.info('%s is not supported on %s',
-                         CAP_PIPEWIRE, device.address)
-            return None
 
     pin_falsy_values = [] if device._has_pin else [None]
     device.pin = _retry_device_method('GetPinCode', pin_falsy_values)
@@ -1149,8 +1117,7 @@ class BluetoothAdapterTests(test.test):
 
             for btpeer in self.btpeer_group[device_type]:
                 logging.info("getting emulated %s", device_type)
-                device = self.reset_btpeer(btpeer, device_type, cap_reqs,
-                                           on_start)
+                device = self.reset_btpeer(btpeer, device_type, on_start)
                 # If device is None, the btpeer does not meet the
                 # capability requirements.
                 if device is None:
@@ -1196,11 +1163,10 @@ class BluetoothAdapterTests(test.test):
 
         return None
 
-    def get_device(self, device_type, cap_reqs, on_start=True):
+    def get_device(self, device_type, on_start=True):
         """Get the bluetooth device object.
 
         @param device_type : the bluetooth device type, e.g., 'MOUSE'
-        @param cap_reqs: capability requirements
         @param on_start: boolean describing whether the requested clear is for a
                             new test, or in the middle of a current one
 
@@ -1208,9 +1174,9 @@ class BluetoothAdapterTests(test.test):
 
         """
 
-        device = self.reset_btpeer(self.host.btpeer, device_type, cap_reqs,
-                                   on_start)
-        self.devices[device_type].append(device)
+        self.devices[device_type].append(
+                self.reset_btpeer(self.host.btpeer, device_type, on_start))
+
         return self.devices[device_type][-1]
 
 
@@ -1243,21 +1209,17 @@ class BluetoothAdapterTests(test.test):
 
         return device
 
-    def reset_btpeer(self, peer, device_type, cap_reqs, clear_device=True):
+    def reset_btpeer(self, peer, device_type, clear_device=True):
         """Reset the btpeer device in order to be used as a different type.
 
         @param peer: the btpeer device to reset with new device type
         @param device_type : the new bluetooth device type, e.g., 'MOUSE'
-        @param cap_reqs: capability requirements
         @param clear_device: whether to clear the device state
 
         @returns: the bluetooth device object
 
         """
-        device = get_bluetooth_emulated_device(peer, device_type, cap_reqs)
-        # If device is None, the peer does not meet the capability requirements.
-        if device is None:
-            return None
+        device = get_bluetooth_emulated_device(peer, device_type)
 
         return self.reset_emulated_device(device, device_type, clear_device)
 

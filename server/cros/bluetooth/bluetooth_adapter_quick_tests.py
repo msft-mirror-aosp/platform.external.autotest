@@ -70,8 +70,7 @@ class BluetoothAdapterQuickTests(
             for device in device_list:
                 if device is not None:
                     logging.info('Restarting %s', device_type)
-                    self.get_device(device_type, device.cap_reqs,
-                                    on_start=False)
+                    self.get_device(device_type, on_start=False)
 
 
     def start_peers(self, device_configs):

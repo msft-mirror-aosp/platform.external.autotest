@@ -1,0 +1,4 @@
+NAME = "fake_test"
+METADATA = {
+    'contacts': ['name@google.com', 'removable@google.com']
+}

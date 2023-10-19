@@ -1,0 +1,4 @@
+NAME = "actions_test"
+METADATA = {
+    'contacts': ['replaceable@google.com', 'removable@google.com']
+}

@@ -1,0 +1,13 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Running this code:
+(for now) there is no cli.  Edit tast_modify.go to
+change what needs to be done to tast test files ("action")
+and how to select which tests are modified ("filter").
+
+`go run .` in this directory
+
+Editing this code:
+Use `go test .` in this directory to execute tests.

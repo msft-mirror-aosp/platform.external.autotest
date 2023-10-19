@@ -1,0 +1,4 @@
+NAME = "filterable_name"
+METADATA = {
+    'contacts': ['replaceable@google.com', 'removable@google.com']
+}

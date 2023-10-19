@@ -1,0 +1,13 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+Running this code:
+(for now) there is no cli.  Edit tauto_modify.py to
+change what needs to be done to control files (an "action")
+and how to select which control files to act on (a "filter").
+`python tauto_modify`
+
+Modifying this code:
+`python -m unittest` to run all unit tests

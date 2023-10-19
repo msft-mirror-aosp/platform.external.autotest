@@ -17,18 +17,22 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
-        BluetoothAdapterAudioTests)
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
-        import BluetoothAdapterHIDReportTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_qr_tests import (
+        BluetoothAdapterQRTests)
 
 from autotest_lib.server.cros.bluetooth.bluetooth_test_utils import (
         BluetoothPolicy)
 
 
-class bluetooth_AdapterEPHealth(BluetoothAdapterQuickTests,
-                                BluetoothAdapterAudioTests,
-                                BluetoothAdapterHIDReportTests):
+class bluetooth_AdapterEPHealth(
+        BluetoothAdapterQuickTests,
+        # HACK: Inherit BluetoothAdapterQRTests here for
+        # BluetoothAdapterHIDReportTests and BluetoothAdapterAudioTests.
+        # Otherwise, there would be MRO issue when inherit
+        # bluetooth_AdapterEPHealth and bluetooth_AdapterSRHealth in
+        # bluetoothQuickHealth.
+        # TODO(b/306337128): Refactor the quick health framework to avoid this.
+        BluetoothAdapterQRTests):
     """A Batch of Bluetooth enterprise policy health tests."""
 
     # A delay for disconnection to finish.

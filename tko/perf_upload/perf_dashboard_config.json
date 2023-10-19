@@ -463,10 +463,6 @@
     "main_name": "ChromeOSPerf"
   },
   {
-    "autotest_name": "platform_LogoutPerf",
-    "main_name": "ChromeOSPerf"
-  },
-  {
     "autotest_name": "platform_Pkcs11LoadPerf",
     "main_name": "ChromeOSPerf"
   },

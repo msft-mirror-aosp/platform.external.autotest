@@ -3583,8 +3583,13 @@ class BluetoothAdapterTests(test.test):
                 'advertise_data', {}).get('service_data').items()
 
             # Verify that a new advertisement is added.
-            advertisement_added = (self.bluetooth_facade.btmon_find(
-                    'LE Set Extended Advertising Data'))
+            advertisement_added = self.bluetooth_facade.btmon_find(
+                    'LE Set Extended Advertising Data')
+            if not advertisement_added:
+                # Fall back to legacy advertisement.
+                advertisement_added = self.bluetooth_facade.btmon_find(
+                        'LE Set Advertising Data')
+                add_adv_param_str = 'LE Set Advertising Parameters'
         else:
             adv_broadcast = advertisement_data.get('Type') == 'broadcast'
             add_adv_param_str = 'Add Extended Advertising Parameters'
@@ -3655,8 +3660,9 @@ class BluetoothAdapterTests(test.test):
         # If BlueZ is in use, check the new API, MGMT command Add Extended
         # Advertising Parameters, is used no matter if Ext Adv is supported by
         # the controller or not.
-        # If Floss is in use, check the HCI command LE Set Extended Advertising
-        # Parameters is used.
+        # If Floss is in use, check the HCI command between
+        # "LE Set Extended Advertising Parameters" and
+        # "LE Set Advertising Parameters" based on controller's capability.
         # TODO(chromeos-bt-team): Revise this after software rotation is
         #                         supported in Floss.
         new_apis_used = self.bluetooth_facade.btmon_find(add_adv_param_str)

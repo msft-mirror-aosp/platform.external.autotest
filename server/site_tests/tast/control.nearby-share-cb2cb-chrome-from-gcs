@@ -1,0 +1,96 @@
+# Copyright 2021 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import logging
+
+from autotest_lib.client.common_lib.error import TestFail
+from autotest_lib.server.cros import chrome_sideloader
+from autotest_lib.server import utils
+
+AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
+METADATA = {
+    'contacts': ['chromeos-sw-engprod@google.com'],
+    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
+    'criteria': 'Nearby CrOS to CrOS test with sideloaded Chrome',
+    'hw_agnostic': False
+}
+NAME = 'tast.nearby-share-cb2cb-chrome-from-gcs'
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+# This mount point controls the version of chrome to use
+CHROME_MOUNT_POINT = '/opt/google/chrome'
+# Location to put the sideloaded chrome artifacts
+CHROME_DIR = '/usr/local/chrome'
+
+DOC = '''
+Runs the Tast Nearby Share remote tests with a custom chrome binary.
+
+These Nearby Share tests require two chromebooks, so we must provision
+both DUTs with the custom chrome binary before the tests are kicked off.
+
+This test is used by Chrome builder for Nearby Share CI/CQ purposes.
+Chromium builders create Ash Chrome binaries and upload to GCS.
+The archive is expected to include chromite which in turn is used to deploy
+chrome onto both CrOS DUTs.
+
+Tast tests uses the sideloaded version of chrome for testing.
+
+'''
+
+
+def run(machine):
+    primary_dut = hosts.create_host(machine)
+    companions = hosts.create_companion_hosts(companion_hosts)
+    args_dict = utils.args_to_dict(args)
+
+    if not companions:
+        raise TestFail('Missing companion hosts')
+
+    secondary_dut = companions[0]
+
+    logging.info("Running %s on primary_dut: %s and companion_host:%s", NAME,
+                 primary_dut, secondary_dut)
+
+    # TODO(b/292118449): Temporary measure to recuperate space from encrypted stateful.
+    # Remove when the Skylab builders across release channels are fully migrated to chromite.
+    for host in [primary_dut, secondary_dut]:
+      chrome_sideloader.remove_image(host, 'lacros')
+
+    # Setup DUT to use the chrome binary from gcs archive.
+    chrome_sideloader.chromite_deploy_chrome(primary_dut,
+                                             args_dict.get('lacros_gcs_path'),
+                                             'chrome',**args_dict)
+    chrome_sideloader.chromite_deploy_chrome(secondary_dut,
+                                             args_dict.get('secondary_lacros_gcs_path'),
+                                             'chrome',**args_dict)
+
+    max_run_sec=int(args_dict.get('max_run_sec', 10800))
+    retries=int(args_dict.get('retries', 0))
+
+    # Register a clean up callback to reset the chrome mount.
+    def cleanup():
+        for host in [primary_dut, secondary_dut]:
+            chrome_sideloader.cleanup_host(
+                host, CHROME_DIR, CHROME_MOUNT_POINT)
+    job.add_post_run_hook(cleanup)
+
+    job.run_test('tast',
+                 host=primary_dut,
+                 test_exprs=['("group:cross-device-remote" && "cross-device-remote_cq")'],
+                 download_data_lazily=False,
+                 ignore_test_failures=False,
+                 max_run_sec=max_run_sec,
+                 companion_duts={'cd1': secondary_dut},
+                 command_args=args,
+                 clear_tpm=False,
+                 retries=retries)
+
+
+parallel_simple(run, machines)

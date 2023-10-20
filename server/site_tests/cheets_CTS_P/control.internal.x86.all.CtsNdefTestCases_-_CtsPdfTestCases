@@ -34,7 +34,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='x86',
         uri='LATEST',
-        login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
         precondition_commands=['android-sh -c \'setprop ctl.start mdnsd\''],
         timeout=45000)
 

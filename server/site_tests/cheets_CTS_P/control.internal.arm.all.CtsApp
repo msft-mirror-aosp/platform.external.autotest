@@ -35,7 +35,6 @@ def run_TS(machine):
         target_plan=None,
         bundle='arm',
         uri='LATEST',
-        login_precondition_commands=['lsblk -do NAME,RM | sed -n s/1$//p | xargs -n1 eject'],
         timeout=23400)
 
 parallel_simple(run_TS, machines)

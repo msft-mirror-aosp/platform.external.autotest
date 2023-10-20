@@ -64,7 +64,7 @@ class firmware_PDResetHard(FirmwareTest):
         self.restore_ap_on_power_mode()
         super(firmware_PDResetHard, self).cleanup()
 
-    def run_once(self):
+    def run_once(self, dts_mode=False):
         """Execute Power Role swap test.
 
         1. Verify that pd console is accessible
@@ -86,6 +86,14 @@ class firmware_PDResetHard(FirmwareTest):
 
         # Test hard resets initiated by both ends
         self._test_hard_reset(port_pair)
+
+        # Servo and DUT haven't implemented the oriented debug accessory mode.
+        # When servo is a sink in DTS mode, the DUT has no way to detect the CC
+        # polarity and all CC communication will fail. So skip the hard reset
+        # test with the DUT as source if we're in DTS mode.
+        if dts_mode:
+            logging.info('Skip testing with DUT as source in DTS mode')
+            return
 
         # Swap power roles (if possible). Note the pr swap is attempted
         # for both devices in the connection. This ensures that a device

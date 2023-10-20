@@ -55,6 +55,10 @@ WAIT_TIME_LID_TRANSITION_SECS = 5
 # emulator on Servo.
 USB_PRESENT_DELAY = 1
 
+# Time to wait for dark resume listener updating dark resume count in case this
+# process is slower than network reconnection.
+WAIT_DARK_RESUME_COUNT_SECS = 2
+
 
 class power_WakeSources(test.test):
     """
@@ -349,6 +353,7 @@ class power_WakeSources(test.test):
                         'Device did not resume from suspend for %s.' %
                         wake_source)
 
+        time.sleep(WAIT_DARK_RESUME_COUNT_SECS)
         count_after = self._dr_utils.count_dark_resumes()
         if full_wake:
             if count_before != count_after:

@@ -32,12 +32,12 @@ func TestApplyToFile(t *testing.T) {
 	// Testcase declarations.
 	Testcases := map[string]ApplyToFileTestcase{
 		"noop":          {},
-		"appendContact": {Actions: []Action{AppendContactAction("name@email.com")}},
+		"appendContact": {Actions: []Action{AppendContactsAction([]string{"name@email.com"})}},
 		"filteredNoop": {Filters: []Filter{TestFilter([]string{"notAMatch"})},
-			Actions: []Action{AppendContactAction("name@email.com")}},
+			Actions: []Action{AppendContactsAction([]string{"name@email.com"})}},
 		"filteredAppend": {Filters: []Filter{TestFilter([]string{
 			fmt.Sprintf("tast.%s.FilteredAppend", tmpDirName)})},
-			Actions: []Action{AppendContactAction("name@email.com")}},
+			Actions: []Action{AppendContactsAction([]string{"name@email.com"})}},
 	}
 
 	// Iterate through testcases.

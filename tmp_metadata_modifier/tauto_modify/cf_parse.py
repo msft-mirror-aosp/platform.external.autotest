@@ -119,7 +119,7 @@ class ControlFile():
         if not metadata_elt:
             return False
 
-        # Caclulate file offsets for the METADATA declaration.
+        # Calculate file offsets for the METADATA declaration.
         # Note that ast only reports offsets into a specific line, while
         # we need the offset into the entire file.
         lines = self.contents.split("\n")

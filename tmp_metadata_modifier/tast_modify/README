@@ -3,11 +3,14 @@
 # found in the LICENSE file.
 
 Running this code:
-(for now) there is no cli.  Edit tast_modify.go to
-change what needs to be done to tast test files ("action")
-and how to select which tests are modified ("filter").
 
-`go run .` in this directory
+`go run . --help` in this directory to see up-to-date help.
+
+Use flags to indicate what needs to be done to tast test files ("actions")
+and how to select which tests are modified ("filters").
+
+e.g.
+go run . --localOnly --removeContacts="foo@google.com, bar@google.com" --dryRun
 
 Editing this code:
 Use `go test .` in this directory to execute tests.

@@ -48,25 +48,27 @@ func ReplaceContactAction(oldEmail, newEmail string) Action {
 	}
 }
 
-// AppendContactAction returns an action that appends the given email to
-// a test's contacts, deleting it elsewhere in the list if it is
-// already present.
-func AppendContactAction(email string) Action {
+// AppendContactsAction returns an action that appends the given emails to
+// a test's contacts, deleting them elsewhere in the list if already present.
+func AppendContactsAction(emails []string) Action {
 	return func(f *TestFile) (bool, error) {
-		_ = f.RemoveContact(email)
-		contacts := append(f.Contacts(), email)
+		for _, email := range emails {
+			_ = f.RemoveContact(email)
+		}
+		contacts := append(f.Contacts(), emails...)
 		f.SetContacts(contacts)
 		return true, nil
 	}
 }
 
-// PrependContactAction returns an action that prepends the given email to
-// a test's contacts, deleting it elsewhere in the list if it is
-// already present.
-func PrependContactAction(email string) Action {
+// PrependContactsAction returns an action that prepends the given emails to
+// a test's contacts, deleting them elsewhere in the list if already present.
+func PrependContactsAction(emails []string) Action {
 	return func(f *TestFile) (bool, error) {
-		_ = f.RemoveContact(email)
-		contacts := append([]string{email}, f.Contacts()...)
+		for _, email := range emails {
+			_ = f.RemoveContact(email)
+		}
+		contacts := append(emails, f.Contacts()...)
 		f.SetContacts(contacts)
 		return true, nil
 	}

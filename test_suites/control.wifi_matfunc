@@ -5,7 +5,11 @@
 AUTHOR = "wiley@chromium.org"
 NAME = "wifi_matfunc"
 PURPOSE = "Verify basic WiFi functionality."
-
+METADATA = {
+    'contacts': ['chromeos-wifi-champs@google.com'],
+    'bug_component': 'b:893827', # ChromeOS > Platform > Connectivity > WiFi
+    'criteria': 'Test basic WiFi functionalities with stable tests',
+}
 TIME = "SHORT"
 TEST_CATEGORY = "General"
 TEST_CLASS = "suite"
@@ -29,7 +33,7 @@ import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
 args_dict['add_experimental'] = True
-args_dict['max_runtime_mins'] = 60
+args_dict['max_runtime_mins'] = 300
 args_dict['name'] = NAME
 args_dict['job'] = job
 

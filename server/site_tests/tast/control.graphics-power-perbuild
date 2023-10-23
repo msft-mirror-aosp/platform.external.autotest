@@ -11,7 +11,8 @@ METADATA = {
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:graphics_power_per-build'
+# TODO(ihf): remove suite:graphics_per-build once power starts running.
+ATTRIBUTES = 'suite:graphics_power_per-build, suite:graphics_per-build'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

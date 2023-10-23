@@ -182,7 +182,7 @@ class network_WiFi_AttenuatedPerf(wifi_cell_test_base.WiFiCellTestBase):
             used_attens = set([dp.attenuation for dp in throughput_data])
             # Midpoint round to keep results somewhat consistent.
             knee_atten = round(knee_atten)
-            step_size = max(1, self._attenuation_increment // 2)
+            step_size = max(1, int(self._attenuation_increment // 2))
             for atten in range(knee_atten - step_size,
                                knee_atten + step_size + 1, step_size):
                 if atten in used_attens:

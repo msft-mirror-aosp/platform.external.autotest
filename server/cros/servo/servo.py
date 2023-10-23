@@ -447,35 +447,44 @@ class _Uart(object):
         """
         logging.debug('%s capturing %s UART.', 'Start' if start else 'Stop',
                       uart)
-        uart_cmd = '%s_uart_capture' % uart
+        uart_capture = '%s_uart_capture' % uart
+        uart_cmd = '%s_uart_cmd' % uart
         target_level = 'on' if start else 'off'
         level = None
         try:
-            if not self._servo.has_control(uart_cmd):
+            if not self._servo.has_control(uart_capture):
                 logging.debug('Can not start capturing, %s UART not available.',
                                 uart)
                 return False
             # Do our own implementation of set() here as not_applicable
             # should also count as a valid control.
-            logging.debug('Trying to set %s to %s.', uart_cmd, target_level)
-            self._servo.set_nocheck(uart_cmd, target_level)
-            level = self._servo.get(uart_cmd)
+            logging.debug('Trying to set %s to %s.', uart_capture,
+                          target_level)
+            self._servo.set_nocheck(uart_capture, target_level)
+            level = self._servo.get(uart_capture)
         except (error.TestFail, AttributeError) as e:
             # Any sort of test failure here should not stop the test. This
             # is just to capture more output. Log and move on.
             logging.warning('Failed to set %s to %s. %s. Ignoring.',
-                            uart_cmd, target_level, str(e))
+                            uart_capture, target_level, str(e))
         except Exception as e:
             # Consider catching these above. In general uart capture errors
             # should be non fatal
             logging.warning(
                     'Unexpected Exception %r Failed to set %s to '
-                    '%s. %s. Ignoring.', type(e), uart_cmd, target_level,
+                    '%s. %s. Ignoring.', type(e), uart_capture, target_level,
                     str(e))
         if level == target_level:
-            logging.debug('Managed to set %s to %s.', uart_cmd, level)
+            logging.info('Managed to set %s to %s.', uart_capture, level)
+            try:
+                # Send a command, so it's easy to correlate the autotest
+                # timestamps with the uart timestamps.
+                if target_level and self._servo.has_control(uart_cmd):
+                    self._servo.set_nocheck(uart_cmd, 'gettime')
+            except Exception as e:
+                logging.debug('Unable to set %s: e', uart_cmd, e)
         else:
-            logging.debug('Failed to set %s to %s. Got %s.', uart_cmd,
+            logging.debug('Failed to set %s to %s. Got %s.', uart_capture,
                           target_level, level)
         return level == target_level
 

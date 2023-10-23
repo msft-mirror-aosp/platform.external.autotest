@@ -407,6 +407,24 @@ class AudioFacadeRemoteAdapter(object):
         return self._audio_proxy.get_force_sr_bt_enabled()
 
 
+    def set_force_a2dp_advanced_codecs_enabled(self, enabled):
+        """Sets the force a2dp advanced codecs enabled state.
+
+        @param enabled: True to enable; False to disable.
+
+        """
+        self._audio_proxy.set_force_a2dp_advanced_codecs_enabled(enabled)
+
+
+    def get_force_a2dp_advanced_codecs_enabled(self):
+        """Gets the force a2dp advanced codecs enabled state.
+
+        @returns: The bool state of force_a2dp_advanced_codecs_enabled.
+
+        """
+        return self._audio_proxy.get_force_a2dp_advanced_codecs_enabled()
+
+
     def start_arc_recording(self):
         """Starts recording using microphone app in container."""
         self._audio_proxy.start_arc_recording()

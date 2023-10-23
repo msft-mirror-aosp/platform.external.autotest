@@ -1022,6 +1022,20 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
     @test_retry_and_log(False)
+    def test_set_force_a2dp_advanced_codecs_enabled(self, enable):
+        """Sets the force a2dp advanced codecs enabled status to `enabled`.
+
+        @param enable: A bool to be set as the force a2dp advanced codecs
+                       enabled status.
+        """
+        self.audio_facade.set_force_a2dp_advanced_codecs_enabled(enable)
+        enabled = self.audio_facade.get_force_a2dp_advanced_codecs_enabled()
+
+        result_key = 'set_force_a2dp_advanced_codecs_enabled_to_%s' % enable
+        self.results = {result_key: enable == enabled}
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
     def test_check_input_device_sample_rate(self, rate):
         """Checks the input device sample rate.
 

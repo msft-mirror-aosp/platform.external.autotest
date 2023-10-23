@@ -768,6 +768,23 @@ def get_force_hfp_swb_enabled():
     return bool(
             get_cras_control_interface().GetForceHFPSwbEnabled())
 
+def set_force_a2dp_advanced_codecs_enabled(enabled):
+    """Sets the force a2dp advanced codecs enabled state.
+
+    @param enabled: True to enable; False to disable.
+    """
+    get_cras_control_interface().SetForceA2DPAdvancedCodecsEnabled(
+            enabled)
+
+
+def get_force_a2dp_advanced_codecs_enabled():
+    """Gets the force a2dp advanced codecs enabled state.
+
+    @returns: The bool state of force_a2dp_advanced_codecs_enabled.
+    """
+    return bool(
+            get_cras_control_interface().GetForceA2DPAdvancedCodecsEnabled())
+
 
 def set_force_sr_bt_enabled(enabled):
     """Sets the force sr bt enabled state.

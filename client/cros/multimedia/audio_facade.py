@@ -571,6 +571,22 @@ class AudioFacadeLocal(object):
         return cras_utils.get_force_sr_bt_enabled()
 
 
+    def set_force_a2dp_advanced_codecs_enabled(self, enabled):
+        """Sets the force a2dp advanced codecs enabled state.
+
+        @param enabled: True to enable; False to disable.
+
+        """
+        cras_utils.set_force_a2dp_advanced_codecs_enabled(enabled)
+
+    def get_force_a2dp_advanced_codecs_enabled(self):
+        """Gets the force a2dp advanced codecs enabled state.
+
+        @returns: The bool state of force_a2dp_advanced_codecs_enabled.
+
+        """
+        return cras_utils.get_force_a2dp_advanced_codecs_enabled()
+
     @check_arc_resource
     def start_arc_recording(self):
         """Starts recording using microphone app in container."""

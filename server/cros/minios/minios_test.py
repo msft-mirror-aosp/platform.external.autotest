@@ -139,7 +139,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         """
         if not self._skip_provisioning:
             self.provision_dut(build_name=self._get_release_builder_path(),
-                               public_bucket=self._use_public_bucket)
+                               public_bucket=self._use_public_bucket,
+                               is_release_bucket=False)
         if self._wifi_configs:
             self._setup_wifi_context(host, kwargs)
         super(MiniOsTest, self).warmup()

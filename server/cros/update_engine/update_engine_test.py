@@ -1275,8 +1275,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                            archive bucket.
         @param is_release_bucket: If True (default), use release bucket
                                   gs://chromeos-releases else use archive bucket
-                                  gs://chromeos-image-archive. Only used for
-                                  public bucket staging.
+                                  gs://chromeos-image-archive.
         @param public_bucket: True to use a public GS bucket for provisioning
                               when the DUT is not connected to the lab network.
                               False assumes the DUT is connected to the lab
@@ -1347,7 +1346,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         provisioner.ChromiumOSProvisioner(
                 update_url,
                 host=self._host,
-                is_release_bucket=True,
+                is_release_bucket=is_release_bucket,
                 public_bucket=public_bucket,
                 cache_server_url=self._cache_server_url,
                 with_minios=with_minios,

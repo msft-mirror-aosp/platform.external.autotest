@@ -79,10 +79,12 @@ class bluetooth_AdapterCTSHealth(TradefedTest,
                                      self.arc_version)))
         url_config = bundle_utils.load_config(config_path)
         bundle_password = bundle_utils.get_bundle_password(url_config)
+        official_version_name = bundle_utils.get_official_version(url_config)
+        suite_name = bundle_utils.get_suite_name(url_config)
 
         return BundleSpecification(
                 bundle_utils.make_bundle_url(url_config, uri, bundle),
-                bundle_password)
+                bundle_password, official_version_name, suite_name)
 
     def probe_arc_version(self):
         """Detects the installed ARC version."""

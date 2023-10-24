@@ -72,6 +72,7 @@ class Cr50Test(FirmwareTest):
                                     'It will clear testlab mode')
 
         logging.info('Test Args: %r', full_args)
+        logging.info('cmdline Args: %r', cmdline_args)
 
         self._devid = self.gsc.get_devid()
         self.can_set_ccd_level = (not self.servo.main_device_is_ccd()

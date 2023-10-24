@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = "Fleet Infra Software team"
-NAME = "labqual informational"
+NAME = "labqual_informational"
 METADATA = {
         "contacts": ["peep-fleet-infra-sw@google.com"],
         "bug_component": "b:1032353", # Chrome Operations > Fleet > Software > OS Fleet Automation

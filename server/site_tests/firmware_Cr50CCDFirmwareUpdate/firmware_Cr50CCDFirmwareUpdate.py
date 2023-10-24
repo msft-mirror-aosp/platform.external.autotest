@@ -152,11 +152,9 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
                        e.g. the servo type doesn't support this test.
         """
         self.cros_host = host
-        # Get the parent (a.k.a. reference board or baseboard), and hand it
-        # to get_latest_release_version so that it
-        # can use it in search as secondary candidate. For example, bob doesn't
-        # have its own release directory, but its parent, gru does.
-        parent = getattr(self.faft_config, 'parent', None)
+        board = (getattr(self.faft_config, 'parent', None)
+                 or getattr(self.faft_config, 'platform', None))
+        platform = self.cros_host.get_platform()
 
         # Allow faft_config.fw_update_build to override
         # get_latest_release_version().
@@ -168,6 +166,14 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
             logging.info('using fw tarball: %s', self.fw_path)
         else:
             self._download_firmware_from_host()
+            # Find the latest firmware build, so the test can download
+            # npcx_monitor.bin.
+            if 'npcx' in self.servo.get('ec_chip'):
+                try:
+                    self.fw_build = self.cros_host.get_latest_release_version(
+                            platform, board)
+                except:
+                    self.fw_build = None
             logging.info('using EC image: %s', self.ec_fw_path)
             logging.info('using bios image: %s', self.bios_fw_path)
 

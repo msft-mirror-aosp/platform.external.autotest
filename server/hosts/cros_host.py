@@ -1062,7 +1062,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         need_bios = install_bios and not bios_image
         # If the test did not supply a local tarball or local ec and bios
         # images, download the build from the devserver.
-        download_fw = not local_tarball and (need_ec or need_bios)
+        download_fw = not local_tarball and build
         if download_fw:
             logging.info('Will install firmware from build %s.', build)
 
@@ -1075,19 +1075,21 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     dest = tmpd.name
 
                 # Download EC firmware image
-                if install_ec and not ec_image:
+                if install_ec:
                     for filename in ec_candidates:
                         local_filename = os.path.join(dest, filename)
-                        ec_image = self._download_fw_file(
+                        extracted_ec = self._download_fw_file(
                                 ds, build, filename, local_filename)
-                        if ec_image:
-                            # Also download the npcx_monitor.bin file
-                            self._download_fw_file(
+                        if extracted_ec:
+                            # Download the npcx_monitor.bin file
+                            npcx_path = self._download_fw_file(
                                     ds, build,
                                     filename.replace('ec.bin',
                                                      'npcx_monitor.bin'),
                                     local_filename.replace(
                                             'ec.bin', 'npcx_monitor.bin'))
+                            # Use the extracted EC image if we don't have one.
+                            ec_image = ec_image or extracted_ec
                             break
                     else:
                         raise error.TestError(
@@ -1141,8 +1143,8 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
             logging.info('Using local EC image: %s', ec_image)
             if not try_scp and 'npcx' in self.servo.get('ec_chip'):
                 logging.info('Check npcx monitor exists')
-                npcx_path = os.path.join(os.path.dirname(ec_image),
-                                         'npcx_monitor.bin')
+                logging.info('npcx path: %s', npcx_path)
+                logging.info('ec path: %s', ec_image)
                 if not os.path.exists(npcx_path):
                     raise error.TestError('npcx monitor not found at %s' %
                                           npcx_path)

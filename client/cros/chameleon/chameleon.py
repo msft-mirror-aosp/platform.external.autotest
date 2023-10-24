@@ -11,6 +11,7 @@ import six.moves.http_client
 import six
 import logging
 import os
+import re
 import socket
 import time
 from six.moves import range
@@ -253,6 +254,42 @@ class ChameleonBoard(object):
             BluetoothRefController(chameleon_connection)
             )
 
+    def get_rpi_btmon_log(self):
+        """Gets RPI btmon log.
+
+        @return: A string contains all RPI btmon log.
+        """
+        data = self.host.run("btmon -r /var/log/btsnoop.log --no-pager").stdout
+        return data
+
+    def get_btmon_packets(self):
+        """Gets RPI btmon log as a list of packets.
+
+        @return: RPI btmon log as a list of strings represents packets.
+        """
+        # All packets start with one of these three '@', '<' or '>'.
+        split_pattern = r'[@><]'
+        data = self.get_rpi_btmon_log()
+        result = re.split(split_pattern, data)
+        return result
+
+    def find_btmon_patterns(self, patterns):
+        """Finds RPI btmon patterns.
+
+        @param patterns: List of regex patterns to find.
+
+        @return: List of matched patterns.
+        """
+        data = self.get_btmon_packets()
+        matches = []
+        for p in patterns:
+            patterns_match = []
+            for packet in data:
+                match = re.findall(p, packet)
+                if match:
+                    patterns_match.append(match[0])
+            matches.append(patterns_match)
+        return matches
 
     def reset(self):
         """Resets Chameleon board."""
@@ -520,6 +557,12 @@ class ChameleonBoard(object):
         """
         return self._chameleond_proxy.motor_board
 
+    def get_bluetooth_mac_address(self):
+        """Gets the Bluetooth MAC address of Chameleon.
+
+        @return: A string for Bluetooth MAC address.
+        """
+        return self._chameleond_proxy.GetBluetoothMacAddress()
 
     def get_mac_address(self):
         """Gets the MAC address of Chameleon.

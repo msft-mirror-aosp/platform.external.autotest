@@ -460,6 +460,48 @@ class BluetoothBaseFacadeLocal(object):
         # Did we successfully start the cras daemon?
         return started
 
+    def get_btmon_log(self, path):
+        """Gets DUT btmon log.
+
+        @param path: Path for btmon log file.
+
+        @return: DUT btmon log as string.
+        """
+        data = utils.run('btmon -r {} --no-pager'.format(path)).stdout
+        return data
+
+    def get_btmon_packets(self, path):
+        """Gets DUT btmon log as a list of packets.
+
+        @param path: Path for btmon log file.
+
+        @return: DUT btmon log as a list of strings represents packets.
+        """
+        # All packets start with one of these three '@', '<' or '>'.
+        split_pattern = r'[@><]'
+        data = self.get_btmon_log(path)
+        result = re.split(split_pattern, data)
+        return result
+
+    def find_btmon_patterns(self, patterns, path=''):
+        """Finds DUT btmon patterns.
+
+        @param patterns: List of regex patterns to find.
+        @param path: Path for btmon log file.
+
+        @return: List of matched patterns.
+        """
+        data = self.get_btmon_packets(path)
+        matches = []
+        for p in patterns:
+            patterns_match = []
+            for packet in data:
+                match = re.findall(p, packet)
+                if match:
+                    patterns_match.append(match[0])
+            matches.append(patterns_match)
+        return matches
+
     def log_message(self, msg):
         """ log a message to /var/log/messages."""
         try:

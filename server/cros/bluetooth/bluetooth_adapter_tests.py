@@ -791,6 +791,8 @@ class BluetoothAdapterTests(test.test):
             'MOUSE': 'NoInputNoOutput',
     }
 
+    dut_btmon_log_path = ""
+
     def assert_on_fail(self, result, raiseNA=False):
         """ If the called function returns a false-like value, raise an error.
 

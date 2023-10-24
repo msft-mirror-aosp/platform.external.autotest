@@ -86,7 +86,7 @@ def get_suite_name(url_config: Dict[str, str]) -> str:
     """
     url_pattern = url_config[_OFFICIAL_URL_PATTERN]
     suite_name = url_pattern.split('-', 2)[1]
-    valid_suites_set = {'cts', 'gts', 'sts', 'vts'}
+    valid_suites_set = {'cts', 'gts', 'sts', 'vts', 'cts_instant'}
     if suite_name in valid_suites_set:
         return suite_name
     raise NoSuiteNameException(f'Invalid suite name {suite_name}')

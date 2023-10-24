@@ -44,8 +44,9 @@ class firmware_FwScreenPressPower(FirmwareTest):
 
     def wait_longer_fw_screen_and_press_power(self):
         """Wait for firmware screen without timeout and press power button."""
-        logging.info("Sleeping for %s", self.faft_config.dev_screen_timeout)
-        time.sleep(self.faft_config.dev_screen_timeout)
+        logging.info("Sleeping for %s (dev screen timeout)",
+                     self.DEV_SCREEN_TIMEOUT)
+        time.sleep(self.DEV_SCREEN_TIMEOUT)
         self.wait_fw_screen_and_press_power()
 
     def wait_second_screen_and_press_power(self):

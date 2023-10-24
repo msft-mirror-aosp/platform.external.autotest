@@ -121,6 +121,9 @@ class FirmwareTest(test.test):
     # CCD password used by tests.
     CCD_PASSWORD = 'Password'
 
+    # Developer screen timeout: 30 seconds.
+    DEV_SCREEN_TIMEOUT = 30
+
     RESPONSE_TIMEOUT = 180
 
     @classmethod

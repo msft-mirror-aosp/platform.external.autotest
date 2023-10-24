@@ -104,12 +104,11 @@ class firmware_DevScreenTimeout(FirmwareTest):
                        self.fw_time_record['quick_bypass_boot'])
         logging.info('Estimated developer firmware timeout: %s', got_timeout)
 
-        if (abs(got_timeout - self.faft_config.dev_screen_timeout) >
-                    self.TIMEOUT_MARGIN):
+        if (abs(got_timeout - self.DEV_SCREEN_TIMEOUT) > self.TIMEOUT_MARGIN):
             raise error.TestFail(
                     'The developer firmware timeout does not match our spec: '
                     'expected %.2f +/- %.2f but got %.2f.' %
-                    (self.faft_config.dev_screen_timeout, self.TIMEOUT_MARGIN,
+                    (self.DEV_SCREEN_TIMEOUT, self.TIMEOUT_MARGIN,
                      got_timeout))
 
     def initialize(self, host, cmdline_args):

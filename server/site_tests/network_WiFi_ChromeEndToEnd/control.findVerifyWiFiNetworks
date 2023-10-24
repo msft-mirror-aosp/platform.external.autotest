@@ -6,7 +6,7 @@ AUTHOR = 'harpreet, krisr, wiley'
 TIME = 'SHORT'
 NAME = 'network_WiFi_ChromeEndToEnd.findVerifyWiFiNetworks'
 TEST_TYPE = 'Server'
-ATTRIBUTES = ('suite:wifi_endtoend, suite:wifi_release, suite:infra_qual_wifi')
+ATTRIBUTES = ('suite:wifi_endtoend, suite:infra_qual_wifi')
 DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING'
 
 DOC = """

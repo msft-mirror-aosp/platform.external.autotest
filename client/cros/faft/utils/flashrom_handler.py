@@ -396,25 +396,6 @@ class FlashromHandler(object):
                               key_body_size]
             key_f.write(key)
 
-    def verify_image(self):
-        """Confirm the image's validity.
-
-        Using the file supplied to init() as the public key container verify
-        the two sections' (FirmwareA and FirmwareB) integrity. The contents of
-        the sections is taken from the files created by new_image()
-
-        In case there is an integrity error raises FlashromHandlerError
-        exception with the appropriate error message text.
-        """
-
-        for section in self.fv_sections.values():
-            if section.get_sig_name():
-                cmd = 'vbutil_firmware --verify %s --signpubkey %s  --fv %s' % (
-                        self.section_file(section.get_sig_name()),
-                        self.pub_key_file,
-                        self.section_file(section.get_body_name()))
-                self.os_if.run_shell_command(cmd)
-
     def _get_subsection_name(self, section, body_or_sig):
         """Get the subsection name of body or signature."""
         if section not in self.fv_sections:

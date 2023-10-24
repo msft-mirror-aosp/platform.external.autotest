@@ -35,7 +35,9 @@ CHEETS_SUFFIX = '-cheetsth'
 CROS_IMAGE_ARCHIVE = 'gs://chromeos-image-archive'
 
 # ChromeOS firmware branch directory name. %s is for a (base)board name.
-FW_BRANCH_GLOB = 'firmware-%s-[0-9]*.B-firmwarebranch'
+FW_BRANCH_GLOB = 'firmware-%s-[0-9]*.B-branch-firmware'
+FW_BRANCH_VER_RE = r'R(\d*)-(\d*).(\d*).(\d*)'
+FW_TARBALL = 'firmware_from_source.tar.bz2'
 
 _Action = collections.namedtuple('_Action', 'name, value')
 

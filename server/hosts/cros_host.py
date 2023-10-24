@@ -834,9 +834,10 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         @param platform: platform name, a.k.a. board or model
         @param ref_board: reference board name, a.k.a. baseboard, parent
 
-        @return 'firmware-{platform}-{branch}-firmwarebranch/{release-version}/'
-                '{platform}'
-                or None if LATEST release file does not exist.
+        @return the build directory that contains firmware_from_source.tar.bz2
+                'firmware-{platform}-{branch}.B-branch-firmware/{release-verision}/
+                '({platform}/)?'
+                or None if the build isn't found.
         """
 
         platforms = [ platform ]
@@ -847,48 +848,60 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         if ref_board:
             platforms.append(ref_board)
 
+        logging.info('Platforms: %s', platforms)
         for board in platforms:
-            # Read 'LATEST-1.0.0' file
-            branch_dir = provision.FW_BRANCH_GLOB % board
-            latest_file = os.path.join(provision.CROS_IMAGE_ARCHIVE, branch_dir,
-                                       'LATEST-1.0.0')
-
+            branch_dir = os.path.join(provision.CROS_IMAGE_ARCHIVE,
+                                      provision.FW_BRANCH_GLOB % board)
+            logging.info('branch_dir: %s', branch_dir)
             try:
                 # The result could be one or more.
-                result = utils.system_output('gsutil ls -d ' +  latest_file)
-
-                candidates = re.findall('gs://.*', result)
+                candidates = utils.gs_ls(branch_dir)
 
                 # Found the directory candidates. No need to check the other
                 # board name cadidates. Let's break the loop.
-                break
+                if candidates:
+                    break
             except error.CmdError:
                 # It doesn't exist. Let's move on to the next item.
                 pass
         else:
-            logging.error('No LATEST release info is available.')
+            logging.error('No release info is available for %r.', platforms)
             return None
 
-        for cand_dir in candidates:
-            result = utils.system_output('gsutil cat ' + cand_dir)
+        # Sort the candidates by version number. Newest to oldest.
+        latest_candidates = sorted(
+                candidates,
+                key=lambda x: [
+                        int(v or 0) for v in re.search(
+                                provision.FW_BRANCH_VER_RE, x).groups()
+                ])
+        latest_candidates.reverse()
+        logging.debug('Latest Builds: %s', latest_candidates)
+        # The firmware tarball may not be in a board sub directory.
+        platforms.append('')
+        for cand_dir in latest_candidates:
+            for platform in platforms:
+                try:
+                    # Check if the fw path does exist.
+                    fw_tarball = os.path.join(cand_dir, platform,
+                                              provision.FW_TARBALL)
+                    logging.debug('Check for %s', fw_tarball)
+                    release = utils.gs_ls(fw_tarball)
+                    release = release[0]
+                    # Now 'release' has a full tarball path: e.g.
+                    #  gs://chromeos-image-archive/
+                    #  firmware-reef-9042.B-branch-firmware/R57-9042.287.0/reef/
+                    #  firmware_from_source.tar.bz2
+                    # Remove "gs://chromeos-image-archive".
+                    release = release.replace(provision.CROS_IMAGE_ARCHIVE, '')
+                    # Remove "firmware_from_source.tar.bz2".
+                    release = release.replace(provision.FW_TARBALL, '')
 
-            release_path = cand_dir.replace('LATEST-1.0.0', result)
-            release_path = os.path.join(release_path, platform)
-            try:
-                # Check if release_path does exist.
-                release = utils.system_output('gsutil ls -d ' + release_path)
-                # Now 'release' has a full directory path: e.g.
-                #  gs://chromeos-image-archive/firmware-octopus-11297.B-
-                #  firmwarebranch/RNone-1.0.0-b4395530/octopus/
-
-                # Remove "gs://chromeos-image-archive".
-                release = release.replace(provision.CROS_IMAGE_ARCHIVE, '')
-
-                # Remove CROS_IMAGE_ARCHIVE and any surrounding '/'s.
-                return release.strip('/')
-            except error.CmdError:
-                # The directory might not exist. Let's try next candidate.
-                pass
+                    # Remove CROS_IMAGE_ARCHIVE and any surrounding '/'s.
+                    return release.strip('/')
+                except error.CmdError:
+                    # The directory might not exist. Let's try next candidate.
+                    pass
         else:
             raise error.AutoservError('Cannot find the latest firmware')
 

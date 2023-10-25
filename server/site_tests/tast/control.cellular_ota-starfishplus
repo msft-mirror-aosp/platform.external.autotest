@@ -3,20 +3,20 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.cellular-ota-starfish-unstable'
+NAME = 'tast.cellular_ota-starfishplus'
 METADATA = {
     "contacts": ["chromeos-cellular-team@google.com"],
     "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cellular_ota_flaky'
+ATTRIBUTES = 'suite:cellular_ota'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:starfish, cellular_modem_state:NORMAL"
+DEPENDENCIES = "carrier:starfishplus, cellular_modem_state:NORMAL"
 
 DOC = '''
-Run the unstable Tast tests which verify basic Cellular functionality.
+Run the stable Tast tests which verify basic Cellular functionality.
 
 "group:cellular" indicates that the test runs on DUTs with a Cellular modem.
 "cellular_sim_active": Used to select tests that require a sim card.
@@ -41,7 +41,7 @@ def run(machine):
     slotMapping = labellib.LabelsMapping(labels).get('starfish_slot_mapping')
     # slotMapping = "0_att,1_fi,2_tmobile,3_verizon"
     if not slotMapping:
-        # any setup that has the label 'carrier:starfish' should have
+        # any setup that has the label 'carrier:starfishplus' should have
         # the starfish_slot_mapping label populated.
         raise error.TestError('starfish_slot_mapping label not set.')
     slots = slotMapping.split(',')
@@ -55,7 +55,7 @@ def run(machine):
         index.strip()
         carrier.strip()
         with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
-            svars = ['starfish.type=starfish','starfish.carrier='+carrier,'starfish.index='+index]
+            svars = ['starfish.type=starfishplus','starfish.carrier='+carrier,'starfish.index='+index]
             yaml.safe_dump({'autotest_host_info_labels':
                             json.dumps(labels)},
                             stream=temp_file)

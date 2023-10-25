@@ -14,7 +14,7 @@ import filters
 
 
 # ChromeOS src/ dir relative to this file.
-DEFAULT_SRC_DIR = pathlib.Path(__file__).joinpath('../../../../..').resolve()
+DEFAULT_SRC_DIR = pathlib.Path(__file__).joinpath('../../../../../..').resolve()
 
 def modify_control_files(src_dir, actions_list, filters_list, dry_run=True,
                          public=True, private=True, client=True, server=True):
@@ -111,6 +111,14 @@ def _set_up_args():
             metavar='EMAIL',
             help=('Add (or move) the given email addresses to the START of the '
                   'contacts list.'))
+    action_group.add_argument(
+            '--set_hw_agnostic', required=False, action='store_true',
+            help=('Set hw_agnostic to be True (or do nothing if it is already'
+                  'set).'))
+    action_group.add_argument(
+            '--unset_hw_agnostic', required=False, action='store_true',
+            help=('Remove hw_agnostic from the control file (or do nothing '
+                  'if it is not present).'))
 
     filter_group = parser.add_argument_group(
             'filters', 'Filters to specify which control files are touched.')
@@ -137,6 +145,10 @@ def _get_actions(args):
     if args.prepend_contacts:
         for elt in args.prepend_contact:
             output.append(actions.prepend_contacts(_split_list_input(elt)))
+    if args.set_hw_agnostic:
+        output.append(actions.set_hw_agnostic())
+    if args.unset_hw_agnostic:
+        output.append(actions.unset_hw_agnostic())
     return output
 
 
@@ -151,8 +163,8 @@ def _get_filters(args):
 
 
 def main():
+    """Entry point."""
     args = _set_up_args()
-    print(args)
 
     modify_control_files(
             args.src_dir, _get_actions(args), _get_filters(args),

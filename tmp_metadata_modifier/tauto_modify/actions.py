@@ -66,3 +66,31 @@ def prepend_contacts(emails):
         cf.metadata['contacts'] = emails + cf.metadata['contacts']
         return True
     return output
+
+
+def set_hw_agnostic():
+    """Return an action which sets 'hw_agnostic' to be true.
+
+    Returns:
+        An action function that acts on a ControlFile and returns a boolean.
+    """
+    def output(cf):
+        if 'hw_agnostic' not in cf.metadata or cf.metadata['hw_agnostic'] != True:
+            cf.metadata['hw_agnostic'] = True
+            return True
+        return False
+    return output
+
+
+def unset_hw_agnostic():
+    """Return an action which removes 'hw_agnostic' if it is present.
+
+    Returns:
+        An action function that acts on a ControlFile and returns a boolean.
+    """
+    def output(cf):
+        if 'hw_agnostic' in cf.metadata:
+            del cf.metadata['hw_agnostic']
+            return True
+        return False
+    return output

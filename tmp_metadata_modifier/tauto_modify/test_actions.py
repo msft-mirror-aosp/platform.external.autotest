@@ -64,6 +64,23 @@ class TestActions(unittest.TestCase):
         self.assertTrue(action(cf))
         self.assertEqual(len(cf.metadata['contacts']), starting_len + 1)
 
+    def test_set_hw_agnostic(self):
+        action = actions.set_hw_agnostic()
+        test_file = os.path.join(TEST_DATA_DIR, 'control.hw_agnostic_add')
+        cf = cf_parse.ControlFile(test_file)
+
+        self.assertTrue(action(cf))
+        self.assertTrue('hw_agnostic' in cf.metadata)
+        self.assertTrue(cf.metadata['hw_agnostic'])
+
+    def test_unset_hw_agnostic(self):
+        action = actions.unset_hw_agnostic()
+        test_file = os.path.join(TEST_DATA_DIR, 'control.actions')
+        cf = cf_parse.ControlFile(test_file)
+
+        self.assertTrue(action(cf))
+        self.assertFalse('hw_agnostic' in cf.metadata)
+
 
 if __name__ == '__main__':
     unittest.main()

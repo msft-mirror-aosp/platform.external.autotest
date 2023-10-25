@@ -184,7 +184,7 @@ class TestObject(object):
                     'test_suites': [{
                             'testCaseTagCriteria': {
                                     'tags': includes,
-                                    'tagsExclude': excludes
+                                    'tagExcludes': excludes
                             }
                     }]
             }

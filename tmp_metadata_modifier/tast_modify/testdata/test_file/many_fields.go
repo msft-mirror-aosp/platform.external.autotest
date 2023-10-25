@@ -17,11 +17,12 @@ func init() {
 		Func:         Many,
 		LacrosStatus: testing.LacrosVariantUnneeded,
 		Desc:         "testing description",
+		// Comments here.
 		Contacts: []string{
 			"first@google.com",
 			"second@google.com",
 		},
-		BugComponent: "b:1234567",
+		BugComponent: "b:1234567", // Trailing comment.
 		Attr:         []string{"group:mainline"},
 		HwAgnostic:   true,
 		Requirements:     []string{"reqOne", "reqTwo"},

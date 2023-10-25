@@ -13,4 +13,4 @@ e.g.
 go run . --localOnly --removeContacts="foo@google.com, bar@google.com" --dryRun
 
 Editing this code:
-Use `go test .` in this directory to execute tests.
+Use `go test ./...` in this directory to execute tests.

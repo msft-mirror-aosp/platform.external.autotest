@@ -5,11 +5,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"go.chromium.org/chromiumos/tast_metadata_modifier/action"
+	"go.chromium.org/chromiumos/tast_metadata_modifier/file"
+	"go.chromium.org/chromiumos/tast_metadata_modifier/filter"
 )
 
 // OutputMode represents how the function should behave with regards to overwriting data.
@@ -33,8 +35,8 @@ type PathFilter struct {
 // WalkAllKnownTests looks for test packages in all known locations relative to the chromiumos
 // src/ directory. These locations can be restricted through the given pathFilter.
 // Calls ApplyToPackageDirs() on allowed locations with the given filters, actions, and outputMode.
-func WalkAllKnownTests(srcDir string, pathFilter *PathFilter, filters []Filter,
-	actions []Action, outputMode OutputMode) error {
+func WalkAllKnownTests(srcDir string, pathFilter *PathFilter, filters []filter.Filter,
+	actions []action.Action, outputMode OutputMode) error {
 	publicCrosDir := srcDir + "platform/tast-tests/src/go.chromium.org/tast-tests/cros/"
 	privateCrosDir := srcDir + "platform/tast-tests-private/src/go.chromium.org/tast-tests-private/crosint/"
 
@@ -69,8 +71,8 @@ func WalkAllKnownTests(srcDir string, pathFilter *PathFilter, filters []Filter,
 // in the given directory. Only packages one directory deep from the given dir are searched.
 // If names are given in allowedPackages slice, only these packages will
 // be modified. Otherwise, all packages will be modified.
-func ApplyToPackageDirs(dir string, allowedPackages []string, filters []Filter,
-	actions []Action, outputMode OutputMode) error {
+func ApplyToPackageDirs(dir string, allowedPackages []string, filters []filter.Filter,
+	actions []action.Action, outputMode OutputMode) error {
 	if len(allowedPackages) == 0 {
 		allowedPackages = append(allowedPackages, "*")
 	}
@@ -93,8 +95,9 @@ func ApplyToPackageDirs(dir string, allowedPackages []string, filters []Filter,
 // ApplyToFile applies the given actions to the given file, if it matches the given filters.
 // It returns a boolean on whether any action was taken, or an error.
 // The output and whether files are actually modified depends on outputMode.
-func ApplyToFile(filePath string, filters []Filter, actions []Action, outputMode OutputMode) (bool, error) {
-	testFile, err := NewTestFile(filePath)
+func ApplyToFile(filePath string, filters []filter.Filter, actions []action.Action,
+	outputMode OutputMode) (bool, error) {
+	testFile, err := file.NewTestFile(filePath)
 	if err != nil {
 		return false, err
 	} else if testFile == nil {
@@ -135,138 +138,20 @@ func ApplyToFile(filePath string, filters []Filter, actions []Action, outputMode
 	case ModeDryRun:
 		fmt.Printf("Would write to %s:\n", filePath)
 	case ModeDryRunVerbose:
-		fmt.Printf("Would write to %s:\n%s", filePath, testFile.contents)
+		fmt.Printf("Would write to %s:%s\n", filePath, testFile.Contents())
 	case ModeWrite:
-		err := os.WriteFile(filePath, testFile.contents, 0644)
+		err := os.WriteFile(filePath, testFile.Contents(), 0644)
 		if err != nil {
 			fmt.Printf("Failed writing changes to %s: %v\n", filePath, err)
 			return false, err
 		}
-		fmt.Printf("Wrote changes to %s", filePath)
+		fmt.Printf("Wrote changes to %s\n", filePath)
 	}
 	return true, nil
 }
 
-// splitInputStrings takes the given user input and breaks it into separate strings.
-// Valid separators are newlines or commas. Any excess whitespace is trimmed.
-func splitInputStrings(s string) []string {
-	splitFunc := func(r rune) bool {
-		return r == '\n' || r == ','
-	}
-	output := []string{}
-	for _, elt := range strings.FieldsFunc(s, splitFunc) {
-		if elt != "" {
-			output = append(output, strings.TrimSpace(elt))
-		}
-	}
-	return output
-}
-
 func main() {
-	// The chromiumos src/ directory relative to this file.
-	const defaultSrcDir = "../../../../"
-
-	actions := []Action{}
-	filters := []Filter{}
-	mode := ModeDryRunVerbose
-
-	// Path flags.
-	var srcDir, packages string
-	var privateOnly, publicOnly, localOnly, remoteOnly bool
-	flag.StringVar(&srcDir, "path_SrcDir", defaultSrcDir,
-		"Paths: Custom path to the src/ directory where tests will be modified.")
-	flag.BoolVar(&privateOnly, "privateOnly", false, "Paths: Look at paths for private tests only.")
-	flag.BoolVar(&publicOnly, "publicOnly", false, "Paths: Look at paths for public tests only.")
-	flag.BoolVar(&localOnly, "localOnly", false, "Paths: Look at paths for local tests only.")
-	flag.BoolVar(&remoteOnly, "remoteOnly", false, "Paths: Look at paths for remote tests only.")
-	flag.StringVar(&packages, "packages", "", "Paths: Look at paths for the given packges only. "+
-		"Input as a quoted string, e.g. 'packageFoo, packageBar'.")
-
-	// Action flags.
-	var removeContacts, replaceContact, appendContacts, prependContacts string
-	flag.StringVar(&removeContacts, "removeContacts", "",
-		"Action: Remove the given email addresses from Contacts. "+
-			"Input as a quoted string, e.g. 'foo@google.com, bar@google.com'.")
-	flag.StringVar(&replaceContact, "replaceContact", "",
-		"Action: Replace the first email address with the second in Contacts. "+
-			"Input as a quoted string, e.g. 'foo@google.com, bar@google.com'.")
-	flag.StringVar(&appendContacts, "appendContacts", "",
-		"Action: Append the given emails to the end of the Contacts list "+
-			"(removing them if they already appear). "+
-			"Input as a quoted string, e.g. 'foo@google.com, bar@google.com'.")
-	flag.StringVar(&prependContacts, "prependContacts", "",
-		"Action: Prepend the given emails to the start of the Contacts list "+
-			"(removing them if they already appear). "+
-			"Input as a quoted string, e.g. 'foo@google.com, bar@google.com'.")
-
-	// Filter flags.
-	var testNames string
-	flag.StringVar(&testNames, "testNames", "",
-		"Filter: Modify only tests with the given ids. "+
-			"Input as a quoted string, e.g. 'tast.packageName.TestName, tast.packageName.OtherTestName'.")
-
-	// Mode flags.
-	var write, dryRun, dryRunVerbose bool
-	flag.BoolVar(&write, "write", false,
-		"Mode: Make changes to test files. Print which files have been modified.")
-	flag.BoolVar(&dryRun, "dryRun", false,
-		"Mode: Print which tests would be modified but do not make changes.")
-	flag.BoolVar(&dryRunVerbose, "dryRunVerbose", true,
-		"Mode: (Default) Print which tests would be moified AND print the file contents with these changes.")
-
-	flag.Parse()
-
-	// Handle path flags.
-	if publicOnly && privateOnly {
-		panic("Can only choose one of: publicOnly and privateOnly")
-	}
-	if localOnly && remoteOnly {
-		panic("Can only choose one of: localOnly and remoteOnly")
-	}
-	pathFilter := &PathFilter{
-		SkipPublic:  privateOnly,
-		SkipPrivate: publicOnly,
-		SkipLocal:   remoteOnly,
-		SkipRemote:  localOnly,
-		Packages:    splitInputStrings(packages),
-	}
-
-	// Handle action flags.
-	if removeContacts != "" {
-		actions = append(actions, RemoveContactsAction(splitInputStrings(removeContacts)))
-		fmt.Println(splitInputStrings(removeContacts))
-	}
-	if replaceContact != "" {
-		input := splitInputStrings(replaceContact)
-		if len(input) != 2 {
-			panic("replaceContact flag takes exactly two comma or newline separated arguments!")
-		}
-		actions = append(actions, ReplaceContactAction(input[0], input[1]))
-	}
-	if appendContacts != "" {
-		actions = append(actions, AppendContactsAction(splitInputStrings(appendContacts)))
-	}
-	if prependContacts != "" {
-		actions = append(actions, PrependContactsAction(splitInputStrings(prependContacts)))
-	}
-	if len(actions) == 0 {
-		panic("Must define at least one action!")
-	}
-
-	// Handle filter flags.
-	if testNames != "" {
-		filters = append(filters, TestFilter(splitInputStrings(testNames)))
-	}
-
-	// Handle mode flags.
-	if write && dryRun || write && dryRunVerbose || dryRun && dryRunVerbose {
-		panic("Cannot specify more than one mode!")
-	}
-	if write {
-		mode = ModeWrite
-	} else if dryRun {
-		mode = ModeDryRun
-	}
+	srcDir, pathFilter, filters, actions, mode := HandleInputFlags()
 
 	// Execute script with flag inputs.
 	err := WalkAllKnownTests(srcDir, pathFilter, filters, actions, mode)

@@ -2,11 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package main
+package file
 
 import (
-	"strings"
-
 	"go/ast"
 )
 
@@ -70,47 +68,4 @@ func FindTestExpr(parsedFile *ast.File) (*TestExpr, bool) {
 		}
 	}
 	return nil, false
-}
-
-// ExprOf returns the expression of the given field name for this TestExpr,
-// or nil the field is not present.
-// E.g. t.ValueOf("Contacts") will find the sub-expression where the
-// Contacts field is defined.
-func (x *TestExpr) ExprOf(keyName string) ast.Expr {
-	if x == nil {
-		return nil
-	}
-	for _, elt := range x.Elts {
-		pair, ok := elt.(*ast.KeyValueExpr)
-		if !ok {
-			continue
-		}
-		key, ok := pair.Key.(*ast.Ident)
-		if !ok {
-			continue
-		}
-		if key.Name == keyName {
-			return pair.Value
-		}
-	}
-	return nil
-}
-
-// ValueOfStringList returns the []string value of the given field name,
-// or an empty list if none was found.
-func (x *TestExpr) ValueOfStringList(fieldName string) []string {
-	output := []string{}
-	compLit, ok := x.ExprOf(fieldName).(*ast.CompositeLit)
-	if !ok || compLit == nil {
-		return output
-	}
-	for _, eltUntyped := range compLit.Elts {
-		elt, ok := eltUntyped.(*ast.BasicLit)
-		if !ok {
-			continue
-		}
-		// Trim trailing/leading whitespace from each element.
-		output = append(output, strings.Trim(elt.Value, "\n\" "))
-	}
-	return output
 }

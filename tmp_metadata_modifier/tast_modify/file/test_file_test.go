@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package main
+package file
 
 import (
 	"reflect"
@@ -14,13 +14,14 @@ import (
 // TestTestFile covers the TestFile type.
 // New testcases can be added by adding files to the test_data/test_file/ directory.
 func TestTestFile(t *testing.T) {
-	TestDirName := "test_data/test_file"
+	TestDirName := "testdata/test_file"
 	matches, err := filepath.Glob(filepath.Join(TestDirName, "*.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, m := range matches {
+		t.Fatal("bad test")
 		// Verify that all test files can be parsed.
 		f, err := NewTestFile(m)
 		if err != nil {
@@ -43,6 +44,12 @@ func TestTestFile(t *testing.T) {
 			actualID := f.TestID()
 			if expectedID != actualID {
 				t.Fatalf("ID for %s incorrect: %v", m, actualID)
+			}
+
+			expectedHwAgnostic := true
+			actualHwAgnostic := f.HwAgnostic()
+			if expectedHwAgnostic != actualHwAgnostic {
+				t.Fatalf("HwAgnostic for %s incorrect: %v", m, expectedHwAgnostic)
 			}
 		}
 	}

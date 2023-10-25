@@ -11,18 +11,21 @@ import (
 	"testing"
 
 	"path/filepath"
+
+	"go.chromium.org/chromiumos/tast_metadata_modifier/action"
+	"go.chromium.org/chromiumos/tast_metadata_modifier/filter"
 )
 
 type ApplyToFileTestcase struct {
-	Actions []Action
-	Filters []Filter
+	Actions []action.Action
+	Filters []filter.Filter
 }
 
 // TestApplyToFile covers usage of the ApplyToFile() function.
 // To add a new end-to-end test, add an entry below for which actions will be applied
 // to the input file and create two new test files: <id>_input.go and <id>_expected.go.
 func TestApplyToFile(t *testing.T) {
-	TestDirPath := "test_data/apply_to_file"
+	TestDirPath := "testdata/apply_to_file"
 
 	// Set up temporary directory in which to apply the file-modifying function.
 	tmpDirPath := t.TempDir()
@@ -32,12 +35,16 @@ func TestApplyToFile(t *testing.T) {
 	// Testcase declarations.
 	Testcases := map[string]ApplyToFileTestcase{
 		"noop":          {},
-		"appendContact": {Actions: []Action{AppendContactsAction([]string{"name@email.com"})}},
-		"filteredNoop": {Filters: []Filter{TestFilter([]string{"notAMatch"})},
-			Actions: []Action{AppendContactsAction([]string{"name@email.com"})}},
-		"filteredAppend": {Filters: []Filter{TestFilter([]string{
+		"appendContact": {Actions: []action.Action{action.AppendContacts([]string{"name@email.com"})}},
+		"filteredNoop": {Filters: []filter.Filter{filter.TestNames([]string{"notAMatch"})},
+			Actions: []action.Action{action.AppendContacts([]string{"name@email.com"})}},
+		"filteredAppend": {Filters: []filter.Filter{filter.TestNames([]string{
 			fmt.Sprintf("tast.%s.FilteredAppend", tmpDirName)})},
-			Actions: []Action{AppendContactsAction([]string{"name@email.com"})}},
+			Actions: []action.Action{action.AppendContacts([]string{"name@email.com"})}},
+		"hwAgnosticModify": {Actions: []action.Action{action.SetHwAgnostic()}},
+		"hwAgnosticAdd":    {Actions: []action.Action{action.SetHwAgnostic()}},
+		"hwAgnosticRemove": {Actions: []action.Action{action.UnsetHwAgnostic()}},
+		"hwAgnosticParam":  {Actions: []action.Action{action.SetHwAgnostic()}},
 	}
 
 	// Iterate through testcases.
@@ -65,7 +72,9 @@ func TestApplyToFile(t *testing.T) {
 		}
 
 		// Run testcase against the temporary file.
-		ApplyToFile(tmpPath, tc.Filters, tc.Actions, ModeWrite)
+		if _, err := ApplyToFile(tmpPath, tc.Filters, tc.Actions, ModeWrite); err != nil {
+			t.Fatal(err)
+		}
 
 		expected, err := os.ReadFile(expectedPath)
 		if err != nil {

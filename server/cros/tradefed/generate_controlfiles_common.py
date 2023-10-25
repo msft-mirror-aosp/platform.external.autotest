@@ -17,10 +17,7 @@ import re
 import stat
 import subprocess
 import tempfile
-import textwrap
 import zipfile
-# Use 'sudo pip install jinja2' to install.
-from jinja2 import Template
 
 import bundle_utils
 
@@ -31,151 +28,6 @@ import bundle_utils
 #  'DEV' means the preview version build from development branch.
 SourceType = Enum('SourceType', ['MOBLAB', 'LATEST', 'DEV'])
 
-
-# TODO(ihf): Assign better TIME to control files. Scheduling uses this to run
-# LENGTHY first, then LONG, MEDIUM etc. But we need LENGTHY for the collect
-# job, downgrade all others. Make sure this still works in CQ/smoke suite.
-_CONTROLFILE_TEMPLATE = Template(
-        textwrap.dedent("""\
-    # Copyright {{year}} The ChromiumOS Authors
-    # Use of this source code is governed by a BSD-style license that can be
-    # found in the LICENSE file.
-
-    # This file has been automatically generated. Do not edit!
-    {%- if servo_support_needed %}
-    from autotest_lib.server import utils as server_utils
-    {%- endif %}
-    {%- if wifi_info_needed %}
-    from autotest_lib.client.common_lib import utils, global_config
-    {%- endif %}
-    {%- if has_precondition_escape %}
-    import pipes
-    {%- endif %}
-
-    AUTHOR = 'n/a'
-    NAME = '{{name}}'
-    METADATA = {
-        "contacts": ["arc-cts-eng@google.com"],
-        "bug_component": "b:183644",
-        "criteria": "A part of Android CTS",
-    }
-    ATTRIBUTES = '{{attributes}}'
-    DEPENDENCIES = '{{dependencies}}'
-    JOB_RETRIES = {{job_retries}}
-    TEST_TYPE = 'server'
-    TIME = '{{test_length}}'
-    MAX_RESULT_SIZE_KB = {{max_result_size_kb}}
-    {%- if sync_count and sync_count > 1 %}
-    SYNC_COUNT = {{sync_count}}
-    {%- endif %}
-    {%- if priority %}
-    PRIORITY = {{priority}}
-    {%- endif %}
-    DOC = 'n/a'
-    {%- if servo_support_needed %}
-
-    # For local debugging, if your test setup doesn't have servo, REMOVE these
-    # two lines.
-    args_dict = server_utils.args_to_dict(args)
-    servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
-
-    {%- endif %}
-    {% if sync_count and sync_count > 1 %}
-    from autotest_lib.server import utils as server_utils
-    def {{test_func_name}}(ntuples):
-        host_list = [hosts.create_host(machine) for machine in ntuples]
-    {% else %}
-    def {{test_func_name}}(machine):
-        {%- if servo_support_needed %}
-        # REMOVE 'servo_args=servo_args' arg for local debugging if your test
-        # setup doesn't have servo.
-        try:
-            host_list = [hosts.create_host(machine, servo_args=servo_args)]
-        except:
-            # Just ignore any servo setup flakiness.
-            host_list = [hosts.create_host(machine)]
-        {%- else %}
-        host_list = [hosts.create_host(machine)]
-        {%- endif %}
-        {%- if wifi_info_needed %}
-        ssid = utils.get_wireless_ssid(machine['hostname'])
-        if machine['hostname'].startswith('chromeos8'):
-            ssid = 'wl-ChromeOS_lab_AP'
-        wifipass = global_config.global_config.get_config_value('CLIENT',
-                    'wireless_password', default=None)
-        {%- endif %}
-    {%- endif %}
-        job.run_test(
-            '{{base_name}}',
-    {%- if camera_facing and camera_facing != 'nocamera' %}
-            camera_facing='{{camera_facing}}',
-            cmdline_args=args,
-    {%- endif %}
-            hosts=host_list,
-            iterations=1,
-    {%- if max_retries != None %}
-            max_retry={{max_retries}},
-    {%- endif %}
-    {%- if enable_default_apps %}
-            enable_default_apps=True,
-    {%- endif %}
-    {%- if vm_force_max_resolution %}
-            vm_force_max_resolution=True,
-    {%- endif %}
-    {%- if vm_tablet_mode %}
-            vm_tablet_mode=True,
-    {%- endif %}
-    {%- if needs_push_media %}
-            needs_push_media={{needs_push_media}},
-    {%- endif %}
-    {%- if needs_cts_helpers %}
-            use_helpers={{needs_cts_helpers}},
-    {%- endif %}
-            tag='{{tag}}',
-            test_name='{{name}}',
-    {%- if authkey %}
-            authkey='{{authkey}}',
-    {%- endif %}
-            run_template={{run_template}},
-            retry_template={{retry_template}},
-            target_module={% if target_module %}'{{target_module}}'{% else %}None{%endif%},
-            target_plan={% if target_plan %}'{{target_plan}}'{% else %}None{% endif %},
-    {%- if abi %}
-            bundle='{{abi}}',
-    {%- endif %}
-    {%- if extra_artifacts %}
-            extra_artifacts={{extra_artifacts}},
-    {%- endif %}
-    {%- if extra_artifacts_host %}
-            extra_artifacts_host={{extra_artifacts_host}},
-    {%- endif %}
-    {%- if uri %}
-            uri='{{uri}}',
-    {%- endif %}
-    {%- for arg in extra_args %}
-            {{arg}},
-    {%- endfor %}
-    {%- if servo_support_needed %}
-            hard_reboot_on_failure=True,
-    {%- endif %}
-    {%- if camera_facing %}
-            retry_manual_tests=True,
-    {%- endif %}
-    {%- if executable_test_count %}
-            executable_test_count={{executable_test_count}},
-    {%- endif %}
-            timeout={{timeout}})
-
-    {% if sync_count and sync_count > 1 -%}
-    ntuples, failures = server_utils.form_ntuples_from_machines(machines,
-                                                                SYNC_COUNT)
-    # Use log=False in parallel_simple to avoid an exception in setting up
-    # the incremental parser when SYNC_COUNT > 1.
-    parallel_simple({{test_func_name}}, ntuples, log=False)
-    {% else -%}
-    parallel_simple({{test_func_name}}, machines)
-    {% endif %}
-"""))
 
 CONFIG = None
 
@@ -194,6 +46,141 @@ _PUBLIC_CTSHARDWARE_COLLECT = 'tradefed-run-collect-tests-only-hardware'
 _TEST_LENGTH = {1: 'FAST', 2: 'SHORT', 3: 'MEDIUM', 4: 'LONG', 5: 'LENGTHY'}
 
 _ALL = 'all'
+
+
+def render_config(year, name, base_name, test_func_name, attributes,
+                  dependencies, extra_artifacts, extra_artifacts_host,
+                  job_retries, max_result_size_kb, revision, build, abi,
+                  needs_push_media, needs_cts_helpers, enable_default_apps,
+                  vm_force_max_resolution, vm_tablet_mode, tag, uri,
+                  servo_support_needed, wifi_info_needed,
+                  has_precondition_escape, max_retries, timeout, run_template,
+                  retry_template, target_module, target_plan, test_length,
+                  priority, extra_args, authkey, sync_count, camera_facing,
+                  executable_test_count):
+    """Render config for generated controlfiles, by hard-coded some templates here.
+    This is to replace jinja2 dependencies.
+    """
+
+    rendered_template = f'# Copyright {year} The ChromiumOS Authors\n' + \
+    '# Use of this source code is governed by a BSD-style license that can be\n' + \
+    '# found in the LICENSE file.\n\n' + \
+    '# This file has been automatically generated. Do not edit!\n'
+    if servo_support_needed:
+        rendered_template += 'from autotest_lib.server import utils as server_utils\n'
+    if wifi_info_needed:
+        rendered_template += 'from autotest_lib.client.common_lib import utils, global_config\n'
+    if has_precondition_escape:
+        rendered_template += 'import pipes\n'
+    rendered_template += '\n'
+
+    rendered_template += 'AUTHOR = \'n/a\'\n'
+    rendered_template += f'NAME = \'{name}\'\n'
+    rendered_template += 'METADATA = {\n' + \
+        '    \"contacts\": [\"arc-cts-eng@google.com\"],\n' + \
+        '    \"bug_component\": \"b:183644\",\n' + \
+        '    \"criteria\": \"A part of Android CTS\",\n}\n'
+    rendered_template += f'ATTRIBUTES = \'{attributes}\'\n'
+    rendered_template += f'DEPENDENCIES = \'{dependencies}\'\n'
+    rendered_template += f'JOB_RETRIES = {job_retries}\n'
+    rendered_template += f'TEST_TYPE = \'server\'\n'
+    rendered_template += f'TIME = \'{test_length}\'\n'
+    rendered_template += f'MAX_RESULT_SIZE_KB = {max_result_size_kb}\n'
+    if sync_count and sync_count > 1:
+        rendered_template += f'SYNC_COUNT = {sync_count}\n'
+    if priority:
+        rendered_template += f'PRIORITY = {priority}\n'
+    rendered_template += 'DOC = \'n/a\'\n'
+    if servo_support_needed:
+        rendered_template += '\n# For local debugging, if your test setup doesn\'t have servo, REMOVE these\n'
+        rendered_template += '# two lines.\n'
+        rendered_template += 'args_dict = server_utils.args_to_dict(args)\n'
+        rendered_template += 'servo_args = hosts.CrosHost.get_servo_arguments(args_dict)\n'
+    rendered_template += '\n'
+    if sync_count and sync_count > 1:
+        rendered_template += 'from autotest_lib.server import utils as server_utils\n'
+        rendered_template += f'def {test_func_name}(ntuples):\n'
+        rendered_template += 'host_list = [hosts.create_host(machine) for machine in ntuples]\n'
+    else:
+        rendered_template += f'def {test_func_name}(machine):\n'
+        if servo_support_needed:
+            rendered_template += '    # REMOVE \'servo_args=servo_args\' arg for local debugging if your test\n'
+            rendered_template += '    # setup doesn\'t have servo.\n'
+            rendered_template += '    try:\n'
+            rendered_template += '        host_list = [hosts.create_host(machine, servo_args=servo_args)]\n'
+            rendered_template += '    except:\n'
+            rendered_template += '        # Just ignore any servo setup flakiness.\n'
+            rendered_template += '        host_list = [hosts.create_host(machine)]\n'
+        else:
+            rendered_template += '    host_list = [hosts.create_host(machine)]\n'
+        if wifi_info_needed:
+            rendered_template += '    ssid = utils.get_wireless_ssid(machine[\'hostname\'])\n'
+            rendered_template += '    if machine[\'hostname\'].startswith(\'chromeos8\'):\n'
+            rendered_template += '        ssid = \'wl-ChromeOS_lab_AP\'\n'
+            rendered_template += '    wifipass = global_config.global_config.get_config_value(\'CLIENT\',\n'
+            rendered_template += '                \'wireless_password\', default=None)\n'
+    rendered_template += '    job.run_test(\n'
+    rendered_template += f'        \'{base_name}\',\n'
+    if camera_facing and camera_facing != 'nocamera':
+        rendered_template += f'        camera_facing=\'{camera_facing}\',\n'
+        rendered_template += '        cmdline_args=args,\n'
+    rendered_template += '        hosts=host_list,\n'
+    rendered_template += '        iterations=1,\n'
+    if max_retries != None:
+        rendered_template += f'        max_retry={max_retries},\n'
+    if enable_default_apps:
+        rendered_template += '        enable_default_apps=True,\n'
+    if vm_force_max_resolution:
+        rendered_template += '        vm_force_max_resolution=True,\n'
+    if vm_tablet_mode:
+        rendered_template += '        vm_tablet_mode=True,\n'
+    if needs_push_media:
+        rendered_template += f'        needs_push_media={needs_push_media},\n'
+    if needs_cts_helpers:
+        rendered_template += f'        use_helpers={needs_cts_helpers},\n'
+    rendered_template += f'        tag=\'{tag}\',\n'
+    rendered_template += f'        test_name=\'{name}\',\n'
+    if authkey:
+        rendered_template += f'        authkey=\'{authkey}\',\n'
+    rendered_template += f'        run_template={run_template},\n'
+    rendered_template += f'        retry_template={retry_template},\n'
+    rendered_template += '        target_module='
+    if target_module:
+        rendered_template += f'\'{target_module}\',\n'
+    else:
+        rendered_template += 'None,\n'
+    rendered_template += '        target_plan='
+    if target_plan:
+        rendered_template += f'\'{target_plan}\',\n'
+    else:
+        rendered_template += 'None,\n'
+    if abi:
+        rendered_template += f'        bundle=\'{abi}\',\n'
+    if extra_artifacts:
+        rendered_template += f'        extra_artifacts={extra_artifacts},\n'
+    if extra_artifacts_host:
+        rendered_template += f'        extra_artifacts_host={extra_artifacts_host},\n'
+    if uri:
+        rendered_template += f'        uri=\'{uri}\',\n'
+    for arg in extra_args:
+        rendered_template += f'        {arg},\n'
+    if servo_support_needed:
+        rendered_template += '        hard_reboot_on_failure=True,\n'
+    if camera_facing:
+        rendered_template += '        retry_manual_tests=True,\n'
+    if executable_test_count:
+        rendered_template += f'        executable_test_count={executable_test_count},\n'
+    rendered_template += f'        timeout={timeout})\n\n'
+
+    if sync_count and sync_count > 1:
+        rendered_template += 'ntuples, failures = server_utils.form_ntuples_from_machines(machines,' + \
+                             '                                                            SYNC_COUNT)\n'
+        rendered_template += '# Use log=False in parallel_simple to avoid an exception in setting up\n'
+        rendered_template += '# the incremental parser when SYNC_COUNT > 1.\n'
+        rendered_template += f'parallel_simple({test_func_name}, ntuples, log=False)\n'
+    else:
+        rendered_template += f'parallel_simple({test_func_name}, machines)\n'
+    return rendered_template
 
 
 def get_tradefed_build(line):
@@ -1086,7 +1073,7 @@ def get_controlfile_content(combined,
     executable_test_count = None
     if _COLLECT in modules or _PUBLIC_COLLECT in modules:
         executable_test_count = CONFIG.get('COLLECT_TESTS_COUNT')
-    return _CONTROLFILE_TEMPLATE.render(
+    return render_config(
             year=CONFIG['COPYRIGHT_YEAR'],
             name=name,
             base_name=CONFIG['TEST_NAME'],

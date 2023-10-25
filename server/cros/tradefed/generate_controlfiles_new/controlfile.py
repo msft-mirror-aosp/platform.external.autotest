@@ -90,7 +90,7 @@ def get_controlfile_content(group: ModuleGroup, config: Config,
     executable_test_count = None
 
     # TODO cleanup all references to legacy code
-    return gcc._CONTROLFILE_TEMPLATE.render(
+    return gcc.render_config(
             year=config['COPYRIGHT_YEAR'],
             name=name,
             base_name=config['TEST_NAME'],

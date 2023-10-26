@@ -4919,6 +4919,24 @@ class BluetoothAdapterTests(test.test):
         return True
 
 
+    @test_retry_and_log(False)
+    def test_last_resume_success(self):
+        """ Check if EC reports suspend failure due to timeout.
+
+        The last_resume_result file returns the most recent response from the AP's
+        resume message to the EC. Bit 31 is set if the EC attempted to wake the
+        system due to a timeout when watching for SLP_S0 transitions.
+
+        See kernel/*/Documentation/ABI/testing/debugfs-cros-ec for more details.
+
+        @return True if resume without suspend failure
+        """
+        last_resume_result = self.host.run_short(
+                "cat /sys/kernel/debug/cros_ec/last_resume_result").stdout
+        is_timeout = (int(last_resume_result, 16) >> 31)
+        self.results = {'no timeout in EC suspend': not bool(is_timeout)}
+        return all(self.results.values())
+
     @test_retry_and_log(False, messages_start=False)
     def test_wait_for_resume(self,
                              boot_id,
@@ -5082,6 +5100,9 @@ class BluetoothAdapterTests(test.test):
         self.results = results
 
         logging.info('test_wait_for_resume(): %r', results)
+
+        self.test_last_resume_success()
+
         return all([success, suspend.exitcode == 0])
 
 

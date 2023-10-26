@@ -134,7 +134,7 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                 AddSuites(config['INTERNAL_SUITE_NAMES']),
                 If(
                     filter_and(bundle.abi == 'arm', has_modules(config['PERBUILD_TESTS'])),
-                    [AddSuites(['suite:arc-cts-perbuild'])],
+                    [AddSuites(['suite:bvt-arc'])],
                 ),
                 If(
                     lambda g: g.get('vm_stable'),

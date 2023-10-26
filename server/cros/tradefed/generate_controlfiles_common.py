@@ -435,10 +435,10 @@ def get_suites(modules,
                 has_unstable_vm_modules = True
         else:
             nonvm_modules.append(module)
-        # A few fast modules can run in suite:arc-cts-perbuild.
+        # A few fast modules can run in suite:bvt-arc.
         if module in CONFIG.get('PERBUILD_TESTS', []) and (
                 abi == 'arm' or abi == ''):
-            suites.add('suite:arc-cts-perbuild')
+            suites.add('suite:bvt-arc')
 
     if hardware_suite:
         suites = set([CONFIG['HARDWARE_SUITE_NAME']])
@@ -501,9 +501,6 @@ def get_job_retries(modules, is_public, suites):
     # TODO(haddowk): remove this when cts p has stabalized.
     if is_public:
         return CONFIG['CTS_JOB_RETRIES_IN_PUBLIC']
-    # Presubmit check forces to set 2 or more retries for CQ tests.
-    if 'suite:bvt-arc' in suites:
-        return 2
     retries = 1  # 0 is NO job retries, 1 is one retry etc.
     for module in modules:
         # We don't want job retries for module collection or special cases.
@@ -544,7 +541,7 @@ def get_max_retries(modules, abi, suites, is_public, shard):
 
     # Ugly overrides.
     # In bvt we don't want to hold the CQ/PFQ too long.
-    if 'suite:bvt-arc' in suites:
+    if retry == -1 and 'suite:bvt-arc' in suites:
         retry = 3
     # Not strict as CQ for bvt-perbuild. Let per-module config take priority.
     if retry == -1 and 'suite:bvt-perbuild' in suites:

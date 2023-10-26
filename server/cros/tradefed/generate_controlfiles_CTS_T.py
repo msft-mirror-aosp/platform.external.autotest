@@ -363,8 +363,12 @@ CONFIG['CTS_TIMEOUT'] = {
 
 # Any test that runs as part as blocking BVT needs to be stable and fast. For
 # this reason we enforce a tight timeout on these modules/jobs.
-# Timeout in hours. (0.1h = 6 minutes)
-CONFIG['BVT_TIMEOUT'] = 0.1
+# Timeout in hours.
+#
+# CtsGraphicsTestCases passing runs take 2000~ secs on slower models.
+# 1hr = 3600sec should be plenty.
+CONFIG['BVT_TIMEOUT'] = 1.0
+
 # We allow a very long runtime for qualification (2 days).
 CONFIG['QUAL_TIMEOUT'] = 48
 
@@ -393,7 +397,7 @@ CONFIG['QUAL_BOOKMARKS'] = sorted([
         'zzzzz'  # A bookend to simplify algorithm.
 ])
 
-# Tests to run against each release build via suite:arc-cts-perbuild.
+# Tests to run against each release build via suite:bvt-arc.
 CONFIG['PERBUILD_TESTS'] = [
         'CtsEdiHostTestCases',
         'CtsGraphicsTestCases',

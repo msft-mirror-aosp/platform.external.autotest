@@ -45,10 +45,9 @@ site.addsitedir(find_checkout())
 from chromite.lib import build_query
 
 DEPENDENCY_ARC = 'arc'
-SUITES_NEED_RETRY = set(['bvt-arc', 'bvt-cq', 'bvt-inline'])
+SUITES_NEED_RETRY = set(['bvt-cq', 'bvt-inline'])
 TESTS_NEED_ARC = 'cheets_'
-BVT_ATTRS = set(
-    ['suite:smoke', 'suite:bvt-inline', 'suite:bvt-cq', 'suite:bvt-arc'])
+BVT_ATTRS = set(['suite:smoke', 'suite:bvt-inline', 'suite:bvt-cq'])
 TAST_PSA_URL = (
     'https://groups.google.com/a/chromium.org/d/topic/chromium-os-dev'
     '/zH1nO7OjJ2M/discussion')

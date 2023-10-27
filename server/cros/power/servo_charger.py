@@ -19,11 +19,11 @@ from autotest_lib.client.common_lib.cros import retry
 # Base delay time in seconds for Servo role change and PD negotiation.
 _DELAY_SEC = 0.1
 # Total delay time in minutes for Servo role change and PD negotiation.
-_TIMEOUT_MIN = 0.3
+_TIMEOUT_MIN = 0.25
 # Exponential backoff for Servo role change and PD negotiation.
 _BACKOFF = 2
 # Number of attempts to recover Servo v4.
-_RETRYS = 3
+_RETRYS = 10
 # Seconds to wait after resetting the role on a recovery attempt
 # before trying to set it to the intended role again.
 _RECOVERY_WAIT_SEC = 1

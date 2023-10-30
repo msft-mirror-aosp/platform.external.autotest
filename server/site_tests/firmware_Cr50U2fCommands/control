@@ -4,10 +4,10 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "louiscollard,apronin"
+AUTHOR = "apronin"
 NAME = "firmware_Cr50U2fCommands"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "louiscollard@chromium.org", "apronin@chromium.org"],
+        "contacts": ["chromeos-faft@google.com", "apronin@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Test U2F functionality in cr50"
 }

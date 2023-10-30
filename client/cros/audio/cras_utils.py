@@ -726,6 +726,24 @@ def set_noise_cancellation_enabled(enabled):
     get_cras_control_interface().SetNoiseCancellationEnabled(enabled)
 
 
+def set_force_hfp_swb_enabled(enabled):
+    """Sets the force hfp swb enabled state.
+
+    @param enabled: True to enable; False to disable.
+    """
+    get_cras_control_interface().SetForceHFPSwbEnabled(
+            enabled)
+
+
+def get_force_hfp_swb_enabled():
+    """Gets the force hfp swb enabled state.
+
+    @returns: The bool state of force_hfp_swb_enabled.
+    """
+    return bool(
+            get_cras_control_interface().GetForceHFPSwbEnabled())
+
+
 def set_force_sr_bt_enabled(enabled):
     """Sets the force sr bt enabled state.
 

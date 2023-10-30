@@ -371,6 +371,24 @@ class AudioFacadeRemoteAdapter(object):
         self._audio_proxy.set_noise_cancellation_enabled(enabled)
 
 
+    def set_force_hfp_swb_enabled(self, enabled):
+        """Sets the state to enable or disable bluetooth HFP SWB.
+
+        @param enabled: True to enable; False to disable.
+
+        """
+        self._audio_proxy.set_force_hfp_swb_enabled(enabled)
+
+
+    def get_force_hfp_swb_enabled(self):
+        """Gets the force_hfp_swb_enabled state.
+
+        @returns: The bool state of force_hfp_swb_enabled.
+
+        """
+        return self._audio_proxy.get_force_hfp_swb_enabled()
+
+
     def set_force_sr_bt_enabled(self, enabled):
         """Sets the state to enable or disable bluetooth mic super_resolution.
 

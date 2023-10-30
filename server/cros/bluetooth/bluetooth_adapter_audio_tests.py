@@ -972,6 +972,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
     @test_retry_and_log(False)
+    def test_set_force_hfp_swb_enabled(self, enable):
+        """Sets the force hfp swb enabled status to `enabled`.
+
+        @param enable: A bool to be set as the force hfp swb enabled status.
+        """
+        self.audio_facade.set_force_hfp_swb_enabled(enable)
+        enabled = self.audio_facade.get_force_hfp_swb_enabled()
+        self.results = {
+                f'set_force_hfp_swb_enabled_to_{enable}': enable == enabled
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
     def test_set_force_sr_bt_enabled(self, enable):
         """Sets the force sr bt enabled status to `enabled`.
 

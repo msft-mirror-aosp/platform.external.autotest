@@ -15,6 +15,8 @@ EXPECT_PEER_WAKE_SUSPEND_SEC = 60
 PEER_WAKE_RESUME_TIMEOUT_SEC = 30
 DEVICE_CONNECT_TIMEOUT_SEC = 20
 SUSPEND_TIMEOUT_SEC = 15
+DEFAULT_RPA_TIMEOUT_SEC = 900
+MIN_RPA_TIMEOUT_SEC = 30
 
 DEVICE_CONNECTED_TIMEOUT = 45
 
@@ -208,14 +210,25 @@ class BluetoothAdapterLLPrivacyTests(
             device,
             loops=1,
             check_connected_method=lambda device: True,
-            disconnect_by_device=False):
+            disconnect_by_device=False,
+            rpa_timeout=None):
         """Running a loop to verify the paired device can auto reconnect
         The device is in privacy mode.
+
+        @param device: emulated peer device
+        @param loops: number of disconnect/reconnect loops
+        @param check_connected_method: method to check the device is connected
+        @param disconnect_by_device: disconnect should be initiated by device
+        @param rpa_timeout: RPA address rotation timeout in second
         """
+        if rpa_timeout is not None:
+            logging.info('Set RPA timeout to %d', rpa_timeout)
+            self.test_update_rpa_timeout(device, rpa_timeout)
         self.test_set_device_privacy(device, True)
 
         # start advertising and set RPA
         self.test_start_device_advertise_with_rpa(device)
+        previous_rpa = device.rpa
         self.test_discover_device(device.rpa)
 
         self.test_pairing_with_rpa(device)
@@ -235,8 +248,19 @@ class BluetoothAdapterLLPrivacyTests(
                     self.test_power_off_adapter()
                     self.test_power_on_adapter()
                 self.test_disconnection_by_device(device)
+
+                # sleep for rpa_timeout seconds for RPA rotation
+                if rpa_timeout is not None:
+                    logging.info("Wait %d seconds for RPA rotation.",
+                                 rpa_timeout)
+                    time.sleep(rpa_timeout)
+
                 start_time = time.time()
                 self.test_start_device_advertise_with_rpa(device)
+                # expect RPA rotation
+                if rpa_timeout is not None and previous_rpa == device.rpa:
+                    logging.warning("RPA does not rotate.")
+                previous_rpa = device.rpa
 
                 # Verify that the device is reconnected. Wait for the input device
                 # to become available before checking the profile connection.
@@ -255,6 +279,11 @@ class BluetoothAdapterLLPrivacyTests(
                                      identity_address=device.address)
             # Restore privacy setting
             self.test_set_device_privacy(device, False)
+
+            if rpa_timeout is not None:
+                self.test_update_rpa_timeout(device, DEFAULT_RPA_TIMEOUT_SEC)
+                logging.info('Restore RPA timeout to %d',
+                             DEFAULT_RPA_TIMEOUT_SEC)
 
     @test_retry_and_log(False)
     def test_pairing_with_rpa(self, device):

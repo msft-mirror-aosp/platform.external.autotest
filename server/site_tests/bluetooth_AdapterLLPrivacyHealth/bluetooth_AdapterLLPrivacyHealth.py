@@ -20,7 +20,7 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
-     import (BluetoothAdapterLLPrivacyTests)
+     import (BluetoothAdapterLLPrivacyTests, DEFAULT_RPA_TIMEOUT_SEC, MIN_RPA_TIMEOUT_SEC)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_qr_tests import (
         BluetoothAdapterQRTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests\
@@ -70,18 +70,19 @@ class bluetooth_AdapterLLPrivacyHealth(
                                       iterations=1,
                                       auto_reconnect=False,
                                       rpa_timeout=None):
-        """ Reconnects a device in privacy mode after suspend/resume.
+        """ Reconnects a device in privacy mode after suspend/resume with
+        device RPA rotation.
 
         @param devtuples: array of tuples consisting of the following
                             * device_type: MOUSE, BLE_MOUSE, etc.
                             * device: meta object for peer device
                             * device_test: Optional; test function to run w/
                                            device (for example, mouse click)
-        @params iterations: number of suspend/resume + reconnect iterations
-        @params auto_reconnect: Expect host to automatically reconnect to peer
+        @param iterations: number of suspend/resume + reconnect iterations
+        @param auto_reconnect: Expect host to automatically reconnect to peer
+        @param rpa_timeout: RPA address rotation timeout in second
         """
         boot_id = self.host.get_boot_id()
-        default_timeout = 900
         try:
             # Set up the device; any failures should assert
             for device_type, device, device_test in devtuples:
@@ -95,6 +96,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                 self.test_set_device_privacy(device, True)
                 self.test_start_device_advertise_with_rpa(device)
                 logging.info('Device use RPA: %s', device.rpa)
+                previous_rpa = device.rpa
                 self.test_discover_device(device.rpa)
                 self.test_pairing_with_rpa(device)
                 self.test_stop_device_advertise_with_rpa(device)
@@ -133,6 +135,11 @@ class bluetooth_AdapterLLPrivacyHealth(
                         # LE can't reconnect without advertising/discoverable
                         self.test_start_device_advertise_with_rpa(device)
                         logging.info('Device current RPA: %s', device.rpa)
+
+                        # expect RPA rotation if rpa_timeout is set
+                        if rpa_timeout is not None and previous_rpa == device.rpa:
+                            logging.warning("RPA does not rotate.")
+                        previous_rpa = device.rpa
                         # Make sure we're actually connected
                         self.test_device_is_connected(
                                 device.init_paired_addr,
@@ -151,8 +158,10 @@ class bluetooth_AdapterLLPrivacyHealth(
 
                 self.test_set_device_privacy(device, False)
                 if rpa_timeout is not None:
-                    self.test_update_rpa_timeout(device, default_timeout)
-                    logging.info('Restore RPA timeout to %d', default_timeout)
+                    self.test_update_rpa_timeout(device,
+                                                 DEFAULT_RPA_TIMEOUT_SEC)
+                    logging.info('Restore RPA timeout to %d',
+                                 DEFAULT_RPA_TIMEOUT_SEC)
 
     def run_reconnect_device(self,
                              devtuples,
@@ -530,22 +539,26 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={"BLE_MOUSE": 1},
                   supports_floss=True)
     def le_auto_reconnect_with_privacy(self):
-        """Test auto reconnect after adapter reboot."""
-        device = self.devices['BLE_MOUSE'][0]
-        self.auto_reconnect_loop_with_device_privacy(
-                device, 3, check_connected_method=self.test_mouse_left_click)
-
-    @test_wrapper('Reconnect Test',
-                  devices={"BLE_MOUSE": 1},
-                  supports_floss=True)
-    def le_auto_reconnect_with_privacy_by_device(self):
-        """Test auto reconnect after device disconnect."""
+        """Test auto reconnect after adapter reboot with device RPA rotation."""
         device = self.devices['BLE_MOUSE'][0]
         self.auto_reconnect_loop_with_device_privacy(
                 device,
                 3,
                 check_connected_method=self.test_mouse_left_click,
-                disconnect_by_device=True)
+                rpa_timeout=MIN_RPA_TIMEOUT_SEC)
+
+    @test_wrapper('Reconnect Test',
+                  devices={"BLE_MOUSE": 1},
+                  supports_floss=True)
+    def le_auto_reconnect_with_privacy_by_device(self):
+        """Test auto reconnect after device disconnect with device RPA rotation."""
+        device = self.devices['BLE_MOUSE'][0]
+        self.auto_reconnect_loop_with_device_privacy(
+                device,
+                3,
+                check_connected_method=self.test_mouse_left_click,
+                disconnect_by_device=True,
+                rpa_timeout=MIN_RPA_TIMEOUT_SEC)
 
     @test_wrapper('HID Wakeup from Suspend Test',
                   devices={"BLE_MOUSE": 1},

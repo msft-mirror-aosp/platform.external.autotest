@@ -36,6 +36,7 @@ except Exception as e:
 import re
 import subprocess
 import functools
+import tarfile
 import time
 import threading
 import traceback
@@ -1326,6 +1327,11 @@ class BluetoothBaseFacadeLocal(object):
         try:
             if not os.path.exists(audio_record_dir):
                 os.makedirs(audio_record_dir)
+
+            # Clean up the audio folder.
+            for file in os.listdir(audio_record_dir):
+                os.remove(os.path.join(audio_record_dir, file))
+
             return True
         except Exception as e:
             logging.error('Failed to create %s on the DUT: %s',
@@ -1514,6 +1520,24 @@ class BluetoothBaseFacadeLocal(object):
                                           test_data['bit_width'],
                                           test_data['rate'])
         return abs(measured_length - new_duration) <= tolerance
+
+    def zip_audio_files(self, audio_record_dir, result_path):
+        """Compress recorded audio files.
+
+        @param audio_record_dir: the audio recording directory
+        @param result_path: Path of the compressed tar ball.
+
+        @returns: True on success, False otherwise.
+        """
+        try:
+            logging.debug('Store the audio files in %s', result_path)
+            with tarfile.open(result_path, "w:gz") as tar:
+                tar.add(audio_record_dir,
+                        arcname=os.path.basename(audio_record_dir))
+        except Exception as e:
+            logging.error('Failed to compress the audio files.')
+            return False
+        return True
 
     def unzip_audio_test_data(self, tar_path, data_dir):
         """Unzip audio test data files.

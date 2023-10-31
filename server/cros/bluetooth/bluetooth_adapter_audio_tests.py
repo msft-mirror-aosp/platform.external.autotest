@@ -285,6 +285,23 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         except:
             logging.warn('failed to call dump_diagnostics()')
 
+    def collect_audio_files(self):
+        """Collect the recoded audio files for debugging. """
+        compressed_file_name = 'audio_files.tar.gz'
+        remote_result_path = os.path.join(AUDIO_RECORD_DIR,
+                                          compressed_file_name)
+
+        if not self.bluetooth_facade.zip_audio_files(AUDIO_RECORD_DIR,
+                                                     remote_result_path):
+            logging.error('Failed to compress the audio files.')
+            return
+
+        try:
+            result_path = os.path.join(self.resultsdir, compressed_file_name)
+            self.host.get_file(remote_result_path, result_path)
+            logging.debug('Collected audio files in %s', result_path)
+        except Exception as e:
+            logging.error('Failed to collect audio files: %s', e)
 
     def initialize_bluetooth_audio(self, device, test_profile):
         """Initialize the Bluetooth audio task.
@@ -668,7 +685,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                           test_data,
                           duration,
                           check_legitimacy=True,
-                          check_frequencies=True):
+                          check_frequencies=True,
+                          start_index=0):
         """Check chunks of recorded streams and verify the primary frequencies.
 
         @param device: the bluetooth peer device
@@ -680,6 +698,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                 _check_audio_frames_legitimacy test
         @param check_frequencies: specify this to True to run
                                  _check_primary_frequencies test
+        @param start_index: The starting index of the audio file. This is used
+                            only to prevent audio files from being replaced
+                            when this function is called multiple times.
 
         @returns: True if all chunks pass the frequencies check.
         """
@@ -694,7 +715,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         for i in range(nchunks):
             logging.debug('Check chunk %d', i)
 
-            recorded_file = self.handle_one_chunk(device, chunk_in_secs, i,
+            recorded_file = self.handle_one_chunk(device, chunk_in_secs,
+                                                  start_index + i,
                                                   test_profile)
             if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
@@ -740,8 +762,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
 
     @test_retry_and_log(False)
-    def test_check_empty_chunks(self, device, test_data, duration,
-                                test_profile):
+    def test_check_empty_chunks(self,
+                                device,
+                                test_data,
+                                duration,
+                                test_profile,
+                                start_index=0):
         """Check if all the chunks are empty.
 
         @param device: The Bluetooth peer device.
@@ -749,6 +775,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param duration: The duration of the audio file to test.
         @param test_profile: Which audio profile is used. Profiles are defined
                              in bluetooth_audio_test_data.py.
+        @param start_index: The starting index of the audio file. This is used
+                            only to prevent audio files from being replaced
+                            when this function is called multiple times.
 
         @returns: True if all the chunks are empty.
         """
@@ -762,7 +791,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         for i in range(nchunks):
             logging.info('Check chunk %d', i)
 
-            recorded_file = self.handle_one_chunk(device, chunk_in_secs, i,
+            recorded_file = self.handle_one_chunk(device, chunk_in_secs,
+                                                  start_index + i,
                                                   test_profile)
             if recorded_file is None:
                 raise error.TestError('Failed to handle chunk %d' % i)
@@ -881,9 +911,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         self.audio_facade.set_force_sr_bt_enabled(enable)
         enabled = self.audio_facade.get_force_sr_bt_enabled()
-        self.results = {
-                f'set_force_sr_bt_enabled_to_{enable}': enable == enabled
-        }
+
+        result_key = 'set_force_sr_bt_enabled_to_%s' % enable
+        self.results = {result_key: enable == enabled}
         return all(self.results.values())
 
     @test_retry_and_log(False)
@@ -1495,7 +1525,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_device_a2dp_connected(device)
         self.test_select_audio_output_node_bluetooth()
 
-        for _ in range(3):
+        nchunks = (test_data['chunk_checking_duration'] //
+                   test_data['chunk_in_secs'])
+
+        for i in range(3):
             # TODO(b/208165757): In here if we record the audio stream before
             # playing that will cause an audio blank about 1~2 sec in the
             # beginning of the recorded file and make the chunks checking fail.
@@ -1503,16 +1536,22 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             self.test_dut_to_start_playing_audio_subprocess(test_data)
             self.test_device_to_start_recording_audio_subprocess(
                     device, test_profile, test_data)
-            self.test_check_chunks(device, test_profile, test_data,
-                                   test_data['chunk_checking_duration'])
+
+            self.test_check_chunks(device,
+                                   test_profile,
+                                   test_data,
+                                   test_data['chunk_checking_duration'],
+                                   start_index=i * 2 * nchunks)
             self.test_dut_to_stop_playing_audio_subprocess()
             self.test_device_to_stop_recording_audio_subprocess(device)
 
             self.test_device_to_start_recording_audio_subprocess(
                     device, test_profile, test_data)
-            self.test_check_empty_chunks(device, test_data,
+            self.test_check_empty_chunks(device,
+                                         test_data,
                                          test_data['chunk_checking_duration'],
-                                         test_profile)
+                                         test_profile,
+                                         start_index=(i * 2 + 1) * nchunks)
             self.test_device_to_stop_recording_audio_subprocess(device)
 
         self.test_disconnection_by_adapter(device.address)

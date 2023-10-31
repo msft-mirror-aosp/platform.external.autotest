@@ -28,13 +28,19 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    def au_run_method(self, device, test_method, test_profile):
+    def au_run_method(self,
+                      device,
+                      test_method,
+                      test_profile,
+                      collect_audio_files=False):
         """audio procedure of running a specified test method.
 
         @param device: the bt peer device
         @param test_method: the audio test method to run
         @param test_profile: which test profile is used,
                              A2DP, HFP_WBS or HFP_NBS
+        @param collect_audio_files: set to True to collect the recorded audio
+                                    files.
         """
         self.test_reset_on_adapter()
         self.test_bluetoothd_running()
@@ -45,25 +51,34 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.test_connection_by_adapter(device.address)
         test_method()
         self.collect_audio_diagnostics()
+        if collect_audio_files:
+            self.collect_audio_files()
         self.test_disconnection_by_adapter(device.address)
         self.cleanup_bluetooth_audio(device, test_profile)
 
 
-    def au_run_test_sequence(self, device, test_sequence, test_profile):
+    def au_run_test_sequence(self,
+                             device,
+                             test_sequence,
+                             test_profile,
+                             collect_audio_files=False):
         """Audio procedure of running a specified test sequence.
 
         @param device: The Bluetooth peer device.
         @param test_sequence: The audio test sequence to run.
         @param test_profile: Which test profile is used,
                              A2DP, A2DP_MEDIUM, HFP_WBS or HFP_NBS.
+        @param collect_audio_files: set to True to collect the recorded audio
+                            files.
         """
         # Setup the Bluetooth device.
         self.test_reset_on_adapter()
         self.test_bluetoothd_running()
         self.initialize_bluetooth_audio(device, test_profile)
-
         test_sequence()
-
+        self.collect_audio_diagnostics()
+        if collect_audio_files:
+            self.collect_audio_files()
         self.cleanup_bluetooth_audio(device, test_profile)
 
 
@@ -147,7 +162,10 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         device = self.devices['BLUETOOTH_AUDIO'][0]
         test_profile = A2DP_MEDIUM
         test_sequence = lambda: self.playback_back2back(device, test_profile)
-        self.au_run_test_sequence(device, test_sequence, test_profile)
+        self.au_run_test_sequence(device,
+                                  test_sequence,
+                                  test_profile,
+                                  collect_audio_files=True)
 
 
     @test_wrapper('A2DP pinned playback test',

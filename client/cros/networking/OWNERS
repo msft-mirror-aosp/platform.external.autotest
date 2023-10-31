@@ -1,1 +1,1 @@
-include /WIFI_OWNERS
+include chromiumos/owners:v1:/wifi/OWNERS.tests

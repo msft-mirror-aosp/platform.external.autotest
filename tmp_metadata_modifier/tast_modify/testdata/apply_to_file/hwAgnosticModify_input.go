@@ -19,7 +19,6 @@ func init() {
 		Desc:         "testing description",
 		Contacts:     []string{"contact@google.com"},
 		BugComponent: "b:1234567",
-		HwAgnostic:   false,
 		Attr:         []string{"group:mainline"},
 	})
 }

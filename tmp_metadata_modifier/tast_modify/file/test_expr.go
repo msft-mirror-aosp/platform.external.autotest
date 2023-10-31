@@ -5,12 +5,14 @@
 package file
 
 import (
+	"fmt"
+
 	"go/ast"
 )
 
 // TestExpr represents the testing.Test{...} ast declaration.
 type TestExpr struct {
-	*ast.CompositeLit
+	*StructExpr
 }
 
 // FindTestExpr finds the testing.Test declaration in the given
@@ -62,10 +64,56 @@ func FindTestExpr(parsedFile *ast.File) (*TestExpr, bool) {
 					continue
 				}
 				// Found testing.Test{...}.
-				//return x.(*TestExpr), true
-				return &TestExpr{x}, true
+				return &TestExpr{&StructExpr{x}}, true
 			}
 		}
 	}
 	return nil, false
+}
+
+// FindParamTestExprs returns a list of ast expressions for
+// all of the parameterized tests in the given parent test,
+// or nil if there are none.
+func (x *TestExpr) FindParamTestExprs(namePrefix string) (map[string]*ParamTestExpr, error) {
+	paramField := x.FindFieldExpr("Params")
+	if paramField == nil {
+		return nil, nil
+	}
+	paramValue, ok := paramField.expr.Value.(*ast.CompositeLit)
+	if !ok {
+		return nil, fmt.Errorf("Param field was not a CompositeLit in %s", namePrefix)
+	}
+
+	output := make(map[string]*ParamTestExpr)
+	for _, elt := range paramValue.Elts {
+		test, ok := elt.(*ast.CompositeLit)
+		if !ok {
+			return nil, fmt.Errorf("Param element was not a CompositeLit in %s", namePrefix)
+		}
+		p := &ParamTestExpr{&StructExpr{test}}
+		name := p.Name()
+		if name == "" {
+			output[namePrefix] = p
+		} else {
+			output[namePrefix+"."+name] = p
+		}
+	}
+	if len(output) == 0 {
+		return nil, nil
+	}
+	return output, nil
+}
+
+// Name returns the name used by this test expression.
+// This does NOT include the package name.
+func (x *TestExpr) Name() string {
+	funcField := x.FindFieldExpr("Func")
+	if funcField == nil {
+		return ""
+	}
+	funcValue, ok := funcField.expr.Value.(*ast.Ident)
+	if funcValue == nil || !ok {
+		return ""
+	}
+	return funcValue.Name
 }

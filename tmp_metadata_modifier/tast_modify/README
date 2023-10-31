@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+-------------------------------------
 Running this code:
 
 `go run . --help` in this directory to see up-to-date help.
@@ -12,5 +13,11 @@ and how to select which tests are modified ("filters").
 e.g.
 go run . --localOnly --removeContacts="foo@google.com, bar@google.com" --dryRun
 
+-------------------------------------
+Using files as input:
+e.g.
+go run . --setHwAgnostic --testNames "`cat path/to/file`"
+
+-------------------------------------
 Editing this code:
 Use `go test ./...` in this directory to execute tests.

@@ -6,10 +6,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"strings"
 
 	"go.chromium.org/chromiumos/tast_metadata_modifier/action"
+	"go.chromium.org/chromiumos/tast_metadata_modifier/file"
 	"go.chromium.org/chromiumos/tast_metadata_modifier/filter"
 )
 
@@ -23,6 +23,26 @@ func splitInputStrings(s string) []string {
 	for _, elt := range strings.FieldsFunc(s, splitFunc) {
 		if elt != "" {
 			output = append(output, strings.TrimSpace(elt))
+		}
+	}
+	return output
+}
+
+// removeRepeats returns a []string that is a version of the
+// given []string with no repeated values.
+// Note: will leave the last instance of each repeated value.
+func removeRepeats(input []string) []string {
+	output := []string{}
+	for i := 0; i < len(input); i++ {
+		duplicate := false
+		for j := i + 1; j < len(input); j++ {
+			if input[i] == input[j] {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			output = append(output, input[i])
 		}
 	}
 	return output
@@ -97,13 +117,20 @@ func HandleInputFlags() (srcDir string, pathFilter *PathFilter,
 		SkipPrivate: publicOnly,
 		SkipLocal:   remoteOnly,
 		SkipRemote:  localOnly,
-		Packages:    splitInputStrings(packages),
+		Packages:    removeRepeats(splitInputStrings(packages)),
+	}
+
+	// Handle filter flags.
+	var testIDSet file.TestIDSet
+	if testNames != "" {
+		testIDSet = file.NewTestIDSet(splitInputStrings(testNames))
+		filters = append(filters, filter.TestNames(testIDSet))
 	}
 
 	// Handle action flags.
 	if removeContacts != "" {
-		actions = append(actions, action.RemoveContacts(splitInputStrings(removeContacts)))
-		fmt.Println(splitInputStrings(removeContacts))
+		emails := removeRepeats(splitInputStrings(removeContacts))
+		actions = append(actions, action.RemoveContacts(emails))
 	}
 	if replaceContact != "" {
 		input := splitInputStrings(replaceContact)
@@ -113,29 +140,26 @@ func HandleInputFlags() (srcDir string, pathFilter *PathFilter,
 		actions = append(actions, action.ReplaceContact(input[0], input[1]))
 	}
 	if appendContacts != "" {
-		actions = append(actions, action.AppendContacts(splitInputStrings(appendContacts)))
+		emails := removeRepeats(splitInputStrings(appendContacts))
+		actions = append(actions, action.AppendContacts(emails))
 	}
 	if prependContacts != "" {
-		actions = append(actions, action.PrependContacts(splitInputStrings(prependContacts)))
+		emails := removeRepeats(splitInputStrings(prependContacts))
+		actions = append(actions, action.PrependContacts(emails))
 	}
 
 	if setHwAgnostic && unsetHwAgnostic {
 		panic("Cannot both set and unset HwAgnostic field!")
 	}
 	if setHwAgnostic {
-		actions = append(actions, action.SetHwAgnostic())
+		actions = append(actions, action.SetHwAgnostic(testIDSet))
 	}
 	if unsetHwAgnostic {
-		actions = append(actions, action.UnsetHwAgnostic())
+		actions = append(actions, action.UnsetHwAgnostic(testIDSet))
 	}
 
 	if len(actions) == 0 {
 		panic("Must define at least one action!")
-	}
-
-	// Handle filter flags.
-	if testNames != "" {
-		filters = append(filters, filter.TestNames(splitInputStrings(testNames)))
 	}
 
 	// Handle mode flags.

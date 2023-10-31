@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 
 	"go.chromium.org/chromiumos/tast_metadata_modifier/action"
+	"go.chromium.org/chromiumos/tast_metadata_modifier/file"
 	"go.chromium.org/chromiumos/tast_metadata_modifier/filter"
 )
 
@@ -30,21 +31,28 @@ func TestApplyToFile(t *testing.T) {
 	// Set up temporary directory in which to apply the file-modifying function.
 	tmpDirPath := t.TempDir()
 	tmpDirName := filepath.Base(tmpDirPath)
-	fmt.Println(fmt.Sprintf("tast.%s.FilteredAppend", tmpDirName))
 
 	// Testcase declarations.
 	Testcases := map[string]ApplyToFileTestcase{
 		"noop":          {},
 		"appendContact": {Actions: []action.Action{action.AppendContacts([]string{"name@email.com"})}},
-		"filteredNoop": {Filters: []filter.Filter{filter.TestNames([]string{"notAMatch"})},
+		"filteredNoop": {Filters: []filter.Filter{filter.TestNames(file.NewTestIDSet([]string{"notAMatch"}))},
 			Actions: []action.Action{action.AppendContacts([]string{"name@email.com"})}},
-		"filteredAppend": {Filters: []filter.Filter{filter.TestNames([]string{
-			fmt.Sprintf("tast.%s.FilteredAppend", tmpDirName)})},
+		"filteredAppend": {Filters: []filter.Filter{filter.TestNames(file.NewTestIDSet([]string{
+			fmt.Sprintf("tast.%s.FilteredAppend", tmpDirName)}))},
 			Actions: []action.Action{action.AppendContacts([]string{"name@email.com"})}},
-		"hwAgnosticModify": {Actions: []action.Action{action.SetHwAgnostic()}},
-		"hwAgnosticAdd":    {Actions: []action.Action{action.SetHwAgnostic()}},
-		"hwAgnosticRemove": {Actions: []action.Action{action.UnsetHwAgnostic()}},
-		"hwAgnosticParam":  {Actions: []action.Action{action.SetHwAgnostic()}},
+		"hwAgnosticModify":    {Actions: []action.Action{action.SetHwAgnostic(nil)}},
+		"hwAgnosticAdd":       {Actions: []action.Action{action.SetHwAgnostic(nil)}},
+		"hwAgnosticRemove":    {Actions: []action.Action{action.UnsetHwAgnostic(nil)}},
+		"hwAgnosticRemoveAll": {Actions: []action.Action{action.UnsetHwAgnostic(nil)}},
+		"hwAgnosticParam":     {Actions: []action.Action{action.SetHwAgnostic(nil)}},
+		"hwAgnosticParamAll": {Actions: []action.Action{action.SetHwAgnostic(
+			file.NewTestIDSet([]string{
+				"tast." + tmpDirName + ".Simple.variant1",
+				"tast." + tmpDirName + ".Simple.variant2",
+			}))}},
+		"hwAgnosticParamSome": {Actions: []action.Action{action.SetHwAgnostic(
+			file.NewTestIDSet([]string{"tast." + tmpDirName + ".Simple.variant2"}))}},
 	}
 
 	// Iterate through testcases.

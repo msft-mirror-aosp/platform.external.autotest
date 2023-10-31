@@ -14,12 +14,11 @@ type otherThings struct {
 
 func init() {
 	testing.AddTest(&testing.Test{
-		Func:         Simple,
-		LacrosStatus: testing.LacrosVariantUnneeded,
+		Func:         HasParams,
 		Desc:         "testing description",
 		Contacts:     []string{"contact@google.com"},
 		BugComponent: "b:1234567",
-		Attr:         []string{"group:mainline", "group:hw_agnostic"},
+		Attr:         []string{"group:mainline"},
 		Timeout:      chrome.GAIALoginTimeout + time.Minute,
 		Params: []testing.Param{
 			{

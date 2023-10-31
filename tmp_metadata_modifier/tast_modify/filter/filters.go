@@ -16,13 +16,11 @@ type Filter func(*file.TestFile) (bool, error)
 // TestNames returns a Filter which flags whether or not a matching
 // file has a test name in the given list of ids.
 // e.g. "tast.packageName.TestName".
-func TestNames(tests []string) Filter {
+func TestNames(tests file.TestIDSet) Filter {
 	return func(f *file.TestFile) (bool, error) {
-		id := f.TestID()
-		for _, t := range tests {
-			if id == t {
-				return true, nil
-			}
+		ids := f.TestIDs()
+		if overlap := tests.Overlap(ids); len(overlap) != 0 {
+			return true, nil
 		}
 		return false, nil
 	}

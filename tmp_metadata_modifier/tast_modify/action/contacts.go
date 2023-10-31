@@ -8,12 +8,21 @@ import (
 	"go.chromium.org/chromiumos/tast_metadata_modifier/file"
 )
 
-// SetContactsAction replaces the entire contacts for a test with
-// the given values.
-func SetContacts(emails []string) Action {
-	return func(f *file.TestFile) (bool, error) {
-		return f.SetContacts(emails)
+const contactsFieldName = "Contacts"
+
+// setContactsInFile is a helper function to set the contacts.
+func setContactsInFile(f *file.TestFile, emails []string) (bool, error) {
+	return f.SetTestField(
+		contactsFieldName, file.FormatStrings(file.FormatManyLines, emails))
+}
+
+// contactsFromFile is a helper function to get the contacts.
+func contactsFromFile(f *file.TestFile) ([]string, error) {
+	contactsField := f.FindTestField(contactsFieldName)
+	if contactsField == nil {
+		return []string{}, nil
 	}
+	return contactsField.Strings()
 }
 
 // removeMatchingEmails takes a list of contacts and a list of
@@ -36,53 +45,65 @@ func removeMatchingEmails(contacts, emails []string) []string {
 	return newContacts
 }
 
-// RemoveContactsAction returns an action that removes the given
-// contact emails from the test declaration.
-func RemoveContacts(emails []string) Action {
+// SetContacts returns an action which replaces the entire
+// contacts for a test with the given values.
+func SetContacts(emails []string) Action {
 	return func(f *file.TestFile) (bool, error) {
-		contacts := f.Contacts()
-		newContacts := removeMatchingEmails(contacts, emails)
-		if len(contacts) != len(newContacts) {
-			return f.SetContacts(emails)
-		}
-		return false, nil
+		return setContactsInFile(f, emails)
 	}
 }
 
-// ReplaceContactAction returns an action that replaces the given oldEmail
+// RemoveContacts returns an action that removes the given
+// contact emails from the test declaration.
+func RemoveContacts(emails []string) Action {
+	return func(f *file.TestFile) (bool, error) {
+		return f.RemoveStringsFromTest(
+			contactsFieldName, emails, file.FormatManyLines)
+	}
+}
+
+// ReplaceContact returns an action that replaces the given oldEmail
 // with the given newEmail in the test's contacts.
 func ReplaceContact(oldEmail, newEmail string) Action {
 	return func(f *file.TestFile) (bool, error) {
-		contacts := f.Contacts()
+		contacts, err := contactsFromFile(f)
+		if err != nil {
+			return false, err
+		}
 		for i, elt := range contacts {
 			if elt == oldEmail {
 				contacts[i] = newEmail
-				f.SetContacts(contacts)
-				return true, nil
+				return setContactsInFile(f, contacts)
 			}
 		}
 		return false, nil
 	}
 }
 
-// AppendContactsAction returns an action that appends the given emails to
+// AppendContacts returns an action that appends the given emails to
 // a test's contacts, deleting them elsewhere in the list if already present.
 func AppendContacts(emails []string) Action {
 	return func(f *file.TestFile) (bool, error) {
-		contacts := f.Contacts()
+		contacts, err := contactsFromFile(f)
+		if err != nil {
+			return false, err
+		}
 		newContacts := removeMatchingEmails(contacts, emails)
 		newContacts = append(newContacts, emails...)
-		return f.SetContacts(newContacts)
+		return setContactsInFile(f, newContacts)
 	}
 }
 
-// PrependContactsAction returns an action that prepends the given emails to
+// PrependContacts returns an action that prepends the given emails to
 // a test's contacts, deleting them elsewhere in the list if already present.
 func PrependContacts(emails []string) Action {
 	return func(f *file.TestFile) (bool, error) {
-		contacts := f.Contacts()
+		contacts, err := contactsFromFile(f)
+		if err != nil {
+			return false, err
+		}
 		newContacts := removeMatchingEmails(contacts, emails)
 		newContacts = append(emails, newContacts...)
-		return f.SetContacts(newContacts)
+		return setContactsInFile(f, newContacts)
 	}
 }

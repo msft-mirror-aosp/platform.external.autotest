@@ -19,7 +19,7 @@ func init() {
 		Desc:         "testing description",
 		Contacts:     []string{"contact@google.com"},
 		BugComponent: "b:1234567",
-		Attr:         []string{"group:mainline", "group:hw_agnostic"},
+		Attr:         []string{"group:mainline"},
 		Timeout:      chrome.GAIALoginTimeout + time.Minute,
 		Params: []testing.Param{
 			{

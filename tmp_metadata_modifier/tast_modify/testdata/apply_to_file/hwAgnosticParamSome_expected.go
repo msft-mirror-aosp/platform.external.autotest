@@ -19,7 +19,7 @@ func init() {
 		Desc:         "testing description",
 		Contacts:     []string{"contact@google.com"},
 		BugComponent: "b:1234567",
-		Attr:         []string{"group:mainline", "group:hw_agnostic"},
+		Attr:         []string{"group:mainline"},
 		Timeout:      chrome.GAIALoginTimeout + time.Minute,
 		Params: []testing.Param{
 			{
@@ -33,7 +33,7 @@ func init() {
 			}, {
 				Name:              "variant2",
 				ExtraHardwareDeps: hwdep.D(pre.AppsStableModels),
-				ExtraAttr:         []string{"group:mainline"},
+				ExtraAttr:         []string{"group:mainline", "group:hw_agnostic"},
 				Fixture:           fixture.LoggedIn,
 				Val: testParameters{
 					tabletMode: false,

@@ -36,6 +36,8 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=['("group:graphics" && graphics_nightly && graphics_trace && graphics_av_analysis)'],
                  ignore_test_failures=True, max_run_sec=10500,
+                 # 3 means reboot at start and between every graphics tests.
+                 varslist=["graphics.rebootLevel=3"],
                  totalshards=10,
                  shardindex=2,
                  command_args=args,

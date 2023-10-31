@@ -28,6 +28,8 @@ def run(machine):
                  # This includes borealis.TraceReplay.* and borealis.TraceReplayProton.* minus the problematic graphics_weekly traces.
                  test_exprs=['("group:graphics" && !graphics_weekly && graphics_trace && graphics_av_analysis)'],
                  ignore_test_failures=True,
+                 # 3 means reboot at start and between every graphics tests.
+                 varslist=["graphics.rebootLevel=3"],
                  totalshards=4,
                  shardindex=2,
                  max_run_sec=21600,  # 6 hours.

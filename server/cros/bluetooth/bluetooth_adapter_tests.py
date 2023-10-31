@@ -4931,8 +4931,15 @@ class BluetoothAdapterTests(test.test):
 
         @return True if resume without suspend failure
         """
-        last_resume_result = self.host.run_short(
-                "cat /sys/kernel/debug/cros_ec/last_resume_result").stdout
+        try:
+            last_resume_result = self.host.run_short(
+                    "cat /sys/kernel/debug/cros_ec/last_resume_result").stdout
+        except Exception as e:
+            # Skip the test if the file does not exist
+            if "No such file or directory" in str(e):
+                return True
+            else:
+                raise
         is_timeout = (int(last_resume_result, 16) >> 31)
         self.results = {'no timeout in EC suspend': not bool(is_timeout)}
         return all(self.results.values())
@@ -5097,12 +5104,11 @@ class BluetoothAdapterTests(test.test):
 
         results['success'] = success
         results['suspend exit code'] = suspend.exitcode
-        self.results = results
 
         logging.info('test_wait_for_resume(): %r', results)
 
         self.test_last_resume_success()
-
+        self.results = results
         return all([success, suspend.exitcode == 0])
 
 

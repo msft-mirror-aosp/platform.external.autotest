@@ -188,7 +188,10 @@ class ServoV4ChargeManager(object):
                         'control is not available on servod.',
                         'charger_attached')
                 return
-            ec_opinion = self._servo.get('charger_attached')
+            try:
+                ec_opinion = self._servo.get('charger_attached')
+            except Exception as e:
+                raise error.TestError(e)
             if ec_opinion != connected:
                 str_lookup = {True: 'connected', False: 'disconnected'}
                 msg = ('EC thinks charger is %s but it should be %s.'
@@ -205,7 +208,12 @@ class ServoV4ChargeManager(object):
                      delay_sec=_DELAY_SEC, backoff=_BACKOFF)
         def check_host_ac(connected):
             """Check if DUT AC power is as expected, if not, retry."""
-            if self._host.is_ac_connected() != connected:
+            try:
+                ac_check = self._host.is_ac_connected()
+            except Exception:
+                raise error.TestError(
+                        "Failed to read power_supply_info on DUT.")
+            if ac_check != connected:
                 intent = 'connect' if connected else 'disconnect'
                 raise error.TestError('DUT failed to %s AC power.'% intent)
 

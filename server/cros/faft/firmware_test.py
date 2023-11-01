@@ -101,7 +101,9 @@ class FirmwareTest(test.test):
     DEFAULT_PWR_RETRIES = 5
 
     # FWMP space constants
-    FWMP_CLEARED_EXIT_STATUS = 1
+    # TODO(b/308823182): only accept status 0 and 26 after the fwmp exit status
+    # has been changed for a while.
+    FWMP_IS_CLEARED_EXIT_STATUSES = [0, 1, 26]
     FWMP_CLEARED_ERROR_MSG = ('CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS'
                               '_INVALID')
 
@@ -2260,10 +2262,16 @@ class FirmwareTest(test.test):
         res = self.host.run('cryptohome '
                             '--action=get_firmware_management_parameters',
                             ignore_status=True)
-        if res.exit_status and res.exit_status != self.FWMP_CLEARED_EXIT_STATUS:
+        fwmp_is_cleared_error = (self.FWMP_CLEARED_ERROR_MSG in res.stdout
+                                 and res.exit_status
+                                 in self.FWMP_IS_CLEARED_EXIT_STATUSES)
+        logging.info('FWMP is cleared error: %s', fwmp_is_cleared_error)
+        if res.exit_status and not fwmp_is_cleared_error:
             raise error.TestError('Could not run cryptohome command %r' % res)
-        return (self.FWMP_CLEARED_ERROR_MSG in res.stdout
-                or tpm_utils.FwmpIsAllZero(res.stdout))
+        fwmp_is_cleared = (fwmp_is_cleared_error
+                           or tpm_utils.FwmpIsAllZero(res.stdout))
+        logging.info('FWMP is cleared: %s', fwmp_is_cleared)
+        return fwmp_is_cleared
 
 
     def _tpm_is_owned(self):

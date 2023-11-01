@@ -1001,9 +1001,11 @@ suite:wifi_interop_static
 suite:wifi_interop_wpa2
 suite:wifi_lucidsleep
 suite:wifi_matfunc
+suite:wifi_matfunc_persistence
 suite:wifi_matfunc_autotest_flaky
 suite:wifi_matfunc_flaky
 suite:wifi_matfunc_openwrt
+suite:wifi_matfunc_persistence_openwrt
 suite:wifi_matfunc_openwrt_flaky
 suite:wifi_perf
 suite:wifi_perf_flaky

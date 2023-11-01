@@ -1,29 +1,26 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2023 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = 'chromeos-kernel-wifi@google.com'
-NAME = 'tast.wificell-func-stable-openwrt'
+AUTHOR = 'The ChromiumOS Authors'
+NAME = 'tast.wificell-func-persistence-stable'
 METADATA = {
-    "contacts": ["chromeos-wifi-champs@google.com"],
-    'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
-    'criteria': 'Tauto wrapper for specified tast tests',
+    'contacts': ['chromeos-wifi-champs@google.com'],
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:wifi_matfunc_openwrt'
+ATTRIBUTES = 'suite:wifi_matfunc_persistence'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = 'peripheral_wifi_state:WORKING'
 
 DOC = '''
-Run the stable Tast tests for basic WiFi functions on suite:wifi_matfunc_openwrt which is a functional clone of wifi_matfunc.
+Run the stable Tast WiFi tests that evaluate persistent (across reboot) behavior.
 
-"group:wificell" indicates that the test runs on a wificell fixture.
+"group:wificell" indicates that the test runs on a wificell fixture. Its
 sub-attributes:
   * "wificell_func": the test is used to verify basic WiFi functionality.
   * "wificell_unstable": the test is unstable or yet to be verified as stable.
-  * "wificell_reboot": the test evalulates rebooting the DUT to evaluate state.
+  * "wificell_reboot": the test evaluates rebooting the DUT to evaluate state.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
@@ -35,8 +32,8 @@ See http://go/tast-failures for information about investigating failures.
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:wificell" && wificell_func &&'
-                 '(!wificell_unstable || (wificell_unstable && wificell_func_ax)) && !wificell_reboot)'],
+                 test_exprs=['("group:wificell" && wificell_func && '
+                             '!wificell_unstable && wificell_reboot)'],
                  ignore_test_failures=False, max_run_sec=18000,
                  command_args=args)
 

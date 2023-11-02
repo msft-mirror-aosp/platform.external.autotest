@@ -3,7 +3,11 @@
 # found in the LICENSE file.
 
 import logging
+import six.moves
+import socket
 
+from autotest_lib.client.bin import utils
+from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.cros import constants
 from autotest_lib.server import autotest
 
@@ -78,14 +82,24 @@ class DarkResumeUtils(object):
                               system.
         """
         logging.info('Suspending DUT (in background)...')
-        self._client_proxy.suspend_bg(suspend_secs)
+        try:
+            self._client_proxy.suspend_bg(suspend_secs)
+        except (socket.error, six.moves.xmlrpc_client.ProtocolError,
+                six.moves.http_client.BadStatusLine):
+            self._rebuild_xmlrpc_proxy()
+            self._client_proxy.suspend_bg(suspend_secs)
 
 
     def stop_resuspend_on_dark_resume(self, stop_resuspend=True):
         """
         If |stop_resuspend| is True, stops re-suspend on seeing a dark resume.
         """
-        self._client_proxy.set_stop_resuspend(stop_resuspend)
+        try:
+            self._client_proxy.set_stop_resuspend(stop_resuspend)
+        except (socket.error, six.moves.xmlrpc_client.ProtocolError,
+                six.moves.http_client.BadStatusLine):
+            self._rebuild_xmlrpc_proxy()
+            self._client_proxy.set_stop_resuspend(stop_resuspend)
 
 
     def count_dark_resumes(self):
@@ -96,13 +110,23 @@ class DarkResumeUtils(object):
         @return the number of dark resumes counted by this DarkResumeUtils
 
         """
-        return self._client_proxy.get_dark_resume_count()
+        try:
+            return self._client_proxy.get_dark_resume_count()
+        except (socket.error, six.moves.xmlrpc_client.ProtocolError,
+                six.moves.http_client.BadStatusLine):
+            self._rebuild_xmlrpc_proxy()
+            return self._client_proxy.get_dark_resume_count()
 
 
 
     def host_has_lid(self):
         """Returns True if the DUT has a lid."""
-        return self._client_proxy.has_lid()
+        try:
+            return self._client_proxy.has_lid()
+        except (socket.error, six.moves.xmlrpc_client.ProtocolError,
+                six.moves.http_client.BadStatusLine):
+            self._rebuild_xmlrpc_proxy()
+            return self._client_proxy.has_lid()
 
 
     def _get_xmlrpc_proxy(self):
@@ -131,3 +155,40 @@ class DarkResumeUtils(object):
                     constants.DARK_RESUME_XMLRPC_SERVER_READY_METHOD,
                 timeout_seconds=XMLRPC_BRINGUP_TIMEOUT_SECONDS)
         return proxy
+
+    def _rebuild_xmlrpc_proxy(self):
+        """SSH tunnel between RPC server and client might be broken while the
+        server is still alive.
+
+        Rebuild the ssh tunnel between them and the xmlrpc proxy. Return when
+        the proxy is ready.
+        """
+        logging.info("Dark resume xmlrpc proxy connection lost. Rebuilding...")
+        # Disconnect the old tunnel, even though it is likely to be already
+        # terminated.
+        remote_name, tunnel_proc, remote_pid = self._host.rpc_server_tracker._rpc_proxy_map[
+                constants.DARK_RESUME_XMLRPC_SERVER_PORT]
+        self._host.disconnect_ssh_tunnel(tunnel_proc)
+
+        # Rebuild ssh tunnel and update xmlrpc proxy map.
+        local_port = utils.get_unused_port()
+        new_tunnel_proc = self._host.create_ssh_tunnel(
+                constants.DARK_RESUME_XMLRPC_SERVER_PORT, local_port)
+        self._host.rpc_server_tracker._rpc_proxy_map[
+                constants.DARK_RESUME_XMLRPC_SERVER_PORT] = (remote_name,
+                                                             new_tunnel_proc,
+                                                             remote_pid)
+
+        newurl = "http://localhost:%d" % local_port
+        proxy = six.moves.xmlrpc_client.ServerProxy(newurl, allow_none=True)
+
+        # Make sure the rebuilt proxy is ready.
+        @retry.retry((socket.error, six.moves.xmlrpc_client.ProtocolError,
+                      six.moves.http_client.BadStatusLine),
+                     timeout_min=XMLRPC_BRINGUP_TIMEOUT_SECONDS / 60)
+        def ready_test():
+            getattr(proxy, constants.DARK_RESUME_XMLRPC_SERVER_READY_METHOD)()
+
+        ready_test()
+        del self._client_proxy
+        self._client_proxy = proxy

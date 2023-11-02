@@ -133,7 +133,10 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                   supports_floss=True)
     def au_a2dp_aac_test(self):
         """A2DP test with sinewaves with the AAC codec."""
+        # TODO(b/308882924): remove this once it is enabled by default
+        self.test_set_force_a2dp_advanced_codecs_enabled(True)
         self._au_a2dp_test(A2DP, audio_config={A2DP_CODEC: AAC})
+        self.test_set_force_a2dp_advanced_codecs_enabled(False)
 
     # The A2DP long test is a stress test. Exclude it from the AVL.
     @test_wrapper('A2DP sinewave long test',

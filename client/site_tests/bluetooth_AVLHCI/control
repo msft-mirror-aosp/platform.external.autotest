@@ -40,7 +40,7 @@ METADATA = {
     'hw_agnostic': False,
 }
 
-ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_fw'
+ATTRIBUTES = 'suite:bluetooth_sa2, suite:bluetooth_fw'
 TEST_TYPE = 'client'
 
 

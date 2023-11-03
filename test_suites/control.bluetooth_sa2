@@ -1,0 +1,42 @@
+# Copyright 2013 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "bluetooth_sa2"
+PURPOSE = "Bluetooth Standalone automated tests, overflow suite to avoid hitting suite runtime limit"
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+METADATA = {
+    "contacts": ["cros-conn-test-team@google.com"],
+    "bug_component": "b:979076", # ChromeOS > EngProd > Platform > Connectivity > Bluetooth
+    }
+
+DOC = """
+This suite runs a subset set of all stable Bluetooth functional tests for hardware and
+software which doesn't require a peer device. This was created because bluetooth_sa suite
+is running over the 3 hour time limit. This will be deleted once bluetooth tests are
+ported to tast and all tests can run under the suite time limit
+
+All stable bluetooth tests will be added to bluetooth/bluetooth_sa/bluetooth_sa2 suites.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

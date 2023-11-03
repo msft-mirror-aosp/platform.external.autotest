@@ -83,7 +83,7 @@ METADATA = {
     'requirements': ['bt-gen-0001-v01'],
 }
 
-ATTRIBUTES = 'suite:bluetooth_sa'
+ATTRIBUTES = 'suite:bluetooth_sa2'
 MAX_RESULT_SIZE_KB = 512000
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'

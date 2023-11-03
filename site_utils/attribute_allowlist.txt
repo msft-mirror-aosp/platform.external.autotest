@@ -335,6 +335,7 @@ suite:bluetooth_manual
 suite:bluetooth_mtbf
 suite:bluetooth_perf
 suite:bluetooth_sa
+suite:bluetooth_sa2
 suite:bluetooth_standalone_cq
 suite:bluetooth_stress
 suite:bluetooth_wifi_coex

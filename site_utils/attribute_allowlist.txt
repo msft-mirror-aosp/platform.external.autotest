@@ -993,6 +993,8 @@ suite:wifi_cross_device_p2p
 suite:wifi_cross_device_p2p_flaky
 suite:wifi_cross_device_sap
 suite:wifi_cross_device_sap_flaky
+suite:wifi_cross_device_multidut
+suite:wifi_cross_device_multidut_flaky
 suite:wifi_endtoend
 suite:wifi_endtoend_flaky
 suite:wifi_flaky

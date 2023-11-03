@@ -1,0 +1,37 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'The ChromiumOS Authors'
+NAME = 'tast.wificell-cross-device-multidut-flaky'
+METADATA = {
+    "contacts": ["chromeos-wifi-champs@google.com"],
+    'bug_component': 'b:893827', # ChromeOS > Platform > Connectivity > WiFi
+    'criteria': 'Tauto wrapper for cross-device-multidut-flaky tast tests',
+}
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:wifi_cross_device_multidut_flaky'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+DEPENDENCIES = 'peripheral_wifi_state:WORKING'
+
+DOC = '''
+Run the unstable Tast tests which verify basic WiFi functions using multi-dut setup.
+
+"group:wificell" indicates that the test runs on a wificell fixture. Its
+sub-attributes:
+  * "wificell_cross_device": The group of WiFi tests running on mutil-dut testbeds.
+  * "wificell_cross_device_multidut_unstable": Flaky tests that test basic WiFi mutidut connections to AP.
+
+See http://go/tast-failures for information about investigating failures.
+'''
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['("group:wificell_cross_device" && wificell_cross_device_unstable)'],
+                 ignore_test_failures=True, max_run_sec=10800,
+                 command_args=args)
+
+parallel_simple(run, machines)

@@ -1209,7 +1209,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                 fw_cmd = "trap '' SIGHUP; %s" % fw_cmd
 
                 # Update firmware on DUT
-                logging.info('Updating firmware.')
+                logging.info('Updating firmware with %r.', fw_cmd)
                 image_bios_version, image_ec_version = self.get_version_from_image(
                         self, dest_bios_path, dest_ec_path)
                 try:

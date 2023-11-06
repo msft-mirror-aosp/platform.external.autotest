@@ -248,9 +248,10 @@ class TradefedTest(test.test):
         # Load expected test failures to exclude them from re-runs.
         self._waivers = set()
         is_dev = uri and uri.startswith('DEV')
+        is_public = not uri
         self._waivers.update(
                 self._get_expected_failures('expectations', bundle_spec,
-                                            bundle, is_dev))
+                                            bundle, is_dev, is_public))
         if not retry_manual_tests:
             self._waivers.update(
                     self._get_expected_failures('manual_tests', bundle_spec,
@@ -1029,7 +1030,8 @@ class TradefedTest(test.test):
                                directory,
                                bundle_spec,
                                bundle_abi,
-                               is_dev=False):
+                               is_dev=False,
+                               is_public=False):
         """Return a list of expected failures or no test module.
 
         @param directory: A directory with expected no tests or failures files.
@@ -1038,6 +1040,8 @@ class TradefedTest(test.test):
         @param bundle_abi: 'arm' or 'x86' if the test is for the particular ABI.
                            None otherwise (like GTS, built for multi-ABI.)
         @param is_dev: Check if it's DEV runner we only apply default waivers.
+        @param is_public: Check if it's running public tests when we should
+                          ignore waivers.
         @return: A list of expected failures or no test modules for the current
                  testing device.
         """
@@ -1065,7 +1069,8 @@ class TradefedTest(test.test):
         # accounts, so if set proper ACLs we need to maintain a list of moblab
         # service accounts.
         # TODO(ruki): potentially will support moblab if needed.
-        if bundle_spec.suite_name == 'cts' and not client_utils.is_moblab():
+        # Since moblab will run public version tests so here just check is_public.
+        if bundle_spec.suite_name == 'cts' and not is_public:
             waivers_list = []
             # List waiver files from GCS bucket.
             result = utils.run('gsutil',

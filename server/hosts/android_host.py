@@ -187,20 +187,42 @@ class AndroidHost(base_classes.Host):
 
         return host_port
 
+    def cache_usb_dev_path_with_retry(self, retry_count=5, retry_delay=2):
+        """
+        Same as cache_usb_dev_path, but will retry multiple times to address timing issue.
+
+        Args:
+            retry_count: Indicates how many times to retry before we give up.
+            retry_delay: Wait time in seconds between each retry.
+        """
+        while retry_count > 0 and self.usb_dev_path is None:
+            retry_count -= 1
+            if not self.cache_usb_dev_path():
+                logging.debug(
+                        'Retry cache usbdev path in %d seconds, %d retry count left.',
+                        retry_delay, retry_count)
+                time.sleep(retry_delay)
+
     def cache_usb_dev_path(self):
         """
         Read and cache usb devpath for the Android device.
+
+        Returns:
+            A bool value indicates whether cache action is successful.
         """
         cmd = 'adb devices -l | grep %s' % self.serial_number
-        res = self.phone_station.run(cmd)
-        for line in res.stdout.strip().split('\n'):
-            if len(line.split()) > 2 and line.split()[1] == 'device':
-                self.usb_dev_path = line.split()[2]
-                logging.info('USB devpath: %s', self.usb_dev_path)
-                break
+        # Example output "32201FDH2003NJ device usb:1-2.1.1.3.1 product:panther model:Pixel_7 device:panther transport_id:6"
+        res = self.phone_station.run(cmd, ignore_status=True)
+        if res.exit_status == 0:
+            for line in res.stdout.strip().split('\n'):
+                if len(line.split()) > 2 and line.split()[1] == 'device':
+                    self.usb_dev_path = line.split()[2]
+                    logging.info('USB devpath: %s', self.usb_dev_path)
+                    break
         if not self.usb_dev_path:
             logging.warning(
                     'Failed to collect usbdev path of the Android device.')
+        return self.usb_dev_path is not None
 
     def ensure_device_connectivity(self):
         """Ensure we can interact with the Android device via adb and
@@ -309,7 +331,7 @@ class AndroidHost(base_classes.Host):
                                   dut_out)
 
         self.restart_adb_server()
-        self.cache_usb_dev_path()
+        self.cache_usb_dev_path_with_retry()
         self.ensure_device_connectivity()
         self.get_gmscore_version()
         ip_address = self.get_wifi_ip_address()
@@ -337,7 +359,7 @@ class AndroidHost(base_classes.Host):
                                   dut_out)
 
         self.restart_adb_server()
-        self.cache_usb_dev_path()
+        self.cache_usb_dev_path_with_retry()
         self.ensure_device_connectivity()
         self.get_gmscore_version()
         self.adb_over_tcp(persist_reboot=False)

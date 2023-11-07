@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import logging
 
 from autotest_lib.client.bin import utils
@@ -16,6 +17,8 @@ class touch_GestureNav(touch_playback_test_base.touch_playback_test_base):
     version = 1
 
     _WAIT_FOR_COMPLETE_NAV = 5
+    _PAGE_BACK = 'test_page_back.html'
+    _PAGE_FWD = 'test_page_fwd.html'
 
     def _is_testable(self):
         """Returns True if the test can run on this device, else False."""
@@ -49,6 +52,18 @@ class touch_GestureNav(touch_playback_test_base.touch_playback_test_base):
                 exception=error.TestFail(fail_msg),
                 timeout=self._WAIT_FOR_COMPLETE_NAV)
 
+    def _get_navigate_url(self, file_name):
+        """
+        Copy source html page file to tmp folder and return navigation path.
+
+        @param file_name: used to store the test html file names
+
+        """
+        source_file_path = os.path.join(self.bindir, file_name)
+        cp_cmd = ('cp %s /tmp/%s' %(source_file_path, file_name))
+        os.system(cp_cmd)
+        navigate_url = ('file:///tmp/%s' %file_name)
+        return navigate_url
 
     def run_once(self):
         """Entry point of this test."""
@@ -60,8 +75,8 @@ class touch_GestureNav(touch_playback_test_base.touch_playback_test_base):
                            init_network_controller=True) as cr:
             self.tab = cr.browser.tabs[0]
 
-            url_back = 'https://www.youtube.com'
-            url_fwd = 'https://www.google.com'
+            url_back = self._get_navigate_url(self._PAGE_BACK)
+            url_fwd = self._get_navigate_url(self._PAGE_FWD)
 
             # Navigate to two urls in the same tab
             self.tab.Navigate(url_back)

@@ -66,7 +66,7 @@ class chromium(test.test):
                 f'{self.server_pkg}/out/Release',
         ])
         if self.test_args:
-            cmd.extend(self.test_args.split(' '))
+            cmd += f'-- {self.test_args}'
         logging.debug('Running: %s', cmd)
         exit_code = 0
         try:

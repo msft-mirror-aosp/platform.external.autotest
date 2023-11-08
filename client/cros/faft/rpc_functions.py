@@ -250,16 +250,6 @@ class BiosServicer(object):
         """
         return self._bios_handler.get_section_flags(section)
 
-    def set_preamble_flags(self, section, flags):
-        """Set the preamble flags of a firmware section.
-
-        @param section: A firmware section, either 'a' or 'b'.
-        @param flags: An integer of preamble flags.
-        """
-        version = self.get_version(section)
-        self._bios_handler.set_section_version(
-                section, version, flags, write_through=True)
-
     def get_body_sha(self, section):
         """Get SHA1 hash of BIOS RW firmware section.
 

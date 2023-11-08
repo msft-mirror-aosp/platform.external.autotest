@@ -29,7 +29,6 @@ class firmware_ECHash(FirmwareTest):
         self.backup_firmware()
         self.switcher.setup_mode('normal')
         self.setup_usbkey(usbkey=False)
-        self.setup_rw_boot()
 
     def cleanup(self):
         try:

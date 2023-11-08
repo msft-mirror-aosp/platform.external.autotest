@@ -20,13 +20,9 @@ TEST_TYPE = "server"
 DOC = """
 This test corrupts both firmware body A and B and checks the next boot results.
 
-The expected behavior is different if the firmware preamble USE_RO_NORMAL
-flag is enabled. In the case USE_RO_NORMAL ON, the firmware corruption
-doesn't hurt the boot results since it boots the RO path directly and does
-not load and verify the RW firmware body. In the case USE_RO_NORMAL OFF,
-the firmware verification fails on loading RW firmware and enters recovery
-mode. In this case, it requires a USB disk plugged-in, which contains a
-ChromeOS test image (built by "build_image --test").
+The RW firmware verification is expected to fail and enters recovery mode.
+It requires a USB disk plugged-in, which contains a ChromeOS test image
+(built by "build_image --test").
 """
 
 args_dict = utils.args_to_dict(args)

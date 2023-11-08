@@ -19,12 +19,6 @@ TEST_TYPE = "server"
 
 DOC = """
 This test corrupts firmware body B and checks the next boot results.
-
-The expected behavior is different if the firmware preamble USE_RO_NORMAL
-flag is enabled. In the case USE_RO_NORMAL ON, the firmware corruption
-doesn't hurt the boot results since it boots the RO path directly and does
-not load and verify the RW firmware body. In the case USE_RO_NORMAL OFF,
-the RW firwmare B corruption will result booting the firmware A.
 """
 
 args_dict = utils.args_to_dict(args)

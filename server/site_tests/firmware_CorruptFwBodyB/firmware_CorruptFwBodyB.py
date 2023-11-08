@@ -4,7 +4,6 @@
 
 import logging
 
-from autotest_lib.server.cros import vboot_constants as vboot
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.faft.firmware_test import ConnectionError
 
@@ -13,11 +12,7 @@ class firmware_CorruptFwBodyB(FirmwareTest):
     """
     Servo based firmware body B corruption test.
 
-    The expected behavior is different if the firmware preamble USE_RO_NORMAL
-    flag is enabled. In the case USE_RO_NORMAL ON, the firmware corruption
-    doesn't hurt the boot results since it boots the RO path directly and does
-    not load and verify the RW firmware body. In the case USE_RO_NORMAL OFF,
-    the RW firwmare B corruption will result booting the firmware A.
+    The RW firmware B corruption will result booting the firmware A.
     """
     version = 1
 
@@ -38,8 +33,6 @@ class firmware_CorruptFwBodyB(FirmwareTest):
 
     def run_once(self):
         """Runs a single iteration of the test."""
-        RO_enabled = (self.faft_client.bios.get_preamble_flags('b') &
-                      vboot.PREAMBLE_USE_RO_NORMAL)
         logging.info("Corrupt firmware body B.")
         self.check_state((self.checkers.fw_tries_checker, 'A'))
         offset_b, byte_b = self.faft_client.bios.get_body_one_byte('b')
@@ -51,12 +44,9 @@ class firmware_CorruptFwBodyB(FirmwareTest):
         self.try_fwb(1)
         self.switcher.mode_aware_reboot()
 
-        logging.info("If RO enabled, expected firmware B boot; otherwise, "
-                     "still A boot since B is corrupted. Restore B later.")
-        if RO_enabled:
-            self.check_state((self.checkers.fw_tries_checker, 'B'))
-        else:
-            self.check_state((self.checkers.fw_tries_checker, ('A', False)))
+        logging.info("Still expected A boot since B is corrupted. "
+                     "Restore B later.")
+        self.check_state((self.checkers.fw_tries_checker, ('A', False)))
         self.faft_client.bios.modify_body('b', offset_b, byte_b)
         self.switcher.mode_aware_reboot()
 

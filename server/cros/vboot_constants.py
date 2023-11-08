@@ -42,9 +42,6 @@ RECOVERY_REASON = {
     'RW_HASH_WRONG_SIZE': '26',  # 0x1A
     'RW_VERIFY_BODY':     '27',  # 0x1B
     'RW_VALID':           '28',  # 0x1C
-    # Read-only normal path requested by firmware preamble, but
-    # unsupported by firmware.
-    'RW_NO_RO_NORMAL':    '29',  # 0x1D
     # Firmware boot failure outside of verified boot
     'RO_FIRMWARE':        '32',  # 0x20
     # Recovery mode TPM initialization requires a system reboot.
@@ -141,7 +138,3 @@ GBB_FLAG_DEPRECATED_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP = 1 << 13
 GBB_FLAG_FORCE_MANUAL_RECOVERY = 1 << 14
 GBB_FLAG_DISABLE_FWMP = 1 << 15
 GBB_FLAG_ENABLE_UDC = 1 << 16
-
-# Firmware preamble flags, copied from:
-#     vboot_reference/firmware/include/vboot_struct.h
-PREAMBLE_USE_RO_NORMAL             = 0x00000001

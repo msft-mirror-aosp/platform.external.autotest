@@ -443,7 +443,6 @@ class server_job(base_job.base_job):
                     control, raise_warnings=False)
             self.fast = parsed_control.fast
             self.max_result_size_KB = parsed_control.max_result_size_KB
-            self.hw_deps = parsed_control.hw_deps
             # wrap this in a try to prevent client/SSP issues. Note: if the
             # except is hit, the timeout will be ignored.
             try:
@@ -898,7 +897,6 @@ class server_job(base_job.base_job):
                 namespace['use_packaging'] = use_packaging
                 namespace['synchronous_offload_dir'] = sync_dir
                 namespace['extended_timeout'] = self.extended_timeout
-                namespace['hw_deps'] = self.hw_deps
                 namespace['is_cft'] = self._is_cft
                 os.environ[OFFLOAD_ENVVAR] = sync_dir
                 self._execute_code(server_control_file, namespace)
@@ -1088,12 +1086,9 @@ class server_job(base_job.base_job):
 
         def group_func():
             try:
-                test.runtest(self, url, tag, args, dargs, self.hw_deps)
+                test.runtest(self, url, tag, args, dargs)
             except error.TestBaseException as e:
                 self.record(e.exit_status, subdir, testname, str(e))
-                raise
-            except error.TestNAError as e:
-                self.record('SKIP', subdir, testname, str(e))
                 raise
             except Exception as e:
                 info = str(e) + "\n" + traceback.format_exc()

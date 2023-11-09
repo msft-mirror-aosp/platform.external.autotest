@@ -125,7 +125,6 @@ class test_init(unittest.TestCase):
                 'fast',
                 'extended_timeout',
                 'force_full_log_collection',
-                'hw_deps',
         ])
 
         OPTIONAL_ATTRIBUTES = set([
@@ -133,7 +132,7 @@ class test_init(unittest.TestCase):
                 'num_tests_run', 'num_tests_failed', 'tag', 'warning_manager',
                 'warning_loggers', 'label', 'parent_job_id',
                 'max_result_size_KB', 'fast', 'extended_timeout',
-                'force_full_log_collection', 'hw_deps'
+                'force_full_log_collection'
         ])
 
         OPTIONAL_ATTRIBUTES_DEVICE_ERROR = set(['failed_with_device_error'])

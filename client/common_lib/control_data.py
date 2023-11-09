@@ -111,7 +111,6 @@ class ControlData(object):
         self.max_result_size_KB = DEFAULT_MAX_RESULT_SIZE_KB
         self.priority = priorities.Priority.DEFAULT
         self.extended_timeout = None
-        self.hw_deps = []
         self.fast = True
         # This will only be honored via `test_that`, and not in lab (for now).
         self.py_version = None
@@ -225,8 +224,6 @@ class ControlData(object):
         items = [x.strip() for x in val.split(',') if x.strip()]
         setattr(self, attr, set(items))
 
-    def _set_list(self, attr, val):
-        setattr(self, attr, list(val))
 
     def _set_dict(self, attr, val):
         setattr(self, attr, val)
@@ -341,9 +338,6 @@ class ControlData(object):
     def set_extended_timeout(self, val):
         """In seconds."""
         self._set_int('extended_timeout', val)
-
-    def set_hw_deps(self, val):
-        self._set_list('hw_deps', val)
 
     def set_py_version(self, val):
         """In majors, ie: 2 or 3."""

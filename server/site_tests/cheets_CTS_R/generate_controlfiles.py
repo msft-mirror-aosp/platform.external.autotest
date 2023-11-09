@@ -6,6 +6,7 @@
 
 # This is a trampoline script to invoke the actual generator script.
 
+import logging
 import os
 import sys
 

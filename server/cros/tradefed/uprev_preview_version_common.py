@@ -1,3 +1,5 @@
+import argparse
+import json
 import logging
 import os
 import subprocess
@@ -121,21 +123,53 @@ def upload_preview_xts(file_path: str, url_config: Dict[str, str], abi: str,
     return
 
 
-def main(config_path: str,
-         xts_name: str,
-         branch_name: str,
-         version_name: Optional[str] = None) -> None:
+def main(config_path: str, xts_name: str, branch_name: str,
+         uprev_base_path: str) -> None:
     """Function to uprev preview version and upload to gs if necessary.
 
     Args:
         config_path: A string which means a config json file path to modify.
         xts_name: A string which is one of the test names: (cts, vts).
         branch_name: A string which means branch name where development is taking place.
-        version_name: A string which means build id. If none, the latest build id is used.
+        uprev_base_path: A string which means uprev preview realpath dir.
 
     Raises:
         ConfigFileNotFoundException: An error when config_path does not exist in the directory.
     """
+    parser = argparse.ArgumentParser(
+            description=
+            'Update the preview version number in bundle_url_config and upload to gs if necessary.',
+            formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument(
+            '--to',
+            dest='preview_version',
+            default=None,
+            help=
+            'If updating with the latest preview version of CTS, this option is not required.'
+            ' Update the version number of preview_version in bundle_url_config and'
+            ' upload to gs if necessary. Example:\n'
+            '--to 9164413')
+    parser.add_argument(
+            '--to_latest',
+            dest='to_latest',
+            default=False,
+            action='store_true',
+            help='Update with the latest preview version of CTS. Example:\n'
+            '--to_latest')
+    parser.add_argument(
+            '--generate_gerrit_cl',
+            dest='generate_gerrit_cl',
+            default=False,
+            action='store_true',
+            help=
+            'Enable generating preview uprev Gerrit CL. Example: --generate_gerrit_cl.'
+    )
+    args = parser.parse_args()
+
+    if not args.preview_version and not args.to_latest:
+        parser.print_help()
+        return
+
     if not os.path.isfile(config_path):
         raise bundle_utils.ConfigFileNotFoundException(
                 f'invalid input: {config_path} does not exist in the directory.'
@@ -144,6 +178,7 @@ def main(config_path: str,
     url_config = bundle_utils.load_config(config_path)
     current_version_name = bundle_utils.get_preview_version(url_config)
     abi_info = bundle_utils.get_abi_info(url_config)
+    version_name = args.preview_version
     if not version_name:
         version_name = get_latest_version_name(branch_name, abi_info)
 
@@ -166,3 +201,25 @@ def main(config_path: str,
     logging.info(
             f'The value of {bundle_utils._PREVIEW_VERSION_NAME} was correctly uploaded to {version_name}.'
     )
+
+    # Call generate_controlfiles.py
+    logging.info("Now running generate_controlfiles.py")
+    subprocess.check_call([uprev_base_path + '/generate_controlfiles.py'],
+                          stdout=None,
+                          stderr=None,
+                          env=None,
+                          shell=True)
+
+    # Git add and git commit, sent out uprev CL.
+    if args.generate_gerrit_cl:
+        logging.info("Now generating Gerrit CL")
+        subprocess.run(['git', 'add', '.'], check=True)
+        with open(uprev_base_path + '/bundle_url_config.json',
+                  'r') as load_json:
+            load_dict = json.load(load_json)
+            preview_version = load_dict['preview_version_name']
+            commit_msg = f'{xts_name}: Uprev to {preview_version}.\n\nBUG=b:308865172\nTEST=None'
+            subprocess.run(['git', 'commit', '-m', commit_msg, '-e'],
+                           check=True)
+        subprocess.run(['repo', 'upload', '--cbr', '.', '--no-verify', '-y'],
+                       check=True)

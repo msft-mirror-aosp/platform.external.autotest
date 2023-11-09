@@ -69,7 +69,7 @@ def render_config(year, name, base_name, test_func_name, attributes,
     if servo_support_needed:
         rendered_template += 'from autotest_lib.server import utils as server_utils\n'
     if wifi_info_needed:
-        rendered_template += 'from autotest_lib.client.common_lib import utils, global_config\n'
+        rendered_template += 'from autotest_lib.server.cros.tradefed import wifi_utils\n'
     if has_precondition_escape:
         rendered_template += 'import pipes\n'
     rendered_template += '\n'
@@ -114,11 +114,7 @@ def render_config(year, name, base_name, test_func_name, attributes,
         else:
             rendered_template += '    host_list = [hosts.create_host(machine)]\n'
         if wifi_info_needed:
-            rendered_template += '    ssid = utils.get_wireless_ssid(machine[\'hostname\'])\n'
-            rendered_template += '    if machine[\'hostname\'].startswith(\'chromeos8\'):\n'
-            rendered_template += '        ssid = \'wl-ChromeOS_lab_AP\'\n'
-            rendered_template += '    wifipass = global_config.global_config.get_config_value(\'CLIENT\',\n'
-            rendered_template += '                \'wireless_password\', default=None)\n'
+            rendered_template += '    ssid, wifipass = wifi_utils.get_wifi_ssid_pass(machine[\'hostname\'])\n'
     rendered_template += '    job.run_test(\n'
     rendered_template += f'        \'{base_name}\',\n'
     if camera_facing and camera_facing != 'nocamera':

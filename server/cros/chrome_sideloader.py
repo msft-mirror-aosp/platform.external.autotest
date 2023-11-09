@@ -91,18 +91,6 @@ def extract_from_image(host, image_name, dest_dir):
         host.run(['rm', '-rf', image_mount_point])
 
 
-def remove_image(host, image_name):
-    """
-    Removes an image from the host.
-
-    @param host: The DUT to execute the command on
-    @param image_name: Name of image
-    """
-    image_path = '/var/lib/imageloader/%s' % image_name
-    if host.path_exists(image_path):
-        host.run(['rm', '-rf', image_path])
-
-
 def _gen_random_str(length):
     """
     Generate random string

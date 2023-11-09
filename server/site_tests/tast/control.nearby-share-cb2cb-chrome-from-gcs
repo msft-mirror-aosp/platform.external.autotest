@@ -58,11 +58,6 @@ def run(machine):
     logging.info("Running %s on primary_dut: %s and companion_host:%s", NAME,
                  primary_dut, secondary_dut)
 
-    # TODO(b/292118449): Temporary measure to recuperate space from encrypted stateful.
-    # Remove when the Skylab builders across release channels are fully migrated to chromite.
-    for host in [primary_dut, secondary_dut]:
-      chrome_sideloader.remove_image(host, 'lacros')
-
     # Setup DUT to use the chrome binary from gcs archive.
     chrome_sideloader.chromite_deploy_chrome(primary_dut,
                                              args_dict.get('lacros_gcs_path'),

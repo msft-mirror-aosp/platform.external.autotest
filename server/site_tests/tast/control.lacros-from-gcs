@@ -46,10 +46,6 @@ def run(machine):
     varslist = []
     args_dict = utils.args_to_dict(args)
 
-    # TODO(b/292118449): Temporary measure to recuperate space from encrypted stateful.
-    # Remove when the Skylab builders across release channels are fully migrated to chromite.
-    chrome_sideloader.remove_image(host, 'lacros')
-
     # Because this wrapper servers Chromium/Chrome CI builders, the Lacros version
     # should be always fresher than the rootfs Chrome bundled in OS.
     chrome_dir = chrome_sideloader.chromite_deploy_chrome(host,

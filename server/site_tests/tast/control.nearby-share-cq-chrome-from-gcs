@@ -53,10 +53,6 @@ def run(machine):
 
     androidcomp = "android.companions=%s:%s:model" % (phone.associated_hostname, phone.serial_number)
 
-    # TODO(b/292118449): Temporary measure to recuperate space from encrypted stateful.
-    # Remove when the Skylab builders across release channels are fully migrated to chromite.
-    chrome_sideloader.remove_image(host, 'lacros')
-
     # Setup DUT to use the chrome binary from gcs archive.
     chrome_sideloader.chromite_deploy_chrome(host,
                                              args_dict.get('lacros_gcs_path'),

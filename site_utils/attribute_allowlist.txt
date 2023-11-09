@@ -580,7 +580,6 @@ suite:bvt-tast-parallels-informational
 suite:calibration
 suite:camera-libcamera
 suite:camera-postsubmit
-suite:camera-stability
 suite:camera-usb-qual
 suite:camerabox_facing-back
 suite:camerabox_facing-front

@@ -10,7 +10,7 @@ METADATA = {
     "criteria": "Run RW firmware update while on battery, then sleep and wake",
     "requirements": ["sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
-ATTRIBUTES = "suite:faft_bios_ro_qual, suite:faft_bios_rw_qual"
+ATTRIBUTES = "suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_bios"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "MEDIUM"
 TEST_TYPE = "server"

@@ -28,6 +28,7 @@ def run(machine):
     varslist.append("pvs.force_dlm_sku_id=1")
     varslist.append("pvs.feature_flags=automated_release=1")
     varslist.append("pvs.ignore_git_access_failures=1")
+    varslist.append("pvs.skip_pvs_version_validation=1")
     job.run_test('tast',
                  host=pvs_host,
                  test_exprs=[tast_test_expr],

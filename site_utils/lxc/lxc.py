@@ -162,7 +162,10 @@ def _ensure_pip(target_setting):
 @metrics.SecondsTimerDecorator(
     '%s/install_packages_duration' % constants.STATS_KEY)
 @retry.retry(error.CmdError, timeout_min=30)
-def install_packages(packages=[], python_packages=[], force_latest=False):
+def install_packages(packages=[],
+                     python_packages=[],
+                     force_latest=False,
+                     allow_releaseinfo_change=False):
     """Install the given package inside container.
 
     !!! WARNING !!!
@@ -178,6 +181,10 @@ def install_packages(packages=[], python_packages=[], force_latest=False):
                          package. Default to False, which means skip installing
                          the package if it's installed already, even with an old
                          version.
+    @param allow_releaseinfo_change: Add --allow-releaseinfo-change flag to
+                                     sudo apt-get update command. Which prevents
+                                     packages that changes InRelease file from
+                                     failing.
 
     @raise error.ContainerError: If package is attempted to be installed outside
                                  a container.
@@ -201,7 +208,12 @@ def install_packages(packages=[], python_packages=[], force_latest=False):
 
     # Always run apt-get update before installing any container. The base
     # container may have outdated cache.
-    common_utils.run('sudo apt-get update')
+    # In edge cases InRelease file change require a confirmation such as -y or
+    # --allow-releaseinfo-change flag.
+    if allow_releaseinfo_change:
+        common_utils.run('sudo apt-get --allow-releaseinfo-change update')
+    else:
+        common_utils.run('sudo apt-get update')
 
     # Make sure the lists are not None for iteration.
     packages = [] if not packages else packages

@@ -186,7 +186,7 @@ class FingerprintTest(test.test):
                     },
             },
             _FP_BOARD_NAME_HELIPILOT: {
-                    'helipilot_v2.0.22861-6d50c1e39d.bin':
+                    'helipilot_v2.0.22861-6d50c1e39d-RO_v2.0.22861-6d50c1e39d-RW.bin':
                     {
                             _FIRMWARE_VERSION_SHA256SUM:
                             '0506e8378917fd3b32ac65c3e1337f19aba98f0295b3398def212cb2000fd28f',

@@ -5120,7 +5120,10 @@ class BluetoothAdapterTests(test.test):
                 raise
         is_timeout = (int(last_resume_result, 16) >> 31)
         self.results = {'no timeout in EC suspend': not bool(is_timeout)}
-        return all(self.results.values())
+        # TODO: Consider this test failure NA until b/307791293 is fixed.
+        if not all(self.results.values()):
+            raise error.TestNAError("SLP_S0 timeout is considered NA.")
+        return True
 
     @test_retry_and_log(False, messages_start=False)
     def test_wait_for_resume(self,

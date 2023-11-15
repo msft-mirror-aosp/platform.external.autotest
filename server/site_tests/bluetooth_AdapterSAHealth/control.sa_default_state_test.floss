@@ -24,7 +24,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss_sa'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'
 

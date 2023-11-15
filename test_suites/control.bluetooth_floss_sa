@@ -1,0 +1,43 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "bluetooth_floss_sa"
+PURPOSE = "Bluetooth Standalone automated tests for Project Floss."
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com',],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'All bluetooth tests for Project Floss that do not need a peer device',
+    'hw_agnostic': False,
+}
+
+DOC = """
+This suite runs the complete set of all stable Bluetooth Floss functional tests for hardware and
+software which doesn't require a peer device.
+
+All stable Floss bluetooth tests will be added to bluetooth_floss/bluetooth_floss_sa suites.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

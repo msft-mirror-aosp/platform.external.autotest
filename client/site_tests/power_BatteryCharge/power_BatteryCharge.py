@@ -142,10 +142,9 @@ class power_BatteryCharge(power_test.power_Test):
                 logging.info('Battery full, aborting!')
                 break
             elif self.status.battery_discharging():
-                # TestError might be raised if |use_design_charge_capacity|
-                # is True when testing with older battery.
-                if current_charge > self.charge_capacity * 0.97:
+                if self.status.battery_discharge_ok_on_ac():
                     logging.info('Battery full (Discharge on AC), aborting!')
+                    break
                 else:
                     raise error.TestError('This test needs to be run with the '
                                           'battery charging on AC.')

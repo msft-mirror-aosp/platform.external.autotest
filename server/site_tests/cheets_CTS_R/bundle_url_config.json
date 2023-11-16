@@ -5,7 +5,7 @@
     "official_url_pattern": "android-cts-%s-linux_x86-%s.zip",
     "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",
     "official_version_name": "11_r13",
-    "preview_version_name": "11085465",
+    "preview_version_name": "11107007",
     "abi_list": {
         "arm": "test_suites_arm64",
         "x86": "test_suites_x86_64"

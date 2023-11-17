@@ -4812,6 +4812,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         if self.discovery_observer:
             self.discovery_observer.cleanup()
+            self.discovery_observer = None
 
         if register_observer:
             self.discovery_observer = self.DiscoveryObserver(
@@ -4830,6 +4831,15 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.discovery_observer = None
 
         return (self.adapter_client.stop_discovery(), '')
+
+    def unregister_discovery_observer(self):
+        """Unregister discovery observer."""
+        if self.discovery_observer:
+            self.discovery_observer.cleanup()
+            self.discovery_observer = None
+        else:
+            logging.warning('discovery observer doesn\'t exist when calling'
+                            'unregister_discovery_observer.')
 
     def is_discovering(self):
         """Check if adapter is discovering."""

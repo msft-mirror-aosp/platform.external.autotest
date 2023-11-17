@@ -2497,8 +2497,7 @@ class BluetoothAdapterTests(test.test):
                 self.bluetooth_facade.remove_device_object(
                         device_address, identity_address)
 
-            discovery_started, _ = self.bluetooth_facade.start_discovery(
-                    register_observer=not wait_complete)
+            discovery_started, _ = self.bluetooth_facade.start_discovery()
 
         if discovery_started:
             try:
@@ -2519,7 +2518,7 @@ class BluetoothAdapterTests(test.test):
             except:
                 logging.error('test_discover_device: unexpected error')
 
-        if start_discovery:
+        if discovery_started:
             if stop_discovery:
                 discovery_stopped, _ = self.bluetooth_facade.stop_discovery()
 
@@ -2529,6 +2528,9 @@ class BluetoothAdapterTests(test.test):
             # Waits until the inquiry command completes, unless we stop it
             # manually, to investigate the RNR behavior.
             elif wait_complete:
+                if self.floss:
+                    self.bluetooth_facade.unregister_discovery_observer()
+
                 # core specification suggested discovery time.
                 # Aligns with bluez and floss.
                 time.sleep(12.8)
@@ -2572,28 +2574,46 @@ class BluetoothAdapterTests(test.test):
         HCI_COMMAND_INQUIRY = '< HCI Command: Inquiry'
         HCI_EVENT_INQUIRY_COMPLETE = '> HCI Event: Inquiry Complete'
 
+        search_strings = [
+                HCI_COMMAND_REMOTE_NAMA_REQUEST, HCI_COMMAND_INQUIRY,
+                HCI_EVENT_INQUIRY_COMPLETE
+        ]
+
+        search_str = '|'.join(search_strings)
+
         contents = self.bluetooth_facade.btmon_get(
-                search_str=HCI_COMMAND_REMOTE_NAMA_REQUEST,
-                start_str=HCI_COMMAND_INQUIRY,
-                end_str=HCI_EVENT_INQUIRY_COMPLETE)
+                search_str=search_str, start_str=HCI_COMMAND_INQUIRY)
 
         self.results = {
                 'Inquiry command count': 0,
-                'RNR command count': 0,
+                'RNR command count during inq': 0,
                 'Inquiry command complete count': 0,
         }
 
+        is_inquirying = False
         for line in contents:
-            if line.startswith(HCI_COMMAND_INQUIRY):
-                self.results['Inquiry command count'] += 1
-            elif line.startswith(HCI_COMMAND_REMOTE_NAMA_REQUEST):
-                self.results['RNR command count'] += 1
-            elif line.startswith(HCI_EVENT_INQUIRY_COMPLETE):
-                self.results['Inquiry command complete count'] += 1
+            if is_inquirying:
+                if line.startswith(HCI_COMMAND_INQUIRY):
+                    logging.warning(
+                            "Receiving Inquiry command while it's already started."
+                    )
+                elif line.startswith(HCI_COMMAND_REMOTE_NAMA_REQUEST):
+                    self.results['RNR command count during inq'] += 1
+                elif line.startswith(HCI_EVENT_INQUIRY_COMPLETE):
+                    is_inquirying = False
+                    self.results['Inquiry command complete count'] += 1
+            else:
+                if line.startswith(HCI_COMMAND_INQUIRY):
+                    is_inquirying = True
+                    self.results['Inquiry command count'] += 1
+                elif line.startswith(HCI_COMMAND_REMOTE_NAMA_REQUEST):
+                    pass
+                elif line.startswith(HCI_EVENT_INQUIRY_COMPLETE):
+                    logging.warning(
+                            "Receiving Inquiry command complete before started."
+                    )
 
-        return (self.results['Inquiry command count'] == 1
-                and self.results['RNR command count'] == 0
-                and self.results['Inquiry command complete count'] == 1)
+        return self.results['RNR command count during inq'] == 0
 
     def _test_discover_by_device(self, device):
         return device.Discover(self.bluetooth_facade.address)

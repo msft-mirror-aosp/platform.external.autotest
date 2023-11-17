@@ -177,7 +177,8 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         time.sleep(3)
         ap_ro_info = self.gsc.get_ap_ro_info()
         self._hash_desc = '%s flags' % self._flag_desc
-        if not self.gsc.get_ap_ro_info()['hash']:
+        ap_ro_info = self.gsc.get_ap_ro_info()
+        if ap_ro_info['supported'] and not ap_ro_info['hash']:
             raise error.TestError('Could not set hash %r' % result)
 
     def rollback_to_release_image(self):

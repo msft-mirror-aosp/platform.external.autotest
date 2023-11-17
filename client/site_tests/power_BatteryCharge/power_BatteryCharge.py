@@ -48,7 +48,8 @@ class power_BatteryCharge(power_test.power_Test):
                  percent_initial_charge_max=None,
                  percent_target_charge=None,
                  use_design_charge_capacity=True,
-                 test_for_charging_speed=False):
+                 test_for_charging_speed=False,
+                 generate_parallax=True):
         """
         max_run_time: maximum time the test will run for
         percent_charge_to_add: percentage of the charge capacity charge to
@@ -60,6 +61,9 @@ class power_BatteryCharge(power_test.power_Test):
                   ideal design state.
         test_for_charging_speed: If set to true, the test will be used to measure
                   charging speed rather than charge battery to the target percent.
+        generate_parallax: If set to true, a parallax report will be generated.
+                  Since this may take some time to do, we need this option to
+                  disable this for some tests.
         """
 
         time_to_sleep = 60
@@ -83,6 +87,7 @@ class power_BatteryCharge(power_test.power_Test):
             self._backlight.set_percent(0)
 
         self.remaining_time = self.max_run_time = max_run_time
+        self.generate_parallax = generate_parallax
 
         self.charge_full_design = self.status.battery.charge_full_design
         self.charge_full = self.status.battery.charge_full
@@ -193,7 +198,8 @@ class power_BatteryCharge(power_test.power_Test):
                                     self.charge_full_design, 'point', 'perf')
         self._keyvallogger.set_end(self._end_time)
 
-        super(power_BatteryCharge, self).postprocess_iteration()
+        super(power_BatteryCharge, self).postprocess_iteration(
+                generate_parallax=self.generate_parallax)
 
     def cleanup(self):
         """Restore stop services and backlight level."""

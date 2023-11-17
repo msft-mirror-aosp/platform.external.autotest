@@ -429,8 +429,13 @@ class power_Test(test.test):
             log.save_results(self.resultsdir)
         self._checkpoint_logger.save_checkpoint_data(self.resultsdir)
 
-    def postprocess_iteration(self):
-        """Write keyval and send data to dashboard."""
+    def postprocess_iteration(self, generate_parallax=True):
+        """Write keyval and send data to dashboard.
+
+        @param generate_parallax: If set to true, the parallax report will be
+                                  generated. Tests may wish to not do this since
+                                  generating this report may take a while.
+        """
         power_telemetry_utils.end_measurement()
         self.status.refresh()
         for log in self._meas_logs:
@@ -438,7 +443,8 @@ class power_Test(test.test):
         super(power_Test, self).postprocess_iteration()
         self.publish_dashboard()
         self._save_results()
-        power_dashboard.generate_parallax_report(self.outputdir)
+        if generate_parallax:
+            power_dashboard.generate_parallax_report(self.outputdir)
         if self._failure_messages:
             raise error.TestFail('Test has failed with messages: %s' %
                                  self._failure_messages)

@@ -41,6 +41,7 @@ class power_BatteryChargeControl(test.test):
                                  max_run_time=time_limit,
                                  percent_charge_to_add=percent_charge_to_add,
                                  percent_target_charge=percent_target_charge,
-                                 use_design_charge_capacity=False)
+                                 use_design_charge_capacity=False,
+                                 generate_parallax=False)
 
         charge_manager.restore_original_setting()

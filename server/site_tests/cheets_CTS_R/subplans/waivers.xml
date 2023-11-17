@@ -6,6 +6,15 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <!-- b/307412242;  fixed in 11_r15 -->
+  <Entry include="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testBeginEndSection" />
+  <Entry include="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testAsyncBeginEndSection" />
+  <Entry include="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testCounter" />
+  <Entry include="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testTracingContent" />
+  <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testBeginEndSection" />
+  <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testAsyncBeginEndSection" />
+  <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testCounter" />
+  <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testTracingContent" />
   <!-- b/294409068; fixed in 11_r14 -->
   <Entry include="CtsDeqpTestCases dEQP-VK.api.info.format_properties#r10x6_unorm_pack16" />
   <Entry include="CtsDeqpTestCases dEQP-VK.api.info.format_properties#r10x6g10x6_unorm_2pack16" />

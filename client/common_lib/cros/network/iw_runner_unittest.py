@@ -75,12 +75,12 @@ class IwRunnerTest(unittest.TestCase):
                                   iw_runner.WIDTH_HT20, -50.00)
 
     HT20_2 = str('BSS 11:11:11:11:11:11 (on wlan0)\n'
-        '     freq: 2462\n'
-        '     signal: -42.00 dBm\n'
-        '     SSID: support_ht20\n'
-        '     WPA:          * Version: 1\n'
-        '     HT operation:\n'
-        '          * secondary channel offset: below\n')
+                 '     freq: 2462.0\n'
+                 '     signal: -42.00 dBm\n'
+                 '     SSID: support_ht20\n'
+                 '     WPA:          * Version: 1\n'
+                 '     HT operation:\n'
+                 '          * secondary channel offset: below\n')
 
     HT20_2_IW_BSS = iw_runner.IwBss('11:11:11:11:11:11', 2462,
                                     'support_ht20', iw_runner.SECURITY_WPA,
@@ -168,20 +168,20 @@ class IwRunnerTest(unittest.TestCase):
                                    'support_vht80', iw_runner.SECURITY_OPEN,
                                    iw_runner.WIDTH_VHT80, -44.00)
 
-    VHT160 =  str('BSS 12:34:56:78:90:aa (on wlan0)\n'
-        '    freq: 5180\n'
-        '    signal: -44.00 dBm\n'
-        '    SSID: support_vht160\n'
-        '    HT operation:\n'
-        '        * secondary channel offset: below\n'
-        '    VHT capabilities:\n'
-        '            VHT Capabilities (0x0f8369b1):\n'
-        '                Max MPDU length: 7991\n'
-        '                Supported Channel Width: 160 MHz\n'
-        '    VHT operation:\n'
-        '        * channel width: 1 (80 MHz)\n'
-        '        * center freq segment 1: 42\n'
-        '        * center freq segment 2: 50\n')
+    VHT160 = str('BSS 12:34:56:78:90:aa (on wlan0)\n'
+                 '    freq: 5180.0\n'
+                 '    signal: -44.00 dBm\n'
+                 '    SSID: support_vht160\n'
+                 '    HT operation:\n'
+                 '        * secondary channel offset: below\n'
+                 '    VHT capabilities:\n'
+                 '            VHT Capabilities (0x0f8369b1):\n'
+                 '                Max MPDU length: 7991\n'
+                 '                Supported Channel Width: 160 MHz\n'
+                 '    VHT operation:\n'
+                 '        * channel width: 1 (80 MHz)\n'
+                 '        * center freq segment 1: 42\n'
+                 '        * center freq segment 2: 50\n')
 
     VHT160_IW_BSS = iw_runner.IwBss('12:34:56:78:90:aa', 5180,
                                     'support_vht160', iw_runner.SECURITY_OPEN,

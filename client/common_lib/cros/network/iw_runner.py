@@ -352,7 +352,8 @@ class IwRunner(object):
                     supported_securities = []
                 bss = bss_match.group(1)
             if line.startswith('freq:'):
-                frequency = int(line.split()[1])
+                freq1, _, _ = line.split()[1].partition('.')
+                frequency = int(freq1)
             if line.startswith('signal:'):
                 signal = float(line.split()[1])
             if line.startswith('SSID: '):

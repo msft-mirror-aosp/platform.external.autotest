@@ -196,12 +196,18 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         """Test body."""
         start_time = time.time()
 
-        perf_monitor = perf_monitor_service.PerfMonitorService(self.context.client.host)
-        perf_monitor.start_monitoring_throughput()
-
-        low_throughput_tests = self.configure_and_run_tests()
-
-        perf_monitor.stop_monitoring_throughput()
+        try:
+            logging.info('Setting up the test')
+            perf_monitor = perf_monitor_service.PerfMonitorService(
+                    self.context.client.host)
+            perf_monitor.start_monitoring_throughput()
+            logging.info('Perf test is starting')
+            low_throughput_tests = self.configure_and_run_tests()
+            logging.info('Perf test is complete')
+            perf_monitor.stop_monitoring_throughput()
+        except Exception as e:
+            perf_monitor.stop_monitoring_throughput()
+            raise error.TestFail('Exception %s encountered' % str(e))
 
         end_time = time.time()
         logging.info('Running time %0.1f seconds.', end_time - start_time)

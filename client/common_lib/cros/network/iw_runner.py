@@ -826,11 +826,13 @@ class IwRunner(object):
             # * 2467 MHz [12] (20.0 dBm) (passive scan)
             # * 2472 MHz [13] (disabled)
             # * 5260 MHz [52] (19.0 dBm) (no IR, radar detection)
+            # * 2472.0 MHz [13] (disabled)
+            # * 5260.0 MHz [52] (19.0 dBm) (no IR, radar detection)
             match_chan_info = re.search(
-                r'(?P<frequency>\d+) MHz'
-                r' (?P<chan_num>\[\d+\])'
-                r'(?: \((?P<tx_power_limit>[0-9.]+ dBm)\))?'
-                r'(?: \((?P<flags>[a-zA-Z, ]+)\))?', line)
+                    r'(?P<frequency>\d+)(\.\d)? MHz'
+                    r' (?P<chan_num>\[\d+\])'
+                    r'(?: \((?P<tx_power_limit>[0-9.]+ dBm)\))?'
+                    r'(?: \((?P<flags>[a-zA-Z, ]+)\))?', line)
             if match_chan_info:
                 frequency = int(match_chan_info.group('frequency'))
                 current_band.frequencies.append(frequency)

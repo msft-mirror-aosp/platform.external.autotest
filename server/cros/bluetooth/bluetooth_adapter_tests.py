@@ -145,6 +145,10 @@ LE_HID_RECONNECT_TIME_MAX_SEC = 3
 # Defines for advertising parameters
 ADV_TX_POWER_NO_PREFERENCE = 127
 
+# Mouse movement boundaries
+MOUSE_MAX_MOVE_VALUE = 127
+MOUSE_MIN_MOVE_VALUE = -127
+
 
 def get_num_devices(cap_reqs):
     """Get the number of devices.
@@ -4700,6 +4704,101 @@ class BluetoothAdapterTests(test.test):
         """
         return self._test_mouse_click(device, 'RIGHT')
 
+    def _test_mouse_bulk_actions(self, device, action_list, delay=0.2):
+        """Tests that the events of mouse bulk actions could be received
+        correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param action_list: List of tuples (action_type, action_args)
+                            representing mouse actionsList.
+        @param delay: Time in seconds between actions.
+
+        @returns: True if the report received by the host matches the
+                  expected one. False otherwise.
+        """
+        gesture = lambda: device.BulkActions(action_list, delay)
+        actual_events = self._record_input_events(
+            device, gesture, address=self._input_dev_uniq_addr(device))
+
+        expected_events = []
+        pressed_buttons = []
+        for action_type, action_args in action_list:
+            if action_type == 'MouseMove':
+                delta_x, delta_y = action_args
+                expected_events.extend([
+                    Event(EV_REL, REL_X, delta_x) if delta_x else None,
+                    Event(EV_REL, REL_Y, delta_y) if delta_y else None,
+                    recorder.SYN_EVENT
+                ])
+            elif action_type == 'PressLeftButton':
+                pressed_buttons.append('LEFT')
+                expected_events.extend([
+                    recorder.MSC_SCAN_BTN_EVENT['LEFT'],
+                    Event(EV_KEY, BTN_LEFT, 1),
+                    recorder.SYN_EVENT
+                ])
+            elif action_type == 'PressRightButton':
+                pressed_buttons.append('RIGHT')
+                expected_events.extend([
+                    recorder.MSC_SCAN_BTN_EVENT['RIGHT'],
+                    Event(EV_KEY, BTN_RIGHT, 1),
+                    recorder.SYN_EVENT
+                ])
+            elif action_type == 'ReleaseAllButtons':
+                for button in pressed_buttons:
+                    expected_events.extend([
+                        recorder.MSC_SCAN_BTN_EVENT[button],
+                        Event(
+                            EV_KEY, BTN_LEFT
+                            if button == 'LEFT' else BTN_RIGHT,
+                            0),
+                    ])
+                expected_events.extend([recorder.SYN_EVENT])
+                pressed_buttons = []
+
+        self.results = {
+            'actual_events': list(map(str, actual_events)),
+            'expected_events': list(map(str, expected_events))
+        }
+        return actual_events == expected_events
+
+    def _test_continuous_mouse_click(self, device, button, num_clicks, delay):
+        """Tests continuous mouse clicks for the specified number of times.
+
+        @param device: The meta device containing a Bluetooth HID device.
+        @param button: Which button to test, 'LEFT' or 'RIGHT'.
+        @param num_clicks: The number of clicks to perform.
+        @param delay: Time in seconds between each mouse click.
+
+        @returns: True if all clicks are successful, False otherwise.
+        """
+        action_list = [
+            ('PressLeftButton' if button == 'LEFT' else 'PressRightButton',
+             None), ('ReleaseAllButtons', None)
+        ]
+        if not self._test_mouse_bulk_actions(
+                device, action_list * num_clicks, delay=delay):
+            return False
+
+        return True
+
+    @test_retry_and_log
+    def test_continues_mouse_left_click(self,
+                                        device,
+                                        num_clicks=1000,
+                                        delay=0.01):
+        """Tests continuous mouse left click events for the specified number
+        of times.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param num_clicks: The number of clicks to perform.
+        @param delay: Time in seconds between each left mouse click.
+
+        @returns: True if all clicks are successful, False otherwise.
+        """
+        return self._test_continuous_mouse_click(device, 'LEFT', num_clicks,
+                                                 delay)
+
     def _test_mouse_move(self, device, delta_x=0, delta_y=0):
         """Test that the mouse move events could be received correctly.
 
@@ -4868,6 +4967,41 @@ class BluetoothAdapterTests(test.test):
                 'actual_events': list(map(str, actual_events)),
                 'expected_events': list(map(str, expected_events))}
         return actual_events == expected_events
+
+
+    @test_retry_and_log
+    def test_continuous_mouse_click_and_drag(self,
+                                             device,
+                                             delta_x,
+                                             delta_y,
+                                             num_iterations=1000,
+                                             delay=0.01):
+        """Tests continuous mouse click-and-drag events for the specified
+        times.
+
+        @param device: The meta device containing a Bluetooth HID device.
+        @param delta_x: The distance to drag in the x-axis.
+        @param delta_y: The distance to drag in the y-axis.
+        @param num_iterations: The number of click-and-drag iterations to
+                               perform.
+        @param delay: Time in seconds between mouse actions.
+
+        @returns: True if all click-and-drags are successful, False otherwise.
+        """
+        # Constrain delta_x and delta_y within the specified mouse movement
+        # boundaries.
+        delta_x = max(MOUSE_MIN_MOVE_VALUE, min(delta_x, MOUSE_MAX_MOVE_VALUE))
+        delta_y = max(MOUSE_MIN_MOVE_VALUE, min(delta_y, MOUSE_MAX_MOVE_VALUE))
+        action_list = [
+            ('PressLeftButton', None),
+            ('MouseMove', (delta_x, delta_y)),
+            ('ReleaseAllButtons', None)
+        ]
+        if not self._test_mouse_bulk_actions(
+                device, action_list * num_iterations, delay=delay):
+            return False
+
+        return True
 
 
     # -------------------------------------------------------------------

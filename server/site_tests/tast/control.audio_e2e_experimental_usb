@@ -1,0 +1,71 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'ChromiumOS Platform Engprod team'
+NAME = 'tast.audio-e2e-experimental-usb'
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+
+ATTRIBUTES = "suite:audio_advanced"
+PY_VERSION = 3
+
+DEPENDENCIES = 'chameleon, test_usbaudio'
+METADATA = {
+    "contacts": ["crosep-intertech@google.com"],
+    "bug_component": "b:1280385",
+    "doc" : "Include experimental usb audio end-to-end tests in Tast"
+}
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run the Tast audio experimental end-to-end tests
+'''
+
+from autotest_lib.client.common_lib import utils
+from autotest_lib.server import utils as server_utils
+
+def run(machine):
+    # Get host objects for each device.
+    host = hosts.create_host(machine)
+
+    # Extract Chameleon args from command line arguments
+    args_dict = utils.args_to_dict(args)
+    varslist = []
+
+    # The hostname of chameleon in the lab follows the naming convention:
+    # Adding a '-chameleon' suffix to the DUT hostname '{DUT}-chameleon'.
+    # In Tast local mode, DUT cannot resolve the chameleon hostname to IP.
+    # The drone server have to look up the IP for '{DUT}-chameleon'
+    # and pass that to DUT.
+    if 'chameleon_ip' in args_dict:
+        chameleon_ip = args_dict['chameleon_ip']
+    else:
+        if 'chameleon_hostname' in args_dict:
+            chameleon_hostname = args_dict['chameleon_hostname']
+        else:
+            chameleon_hostname = f'{host.hostname}-chameleon'
+        chameleon_ip = server_utils.get_ip_address(chameleon_hostname)
+
+    # Define list of Chameleon specific variables to pass to Tast.
+    varslist.append(f'audio.chameleon_ip={chameleon_ip}')
+
+    if 'chameleon_port' in args_dict:
+        chameleon_port = args_dict['chameleon_port']
+        varslist.append(f'audio.chameleon_port={chameleon_port}')
+
+    logging.info(f'Running with args: {args} and varslist: {varslist}')
+    job.run_test(
+        'tast',
+        host=host,
+        test_exprs=[
+            '("group:audio_e2e_experimental" && "audio_e2e_experimental_usb")'
+        ],
+        ignore_test_failures=True,
+        max_run_sec=21600,
+        command_args=args,
+        varslist=varslist)
+
+parallel_simple(run, machines)

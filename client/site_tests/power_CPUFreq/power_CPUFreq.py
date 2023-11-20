@@ -11,7 +11,6 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error, utils
 
 SYSFS_CPUQUIET_ENABLE = '/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/enable'
-SYSFS_INTEL_PSTATE_PATH = '/sys/devices/system/cpu/intel_pstate'
 
 
 class power_CPUFreq(test.test):
@@ -37,9 +36,10 @@ class power_CPUFreq(test.test):
 
     def run_once(self):
         # TODO(crbug.com/485276) Revisit this exception once we've refactored
-        # test to account for intel_pstate cpufreq driver
-        if os.path.exists(SYSFS_INTEL_PSTATE_PATH):
-            raise error.TestNAError('Test does NOT support intel_pstate driver')
+        # test to account for intel_pstate/amd_pstate cpufreq driver
+        for cpu in self._cpus:
+            if 'pstate' in cpu.get_driver():
+                raise error.TestNAError('Test does NOT support P-state driver')
 
         keyvals = {}
         try:

@@ -3394,3 +3394,10 @@ def wrapped_partial(func, *args, **kwargs):
     partial_func = functools.partial(func, *args, **kwargs)
     functools.update_wrapper(partial_func, func)
     return partial_func
+
+
+CFT_BREADCRUMB = '/usr/local/f20container'
+
+
+def is_in_cft_container():
+    return os.path.exists(CFT_BREADCRUMB)

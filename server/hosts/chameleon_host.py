@@ -6,7 +6,6 @@
 """This file provides core logic for connecting a Chameleon Daemon."""
 
 import logging
-import os
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -25,7 +24,6 @@ CHAMELEON_PORT_ATTR = 'chameleon_port'
 _CONFIG = global_config.global_config
 ENABLE_SSH_TUNNEL_FOR_CHAMELEON = _CONFIG.get_config_value(
         'CROS', 'enable_ssh_tunnel_for_chameleon', type=bool, default=False)
-CFT_BREADCRUMB = '/usr/local/f20container'
 
 
 class ChameleonHostError(Exception):
@@ -68,9 +66,8 @@ class ChameleonHost(ssh_host.SSHHost):
         self._tunneling_process = None
 
         try:
-            if (self._is_in_lab and
-                    not ENABLE_SSH_TUNNEL_FOR_CHAMELEON and
-                    not os.path.exists(CFT_BREADCRUMB)):
+            if (self._is_in_lab and not ENABLE_SSH_TUNNEL_FOR_CHAMELEON
+                        and not utils.is_in_cft_container()):
                 logging.debug('ChameleonHost: use defaut proxy')
                 self._chameleon_connection = chameleon.ChameleonConnection(
                         self.hostname, chameleon_port)
@@ -88,8 +85,9 @@ class ChameleonHost(ssh_host.SSHHost):
                     reasons.append('self._is_in_lab: False')
                 if ENABLE_SSH_TUNNEL_FOR_CHAMELEON:
                     reasons.append('ENABLE_SSH_TUNNEL_FOR_CHAMELEON: True')
-                if os.path.exists(CFT_BREADCRUMB):
-                    reasons.append('path.exists(%s): True' % CFT_BREADCRUMB)
+                if utils.is_in_cft_container():
+                    reasons.append('path.exists(%s): True' %
+                                   utils.CFT_BREADCRUMB)
                 logging.debug(
                         'ChameleonHost: use rpc_server_tracker.xmlrpc_connect '
                         'proxy, reason: %s', ' & '.join(reasons))
@@ -110,7 +108,7 @@ class ChameleonHost(ssh_host.SSHHost):
         """
         if dnsname_mangler.is_ip_address(self.hostname):
             self._is_in_lab = False
-        elif os.path.exists(CFT_BREADCRUMB):
+        elif utils.is_in_cft_container():
             self._is_in_lab = True
         else:
             self._is_in_lab = utils.host_is_in_lab_zone(self.hostname)
@@ -323,6 +321,6 @@ def create_btpeer_host(dut, btpeer_args_list):
             return []
 
 def _host_is_in_lab_zone(host):
-    if os.path.exists(CFT_BREADCRUMB):
+    if utils.is_in_cft_container():
         return True
     return utils.host_is_in_lab_zone(host)

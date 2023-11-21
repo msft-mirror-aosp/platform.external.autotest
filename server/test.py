@@ -14,6 +14,7 @@ import os
 import tempfile
 import re
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import log
 from autotest_lib.client.common_lib import test as common_test
 from autotest_lib.client.common_lib import utils
@@ -317,7 +318,7 @@ class _sysinfo_logger(object):
                                   'objects, ignoring it')
 
 
-def runtest(job, url, tag, args, dargs):
+def runtest(job, url, tag, args, dargs, hw_deps=None):
     """Server-side runtest.
 
     @param job: A server_job instance.
@@ -326,6 +327,7 @@ def runtest(job, url, tag, args, dargs):
                 See client/common_lib/test.py:runtest
     @param args: args to pass to the test.
     @param dargs: key-val based args to pass to the test.
+    @param hw_deps: List of hw_deps for test
     """
 
     disable_before_test_hook = dargs.pop('disable_before_test_sysinfo', False)
@@ -366,6 +368,28 @@ def runtest(job, url, tag, args, dargs):
             existing_hook(mytest)
     logging_args[0] = log_kernel_hook
 
+    def check_test_compatible_board(hw_deps):
+
+        _should_run = False
+        try:
+            dut_use_flags = dargs['host'].run(
+                    'cat /usr/local/etc/tast_use_flags.txt').stdout
+            dut_use_flags_list = dut_use_flags.split('\n')
+            for item in hw_deps:
+                if item in dut_use_flags_list:
+                    _should_run = True
+                    break
+        except Exception as e:
+            if logger:
+                logger.cleanup()
+            raise error.TestWarn('USE flags not found on DUT')
+
+        if not _should_run and hw_deps:
+            if logger:
+                logger.cleanup()
+            raise error.TestNAError('Test not supported on this board')
+
+    check_test_compatible_board(hw_deps)
     try:
         common_test.runtest(job, url, tag, args, dargs, locals(), globals(),
                             *logging_args)

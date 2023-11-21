@@ -803,6 +803,8 @@ class base_job(object):
     # the use_sequence_number property
     _sequence_number = _job_state.property_factory(
         '_state', '_sequence_number', None)
+    hw_deps = _job_state.property_factory('_state', 'hw_deps', None)
+
     def _get_use_sequence_number(self):
         return bool(self._sequence_number)
     def _set_use_sequence_number(self, value):

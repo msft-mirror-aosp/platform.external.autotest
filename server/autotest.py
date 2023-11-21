@@ -19,6 +19,7 @@ import common
 from autotest_lib.client.bin.result_tools import runner as result_tools_runner
 from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import base_job
+from autotest_lib.client.common_lib import control_data
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import packages
@@ -1116,6 +1117,7 @@ class _Run(object):
                         self._strip_stderr_prologue(result.stderr,
                                                     monitor_cmd))
 
+
                 # When error is 255, the SSH connection is probably dropped.
                 # Waiting up for `client_disconnect_timeout` seconds before
                 # aborting the test.
@@ -1197,6 +1199,30 @@ class _Run(object):
                                           self.host.DEFAULT_REBOOT_TIMEOUT))
         self.host.reboot_followup()
 
+    def _check_test_compatible_board(self) -> bool:
+        """Checks USE flag info from control file(hw_deps) against tast use flags
+        present on DUT. If any matches then test is good to run returns TRUE else
+        returns FALSE.
+        """
+        _should_run = False
+        try:
+            dut_use_flags = self.host.run(
+                    'cat /usr/local/etc/tast_use_flags.txt').stdout
+            dut_use_flags_list = dut_use_flags.split('\n')
+            control = control_data.parse_control_string((self.host.run(
+                    'cat %s' % self.remote_control_file).stdout))
+            hw_deps = control.hw_deps
+            for item in hw_deps:
+                if item in dut_use_flags_list:
+                    _should_run = True
+                    break
+        except Exception as e:
+            logging.debug('USE flags file not found')
+
+        if not _should_run and hw_deps:
+            logging.debug('Test not supported on this board')
+            return False
+        return True
 
     def execute_control(self, timeout=None, client_disconnect_timeout=None):
         if not self.background:
@@ -1212,96 +1238,112 @@ class _Run(object):
         start_time = time.time()
 
         logger = client_logger(self.host, self.tag, self.results_dir)
+        skip_finally = False
         try:
-            while not timeout or time.time() < start_time + timeout:
-                if timeout:
-                    section_timeout = start_time + timeout - time.time()
-                else:
-                    section_timeout = None
-                boot_id = self.host.get_boot_id()
-                last = self.execute_section(section, section_timeout,
-                                            logger, client_disconnect_timeout,
-                                            boot_id=boot_id)
-                if self.background:
-                    return
-                section += 1
-                if self.is_client_job_finished(last):
-                    logging.info("Client complete")
-                    return
-                elif self.is_client_job_rebooting(last):
+            if not self._check_test_compatible_board():
+                self.host.job.record("START", None, None)
+                self.host.job.record("TEST_NA", None, None,
+                                     "Test not supported on this board")
+                self.host.job.record("END TEST_NA", None, None)
+                skip_finally = True
+                return
+            else:
+                while not timeout or time.time() < start_time + timeout:
+                    if timeout:
+                        section_timeout = start_time + timeout - time.time()
+                    else:
+                        section_timeout = None
+                    boot_id = self.host.get_boot_id()
+                    last = self.execute_section(section,
+                                                section_timeout,
+                                                logger,
+                                                client_disconnect_timeout,
+                                                boot_id=boot_id)
+                    if self.background:
+                        return
+                    section += 1
+                    if self.is_client_job_finished(last):
+                        logging.info("Client complete")
+                        return
+                    elif self.is_client_job_rebooting(last):
+                        try:
+                            self._wait_for_reboot(boot_id)
+                        except error.AutotestRunError as e:
+                            self.host.job.record("ABORT", None, "reboot",
+                                                 str(e))
+                            self.host.job.record("END ABORT", None, None,
+                                                 str(e))
+                            raise
+                        continue
+
+                    # If a test fails without probable cause we try to bucket it's
+                    # failure into one of 2 categories. If we can determine the
+                    # current state of the device and it is suspicious, we close the
+                    # status lines indicating a failure. If we either cannot
+                    # determine the state of the device, or it appears totally
+                    # healthy, we give up and abort.
                     try:
-                        self._wait_for_reboot(boot_id)
-                    except error.AutotestRunError as e:
-                        self.host.job.record("ABORT", None, "reboot", str(e))
-                        self.host.job.record("END ABORT", None, None, str(e))
-                        raise
-                    continue
+                        self._diagnose_dut(boot_id)
+                    except AutotestDeviceEssentialUtilMissing as e:
+                        self.host.job.record('FAIL', None, None, str(e))
+                        self.host.job.record('END FAIL', None, None)
+                        self.host.job.record('END GOOD', None, None)
+                        self.host.job.failed_with_device_error = True
+                        msg = ("Aborting - Python interpreter not accessible on "
+                               "client %s\n") % self.host.hostname
+                        logging.info(msg)
+                        raise e
 
-                # If a test fails without probable cause we try to bucket it's
-                # failure into one of 2 categories. If we can determine the
-                # current state of the device and it is suspicious, we close the
-                # status lines indicating a failure. If we either cannot
-                # determine the state of the device, or it appears totally
-                # healthy, we give up and abort.
-                try:
-                    self._diagnose_dut(boot_id)
-                except AutotestDeviceEssentialUtilMissing as e:
-                    self.host.job.record('FAIL', None, None, str(e))
-                    self.host.job.record('END FAIL', None, None)
-                    self.host.job.record('END GOOD', None, None)
-                    self.host.job.failed_with_device_error = True
-                    msg = ("Aborting - Python interpreter not accessible on "
-                           "client %s\n") % self.host.hostname
-                    logging.info(msg)
-                    raise e
+                    except AutotestDeviceError as e:
+                        # The status lines of the test are pretty much tailed to
+                        # our log, with indentation, from the client job on the DUT.
+                        # So if the DUT goes down unexpectedly we'll end up with a
+                        # malformed status log unless we manually unwind the status
+                        # stack. Ideally we would want to write a nice wrapper like
+                        # server_job methods run_reboot, run_group but they expect
+                        # reboots and we don't.
+                        self.host.job.record('FAIL', None, None, str(e))
+                        self.host.job.record('END FAIL', None, None)
+                        self.host.job.record('END GOOD', None, None)
+                        self.host.job.failed_with_device_error = True
+                        return
+                    except AutotestAbort as e:
+                        self.host.job.record('ABORT', None, None, str(e))
+                        self.host.job.record('END ABORT', None, None)
 
-                except AutotestDeviceError as e:
-                    # The status lines of the test are pretty much tailed to
-                    # our log, with indentation, from the client job on the DUT.
-                    # So if the DUT goes down unexpectedly we'll end up with a
-                    # malformed status log unless we manually unwind the status
-                    # stack. Ideally we would want to write a nice wrapper like
-                    # server_job methods run_reboot, run_group but they expect
-                    # reboots and we don't.
-                    self.host.job.record('FAIL', None, None, str(e))
-                    self.host.job.record('END FAIL', None, None)
-                    self.host.job.record('END GOOD', None, None)
-                    self.host.job.failed_with_device_error = True
-                    return
-                except AutotestAbort as e:
-                    self.host.job.record('ABORT', None, None, str(e))
-                    self.host.job.record('END ABORT', None, None)
-
-                    # give the client machine a chance to recover from a crash
-                    self.host.wait_up(
-                        self.host.HOURS_TO_WAIT_FOR_RECOVERY * 3600)
-                    logging.debug('Unexpected final status message from '
-                                  'client %s: %s', self.host.hostname, last)
-                    # The line 'last' may have sensitive phrases, like
-                    # 'END GOOD', which breaks the tko parser. So the error
-                    # message will exclude it, since it will be recorded to
-                    # status.log.
-                    msg = ("Aborting - unexpected final status message from "
-                           "client on %s\n") % self.host.hostname
-                    raise error.AutotestRunError(msg)
+                        # give the client machine a chance to recover from a crash
+                        self.host.wait_up(
+                                self.host.HOURS_TO_WAIT_FOR_RECOVERY * 3600)
+                        logging.debug(
+                                'Unexpected final status message from '
+                                'client %s: %s', self.host.hostname, last)
+                        # The line 'last' may have sensitive phrases, like
+                        # 'END GOOD', which breaks the tko parser. So the error
+                        # message will exclude it, since it will be recorded to
+                        # status.log.
+                        msg = ("Aborting - unexpected final status message from "
+                               "client on %s\n") % self.host.hostname
+                        raise error.AutotestRunError(msg)
         finally:
-            # B/203609358 someting is removing telemetry. Adding this to check the
-            # status of the folder as late as possible.
-            logging.debug('Autotest job finishes running. Below is the '
-                          'post-processing operations.')
-            logger.close()
-            if not self.background:
-                collector.collect_client_job_results()
-                collector.remove_redundant_client_logs()
-                state_file = os.path.basename(self.remote_control_file
-                                              + '.state')
-                state_path = os.path.join(self.results_dir, state_file)
-                self.host.job.postprocess_client_state(state_path)
-                self.host.job.remove_client_log(hostname, remote_results,
-                                                local_results)
-                job_record_context.restore()
+            if not skip_finally:
+                # B/203609358 something is removing telemetry. Adding this to check the
+                # status of the folder as late as possible.
+                logging.debug('Autotest job finishes running. Below is the '
+                              'post-processing operations.')
+                logger.close()
+                if not self.background:
 
-            logging.debug('Autotest job finishes.')
+                    collector.collect_client_job_results()
+                    collector.remove_redundant_client_logs()
+                    state_file = os.path.basename(self.remote_control_file +
+                                                  '.state')
+                    state_path = os.path.join(self.results_dir, state_file)
+                    self.host.job.postprocess_client_state(state_path)
+                    self.host.job.remove_client_log(hostname, remote_results,
+                                                    local_results)
+                    job_record_context.restore()
+
+                logging.debug('Autotest job finishes.')
 
         # should only get here if we timed out
         assert timeout

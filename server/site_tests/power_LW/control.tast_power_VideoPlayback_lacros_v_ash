@@ -38,16 +38,12 @@ def run(machine):
     job.run_test("power_BatteryChargeControl", host=host,
                  percent_charge_to_add=None, percent_target_charge=75,
                  tag="power.VideoPlayback.lacros")
-    job.run_test("power_BatteryDrainControl", host=host,
-                 drain_to_percent=75, tag="power.VideoPlayback.lacros")
     job.run_test("power_LW", host=host, test=test, args=args_lacros,
                  machine=machine, server_test=True,
                  tag="power.VideoPlayback.lacros")
     job.run_test("power_BatteryChargeControl", host=host,
                  percent_charge_to_add=None, percent_target_charge=75,
                  tag="power.VideoPlayback.ash")
-    job.run_test("power_BatteryDrainControl", host=host,
-                 drain_to_percent=75, tag="power.VideoPlayback.ash")
     job.run_test("power_LW", host=host, test=test, args=args_ash,
                  machine=machine, server_test=True,
                  tag="power.VideoPlayback.ash")

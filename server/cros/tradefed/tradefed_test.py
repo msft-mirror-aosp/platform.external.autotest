@@ -1073,38 +1073,48 @@ class TradefedTest(test.test):
         if bundle_spec.suite_name == 'cts' and not is_public:
             waivers_list = []
             # List waiver files from GCS bucket.
-            result = utils.run('gsutil',
-                               args=('ls', _GCS_WAIVERS_PATH),
-                               verbose=True)
-            waiver_files = result.stdout
+            try:
+                result = utils.run('gsutil',
+                                   args=('ls', _GCS_WAIVERS_PATH),
+                                   verbose=True)
+                waiver_files = result.stdout
+                # Filter out waivers for current sdk_ver.
+                # Default waivers will be put into expected_gcs_fail_files directly.
+                # Non-default waivers will be filtered by TargetFixedVersion.
+                # Waivers file name example : 9_r14-CTS-R.yaml
+                for wf in waiver_files.splitlines():
+                    f = os.path.basename(wf)
+                    target_fixed_version, _, dessert = f[:-len('.yaml')].split(
+                            '-', 2)
+                    if dessert == self._SDK_VER_MAP[sdk_ver]:
+                        if target_fixed_version == 'expected':
+                            expected_gcs_fail_files.append(wf)
+                        else:
+                            waivers_list.append([target_fixed_version, wf])
 
-            # Filter out waivers for current sdk_ver.
-            # Default waivers will be put into expected_gcs_fail_files directly.
-            # Non-default waivers will be filtered by TargetFixedVersion.
-            # Waivers file name example : 9_r14-CTS-R.yaml
-            for wf in waiver_files.splitlines():
-                f = os.path.basename(wf)
-                target_fixed_version, _, dessert = f[:-len('.yaml')].split(
-                        '-', 2)
-                if dessert == self._SDK_VER_MAP[sdk_ver]:
-                    if target_fixed_version == 'expected':
-                        expected_gcs_fail_files.append(wf)
-                    else:
-                        waivers_list.append([target_fixed_version, wf])
-
-            if not is_dev:
-                current_version = bundle_spec.official_version_name
-                expected_gcs_fail_files.extend(
-                        self._get_valid_waivers(waivers_list, current_version))
+                if not is_dev:
+                    current_version = bundle_spec.official_version_name
+                    expected_gcs_fail_files.extend(
+                            self._get_valid_waivers(waivers_list,
+                                                    current_version))
+            except error.CmdError as e:
+                logging.warning(
+                        'Skip loading GCS waivers. gsutil ls failed with: %s',
+                        e)
 
         with tempfile.TemporaryDirectory(prefix='cts-waivers_') as tmp:
             for failure_file in expected_gcs_fail_files:
                 local_file_path = os.path.join(tmp,
                                                os.path.basename(failure_file))
-                utils.run('gsutil',
-                          args=('cp', failure_file, local_file_path),
-                          verbose=True)
-                expected_fail_files.append(local_file_path)
+                try:
+                    utils.run('gsutil',
+                              args=('cp', failure_file, local_file_path),
+                              verbose=True)
+                    expected_fail_files.append(local_file_path)
+                except error.CmdError as e:
+                    logging.warning('gsutil cp failed for file %s with: %s',
+                                    failure_file, e)
+                    continue
             waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
                     expected_fail_files)
 

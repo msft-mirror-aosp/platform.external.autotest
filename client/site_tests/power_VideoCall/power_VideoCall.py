@@ -34,18 +34,18 @@ class power_VideoCall(power_test.power_Test):
     HIGH_REGEX = r'''
         AMD[ ]Athlon[ ](Gold|Silver)[ ][3-9][0-9]{3}C|     # AMD Athlon Gold 3150C
         AMD[ ]Ryzen[ ][357][ ][3-9][0-9]{3}C|     # AMD Ryzen 7 3700C
-        AMD[ ]Eng[ ]Sample                        # Unreleased AMD CPU
+        AMD[ ]Eng[ ]Sample|                       # Unreleased AMD CPU
         Genuine[ ]Intel[ ]0000|                   # Unreleased Intel CPU
         Intel[ ]Core[ ]i[357]-1[0-9]{3,4}[UPHG]|  # 10510U, 1135G7, 1250P
-        Intel[ ]Core[ ]i[357]-[6-9][0-9]{3}U|     # Intel Core i7-8650U
+        Intel[ ]Core[ ]i[357]-[6-9][0-9]{3}U      # Intel Core i7-8650U
     '''
     MEDIUM_REGEX = r'''
         Intel[ ]Celeron[ ][0-9]{4,5}[UY]|         # Intel Celeron 5205U
         Intel[ ]Core[ ][im][357]-[0-9]{4,5}[UY]|  # Intel Core i5-8200Y
         Intel[ ]Core[ ][im][357]-[67]Y[0-9]{2}|   # Intel Core m7-6Y75
         Intel[ ]Pentium[ ][0-9]{4,5}[UY]|         # Intel Pentium 6405U
-        mediatek[ ]mt819[0-9]                     # mediatek mt8192
-        qcom[ ]sc[0-9]{4}|                        # qcom sc7180
+        mediatek[ ]mt819[0-9]|                    # mediatek mt8192
+        qcom[ ]sc[0-9]{4}                         # qcom sc7180
     '''
     AMD_REGEX = r'''
         AMD  # AMD

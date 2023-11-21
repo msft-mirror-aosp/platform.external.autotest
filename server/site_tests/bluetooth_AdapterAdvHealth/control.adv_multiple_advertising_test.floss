@@ -59,7 +59,7 @@ METADATA = {
 }
 ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth'
+DEPENDENCIES = 'bluetooth_state:NORMAL'
 
 def run(machine):
     host = hosts.create_host(machine)

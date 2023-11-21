@@ -20,7 +20,7 @@ METADATA = {
 
 ATTRIBUTES = 'suite:bluetooth_floss_sa'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth'
+DEPENDENCIES = 'bluetooth_state:NORMAL'
 
 
 args_dict = utils.args_to_dict(args)

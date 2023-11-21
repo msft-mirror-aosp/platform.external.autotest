@@ -30,7 +30,7 @@ METADATA = {
 
 ATTRIBUTES = 'suite:bluetooth, suite:bluetooth_core'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:2'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:2'
 
 
 args_dict = utils.args_to_dict(args)

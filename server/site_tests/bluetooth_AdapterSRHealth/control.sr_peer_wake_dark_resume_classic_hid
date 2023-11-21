@@ -33,7 +33,7 @@ METADATA = {
 
 ATTRIBUTES = 'suite:bluetooth_flaky'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1, servo_state:WORKING'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1, servo_state:WORKING'
 
 
 args_dict = utils.args_to_dict(args)

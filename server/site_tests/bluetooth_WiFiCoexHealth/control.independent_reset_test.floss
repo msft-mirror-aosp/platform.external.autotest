@@ -29,7 +29,7 @@ METADATA = {
 
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'wificell, bluetooth'
+DEPENDENCIES = 'wificell, bluetooth_state:NORMAL'
 
 
 args_dict = utils.args_to_dict(args)

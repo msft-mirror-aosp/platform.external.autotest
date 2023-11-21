@@ -27,7 +27,7 @@ METADATA = {
 
 ATTRIBUTES = 'suite:bvt-perbuild, suite:bluetooth_sa, suite:distributed_lab_qual_bvt_shard1'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth'
+DEPENDENCIES = 'bluetooth_state:NORMAL'
 
 
 args_dict = utils.args_to_dict(args)

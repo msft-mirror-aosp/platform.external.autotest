@@ -32,7 +32,7 @@ METADATA = {
 ATTRIBUTES = 'suite:bluetooth_sa2'
 MAX_RESULT_SIZE_KB = 128000
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth'
+DEPENDENCIES = 'bluetooth_state:NORMAL'
 
 
 def run(machine):

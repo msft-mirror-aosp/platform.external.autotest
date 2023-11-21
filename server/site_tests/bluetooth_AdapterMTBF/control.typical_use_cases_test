@@ -29,7 +29,7 @@ METADATA = {
 ATTRIBUTES = 'suite:bluetooth_mtbf'
 MAX_RESULT_SIZE_KB = 512000
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:4'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:4'
 
 
 args_dict = utils.args_to_dict(args)

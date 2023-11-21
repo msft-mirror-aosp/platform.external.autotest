@@ -21,7 +21,7 @@ METADATA = {
 
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'server'
-DEPENDENCIES = 'arc, bluetooth, working_bluetooth_btpeer:2'
+DEPENDENCIES = 'arc, bluetooth_state:NORMAL, working_bluetooth_btpeer:2'
 
 
 args_dict = utils.args_to_dict(args)

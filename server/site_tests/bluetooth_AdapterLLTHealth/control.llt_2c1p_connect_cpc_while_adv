@@ -27,7 +27,7 @@ METADATA = {
 
 ATTRIBUTES = '' # TODO(b/186266241)
 TEST_TYPE = 'server'
-DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:3'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:3'
 
 
 args_dict = utils.args_to_dict(args)

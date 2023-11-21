@@ -6,7 +6,7 @@
 # Use force discharge to drain the battery to 75%. Times out after 4 hours.
 
 # Sample usage:
-# test_that <ip address of DUT> power_BatteryChargeControl.drain75
+# test_that <ip address of DUT> power_BatteryDrainControl.drain75
 
 NAME = "power_BatteryDrainControl.drain75"
 METADATA = {

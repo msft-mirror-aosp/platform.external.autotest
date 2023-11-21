@@ -9,16 +9,13 @@
 # test_that <ip address of DUT> power_BatteryDrainControl.args \
 # --args 'drain_to_percent=90'
 
-# test_that <ip address of DUT> power_BatteryChargeControl.args \
-# --args 'drain_to_percent=90 --drain_timeout=3600'
-
 # What are the parameters:
 # drain_to_percent: percent of charge capacity to drain to. Default value of 75.
 #                   Optional.
 # drain_timeout: seconds after which to timeout. Default value of 14400 (4
 #                hours). Optional.
 
-NAME = "power_BatteryChargeControl.args"
+NAME = "power_BatteryDrainControl.args"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
     "bug_component": "b:1361410",

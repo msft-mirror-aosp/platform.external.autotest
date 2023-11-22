@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from autotest_lib.client.common_lib import utils
+from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.pasit_fast'
@@ -33,15 +34,24 @@ for more information.
 See http://go/tast-failures for information about investigating failures.
 '''
 
-args_dict = utils.args_to_dict(args)
-assert 'servo_state:WORKING' in DEPENDENCIES
-servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+command_args, varslist = tast.split_arguments(args)
+varslist = ['DockingID=1912901']
+varslist += ['ExtDispID1=2007901']
+varslist += ['ExtDispID2=2007902']
+varslist += ['EthernetID=j45sw01']
+varslist += ['USBTypeAIDArray=2001901']
+varslist += ['utils.wwcbIPPowerIp=100.82.89.93']
 
 def run(machine):
+    args_dict = utils.args_to_dict(command_args)
+    assert 'servo_state:WORKING' in DEPENDENCIES
+    servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
     job.run_test('tast',
                  host=hosts.create_host(machine, servo_args=servo_args),
-                 test_exprs=['("group:pasit_fast")'],
-                 ignore_test_failures=True, max_run_sec=10800,
-                 command_args=args)
+                 test_exprs=['("group:pasit" && pasit_fast)'],
+                 ignore_test_failures=False, max_run_sec=10800,
+                 command_args=command_args,
+                 varslist=varslist,
+                 is_cft=is_cft)
 
 parallel_simple(run, machines)

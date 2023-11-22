@@ -6,12 +6,14 @@
 
 from gi.repository import GLib
 import logging
+import os
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.floss_enums import BtStatus
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (
-        generate_dbus_cb_objpath, glib_call, glib_callback)
+        dbus_optional_value, generate_dbus_cb_objpath, glib_call,
+        glib_callback)
 
 
 class SocketManagerCallbacks:
@@ -37,20 +39,39 @@ class SocketManagerCallbacks:
         """
         pass
 
-    def on_handle_incoming_connection(self, listener_id, connection):
+    def on_handle_incoming_connection(
+            self,
+            listener_id,
+            connection,
+            *,  # Keyword only after bare asterisk
+            dbus_unix_fd_list=None):
         """Called when incoming connection is handled.
 
         @param listener_id: SocketId.
         @param connection: BluetoothSocket.
+        @param dbus_unix_fd_list: List of fds. Use the handle inside connection
+                                  to look up the target fd. If it would be
+                                  kept, dup it with os.dup first.
+                                  CrOS specific pydbus feature.
         """
         pass
 
-    def on_outgoing_connection_result(self, connecting_id, result, socket):
+    def on_outgoing_connection_result(
+            self,
+            connecting_id,
+            result,
+            socket,
+            *,  # Keyword only after bare asterisk
+            dbus_unix_fd_list=None):
         """Called when outgoing connection is handled.
 
         @param connecting_id: SocketId.
         @param result: BtStatus.
         @param socket: BluetoothSocket.
+        @param dbus_unix_fd_list: List of fds. Use the handle inside socket
+                                  to look up the target fd. If it would be
+                                  kept, dup it with os.dup first.
+                                  CrOS specific pydbus feature.
         """
         pass
 
@@ -104,16 +125,31 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
             for observer in self.observers.values():
                 observer.on_incoming_socket_closed(listener_id, reason)
 
-        def OnHandleIncomingConnection(self, listener_id, connection):
+        def OnHandleIncomingConnection(self,
+                                       listener_id,
+                                       connection,
+                                       *,
+                                       dbus_unix_fd_list=None):
             """Handle incoming socket connection callback."""
             for observer in self.observers.values():
-                observer.on_handle_incoming_connection(listener_id, connection)
+                observer.on_handle_incoming_connection(
+                        listener_id,
+                        connection,
+                        dbus_unix_fd_list=dbus_unix_fd_list)
 
-        def OnOutgoingConnectionResult(self, connecting_id, result, socket):
+        def OnOutgoingConnectionResult(self,
+                                       connecting_id,
+                                       result,
+                                       socket,
+                                       *,
+                                       dbus_unix_fd_list=None):
             """Handle outgoing socket connection callback."""
             for observer in self.observers.values():
-                observer.on_outgoing_connection_result(connecting_id, result,
-                                                       socket)
+                observer.on_outgoing_connection_result(
+                        connecting_id,
+                        result,
+                        socket,
+                        dbus_unix_fd_list=dbus_unix_fd_list)
 
     def __init__(self, bus, hci):
         self.bus = bus
@@ -121,8 +157,20 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         self.callbacks = None
         self.callback_id = None
         self.objpath = self.ADAPTER_OBJECT_PATTERN.format(hci)
+
+        # key = listener_id, val = (socket_info, status)
         self.ready_sockets = {}
-        self.active_sockets = {}
+
+        # key = listener_id, val = (socket_info, [incoming_sockets])
+        # Where incoming_sockets are tuples: (socket_info, fd)
+        # fds are NOT file object, they only work with low-level I/O functions
+        # such as os.read() and os.write().
+        self.listening_sockets = {}
+
+        # key = connecting_id, val = (status, socket_info, fd)
+        # fds are NOT file object, they only work with low-level I/O functions
+        # such as os.read() and os.write().
+        self.connecting_sockets = {}
 
     def __del__(self):
         """Destructor"""
@@ -138,35 +186,88 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
 
         if BtStatus(status) != BtStatus.SUCCESS:
             return
-        if socket_id in self.active_sockets:
+        if socket_id in self.listening_sockets:
             logging.warn('The socket_id: %s, is already registered', socket_id)
         else:
-            self.active_sockets[socket_id] = socket
+            self.listening_sockets[socket_id] = (socket, [])
 
     @glib_callback()
     def on_incoming_socket_closed(self, listener_id, reason):
         """Handle incoming socket closed callback."""
         logging.debug('on_incoming_socket_closed: listener_id: %s, reason: %s',
                       listener_id, reason)
-        if listener_id in self.active_sockets:
-            self.active_sockets.pop(listener_id)
+        if listener_id in self.listening_sockets:
+            self.listening_sockets.pop(listener_id)
         else:
             logging.warn('The socket_id: %s, is not registered yet',
                          listener_id)
 
     @glib_callback()
-    def on_handle_incoming_connection(self, listener_id, connection):
+    def on_handle_incoming_connection(self,
+                                      listener_id,
+                                      connection,
+                                      *,
+                                      dbus_unix_fd_list=None):
         """Handle incoming socket connection callback."""
         logging.debug(
                 'on_handle_incoming_connection: listener_id: %s,'
                 ' connection: %s', listener_id, connection)
+        optional_fd = connection['fd']
+        if not optional_fd:
+            return
+
+        if not dbus_unix_fd_list or dbus_unix_fd_list.get_length() < 1:
+            logging.error('on_handle_incoming_connection: Empty fd list')
+            return
+
+        fd_handle = optional_fd['optional_value']
+        if fd_handle > dbus_unix_fd_list.get_length():
+            logging.error('on_handle_incoming_connection: Invalid fd handle')
+            return
+
+        fd = dbus_unix_fd_list.get(fd_handle)
+        fd_dup = os.dup(fd)
+        logging.debug('on_handle_incoming_connection: Got fd %s, dup to %s',
+                      fd, fd_dup)
+
+        self.listening_sockets[listener_id][1].append((connection, fd_dup))
 
     @glib_callback()
-    def on_outgoing_connection_result(self, connecting_id, result, socket):
+    def on_outgoing_connection_result(self,
+                                      connecting_id,
+                                      result,
+                                      socket,
+                                      *,
+                                      dbus_unix_fd_list=None):
         """Handle outgoing socket connection callback."""
         logging.debug(
                 'on_outgoing_connection_result: connecting_id: %s, '
                 'result: %s, socket: %s', connecting_id, result, socket)
+
+        self.connecting_sockets[connecting_id] = (result, socket, None)
+
+        if not socket:
+            return
+
+        optional_fd = socket['optional_value']['fd']
+        if not optional_fd:
+            return
+
+        if not dbus_unix_fd_list or dbus_unix_fd_list.get_length() < 1:
+            logging.error('on_outgoing_connection_result: Empty fd list')
+            return
+
+        fd_handle = optional_fd['optional_value']
+        if fd_handle > dbus_unix_fd_list.get_length():
+            logging.error('on_outgoing_connection_result: Invalid fd handle')
+            return
+
+        fd = dbus_unix_fd_list.get(fd_handle)
+        fd_dup = os.dup(fd)
+        logging.debug('on_outgoing_connection_result: Got fd %s, dup to %s',
+                      fd, fd_dup)
+
+        self.connecting_sockets[connecting_id] = (result, socket, fd_dup)
 
     def _make_dbus_device(self, address, name):
         return {
@@ -175,7 +276,7 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         }
 
     def _make_dbus_timeout(self, timeout):
-        return {'timeout_ms': GLib.Variant('i', timeout)}
+        return dbus_optional_value('i', timeout)
 
     @glib_call(False)
     def has_proxy(self):
@@ -386,9 +487,9 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
         @return: True on success, False otherwise.
         """
         try:
-            utils.poll_for_condition(
-                    condition=(lambda: socket_id not in self.active_sockets),
-                    timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
+            utils.poll_for_condition(condition=(
+                    lambda: socket_id not in self.listening_sockets),
+                                     timeout=self.FLOSS_RESPONSE_LATENCY_SECS)
 
             return True
         except utils.TimeoutError:
@@ -412,10 +513,10 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
 
         @return: True on success, False otherwise.
         """
-        # Copy the keys of self.active_sockets as the following loop will pop
-        # the keys via self.close_sync().
+        # Copy the keys of self.listening_sockets as the following loop will
+        # pop the keys via self.close_sync().
         failed_socket_ids = []
-        socket_ids = [i for i in self.active_sockets]
+        socket_ids = [i for i in self.listening_sockets]
         for i in socket_ids:
             if not self.close_sync(i):
                 failed_socket_ids.append(i)

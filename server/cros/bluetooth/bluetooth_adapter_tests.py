@@ -6557,6 +6557,13 @@ class BluetoothAdapterTests(test.test):
         }
         return all(self.results.values())
 
+    def ensure_hid_device_creation(self, device):
+        """Ensures HID device creation for BT devices.
+
+        @param device: The BT peer device.
+        """
+        if device.device_type in ['MOUSE', 'KEYBOARD', 'GAMEPAD']:
+            self.test_hid_device_created(device.address)
 
     @test_retry_and_log(False)
     def test_hid_device_created_speed(self, device):

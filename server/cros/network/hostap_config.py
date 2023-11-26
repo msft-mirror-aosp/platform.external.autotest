@@ -181,6 +181,10 @@ class HostapConfig(object):
 
     CHANNEL_WIDTH_22 = object()
 
+    LEGACY_CHANNEL_WIDTH_NAMES_2_4G = {
+        CHANNEL_WIDTH_22: 'LEGACY_11G_22MHz',
+    }
+
     HT_CHANNEL_WIDTH_20 = object()
     HT_CHANNEL_WIDTH_40_PLUS = object()
     HT_CHANNEL_WIDTH_40_MINUS = object()
@@ -276,6 +280,33 @@ class HostapConfig(object):
         else:
             raise error.TestFail('Unknown channel value: %r.' % channel)
 
+    @staticmethod
+    def get_channel_width_name(mode, freq_band, channel_width):
+        """Gets channel width name based on Wi-Fi mode, freq band, and width.
+
+        This method retrieves the channel width name corresponding to the
+        provided Wi-Fi mode, frequency band, and channel width.
+
+        The current implementation supports fetching '11AX_MIXED' channel width
+        names for the 5GHz frequency band and '11G' channel width names for the
+        2.4GHz frequency band. Also, it offers the flexibility to seamlessly
+        incorporate additional channel configurations in the future.
+
+        @param mode: The Wi-Fi mode, such as '11AX_MIXED' or '11G'.
+        @param freq_band: The frequency band, such as '2_4G' or '5G'.
+        @param channel_width: The Channel width.
+
+        @return: Channel width name, or None if not found.
+        """
+        if (mode == HostapConfig.MODE_11AX_MIXED and
+                freq_band == HostapConfig.FREQ_BAND_5G):
+            return HostapConfig.HE_NAMES.get(channel_width)
+
+        if (mode == HostapConfig.MODE_11G and
+                freq_band == HostapConfig.FREQ_BAND_2_4G):
+            return HostapConfig.LEGACY_CHANNEL_WIDTH_NAMES_2_4G.get(
+                    channel_width)
+        return None
 
     @property
     def _get_default_config(self):

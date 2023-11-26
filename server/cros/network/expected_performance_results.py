@@ -1620,3 +1620,370 @@ def get_board_max_wifibt_coex_throughput_drop_expectation(test_type, board_name,
                         return board_drop_expectations[test_type][mode][freq_band][channel_width][bt_tag]
 
     return None
+
+
+def get_expected_result(expected_table, *keys):
+    """Retrieves the expected result from nested dict based on keys.
+
+    @param expected_table: The nested dictionary to traverse.
+    @param keys: Variable length arguments representing keys to traverse the
+                 dictionary.
+
+    @return: The expected result retrieved based on provided keys, or None if
+             not found.
+    """
+    for key in keys:
+        expected_table = expected_table.get(key)
+        if expected_table is None:
+            return None
+    return expected_table
+
+
+def get_expected_value(measurement, expected_dict, test_type, test_name,
+                       ap_config, bt_tag):
+    """Returns the expected value for a measurement in a Wi-Fi BT load test.
+
+    @param measurement: The name of the measurement.
+    @param expected_dict: The nested dictionary containing the expected values.
+    @param test_type: The PerfTestTypes test type.
+    @param test_name: The test name.
+    @param ap_config: The AP configuration.
+    @param bt_tag: String for BT operation.
+
+    @return: The expected value retrieved based on the provided keys.
+    """
+    mode = ap_config.mode
+    channel_width = ap_config.channel_width
+    freq_band = ap_config.freq_band
+
+    result = get_expected_result(expected_dict, test_name, test_type, mode,
+                                 freq_band, channel_width, bt_tag)
+    if result is None:
+        ret_mode = hostap_config.HostapConfig.get_channel_width_name(
+                mode, freq_band, channel_width)
+        raise error.TestFail(
+                'Failed to find the expected %s value from the key values, '
+                'test type = %s, freq band = %s, mode = %s, channel width = %s'
+                % (measurement, test_type, freq_band, mode, ret_mode))
+    return result
+
+
+"""The tuples defined below represent thresholds for drop rate values, where
+drop rate refers to the decrease in measured throughput during different
+BT status: BT_connected, BT_connected_with_load and BT_disconnected_again. The
+tuples are structured as (should not exceed, must not exceed). Currently, the
+'should not exceed' value is set to 0 as a turnaround. Meanwhile, the
+'must not exceed' value was derived from the highest drop rate observed during
+100 runs of Wi-Fi and Bluetooth load coexistence tests.
+"""
+expected_throughput_drop = {
+    'coex_test_with_mouse_click_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 18),
+                        'BT_connected_with_load': (0, 17),
+                        'BT_disconnected_again': (0, 18)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 2),
+                        'BT_connected_with_load': (0, 7),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 1),
+                        'BT_connected_with_load': (0, 1),
+                        'BT_disconnected_again': (0, 1)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 18),
+                        'BT_connected_with_load': (0, 14),
+                        'BT_disconnected_again': (0, 16)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 4),
+                        'BT_connected_with_load': (0, 3),
+                        'BT_disconnected_again': (0, 4)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 3),
+                        'BT_connected_with_load': (0, 6),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                            'BT_connected': (0, 14),
+                            'BT_connected_with_load': (0, 17),
+                            'BT_disconnected_again': (0, 14)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 5),
+                        'BT_connected_with_load': (0, 8),
+                        'BT_disconnected_again': (0, 1)
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+def get_expected_wifi_throughput_drop_rate(test_type, test_name, ap_config,
+                                           bt_tag):
+    """Returns the expected throughput drop rate for Wi-Fi BT load coex tests.
+
+    @param test_type: The PerfTestTypes test type.
+    @param test_name: The test name.
+    @param ap_config: The AP configuration.
+    @param bt_tag: String for BT operation.
+
+    @return: A tuple of two integers (SHOULD, MUST) of the expected throughput
+             drop percentage.
+    """
+    return get_expected_value('throughput drop', expected_throughput_drop,
+                              test_type, test_name, ap_config, bt_tag)
+
+
+"""The tuples defined below represent thresholds for throughput values as
+(should not exceed, must not exceed). The 'should not exceed' value is derived
+from the highest throughput observed during 100 runs of Wi-Fi and Bluetooth
+load coexistence tests. Conversely, the 'must not exceed' value is derived from
+the lowest throughput observed during the same tests.
+"""
+expected_throughput_values = {
+    'coex_test_with_mouse_click_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (369.32, 342.55),
+                        'BT_connected_with_load': (362.52, 331.14),
+                        'BT_disconnected_again': (376.43, 297.24)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (27.24, 27.21),
+                        'BT_connected_with_load': (25.67, 25.65),
+                        'BT_disconnected_again': (27.87, 27.86)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (389.08, 386.41),
+                        'BT_connected_with_load': (386.97, 383.77),
+                        'BT_disconnected_again': (387.17, 384.99)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (39.08, 38.66),
+                        'BT_connected_with_load': (38.53, 38.36),
+                        'BT_disconnected_again': (40.66, 40.45),
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (728.72, 722.50),
+                        'BT_connected_with_load': (733.23, 727.69),
+                        'BT_disconnected_again': (731.66, 726.54)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (21.55, 21.11),
+                        'BT_connected_with_load': (20.91, 20.68),
+                        'BT_disconnected_again': (22.15, 21.86),
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (328.92, 296.43),
+                        'BT_connected_with_load': (335.53, 317.38),
+                        'BT_disconnected_again': (330.17, 303.26)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (21.72, 21.69),
+                        'BT_connected_with_load': (20.87, 20.84),
+                        'BT_disconnected_again': (22.85, 22.80),
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+def get_expected_wifi_throughput(test_type, test_name, ap_config, bt_tag):
+    """Returns the expected throughput for Wi-Fi BT load coex performance tests.
+
+    @param test_type: The PerfTestTypes test type.
+    @param test_name: The test name.
+    @param ap_config: The AP configuration.
+    @param bt_tag: String for BT operation.
+
+    @return: A tuple of two floats (must,should) of the expected throughput's
+             in Mbps.
+    """
+    return get_expected_value('throughput', expected_throughput_values,
+                              test_type, test_name, ap_config, bt_tag)
+
+
+"""The below defined values serve as thresholds for latency measurements.
+They are determined based on the highest observed latency across 100
+runs of Wi-Fi and Bluetooth load coexistence tests.
+"""
+expected_latency_values = {
+    'coex_test_with_mouse_click_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 3.55,
+                        'BT_connected_with_load': 3.24,
+                        'BT_disconnected_again': 3.33
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 3.82,
+                        'BT_connected_with_load': 4.74,
+                        'BT_disconnected_again': 2.64
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.57,
+                        'BT_connected_with_load': 1.63,
+                        'BT_disconnected_again': 1.58
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                            'BT_connected': 5.30,
+                            'BT_connected_with_load': 4.51,
+                            'BT_disconnected_again': 4.63
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.62,
+                        'BT_connected_with_load': 2.03,
+                        'BT_disconnected_again': 1.69
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 3.95,
+                        'BT_connected_with_load': 4.13,
+                        'BT_disconnected_again': 5.12
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.60,
+                        'BT_connected_with_load': 1.46,
+                        'BT_disconnected_again': 1.56
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 3.80,
+                        'BT_connected_with_load': 2.96,
+                        'BT_disconnected_again': 5.28
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+def get_expected_wifi_latency(test_type, test_name, ap_config, bt_tag):
+    """Returns the expected latency for Wi-Fi BT load coex tests.
+
+    @param test_type: The PerfTestTypes test type.
+    @param test_name: The test name.
+    @param ap_config: The AP configuration.
+    @param bt_tag: String for BT operation.
+
+    @return: Float value for the expected latency in milliseconds.
+    """
+    return get_expected_value('latency', expected_latency_values, test_type,
+                              test_name, ap_config, bt_tag)

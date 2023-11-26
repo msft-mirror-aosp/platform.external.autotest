@@ -65,6 +65,16 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # This is temporary. All codecs will be served by PIPEWIRE eventually.
     AUDIO_SERVER_CHOICE = {SBC: PULSEAUDIO, AAC: PIPEWIRE}
 
+    # Regex to find ACL data event time for Bluetooth A2DP audio packets in
+    # btmon log, e.g.
+    # ACL Data RX: Handle 12 flags 0x02 dlen 612         #700 [hci0] 82.540952
+    #   Channel: 64 len 608 [PSM 25 mode Basic (0x00)] {chan 0}
+    # PSM with value 25 was taken from this reference:
+    # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/
+    # Assigned%20Number%20Types/Assigned_Numbers.pdf
+    A2DP_NOTIFICATION_REGEX = (
+            r"ACL Data (?:RX|TX): Handle {} .*\[hci\d+\] (\d+\.\d+)\s.*PSM 25")
+
     # The real IP replacent when used in ssh tunneling environment
     real_ip = None
 
@@ -449,6 +459,26 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     def stop_audio_stream_for_avrcp(self):
         """Stop playing audio on DUT"""
         self.test_dut_to_stop_playing_audio_subprocess()
+
+    def get_peer_a2dp_notif_timestamps(self, device):
+        """Gets peer A2DP notifications timestamp.
+
+        @param device: The Bluetooth device.
+
+        @return: List of peer notifications timestamp.
+        """
+        return self.get_peer_protocol_notif_timestamps(
+                self.A2DP_NOTIFICATION_REGEX, device)
+
+    def get_dut_a2dp_notif_timestamps(self, device):
+        """Gets DUT A2DP notifications timestamp.
+
+        @param device: The Bluetooth device.
+
+        @return: List of DUT notifications timestamp.
+        """
+        return self.get_dut_protocol_notif_timestamps(
+                self.A2DP_NOTIFICATION_REGEX, device)
 
     def initialize_bluetooth_player(self, device):
         """Initialize the Bluetooth media player.

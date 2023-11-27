@@ -120,7 +120,7 @@ class Cr50Test(FirmwareTest):
         except Exception as e:
             logging.warning('Error saving DBG image: %s', str(e))
             if restore_cr50_image or is_release_qual:
-                raise error.TestNAError('Need %s DBG image for %s %s: %s' %
+                raise error.TestNAError('%s DBG image - %s %s: %s' %
                                         (self.gsc.NAME, self._devid,
                                          self.servo.get_board(), str(e)))
 
@@ -140,10 +140,9 @@ class Cr50Test(FirmwareTest):
         except Exception as e:
             logging.warning('Error saving eraseflashinfo image: %s', str(e))
             if restore_cr50_board_id or is_release_qual:
-                raise error.TestNAError(
-                        'Need %s eraseflashinfo image %s %s: %s' %
-                        (self.gsc.NAME, self._devid, self.servo.get_board(),
-                         str(e)))
+                raise error.TestNAError('%s EFI image - %s %s: %s' %
+                                        (self.gsc.NAME, self._devid,
+                                         self.servo.get_board(), str(e)))
 
         if is_release_qual or self.running_cr50_release_suite():
             release_ver_arg = full_args.get('release_ver', '')
@@ -291,6 +290,9 @@ class Cr50Test(FirmwareTest):
 
         @param cr50_dbg_image_path: The path to the node locked cr50 image.
         """
+        if self.servo.main_device_is_ccd():
+            raise error.TestError('DBG image cannot run on ccd device. It '
+                                  'would clear testlab mode.')
         if os.path.isfile(cr50_dbg_image_path):
             self._dbg_image_path = cr50_dbg_image_path
         else:
@@ -302,6 +304,9 @@ class Cr50Test(FirmwareTest):
         @param cr50_eraseflashinfo_image_path: The path to the node locked cr50
                                                image.
         """
+        if self.servo.main_device_is_ccd():
+            raise error.TestError('EFI image cannot run on ccd device. It '
+                                  'would clear testlab mode.')
         if os.path.isfile(cr50_eraseflashinfo_image_path):
             self._eraseflashinfo_image_path = cr50_eraseflashinfo_image_path
         else:

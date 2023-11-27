@@ -4,7 +4,11 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "faft_cr50_tot"
-PURPOSE = "Suite to test TOT cr50 images."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Suite to test TOT cr50 images."
+}
 
 TIME = "LONG"
 TEST_CATEGORY = "Stress"

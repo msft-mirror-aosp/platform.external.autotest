@@ -4,7 +4,11 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "faft_cr50_crypto"
-PURPOSE = "Experimental verify cr50 crypto."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Experimental verify cr50 crypto."
+}
 
 TIME = "SHORT"
 TEST_CATEGORY = "Stress"

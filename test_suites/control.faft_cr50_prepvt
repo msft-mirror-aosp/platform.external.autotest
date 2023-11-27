@@ -4,7 +4,11 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "faft_cr50_prepvt"
-PURPOSE = "Suite to test cr50 prePVT images."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Suite to test cr50 prePVT images."
+}
 
 TIME = "LONG"
 TEST_CATEGORY = "Stress"

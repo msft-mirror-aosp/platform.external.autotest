@@ -4,7 +4,11 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "cr50_stress"
-PURPOSE = "Cr50 stress test functionality and devices"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Cr50 stress test functionality and devices"
+}
 
 TIME = "LONG"
 TEST_CATEGORY = "Stress"

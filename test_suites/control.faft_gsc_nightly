@@ -4,7 +4,11 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "faft_gsc_nightly"
-PURPOSE = "Suite to run faft gsc tests nightly."
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "Suite to run faft gsc tests nightly."
+}
 
 TIME = "LONG"
 TEST_CATEGORY = "Stress"

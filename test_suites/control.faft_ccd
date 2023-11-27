@@ -9,6 +9,7 @@ PURPOSE = "Test suite to verify basic ccd functionality."
 TIME = "SHORT"
 TEST_CLASS = "suite"
 TEST_TYPE = "Server"
+DEPENDENCIES = 'servo_state:WORKING, servo_component:ccd_gsc'
 
 DOC = """
 This is the faft_ccd test suite.

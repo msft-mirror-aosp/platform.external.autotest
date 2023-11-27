@@ -135,9 +135,6 @@ class ChromeLogin(object):
             cmd += ' --feature=' + self._feature
         if not verbose:
             cmd += ' > /dev/null 2>&1'
-        cmd += ' --feature=LacrosSupport'
-        cmd += ' --feature=LacrosPrimary'
-        cmd += ' --feature=LacrosOnly'
         return cmd
 
     def _login_by_script(self, timeout, verbose):

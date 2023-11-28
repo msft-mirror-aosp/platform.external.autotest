@@ -112,6 +112,15 @@ def adb_keepalive(targets, extra_paths, socket=None):
         common_utils.join_bg_jobs(jobs)
 
 
+def get_test_result_suite_version(test_result_xml_path):
+    """Get tests suite version from test_results.xml."""
+    root = ElementTree.parse(test_result_xml_path)
+    suite_version = ""
+    for result in root.iter('Result'):
+        suite_version = result.get('suite_version')
+    return suite_version
+
+
 def parse_tradefed_testresults_xml(test_result_xml_path, waivers=None):
     """ Check the result from tradefed through test_results.xml
     @param waivers: a set() of tests which are permitted to fail.

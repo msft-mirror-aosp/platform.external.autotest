@@ -799,7 +799,7 @@ class DevServer(object):
                 if not devserver.startswith("http://"):
                     devserver = ("http://%s" % devserver)
                 logging.info("Using Devserver %s. From CFT Args.", devserver)
-                return [devserver]
+                return [devserver], False
 
         logging.info('Getting devservers for host: %s', hostname)
         metrics.Counter(

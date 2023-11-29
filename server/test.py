@@ -372,13 +372,24 @@ def runtest(job, url, tag, args, dargs, hw_deps=None):
 
         _should_run = False
         try:
-            dut_use_flags = dargs['host'].run(
-                    'cat /usr/local/etc/tast_use_flags.txt').stdout
-            dut_use_flags_list = dut_use_flags.split('\n')
-            for item in hw_deps:
-                if item in dut_use_flags_list:
-                    _should_run = True
-                    break
+            if ('host' in dargs and hasattr(dargs['host'], 'is_up_fast')
+                        and dargs['host'].is_up_fast()):
+                dut_use_flags = dargs['host'].run(
+                        'cat /usr/local/etc/tast_use_flags.txt').stdout
+                dut_use_flags_list = dut_use_flags.split('\n')
+                for item in hw_deps:
+                    if item in dut_use_flags_list:
+                        _should_run = True
+                        break
+            elif ('hosts' in dargs):
+                for host in dargs['hosts']:
+                    dut_use_flags = host.run(
+                            'cat /usr/local/etc/tast_use_flags.txt').stdout
+                    dut_use_flags_list = dut_use_flags.split('\n')
+                    for item in hw_deps:
+                        if item in dut_use_flags_list:
+                            _should_run = True
+                            break
         except Exception as e:
             if logger:
                 logger.cleanup()

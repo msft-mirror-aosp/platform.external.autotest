@@ -1,4 +1,4 @@
-# Lint as: python2, python3
+# Lint as: python3
 
 """
 lockfile.py - Platform-independent advisory file locks.
@@ -53,12 +53,9 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
-import socket
 import os
 import threading
 import time
-import six
-from six.moves import urllib
 
 # Work with PEP8 and non-PEP8 versions of threading module.
 if not hasattr(threading, "current_thread"):
@@ -140,13 +137,10 @@ class LockBase(object):
         """
         self.path = path
         self.lock_file = os.path.abspath(path) + ".lock"
-        self.hostname = socket.gethostname()
-        self.pid = os.getpid()
-        name = threading.current_thread().get_name()
-        tname = "%s-" % urllib.parse.quote(name, safe="")
-        dirname = os.path.dirname(self.lock_file)
-        self.unique_name = os.path.join(dirname, "%s.%s%s" % (self.hostname,
-                                                              tname, self.pid))
+        # b/312122160: Under CFT runtime the original naming scheme is no longer
+        # unique among test runs. Just use a random string.
+        rand_str = os.urandom(8).hex()
+        self.unique_name = f'{self.lock_file}.{rand_str}'
 
     def __del__(self):
         """Paranoia: We are trying hard to not leave any file behind. This

@@ -22,6 +22,10 @@ ADVMON_UNSUPPORTED_CHIPSETS = [
         'QCA-6174A-3-UART', 'QCA-6174A-5-USB',
 ]
 
+ADVMON_UNSUPPORTED_CHIPSETS_FLOSS = [
+        'Realtek-RTL8852C-USB', 'Realtek-RTL8852A-USB',
+]
+
 
 class TestMonitor():
     """Local object hosting the test values for Advertisement Monitor object.
@@ -428,8 +432,15 @@ class BluetoothAdapterAdvMonitorTests(
 
         """
         chipset = self.bluetooth_facade.get_chipset_name()
-        if chipset in ADVMON_UNSUPPORTED_CHIPSETS:
+        unsupported_chipsets = ADVMON_UNSUPPORTED_CHIPSETS
+        if self.floss:
+            unsupported_chipsets = unsupported_chipsets + \
+                    ADVMON_UNSUPPORTED_CHIPSETS_FLOSS
+
+        if chipset in unsupported_chipsets:
             logging.warning('Controller support check skipped for %s', chipset)
+            if self.floss:
+                raise error.TestNAError('Software filtering not supported')
         else:
             supported_features = self.read_supported_features()
             if not supported_features:

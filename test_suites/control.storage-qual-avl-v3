@@ -1,0 +1,22 @@
+# Copyright 2023 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'storage-qual-avl-v3'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'AVL Storage Qualification v3 suite',
+    'hw_agnostic': False
+}
+TEST_TYPE = 'Server'
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['max_runtime_mins'] = 4320
+args_dict['name'] = 'storage-qual-avl-v3'
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

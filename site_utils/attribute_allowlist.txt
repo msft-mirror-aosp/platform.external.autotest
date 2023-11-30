@@ -955,6 +955,14 @@ suite:storage_qual_v2_quick
 suite:storage_qual_v2_s
 suite:storage_qual_v2_xl
 suite:storage_qual_v2_xs
+suite:storage-qual-pdp-enabled
+suite:storage-qual-pdp-kpi
+suite:storage-qual-pdp-stress
+suite:storage-qual-avl-v3
+suite:storage-qual-avl-v3-batch1
+suite:storage-qual-avl-v3-batch2
+suite:storage-qual-avl-v3-batch3
+suite:storage-qual-avl-v3-batch4
 suite:storagequal
 suite:stress
 suite:stub

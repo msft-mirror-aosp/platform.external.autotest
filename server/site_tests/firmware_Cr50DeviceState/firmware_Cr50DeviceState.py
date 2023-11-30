@@ -171,9 +171,6 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def get_tpm_init_time(self):
         """If the AP is on, return the time it took the tpm to initialize."""
-        # The AP has to be on and have cbmem support to get `cbmem -t`.
-        if not self.gsc.ap_is_on():
-            return -1
         # The board may not support cbmem after suspend. Ignore errors on those
         # devices.
         ignore_status = not getattr(self.faft_config, 'suspend_cbmem', True)
@@ -559,6 +556,12 @@ class firmware_Cr50DeviceState(Cr50Test):
         # sleep_time.
         self.stage_irq_add('idle in %s' % (self._found_state or state))
 
+        # If the AP is off, the system will resume through firmware and run
+        # TPM init. Verify it doesn't take too long to initialize the TPM.
+        self.check_tpm_init = not self.gsc.ap_is_on()
+        logging.info('Check TPM init: %s',
+                     'yes' if self.check_tpm_init else 'no')
+
         # Return to S0
         self.enter_state('S0')
         self.stage_irq_add('entered S0')
@@ -574,9 +577,11 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         self.print_fwmp('%s resume' % state)
 
-        self.steps[-1][self.KEY_TPM_INIT] = self.get_tpm_init_time()
-        logging.info('Resume from %s tpm initialized in %dus', state,
-                      self.steps[-1][self.KEY_TPM_INIT])
+        # The AP has to be on and have cbmem support to get `cbmem -t`.
+        if self.check_tpm_init and self.gsc.ap_is_on():
+            self.steps[-1][self.KEY_TPM_INIT] = self.get_tpm_init_time()
+            logging.info('Resume from %s tpm initialized in %dus', state,
+                         self.steps[-1][self.KEY_TPM_INIT])
 
     def print_fwmp(self, desc, initialized=True):
         """Print FWMP and PCR0 state for debugging."""

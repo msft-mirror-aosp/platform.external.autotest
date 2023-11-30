@@ -10,7 +10,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = "suite:audio_advanced"
 PY_VERSION = 3
 
-DEPENDENCIES = 'chameleon, test_usbaudio'
+DEPENDENCIES = 'chameleon_state:WORKING, test_usbaudio'
 METADATA = {
     "contacts": ["crosep-intertech@google.com"],
     "bug_component": "b:1280385",

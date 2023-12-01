@@ -39,6 +39,24 @@ class DarkResumeXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
         sys_power.suspend_bg_for_dark_resume(suspend_for_secs)
 
     @xmlrpc_server.dbus_safe(None)
+    def pause_ethernet_hook(self):
+        """Pause check_ethernet.hook that reboots the device upon ethernet lost.
+
+        check_ethernet.hook will brings itself back if paused for more than 30
+        minutes.
+        resume_ethernet_hook() will release the pause.
+        """
+        sys_power.pause_check_network_hook()
+
+    @xmlrpc_server.dbus_safe(None)
+    def resume_ethernet_hook(self):
+        """Resume check_ethernet.hook on the device.
+
+        Must be called after pause_ethernet_hook().
+        """
+        sys_power.resume_check_network_hook()
+
+    @xmlrpc_server.dbus_safe(None)
     def set_stop_resuspend(self, stop_resuspend):
         """
         Stops resuspend on seeing a dark resume.

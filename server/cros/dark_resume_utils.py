@@ -128,6 +128,23 @@ class DarkResumeUtils(object):
             self._rebuild_xmlrpc_proxy()
             return self._client_proxy.has_lid()
 
+    def pause_ethernet_check_on_host(self):
+        """Pause check_ethernet.hook on host."""
+        try:
+            self._client_proxy.pause_ethernet_hook()
+        except (socket.error, six.moves.xmlrpc_client.ProtocolError,
+                six.moves.http_client.BadStatusLine):
+            self._rebuild_xmlrpc_proxy()
+            self._client_proxy.pause_ethernet_hook()
+
+    def resume_ethernet_check_on_host(self):
+        """Resume check_ethernet.hook on host."""
+        try:
+            self._client_proxy.resume_ethernet_hook()
+        except (socket.error, six.moves.xmlrpc_client.ProtocolError,
+                six.moves.http_client.BadStatusLine):
+            self._rebuild_xmlrpc_proxy()
+            self._client_proxy.resume_ethernet_hook()
 
     def _get_xmlrpc_proxy(self):
         """Get a dark resume XMLRPC proxy for the host this DarkResumeUtils is

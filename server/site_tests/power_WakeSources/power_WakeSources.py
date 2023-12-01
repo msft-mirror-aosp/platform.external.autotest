@@ -412,6 +412,7 @@ class power_WakeSources(test.test):
     def cleanup(self):
         """cleanup."""
         if hasattr(self, '_dr_utils'):
+            self._dr_utils.resume_ethernet_check_on_host()
             self._dr_utils.stop_resuspend_on_dark_resume(False)
             self._dr_utils.teardown()
 
@@ -442,6 +443,7 @@ class power_WakeSources(test.test):
 
         self._dr_utils = DarkResumeUtils(host)
         self._dr_utils.stop_resuspend_on_dark_resume()
+        self._dr_utils.pause_ethernet_check_on_host()
 
     def run_once(self):
         """Body of the test."""

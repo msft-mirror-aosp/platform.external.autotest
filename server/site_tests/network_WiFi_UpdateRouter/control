@@ -11,7 +11,7 @@ METADATA = {
 }
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING'
-ATTRIBUTES = 'suite:bluetooth_wifi_testbed_update'
+ATTRIBUTES = ''
 
 def run(machine):
     job.run_test('network_WiFi_UpdateRouter',

@@ -4757,7 +4757,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
     def restart_cras(self):
         """Restarts the cras daemon."""
-        self._restart_cras(enable_floss=True)
+        return self._restart_cras(enable_floss=True)
 
     def is_bluetoothd_proxy_valid(self):
         """Checks whether the proxy objects for Floss are ok and registers

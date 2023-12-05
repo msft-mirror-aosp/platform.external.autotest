@@ -839,6 +839,13 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 if x.get('connected', False)
         ])
 
+    def get_bonded_devices_addresses(self):
+        """Gets the address of all currently bonded devices."""
+        return [
+                addr for addr in self.known_devices
+                if self.known_devices[addr]['bond_state'] == BondState.BONDED
+        ]
+
     def is_connected(self, address):
         """Checks whether a device is connected."""
         return address in self.known_devices and self.known_devices[

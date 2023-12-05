@@ -4952,6 +4952,17 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         if not self.configure_floss(enabled=True):
             return False
 
+        # Turn on the adapter in order to remove all remote devices.
+        if not self.is_powered_on():
+            if not self.set_powered(True):
+                logging.warning('Unable to power on the adapter')
+                return False
+
+        addresses = self.adapter_client.get_bonded_devices_addresses()
+        for address in addresses:
+            logging.debug('removing %s', address)
+            self.adapter_client.forget_device(address)
+
         if not self.set_powered(False):
             return False
 

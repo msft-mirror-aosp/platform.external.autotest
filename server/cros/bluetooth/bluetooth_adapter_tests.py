@@ -1291,11 +1291,12 @@ class BluetoothAdapterTests(test.test):
         # TODO: the device types with special cap_reqs, i.e., capability
         # requirements, should be allocated first.
         for device_type, cap_reqs in device_configs.items():
-            number = get_num_devices(cap_reqs)
-            if len(self.btpeer_group[device_type]) < number:
-                logging.error('Number of Bluetooth peers with device type'
-                      '%s is %d, which is less then needed %d', device_type,
-                      len(self.btpeer_group[device_type]), number)
+            req_num = get_num_devices(cap_reqs)
+            if len(self.btpeer_group[device_type]) < req_num:
+                logging.error(
+                        'Number of Bluetooth peers with device type'
+                        '%s is %d, which is less then needed %d', device_type,
+                        len(self.btpeer_group[device_type]), req_num)
                 return False
 
             for btpeer in self.btpeer_group[device_type]:
@@ -1305,28 +1306,37 @@ class BluetoothAdapterTests(test.test):
                 # If device is None, the btpeer does not meet the
                 # capability requirements.
                 if device is None:
+                    logging.debug("btpeer could not be setup as %s",
+                                  device_type)
                     continue
 
                 self.devices[device_type].append(device)
 
-                # Remove this btpeer from btpeer_group since it is already
-                # configured as a specific device
+                # Remove this btpeer from btpeer_group for other device types
+                # since it is already configured as a specific device
                 for temp_device in SUPPORTED_DEVICE_TYPES:
+                    if temp_device == device_type:
+                        continue
                     if btpeer in self.btpeer_group[temp_device]:
                         self.btpeer_group[temp_device].remove(btpeer)
 
                 emulated_count = len(self.devices[device_type])
-                if emulated_count >= number:
+                if emulated_count == req_num:
+                    logging.debug('Got %s device of type %s', req_num,
+                                  device_type)
                     break
-            else:
+
                 logging.info("Emulated devices: %s", self.devices)
+
+            emulated_count = len(self.devices[device_type])
+            if emulated_count < req_num:
                 raise error.TestNAError(
-                        'No sufficient %s peers supporting %s' %
-                        (device_type, cap_reqs))
+                        'No sufficient peers supporting %s need %s got %s' %
+                        (device_type, req_num, emulated_count))
             logging.info("Number of emulated %s: %d", device_type,
                          emulated_count)
-        logging.info("getting emulated devices %s", self.devices)
 
+        logging.info("getting emulated devices %s", self.devices)
         return True
 
     def get_peer_device_type(self, device):

@@ -4,10 +4,11 @@
 
 
 Running this code:
-(for now) there is no cli.  Edit tauto_modify.py to
-change what needs to be done to control files (an "action")
-and how to select which control files to act on (a "filter").
-`python tauto_modify`
+`python tauto_modify.py --help`
+
+Examples:
+python tauto_modify.py --remove_contacts email@google.com email2@google.com
+python tauto_modify.py --set_hw_agnostic --test_names tauto.nameA tauto.nameB
 
 Modifying this code:
 `python -m unittest` to run all unit tests

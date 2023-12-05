@@ -59,7 +59,11 @@ def modify_control_files(src_dir, actions_list, filters_list, dry_run=True,
             for action_func in actions_list:
                 modified = action_func(cf) or modified
             cf.update_contents()
+            if not modified:
+                continue
 
+            # If file was flagged as modified, either print it out (default) or
+            # edit the original source file.
             if dry_run:
                 print(f'Will modify {cf_path}:')
                 print(cf.contents)

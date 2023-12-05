@@ -59,9 +59,13 @@ func (f *TestFile) ParseContents() error {
 	}
 	f.testExpr = testExpr // Needs to be set before calling ParentTestID.
 
+	// Look for parameterized tests and print out a warning if there is any problem.
+	// Some tests use custom functions to define parameterized tests, and those
+	// are out-of-scope for this tool.
 	paramExprs, err := testExpr.FindParamTestExprs(f.ParentTestID())
 	if err != nil {
-		return fmt.Errorf("Error finding Parameterized tests for %s: %v", f.path, err)
+		fmt.Printf("WARNING: could not parse Parameterized tests for %s\n", f.path)
+		return nil
 	}
 	f.paramExprs = paramExprs
 

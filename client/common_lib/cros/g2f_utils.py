@@ -12,7 +12,7 @@ from autotest_lib.client.common_lib import error
 U2F_VID = '18D1'
 U2F_PID = '5212'
 
-QUERY_U2F_DEVICE_ATTEMPTS=5
+QUERY_U2F_DEVICE_ATTEMPTS=30
 QUERY_U2F_RETRY_DELAY_SEC=1
 
 def ChromeOSLogin(client):

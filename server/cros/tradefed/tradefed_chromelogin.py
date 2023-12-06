@@ -114,6 +114,10 @@ class ChromeLogin(object):
         cmd += ' --no-popup-notification'
         # Always disable external storage for ARC
         cmd += ' --disable-feature=ArcExternalStorageAccess'
+        # TODO(b/306067199): Revert this before M122 branch cut.
+        cmd += ' --feature=RoundedWindows'
+        # TODO(b/306067199): Revert this before M122 branch cut.
+        cmd += ' --feature=ArcRoundedWindowCompat'
         # Toggle the translation from houdini to ndk
         if self._toggle_ndk:
             cmd += ' --toggle_ndk'

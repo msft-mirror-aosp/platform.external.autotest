@@ -656,7 +656,6 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
 CONFIG['HARDWARE_MODULES'] = [
         'CtsPerfettoTestCases',
         'CtsSustainedPerformanceHostTestCases',
-        'CtsCameraTestCases',
         'CtsViewTestCases',
         'CtsMediaAudioTestCases',
         'CtsMediaCodecTestCases',

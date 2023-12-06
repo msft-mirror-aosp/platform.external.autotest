@@ -7,8 +7,6 @@ import os
 import re
 
 KERNEL_TMP_FILE_NAME = 'kernel_dump'
-ROOTFS_TMP_FILE_NAME = 'rootfs_dump'
-ROOTFS_OFFSET_TMP_FILE_NAME = 'rootfs_offset'
 
 _KERNEL_MAP = {'A': '2', 'B': '4'}
 _ROOTFS_MAP = {'A': '3', 'B': '5'}
@@ -76,32 +74,6 @@ class RootfsHandler(object):
                 'iflag=count_bytes oflag=seek_bytes' %
                 (rootfs_path, offset, count))
 
-    def dump_rootfs_verity(self, section):
-        """Dumps verity hashes of the root FS.
-
-        @param section: The rootfs to dump. May be A or B.
-        """
-        kernel_path = self.os_if.join_part(self.root_dev,
-                                           _KERNEL_MAP[section.upper()])
-        rootfs_path = self.os_if.join_part(self.root_dev,
-                                           _ROOTFS_MAP[section.upper()])
-        (offset, count) = self._verity_range(kernel_path)
-
-        self._dump_rootfs_verity(rootfs_path, offset, count)
-
-    def restore_rootfs_verity(self, section):
-        """Restores verity hashes of the root FS.
-
-        @param section: The rootfs to restore. May be A or B.
-        """
-        rootfs_path = self.os_if.join_part(self.root_dev,
-                                           _ROOTFS_MAP[section.upper()])
-
-        self.os_if.run_shell_command(
-                'dd if=%s of=%s seek=`cat %s` bs=1M '
-                'oflag=seek_bytes' %
-                (self.rootfs_dump_file, rootfs_path, self.rootfs_offset_file))
-
     def _verity_table(self, kernel_path):
         """Returns verity table of a kernel.
 
@@ -126,20 +98,6 @@ class RootfsHandler(object):
         hash_size = partition_size / 4096 * 64 + 512
         return (partition_size, hash_size)
 
-    def _dump_rootfs_verity(self, rootfs_path, offset, count):
-        """Dumps verity hashes of the root FS.
-
-        @param rootfs_path: The path to a root FS device.
-        @param offset: The offset of hashes of the rootfs in bytes.
-        @param count: The amount of bytes to dump.
-        """
-        self.os_if.run_shell_command(
-                'dd if=%s of=%s skip=%d count=%d bs=1M '
-                'iflag=count_bytes,skip_bytes' %
-                (rootfs_path, self.rootfs_dump_file, offset, count))
-        self.os_if.run_shell_command('echo %d > %s' %
-                                     (offset, self.rootfs_offset_file))
-
     def _remove_mapper(self):
         """Removes the dm device mapper used by this class."""
         if self.os_if.path_exists(_DM_DEV_PATH):
@@ -150,7 +108,4 @@ class RootfsHandler(object):
         """Initialize the rootfs handler object."""
         self.root_dev = self.os_if.get_root_dev()
         self.kernel_dump_file = self.os_if.state_dir_file(KERNEL_TMP_FILE_NAME)
-        self.rootfs_dump_file = self.os_if.state_dir_file(ROOTFS_TMP_FILE_NAME)
-        self.rootfs_offset_file = self.os_if.state_dir_file(
-                ROOTFS_OFFSET_TMP_FILE_NAME)
         self.initialized = True

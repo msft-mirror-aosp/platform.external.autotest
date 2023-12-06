@@ -1145,9 +1145,7 @@ RPC_CATEGORIES = [
                         },
                         {
                                 "method_names": [
-                                        "dump_rootfs_verity",
                                         "corrupt_rootfs_verity",
-                                        "restore_rootfs_verity",
                                 ],
                                 "passing_args": [
                                         ("A", ),

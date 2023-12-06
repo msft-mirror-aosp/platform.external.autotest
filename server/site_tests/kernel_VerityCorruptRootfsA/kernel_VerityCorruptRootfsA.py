@@ -18,18 +18,13 @@ class kernel_VerityCorruptRootfsA(FirmwareTest):
 
     def initialize(self, host, cmdline_args, dev_mode=False):
         super(kernel_VerityCorruptRootfsA, self).initialize(host, cmdline_args)
-        self.backup_kernel()
-        self.backup_cgpt_attributes()
-        self.faft_client.rootfs.dump_rootfs_verity('a')
         self.switcher.setup_mode('dev' if dev_mode else 'normal')
         self.setup_usbkey(usbkey=False)
         self.setup_kernel('a')
 
     def cleanup(self):
         try:
-            self.restore_cgpt_attributes()
-            self.faft_client.rootfs.restore_rootfs_verity('a')
-            self.restore_kernel()
+            self.setup_kernel('a')
         except Exception as e:
             logging.error("Caught exception: %s", str(e))
         super(kernel_VerityCorruptRootfsA, self).cleanup()
@@ -43,8 +38,7 @@ class kernel_VerityCorruptRootfsA(FirmwareTest):
 
         logging.info("Expected kernel B boot and restore kernel A.")
         self.check_state((self.checkers.root_part_checker, 'b'))
-        self.faft_client.rootfs.restore_rootfs_verity('a')
-        self.restore_kernel()
+        self.setup_kernel('a')
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected kernel A boot.")

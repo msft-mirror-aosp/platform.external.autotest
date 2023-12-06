@@ -259,6 +259,8 @@ class TradefedTest(test.test):
     def _load_waivers(self, official_suite_version):
         """Load expected test failures to exclude them from re-runs."""
         self._waivers = set()
+        self._notest_modules = set()
+
         is_dev = self._bundle_uri and self._bundle_uri.startswith('DEV')
         is_public = not self._bundle_uri
         self._waivers.update(
@@ -271,8 +273,9 @@ class TradefedTest(test.test):
                                                 official_suite_version))
 
         # Load modules with no tests.
-        self._notest_modules = self._get_expected_failures(
-                'notest_modules', official_suite_version)
+        self._notest_modules.update(
+                self._get_expected_failures('notest_modules',
+                                            official_suite_version))
 
     def _output_perf(self):
         """Output performance values."""

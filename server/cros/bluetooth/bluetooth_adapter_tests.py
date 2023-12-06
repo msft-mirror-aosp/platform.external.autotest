@@ -36,7 +36,9 @@ from autotest_lib.server import test
 from autotest_lib.client.bin.input.linux_input import (
         BTN_LEFT, BTN_RIGHT, EV_KEY, EV_REL, REL_X, REL_Y, REL_WHEEL,
         REL_WHEEL_HI_RES, KEY_PLAYCD, KEY_PAUSECD, KEY_STOPCD, KEY_NEXTSONG,
-        KEY_PREVIOUSSONG)
+        KEY_PREVIOUSSONG, BTN_A, BTN_B, BTN_X, BTN_Y, BTN_TL, BTN_TR, EV_ABS,
+        ABS_HAT0X, ABS_HAT0Y, ABS_BRAKE, ABS_GAS, ABS_X, ABS_Y, ABS_Z, ABS_RZ,
+        BTN_THUMBL, BTN_THUMBR, BTN_START)
 from autotest_lib.server.cros.bluetooth.bluetooth_gatt_client_utils import (
         GATT_ClientFacade, GATT_Application, GATT_HIDApplication,
         Floss_GATT_HIDApplication)
@@ -4908,6 +4910,335 @@ class BluetoothAdapterTests(test.test):
 
         return all(self.results.values())
 
+    # -------------------------------------------------------------------
+    # Bluetooth gamepad related tests
+    # -------------------------------------------------------------------
+    def _test_gamepad_key_events(self, device, button, gesture):
+        """Tests that the gamepad press buttons events could be received
+        correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: Gamepad button, as GAMEPAD_BUTTON_* value, that will be
+                       pressed.
+        @param gesture: The gesture method to perform.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+        actual_events = self._record_input_events(device,
+                                                  gesture,
+                                                  address=device.address)
+
+        linux_input_button = {
+                'GAMEPAD_BUTTON_A': BTN_A,
+                'GAMEPAD_BUTTON_B': BTN_B,
+                'GAMEPAD_BUTTON_X': BTN_X,
+                'GAMEPAD_BUTTON_Y': BTN_Y,
+                'GAMEPAD_BUTTON_START': BTN_START,
+                'GAMEPAD_LEFT_STICK': BTN_THUMBL,
+                'GAMEPAD_RIGHT_STICK': BTN_THUMBR,
+                'GAMEPAD_BUTTON_LEFT_BUMPER': BTN_TL,
+                'GAMEPAD_BUTTON_RIGHT_BUMPER': BTN_TR
+        }
+
+        expected_events = [
+                # Button down
+                recorder.MSC_SCAN_BTN_EVENT[button],
+                Event(EV_KEY, linux_input_button[button], 1),
+                recorder.SYN_EVENT,
+                # Button up
+                recorder.MSC_SCAN_BTN_EVENT[button],
+                Event(EV_KEY, linux_input_button[button], 0),
+                recorder.SYN_EVENT
+        ]
+
+        self.results = {
+                'actual_events': list(map(str, actual_events)),
+                'expected_events': list(map(str, expected_events))
+        }
+        return actual_events == expected_events
+
+    def _test_gamepad_dpad_events(self, device, button, gesture):
+        """Tests that the gamepad press D-Pad buttons events could be received
+        correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: D-Pad button, as GAMEPAD_BUTTON_* value, that will be
+                       pressed.
+        @param gesture: The gesture method to perform.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+        actual_events = self._record_input_events(device,
+                                                  gesture,
+                                                  address=device.address)
+
+        linux_input_button = {
+                'GAMEPAD_BUTTON_LEFT': ABS_HAT0X,
+                'GAMEPAD_BUTTON_RIGHT': ABS_HAT0X,
+                'GAMEPAD_BUTTON_UP': ABS_HAT0Y,
+                'GAMEPAD_BUTTON_DOWN': ABS_HAT0Y
+        }
+        button_down_event_value = {
+                'GAMEPAD_BUTTON_LEFT': -1,
+                'GAMEPAD_BUTTON_RIGHT': 1,
+                'GAMEPAD_BUTTON_UP': -1,
+                'GAMEPAD_BUTTON_DOWN': 1
+        }
+
+        expected_events = [
+                # Button down
+                Event(EV_ABS, linux_input_button[button],
+                      button_down_event_value[button]),
+                recorder.SYN_EVENT,
+                # Button up
+                Event(EV_ABS, linux_input_button[button], 0),
+                recorder.SYN_EVENT
+        ]
+
+        self.results = {
+                'actual_events': list(map(str, actual_events)),
+                'expected_events': list(map(str, expected_events))
+        }
+        return actual_events == expected_events
+
+    def _test_gamepad_triggers_events(self, device, button, gesture, value):
+        """Tests that the gamepad press trigger buttons events could be
+        received correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: Trigger button, as LEFT_TRIGGER or RIGHT_TRIGGER value,
+                       that will be pressed.
+        @param gesture: The gesture method to perform.
+        @param value: A value between 0-1023 to press the trigger.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+
+        actual_events = self._record_input_events(device,
+                                                  gesture,
+                                                  address=device.address)
+
+        linux_input_button = {
+                'LEFT_TRIGGER': ABS_BRAKE,
+                'RIGHT_TRIGGER': ABS_GAS
+        }
+
+        expected_events = [
+                # Button down
+                Event(EV_ABS, linux_input_button[button], value),
+                recorder.SYN_EVENT,
+                # Button up
+                Event(EV_ABS, linux_input_button[button], 0),
+                recorder.SYN_EVENT
+        ]
+
+        self.results = {
+                'actual_events': list(map(str, actual_events)),
+                'expected_events': list(map(str, expected_events))
+        }
+        return actual_events == expected_events
+
+    def _test_gamepad_move_thumbstick(self,
+                                      device,
+                                      stick,
+                                      gesture,
+                                      delta_x=4095,
+                                      delta_y=4095):
+        """Tests that the events of gamepad thumbstick movement could be
+        received correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param stick: A stick type, as GAMEPAD_LEFT_STICK or
+                      GAMEPAD_RIGHT_STICK value, that will be moved.
+        @param gesture: The gesture method to perform.
+        @param delta_x: A value between 4095-65535 to move the thumbstick
+                        horizontally.
+        @param delta_y: A value between 4095-65535 to move the thumbstick
+                        vertically.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+
+        actual_events = self._record_input_events(device,
+                                                  gesture,
+                                                  address=device.address)
+
+        linux_input_button_x = {
+                'GAMEPAD_LEFT_STICK': ABS_X,
+                'GAMEPAD_RIGHT_STICK': ABS_Z
+        }
+        linux_input_button_y = {
+                'GAMEPAD_LEFT_STICK': ABS_Y,
+                'GAMEPAD_RIGHT_STICK': ABS_RZ
+        }
+
+        expected_events = [
+                # Move thumbsticks
+                Event(EV_ABS, linux_input_button_x[stick], delta_x),
+                Event(EV_ABS, linux_input_button_y[stick], delta_y),
+                recorder.SYN_EVENT,
+                # Clear thumbsticks
+                Event(EV_ABS, linux_input_button_x[stick], 0),
+                Event(EV_ABS, linux_input_button_y[stick], 0),
+                recorder.SYN_EVENT
+        ]
+
+        self.results = {
+                'actual_events': list(map(str, actual_events)),
+                'expected_events': list(map(str, expected_events))
+        }
+        return actual_events == expected_events
+
+    @test_retry_and_log
+    def test_gamepad_action_button_press(self, device, button):
+        """Tests that the gamepad press action buttons events could be received
+        correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: Action button, as GAMEPAD_BUTTON_* value, that will be
+                       pressed.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+        gesture = lambda: device.PressActionButton(button)
+        return self._test_gamepad_key_events(device, button, gesture)
+
+    @test_retry_and_log
+    def test_gamepad_start_button_press(self, device, button):
+        """Tests that the gamepad press start button events could be received
+        correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: GAMEPAD_BUTTON_START, the value of the gamepad button
+                       that will be pressed.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+         """
+        gesture = device.PressStartButton
+        return self._test_gamepad_key_events(device, button, gesture)
+
+    @test_retry_and_log
+    def test_gamepad_dpad_button_press(self, device, button):
+        """Tests that the gamepad press D-Pad buttons events could be received
+        correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: A D-Pad button, as GAMEPAD_BUTTON_* value, that will be
+                       pressed.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+        gesture = lambda: device.PressDPadButton(button)
+        return self._test_gamepad_dpad_events(device, button, gesture)
+
+    @test_retry_and_log
+    def test_gamepad_bumper_button_press(self, device, button):
+        """Tests that the gamepad press bumper buttons (LB, RB) events could be
+         received correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: A bumper button, as GAMEPAD_BUTTON_LEFT_BUMPER or
+                       GAMEPAD_BUTTON_RIGHT_BUMPER value, that will be pressed.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+        if button == 'GAMEPAD_BUTTON_LEFT_BUMPER':
+            gesture = device.PressLeftBumper
+        elif button == 'GAMEPAD_BUTTON_RIGHT_BUMPER':
+            gesture = device.PressRightBumper
+        else:
+            raise error.TestError('Button (%s) is not valid.' % button)
+        return self._test_gamepad_key_events(device, button, gesture)
+
+    @test_retry_and_log
+    def test_gamepad_trigger_button_press(self, device, button, value):
+        """Tests that the gamepad press trigger buttons (LT, RT) events could
+        be received correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: Trigger button, as LEFT_TRIGGER or RIGHT_TRIGGER value,
+                       that will be pressed.
+        @param value: A value between 0-1023 to press the trigger.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+        if button == 'LEFT_TRIGGER':
+            gesture = lambda: device.PressLeftTrigger(value)
+        elif button == 'RIGHT_TRIGGER':
+            gesture = lambda: device.PressRightTrigger(value)
+        else:
+            raise error.TestError('Trigger type (%s) is not valid.' % button)
+        return self._test_gamepad_triggers_events(device, button, gesture,
+                                                  value)
+
+    @test_retry_and_log
+    def test_gamepad_thumbstick_press(self, device, stick):
+        """Tests that the gamepad press thumbstick buttons events could be
+        received correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param stick: A stick type, as GAMEPAD_LEFT_STICK or
+                      GAMEPAD_RIGHT_STICK value, that will be pressed.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+        if stick == 'GAMEPAD_LEFT_STICK':
+            gesture = device.PressLeftThumbstick
+        elif stick == 'GAMEPAD_RIGHT_STICK':
+            gesture = device.PressRightThumbstick
+        else:
+            raise error.TestError('Stick type (%s) is not valid.' % stick)
+        return self._test_gamepad_key_events(device, stick, gesture)
+
+    @test_retry_and_log
+    def test_gamepad_move_thumbstick(self,
+                                     device,
+                                     stick,
+                                     delta_x=4095,
+                                     delta_y=4095):
+        """Tests that the movement of the gamepad thumbstick events could be
+        received correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param stick: A stick type, as GAMEPAD_LEFT_STICK or
+                           GAMEPAD_RIGHT_STICK value, that will be moved.
+        @param delta_x: A value between 4095-65535 to move the thumbstick
+                        horizontally.
+        @param delta_y: A value between 4095-65535 to move the thumbstick
+                        vertically.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+
+        """
+        if stick == 'GAMEPAD_LEFT_STICK':
+            gesture = lambda: device.MoveLeftThumbstick(delta_x, delta_y)
+        elif stick == 'GAMEPAD_RIGHT_STICK':
+            gesture = lambda: device.MoveRightThumbstick(delta_x, delta_y)
+        else:
+            raise error.TestError('Stick type (%s) is not valid.' % stick)
+        return self._test_gamepad_move_thumbstick(device, stick, gesture,
+                                                  delta_x, delta_y)
 
     def is_newer_kernel_version(self, version, minimum_version):
         """ Check if given kernel version is newer than unsupported version."""

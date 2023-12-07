@@ -266,6 +266,9 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         Delay starting AP RO verification, so the test can get the full
         AP RO console output.
         """
+        if not self.host.ping_wait_up(self.faft_config.delay_reboot_to_ping):
+            raise error.TestError('AP is %s. Dut is not sshable. ' %
+                                  self.cr50.get_ccdstate('AP'))
         apro_start_cmd = utils.sh_escape('sleep %d ; gsctool -aB start' %
                                          self.START_DELAY)
         full_ssh_cmd = '%s "%s"' % (self.host.ssh_command(options='-tt'),

@@ -121,7 +121,7 @@ class firmware_PDVbusRequest(FirmwareTest):
         self.restore_ap_on_power_mode()
         super(firmware_PDVbusRequest, self).cleanup()
 
-    def run_once(self):
+    def run_once(self, dts_mode=False):
         """Exectue VBUS request test.
 
         """
@@ -215,6 +215,14 @@ class firmware_PDVbusRequest(FirmwareTest):
                                   (dut_voltage_limit, str(charging_voltages)))
 
         for voltage in charging_voltages:
+            # Servo and DUT haven't implemented the oriented debug accessory
+            # mode. When servo is a sink in DTS mode, the DUT has no way to
+            # detect the CC polarity and all CC communication will fail. So skip
+            # the case where servo is a sink (voltage = 0) in DTS mode.
+            if dts_mode and voltage == 0:
+                logging.info('Skip testing with servo as sink in DTS mode')
+                continue
+
             logging.info('********* %r *********', voltage)
             # Set charging voltage
             self.charge(voltage)

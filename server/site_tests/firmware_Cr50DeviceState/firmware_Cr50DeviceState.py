@@ -31,6 +31,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             '23E14DD9BB51A50E16911F7E11DF1E1AAF0B17134DC739C5653607A1EC8DD37A',
     ]
     DEEP_SLEEP_STEP_SUFFIX = ' Num Deep Sleep Steps'
+    BOARD_HAS_SBU_ISSUES = ['octopus']
 
     # Use negative numbers to keep track of counts not in the IRQ list. The
     # actual number don't matter too much. Just make sure deep sleep is the
@@ -258,6 +259,10 @@ class firmware_Cr50DeviceState(Cr50Test):
         # CCD will prevent sleep
         if self.ccd_enabled and (irq_key in self.SLEEP_KEYS or
             self.DEEP_SLEEP_STEP_SUFFIX in str(irq_key)):
+            # If the board has sbu issues, the device may enter sleep. Ignore
+            # it until the hardware is fixed.
+            if self.servo.get_board() in self.BOARD_HAS_SBU_ISSUES:
+                return self.DEFAULT_COUNTS
             return [0, 0]
         if irq_key == self.KEY_REGULAR_SLEEP:
             # If cr50_time is really low, we probably woke cr50 up using

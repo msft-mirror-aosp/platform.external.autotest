@@ -12,6 +12,7 @@ ec_comm
 ecrst
 (?P<guc>eraseflashinfo)?
 fips
+flog
 gettime
 gpiocfg
 gpioget

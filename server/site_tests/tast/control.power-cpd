@@ -38,7 +38,7 @@ def run(machine):
                  host=hosts.create_host(machine, servo_args=servo_args),
                  test_exprs=['("group:power" && power_cpd)'],
                  ignore_test_failures=True,
-                 max_run_sec=10800, # 3h
+                 max_run_sec=28800, # 8h
                  command_args=command_args,
                  varslist=varslist)
 

@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import shutil
@@ -109,6 +110,18 @@ class BundelUtilsTest(unittest.TestCase):
         with self.assertRaises(bundle_utils.NoVersionNameException):
             bundle_utils.get_preview_version(url_config={})
 
+    def test_set_official_version(self):
+        url_config = copy.deepcopy(CTS_URL_CONFIG)
+        bundle_utils.set_official_version(url_config, 'latest-version')
+        self.assertEqual(bundle_utils.get_official_version(url_config),
+                         'latest-version')
+
+    def test_set_preview_version(self):
+        url_config = copy.deepcopy(CTS_URL_CONFIG)
+        bundle_utils.set_preview_version(url_config, 'latest-version')
+        self.assertEqual(bundle_utils.get_preview_version(url_config),
+                         'latest-version')
+
     def test_get_abi_info_cts(self):
         """Test for cts get_abi_info."""
 
@@ -129,45 +142,24 @@ class BundelUtilsTest(unittest.TestCase):
         with self.assertRaises(bundle_utils.AbiNotFoundException):
             bundle_utils.get_abi_info(url_config={})
 
-    def test_modify_version_name_in_config_preview(self):
-        """Test for cts preview modify_version_name_in_config."""
-
-        expected_version = '0'
-        bundle_utils.modify_version_name_in_config(
-                latest_version_name=expected_version,
-                config_path=self.cts_config_path,
-                target_key='preview_version_name')
-        with open(self.cts_config_path) as json_object:
-            actual_version = json.load(json_object)['preview_version_name']
-        self.assertEquals(expected_version, actual_version)
-
-    def test_modify_version_name_in_config_official(self):
-        """Test for cts official modify_version_name_in_config."""
-
-        expected_version = '0'
-        bundle_utils.modify_version_name_in_config(
-                latest_version_name=expected_version,
-                config_path=self.cts_config_path,
-                target_key='official_version_name')
-        with open(self.cts_config_path) as json_object:
-            actual_version = json.load(json_object)['official_version_name']
-        self.assertEquals(expected_version, actual_version)
-
-    def test_modify_version_name_in_config_error(self):
-        """Test for bundle error of modify_version_name_in_config.
-
-        modify_version_name_in_config modifies version name. It raises an InvalidVersionNameKeyException
-        when an inappropriate version name is specified.
-        """
-
-        modified_json_path = os.path.join(self.test_dir, 'error_test.json')
-        with open(modified_json_path, mode='w') as f:
-            json.dump(CTS_URL_CONFIG, f, indent=4)
-        with self.assertRaises(bundle_utils.InvalidVersionNameKeyException):
-            bundle_utils.modify_version_name_in_config(
-                    latest_version_name='test',
-                    config_path=modified_json_path,
-                    target_key='abi_list')
+    def test_write_url_config(self):
+        bundle_utils.write_url_config(CTS_URL_CONFIG, self.cts_config_path)
+        with open(self.cts_config_path) as f:
+            contents = f.read()
+        self.assertEqual(
+                contents, """{
+    "public_base": "https://dl.google.com/dl/android/cts/",
+    "internal_base": "gs://chromeos-arc-images/cts/bundle/R/",
+    "partner_base": "gs://chromeos-partner-gts/R/",
+    "official_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+    "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+    "official_version_name": "11_r9",
+    "preview_version_name": "9199760",
+    "abi_list": {
+        "arm": "test_suites_arm64",
+        "x86": "test_suites_x86_64"
+    }
+}""")
 
     def test_make_urls_for_all_abis_cts_public(self):
         """Test for cts make_urls_for_all_abis in the case of public."""

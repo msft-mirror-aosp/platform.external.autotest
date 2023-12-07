@@ -104,8 +104,6 @@ def upload_preview_xts(file_path: str, url_config: Dict[str, str], abi: str,
         xts_name: A string which is one of the test names: (cts, vts).
         version_name: A string which means target build version name.
     """
-    url_config[bundle_utils._PREVIEW_VERSION_NAME] = version_name
-
     for remote_url in bundle_utils.make_preview_urls(url_config, abi):
         # TODO(b/256108932): Add a method to dryrun this to make it easier to
         # test without actually uploading. Alternatively inject a configuration
@@ -153,6 +151,8 @@ def main(config_path: str,
         logging.info(f'{version_name} is the latest version. No work to do.')
         return
 
+    bundle_utils.set_preview_version(url_config, version_name)
+
     for target_abi, target_name in abi_info.items():
         with tempfile.TemporaryDirectory(
                 prefix=f'fetch_artifact_{target_abi}_') as download_dir:
@@ -161,8 +161,8 @@ def main(config_path: str,
             upload_preview_xts(download_dir, url_config, target_abi, xts_name,
                                version_name)
 
-    bundle_utils.modify_version_name_in_config(
-            version_name, config_path, bundle_utils._PREVIEW_VERSION_NAME)
+    # Only write config after bundles are correctly uploaded.
+    bundle_utils.write_url_config(url_config, config_path)
     logging.info(
             f'The value of {bundle_utils._PREVIEW_VERSION_NAME} was correctly uploaded to {version_name}.'
     )

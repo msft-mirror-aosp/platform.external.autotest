@@ -1,4 +1,3 @@
-from enum import Enum
 import json
 from typing import Dict, List, Optional
 
@@ -12,10 +11,6 @@ _OFFICIAL_VERSION_NAME = 'official_version_name'
 _PREVIEW_VERSION_NAME = 'preview_version_name'
 _ABI_LIST = 'abi_list'
 _BUNDLE_PASSOWORD = 'bundle_password'
-
-
-ValidVersionNameKeys = Enum('ValidVersionNameKeys',
-                            [_OFFICIAL_VERSION_NAME, _PREVIEW_VERSION_NAME])
 
 
 class AbiNotFoundException(Exception):
@@ -144,6 +139,26 @@ def get_preview_version(url_config: Dict[str, str]) -> str:
     return url_config[_PREVIEW_VERSION_NAME]
 
 
+def set_official_version(url_config: Dict[str, str], version_name: str):
+    """Sets the official version field of url_config.
+
+    Args:
+        url_config: The config.
+        version_name: The version to set to.
+    """
+    url_config[_OFFICIAL_VERSION_NAME] = version_name
+
+
+def set_preview_version(url_config: Dict[str, str], version_name: str):
+    """Sets the preview version field of url_config.
+
+    Args:
+        url_config: The config.
+        version_name: The version to set to.
+    """
+    url_config[_PREVIEW_VERSION_NAME] = version_name
+
+
 def get_abi_info(url_config: Dict[str, str]) -> Dict[str, str]:
     """Function to get the abi information from url_config.
 
@@ -164,25 +179,13 @@ def get_abi_info(url_config: Dict[str, str]) -> Dict[str, str]:
     return url_config[_ABI_LIST]
 
 
-def modify_version_name_in_config(latest_version_name: str, config_path: str,
-                                  target_key: str) -> None:
-    """Function to modify build id in bundle_url_config.json.
+def write_url_config(url_config: Dict[str, str], config_path: str):
+    """Writes url_config to the given path as JSON.
 
     Args:
-        latest_version_name: A string which means build id specified in command option.
-        config_path: A string which means config json file path.
-        target_key: A string which specifies whether official or preview version name is modified.
-
-    Raises:
-        InvalidVersionNameKeyException: An error when an inappropriate version name is specified.
+        url_config: The config.
+        config_path: The path to write to.
     """
-    url_config = load_config(config_path)
-    if target_key not in ValidVersionNameKeys.__members__:
-        raise InvalidVersionNameKeyException(
-                'invalid input: To change a version number, target_key should be in %s, '
-                'but now the key is %s' % (', '.join(
-                        list(ValidVersionNameKeys.__members__)), target_key))
-    url_config[target_key] = latest_version_name
     with open(config_path, mode="w") as f:
         json.dump(url_config, f, indent=4)
 

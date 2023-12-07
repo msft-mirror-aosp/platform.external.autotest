@@ -125,7 +125,8 @@ class power_CPUFreq(test.test):
 
         # setting freq to a particular frequency isn't reliable so just test
         # that driver allows setting & getting.
-        if cpu.get_driver() == 'acpi-cpufreq':
+        if (cpu.get_driver() == 'acpi-cpufreq'
+                    or cpu.get_driver() == 'intel_cpufreq'):
             return True
 
         return set_freq == freq
@@ -160,6 +161,9 @@ class cpufreq(object):
 
     def __str__(self):
         return os.path.basename(os.path.dirname(self.__base_path))
+
+    def __file_exists(self, file_name):
+        return os.path.exists(os.path.join(self.__base_path, file_name))
 
     def __write_file(self, file_name, data):
         path = os.path.join(self.__base_path, file_name)
@@ -220,9 +224,22 @@ class cpufreq(object):
     def get_available_frequencies(self):
         if self._freqs:
             return self._freqs
-        frequencies = self.__read_file('scaling_available_frequencies')
-        logging.info('available frequencies: %s', frequencies)
-        self._freqs = [int(i) for i in frequencies.split()]
+        available_freq_file = 'scaling_available_frequencies'
+        if self.__file_exists(available_freq_file):
+            frequencies = self.__read_file(available_freq_file)
+            logging.info('available frequencies: %s', frequencies)
+            self._freqs = [int(i) for i in frequencies.split()]
+        else:
+            # If scaling_available_frequencies doesn't exist (it does on some
+            # Intel platforms), just add each frequency from min to max in
+            # 100kHz increments.
+            min_freq = self.get_min_frequency()
+            max_freq = self.get_max_frequency()
+            logging.info(
+                    'generating available frequencies from %d to %d in '
+                    '100kHz increments', min_freq, max_freq)
+            self._freqs = list(range(min_freq, max_freq + 1, 100000))
+
         return self._freqs
 
     def get_current_frequency(self):

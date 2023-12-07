@@ -18,6 +18,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
     """Runs a forced autoupdate during OOBE."""
 
     version = 1
+    progress_after_interrupt = 0
 
     def cleanup(self):
         # Get the last two update_engine logs: before and after reboot.
@@ -108,6 +109,25 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                                 status[self._CURRENT_OP],
                                 status[self._PROGRESS],
                         ))
+
+    def _wait_for_update_engine_to_resume(self):
+        """
+        Wait for the interrupted update to resume.
+        """
+        def update_engine_resumed():
+            """
+            Check if the update engine is not idle.
+            """
+            return (self._get_update_progress() >
+                    self.progress_after_interrupt +
+                    self._RESUME_AFTER_INTERRUPT_PROGRESS_THRESHOLD)
+
+        self.progress_after_interrupt = self._get_update_progress()
+        utils.poll_for_condition(
+                update_engine_resumed,
+                timeout=self._RESUME_AFTER_REBOOT_WAIT_TIME_SECONDS,
+                desc="Update Engine failed to resume after reboot",
+        )
 
     def _wait_for_oobe_update_to_complete(self, active):
         """
@@ -219,6 +239,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             elif interrupt == self._SUSPEND_INTERRUPT:
                 self._suspend_then_resume()
             self._take_screenshot(self._AFTER_INTERRUPT_FILENAME)
+
+            self._wait_for_update_engine_to_resume()
 
             if self._is_update_engine_idle():
                 raise error.TestFail("The update was IDLE after interrupt.")

@@ -104,6 +104,12 @@ class UpdateEngineUtil(object):
     # Path to nebraska on the DUT.
     _NEBRASKA_PATH = '/usr/local/bin/nebraska.py'
 
+    # After the update is interrupted, we require a threshold amount
+    # to be achieved before considering it successfully resumed.
+    _RESUME_AFTER_INTERRUPT_PROGRESS_THRESHOLD = 0.01
+    # Update engine restart after reboot wait time
+    _RESUME_AFTER_REBOOT_WAIT_TIME_SECONDS = 60
+
     def __init__(self, run_func=_DEFAULT_RUN, get_file=_DEFAULT_COPY):
         """
         Initialize this class with _run() and _get_file() functions.

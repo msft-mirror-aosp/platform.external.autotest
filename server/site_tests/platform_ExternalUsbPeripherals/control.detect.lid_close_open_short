@@ -6,7 +6,7 @@ from autotest_lib.server import utils
 
 NAME = "platform_ExternalUsbPeripherals.detect.lid_close_open"
 METADATA = {
-    "contacts": ["chromeos-platform-usb@google.com"],
+    "contacts": ["chromeos-usb@google.com"],
     "bug_component": "b:958036",
     "criteria": "Test fails if USB enumeration check fails.",
     "hw_agnostic": False,

@@ -22,6 +22,14 @@ class firmware_Cr50DeviceState(Cr50Test):
     """
     version = 1
 
+    # If the system boots, it should be in normal or dev mode. These are the
+    # only valid pcr0 values.
+    VALID_PCR0_VALUES = [
+            # Normal Mode
+            '89EAF35134B4B3C649F44C0C765B96AEAB8BB34EE83CC7A683C4E53D1581C8C7',
+            # Dev Mode
+            '23E14DD9BB51A50E16911F7E11DF1E1AAF0B17134DC739C5653607A1EC8DD37A',
+    ]
     DEEP_SLEEP_STEP_SUFFIX = ' Num Deep Sleep Steps'
 
     # Use negative numbers to keep track of counts not in the IRQ list. The
@@ -593,8 +601,14 @@ class firmware_Cr50DeviceState(Cr50Test):
         if result.exit_status and self.fwmp and initialized:
             raise error.TestFail('Error getting FWMP: %r' % result)
         result = self.host.run('trunks_client --read_pcr --index=0')
-        logging.info('PCR %r: %r', desc, result.stdout if result else None)
         self._record_uart_capture()
+        if not result:
+            return
+        pcr = result.stdout.split(':')[-1].strip()
+        logging.info('PCR %r: %r', desc, pcr)
+        if pcr not in self.VALID_PCR0_VALUES:
+            raise error.TestFail('%s: invalid pcr0 value. %s not found in %r' %
+                                 (desc, pcr, self.VALID_PCR0_VALUES))
 
     def verify_state(self, state):
         """Verify cr50 behavior while running through the power state"""

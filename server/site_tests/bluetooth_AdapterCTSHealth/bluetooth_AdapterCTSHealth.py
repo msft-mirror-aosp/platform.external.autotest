@@ -5,6 +5,7 @@
 
 import logging
 import os
+import re
 import sys
 
 from autotest_lib.client.bin import utils as client_utils
@@ -22,6 +23,7 @@ CTS_TIMEOUT_SECONDS = 5400
 CTS_CONFIG_RELATIVE_PATH = '../../cheets_CTS_{}/bundle_url_config.json'
 ARC_FIELD_ID = 'CHROMEOS_ARC_ANDROID_SDK_VERSION'
 ARC_VERSION_MAPPING = {'28': 'P', '30': 'R', '33': 'T'}
+BT_ADDR_PATTERN = '([0-9A-F]{2}:){5}[0-9A-F]{2}'
 
 
 class bluetooth_AdapterCTSHealth(TradefedTest,
@@ -30,14 +32,26 @@ class bluetooth_AdapterCTSHealth(TradefedTest,
     """Class to run Bluetooth CTS health tests"""
 
     def _tradefed_retry_command(self, template, session_id):
-        """Needed by tradefed. Content is copy-pasted."""
+        """Needed by tradefed.
+
+        Content is copy-pasted, except the forget device part.
+        The reason is, we need to forget the device AFTER chrome is restarted,
+        so that cannot be done earlier.
+        """
         cmd = []
         for arg in template:
             cmd.append(arg.format(session_id=session_id))
+
+        self.forget_bonded_devices()
         return cmd
 
     def _tradefed_run_command(self, template):
-        """Needed by tradefed. Content is copy-pasted."""
+        """Needed by tradefed.
+
+        Content is copy-pasted, except the forget device part.
+        The reason is, we need to forget the device AFTER chrome is restarted,
+        so that cannot be done earlier.
+        """
         cmd = template[:]
 
         if self.arc_version == 'P':
@@ -53,6 +67,7 @@ class bluetooth_AdapterCTSHealth(TradefedTest,
             # Suppress redundant output from tradefed.
             cmd.append('--quiet-output=true')
 
+        self.forget_bonded_devices()
         return cmd
 
     def _get_tradefed_base_dir(self):
@@ -202,6 +217,44 @@ class bluetooth_AdapterCTSHealth(TradefedTest,
         ble_peer = self.devices['BLE_MOUSE'][0]
         ble_peer.SetDiscoverable(False)
 
+    def forget_bonded_devices(self):
+        """Removes the bonded devices.
+
+        We need to remove the bonded devices in order to prevent them
+        interfering with the test result (e.g. DUT auto connects to them).
+        This is done in the beginning of the test, similar to other Bluetooth
+        tests. However, instead of calling test_reset_on_adapter(), we directly
+        call some commands. This is done because test_reset_on_adapter needs
+        bluetooth_facade with conflicts with the tradefed test.
+        """
+        if self.floss:
+            # in btclient, peer address is enclosed with [], host address isn't.
+            regex = re.compile('\[' + BT_ADDR_PATTERN + '\]')
+            self.host.run('btclient',
+                          args=('--command', 'adapter enable', '--timeout',
+                                '5'))
+            cmd_list = self.host.run('btclient',
+                                     args=('--command', 'list bonded',
+                                           '--timeout', '5'))
+        else:
+            regex = re.compile(BT_ADDR_PATTERN)
+            self.host.run('bluetoothctl', args=('power on'))
+            cmd_list = self.host.run('bluetoothctl', args=('devices Bonded'))
+
+        output_list = cmd_list.stdout
+        for line in output_list.splitlines():
+            result = regex.search(line)
+            if result is None:
+                continue
+
+            addr = result.group().strip('[]')
+            if self.floss:
+                self.host.run('btclient',
+                              args=('--command', 'bond remove ' + addr,
+                                    '--timeout', '5'))
+            else:
+                self.host.run('bluetoothctl', args=('remove', addr))
+
     def run_once(self, test_name=None, floss=False, args_dict=None):
         """Runs the batch of Bluetooth CTS health tests
 
@@ -209,6 +262,7 @@ class bluetooth_AdapterCTSHealth(TradefedTest,
         @param floss: Is Bluetooth running Floss?
         @param args_dict: The arguments passed from the command line
         """
+        self.floss = floss
         self.prepare_btpeers(args_dict)
 
         chrome_feature = 'Floss' if floss else None

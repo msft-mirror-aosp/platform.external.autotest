@@ -3253,7 +3253,7 @@ class PCHPowergatingStats(object):
         # Example pattern to match:
         # PCH IP: 0  - PMC                                State: On
         # PCH IP: 1  - SATA                               State: Off
-        pattern = r'PCH IP:\s+(?P<id>\d+)\s+' \
+        pattern = r'(PMC\d+:)?PCH IP:\s+(?P<id>\d+)\s+' \
                   r'- (?P<name>.*\w)\s+'      \
                   r'State: (?P<state>Off|On)'
         matcher = re.compile(pattern)

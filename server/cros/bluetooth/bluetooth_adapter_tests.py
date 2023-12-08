@@ -25,6 +25,7 @@ import time
 import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input import input_event_recorder as recorder
+from autotest_lib.client.bin.input import linux_input
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.cros.chameleon import chameleon
@@ -36,9 +37,9 @@ from autotest_lib.server import test
 from autotest_lib.client.bin.input.linux_input import (
         BTN_LEFT, BTN_RIGHT, EV_KEY, EV_REL, REL_X, REL_Y, REL_WHEEL,
         REL_WHEEL_HI_RES, KEY_PLAYCD, KEY_PAUSECD, KEY_STOPCD, KEY_NEXTSONG,
-        KEY_PREVIOUSSONG, BTN_A, BTN_B, BTN_X, BTN_Y, BTN_TL, BTN_TR, EV_ABS,
-        ABS_HAT0X, ABS_HAT0Y, ABS_BRAKE, ABS_GAS, ABS_X, ABS_Y, ABS_Z, ABS_RZ,
-        BTN_THUMBL, BTN_THUMBR, BTN_START)
+        KEY_PREVIOUSSONG, KEY_LEFTSHIFT, BTN_A, BTN_B, BTN_X, BTN_Y, BTN_TL,
+        BTN_TR, EV_ABS, ABS_HAT0X, ABS_HAT0Y, ABS_BRAKE, ABS_GAS, ABS_X, ABS_Y,
+        ABS_Z, ABS_RZ, BTN_THUMBL, BTN_THUMBR, BTN_START)
 from autotest_lib.server.cros.bluetooth.bluetooth_gatt_client_utils import (
         GATT_ClientFacade, GATT_Application, GATT_HIDApplication,
         Floss_GATT_HIDApplication)
@@ -124,6 +125,15 @@ UNSUPPORTED_BT_HW_FILTERING_CHIPSETS = [
         'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
         'Realtek-RTL8852A-USB', 'Realtek-RTL8852C-USB'
 ]
+
+CHAR_TO_KEY_MAP = {
+        "'": "KEY_APOSTROPHE",
+        " ": "KEY_SPACE",
+        ".": "KEY_PERIOD",
+        "\n": "KEY_ENTER"
+}
+
+SPECIAL_CHAR_NEEDS_LEFTSHIFT = {"!": "KEY_1"}
 
 # Possible inquiry results format and code in hciconfig
 INQUIRY_MODE = {'STANDARD': 0, 'RSSI': 1, 'EIR': 2, 'ERROR': -1}
@@ -4902,6 +4912,83 @@ class BluetoothAdapterTests(test.test):
         rec_key_events = [ev for ev in rec_events if ev.type == EV_KEY]
 
         # Fail if we didn't record the correct number of events
+        if len(rec_key_events) != len(predicted_events):
+            logging.error('Expected %d events, received %d',
+                          len(predicted_events), len(rec_key_events))
+            length_correct = False
+
+        for predicted, recorded in zip(predicted_events, rec_key_events):
+            if not predicted == recorded:
+                content_correct = False
+                break
+
+        self.results = {
+            'received_events': len(rec_key_events) > 0,
+            'length_correct': length_correct,
+            'content_correct': content_correct,
+        }
+
+        return all(self.results.values())
+
+    @test_retry_and_log
+    def test_keyboard_input_from_string(self,
+                                        device,
+                                        string_to_send,
+                                        delay=0.1):
+        """ Tests that keyboard events can be transmitted and received
+        correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param string_to_send: The set of keys to be pressed one-by-one.
+        @param delay: Time in seconds between sending each character.
+
+        @return: True if the recorded output matches the expected output,
+                 false otherwise.
+                """
+
+        if not string_to_send:
+            logging.info("The string is empty, return true.")
+            return True
+
+        length_correct = True
+        content_correct = True
+        holding_shift = False
+        key_events = []
+        for i, c in enumerate(string_to_send):
+            if c in SPECIAL_CHAR_NEEDS_LEFTSHIFT:
+                key_map_key = SPECIAL_CHAR_NEEDS_LEFTSHIFT[c]
+            else:
+                key_map_key = CHAR_TO_KEY_MAP.get(c, "KEY_" + c.upper())
+
+            key_map_code = getattr(linux_input, key_map_key, None)
+
+            need_shift = c.isupper() or c in SPECIAL_CHAR_NEEDS_LEFTSHIFT
+
+            if need_shift and not holding_shift:
+                # Press and hold leftshift.
+                key_events.append([EV_KEY, KEY_LEFTSHIFT, 1])
+                holding_shift = True
+            elif not need_shift and holding_shift:
+                # Release leftshift.
+                key_events.append([EV_KEY, KEY_LEFTSHIFT, 0])
+                holding_shift = False
+
+            # Press and release the current key.
+            key_events.extend([[EV_KEY, key_map_code, 1],
+                               [EV_KEY, key_map_code, 0]])
+
+        predicted_events = [Event(*event) for event in key_events]
+
+        # Create and run this input string as a gesture.
+        gesture = lambda: device.KeyboardSendString(string_to_send, delay)
+        rec_events = self._record_input_events(device,
+                                               gesture,
+                                               address=device.address)
+
+        # Filter out any input events that were not from the keyboard.
+        rec_key_events = [ev for ev in rec_events if ev.type == EV_KEY]
+
+        # Fail if we didn't record the correct number of events.
         if len(rec_key_events) != len(predicted_events):
             logging.error('Expected %d events, received %d',
                           len(predicted_events), len(rec_key_events))

@@ -13,7 +13,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular_ota'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:starfish, cellular_modem_state:NORMAL"
+DEPENDENCIES = "carrier:starfish"
 
 DOC = '''
 Run the stable Tast tests which verify basic Cellular functionality.

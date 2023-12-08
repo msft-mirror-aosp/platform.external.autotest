@@ -2,15 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-NAME = 'tast.pvs.perbuild'
+NAME = 'tast.pvs.perbuild-latest-shop'
 METADATA = {
     'contacts': ['chromeos-pvs-eng@google.com'],
     # ChromeOS > Platform > Enablement > PVS Framework
     'bug_component': 'b:1110659',
-    'criteria': 'Tauto wrapper for pvs scenario tast tests'
+    'criteria': 'Tauto wrapper for pvs scenario tast tests run with latest SHoP'
 }
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:pvs-perbuild'
+ATTRIBUTES = 'suite:pvs-perbuild-latest-shop'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 REQUIRE_SSP = True
 
@@ -24,7 +24,7 @@ def run(machine):
     companions = hosts.create_companion_hosts(companion_hosts)
     companion_dut = companions[0]
     tast_test_expr = '("group:pvs" && pvs_perbuild)'
-    varslist.append("pvs.shop_ref=prod")
+    varslist.append("pvs.shop_ref=latest")
     varslist.append("pvs.force_dlm_sku_id=1")
     varslist.append("pvs.feature_flags=automated_release=1")
     varslist.append("pvs.ignore_git_access_failures=1")

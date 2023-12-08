@@ -1,0 +1,22 @@
+# Copyright 2023 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'pvs-perbuild-latest-shop'
+METADATA = {
+    'contacts': ['chromeos-pvs-eng@google.com'],
+    # ChromeOS > Platform > Enablement > PVS Framework
+    'bug_component': 'b:1110659',
+    'criteria': 'Tauto wrapper for pvs scenario tast tests run with latest SHoP'
+}
+TEST_TYPE = 'Server'
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['max_runtime_mins'] = 100
+args_dict['name'] = 'pvs-perbuild-latest-shop'
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

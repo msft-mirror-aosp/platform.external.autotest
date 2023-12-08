@@ -27,7 +27,8 @@ class power_ProbeDriver(test.test):
 
             # Charge Limit may take slightly longer to disable, so poll for it.
             utils.poll_for_condition(
-                    condition=power_status.get_status().battery_charging
+                    condition=lambda: \
+                    not power_status.get_status().battery_discharging() \
                     or power_status.get_status().battery_discharge_ok_on_ac(),
                     timeout=10,
                     sleep_interval=1.0,

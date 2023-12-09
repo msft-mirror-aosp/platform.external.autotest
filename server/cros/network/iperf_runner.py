@@ -35,6 +35,7 @@ class IperfResult(object):
             INTERVAL_INDEX = 6
             DATA_TRANSFERED_INDEX = 7
             PERCENT_LOSS_INDEX = 12
+            JITTER_INDEX = 9
 
         NUM_FIELDS_IN_CLIENT_OUTPUT = 9
         NUM_FIELDS_IN_SERVER_OUTPUT = 14
@@ -43,6 +44,7 @@ class IperfResult(object):
         total_throughput = 0
         test_durations = []
         percent_losses = []
+        jitter_values = []
         for line in lines:
             fields = line.split(',')
             # Negative Log ID values are used for sum total output which we
@@ -67,6 +69,7 @@ class IperfResult(object):
             if (config.udp):
                 percent_losses.append(
                         float(fields[IperfIndex.PERCENT_LOSS_INDEX]))
+                jitter_values.append(float(fields[IperfIndex.JITTER_INDEX]))
 
         # OpenWrt iperf clients and the ones connected to OpenWrt iperf server
         # don't show server side results for UDP. The fallback approach to
@@ -103,11 +106,18 @@ class IperfResult(object):
             return None
 
         test_duration = math.fsum(test_durations) / len(test_durations)
-        if config.udp and len(percent_losses):
-            percent_loss = math.fsum(percent_losses) / len(percent_losses)
+        if config.udp:
+            percent_loss = math.fsum(percent_losses) / len(
+                    percent_losses) if percent_losses and len(
+                            percent_losses) > 0 else None
+            jitter_value = math.fsum(jitter_values) / len(
+                    jitter_values) if jitter_values and len(
+                            jitter_values) > 0 else None
         else:
             percent_loss = None
-        return IperfResult(test_duration, total_throughput, percent_loss)
+            jitter_value = None
+        return IperfResult(test_duration, total_throughput, percent_loss,
+                           jitter_value)
 
     @staticmethod
     def from_samples(samples):
@@ -145,9 +155,17 @@ class IperfResult(object):
                 percent_loss_samples)
             percent_loss_mean = numpy.mean(percent_loss_samples)
 
+        if samples[0].jitter == None:
+            jitter_mean = None
+        else:
+            jitter_samples = [float(sample.jitter) for sample in samples]
+            jitter_samples = IperfResult._remove_outliers(jitter_samples)
+            jitter_mean = numpy.mean(jitter_samples)
+
         return IperfResult(duration_mean,
                            throughput_mean,
                            percent_loss_mean,
+                           jitter_mean,
                            throughput_dev=throughput_dev)
 
     @staticmethod
@@ -215,18 +233,24 @@ class IperfResult(object):
         bits_per_second = total_bits / duration
         return bits_per_second / 1000000
 
-    def __init__(self, duration, throughput, percent_loss,
+    def __init__(self,
+                 duration,
+                 throughput,
+                 percent_loss,
+                 jitter,
                  throughput_dev=None):
         """Construct an IperfResult.
 
         @param duration float how long the test took in seconds.
         @param throughput float test throughput in Mbps.
         @param percent_loss float percentage of packets lost in UDP transfer.
+        @param jitter float test jitter in ms.
         @param throughput_dev standard deviation of throughputs.
         """
         self.duration = duration
         self.throughput = throughput
         self.percent_loss = percent_loss
+        self.jitter = jitter
         self.throughput_dev = throughput_dev
 
     def get_keyval(self, prefix=''):

@@ -1,0 +1,26 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+NAME = "audio_AudioBasicHeadphone.omtp"
+METADATA = {
+    "contacts": ["chromeos-audio-sw@google.com"],
+    "bug_component": "b:875558",
+    "criteria": "This test will fail if the captured audio does not match original file.",
+    "doc" : "Tests headphone audio playback"
+}
+TEST_TYPE = "server"
+ATTRIBUTES = "suite:audio_essential"
+DEPENDENCIES = "audio_cable, chameleon_state:WORKING, trrs_type:OMTP"
+JOB_RETRIES = 1
+
+args_dict = utils.args_to_dict(args)
+chameleon_args = hosts.CrosHost.get_chameleon_arguments(args_dict)
+
+def run(machine):
+    host = hosts.create_host(machine, chameleon_args=chameleon_args)
+    job.run_test("audio_AudioBasicHeadphone", host=host)
+
+parallel_simple(run, machines)

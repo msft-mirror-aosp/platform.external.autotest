@@ -548,7 +548,6 @@ CONFIG['LOGIN_PRECONDITION'] = {}
 
 # Preconditions applicable to ublic tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
-        'CtsLibcoreTestCases': _WIFI_CONNECT_COMMANDS_V2,
         'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS_V2,
         'CtsNetTestCases': _WIFI_CONNECT_COMMANDS_V2,
         'CtsJobSchedulerTestCases': _WIFI_CONNECT_COMMANDS_V2,

@@ -570,9 +570,7 @@ _WIFI_CONNECT_COMMANDS_V2 = [
         "'adb shell dumpsys wifi transports -eth'",
 ]
 
-IPV6_MODULES = [
-        'CtsLibcoreTestCases',
-]
+IPV6_MODULES = []
 
 CONFIG['WIFI_MODULES'] = [
         'CtsNetApi23TestCases',

@@ -46,10 +46,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # A2DP and HFP.
     CRAS_BLUETOOTH_OUTPUT_NODE_TYPE = 'BLUETOOTH'
     CRAS_INTERNAL_SPEAKER_OUTPUT_NODE_TYPE = 'INTERNAL_SPEAKER'
-    # The node types of the bluetooth input nodes in cras are different for WBS
-    # and NBS.
-    CRAS_HFP_BLUETOOTH_INPUT_NODE_TYPE = {HFP_WBS: 'BLUETOOTH',
-                                          HFP_NBS: 'BLUETOOTH_NB_MIC'}
 
     # Human readable strings describing the current connection state
     CONNECTION_STATE_DISCONNECTED = 'BT_disconnected'

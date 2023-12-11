@@ -4709,8 +4709,13 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         Returns:
             True if default adapter is enabled successfully. False otherwise.
         """
-        # Start manager and enable Floss, then restart the default adapter.
-        if not self.reset_on():
+        # Start manager and enable Floss if not already up
+        if not self.configure_floss(enabled=True):
+            return False
+
+        # Enable adapter and setup clients
+        if not self.set_powered(True):
+            logging.warn('Failed to start btadapterd')
             return False
 
         # If we need to wait for any other interfaces, add below here:
@@ -4725,7 +4730,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             True if adapter daemon and manager daemon are both off.
         """
         # First power off the adapter
-        if not self.reset_off():
+        if not self.set_powered(False):
             logging.warn('Failed to stop btadapterd')
             return False
 

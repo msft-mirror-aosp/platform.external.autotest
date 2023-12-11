@@ -329,17 +329,20 @@ class FlossMediaClient(BluetoothMediaCallbacks):
         return True
 
     @glib_call(None)
-    def set_audio_config(self, sample_rate, bits_per_sample, channel_mode):
+    def set_audio_config(self, address, codec_type, sample_rate,
+                         bits_per_sample, channel_mode):
         """Sets audio configuration.
 
+        @param address: Device address to set the A2DP codec config.
+        @param codec_type: Requested codec ID (see DBus interface definition).
         @param sample_rate: Value of sample rate.
         @param bits_per_sample: Number of bits per sample.
         @param channel_mode: Value of channel mode.
 
         @return: True on success, False on failure, None on DBus error.
         """
-        return self.proxy().SetAudioConfig(sample_rate, bits_per_sample,
-                                           channel_mode)
+        return self.proxy().SetAudioConfig(address, codec_type, sample_rate,
+                                           bits_per_sample, channel_mode)
 
     @glib_call(False)
     def set_volume(self, volume):

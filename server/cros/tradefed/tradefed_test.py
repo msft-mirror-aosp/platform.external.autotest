@@ -52,6 +52,10 @@ MediaAsset = namedtuple('MediaAssetInfo', ['uri', 'localpath'])
 _GCS_WAIVERS_PATH = 'gs://chromeos-arc-images/waivers/'
 
 
+class UnsupportedSuiteVersion(Exception):
+    """Custom exception for unsupported suite version."""
+
+
 class BundleSpecification:
     """Class containing xTS bundle information."""
 
@@ -1031,7 +1035,7 @@ class TradefedTest(test.test):
         vs = re.fullmatch(r"(.+)_.*r(\d+)", version)
         if not vs:
             logging.error("xTS wrong version format for %s !", version)
-            raise ValueError("xTS wrong version format for " + version)
+            raise UnsupportedSuiteVersion(version)
         return tuple(map(float, vs.groups()))
 
     def _get_valid_waivers(self, waivers_result, release_version):
@@ -1115,11 +1119,17 @@ class TradefedTest(test.test):
                         else:
                             waivers_list.append([target_fixed_version, wf])
 
-                if not is_dev:
-                    current_version = official_suite_version
-                    expected_gcs_fail_files.extend(
-                            self._get_valid_waivers(waivers_list,
-                                                    current_version))
+                try:
+                    if not is_dev:
+                        current_version = official_suite_version
+                        expected_gcs_fail_files.extend(
+                                self._get_valid_waivers(
+                                        waivers_list, current_version))
+                except UnsupportedSuiteVersion as e:
+                    logging.warning(
+                            'Skip loading GCS waivers for unsupported version format: %s',
+                            e)
+
             except error.CmdError as e:
                 logging.warning(
                         'Skip loading GCS waivers. gsutil ls failed with: %s',

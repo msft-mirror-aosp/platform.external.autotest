@@ -168,7 +168,7 @@ class platform_ServoPowerStateController(test.test):
         # Check that power state is actually off (in S5 or G3)
         if check_power_state_off:
             ap_power_state = self.host.servo.get('ec_system_powerstate')
-            logging.info('Read power state: %s' % ap_power_state)
+            logging.info('Read power state: %s', ap_power_state)
             if ap_power_state not in self.POWER_OFF_STATES:
                 raise error.TestFail('%s. %s' % (error_message, 'DUT not in S5 or G3 state.'))
 
@@ -279,15 +279,46 @@ class platform_ServoPowerStateController(test.test):
             raise error.TestFail('power_state:reset failed to reboot DUT.')
 
 
-    def run_once(self, host, usb_available=True):
+    def ensure_image_on_usbkey(self):
+        """Run the test:
+        1.Check servo usbkey can be detected correctly,and if not abort the test with clear information.
+        2.Check whether a valid image is loaded on servo usbkey at beginning of the test.
+        3.Attempt download image if no valid image found in step 2.
+        """
+        usb_image_name = self.servo_host.validate_image_usbkey()
+        if usb_image_name:
+            logging.info('%s build found on usbkey.', usb_image_name)
+            return
+        # If no image found on usbkey, we need to download one.
+        build = self.host.get_release_builder_path()
+        if not build:
+            raise error.TestError(
+                    'Failed to get release builder path from the DUT')
+        logging.info('Attempt to download %s to servo usbkey', build)
+        self.host.stage_build_to_usb(build)
+        # We need to ensure DUT boot back as stage_build_to_usb will power off/on the DUT.
+        if not self.host.wait_up(timeout=self.host.BOOT_TIMEOUT):
+            raise error.TestError(
+                    'DUT did not boot up after download image to servo usbkey.'
+            )
+        # Need to validate image again after downloading.
+        if not self.servo_host.validate_image_usbkey():
+            raise error.TestError(
+                    'No valid image found on servo usbkey and failed to download one.'
+            )
+
+    def run_once(self, host, usb_available=True, usbkey_image_agnostic=False):
         """Run the test.
 
         @param host: host object of tested DUT.
         @param usb_plugged_in: True if USB stick is plugged in servo.
         """
         self.host = host
+        self.servo_host = host._servo_host
         self.controller = host.servo.get_power_state_controller()
 
         self.test_with_usb_unplugged()
         if usb_available and host.is_servo_usb_usable():
+            if usbkey_image_agnostic:
+                self.ensure_image_on_usbkey()
             self.test_with_usb_plugged_in()

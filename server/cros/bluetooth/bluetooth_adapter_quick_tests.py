@@ -461,6 +461,12 @@ class BluetoothAdapterQuickTests(
             raise error.TestError('Failed to set LL privacy to {}'.format(
                     self.llprivacy))
 
+        # Initialize bluetooth_adapter_tests class (also clears self.fails)
+        self.initialize()
+
+        # Start and emulate the peer devices
+        self.start_peers(device_configs)
+
         # Reset the adapter
         self.test_reset_on_adapter()
 
@@ -469,11 +475,6 @@ class BluetoothAdapterQuickTests(
 
         # Reset power/wakeup to disabled.
         self.test_adapter_set_wake_disabled()
-
-        # Initialize bluetooth_adapter_tests class (also clears self.fails)
-        self.initialize()
-        # Start and peer HID devices
-        self.start_peers(device_configs)
 
         time.sleep(self.TEST_SLEEP_SECS)
         self.log_message('Starting test: %s' % test_name)

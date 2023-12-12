@@ -238,8 +238,9 @@ class bluetooth_AdapterCTSHealth(TradefedTest,
                                            '--timeout', '5'))
         else:
             regex = re.compile(BT_ADDR_PATTERN)
-            self.host.run('bluetoothctl', args=('power on'))
-            cmd_list = self.host.run('bluetoothctl', args=('devices Bonded'))
+            self.host.run('bluetoothctl', args=('power', 'on'))
+            cmd_list = self.host.run('bluetoothctl',
+                                     args=('devices', 'Bonded'))
 
         output_list = cmd_list.stdout
         for line in output_list.splitlines():
@@ -265,7 +266,10 @@ class bluetooth_AdapterCTSHealth(TradefedTest,
         self.floss = floss
         self.prepare_btpeers(args_dict)
 
-        chrome_feature = 'Floss' if floss else None
+        chrome_feature = None
+        if floss:
+            # A dirty way to disable floss prevention only for this test
+            chrome_feature = 'Floss --disable-feature=FlossIsAvailabilityCheckNeeded'
         try:
             self._run_tradefed_with_retries(test_name=test_name,
                                             run_template=self.run_template,

@@ -30,7 +30,7 @@ def run(machine):
                  test_exprs=['("group:cuj" && cuj_experimental)'],
                  ignore_test_failures=True,
                  max_run_sec=3*60*60,  # 3 hours
-                 totalshards=7,
+                 totalshards=13,
                  shardindex=4,
                  command_args=args)
 parallel_simple(run, machines)

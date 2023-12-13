@@ -660,6 +660,12 @@ suite:cuj_experimental_3
 suite:cuj_experimental_4
 suite:cuj_experimental_5
 suite:cuj_experimental_6
+suite:cuj_experimental_7
+suite:cuj_experimental_8
+suite:cuj_experimental_9
+suite:cuj_experimental_10
+suite:cuj_experimental_11
+suite:cuj_experimental_12
 suite:cuj_weekly_0
 suite:cuj_weekly_1
 suite:cuj_weekly_2

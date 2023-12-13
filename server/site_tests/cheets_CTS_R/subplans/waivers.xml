@@ -15,15 +15,4 @@
   <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testAsyncBeginEndSection" />
   <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testCounter" />
   <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testTracingContent" />
-  <!-- b/294409068; fixed in 11_r14 -->
-  <Entry include="CtsDeqpTestCases dEQP-VK.api.info.format_properties#r10x6_unorm_pack16" />
-  <Entry include="CtsDeqpTestCases dEQP-VK.api.info.format_properties#r10x6g10x6_unorm_2pack16" />
-  <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.512_512_1#joint" />
-  <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6_unorm_pack16.1024_128_1#joint" />
-  <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6g10x6_unorm_2pack16.512_512_1#joint" />
-  <Entry include="CtsDeqpTestCases dEQP-VK.ycbcr.storage_image_write.r10x6g10x6_unorm_2pack16.1024_128_1#joint" />
-  <!-- b/300061585; fixed in 11_r14 -->
-  <Entry include="CtsDeqpTestCases dEQP-VK.synchronization.basic.timeline_semaphore#multi_queue" />
-  <!-- b/304645835; fixed in 11_r14 -->
-  <Entry include="CtsDeqpTestCases dEQP-VK.graphicsfuzz#control-flow-switch" />
 </SubPlan>

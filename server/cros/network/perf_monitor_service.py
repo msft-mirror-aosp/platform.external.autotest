@@ -101,8 +101,8 @@ class PerfMonitorService(object):
         """
         self.monitoring_throughput = False
         self.thread.join()
-        self._throughput_perf_analytics()
         try:
+            self._throughput_perf_analytics()
             self._graph_throughput_metrics()
         except KeyError as k:
             logging.error('KeyException observed: missing key: %s', str(k))

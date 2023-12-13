@@ -61,9 +61,8 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
     def cl_adapter_pairing_test(self):
         """Performs pairing test with mouse peripheral"""
         device = self.devices['MOUSE'][0]
-        self.pairing_test(device,
-                          check_connected_method=\
-                          self.test_mouse_right_click)
+        self.hid_pairing_test(
+                device, check_connected_method=self.test_mouse_right_click)
 
 
     @test_wrapper('Pairing Cancel Test',
@@ -81,9 +80,8 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
     def cl_adapter_keyboard_pairing_test(self):
         """Performs pairing test with keyboard peripheral"""
         device = self.devices['KEYBOARD'][0]
-        self.pairing_test(device,
-                          check_connected_method=\
-                          self.run_keyboard_tests)
+        self.hid_pairing_test(device,
+                              check_connected_method=self.run_keyboard_tests)
 
 
     @test_wrapper('keyboard Pairing In Standard Inquiry Mode Test',
@@ -92,11 +90,10 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
     def cl_adapter_keyboard_pairing_in_standard_inq_mode_test(self):
         """Performs pairing test with keyboard in standard inquiry mode"""
         device = self.devices['KEYBOARD'][0]
-        self.pairing_test(device,
-                          check_connected_method=\
-                          self.run_keyboard_tests,
-                          inq_mode='STANDARD',
-                          check_inq=True)
+        self.hid_pairing_test(device,
+                              check_connected_method=self.run_keyboard_tests,
+                              inq_mode='STANDARD',
+                              check_inq=True)
 
     @test_wrapper('Pairing Suspend Resume Test',
                   devices={"MOUSE": 1},
@@ -104,10 +101,10 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
     def cl_adapter_pairing_suspend_resume_test(self):
         """Performs pairing test over resume with mouse peripheral"""
         device = self.devices['MOUSE'][0]
-        self.pairing_test(device,
-                          check_connected_method=\
-                          self.test_mouse_right_click,
-                          suspend_resume=True)
+        self.hid_pairing_test(
+                device,
+                check_connected_method=self.test_mouse_right_click,
+                suspend_resume=True)
 
 
     @test_wrapper('Pairing Twice Test',
@@ -116,10 +113,10 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
     def cl_adapter_pairing_twice_test(self):
         """Performs pairing twice test with  mouse peripheral"""
         device = self.devices['MOUSE'][0]
-        self.pairing_test(device,
-                          check_connected_method=\
-                          self.test_mouse_right_click,
-                          pairing_twice=True)
+        self.hid_pairing_test(
+                device,
+                check_connected_method=self.test_mouse_right_click,
+                pairing_twice=True)
 
 
     @test_wrapper('HID Reports Test',

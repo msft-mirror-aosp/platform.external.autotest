@@ -39,14 +39,14 @@ class BluetoothAdapterPairingTests(
     # TODO(josephsih): Reduce the sleep intervals to speed up the tests.
     PAIR_TEST_SLEEP_SECS = 5
 
-    def pairing_test(self,
-                     device,
-                     check_connected_method=lambda device: True,
-                     pairing_twice=False,
-                     suspend_resume=False,
-                     reboot=False,
-                     inq_mode=None,
-                     check_inq=False):
+    def hid_pairing_test(self,
+                         device,
+                         check_connected_method=lambda device: True,
+                         pairing_twice=False,
+                         suspend_resume=False,
+                         reboot=False,
+                         inq_mode=None,
+                         check_inq=False):
         """Running Bluetooth adapter tests about pairing to a device."""
 
         # Reset the adapter to forget previously paired devices if any.
@@ -63,15 +63,16 @@ class BluetoothAdapterPairingTests(
                 self.write_inquiry_mode(inq_mode)
 
         try:
-            self._pairing_test_impl(device, check_connected_method,
-                                    pairing_twice, suspend_resume, reboot,
-                                    check_inq)
+            self._hid_pairing_test_impl(device, check_connected_method,
+                                        pairing_twice, suspend_resume, reboot,
+                                        check_inq)
         finally:
             if original_inq_mode:
                 self.write_inquiry_mode(original_inq_mode)
 
-    def _pairing_test_impl(self, device, check_connected_method, pairing_twice,
-                           suspend_resume, reboot, check_inq):
+    def _hid_pairing_test_impl(self, device, check_connected_method,
+                               pairing_twice, suspend_resume, reboot,
+                               check_inq):
         """Running Bluetooth adapter tests about pairing to a device."""
 
         # The adapter must be set to the pairable state.
@@ -112,6 +113,7 @@ class BluetoothAdapterPairingTests(
             return
 
         # Run hid test to make sure profile is connected
+        self.test_hid_device_created(device.address)
         if not check_connected_method(device):
             return
 
@@ -123,12 +125,11 @@ class BluetoothAdapterPairingTests(
             if not self.test_device_is_paired(device.address):
                 return
 
-
             # check if peripheral is connected after suspend resume
             if not self.ignore_failure(check_connected_method, device):
                 logging.info("device not connected after suspend_resume")
                 self.test_connection_by_device(device)
-                time.sleep(self.PAIR_TEST_SLEEP_SECS)
+                self.test_hid_device_created(device.address)
                 if not check_connected_method(device):
                     return
             else:
@@ -169,10 +170,7 @@ class BluetoothAdapterPairingTests(
                 if not self.test_connection_by_device(device):
                     return False
 
-                # With raspberry pi peer, it takes a moment before the device is
-                # registered as an input device. Without delay, the input recorder
-                # doesn't find the device
-                time.sleep(1)
+                self.test_hid_device_created(device.address)
                 return check_connected_method(device)
             # Adapter inited connection.
             # Reconnect so that we can test disconnection from the kit.

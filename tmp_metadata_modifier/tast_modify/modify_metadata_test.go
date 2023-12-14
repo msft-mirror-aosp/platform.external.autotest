@@ -5,12 +5,13 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"testing"
 
 	"path/filepath"
+
+	"github.com/google/go-cmp/cmp"
 
 	"go.chromium.org/chromiumos/tast_metadata_modifier/action"
 	"go.chromium.org/chromiumos/tast_metadata_modifier/file"
@@ -94,9 +95,8 @@ func TestApplyToFile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Compare actual results to expected.
-		if !bytes.Equal(expected, actual) {
-			t.Fatalf("%s returned:\n%s", id, actual)
+		if diff := cmp.Diff(actual, expected); diff != "" {
+			t.Errorf(" failed (-got +want):\n%s", diff)
 		}
 	}
 }

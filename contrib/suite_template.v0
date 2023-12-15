@@ -1,0 +1,27 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+load("//create.star", "create")
+
+def _{suite_name_sanitized}():
+    return create.suite(
+        id = "{suite_name}",
+        owners = [
+            {owners}
+        ],
+        bug_component = "{bug_component}",
+        criteria = "{criteria}",
+        tests = [
+{test_list_str}
+        ],
+    )
+
+def _all_suites():
+    return [
+        _{suite_name_sanitized}(),
+    ]
+
+{suite_name_sanitized} = struct(
+    all_suites = _all_suites,
+)

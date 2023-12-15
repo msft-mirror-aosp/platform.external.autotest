@@ -10,7 +10,6 @@ from autotest_lib.client.bin import test
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
-from autotest_lib.client.common_lib.cros import power_load_util
 from autotest_lib.client.cros.power import sys_power
 
 
@@ -39,7 +38,7 @@ class power_LowMemorySuspend(test.test):
         @return: list of created tabs
         """
         # Any non-trivial web page is suitable to consume memory.
-        URL = 'https://inbox.google.com/'
+        URL = 'https://www.reddit.com'
         tabs = []
 
         # There is some race condition to navigate the first tab, navigating
@@ -116,10 +115,7 @@ class power_LowMemorySuspend(test.test):
     def run_once(self, switches_per_suspend=15, total_suspend_duration=2400,
                  suspend_seconds=10, additional_sleep=10):
         """Runs the test once."""
-        username = power_load_util.get_username()
-        password = power_load_util.get_password()
-        with chrome.Chrome(gaia_login=True, username=username,
-                           password=password) as cr:
+        with chrome.Chrome(logged_in=True) as cr:
             tabs = self.create_tabs(cr)
             suspend_count = self.cycling_suspend(
                 cr, tabs, switches_per_suspend, total_suspend_duration,
@@ -148,4 +144,3 @@ class power_LowMemorySuspend(test.test):
                                value=ending_swap_free, units='KB')
         self.output_perf_value(description='swap_total',
                                value=swap_total, units='KB')
-

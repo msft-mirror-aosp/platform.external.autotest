@@ -14,7 +14,8 @@ METADATA = {
     "criteria": "Fails if the language or keyboard dropdowns in OOBE under a supported region configuration do not include the desired values.",
     "hw_agnostic": True
 }
-ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
+# TODO(b/316565576): Fix and return back after changes for OOBE's IM handling will be landed.
+ATTRIBUTES = ""
 TEST_TYPE = 'client'
 JOB_RETRIES = 2
 

@@ -224,6 +224,28 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     # Regex for checking if the ccd device is connected.
     CCD_CONNECTED_RE = r'ccd.*: connected'
     # ===============================================================
+    # Constants used to report the AP state
+    CCDSTATE_FULL_EXT = ' full'
+    CCDSTATE_AP_KEY = 'AP'
+    # If ccdstate prints appends "(K)" or "(F)" to the AP state, it'll show up
+    # in the AP full output.
+    CCDSTATE_AP_FULL_KEY = CCDSTATE_AP_KEY + CCDSTATE_FULL_EXT
+    # PCR0 Info
+    CCDSTATE_PCR0_KEY = 'pcr0'
+    # Just print the first 8 characters of the pcr0 value. That should be enough
+    # to determine the state.
+    PCR0_REPORT_CHARS = 8
+    PCR0_DICT = {
+        # Known PCR0 values.
+        '0000000000000000000000000000000000000000000000000000000000000000' : 'zeroed',
+        '89eaf35134b4b3c649f44c0c765b96aeab8bb34ee83cc7a683c4e53d1581c8c7' : 'normal',
+        '9f9ea866d3f34fe3a3112ae9cb1fbabc6ffe8cd261d42493bc6842a9e4f93b3d' : 'rec',
+        '23e14dd9bb51a50e16911f7e11df1e1aaf0b17134dc739c5653607a1ec8dd37a' : 'dev',
+        '2a7580e5da289546f4d2e0509cc6de155ea131818954d36d49e027fd42b8c8f8' : 'dev+rec',
+        # If cr50 can't read the pcr0 value, it'll return "error"
+        'error' : 'pcr_read_error',
+    }
+    # ===============================================================
     # AP_RO strings
     # Specify the start of the output as ap_ro_check or result, so the timestamp
     # of the ap_ro_check_unsupported message is ignored. This lets the test
@@ -1327,7 +1349,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 k = k.strip()
                 v = v.strip()
                 if '(' in v:
-                    ccdstate[k + ' full'] = v
+                    ccdstate[k + self.CCDSTATE_FULL_EXT] = v
                     v = v.split('(')[0].strip()
                 ccdstate[k] = v
         logging.info('Current CCD state:\n%s', pprint.pformat(ccdstate))
@@ -1720,3 +1742,53 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             irq_counts[num] = count
         self.print_irqs(irq_counts)
         return irq_counts
+
+    def get_ap_ccdstate_info_str(self, ccdstate):
+        """Return a string with the AP information from ccdstate."""
+        if self.CCDSTATE_AP_FULL_KEY in ccdstate:
+            val = ccdstate[self.CCDSTATE_AP_FULL_KEY]
+        if self.CCDSTATE_AP_KEY in ccdstate:
+            val = ccdstate[self.CCDSTATE_AP_KEY]
+        else:
+            return ''
+        return 'AP=%s' % val
+
+    def get_pcr0_ccdstate_info_str(self, ccdstate):
+        """Return a string with the pcr0 information from ccdstate.
+
+        This converts the value to something that's human readable.
+
+        @returns a string with the human readable pcr0 information or '' if
+                 ccdstate doesn't contain the pcr0 information.
+        """
+        pcr0_val = ccdstate.get(self.CCDSTATE_PCR0_KEY, '').strip()
+        if not pcr0_val:
+            return ''
+        found_desc = 'unknown'
+        for known_val, desc in self.PCR0_DICT:
+            if known_val.startswith(pcr0_val):
+                found_desc = desc
+                break
+        logging.info('PCR0 - %s : %s', found_desc, pcr0_val)
+        # The PCR0 value is very long. Just report the first 8 characters
+        report_len = min(len(pcr0_val), self.PCR0_REPORT_CHARS)
+        return ',pcr0=%s(%s)' % (found_desc, pcr0_val[:report_len])
+
+    def get_debug_ap_state(self):
+        """Use gsc ccdstate to try and get some information about the AP state.
+
+        @returns '' if there's any error or a string with the AP and pcr0
+                information if ccdstate reported it.
+        """
+        ap_info = ''
+        try:
+            ccdstate = self.get_ccdstate()
+            ap_info += self.get_ap_ccdstate_info_str(ccdstate)
+            ap_info += self.get_pcr0_ccdstate_info_str(ccdstate)
+        except Exception as e:
+            # Ignore all exceptions. This is just an attempt to get AP state
+            # that can be reported in errors. This should not override the
+            # original error.
+            logging.warning('Ignoring exception getting the AP state from '
+                            'GSC: %s', e)
+        return ap_info

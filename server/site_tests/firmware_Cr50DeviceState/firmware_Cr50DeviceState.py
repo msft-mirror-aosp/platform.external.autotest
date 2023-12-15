@@ -459,7 +459,8 @@ class firmware_Cr50DeviceState(Cr50Test):
             return
         # Try a second time to see if the AP comes up.
         if not self.ap_is_on_after_power_button_press():
-            raise error.TestError('Could not wake the AP using power button')
+            raise error.TestError('Could not wake the AP using power button '
+                                  '%s' % self.try_to_get_ap_state())
         logging.warning('Had to press power button twice to wake the AP')
 
 
@@ -503,7 +504,8 @@ class firmware_Cr50DeviceState(Cr50Test):
         if target_state and not self.wait_power_state(
                 state, self.POWER_STATE_CHECK_TRIES):
             self._record_uart_capture()
-            raise error.TestFail('Platform failed to reach %s state.' % state)
+            raise error.TestFail('Platform failed to reach %s state. %s' %
+                                 (state, self.try_to_get_ap_state()))
         power_state = self.get_power_state()
         logging.info('%s: Entered %s', state, power_state)
         # If the target state is unknown, track it for logging.
@@ -586,7 +588,8 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         # The DUT has already been up for 60 seconds. It should be pingable.
         if not self.host.ping_wait_up(self.faft_config.delay_reboot_to_ping):
-            raise error.TestFail('Unable to ping dut after %s resume' % state)
+            raise error.TestFail('Unable to ping dut after %s resume %s' %
+                                 (state, self.try_to_get_ap_state()))
 
         self.print_fwmp('%s resume' % state)
 

@@ -4,15 +4,15 @@
 
 from autotest_lib.server import utils
 
+# TODO(b/316978014) Remove this control file when the test is no longer in any
+# PVS plan
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_PDProtocol.ec_wp"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Verify PD protocol negotiation",
-        "requirements": ["sys-fw-0022-v02"]
 }
-ATTRIBUTES = "suite:faft_ec_fw_qual, suite:faft_ec"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
 TIME = "SHORT"
 TEST_TYPE = "server"

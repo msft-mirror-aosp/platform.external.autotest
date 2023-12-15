@@ -39,6 +39,7 @@ def make_chroot_path_relative(path):
 
 
 class TestSuite(object):
+
     def __init__(self, cf_object, name, file_path):
         self.name = name
         self.cf_object = cf_object
@@ -58,6 +59,7 @@ class TestSuite(object):
 
 
 class TestObject(object):
+
     def __init__(self, cf_object, file_path):
         self.name = cf_object.name
         self.type = 'tast' if ('tast' in self.name or 'storage_testing_v3'
@@ -66,6 +68,7 @@ class TestObject(object):
         self.file_path = file_path
         self.tast_exprs = ''
         self.tast_string = ''
+        self.no_autoparse = False
 
     def get_attributes(self):
         return self.cf_object.attributes
@@ -104,14 +107,8 @@ class TestObject(object):
                             test_exprs = []
                             regex_list = False
                             for elem in keyword.value.elts:
-                                try:
-                                    test_exprs.append(elem.s)
-                                    regex_list = ('(' in elem.s or regex_list)
-                                except AttributeError:
-                                    logging.warning(
-                                            'Non-standard test found, check %s manually',
-                                            self.relative_path())
-                                    break
+                                test_exprs.append(elem.s)
+                                regex_list = ('(' in elem.s or regex_list)
                             if regex_list:
                                 self.tast_string = ' '.join(test_exprs)
                             else:
@@ -120,12 +117,12 @@ class TestObject(object):
                                 self.tast_string = ' '.join(test_exprs)
 
     def enumerate_tast_from_test_expr(self):
-        self.parse_cf_for_tast_string()
         try:
+            self.parse_cf_for_tast_string()
             self.tast_exprs = self.tast_string.split(', ')
         except AttributeError:
-            logging.warning('Non-standard test found, check %s manually',
-                            self.relative_path())
+            # indicate that tast expression couldn't be parsed
+            self.no_autoparse = True
         if len(self.mapped_requirements()) > 0:
             logging.error(
                     '%s mapped to a requirement, autotest tast wrappers cannot be mapped to requiremnts, please mapp directly to the tast tests themselves',
@@ -171,21 +168,26 @@ class TestObject(object):
         """
         tests = []
         for expr in self.tast_exprs:
-            logging.debug("Getting tast tests for: %s", expr)
+            logging.info("Getting tast tests for: %s", expr)
+            test_names = []
             includes = []
             excludes = []
-            for part in expr.lstrip('(').rstrip(')').split('&&'):
-                part = part.strip(' ').strip('"')
-                if part.startswith('!'):
-                    excludes.append(part.strip('!'))
-                else:
-                    includes.append(part)
+            if not expr.startswith('('):
+                test_names.append('tast.' + expr)
+            else:
+                for part in expr.lstrip('(').rstrip(')').split('&&'):
+                    part = part.strip(' ').strip('"')
+                    if part.startswith('!'):
+                        excludes.append(part.strip('!'))
+                    else:
+                        includes.append(part)
             # turn the tast expression into a cros test find request
             request = {
                     'test_suites': [{
                             'testCaseTagCriteria': {
                                     'tags': includes,
-                                    'tagExcludes': excludes
+                                    'tagExcludes': excludes,
+                                    'testNames': test_names,
                             }
                     }]
             }
@@ -224,6 +226,7 @@ class TestObject(object):
 
 
 class TestParser(object):
+
     def get_all_test_objects(self, locations):
         tests = {}
         suites = {}
@@ -233,10 +236,6 @@ class TestParser(object):
                                                          '').items():
             if cf_object.test_class == 'suite' or self.in_suites_dir(
                     file_path):
-                if cf_object.test_class != 'suite':
-                    logging.warning(
-                            'Treating unmarked suite %s as a suite based on control file path, expected TEST_CLASS = \'suite\' in the control file',
-                            cf_object.name)
                 suites[cf_object.name] = (TestSuite(cf_object, cf_object.name,
                                                     file_path))
             else:
@@ -253,6 +252,7 @@ class TestParser(object):
 
 
 class TestManager(object):
+
     def __init__(self):
         self.tests = {}
         self.suites = {}
@@ -319,8 +319,13 @@ class TestManager(object):
 
         for test in suite.get_tests():
             if self.tests[test].is_tast():
+                logging.info("Enumerating tast test: %s", test)
                 found_tests = self.tests[test].enumerate_tests_from_tast_exprs(
                         self.dut)
+                if self.tests[test].no_autoparse:
+                    raise Exception(
+                            "cannot list tast tests for suite failed to autoparse: %s"
+                            % (test))
                 for test in found_tests:
                     suite_tests.add(test)
             else:
@@ -391,6 +396,7 @@ class TestManager(object):
 
 
 class TastManager(object):
+
     def __init__(self):
         # hack to get metadata including local changes to tast files
         # use fastbuild and then export to proto and parse the proto
@@ -444,6 +450,7 @@ class TastManager(object):
 
 
 class TastTest(object):
+
     def __init__(self, name, metadata):
         self.name = name
         self.metadata = metadata

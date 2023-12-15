@@ -732,7 +732,7 @@ class PDPortPartner(object):
 
         @returns: number of PD ports accessible via console
         """
-        MAX_PORTS = 2
+        MAX_PORTS = 4
         num_ports = 0
         for port in range(MAX_PORTS):
             if self._send_pd_state(port, console):

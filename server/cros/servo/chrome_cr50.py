@@ -1764,8 +1764,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         pcr0_val = ccdstate.get(self.CCDSTATE_PCR0_KEY, '').strip()
         if not pcr0_val:
             return ''
+        logging.info('PCR0 - %s', pcr0_val)
         found_desc = 'unknown'
-        for known_val, desc in self.PCR0_DICT:
+        for known_val, desc in self.PCR0_DICT.items():
             if known_val.startswith(pcr0_val):
                 found_desc = desc
                 break
@@ -1791,4 +1792,5 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             # original error.
             logging.warning('Ignoring exception getting the AP state from '
                             'GSC: %s', e)
+        logging.info('AP state: %s', ap_info)
         return ap_info

@@ -25,7 +25,7 @@ class FingerprintTest(test.test):
 
     _UPSTART_DIR = '/etc/init'
     _BIOD_UPSTART_JOB_FILE = 'biod.conf'
-    _STATEFUL_PARTITION_DIR = '/mnt/stateful_partition'
+    _STATEFUL_PARTITION_DIR = '/var/lib/bio_fw_updater'
 
     _GENIMAGES_SCRIPT_NAME = 'gen_test_images.sh'
     _GENIMAGES_OUTPUT_DIR_NAME = 'images'

@@ -260,6 +260,9 @@ class TradefedTest(test.test):
 
         self._hard_reboot_on_failure = hard_reboot_on_failure
 
+    def _load_local_waivers(self, directory, is_dev=False):
+        return self._get_expected_failures(os.path.join(self.bindir, directory), is_dev)
+
     def _load_waivers(self, official_suite_version):
         """Load expected test failures to exclude them from re-runs."""
         self._waivers = set()
@@ -268,18 +271,19 @@ class TradefedTest(test.test):
         is_dev = self._bundle_uri and self._bundle_uri.startswith('DEV')
         is_public = not self._bundle_uri
         self._waivers.update(
-                self._get_expected_failures('expectations',
-                                            official_suite_version, is_dev,
-                                            is_public))
+                self._load_local_waivers('expectations', is_dev))
+
+        if self._should_load_gcs_waivers(is_public):
+            self._waivers.update(
+                    self._load_gcs_waivers(official_suite_version, is_dev))
+
         if not self._retry_manual_tests:
             self._waivers.update(
-                    self._get_expected_failures('manual_tests',
-                                                official_suite_version))
+                    self._load_local_waivers('manual_tests'))
 
         # Load modules with no tests.
         self._notest_modules.update(
-                self._get_expected_failures('notest_modules',
-                                            official_suite_version))
+                self._load_local_waivers('notest_modules'))
 
     def _output_perf(self):
         """Output performance values."""
@@ -1059,19 +1063,74 @@ class TradefedTest(test.test):
         return self._bundle_spec.suite_name in ['CTS', 'GTS', 'STS'
                                                 ] and not is_public
 
+    def _load_gcs_waivers(self, official_suite_version, is_dev=False):
+        """Load GCS waivers."""
+        expected_gcs_fail_files = []
+        waivers_list = []
+        # List waiver files from GCS bucket.
+        try:
+            result = utils.run('gsutil',
+                               args=('ls', _GCS_WAIVERS_PATH),
+                               verbose=True)
+            waiver_files = result.stdout
+
+            # Filter out waivers for current sdk_ver.
+            # Default waivers will be put into expected_gcs_fail_files directly.
+            # Non-default waivers will be filtered by TargetFixedVersion.
+            # Waivers file name example : 9_r14-CTS-R.yaml, 11_sts-r12-STS-R.yaml
+            for wf in waiver_files.splitlines():
+                f = os.path.basename(wf)
+                vs = re.fullmatch(r"(expected|.+r.+)-(.+)-(.+).yaml", f)
+                if not vs:
+                    continue
+                target_fixed_version, suite_name, dessert = vs.groups()
+                if dessert == self._SDK_VER_MAP[
+                        sdk_ver] and self._bundle_spec.suite_name == suite_name:
+                    if target_fixed_version == 'expected':
+                        expected_gcs_fail_files.append(wf)
+                    else:
+                        waivers_list.append([target_fixed_version, wf])
+
+        except error.CmdError as e:
+            logging.warning(
+                    'Skip loading GCS waivers. gsutil ls failed with: %s',
+                    e)
+            return set()
+
+        try:
+            if not is_dev:
+                expected_gcs_fail_files.extend(
+                        self._get_valid_waivers(
+                                waivers_list, official_suite_version))
+        except UnsupportedSuiteVersion as e:
+            logging.warning(
+                    'Skip loading GCS waivers for unsupported version format: %s',
+                    e)
+
+        gcs_local_fail_files = []
+        with tempfile.TemporaryDirectory(prefix='cts-waivers_') as tmp:
+            for failure_file in expected_gcs_fail_files:
+                local_file_path = os.path.join(tmp,
+                                               os.path.basename(failure_file))
+                try:
+                    utils.run('gsutil',
+                              args=('cp', failure_file, local_file_path),
+                              verbose=True)
+                    gcs_local_fail_files.append(local_file_path)
+                except error.CmdError as e:
+                    logging.warning('gsutil cp failed for file %s with: %s',
+                                    failure_file, e)
+                    continue
+            return self._get_expected_failures(tmp, is_dev)
+
     def _get_expected_failures(self,
-                               directory,
-                               official_suite_version,
-                               is_dev=False,
-                               is_public=False):
+                               expected_fail_dir,
+                               is_dev=False):
         """Return a list of expected failures or no test module.
 
-        @param directory: A directory with expected no tests or failures files.
-        @param official_suite_version: current xTS release version obtained from
-                                       test result xml
+        @param expected_fail_dir: A directory with expected no tests or failures
+                                  files.
         @param is_dev: Check if it's DEV runner we only apply default waivers.
-        @param is_public: Check if it's running public tests when we should
-                          ignore waivers.
         @return: A list of expected failures or no test modules for the current
                  testing device.
         """
@@ -1082,74 +1141,17 @@ class TradefedTest(test.test):
         test_arch = self._get_board_arch()
         sdk_ver = self._get_android_version()
         first_api_level = self._get_first_api_level()
-        expected_fail_dir = os.path.join(self.bindir, directory)
         if os.path.exists(expected_fail_dir):
             if is_dev:
                 # For DEV runners, it runs the latest source code to detect
                 # failures, so we should stop applying non default waivers.
                 expected_fail_files += glob.glob(expected_fail_dir +
-                                                 '/expected-failures-*.yaml')
+                                                 '/expected-*.yaml')
             else:
                 expected_fail_files += glob.glob(expected_fail_dir + '/*.yaml')
 
-        expected_gcs_fail_files = []
-        if self._should_load_gcs_waivers(is_public):
-            waivers_list = []
-            # List waiver files from GCS bucket.
-            try:
-                result = utils.run('gsutil',
-                                   args=('ls', _GCS_WAIVERS_PATH),
-                                   verbose=True)
-                waiver_files = result.stdout
-
-                # Filter out waivers for current sdk_ver.
-                # Default waivers will be put into expected_gcs_fail_files directly.
-                # Non-default waivers will be filtered by TargetFixedVersion.
-                # Waivers file name example : 9_r14-CTS-R.yaml, 11_sts-r12-STS-R.yaml
-                for wf in waiver_files.splitlines():
-                    f = os.path.basename(wf)
-                    vs = re.fullmatch(r"(expected|.+r.+)-(.+)-(.+).yaml", f)
-                    if not vs:
-                        continue
-                    target_fixed_version, suite_name, dessert = vs.groups()
-                    if dessert == self._SDK_VER_MAP[
-                            sdk_ver] and self._bundle_spec.suite_name == suite_name:
-                        if target_fixed_version == 'expected':
-                            expected_gcs_fail_files.append(wf)
-                        else:
-                            waivers_list.append([target_fixed_version, wf])
-
-                try:
-                    if not is_dev:
-                        current_version = official_suite_version
-                        expected_gcs_fail_files.extend(
-                                self._get_valid_waivers(
-                                        waivers_list, current_version))
-                except UnsupportedSuiteVersion as e:
-                    logging.warning(
-                            'Skip loading GCS waivers for unsupported version format: %s',
-                            e)
-
-            except error.CmdError as e:
-                logging.warning(
-                        'Skip loading GCS waivers. gsutil ls failed with: %s',
-                        e)
-
-        with tempfile.TemporaryDirectory(prefix='cts-waivers_') as tmp:
-            for failure_file in expected_gcs_fail_files:
-                local_file_path = os.path.join(tmp,
-                                               os.path.basename(failure_file))
-                try:
-                    utils.run('gsutil',
-                              args=('cp', failure_file, local_file_path),
-                              verbose=True)
-                    expected_fail_files.append(local_file_path)
-                except error.CmdError as e:
-                    logging.warning('gsutil cp failed for file %s with: %s',
-                                    failure_file, e)
-                    continue
-            waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
-                    expected_fail_files)
+        waivers = cts_expected_failure_parser.ParseKnownCTSFailures(
+                expected_fail_files)
 
         return waivers.find_waivers(test_arch, test_board, test_model,
                                     self._bundle_abi, sdk_ver, first_api_level)

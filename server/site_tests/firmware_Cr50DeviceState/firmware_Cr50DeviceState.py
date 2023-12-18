@@ -599,7 +599,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             logging.info('Resume from %s tpm initialized in %dus', state,
                          self.steps[-1][self.KEY_TPM_INIT])
 
-    def print_fwmp(self, desc, initialized=True):
+    def print_fwmp(self, desc, initialized=True, check_pcr=True):
         """Print FWMP and PCR0 state for debugging."""
         result = self.host.run(
                 'cryptohome --action=get_firmware_management_parameters',
@@ -614,7 +614,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             return
         pcr = result.stdout.split(':')[-1].strip()
         logging.info('PCR %r: %r', desc, pcr)
-        if pcr not in self.VALID_PCR0_VALUES:
+        if check_pcr and pcr not in self.VALID_PCR0_VALUES:
             raise error.TestFail('%s: invalid pcr0 value. %s not found in %r' %
                                  (desc, pcr, self.VALID_PCR0_VALUES))
 
@@ -820,7 +820,9 @@ class firmware_Cr50DeviceState(Cr50Test):
             # value in nvmem
             self.host.run(
                     'trunks_send --raw 80 01 00 00 00 0c 00 00 01 45 00 01')
-            self.print_fwmp('Extended PCR0', initialized=False)
+            self.print_fwmp('Extended PCR0',
+                            initialized=False,
+                            check_pcr=False)
             self.host.reboot()
             self.print_fwmp('PCR0 after reboot', initialized=False)
         self.init_fwmp()

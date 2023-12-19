@@ -82,8 +82,11 @@ class MainSsh(object):
         with self._lock:
             # If a previously started main SSH connection is not running
             # anymore, it needs to be cleaned up and then restarted.
+            # TODO(b/317134798): This is currently leaking PIDs, since we lose
+            # track of the forked child process ID so we can't kill it later.
             if (self._main_job and (not os.path.exists(self._socket_path) or
-                                      self._main_job.sp.poll() is not None)):
+                                      (self._main_job.sp.poll() is not None and
+                                       self._main_job.sp.poll() != 0))):
                 logging.info(
                         'Main-ssh connection to %s is down.', self._hostname)
                 self._close_internal()

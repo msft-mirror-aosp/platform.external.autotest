@@ -1,4 +1,4 @@
-# Lint as: python2, python3
+# Lint as: python3
 # Copyright 2015 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -9,7 +9,6 @@ from __future__ import print_function
 
 import re
 import logging
-import six
 from six.moves import range
 import time
 
@@ -97,16 +96,16 @@ class PDConsoleUtils(object):
                 return int(result)
         return 1
 
-    def execute_pd_state_cmd(self, port):
+    def execute_pd_state_cmd(self, port, field):
         """Get PD state for specified channel
 
         pd 0/1 state command gives produces 5 fields. The full response
-        line is captured and then parsed to extract each field to fill
-        the dict containing port, polarity, role, pd_state, and flags.
+        line is captured and then parsed to extract one field out of:
+        port, polarity, role, pd_state, and flags.
 
         @param port: Type C PD port 0 or 1
 
-        @returns: A dict with the 5 fields listed above
+        @returns: The requested field value
         @raises: TestFail if any field not found
         """
         cmd = 'pd'
@@ -117,19 +116,14 @@ class PDConsoleUtils(object):
         m = self.send_pd_command_get_output(pd_cmd, ['(Port.*) - (Role:.*)\n'],
                                             debug_on=False)
 
-        # Extract desired values from result string
-        state_result = {}
+        # Extract desired value from result string
         pd_state_dict = self.PD_STATE_DICT
 
-        for key, regexp in six.iteritems(pd_state_dict):
-            value = re.search(regexp, m[0][0])
-            if value:
-                state_result[key] = value.group(1)
-            else:
-                raise error.TestFail('pd %d state: %r value not found' %
-                                     (port, key))
-
-        return state_result
+        regexp = pd_state_dict[field]
+        value = re.search(regexp, m[0][0])
+        if value:
+            return value.group(1)
+        raise error.TestFail(f'pd {port} state: {field} value not found')
 
     def get_pd_state(self, port):
         """Get the current PD state
@@ -144,8 +138,7 @@ class PDConsoleUtils(object):
         @param port: Type C PD port 0/1
         @returns: current pd state
         """
-        pd_dict = self.execute_pd_state_cmd(port)
-        return pd_dict['port']
+        return self.execute_pd_state_cmd(port, 'port')
 
     def get_pd_role(self, port):
         """Get the current PD power role (source or sink)
@@ -153,8 +146,7 @@ class PDConsoleUtils(object):
         @param port: Type C PD port 0/1
         @returns: current pd state
         """
-        pd_dict = self.execute_pd_state_cmd(port)
-        return pd_dict['role']
+        return self.execute_pd_state_cmd(port, 'role')
 
     def get_pd_flags(self, port):
         """Get the current PD flags
@@ -162,8 +154,7 @@ class PDConsoleUtils(object):
         @param port: Type C PD port 0/1
         @returns: current pd state
         """
-        pd_dict = self.execute_pd_state_cmd(port)
-        return pd_dict['flags']
+        return self.execute_pd_state_cmd(port, 'flags')
 
     def get_pd_dualrole(self, port):
         """Get the current PD dualrole setting
@@ -526,8 +517,8 @@ class TCPMv1ConsoleUtils(PDConsoleUtils):
         @returns: current pd state
         """
 
-        pd_dict = self.execute_pd_state_cmd(port)
-        return self._normalize_pd_state(pd_dict['pd_state'])
+        return self._normalize_pd_state(
+                self.execute_pd_state_cmd(port, 'pd_state'))
 
     def set_pd_dualrole(self, port, value):
         """Set pd dualrole
@@ -672,8 +663,7 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
         @returns: current pe state
         """
 
-        pd_dict = self.execute_pd_state_cmd(port)
-        return pd_dict['pe_state']
+        return self.execute_pd_state_cmd(port, 'pe_state')
 
     def get_pd_state(self, port):
         """Get the current PD state
@@ -682,8 +672,7 @@ class TCPMv2ConsoleUtils(PDConsoleUtils):
         @returns: current pd state
         """
 
-        pd_dict = self.execute_pd_state_cmd(port)
-        return pd_dict['pd_state']
+        return self.execute_pd_state_cmd(port, 'pd_state')
 
     def set_pd_dualrole(self, port, value):
         """Set pd dualrole

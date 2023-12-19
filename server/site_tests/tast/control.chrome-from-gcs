@@ -76,6 +76,7 @@ def run(machine):
     if os.path.exists(lacros_dir):
         varslist.append('lacros.DeployedBinary=%s' % LACROS_DIR)
 
+    run_private_tests=args_dict.get('run_private_tests', 'true') == 'true'
     total_shards=args_dict.get('total_shards', 1)
     shard_index=args_dict.get('shard_index', 0)
     max_run_sec=int(args_dict.get('max_run_sec', 21600)) # 6 hours.
@@ -101,6 +102,7 @@ def run(machine):
                  varslist=varslist,
                  totalshards=total_shards,
                  shardindex=shard_index,
-                 clear_tpm=False)
+                 clear_tpm=False,
+                 run_private_tests=run_private_tests)
 
 parallel_simple(run, machines)

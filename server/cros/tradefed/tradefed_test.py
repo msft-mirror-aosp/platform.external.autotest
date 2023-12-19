@@ -1085,7 +1085,7 @@ class TradefedTest(test.test):
                     continue
                 target_fixed_version, suite_name, dessert = vs.groups()
                 if dessert == self._SDK_VER_MAP[
-                        sdk_ver] and self._bundle_spec.suite_name == suite_name:
+                        self._get_android_version()] and self._bundle_spec.suite_name == suite_name:
                     if target_fixed_version == 'expected':
                         expected_gcs_fail_files.append(wf)
                     else:

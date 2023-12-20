@@ -105,7 +105,7 @@ class FingerprintTest(test.test):
                     'rex': 'bloonchipper_v2.0.5938-197506c1',
             },
             _FP_BOARD_NAME_DARTMONKEY: 'dartmonkey_v2.0.2887-311310808',
-            _FP_BOARD_NAME_HELIPILOT: 'helipilot_v2.0.22861-6d50c1e39d',
+            _FP_BOARD_NAME_HELIPILOT: 'helipilot_v2.0.23333-f354f1b380',
             _FP_BOARD_NAME_NOCTURNE: 'nocturne_fp_v2.2.64-58cf5974e',
             _FP_BOARD_NAME_NAMI: 'nami_fp_v2.2.144-7a08e07eb',
     }
@@ -186,14 +186,14 @@ class FingerprintTest(test.test):
                     },
             },
             _FP_BOARD_NAME_HELIPILOT: {
-                    'helipilot_v2.0.22861-6d50c1e39d-RO_v2.0.22861-6d50c1e39d-RW.bin':
+                    'helipilot_v2.0.23333-f354f1b380-RO_v2.0.23333-f354f1b380-RW.bin':
                     {
                             _FIRMWARE_VERSION_SHA256SUM:
-                            '0506e8378917fd3b32ac65c3e1337f19aba98f0295b3398def212cb2000fd28f',
+                            'a321f63560eba1e6d6f6b1771a94c7a5e053c5c1eca5fcb5eeaf7996b0fe2d0b',
                             _FIRMWARE_VERSION_RO_VERSION:
-                            'helipilot_v2.0.22861-6d50c1e39d',
+                            'helipilot_v2.0.23333-f354f1b380',
                             _FIRMWARE_VERSION_RW_VERSION:
-                            'helipilot_v2.0.22861-6d50c1e39d',
+                            'helipilot_v2.0.23333-f354f1b380',
                             _FIRMWARE_VERSION_KEY_ID:
                             'ff60ba1fe2cf13f60d0debfb350f7c321115e59a',
                     },

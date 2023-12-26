@@ -2,6 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/317791685) Remove this file when the test is no longer in any
+# PVS plan
+
 import logging
 
 from autotest_lib.client.common_lib import error
@@ -32,19 +35,20 @@ class firmware_ECKeyboardReboot(FirmwareTest):
     def confirm_dut_off(self):
         """Confirms the DUT is off."""
         if not self.host.ping_wait_down(timeout=10):
-          raise error.TestFail('DUT is on, expected off')
+            raise error.TestFail('DUT is on, expected off')
         logging.info('DUT is off as expected')
 
     def confirm_dut_on(self):
         """Confirms the DUT is on."""
         if not self.host.wait_up(timeout=60):
-          raise error.TestFail('DUT is off, expected on')
+            raise error.TestFail('DUT is off, expected on')
         logging.info('DUT is on as expected')
 
     def run_once(self):
         """Runs a single iteration of the test."""
         if not self.check_ec_capability(['keyboard']):
-          raise error.TestNAError("Nothing needs to be tested on this device")
+            raise error.TestNAError(
+                    "Nothing needs to be tested on this device")
         logging.info("Test dut-control ec_uart_cmd:reboot command.")
 
         self.ec.reboot()

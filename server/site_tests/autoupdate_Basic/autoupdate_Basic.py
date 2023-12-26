@@ -54,7 +54,7 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
 
         self._m2n = m2n
         if self._m2n:
-            skip_board_suffixes = ['-kernelnext', '-manatee']
+            skip_board_suffixes = ['-kernelnext', '-manatee', '-scudo']
             self.provision_dut(public_bucket=running_at_desk,
                                skip_board_suffixes=skip_board_suffixes,
                                oldest_stable=oldest_stable)

@@ -162,14 +162,20 @@ class BluetoothAdapterQuickTests(
         self.floss_lm_quirk = floss_lm_quirk
         self.args_dict = args_dict if args_dict else {}
 
-        logging.info("Initialize dark resume utils.")
-        self._dr_utils = DarkResumeUtils(self.host)
-        # Bluetooth should lead to a full resume, but if dark resume is on,
-        # it may go into dark suspend again in case the test fails, so the
-        # DUT may not wake up.
-        # This function is to prevent the DUT from dark suspend.
-        self._dr_utils.stop_resuspend_on_dark_resume()
-        self._ec = chrome_ec.ChromeEC(self.host.servo)
+        try:
+            logging.info("Initialize dark resume utils.")
+            self._dr_utils = DarkResumeUtils(self.host)
+            # Bluetooth should lead to a full resume, but if dark resume is on,
+            # it may go into dark suspend again in case the test fails, so the
+            # DUT may not wake up.
+            # This function is to prevent the DUT from dark suspend.
+            self._dr_utils.stop_resuspend_on_dark_resume()
+            self._ec = chrome_ec.ChromeEC(self.host.servo)
+        except Exception as e:
+            logging.error('Exception %s while initializing dark resume utils',
+                          str(e))
+            self._dr_utils = None
+            self._ec = None
 
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
@@ -577,8 +583,9 @@ class BluetoothAdapterQuickTests(
 
         logging.info("Clean up dark resume utils.")
         try:
-            self._dr_utils.stop_resuspend_on_dark_resume(False)
-            self._dr_utils.teardown()
+            if self._dr_utils:
+                self._dr_utils.stop_resuspend_on_dark_resume(False)
+                self._dr_utils.teardown()
         # Unhandled exception would cause test failure.
         except (OSError, ConnectionRefusedError) as e:
             # The error "errno 99" means "Cannot assign requested address".
@@ -742,6 +749,10 @@ class BluetoothAdapterQuickTests(
         @param keep_paired: Keep the paried devices after test.
         @param dark_resume: Enable dark resume.
         """
+
+        if dark_resume and self._dr_utils is None:
+            raise error.TestNAError('Dark resume utils are not initialized.')
+
         boot_id = self.host.get_boot_id()
 
         if should_wake:

@@ -4883,6 +4883,36 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             return False
         return True
 
+    def restart_floss_client(self):
+        """Re-init all clients and wait until they're ready"""
+        default_adapter = self.manager_client.get_default_adapter()
+        self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
+        self.advertising_client = FlossAdvertisingClient(
+                self.bus, default_adapter)
+        self.gatt_client = FlossGattClient(self.bus, default_adapter)
+        self.media_client = FlossMediaClient(self.bus, default_adapter)
+
+        self.socket_client = FlossSocketManagerClient(self.bus,
+                                                      default_adapter)
+        self.admin_client = FlossAdminClient(self.bus, default_adapter)
+        self.scanner_client = FlossScannerClient(self.bus, default_adapter)
+        self.battery_client = FlossBatteryManagerClient(
+                self.bus, default_adapter)
+        self.floss_logger = FlossLogger(self.bus, default_adapter)
+
+        try:
+            utils.poll_for_condition(
+                    condition=lambda: self.is_bluetoothd_proxy_valid(
+                    ) and self.adapter_client.get_address(),
+                    desc='Wait for adapter start',
+                    sleep_interval=self.ADAPTER_CLIENT_POLL_INTERVAL,
+                    timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
+        except Exception as e:
+            logging.error('timeout: error starting adapter daemon: %s', e)
+            logging.error(traceback.format_exc())
+            return False
+        return True
+
     def is_powered_on(self):
         """Gets whether the default adapter is enabled."""
         default_adapter = self.manager_client.get_default_adapter()
@@ -4901,32 +4931,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         if powered:
             self.manager_client.start(default_adapter)
-            self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
-            self.advertising_client = FlossAdvertisingClient(
-                    self.bus, default_adapter)
-            self.gatt_client = FlossGattClient(self.bus, default_adapter)
-            self.media_client = FlossMediaClient(self.bus, default_adapter)
-
-            self.socket_client = FlossSocketManagerClient(
-                    self.bus, default_adapter)
-            self.admin_client = FlossAdminClient(self.bus, default_adapter)
-            self.scanner_client = FlossScannerClient(self.bus, default_adapter)
-            self.battery_client = FlossBatteryManagerClient(
-                    self.bus, default_adapter)
-            self.floss_logger = FlossLogger(self.bus, default_adapter)
-
-            try:
-                utils.poll_for_condition(
-                        condition=lambda: self.is_bluetoothd_proxy_valid(
-                        ) and self.adapter_client.get_address(),
-                        desc='Wait for adapter start',
-                        sleep_interval=self.ADAPTER_CLIENT_POLL_INTERVAL,
-                        timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)
-            except Exception as e:
-                logging.error('timeout: error starting adapter daemon: %s', e)
-                logging.error(traceback.format_exc())
+            if not self.restart_floss_client():
                 return False
-
             self.floss_logger.set_debug_logging(self.enable_floss_debug)
         else:
             self.manager_client.stop(default_adapter)

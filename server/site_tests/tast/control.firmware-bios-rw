@@ -1,4 +1,4 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2021 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,16 +6,16 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'ChromiumOS Firmware EngProd team'
-NAME = 'tast.firmware-bios_usb'
+NAME = 'tast.firmware-bios-rw'
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Run Tast tests for firmware that require USB",
+        "criteria": "Run Tast tests for AP firmware (RW only)",
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'servo_state:WORKING, servo_usb_state:NORMAL'
-ATTRIBUTES = 'suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_tot'
+DEPENDENCIES = 'servo_state:WORKING'
+ATTRIBUTES = 'suite:faft_bios_rw_qual'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 0
 
@@ -25,7 +25,8 @@ REQUIRE_SSP = True
 DOC = '''
 Run Tast tests for AP firmware.
 
-Runs the bios tests that require USB sticks.
+Runs all the bios tests, excluding the ones only for RO qual and the ones
+that require USB sticks.
 '''
 
 command_args, varslist = tast.split_arguments(args)
@@ -36,10 +37,9 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine, servo_args=servo_args),
-                 test_exprs=['("group:firmware" && firmware_bios && firmware_usb)'],
+                 test_exprs=['("group:firmware" && firmware_bios && !firmware_usb && !firmware_ro)'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=command_args,
-                 varslist=varslist,
-                 ephemeraldevserver='false')
+                 varslist=varslist)
 
 parallel_simple(run, machines)

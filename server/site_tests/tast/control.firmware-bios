@@ -10,12 +10,12 @@ NAME = 'tast.firmware-bios'
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Run Tast tests for firmware",
+        "criteria": "Run Tast tests for AP firmware",
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_bios_tot'
+ATTRIBUTES = 'suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_tot'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 0
 
@@ -23,10 +23,10 @@ JOB_RETRIES = 0
 REQUIRE_SSP = True
 
 DOC = '''
-Run Tast tests for EC firmware.
+Run Tast tests for AP firmware.
 
-The tests are part of 'group:firmware'. The 'firmware_bios' sub-attribute
-limits it to AP bios tests.
+Runs all the bios tests, including the ones only for RO qual, excluding the ones
+that require USB sticks.
 '''
 
 command_args, varslist = tast.split_arguments(args)

@@ -137,7 +137,11 @@ class BluetoothAdapterLLPrivacyTests(
     @test_retry_and_log(False)
     def test_set_device_privacy(self, device, enable):
         """Test privacy mode has been enabled."""
-        return device.SetPrivacy(enable)
+        status = device.SetPrivacy(enable)
+        # b:317736407 wait for a short delay so the own address type is set
+        # correctly in the gatt server after bluetooth power toggle.
+        time.sleep(0.5)
+        return status
 
     @test_retry_and_log(False)
     def test_start_device_advertise_with_rpa(self, device):

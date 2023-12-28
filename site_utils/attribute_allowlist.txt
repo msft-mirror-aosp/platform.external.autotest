@@ -744,9 +744,7 @@ suite:faft_cr50_tot
 suite:faft_detachable
 suite:faft_ec
 suite:faft_ec_fw_qual
-suite:faft_ec_tot
 suite:faft_experimental
-suite:faft_lab
 suite:faft_lv1
 suite:faft_lv2
 suite:faft_lv3

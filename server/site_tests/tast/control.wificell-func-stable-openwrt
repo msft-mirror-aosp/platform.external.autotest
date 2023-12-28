@@ -1,4 +1,4 @@
-# Copyright 2022 The ChromiumOS Authors
+# Copyright 2024 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -35,8 +35,8 @@ See http://go/tast-failures for information about investigating failures.
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:wificell" && wificell_func &&'
-                 '(!wificell_unstable || (wificell_unstable && wificell_func_ax)) && !wificell_reboot)'],
+                 test_exprs=['("group:wificell" && wificell_func && '
+                 '!wificell_unstable && !wificell_reboot)'],
                  ignore_test_failures=False, max_run_sec=18000,
                  command_args=args)
 

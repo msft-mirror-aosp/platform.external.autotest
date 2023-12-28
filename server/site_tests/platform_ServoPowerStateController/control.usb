@@ -12,7 +12,7 @@ METADATA = {
         "criteria": "Verify servo PowerStateController functions",
         "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
-ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv2, suite:faft_normal, suite:faft_bios_tot, suite:bvt-perbuild,suite:servo_lab, suite:labqual, suite:distributed_lab_qual_faft, suite:distributed_faft_bios_shard1"
+ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv2, suite:bvt-perbuild,suite:servo_lab, suite:labqual"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "LONG"
 TEST_TYPE = "server"

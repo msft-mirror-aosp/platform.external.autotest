@@ -11,7 +11,6 @@ METADATA = {
     "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
     "criteria": "Servo based consecutive boot test",
 }
-ATTRIBUTES = "suite:faft_dev"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "LONG"
 TEST_TYPE = "server"

@@ -12,7 +12,7 @@ METADATA = {
         "criteria": "Navigate to the MiniOS by menu navigation",
         "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01"],
 }
-ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_lv4, suite:faft_bios_tot, suite:distributed_faft_bios_shard1"
+ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_lv4"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "MEDIUM"
 TEST_TYPE = "server"

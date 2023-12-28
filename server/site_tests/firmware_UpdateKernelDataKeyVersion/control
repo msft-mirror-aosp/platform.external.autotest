@@ -12,7 +12,7 @@ METADATA = {
         "criteria": "Servo based kernel update test which checks the kernel data key version",
         "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
-ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_dev, suite:faft_lv5, suite:faft_bios_tot, suite:distributed_faft_bios_shard1"
+ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv5"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "SHORT"
 TEST_TYPE = "server"

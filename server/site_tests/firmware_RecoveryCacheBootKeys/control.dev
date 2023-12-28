@@ -12,7 +12,7 @@ METADATA = {
         "criteria": "Servo based RECOVERY_MRC_CACHE boot tests",
         "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01"],
 }
-ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_lv2, suite:distributed_faft_bios_shard1"
+ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_lv2"
 DEPENDENCIES = "servo_state:WORKING, servo_usb_state:NORMAL"
 TIME = "SHORT"
 TEST_TYPE = "server"

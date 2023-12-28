@@ -15,7 +15,7 @@ METADATA = {
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING, servo_usb_state:NORMAL'
-ATTRIBUTES = 'suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_tot'
+ATTRIBUTES = 'suite:faft_bios, suite:faft_bios_ro_qual'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 JOB_RETRIES = 0
 

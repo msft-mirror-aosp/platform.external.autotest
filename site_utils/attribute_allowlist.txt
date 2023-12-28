@@ -686,8 +686,6 @@ suite:distributed_bvt_tast_info_chrome_shard_2
 suite:distributed_bvt_tast_info_chrome_shard_3
 suite:distributed_bvt_tast_info_chrome_shard_4
 suite:distributed_bvt_tast_info_chrome_shard_5
-suite:distributed_faft_bios_shard1
-suite:distributed_faft_bios_shard2
 suite:distributed_lab_qual_bvt_shard1
 suite:distributed_lab_qual_bvt_shard2
 suite:distributed_arc_qual_cts_shard1
@@ -698,7 +696,6 @@ suite:distributed_arc_qual_cts_shard5
 suite:distributed_arc_qual_cts_shard6
 suite:distributed_arc_qual_cts_shard7
 suite:distributed_arc_qual_cts_shard8
-suite:distributed_lab_qual_faft
 suite:dmserver-enrollment-daily
 suite:dmserver-enrollment-live
 suite:dmserver-zteenrollment-daily
@@ -737,7 +734,6 @@ suite:faft_bios
 suite:faft_bios_ec3po
 suite:faft_bios_ro_qual
 suite:faft_bios_rw_qual
-suite:faft_bios_tot
 suite:faft_ccd
 suite:faft_cr50_experimental
 suite:faft_gsc_devboard
@@ -746,7 +742,6 @@ suite:faft_cr50_prepvt
 suite:faft_cr50_pvt
 suite:faft_cr50_tot
 suite:faft_detachable
-suite:faft_dev
 suite:faft_ec
 suite:faft_ec_fw_qual
 suite:faft_ec_tot
@@ -757,7 +752,6 @@ suite:faft_lv2
 suite:faft_lv3
 suite:faft_lv4
 suite:faft_lv5
-suite:faft_normal
 suite:faft_pd
 suite:faft_pd_unstable
 suite:faft_setup

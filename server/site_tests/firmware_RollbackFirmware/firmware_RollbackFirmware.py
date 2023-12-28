@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/290823172): Remove this test file when PVS testplan updated
+
 import logging
 
 from autotest_lib.server.cros import vboot_constants as vboot

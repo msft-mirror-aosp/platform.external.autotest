@@ -36,7 +36,6 @@ from autotest_lib.utils import labellib
 
 def run(machine):
     host = hosts.create_host(machine)
-    host.reboot()
     labels = host.host_info_store.get().labels
     slotMapping = labellib.LabelsMapping(labels).get('starfish_slot_mapping')
     # slotMapping = "0_att,1_fi,2_tmobile,3_verizon"
@@ -65,8 +64,10 @@ def run(machine):
                           "1_dut_check":["cellular.Identifiers","cellular.IsConnected."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
                           "2_autoconnect_enable":["cellular.ShillAutoconnect","cellular.ShillEnableDisable"],
                           "3_platform":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e")'],
-                          "4_suspend_resume":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")']
+                          "4_suspend_resume":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")'],
+                          "5_e2e":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_e2e" && (!"cellular_carrier_dependent" || "cellular_carrier_'+carrier+'"))'],
                          }
+            host.reboot()
             for testsession in sorted(testgroups):
                 sessiontag = testsession+"_"+carrier
                 tast_test_expr = testgroups[testsession]

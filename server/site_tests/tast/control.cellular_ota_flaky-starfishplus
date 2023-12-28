@@ -3,17 +3,17 @@
 # found in the LICENSE file.
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.cellular_ota-starfish'
+NAME = 'tast.cellular_ota_flaky-starfishplus'
 METADATA = {
     "contacts": ["chromeos-cellular-team@google.com"],
     "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cellular_ota'
+ATTRIBUTES = 'suite:cellular_ota_flaky'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:starfish"
+DEPENDENCIES = "carrier:starfishplus"
 
 DOC = '''
 Run the stable Tast tests which verify basic Cellular functionality.
@@ -40,10 +40,18 @@ def run(machine):
     slotMapping = labellib.LabelsMapping(labels).get('starfish_slot_mapping')
     # slotMapping = "0_att,1_fi,2_tmobile,3_verizon"
     if not slotMapping:
-        # any setup that has the label 'carrier:starfish' should have
+        # any setup that has the label 'carrier:starfishplus' should have
         # the starfish_slot_mapping label populated.
         raise error.TestError('starfish_slot_mapping label not set.')
     slots = slotMapping.split(',')
+    stress_testlist=[
+                     'cellular.ShillEnableAndConnect',
+                     'cellular.HostStressEnableDisable',
+                     'cellular.ModemmanagerEnableAndConnect',
+                     'cellular.ShillSafetyDance',
+                     'cellular.ModemSSRVerification',
+                     'cellular.ModemRebootVerification',
+                    ]
     for c in slots:
         c.strip()
         xs = c.split('_')
@@ -54,19 +62,28 @@ def run(machine):
         index.strip()
         carrier.strip()
         with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
-            svars = ['starfish.type=starfish','starfish.carrier='+carrier,'starfish.index='+index]
+            svars = ['starfish.type=starfishplus','starfish.carrier='+carrier,'starfish.index='+index]
             yaml.safe_dump({'autotest_host_info_labels':
                             json.dumps(labels)},
                             stream=temp_file)
             temp_file.flush()
             testgroups = {
-                          "0_is_modem_up":["cellular.IsModemUp"],
-                          "1_dut_check":["cellular.Identifiers","cellular.IsConnected."+carrier,"cellular.Smoke."+carrier,"cellular.SmokeIPConnectivity."+carrier],
-                          "2_autoconnect_enable":["cellular.ShillAutoconnect","cellular.ShillEnableDisable"],
-                          "3_platform":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e")'],
-                          "4_suspend_resume":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_suspend")'],
-                          "5_e2e":['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_e2e" && (!"cellular_carrier_dependent" || "cellular_carrier_'+carrier+'"))'],
+                          "0_flaky_e2e":['("group:cellular" && "cellular_sim_active" && "cellular_unstable" && "cellular_e2e" && (!"cellular_carrier_dependent" || "cellular_carrier_'+carrier+'"))'],
+                          "1_flaky_platform":['("group:cellular" && "cellular_sim_active" && "cellular_unstable" && !"cellular_run_isolated" && !"cellular_e2e" && !"cellular_sms")'],
+                          "2_flaky_stress":stress_testlist,
+                          "3_flaky_suspend_resume":['("group:cellular" && "cellular_sim_active" && "cellular_unstable" && "cellular_suspend")'],
                          }
+            if (carrier in ['docomo','softbank','tmobile']):
+                testgroups["4_flaky_hotspot"]=[
+                                               'network.HotspotUpdateConfiguration.'+carrier,
+                                               'network.HotspotUpdateConfigurationWhenHotspotOn.'+carrier,
+                                               'network.HotspotAutoDisable.'+carrier,
+                                               'network.HotspotDisabledWhenNoUpstreamNetwork.'+carrier,
+                                               'network.HotspotEnableDisableInLockScreen.'+carrier,
+                                               'network.HotspotPolicy.'+carrier,
+                                               'network.HotspotAbortEnable.'+carrier
+                                              ]
+
             host.reboot()
             for testsession in sorted(testgroups):
                 sessiontag = testsession+"_"+carrier

@@ -6,6 +6,7 @@
 """This file provides core logic for connecting a Chameleon Daemon."""
 
 import logging
+import re
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
@@ -108,10 +109,8 @@ class ChameleonHost(ssh_host.SSHHost):
         """
         if dnsname_mangler.is_ip_address(self.hostname):
             self._is_in_lab = False
-        elif utils.is_in_cft_container():
-            self._is_in_lab = True
         else:
-            self._is_in_lab = utils.host_is_in_lab_zone(self.hostname)
+            self._is_in_lab = _host_is_in_lab_zone(self.hostname)
 
     def is_in_lab(self):
         """Check whether the chameleon host is a lab device.
@@ -323,4 +322,5 @@ def create_btpeer_host(dut, btpeer_args_list):
 def _host_is_in_lab_zone(host):
     if utils.is_in_cft_container():
         return True
-    return utils.host_is_in_lab_zone(host)
+    pattern = r'chromeos\d+.*chameleon.*'
+    return re.match(pattern, host) is not None

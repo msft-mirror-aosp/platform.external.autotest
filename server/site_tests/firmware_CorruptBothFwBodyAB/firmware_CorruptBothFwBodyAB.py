@@ -1,6 +1,7 @@
 # Copyright 2011 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+# TODO(b/290823172): Please remove this test when PVS is no longer using it.
 
 import logging
 

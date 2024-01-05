@@ -675,20 +675,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """Handle one chunk of audio data by calling chameleon api."""
         self._get_real_ip()
 
-        # TODO(b/207046142): Remove the old version fallback after the new
-        # Chameleon bundle is deployed.
         try:
             recorded_file = device.HandleOneChunk(chunk_in_secs, index,
                                                   self.real_ip)
         except Exception as e:
-            logging.debug("Unable to use new version of HandleOneChunk;"
-                          "fall back to use the old one.")
-            try:
-                recorded_file = device.HandleOneChunk(chunk_in_secs, index,
-                                                      test_profile,
-                                                      self.real_ip)
-            except Exception as e:
-                raise error.TestError('Failed to handle chunk (%s)', e)
+            raise error.TestError('Failed to handle chunk (%s)', e)
 
         return recorded_file
 
@@ -1504,21 +1495,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         test_data = audio_test_data[test_profile]
 
-        # TODO(b/207046142): Remove the old version fallback after the new
-        # Chameleon bundle is deployed.
-        # Currently the BT audio tests store test profile parameters in
-        # Chameleon bundle. However, we decide to move the test profiles to
-        # server test. During the transition, the new test code may interact
-        # with old/existing Chameleon bundle, which does not have A2DP_MEDIUM
-        # profile. We use a trick here: override the passing-in test_profile
-        # with A2DP so that Chameleon can look up the profile, and override the
-        # three parameters locally to make it a A2DP_MEDIUM profile.
-        test_profile = A2DP
-        test_data = audio_test_data[test_profile].copy()
-        test_data['duration'] = 60
-        test_data['chunk_checking_duration'] = 5
-        test_data['chunk_in_secs'] = 1
-
         # Set audio output to the internal speaker and set the minimum volume
         # to avoid making noise while testing.
         self.test_select_audio_output_node_internal_speaker()
@@ -1573,21 +1549,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         test_data = audio_test_data[test_profile]
 
-        # TODO(b/207046142): Remove the old version fallback after the new
-        # Chameleon bundle is deployed.
-        # Currently the BT audio tests store test profile parameters in
-        # Chameleon bundle. However, we decide to move the test profiles to
-        # server test. During the transition, the new test code may interact
-        # with old/existing Chameleon bundle, which does not have A2DP_MEDIUM
-        # profile. We use a trick here: override the passing-in test_profile
-        # with A2DP so that Chameleon can look up the profile, and override the
-        # three parameters locally to make it a A2DP_MEDIUM profile.
-        test_profile = A2DP
-        test_data = audio_test_data[test_profile].copy()
-        test_data['duration'] = 60
-        test_data['chunk_checking_duration'] = 5
-        test_data['chunk_in_secs'] = 1
-
         # Connect the Bluetooth device.
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
@@ -1632,21 +1593,6 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param test_profile: to select which A2DP test profile is used.
         """
         test_data = audio_test_data[test_profile]
-
-        # TODO(b/207046142): Remove the old version fallback after the new
-        # Chameleon bundle is deployed.
-        # Currently the BT audio tests store test profile parameters in
-        # Chameleon bundle. However, we decide to move the test profiles to
-        # server test. During the transition, the new test code may interact
-        # with old/existing Chameleon bundle, which does not have A2DP_MEDIUM
-        # profile. We use a trick here: override the passing-in test_profile
-        # with A2DP so that Chameleon can look up the profile, and override the
-        # three parameters locally to make it a A2DP_MEDIUM profile.
-        test_profile = A2DP
-        test_data = audio_test_data[test_profile].copy()
-        test_data['duration'] = 60
-        test_data['chunk_checking_duration'] = 5
-        test_data['chunk_in_secs'] = 1
 
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)

@@ -156,6 +156,18 @@ def parse_arguments(argv):
             help="The suite is used to identify the type of test results,"
             "e.g. 'power' for platform power team. If not specific, the "
             "default value is 'default_suite'.")
+    upload_parser.add_argument(
+            "--bucket",
+            type=str,
+            default=None,
+            help="the bucket to upload the results to. If provided,"
+            "this overrides the local config file")
+    upload_parser.add_argument(
+            "--sa_path",
+            type=str,
+            default=None,
+            help="the sa path to use when uploading. If provided,"
+            "this overrides the local config file")
 
     # checkacls subcommand to verify service account has proper acls to upload results to bucket
     subparsers.add_parser(name="checkacls", help='check ACLs of configured service account')
@@ -481,7 +493,7 @@ class ResultsParserClass:
 
         if job.label is None:
             match = re.match(LABEL_REGEX, path)
-            job.label = "chroot/" + match.group(2)
+            job.label = "cft/" + match.group(2)
         job.afe_job_id = str(job_id)
         if not job.afe_parent_job_id:
             job.afe_parent_job_id = str(job_id + 1)
@@ -811,7 +823,12 @@ def main(args):
         _configure_environment(parsed_args.bucket, parsed_args.force)
         return
 
-    persistent_settings = _load_config()
+    persistent_settings = dict()
+    if parsed_args.bucket != "" and parsed_args.sa_path != "":
+        persistent_settings["bucket"] = parsed_args.bucket
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = parsed_args.sa_path
+    else:
+        persistent_settings = _load_config()
 
     if parsed_args.subcommand == "checkacls":
         _check_acls(persistent_settings)

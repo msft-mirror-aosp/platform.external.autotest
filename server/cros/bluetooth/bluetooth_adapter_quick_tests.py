@@ -467,6 +467,11 @@ class BluetoothAdapterQuickTests(
             raise error.TestError('Failed to set LL privacy to {}'.format(
                     self.llprivacy))
 
+        # b/317736407 Reset the adapter, otherwise the test_start_discovery
+        # fails when the LL privacy is enabled.
+        if self.llprivacy:
+            self.test_reset_on_adapter()
+
         # Initialize bluetooth_adapter_tests class (also clears self.fails)
         self.initialize()
 

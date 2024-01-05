@@ -9,41 +9,29 @@ import os
 import sys
 import re
 
-from suite_lib import TestManager
+from suite_lib import TestManager, TastManager
 
 # Export suite to protobuf format
 
-TEMPLATE_FILE = 'suite_template.v0'
+TEMPLATE_FILE = 'suite_template.v1'
 
 SANITIZE = r'[ \-\s]+'
 NAME_RE = re.compile(r'id *= *"([^"]+)",')
-BUG_RE = re.compile(r'bug_component *= *"([^"]+)",')
-OWNERS_RE = re.compile(r'owners *= *\[([^\]]+)\]',
-                       flags=re.MULTILINE | re.DOTALL)
-CRITERIA_RE = re.compile(r'criteria *= *"([^"]+)",')
-
+TEST_LIST_RE = re.compile(r'tests *= *\[([^\]]+)\]',
+                          flags=re.MULTILINE | re.DOTALL)
 
 def export_suite_to_starlark(suite_name, suite_tests, starlark_path):
 
-    # set default values for metadata
-    owners = '"<TODO enter email of suite owner here can add multiple values>"'
-    bug_component = 'b:<TODO bug component of suite owner here>'
-    criteria = '<TODO enter brief one sentence description of the test suite here and what it validates>'
-    updated = False
 
-    try:
-        # read in suite if it already exists to avoid writing over metadata
-        updated, owners, bug_component, criteria = _parse_existing_suite_starlark(
-                starlark_path, suite_name)
-    except FileNotFoundError:
-        pass
+    if os.path.isfile(starlark_path):
+        # if suite already exists, update it
+        _update_existing_suite_starlark(starlark_path, suite_name, suite_tests)
+        logging.info(
+                '\n\nupdated suite: %s, check diff to make sure no unexpected changes were made.',
+                starlark_path)
+        return
 
-    _write_suite(suite_name, suite_tests, starlark_path, owners, bug_component,
-                 criteria, updated)
-
-
-def _write_suite(suite_name, suite_tests, starlark_path, owners, bug_component,
-                 criteria, updated):
+    # if suite does not exist, write it out
     # sanitize suite name by removing spaces and dashes and replacing with _
     # this allows using it as a function name in starlark
     suite_name_sanitized = re.sub(SANITIZE, '_', suite_name)
@@ -60,18 +48,11 @@ def _write_suite(suite_name, suite_tests, starlark_path, owners, bug_component,
             suite_name_sanitized=suite_name_sanitized,
             suite_name=suite_name,
             test_list_str=_to_string(suite_tests),
-            owners=owners,
-            bug_component=bug_component,
-            criteria=criteria,
     )
     with open(starlark_path, 'w', encoding='utf-8') as f:
         f.write(contents)
-    if updated:
-        logging.info(
-                '\n\nupdated suite: %s, check diff to make sure no unexpected changes were made.',
-                starlark_path)
-    else:
-        logging.info('\n\nwrote suite: %s.', starlark_path)
+
+    logging.info('\n\nwrote suite: %s.', starlark_path)
 
 
 # parse existing suite starlark file to get metadata for regenerating updated
@@ -81,7 +62,7 @@ def _write_suite(suite_name, suite_tests, starlark_path, owners, bug_component,
 #
 # returns updated, owners, bug_component, criteria throws FileNotFoundError if file
 # does not exist or Exception if there is a processing error
-def _parse_existing_suite_starlark(starlark_path, suite_name):
+def _update_existing_suite_starlark(starlark_path, suite_name, suite_tests):
     with open(starlark_path, 'r') as f:
         data = f.read()
         suite_name_parsed = _parse_from_re(NAME_RE, data)
@@ -89,20 +70,16 @@ def _parse_existing_suite_starlark(starlark_path, suite_name):
             raise Exception(
                     'suite name mismatch: %s != %s refusing to overwrite %s' %
                     (suite_name, suite_name_parsed, starlark_path))
-        owners = _parse_from_re(OWNERS_RE, data)
-        owners = owners.rstrip('\n ').lstrip('\n ')
-        bug_component = _parse_from_re(BUG_RE, data)
-        criteria = _parse_from_re(CRITERIA_RE, data)
-        if owners is None:
-            raise Exception('owners not found in %s' % starlark_path)
-        if bug_component is None:
-            raise Exception('bug_component not found in %s' % starlark_path)
-        if criteria is None:
-            raise Exception('criteria not found in %s' % starlark_path)
 
-        updated = True
+        if TEST_LIST_RE.findall(data) is None:
+            raise Exception("failed to match test list for updating suite")
+        # replace existing test list with new one
+        new_test_list = 'tests = [\n{}\n        ]'.format(
+                _to_string(suite_tests))
+        data = TEST_LIST_RE.sub(new_test_list, data)
 
-        return updated, owners, bug_component, criteria
+    with open(starlark_path, 'w') as f:
+        f.write(data)
 
 
 def _parse_from_re(regex, data):
@@ -118,10 +95,12 @@ def _parse_from_re(regex, data):
 
 def _to_string(test_list):
     INDENT = 12
+    sorted_test_list = sorted(test_list)
     ret = ''
-    for test in test_list:
-        ret += ' ' * INDENT + '\'' + test + '\',\n'
-    return ret
+    for test in sorted_test_list:
+        ret += ' ' * INDENT + '"' + test + '",\n'
+    # remove trailing newline
+    return ret.rstrip('\n')
 
 
 def main(args):
@@ -131,8 +110,14 @@ def main(args):
     root_handler = root.handlers[0]
     root_handler.setFormatter(logging.Formatter('%(message)s'))
 
-    suite_name = args.suite
-    starlark_path = args.output
+    if args.update_metadata:
+        logging.info('updating tast metadata...')
+        TastManager()
+        if args.output is None and args.suite is None:
+            sys.exit(0)
+    if args.output is None or args.suite is None:
+        logging.error('missing required arguments --suite and --output')
+        sys.exit(1)
 
     tests = TestManager()
     basepath = os.path.dirname(os.path.abspath(__file__))
@@ -140,9 +125,9 @@ def main(args):
                               (basepath + '/../server/site_tests'),
                               (basepath + '/../client/site_tests')])
     tests.process_all_tests()
-    suite_tests = sorted(tests.list_suite_named(suite_name))
+    suite_tests = tests.list_suite_named(args.suite)
 
-    export_suite_to_starlark(suite_name, suite_tests, starlark_path)
+    export_suite_to_starlark(args.suite, suite_tests, args.output)
 
 
 if __name__ == '__main__':
@@ -163,13 +148,16 @@ if __name__ == '__main__':
     parser.add_argument(
             '--suite',
             help='suite to parse from autotest format',
-            required=True,
     )
     parser.add_argument(
             '--output',
             help='path to file to write starlark centralized style suite to',
-            required=True,
+    )
+    parser.add_argument(
+            '--update-metadata',
+            help='generate updated tast metadata for cros-test-finder',
+            action='store_true',
+            default=False,
     )
     parsed_args = parser.parse_args()
-
     main(parsed_args)

@@ -1,4 +1,4 @@
-# Copyright 2023 The ChromiumOS Authors
+# Copyright 2024 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,12 +6,12 @@ load("//create.star", "create")
 
 def _{suite_name_sanitized}():
     return create.suite(
-        id = "{suite_name}",
+        suite_id = "{suite_name}",
         owners = [
-            {owners}
+            "<TODO enter email of suite owner here can add multiple values>"
         ],
-        bug_component = "{bug_component}",
-        criteria = "{criteria}",
+        bug_component = "b:<TODO bug component of suite owner here>",
+        criteria = "<TODO enter brief one sentence description of the test suite here and what it validates>",
         tests = [
 {test_list_str}
         ],

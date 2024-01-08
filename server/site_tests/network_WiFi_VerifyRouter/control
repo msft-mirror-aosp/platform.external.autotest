@@ -11,7 +11,7 @@ METADATA = {
     'hw_agnostic': False
 }
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'wificell'
+DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING, wifi_router_models:gale'
 ATTRIBUTES = 'suite:bluetooth_wifi_testbed_update, suite:wificell_dut_validation'
 
 def run(machine):

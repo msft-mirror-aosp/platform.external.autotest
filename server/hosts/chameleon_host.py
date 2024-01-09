@@ -208,7 +208,7 @@ def create_chameleon_host(dut, chameleon_args):
                 except (error.AutoservSSHTimeout,
                         error.AutoservSshPermissionDeniedError,
                         error.AutoservSshPingHostError) as e:
-                    logging.warning(
+                    logging.debug(
                             'Chameleon %s is not accessible. Please file a bug'
                             ' to test lab: %s', chameleon_hostname, e)
                     return None

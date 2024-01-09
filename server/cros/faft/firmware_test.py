@@ -2783,7 +2783,10 @@ class FirmwareTest(test.test):
                 pw
                 or self.gsc.get_cap("OpenNoDevMode")[self.gsc.CAP_IS_ACCESSIBLE]
             ):
-                if self.servo.has_control("cold_reset_select"):
+                # Only set cold reset select on c2d2. Servo micro should work
+                # as is.
+                if (self.servo.has_control("cold_reset_select")
+                            and "c2d2" in self.servo.get_servo_type()):
                     restore_crs = self.servo.get("cold_reset_select")
                     # `ecrst pulse` is always available. Use it to reset the EC.
                     # It will reset the EC and keep the EC-EFS2 boot mode in

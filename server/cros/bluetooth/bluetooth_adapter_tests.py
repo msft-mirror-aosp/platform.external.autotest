@@ -149,6 +149,31 @@ ADV_TX_POWER_NO_PREFERENCE = 127
 MOUSE_MAX_MOVE_VALUE = 127
 MOUSE_MIN_MOVE_VALUE = -127
 
+# Gamepad thumbstick movement boundaries
+THUMBSTICK_MIN_MOVE_VALUE = 4095
+THUMBSTICK_MAX_MOVE_VALUE = 65535
+
+LINUX_GAMEPAD_INPUT_BUTTON = {
+    'GAMEPAD_BUTTON_A': BTN_A,
+    'GAMEPAD_BUTTON_B': BTN_B,
+    'GAMEPAD_BUTTON_X': BTN_X,
+    'GAMEPAD_BUTTON_Y': BTN_Y,
+    'GAMEPAD_BUTTON_START': BTN_START,
+    'GAMEPAD_LEFT_THUMBSTICK': BTN_THUMBL,
+    'GAMEPAD_RIGHT_THUMBSTICK': BTN_THUMBR,
+    'GAMEPAD_BUTTON_LEFT_BUMPER': BTN_TL,
+    'GAMEPAD_BUTTON_RIGHT_BUMPER': BTN_TR
+}
+
+LINUX_THUMBSTICK_INPUT_BUTTON_X = {
+    'GAMEPAD_LEFT_THUMBSTICK': ABS_X,
+    'GAMEPAD_RIGHT_THUMBSTICK': ABS_Z
+}
+
+LINUX_THUMBSTICK_INPUT_BUTTON_Y = {
+    'GAMEPAD_LEFT_THUMBSTICK': ABS_Y,
+    'GAMEPAD_RIGHT_THUMBSTICK': ABS_RZ
+}
 
 def get_num_devices(cap_reqs):
     """Get the number of devices.
@@ -5158,26 +5183,14 @@ class BluetoothAdapterTests(test.test):
                                                   gesture,
                                                   address=device.address)
 
-        linux_input_button = {
-                'GAMEPAD_BUTTON_A': BTN_A,
-                'GAMEPAD_BUTTON_B': BTN_B,
-                'GAMEPAD_BUTTON_X': BTN_X,
-                'GAMEPAD_BUTTON_Y': BTN_Y,
-                'GAMEPAD_BUTTON_START': BTN_START,
-                'GAMEPAD_LEFT_STICK': BTN_THUMBL,
-                'GAMEPAD_RIGHT_STICK': BTN_THUMBR,
-                'GAMEPAD_BUTTON_LEFT_BUMPER': BTN_TL,
-                'GAMEPAD_BUTTON_RIGHT_BUMPER': BTN_TR
-        }
-
         expected_events = [
                 # Button down
                 recorder.MSC_SCAN_BTN_EVENT[button],
-                Event(EV_KEY, linux_input_button[button], 1),
+                Event(EV_KEY, LINUX_GAMEPAD_INPUT_BUTTON[button], 1),
                 recorder.SYN_EVENT,
                 # Button up
                 recorder.MSC_SCAN_BTN_EVENT[button],
-                Event(EV_KEY, linux_input_button[button], 0),
+                Event(EV_KEY, LINUX_GAMEPAD_INPUT_BUTTON[button], 0),
                 recorder.SYN_EVENT
         ]
 
@@ -5282,8 +5295,8 @@ class BluetoothAdapterTests(test.test):
         received correctly.
 
         @param device: The meta device containing a bluetooth HID device.
-        @param stick: A stick type, as GAMEPAD_LEFT_STICK or
-                      GAMEPAD_RIGHT_STICK value, that will be moved.
+        @param stick: A stick type, as GAMEPAD_LEFT_THUMBSTICK or
+                      GAMEPAD_RIGHT_THUMBSTICK value, that will be moved.
         @param gesture: The gesture method to perform.
         @param delta_x: A value between 4095-65535 to move the thumbstick
                         horizontally.
@@ -5299,23 +5312,14 @@ class BluetoothAdapterTests(test.test):
                                                   gesture,
                                                   address=device.address)
 
-        linux_input_button_x = {
-                'GAMEPAD_LEFT_STICK': ABS_X,
-                'GAMEPAD_RIGHT_STICK': ABS_Z
-        }
-        linux_input_button_y = {
-                'GAMEPAD_LEFT_STICK': ABS_Y,
-                'GAMEPAD_RIGHT_STICK': ABS_RZ
-        }
-
         expected_events = [
                 # Move thumbsticks
-                Event(EV_ABS, linux_input_button_x[stick], delta_x),
-                Event(EV_ABS, linux_input_button_y[stick], delta_y),
+                Event(EV_ABS, LINUX_THUMBSTICK_INPUT_BUTTON_X[stick], delta_x),
+                Event(EV_ABS, LINUX_THUMBSTICK_INPUT_BUTTON_Y[stick], delta_y),
                 recorder.SYN_EVENT,
                 # Clear thumbsticks
-                Event(EV_ABS, linux_input_button_x[stick], 0),
-                Event(EV_ABS, linux_input_button_y[stick], 0),
+                Event(EV_ABS, LINUX_THUMBSTICK_INPUT_BUTTON_X[stick], 0),
+                Event(EV_ABS, LINUX_THUMBSTICK_INPUT_BUTTON_Y[stick], 0),
                 recorder.SYN_EVENT
         ]
 
@@ -5324,6 +5328,159 @@ class BluetoothAdapterTests(test.test):
                 'expected_events': list(map(str, expected_events))
         }
         return actual_events == expected_events
+
+    def _test_gamepad_bulk_actions(
+        self, device, action_list, num_iterations, delay=0.2
+    ):
+        """Tests that the events of gamepad bulk actions could be received
+        correctly.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param action_list: List of tuples (action_type, action_args)
+                            representing gamepad actionsList.
+        @param num_iterations: The number of iterations to perform.
+        @param delay: Time in seconds between actions.
+
+        @returns: True if the report received by the host matches the expected
+                  one. False otherwise.
+        """
+        bulk_action_list = action_list * num_iterations
+        gesture = lambda: device.BulkActions(bulk_action_list, delay)
+        actual_events = self._record_input_events(
+            device, gesture, address=device.address
+        )
+
+        expected_events = []
+        pressed_buttons = []
+        moved_sticks = []
+
+        for action_type, action_args in action_list:
+            if action_type in ('MoveLeftThumbstick', 'MoveRightThumbstick'):
+                stick, delta_x, delta_y = action_args
+                moved_sticks.append(stick)
+                expected_events.extend([
+                    Event(EV_ABS, LINUX_THUMBSTICK_INPUT_BUTTON_X[stick],
+                          delta_x),
+                    Event(EV_ABS, LINUX_THUMBSTICK_INPUT_BUTTON_Y[stick],
+                          delta_y),
+                    recorder.SYN_EVENT
+                ])
+            if action_type == 'GamepadPressButtons':
+                button = action_args
+                pressed_buttons.append(button)
+                expected_events.extend([
+                    recorder.MSC_SCAN_BTN_EVENT[button],
+                    Event(EV_KEY, LINUX_GAMEPAD_INPUT_BUTTON[button], 1),
+                    recorder.SYN_EVENT
+                ])
+            if action_type == 'ReleaseAllButtons':
+                for stick in moved_sticks:
+                    expected_events.extend([
+                        Event(EV_ABS, LINUX_THUMBSTICK_INPUT_BUTTON_X[stick],
+                              0),
+                        Event(EV_ABS, LINUX_THUMBSTICK_INPUT_BUTTON_Y[stick],
+                              0),
+                    ])
+                for button in pressed_buttons:
+                    expected_events.extend([
+                        recorder.MSC_SCAN_BTN_EVENT[button],
+                        Event(EV_KEY, LINUX_GAMEPAD_INPUT_BUTTON[button], 0),
+                    ])
+                expected_events.append(recorder.SYN_EVENT)
+                pressed_buttons, moved_sticks = [], []
+
+        actual_events = list(map(str, actual_events))
+        expected_events = list(map(str, expected_events))
+        all_expected_events = [(iteration, expected_events)
+                               for iteration in range(num_iterations)]
+
+        for iteration, expected_slice in all_expected_events:
+            start_index = iteration * len(expected_slice)
+            end_index = (iteration + 1) * len(expected_slice)
+
+            if end_index > len(actual_events):
+                return False
+
+            actual_slice = actual_events[start_index: end_index]
+            for index, expected_event in enumerate(expected_slice):
+                actual_event = actual_slice[index]
+
+                if actual_event != expected_event:
+                    self.results = {
+                        'first_failed_iteration': iteration,
+                        'first_failed_actual_events': actual_slice,
+                        'first_failed_expected_events': expected_slice,
+                    }
+                    return False
+        return True
+
+    def _test_gamepad_continuous_button_press(
+        self, device, button, num_iterations, delay
+    ):
+        """Tests continuous gamepad button press events for the specified
+        number of times.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: Action or bumper button (as GAMEPAD_BUTTON_*) value, or
+                       stick value as GAMEPAD_LEFT_THUMBSTICK or
+                       GAMEPAD_RIGHT_THUMBSTICK that will be pressed.
+        @param num_iterations: The number of iteraions to perform.
+        @param delay: Time in seconds between each action button press.
+
+        @returns: True if all events are successful, False otherwise.
+        """
+        action_list = [
+            ('GamepadPressButtons', button), ('ReleaseAllButtons', None)
+        ]
+
+        return self._test_gamepad_bulk_actions(
+            device, action_list, num_iterations, delay=delay
+        )
+
+    def _test_gamepad_continuous_press_button_and_move_thumbstick(
+        self, device, button, stick, delta_x, delta_y, num_iterations, delay
+    ):
+        """Tests continuous gamepad press button and move thumbstick events for
+        the specified number of times.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: Action or bumper button (as GAMEPAD_BUTTON_*) value, or
+                       stick value as GAMEPAD_LEFT_THUMBSTICK or
+                       GAMEPAD_RIGHT_THUMBSTICK that will be pressed.
+        @param stick: A stick type, as GAMEPAD_LEFT_THUMBSTICK or
+                      GAMEPAD_RIGHT_THUMBSTICK value, that will be moved.
+        @param delta_x: A value between 4095-65535 to move the thumbstick
+                        horizontally.
+        @param delta_y: A value between 4095-65535 to move the thumbstick
+                        vertically.
+        @param num_iterations: The number of presses to perform.
+        @param delay: Time in seconds between each action button press.
+
+        @returns: True if all events are successful, False otherwise.
+        """
+        delta_x = max(THUMBSTICK_MIN_MOVE_VALUE,
+                      min(delta_x, THUMBSTICK_MAX_MOVE_VALUE))
+        delta_y = max(THUMBSTICK_MIN_MOVE_VALUE,
+                      min(delta_y, THUMBSTICK_MAX_MOVE_VALUE))
+
+        stick_actions = {
+            'GAMEPAD_LEFT_THUMBSTICK': 'MoveLeftThumbstick',
+            'GAMEPAD_RIGHT_THUMBSTICK': 'MoveRightThumbstick'
+        }
+
+        thumbstick_action = stick_actions.get(stick, None)
+        if thumbstick_action is None:
+            raise error.TestError('Stick type (%s) is not valid.' % stick)
+
+        action_list = [
+            ('GamepadPressButtons', button),
+            (thumbstick_action, (stick, delta_x, delta_y)),
+            ('ReleaseAllButtons', None)
+        ]
+
+        return self._test_gamepad_bulk_actions(
+            device, action_list, num_iterations, delay=delay
+        )
 
     @test_retry_and_log
     def test_gamepad_action_button_press(self, device, button):
@@ -5423,16 +5580,16 @@ class BluetoothAdapterTests(test.test):
         received correctly.
 
         @param device: The meta device containing a bluetooth HID device.
-        @param stick: A stick type, as GAMEPAD_LEFT_STICK or
-                      GAMEPAD_RIGHT_STICK value, that will be pressed.
+        @param stick: A stick type, as GAMEPAD_LEFT_THUMBSTICK or
+                      GAMEPAD_RIGHT_THUMBSTICK value, that will be pressed.
 
         @returns: True if the report received by the host matches the expected
                   one. False otherwise.
 
         """
-        if stick == 'GAMEPAD_LEFT_STICK':
+        if stick == 'GAMEPAD_LEFT_THUMBSTICK':
             gesture = device.PressLeftThumbstick
-        elif stick == 'GAMEPAD_RIGHT_STICK':
+        elif stick == 'GAMEPAD_RIGHT_THUMBSTICK':
             gesture = device.PressRightThumbstick
         else:
             raise error.TestError('Stick type (%s) is not valid.' % stick)
@@ -5448,8 +5605,8 @@ class BluetoothAdapterTests(test.test):
         received correctly.
 
         @param device: The meta device containing a bluetooth HID device.
-        @param stick: A stick type, as GAMEPAD_LEFT_STICK or
-                           GAMEPAD_RIGHT_STICK value, that will be moved.
+        @param stick: A stick type, as GAMEPAD_LEFT_THUMBSTICK or
+                           GAMEPAD_RIGHT_THUMBSTICK value, that will be moved.
         @param delta_x: A value between 4095-65535 to move the thumbstick
                         horizontally.
         @param delta_y: A value between 4095-65535 to move the thumbstick
@@ -5459,14 +5616,67 @@ class BluetoothAdapterTests(test.test):
                   one. False otherwise.
 
         """
-        if stick == 'GAMEPAD_LEFT_STICK':
+        if stick == 'GAMEPAD_LEFT_THUMBSTICK':
             gesture = lambda: device.MoveLeftThumbstick(delta_x, delta_y)
-        elif stick == 'GAMEPAD_RIGHT_STICK':
+        elif stick == 'GAMEPAD_RIGHT_THUMBSTICK':
             gesture = lambda: device.MoveRightThumbstick(delta_x, delta_y)
         else:
             raise error.TestError('Stick type (%s) is not valid.' % stick)
         return self._test_gamepad_move_thumbstick(device, stick, gesture,
                                                   delta_x, delta_y)
+
+    @test_retry_and_log
+    def test_gamepad_continuous_button_press(
+        self, device, button, num_iterations=1000, delay=0.02
+    ):
+        """Tests continuous gamepad button press events for the specified
+        number of times.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: Action or bumper button (as GAMEPAD_BUTTON_*) value, or
+                       stick value as GAMEPAD_LEFT_THUMBSTICK or
+                       GAMEPAD_RIGHT_THUMBSTICK that will be pressed.
+        @param num_iterations: The number of iteraions to perform.
+        @param delay: Time in seconds between each action button press.
+
+        @returns: True if all events are successful, False otherwise.
+        """
+        return self._test_gamepad_continuous_button_press(
+            device, button, num_iterations, delay
+        )
+
+    @test_retry_and_log
+    def test_gamepad_continuous_press_button_and_move_thumbstick(
+        self,
+        device,
+        button,
+        stick,
+        delta_x=4095,
+        delta_y=4095,
+        num_iterations=1000,
+        delay=0.02,
+    ):
+        """Tests continuous gamepad press button and move thumbstick events for
+        the specified number of times.
+
+        @param device: The meta device containing a bluetooth HID device.
+        @param button: Action or bumper button (as GAMEPAD_BUTTON_*) value, or
+                       stick value as GAMEPAD_LEFT_THUMBSTICK or
+                       GAMEPAD_RIGHT_THUMBSTICK that will be pressed.
+        @param stick: A stick type, as GAMEPAD_LEFT_THUMBSTICK or
+                      GAMEPAD_RIGHT_THUMBSTICK value, that will be moved.
+        @param delta_x: A value between 4095-65535 to move the thumbstick
+                        horizontally.
+        @param delta_y: A value between 4095-65535 to move the thumbstick
+                        vertically.
+        @param num_iterations: The number of iteraions to perform.
+        @param delay: Time in seconds between each action button press.
+
+        @returns: True if all events are successful, False otherwise.
+        """
+        return self._test_gamepad_continuous_press_button_and_move_thumbstick(
+            device, button, stick, delta_x, delta_y, num_iterations, delay
+        )
 
     def is_newer_kernel_version(self, version, minimum_version):
         """ Check if given kernel version is newer than unsupported version."""

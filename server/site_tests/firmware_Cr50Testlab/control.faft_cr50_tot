@@ -11,7 +11,10 @@ METADATA = {
     "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
     "criteria": "Verify ccd testlab mode",
 }
-ATTRIBUTES = "suite:faft_cr50_tot"
+# This is verified by a devboard test. Remove the tests from nightly suites.
+# Don't delete the test in case we find something that we need to verify on
+# an actual dut.
+# ATTRIBUTES = "suite:faft_cr50_tot"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"

@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2017 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -1747,7 +1746,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Return a string with the AP information from ccdstate."""
         if self.CCDSTATE_AP_FULL_KEY in ccdstate:
             val = ccdstate[self.CCDSTATE_AP_FULL_KEY]
-        if self.CCDSTATE_AP_KEY in ccdstate:
+        elif self.CCDSTATE_AP_KEY in ccdstate:
             val = ccdstate[self.CCDSTATE_AP_KEY]
         else:
             return ''

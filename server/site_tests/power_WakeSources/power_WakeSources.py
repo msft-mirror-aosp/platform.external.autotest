@@ -1,4 +1,4 @@
-# Lint as: python2, python3
+# Lint as: python3
 # Copyright 2018 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -7,7 +7,7 @@ import logging
 import re
 import time
 
-from autotest_lib.client.common_lib import autotest_enum, error
+from autotest_lib.client.common_lib import autotest_enum, error, utils
 from autotest_lib.server import test
 from autotest_lib.server.cros import servo_keyboard_utils
 from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
@@ -27,8 +27,8 @@ TABLET_MODE = autotest_enum.AutotestEnum('ON', 'OFF', 'RESET')
 
 # List of wake sources expected to cause a full resume.
 FULL_WAKE_SOURCES = [
-    'PWR_BTN', 'LID_OPEN', 'BASE_ATTACH', 'BASE_DETACH', 'INTERNAL_KB',
-    'USB_KB', 'TABLET_MODE_ON', 'TABLET_MODE_OFF'
+        'PWR_BTN', 'LID_OPEN', 'BASE_ATTACH', 'BASE_DETACH', 'INTERNAL_KB',
+        'USB_KB', 'TABLET_MODE_ON', 'TABLET_MODE_OFF'
 ]
 
 # List of wake sources expected to cause a dark resume.
@@ -119,6 +119,12 @@ class power_WakeSources(test.test):
         elif wake_source == 'USB_KB':
             # Initialize USB keyboard.
             self._host.servo.set_nocheck('init_usb_keyboard', 'on')
+            utils.poll_for_condition(
+                    condition=lambda: servo_keyboard_utils.
+                    is_servo_usb_keyboard_present(self._host) is True,
+                    desc='Wait for the servo keyboard presence',
+                    timeout=USB_PRESENT_DELAY)
+            servo_keyboard_utils.set_servo_keyboard_persist(self._host)
         elif wake_source == 'TABLET_MODE_ON':
             self._force_tablet_mode(TABLET_MODE.OFF)
         elif wake_source == 'TABLET_MODE_OFF':

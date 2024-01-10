@@ -811,9 +811,6 @@ class BluetoothAdapterTests(test.test):
     # Minimum RSSI required for peer devices during testing
     MIN_RSSI = -70
 
-    # hci0 is the default hci device if there is no external bluetooth dongle.
-    EXPECTED_HCI = 'hci0'
-
     CLASS_OF_SERVICE_MASK = 0xFFE000
     CLASS_OF_DEVICE_MASK = 0x001FFF
 
@@ -1990,12 +1987,12 @@ class BluetoothAdapterTests(test.test):
         """Test that the bluetooth adapter is in the correct working state.
 
         This includes that the adapter is detectable, is powered on,
-        and its hci device is hci0.
+        and has an active hci device.
         """
         has_adapter = self.bluetooth_facade.has_adapter()
         is_powered_on = self._wait_for_condition(
                 self.bluetooth_facade.is_powered_on, method_name())
-        hci = self.bluetooth_facade.get_hci() == self.EXPECTED_HCI
+        hci = self.bluetooth_facade.get_hci() != None
         self.results = {
                 'has_adapter': has_adapter,
                 'is_powered_on': is_powered_on,

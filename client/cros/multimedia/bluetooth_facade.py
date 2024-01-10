@@ -1846,7 +1846,10 @@ class BluetoothBaseFacadeLocal(object):
                 None on failure.
 
         """
-        return json.dumps(self._raw_socket.get_dev_info(0))
+        index = self._raw_socket.get_hci()
+        if index is None:
+            raise error.TestError('No active hci')
+        return json.dumps(self._raw_socket.get_dev_info(index))
 
     def btmon_start(self):
         """Starts btmon monitoring."""

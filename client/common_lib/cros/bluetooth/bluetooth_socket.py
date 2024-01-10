@@ -13,6 +13,7 @@ import logging
 import socket
 import struct
 import six
+import sys
 
 
 # Constants from lib/mgmt.h in BlueZ source
@@ -1209,18 +1210,42 @@ class BluetoothRawSocket(BluetoothSocket):
                 None on failure.
 
         """
-        buf = array.array('B', [0] * 96)
+        # 92 bytes are required here, not 96 bytes even on 64-bit machine since
+        # the elements are aligned to 4 bytes, so no padding is required to
+        # align them to 8 bytes.
+        # 2 bytes of index and 90 bytes of return value initialized to zero.
+        buf = array.array('B', struct.pack('@H90x', index))
         fcntl.ioctl(self.fileno(), HCIGETDEVINFO, buf, 1)
 
         (dev_id, name, address, flags, dev_type, features, pkt_type,
          link_policy, link_mode, acl_mtu, acl_pkts, sco_mtu, sco_pkts, err_rx,
          err_tx, cmd_tx, evt_rx, acl_tx, acl_rx, sco_tx, sco_rx, byte_rx,
-         byte_tx) = struct.unpack_from('@H8s6sIBQIIIHHHHIIIIIIIIII',
+         byte_tx) = struct.unpack_from('@H8s6sIB8sIIIHHHHIIIIIIIIII',
                                        memoryview(buf))
 
         return (dev_id, name.decode('utf-8').rstrip('\0'), ':'.join(
                 '%02X' % x for x in reversed(struct.unpack('6B', address))),
-                flags, (dev_type & 0x30) >> 4, dev_type & 0x0f, features,
-                pkt_type, link_policy, link_mode, acl_mtu, acl_pkts, sco_mtu,
-                sco_pkts, err_rx, err_tx, cmd_tx, evt_rx, acl_tx, acl_rx,
-                sco_tx, sco_rx, byte_rx, byte_tx)
+                flags, (dev_type & 0x30) >> 4, dev_type & 0x0f,
+                int.from_bytes(features, sys.byteorder), pkt_type, link_policy,
+                link_mode, acl_mtu, acl_pkts, sco_mtu, sco_pkts, err_rx,
+                err_tx, cmd_tx, evt_rx, acl_tx, acl_rx, sco_tx, sco_rx,
+                byte_rx, byte_tx)
+
+    def get_hci(self):
+        """Read the HCI index for the active BT adapter
+
+        This method uses the same underlying ioctl as the hciconfig tool.
+
+        @return Integer denoting the first active HCI index,
+                None on failure.
+        """
+        # 2 bytes of |indexes to find|, and 10 bytes of return value.
+        buf = array.array('B', struct.pack('@H10x', 1))
+        fcntl.ioctl(self.fileno(), HCIGETDEVLIST, buf, 1)
+
+        # 2 bytes of dev_num, 2 bytes of gap (byte alignment),
+        # 2 bytes of dev_id, implicit 2 bytes of gap, 4 bytes of dev_opt.
+        (dev_num, dev_id,
+         dev_opt) = struct.unpack_from('@H2xHI', memoryview(buf))
+
+        return dev_id if dev_num > 0 else None

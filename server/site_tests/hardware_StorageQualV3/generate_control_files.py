@@ -56,7 +56,7 @@ v3_tests = [
                           'pdp-enabled', 'pdp-kpi', 'pdp-stress', 'avl-v3',
                           'avl-v3-batch1'
                   ],
-                  duration=1200),
+                  duration=12000),
         TestEntry(name='storage_testing_v3_soc_perf',
                   test_expr=['storage.SocPerformance.*'],
                   attributes=['pdp-kpi', 'pdp-stress'],
@@ -108,7 +108,7 @@ v3_tests = [
                   attributes=['pdp-stress', 'avl-v3', 'avl-v3-batch1'],
                   duration=28800),
         TestEntry(name='storage_testing_v3_stress_2',
-                  test_expr=['storage.Stress.iteration2'],
+                  test_expr=['storage.Stress.iteration_2'],
                   attributes=['avl-v3', 'avl-v3-batch4'],
                   duration=28800),
 ]

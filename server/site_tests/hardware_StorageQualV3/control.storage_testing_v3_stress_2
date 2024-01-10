@@ -37,7 +37,7 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     job.run_test('tast',
                 host=hosts.create_host(machine, servo_args=servo_args),
-                test_exprs=['storage.Stress.iteration2'],
+                test_exprs=['storage.Stress.iteration_2'],
                 ignore_test_failures=False,
                 max_run_sec=28800,
                 command_args=args)

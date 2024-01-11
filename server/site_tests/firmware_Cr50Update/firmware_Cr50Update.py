@@ -27,9 +27,6 @@ class firmware_Cr50Update(Cr50Test):
     POST_INSTALL = "post_install"
     CCD = "ccd"
 
-    DEV_NAME = "dev_image"
-    OLD_RELEASE_NAME = "old_release_image"
-    RELEASE_NAME = "release_image"
     SUCCESS = 0
     UPDATE_OK = 1
 
@@ -38,8 +35,10 @@ class firmware_Cr50Update(Cr50Test):
                    old_release_path="", old_release_ver="", test="",
                    full_args={}):
         """Initialize servo and process the given images"""
-        super(firmware_Cr50Update, self).initialize(host, cmdline_args,
+        super(firmware_Cr50Update, self).initialize(host,
+                                                    cmdline_args,
                                                     full_args,
+                                                    restore_cr50_board_id=True,
                                                     restore_cr50_image=True)
         self.test_post_install = test.lower() == self.POST_INSTALL
         self.test_ccd = test.lower() == self.CCD
@@ -57,32 +56,24 @@ class firmware_Cr50Update(Cr50Test):
 
         self.host = host
 
-        # A dict used to store relevant information for each image
-        self.images = {}
-
         # Process the given images in order of oldest to newest. Get the version
         # info and add them to the update order
-        self.update_order = []
+        self.old_release_image = None
         if old_release_path or old_release_ver:
-            self.add_image_to_update_order(self.OLD_RELEASE_NAME,
-                                           old_release_path, old_release_ver)
-        self.add_image_to_update_order(self.RELEASE_NAME, release_path,
-                                       release_ver)
-        self.add_image_to_update_order(self.DEV_NAME,
-                                       self.get_saved_dbg_image_path())
-        self.verify_update_order()
-        logging.info("Update %s", self.update_order)
+            self.old_release_image = self.get_image_ver_and_path(
+                    'old release', old_release_path, old_release_ver)
+        self.release_image = self.get_image_ver_and_path(
+                'release', release_path, release_ver)
+        self.dev_image = self.get_image_ver_and_path(
+                'DBG', self.get_saved_dbg_image_path())
 
         if self.test_ccd:
             self.device_update_path = '/tmp/cr50.bin'
         else:
             self.device_update_path = cr50_utils.GetActiveCr50ImagePath(
                 self.host)
-        # Update to the dev image
-        self.run_update(self.DEV_NAME)
 
-
-    def run_update(self, image_name):
+    def run_update(self, image_info):
         """Copy the image to the DUT and update to it.
 
         Normal updates will use the gsc_update script to update. If a rollback
@@ -93,7 +84,7 @@ class firmware_Cr50Update(Cr50Test):
                            retrieve the image info.
         """
         # Get the current update information
-        image_ver, image_ver_str, image_path = self.images[image_name]
+        image_name, image_path, image_ver, image_ver_str = image_info
 
         dest, ver = cr50_utils.InstallImage(self.host, image_path,
                 self.device_update_path)
@@ -158,12 +149,10 @@ class firmware_Cr50Update(Cr50Test):
         logging.info(self.host.run('/usr/sbin/gsc_update'))
         self.host.reboot()
 
-
     def startup_install(self):
         """Run the update using the startup script"""
         # Clear the update state and reboot, so gsc_update will run again.
         cr50_utils.ClearUpdateStateAndReboot(self.host)
-
 
     def fetch_image(self, ver=None):
         """Fetch the image from gs and copy it to the host.
@@ -180,8 +169,7 @@ class firmware_Cr50Update(Cr50Test):
             return self.download_cr50_release_image(ver, bid)
         return self.download_cr50_debug_image()
 
-
-    def add_image_to_update_order(self, image_name, image_path, ver=None):
+    def get_image_ver_and_path(self, image_name, image_path, ver=None):
         """Process the image. Add it to the update_order list and images dict.
 
         Copy the image to the DUT and get version information.
@@ -204,41 +192,17 @@ class firmware_Cr50Update(Cr50Test):
 
         ver_str = cr50_utils.GetVersionString(ver)
 
-        self.update_order.append(image_name)
-        self.images[image_name] = (ver, ver_str, image_path)
         logging.info("%s stored at %s with version %s", image_name, image_path,
                      ver_str)
-
-
-    def verify_update_order(self):
-        """Verify each image in the update order has a higher version than the
-        last.
-
-        The test uses the cr50 update script to update to the next image in the
-        update order. If the versions are not in ascending order then the update
-        won't work. Cr50 cannot update to an older version using the standard
-        update process.
-
-        Raises:
-            TestError if the versions are not in ascending order.
-        """
-        for i, name in enumerate(self.update_order[1::]):
-            rw = self.images[name][0][1]
-
-            last_name = self.update_order[i]
-            last_rw = self.images[last_name][0][1]
-            if cr50_utils.GetNewestVersion(last_rw, rw) != rw:
-                raise error.TestError("%s is version %s. %s needs to have a "
-                                      "higher version, but it has %s" %
-                                      (last_name, last_rw, name, rw))
-
-
-    def after_run_once(self):
-        """Add log printing what iteration we just completed"""
-        logging.info("Update iteration %s ran successfully", self.iteration)
-
+        return image_name, image_path, ver, ver_str
 
     def run_once(self):
-        """Update to each image in update_order"""
-        for name in self.update_order:
-            self.run_update(name)
+        """Verify the update process"""
+        if self.old_release_image:
+            self.eraseflashinfo_and_restore_image(self.dev_image[1])
+            self.run_update(self.old_release_image)
+        else:
+            self.run_update(self.dev_image)
+
+        self.run_update(self.release_image)
+        self.run_update(self.dev_image)

@@ -120,13 +120,15 @@ class IperfResult(object):
                            jitter_value)
 
     @staticmethod
-    def from_samples(samples):
+    def from_samples(samples, config):
         """Build an averaged IperfResult from |samples|.
 
         Calculate an representative sample with averaged values
         and standard deviation of throughput from samples.
 
         @param samples list of IperfResult objects.
+        @param config IperfConfig the config for the test.
+
         @return IperfResult object.
 
         """
@@ -141,24 +143,42 @@ class IperfResult(object):
         throughput_mean = numpy.mean(throughput_samples)
         throughput_dev = numpy.std(throughput_samples)
 
-        # For TCP connections, the packet loss is 0 by definition. In these
-        # cases, the percent_loss will be None for all samples, and UDP results
-        # should never have a percent_loss of None, so we can just check the
-        # first sample.
-        if samples[0].percent_loss == None:
+        if not config.udp:
             percent_loss_mean = None
-        else:
-            percent_loss_samples = [
-                    float(sample.percent_loss) for sample in samples
-            ]
-            percent_loss_samples = IperfResult._remove_outliers(
-                percent_loss_samples)
-            percent_loss_mean = numpy.mean(percent_loss_samples)
-
-        if samples[0].jitter == None:
             jitter_mean = None
         else:
-            jitter_samples = [float(sample.jitter) for sample in samples]
+            percent_loss_samples = [
+                float(sample.percent_loss)
+                for sample in samples
+                if sample.percent_loss is not None
+            ]
+            if len(percent_loss_samples) < len(samples):
+                logging.warning(
+                    'iperf command output was missing some percent loss data')
+                # TODO(b/307813147): Currently, we observed many flaky results
+                # because of unhandled TypeError from converting a 'NoneType'
+                # into 'float'. Investigation in b/306472762 suggests they are
+                # caused by the missing packet loss data for udp tests. Here we
+                # covert the TypeError into a more actionable error so that we
+                # can keep the failure visible while this issue is under
+                # investigation (b/307813147). However, this issue should not
+                # fail the test and we should remove this error when b/307813147
+                # is fixed.
+                raise error.TestFail(
+                    'Invalid iperf output: percent loss data missing')
+            percent_loss_samples = IperfResult._remove_outliers(
+                percent_loss_samples
+            )
+            percent_loss_mean = numpy.mean(percent_loss_samples)
+
+            jitter_samples = [
+                float(sample.jitter)
+                for sample in samples
+                if sample.jitter is not None
+            ]
+            if len(jitter_samples) < len(samples):
+                logging.warning(
+                    'iperf command output was missing some jitter data')
             jitter_samples = IperfResult._remove_outliers(jitter_samples)
             jitter_mean = numpy.mean(jitter_samples)
 

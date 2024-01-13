@@ -119,7 +119,7 @@ class PerfTestManager(object):
                 server_interface=peer_device_interface,
                 ignore_failures=ignore_failures)
 
-    def get_result(self, results):
+    def get_result(self, results, config):
         """Get a single performance result from a list of results.
 
         @param results list of IperfResults or NetperfResults.
@@ -130,7 +130,7 @@ class PerfTestManager(object):
         # All the results will be of the same type, so we can safely check the
         # first result only.
         if isinstance(results[0], iperf_runner.IperfResult):
-            return iperf_runner.IperfResult.from_samples(results)
+            return iperf_runner.IperfResult.from_samples(results, config)
         if isinstance(results[0], netperf_runner.NetperfResult):
             return netperf_runner.NetperfResult.from_samples(results)
         raise error.TestFail('Invalid test result type: %s' % type(results))

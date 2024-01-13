@@ -168,7 +168,7 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
                                    units='Mbps',
                                    higher_is_better=True,
                                    graph=ap_config_tag)
-            result = manager.get_result(results)
+            result = manager.get_result(results, config)
             self.verify_result(result, expected_throughput[0],
                                expected_throughput[1], test_type,
                                failed_test_types, power_save, ap_config)

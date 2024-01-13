@@ -126,7 +126,7 @@ class network_WiFi_PerfNoisyEnv(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
             values = [sample.throughput for sample in results]
             self.output_perf_value(gain_tag, values, units='Mbps',
                                    higher_is_better=True, graph=graph_name)
-            result = manager.get_result(results)
+            result = manager.get_result(results, config)
             keyval_prefix = '_'.join(
                     [self._ap_config.perf_loggable_description,
                      config.test_type, gain_tag])

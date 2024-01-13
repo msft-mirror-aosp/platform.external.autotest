@@ -79,13 +79,13 @@ class IperfSession(object):
                 if len(history) < self.MEASUREMENT_MIN_SAMPLES:
                     continue
 
-                final_result = iperf_runner.IperfResult.from_samples(history)
+                final_result = iperf_runner.IperfResult.from_samples(history, config)
                 if final_result.throughput_cv_less_than_maximum(
                         self.MAX_THROUGHPUT_CV):
                     break
 
         if final_result is None:
-            final_result = iperf_runner.IperfResult.from_samples(history)
+            final_result = iperf_runner.IperfResult.from_samples(history, config)
         logging.info('Took averaged measurement from %s iperf %s runs: %r.',
                      len(history), config.test_type, final_result)
         return history or None

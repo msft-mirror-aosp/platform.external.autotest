@@ -84,7 +84,7 @@ class network_WiFi_BluetoothScanPerf(
                                units='Mbps',
                                higher_is_better=True,
                                graph=ap_config_tag)
-        result = manager.get_result(results)
+        result = manager.get_result(results, config)
         self.write_perf_keyval(
                 result.get_keyval(
                         prefix='_'.join([config.test_type, test_str])))

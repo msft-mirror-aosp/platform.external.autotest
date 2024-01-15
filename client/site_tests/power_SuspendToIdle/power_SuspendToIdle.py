@@ -32,10 +32,13 @@ class power_SuspendToIdle(test.test):
             self._error_message.append(str(e))
 
     def run_once(self, force_suspend_to_idle=False):
-        """Main test method.
-        """
+        """Main test method."""
         if utils.get_cpu_arch() != 'x86_64':
             raise error.TestNAError('This test only supports x86_64 CPU.')
+        cpu_vendor = utils.get_cpu_vendor()
+        if 'intel' not in cpu_vendor.lower():
+            raise error.TestNAError('This test is not supported on %s.' %
+                                    cpu_vendor)
 
         if power_utils.get_sleep_state() != 'freeze':
             if not force_suspend_to_idle:
@@ -85,7 +88,7 @@ class power_SuspendToIdle(test.test):
                     and dmc_firmware_stats.get_accumulated_dc6_entry() <= 0):
             logging.warning('DC6 entry check failed.')
 
-        if (cpu_packages_stats.refresh().get('C10', 0) <= 0):
+        if cpu_packages_stats.refresh().get('C10', 0) <= 0:
             logging.warning('C10 state check failed.')
 
         if (

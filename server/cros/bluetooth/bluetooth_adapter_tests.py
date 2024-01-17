@@ -4198,7 +4198,7 @@ class BluetoothAdapterTests(test.test):
         # Verify the new advertising intervals.
         # With intervals of 200 ms and 200 ms, the log looks like
         #   bluetoothd: Set Advertising Intervals: 0x0140, 0x0140
-        txt = 'bluetoothd: Set Advertising Intervals: 0x%04x, 0x%04x'
+        txt = 'Set Advertising Intervals: 0x%04x, 0x%04x'
         adv_intervals_found = self.bluetooth_facade.btmon_find(
                 txt % (self.convert_to_adv_jiffies(min_adv_interval_ms),
                        self.convert_to_adv_jiffies(max_adv_interval_ms)))

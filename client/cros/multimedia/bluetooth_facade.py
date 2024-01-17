@@ -369,7 +369,7 @@ class BluetoothBaseFacadeLocal(object):
 
         # Initialize a btmon object to record bluetoothd's activity.
         self.btmon = output_recorder.OutputRecorder(
-                ['btmon', '-c', 'never'],
+                ['btmon', '-c', 'never', '-C', '120'],
                 stop_delay_secs=self.BTMON_STOP_DELAY_SECS)
 
     def configure_floss(self, enabled):

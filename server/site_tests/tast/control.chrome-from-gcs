@@ -71,6 +71,9 @@ def run(machine):
         tast_expr = chrome_sideloader.get_tast_expr(args_dict)
     logging.info('Tast expr: %s', tast_expr)
 
+    maybemissingvars = chrome_sideloader.get_test_args(args_dict, 'maybemissingvars')
+    logging.info('maybemissingvars=%s', maybemissingvars)
+
     # If chrome archive contains Lacros, chromite will also deploy Lacros.
     lacros_dir = os.path.join(chrome_dir, 'out/Release/lacros_clang/')
     if os.path.exists(lacros_dir):
@@ -94,6 +97,7 @@ def run(machine):
     job.run_test('tast',
                  host=host,
                  test_exprs=[tast_expr],
+                 maybemissingvars=maybemissingvars,
                  download_data_lazily=False,
                  ignore_test_failures=False,
                  retries=retries,

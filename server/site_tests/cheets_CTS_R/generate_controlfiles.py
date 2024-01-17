@@ -22,4 +22,5 @@ try:
 except OSError:
     logging.error('Can\'t change current PATH directory')
 
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 os.execv(target_script_path, sys.argv)

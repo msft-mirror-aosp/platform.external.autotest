@@ -13,4 +13,5 @@ target_script_name = 'generate_controlfiles_CTS_P.py'
 target_script_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
     '..', '..', 'cros', 'tradefed', target_script_name))
 
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 os.execv(target_script_path, sys.argv)

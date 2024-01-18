@@ -109,6 +109,8 @@ class UpdateEngineUtil(object):
     _RESUME_AFTER_INTERRUPT_PROGRESS_THRESHOLD = 0.01
     # Update engine restart after reboot wait time
     _RESUME_AFTER_REBOOT_WAIT_TIME_SECONDS = 60
+    # Update engine resume update after reboot wait time.
+    _RESUME_UPDATE_AFTER_REBOOT_WAIT_TIME_SECONDS = 180
 
     def __init__(self, run_func=_DEFAULT_RUN, get_file=_DEFAULT_COPY):
         """

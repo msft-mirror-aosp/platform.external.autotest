@@ -125,7 +125,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         self.progress_after_interrupt = self._get_update_progress()
         utils.poll_for_condition(
                 update_engine_resumed,
-                timeout=self._RESUME_AFTER_REBOOT_WAIT_TIME_SECONDS,
+                timeout=self._RESUME_UPDATE_AFTER_REBOOT_WAIT_TIME_SECONDS,
                 desc="Update Engine failed to resume after reboot",
         )
 

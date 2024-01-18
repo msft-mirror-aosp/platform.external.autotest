@@ -5,6 +5,7 @@
 NAME = 'network_WiFi_Perf.he40'
 METADATA = {
     'contacts': ['chromeos-wifi-champs@google.com'],
+    'requirements': ['wifi-gen-0002-v01', 'wifi-proc-0009-v01', 'wifi-proc-0012-v01', 'wifi-proc-0013-v01', 'wifi-proc-0016-v01', 'wifi-proc-0020-v01'],
     # ChromeOS > Platform > Connectivity > WiFi
     'bug_component': 'b:893827',
     # iperf and netperf are used to measure the throughput.

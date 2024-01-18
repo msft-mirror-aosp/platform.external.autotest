@@ -2135,6 +2135,8 @@ def get_power_lab_wlan_hostname(hostname):
     @returns wlan hostname.
     """
     split_host = hostname.split('.')
+    # Trim the port number in hostname. Example chromeos1-power-host2:22
+    split_host[0] = split_host[0].split(':')[0]
     split_host[0] += '-wlan'
     return '.'.join(split_host)
 

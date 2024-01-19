@@ -15,7 +15,7 @@ class firmware_Cr50Update(Cr50Test):
     Verify a dut can update to the given image.
 
     Copy the new image onto the device and clear the update state to force
-    cr50-update to run. The test will fail if Cr50 does not update or if the
+    gsc_update to run. The test will fail if Cr50 does not update or if the
     update script encounters any errors.
 
     @param image: the location of the update image
@@ -85,7 +85,7 @@ class firmware_Cr50Update(Cr50Test):
     def run_update(self, image_name):
         """Copy the image to the DUT and update to it.
 
-        Normal updates will use the cr50-update script to update. If a rollback
+        Normal updates will use the gsc_update script to update. If a rollback
         is True, use usb_update to flash the image and then use the 'rw'
         commands to force a rollback.
 
@@ -138,7 +138,7 @@ class firmware_Cr50Update(Cr50Test):
             self.startup_install()
 
         # The cr50 updates happen over /dev/tpm0. It takes a while. After
-        # cr50-update has finished, cr50 should reboot. Wait until this happens
+        # gsc_update has finished, cr50 should reboot. Wait until this happens
         # before sending anymore commands.
         self.gsc.wait_for_reboot()
 
@@ -155,13 +155,13 @@ class firmware_Cr50Update(Cr50Test):
 
     def post_install(self):
         """Run the update using the post-install script"""
-        logging.info(self.host.run('/usr/share/cros/cr50-update.sh'))
+        logging.info(self.host.run('/usr/sbin/gsc_update'))
         self.host.reboot()
 
 
     def startup_install(self):
         """Run the update using the startup script"""
-        # Clear the update state and reboot, so cr50-update will run again.
+        # Clear the update state and reboot, so gsc_update will run again.
         cr50_utils.ClearUpdateStateAndReboot(self.host)
 
 

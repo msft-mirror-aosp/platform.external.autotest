@@ -333,7 +333,7 @@ def GetActiveCr50ImagePath(client):
     """Get the path the device uses to update gsc
 
     Extract the active gsc path from the cr50-update messages. This path is
-    determined by cr50-get-name based on the board id flag value.
+    determined by gsc_get_name based on the board id flag value.
 
     Args:
         client: the object to run commands on

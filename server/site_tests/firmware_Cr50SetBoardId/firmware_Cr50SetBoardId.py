@@ -10,14 +10,14 @@ from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
 
 class firmware_Cr50SetBoardId(Cr50Test):
-    """Verify cr50-set-board-id.sh
+    """Verify gsc_set_board_id
 
-    Verify cr50-set-board-id sets the correct board id and flags based on the
+    Verify gsc_set_board_id sets the correct board id and flags based on the
     given stage.
     """
     version = 1
 
-    BID_SCRIPT = '/usr/share/cros/cr50-set-board-id.sh'
+    BID_SCRIPT = '/usr/sbin/gsc_set_board_id'
 
     # the command to get the brand name
     GET_BRAND = 'cros_config / brand-code'
@@ -41,7 +41,7 @@ class firmware_Cr50SetBoardId(Cr50Test):
         'pvt' : RELEASE_FLAGS,
     }
 
-    # The response strings from cr50-set-board-id
+    # The response strings from gsc_set_board_id
     SUCCESS = ["Successfully updated board ID to 'BID' with phase 'PHASE'.",
                0]
     ERROR_UNKNOWN_PHASE = ['Unknown phase (PHASE)', 1]
@@ -68,7 +68,7 @@ class firmware_Cr50SetBoardId(Cr50Test):
         bid = self.get_saved_cr50_original_version()[2]
         self._bid_flags = int(bid.rsplit(':', 1)[-1], 16) if bid else 0
         if self._bid_flags == self.TEST_MP_FLAGS:
-            raise error.TestNAError('cr50-set-board-id cannot be used with '
+            raise error.TestNAError('gsc_set_board_id cannot be used with '
                                     'test mp images.')
         self.make_rootfs_writable()
         self.host.run('rm %s' % self.gsc.DUT_PREPVT, ignore_status=True)
@@ -120,7 +120,7 @@ class firmware_Cr50SetBoardId(Cr50Test):
 
 
     def run_once(self):
-        """Verify cr50-set-board-id.sh"""
+        """Verify gsc_set_board_id"""
         self.eraseflashinfo()
         # 'A' is too short to be a valid rlz code
         self.run_script(self.ERROR_INVALID_RLZ, 'dvt', 'A')
@@ -130,7 +130,7 @@ class firmware_Cr50SetBoardId(Cr50Test):
         self.run_script(self.ERROR_UNKNOWN_PHASE, 'dummy_phase', 'A')
 
         self.eraseflashinfo()
-        # Set the board id so we can verify cr50-set-board-id has the correct
+        # Set the board id so we can verify gsc_set_board_id has the correct
         # response to the board id already being set.
         self.run_script(self.SUCCESS, 'dvt', 'TEST')
         # mp has different flags than dvt

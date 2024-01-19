@@ -32,29 +32,15 @@ import json
 import tempfile
 import yaml
 from autotest_lib.client.common_lib import error
-from autotest_lib.utils import labellib
+from autotest_lib.client.cros.cellular import labels_utils
 
 def run(machine):
     host = hosts.create_host(machine)
     labels = host.host_info_store.get().labels
-    slotMapping = labellib.LabelsMapping(labels).get('starfish_slot_mapping')
-    # slotMapping = "0_att,1_fi,2_tmobile,3_verizon"
-    if not slotMapping:
-        # any setup that has the label 'carrier:starfishplus' should have
-        # the starfish_slot_mapping label populated.
-        raise error.TestError('starfish_slot_mapping label not set.')
-    slots = slotMapping.split(',')
-    for c in slots:
-        c.strip()
-        xs = c.split('_')
-        if len(xs) != 2:
-            raise error.TestError('error parsing starfish_slot_mapping label.')
-        index = xs[0]
-        carrier = xs[1]
-        index.strip()
-        carrier.strip()
+    slots = labels_utils.parse_starfish_slot_labels(labels)
+    for (index, carrier) in slots:
         with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
-            svars = ['starfish.type=starfishplus','starfish.carrier='+carrier,'starfish.index='+index]
+            svars = ['starfish.type=starfishplus',f'starfish.carrier={carrier}',f'starfish.index={index}']
             yaml.safe_dump({'autotest_host_info_labels':
                             json.dumps(labels)},
                             stream=temp_file)

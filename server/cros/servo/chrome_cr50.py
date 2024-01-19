@@ -454,14 +454,33 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                 self.batt_pres_is_reset() and
                 self.get_cap_overview(self.get_cap_dict())[1])
 
-
-    def wp_is_reset(self):
+    def wp_follows_batt_pres(self):
         """Returns True if wp is reset to follow batt pres at all times"""
         wp_state = self.get_wp_state()
         follow_batt_pres = wp_state[0]
         follow_batt_pres_atboot = wp_state[2]
         return follow_batt_pres and follow_batt_pres_atboot
 
+    def wp_is_reset(self):
+        """Returns True if wp is reset to follow batt pres at all times
+
+        Cr50 sets WP to follow battery present after ccd reset or
+        factory mode disabled is called.
+        """
+        rv = self.wp_follows_batt_pres()
+        logging.info('WP reset - WP follow batt pres: %s', rv)
+        return rv
+
+    def wp_is_forced_enabled(self):
+        """Returns True if wp is forced enabled now and atboot"""
+        wp_state = self.get_wp_state()
+        follow_batt_pres = wp_state[0]
+        enabled = wp_state[1]
+        follow_batt_pres_atboot = wp_state[2]
+        enabled_atboot = wp_state[3]
+        if follow_batt_pres or follow_batt_pres_atboot:
+            return False
+        return enabled and enabled_atboot
 
     def get_wp_state(self):
         """Get the current write protect and atboot state

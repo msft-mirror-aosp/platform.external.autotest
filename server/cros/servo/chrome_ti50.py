@@ -241,3 +241,13 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         # fsinfo is in all ti50 images.
         rv = self.send_safe_command_get_output('fsinfo', ['fsinfo(.*)>'])[0][1]
         logging.info('fsinfo output:\n%s', rv.strip())
+
+    def wp_is_reset(self):
+        """Returns True if wp is always set to force enable.
+
+        Ti50 enables WP after ccd reset or factory mode disabled is called.
+        This is different from Cr50 behavior.
+        """
+        rv = self.wp_is_forced_enabled()
+        logging.info('WP reset - WP forced enabled: %s', rv)
+        return rv

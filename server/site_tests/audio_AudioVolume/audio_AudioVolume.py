@@ -159,9 +159,9 @@ class audio_AudioVolume(audio_test.AudioTest):
                 recorder.stop_recording()
                 logging.info('Stopped recording from Chameleon.')
 
-                audio_test_utils.dump_cros_audio_logs(
-                        self.host, self.facade, self.resultsdir,
-                        'after_recording_' + 'tag')
+                audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                                      self.resultsdir,
+                                                      'after_recording_' + tag)
 
                 source.stop_playback()
 

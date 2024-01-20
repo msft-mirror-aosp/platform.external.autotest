@@ -144,6 +144,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                             self.test_device_set_discoverable(device, True)
                             # Make sure we're actually connected
                             self.test_device_is_connected(device.address)
+                            # Set not discoverable for the next iteration
+                            self.test_device_set_discoverable(device, False)
                         else:
                             # Classic requires peer to initiate a connection to
                             # wake up the dut

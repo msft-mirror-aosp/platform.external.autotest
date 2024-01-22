@@ -360,8 +360,16 @@ class telemetry_AFDOGenerate(test.test):
         self._passed = False
 
         # Ignored servo arguments.
-        ignored_options = ('servo_host', 'servo_port')
+        ignored_options = (
+                'buildartifactsurl',
+                'cache_endpoint',
+                'dut_servers',
+                'libs_server',
+                'servo_host',
+                'servo_port',
+        )
 
+        unknown_options = []
         for option_name, value in args.items():
             if option_name == 'arch':
                 # Verify board: arch.
@@ -380,10 +388,11 @@ class telemetry_AFDOGenerate(test.test):
                 self._minimal_telemetry = (value == 'True')
             elif option_name == 'version':
                 self._version = value
-            elif option_name in ignored_options:
-                continue
-            else:
-                raise error.TestFail('Unknown option passed: %s' % option_name)
+            elif option_name not in ignored_options:
+                unknown_options.append(option_name)
+
+        if unknown_options:
+            raise error.TestFail(f'Unknown options passed: {unknown_options}')
 
     def _is_arm(self):
         """Return true if arch is arm."""

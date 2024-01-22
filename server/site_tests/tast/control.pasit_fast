@@ -40,7 +40,7 @@ varslist += ['ExtDispID1=2007901']
 varslist += ['ExtDispID2=2007902']
 varslist += ['EthernetID=j45sw01']
 varslist += ['USBTypeAIDArray=2001901']
-varslist += ['utils.wwcbIPPowerIp=100.82.89.93']
+varslist += ['utils.wwcbIPPowerIp=192.168.231.110']
 
 def run(machine):
     args_dict = utils.args_to_dict(command_args)

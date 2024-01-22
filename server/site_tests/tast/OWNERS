@@ -1,2 +1,3 @@
+set noparent
 # Owned by Tast framework OWNERs.
 include chromiumos/platform/tast:/OWNERS

@@ -4,7 +4,7 @@ import logging
 import os
 import subprocess
 import tempfile
-from typing import Dict, Optional
+from typing import Dict
 
 import bundle_utils
 
@@ -164,6 +164,10 @@ def main(config_path: str, xts_name: str, branch_name: str,
             help=
             'Enable generating preview uprev Gerrit CL. Example: --generate_gerrit_cl.'
     )
+    parser.add_argument(
+            '--cache_dir',
+            help='Cache directory to be passed on to generate_controlfiles.py',
+    )
     args = parser.parse_args()
 
     if not args.preview_version and not args.to_latest:
@@ -204,11 +208,11 @@ def main(config_path: str, xts_name: str, branch_name: str,
 
     # Call generate_controlfiles.py
     logging.info("Now running generate_controlfiles.py")
-    subprocess.check_call([uprev_base_path + '/generate_controlfiles.py'],
-                          stdout=None,
-                          stderr=None,
-                          env=None,
-                          shell=True)
+    gen_args = []
+    if args.cache_dir is not None:
+        gen_args.extend(['--cache_dir', args.cache_dir])
+    subprocess.check_call(
+            [uprev_base_path + '/generate_controlfiles.py', *gen_args])
 
     # Git add and git commit, sent out uprev CL.
     if args.generate_gerrit_cl:

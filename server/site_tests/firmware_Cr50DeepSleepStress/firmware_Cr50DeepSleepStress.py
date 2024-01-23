@@ -139,8 +139,9 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
         for i in range(suspend_count):
             if not self._dut_is_responsive():
-                raise error.TestFail('Unable to ssh into DUT after %d resets' %
-                                     i)
+                raise error.TestFail(
+                        'Unable to ssh into DUT after %d resets: %s' %
+                        (i, self.gsc.get_debug_ap_state()))
             self.host.run('ls /dev/tpm0')
             # Power off the device
             self.set_ap_off_power_mode('shutdown')
@@ -175,7 +176,8 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         @returns an error message
         """
         start_msg = ('' if self._dut_is_responsive() else
-                     'DUT unresponsive after suspend/resume')
+                     'DUT unresponsive after suspend/resume %s' %
+                     self.gsc.get_debug_ap_state())
         logging.info('SSH state afters suspend resume %r', start_msg or 'ok')
         if enable:
             self.gsc.ccd_enable()

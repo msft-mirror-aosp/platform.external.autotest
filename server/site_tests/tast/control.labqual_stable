@@ -1,0 +1,47 @@
+# Copyright 2024 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+from autotest_lib.server.site_tests.tast import tast
+
+# To be removed after CFT support crosfleet, currently required to schedule labqual_stable tast tests manually through crosfleet cli.
+AUTHOR = 'Fleet Infra Software team'
+NAME = 'tast.labqual_stable'
+METADATA = {
+        "contacts": ["peep-fleet-infra-sw@google.com"],
+        "bug_component": "b:1032353", # Chrome Operations > Fleet > Software > OS Fleet Automation
+        "criteria": "Run Tast tests for Labqual"
+}
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'servo_state:WORKING, servo_usb_state:NORMAL'
+ATTRIBUTES = 'suite:labqual_stable'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+JOB_RETRIES = 0
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run Tast tests for Labqual.
+
+The tests are part of 'group:labqual_stable' which are implemented for the revamped labqual project - go/revamp-labqual
+'''
+
+command_args, varslist = tast.split_arguments(args)
+args_dict = utils.args_to_dict(command_args)
+assert 'servo_state:WORKING' in DEPENDENCIES
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine, servo_args=servo_args),
+                 test_exprs=['("group:labqual_stable")'],
+                 ignore_test_failures=False, max_run_sec=10800,
+                 command_args=command_args,
+                 ephemeraldevserver=False,
+                 run_private_tests=False,
+                 varslist=varslist)
+
+parallel_simple(run, machines)

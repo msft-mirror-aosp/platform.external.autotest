@@ -1,15 +1,15 @@
-# Copyright 2023 The ChromiumOS Authors
+# Copyright 2024 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 AUTHOR = "Fleet Infra Software team"
-NAME = "labqual_informational"
+NAME = "labqual_stable"
 METADATA = {
         "contacts": ["peep-fleet-infra-sw@google.com"],
         "bug_component": "b:1032353", # Chrome Operations > Fleet > Software > OS Fleet Automation
         "criteria": "Run Tast tests for Labqual"
 }
-PURPOSE = "Suite which contains new experimental tests to qualify os and firmware for low-touch lab"
+PURPOSE = "Suite which contains new stable tests to qualify os and firmware for low-touch lab"
 
 TIME = "MEDIUM"
 TEST_CATEGORY = "General"
@@ -17,7 +17,7 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This is the labqual2 test suite which is currently in informational stages.
+This is the stable labqual test suite.
 
 It will be used to qualify DUTs for low-touch lab deployment in the future.
 This suite focuses on updating and recovery since these are critical for the low-touch lab. In the future DUTs must pass these tests 100% before entering the lab, so only tests that are critical should be included.
@@ -34,7 +34,7 @@ This suite focuses on updating and recovery since these are critical for the low
 import common
 from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 
-args_dict['name'] = 'labqual_informational'
+args_dict['name'] = 'labqual_stable'
 args_dict['add_experimental'] = True
 args_dict['job'] = job
 

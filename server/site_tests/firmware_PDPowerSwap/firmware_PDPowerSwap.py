@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/322035270): Remove this file when PVS is no longer using this test.
+
 import logging
 import time
 

@@ -17,7 +17,7 @@ from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros import filesystem_util, gsutil_wrapper
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
-from autotest_lib.server.cros.servo import chrome_ti50, firmware_programmer
+from autotest_lib.server.cros.servo import firmware_programmer
 
 
 class Cr50Test(FirmwareTest):
@@ -1221,8 +1221,7 @@ class Cr50Test(FirmwareTest):
 
     def init_flog(self):
         """Save original FLOG output. Check for new messages at end of test."""
-        self._original_flog = cr50_utils.DumpFlog(
-                self.host, self.gsc.NAME == chrome_ti50.CHIP_NAME).strip()
+        self._original_flog = self.gsc.get_flog()
         logging.debug('Initial FLOG output:\n%s', self._original_flog)
 
     def check_flog_output(self):
@@ -1231,8 +1230,7 @@ class Cr50Test(FirmwareTest):
         @returns an error message with the flog difference, if there are new
                  entries.
         """
-        new_flog = cr50_utils.DumpFlog(
-                self.host, self.gsc.NAME == chrome_ti50.CHIP_NAME).strip()
+        new_flog = self.gsc.get_flog()
         logging.debug('FLOG output (cleanup):\n%s', new_flog)
         diff = difflib.unified_diff(self._original_flog.splitlines(),
                                     new_flog.splitlines())

@@ -10,10 +10,8 @@ import math
 import time
 
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server import autotest
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
-from autotest_lib.server.cros.servo import chrome_ti50
 
 
 class firmware_Cr50DeepSleepStress(FirmwareTest):
@@ -282,8 +280,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
         @returns an error message with the flog difference, if there are new
                  entries.
         """
-        new_flog = cr50_utils.DumpFlog(self.host,
-                                self.gsc.NAME == chrome_ti50.CHIP_NAME).strip()
+        new_flog = self.gsc.get_flog()
         logging.info('New FLOG output:\n%s', new_flog)
         diff = difflib.unified_diff(original_flog.splitlines(),
                                     new_flog.splitlines())
@@ -315,8 +312,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                                     'or "reboot"')
         if not suspend_count:
             raise error.TestFail('Need to provide non-zero suspend_count')
-        original_flog = cr50_utils.DumpFlog(self.host,
-                                self.gsc.NAME == chrome_ti50.CHIP_NAME).strip()
+        original_flog = self.gsc.get_flog()
         logging.debug('Initial FLOG output:\n%s', original_flog)
 
         suspend_type = reset_type

@@ -1812,3 +1812,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                             'GSC: %s', e)
         logging.info('AP state: %s', ap_info)
         return ap_info
+
+    def get_flog(self):
+        """Return the flog contents"""
+        return self.send_command_retry_get_output('flog', ['flog(.*)>'],
+                                                  safe=True)[0][1].strip()

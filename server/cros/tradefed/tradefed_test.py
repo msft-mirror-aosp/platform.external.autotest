@@ -1587,6 +1587,8 @@ class TradefedTest(test.test):
         env['ANDROID_ADB_SERVER_PORT'] = str(self._adb.get_port())
         # See b/262183144. CTS implicity assumes how shell expands "*.jar".
         env['LC_COLLATE'] = 'en_US.UTF-8'
+        # b/318310878: Tell TF "feature server" to use random port
+        env['TF_SERVICE_PORT'] = '0'
         return env
 
     def _run_tradefed_with_timeout(self, command, timeout):

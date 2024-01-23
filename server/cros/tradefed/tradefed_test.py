@@ -193,13 +193,10 @@ class TradefedTest(test.test):
 
         self._max_retry = self._get_max_retry(max_retry)
         self._warn_on_test_retry = warn_on_test_retry
-        cache_root = self._get_cache_root()
 
-        # The content of the cache survives across jobs.
-        self._safe_makedirs(cache_root)
-        self._tradefed_cache = os.path.join(cache_root, 'cache')
-        self._tradefed_cache_lock = os.path.join(cache_root, 'lock')
-        self._tradefed_cache_dirty = os.path.join(cache_root, 'dirty')
+        # Sets self._tradefed_cache_* properties.
+        self._configure_tradefed_cache()
+
         # The content of the install location does not survive across jobs and
         # is isolated (by using a unique path)_against other autotest instances.
         # This is not needed for the lab, but if somebody wants to run multiple
@@ -678,7 +675,7 @@ class TradefedTest(test.test):
         clean = force
         with tradefed_utils.lock(self._tradefed_cache_lock):
             size = self._dir_size(self._tradefed_cache)
-            if size > constants.TRADEFED_CACHE_MAX_SIZE:
+            if size > self._tradefed_cache_max_size_gib * (1 << 30):
                 logging.info(
                     'Current cache size=%d got too large. Clearing %s.', size,
                     self._tradefed_cache)
@@ -1018,21 +1015,36 @@ class TradefedTest(test.test):
         self._safe_makedirs(dest)
         shutil.copy(os.path.join('/tmp', name), os.path.join(dest, name))
 
-    def _get_cache_root(self):
-        """Returns the cache_root for current runtime environment."""
+    def _configure_tradefed_cache(self):
+        """Configures Tradefed cache for current runtime environment."""
         # Tests in the lab run within individual lxc container instances.
         current_uid = os.getuid()
         current_user = pwd.getpwuid(current_uid)
         logging.info('Current user is: %d, %s',
                      current_uid, current_user.pw_name)
         if utils.is_in_container() and current_uid == 0:
-            cache_root = constants.TRADEFED_CACHE_CONTAINER
+            # SSP container
+            cache_config = constants.TRADEFED_CACHE_CONTAINER
         elif utils.is_in_container():
-            cache_root = constants.TRADEFED_CACHE_CFT
+            # CFT container
+            if self._bundle_uri == 'DEV':
+                cache_config = constants.TRADEFED_CACHE_CFT_DEV
+            else:
+                # Note DEV_WAIVER and DEV_MOBLAB jobs also use this.
+                cache_config = constants.TRADEFED_CACHE_CFT
         else:
-            cache_root = constants.TRADEFED_CACHE_LOCAL
-        logging.info('Using cache_root = %s', cache_root)
-        return cache_root
+            # Local chroot environment
+            cache_config = constants.TRADEFED_CACHE_LOCAL
+
+        cache_root, max_size_gib = cache_config
+        logging.info('Using cache_root = %s, max_size_gib = %s', cache_root,
+                     max_size_gib)
+        # The content of the cache survives across jobs.
+        self._safe_makedirs(cache_root)
+        self._tradefed_cache = os.path.join(cache_root, 'cache')
+        self._tradefed_cache_lock = os.path.join(cache_root, 'lock')
+        self._tradefed_cache_dirty = os.path.join(cache_root, 'dirty')
+        self._tradefed_cache_max_size_gib = max_size_gib
 
     def _get_version_tuple(self, version):
         """Split version like 9_r14/9_sts-r14 to format (9, 14)."""

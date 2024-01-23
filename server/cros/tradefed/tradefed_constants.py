@@ -2,6 +2,7 @@
 # Copyright 2018 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+import typing
 
 # TODO(kinaba): Update adb and aapt as well to this version.
 SDK_TOOLS_DIR = 'gs://chromeos-arc-images/builds/git_udc_release-static_sdk_tools/9594652'
@@ -24,10 +25,27 @@ ARC_POLLING_INTERVAL_SECONDS = 1
 ARC_READY_TIMEOUT_SECONDS = 60
 
 TRADEFED_PREFIX = 'autotest-tradefed-install_'
+
+
+class CacheConfig(typing.NamedTuple):
+    """Represents a Tradefed cache config.
+
+    Attributes:
+        cache_root: Root directory of the cache.
+        max_size_gib: Max size of the cache in GiB. Currently whenever this is
+            reached we wipe the entire cache.
+    """
+    cache_root: str
+    max_size_gib: int
+
+
 # While running CTS tradefed creates state in the installed location (there is
 # currently no way to specify a dedicated result directory for all changes).
 # For this reason we start each test with a clean copy of the CTS/GTS bundle.
-TRADEFED_CACHE_LOCAL = '/tmp/autotest-tradefed-cache'
+TRADEFED_CACHE_LOCAL = CacheConfig(
+        cache_root='/tmp/autotest-tradefed-cache',
+        max_size_gib=100,
+)
 # On lab servers and moblab all server tests run inside of lxc instances
 # isolating file systems from each other. To avoid downloading CTS artifacts
 # repeatedly for each test (or lxc instance) we share a common location
@@ -36,16 +54,35 @@ TRADEFED_CACHE_LOCAL = '/tmp/autotest-tradefed-cache'
 # all CTS/GTS tests. Currently both read and write access require taking the
 # lock. Writes happen rougly monthly while reads are many times a day. If this
 # becomes a bottleneck we could examine allowing concurrent reads.
-TRADEFED_CACHE_CONTAINER = '/usr/local/autotest/results/shared/cache'
+#
+# Regarding max cache size, see b/319223147#comment4 for calculation as of Jan
+# 2024.
+#
+# This directory is used by SSP containers. As of Jan 2024, all automated CTS
+# jobs should already run via CFT. Therefore setting a smaller cache size to
+# not take up too much disk on drones (there may still be manual test runs
+# scheduled with CFT disabled).
+TRADEFED_CACHE_CONTAINER = CacheConfig(
+        cache_root='/usr/local/autotest/results/shared/cache',
+        max_size_gib=50,
+)
 # On CFT, tests run as non-root, and cannot write to TRADEFED_CACHE_CONTAINER.
-TRADEFED_CACHE_CFT = '/usr/local/autotest/results/shared/cache_cft'
-# The maximum size of the shared global cache. It needs to be able to hold
-# P, R, x86, arm, official, dev CTS bundles, as well as GTS bundles, and
-# media assets. (See b/126165348#comment40 for the calculation.)
-# In the current implementation, each test instance just symlinks to the
-# shared cache for majority of the content, so running multiple parallel
-# CTS tests should be acceptable in terms of storage.
-TRADEFED_CACHE_MAX_SIZE = (100 * 1024 * 1024 * 1024)
+# This directory is used for qual jobs running official xTS releases, as well as
+# waivers jobs on release branches if any.
+# Working set size == sum(all official CTS builds) +
+#                     sum(all preview CTS builds used by waiver jobs)
+TRADEFED_CACHE_CFT = CacheConfig(
+        cache_root='/usr/local/autotest/results/shared/cache_cft',
+        max_size_gib=100,
+)
+# This directory is used for ToT jobs running preview xTS versions, separate
+# from the official bundle cache to limit impact when a broken CTS version
+# causes cache wipes.
+# Working set size == sum(all preview CTS builds)
+TRADEFED_CACHE_CFT_DEV = CacheConfig(
+        cache_root='/usr/local/autotest/results/shared/cache_cft_dev',
+        max_size_gib=50,
+)
 # The path that cts-tradefed uses to place media assets. By downloading and
 # expanding the archive here beforehand, tradefed can reuse the content.
 TRADEFED_MEDIA_PATH = '/tmp/android-cts-media'

@@ -684,8 +684,13 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
                 '--force', '--build-dir',
                 os.path.join(chrome_dir, 'out/Release/'), '--process-timeout',
                 str(kill_proc_timeout), '--device', host.host_port, '--board',
-                board, '--mount', '--nostrip'
+                board, '--mount', '--nostrip',
+
+                # Sometimes a DUT stucks on deploy_chrome (b/313703515).
+                # Increases the log level for investigation.
+                '--log-level', 'debug',
         ]
+
         try:
             common_utils.run(cmd,
                              stdout_tee=utils.TEE_TO_LOGS,

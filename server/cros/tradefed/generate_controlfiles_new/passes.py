@@ -301,6 +301,11 @@ class MergeSplitSuites(Pass):
                     continue
                 merged_group['modules'] |= group['modules']
 
+            # Above handling of abi_bits may result in current group being
+            # empty.
+            if not merged_group['modules']:
+                continue
+
             basename = re.sub(
                     r'\[[^]]*\]', '',
                     min(merged_group['modules']) + '_-_' +
@@ -355,6 +360,16 @@ class SplitByAttr(Pass):
 
     def __str__(self) -> str:
         return f'Split by {self._key}'
+
+
+class SplitByAbi(SplitByAttr):
+    """Split group into arm and x86.
+
+    Used when bundle has no ABI specified, but split by ABI is needed.
+    """
+
+    def __init__(self) -> None:
+        super().__init__('abi', ('arm', 'x86'))
 
 
 class SplitByBits(SplitByAttr):

@@ -15,6 +15,7 @@ from .common import *
 
 def _get_extension(group: ModuleGroup, abi: str, revision: str,
                    is_public: bool) -> str:
+    abi = abi or group.get('abi')
     return gcc.get_extension(group['basename'],
                              abi,
                              revision,
@@ -59,7 +60,7 @@ def get_controlfile_content(group: ModuleGroup, config: Config,
     suites = sorted(group.get('suites', []))
     revision = bundle.revision
     build = bundle.build
-    abi = bundle.abi
+    abi = bundle.abi or group.get('abi')
     uri = None if bundle.source_type == 'MOBLAB' else bundle.source_type
     abi_bits = group.get('abi_bits')
     is_public = bundle.source_type == 'MOBLAB'

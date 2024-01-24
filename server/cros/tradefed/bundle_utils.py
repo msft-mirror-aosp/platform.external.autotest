@@ -159,6 +159,21 @@ def set_preview_version(url_config: Dict[str, str], version_name: str):
     url_config[_PREVIEW_VERSION_NAME] = version_name
 
 
+def get_abis(url_config: Dict[str, str]) -> List[Optional[str]]:
+    """Retrieves ABIs listed in url_config.
+
+    Args:
+        url_config: The config.
+
+    Returns:
+        A list of ABIs supported. If no ABI is specified for the bundle (for
+        example GTS), a list with a single item None is returned.
+    """
+    if _ABI_LIST in url_config:
+        return list(url_config[_ABI_LIST])
+    return [None]
+
+
 def get_abi_info(url_config: Dict[str, str]) -> Dict[str, str]:
     """Function to get the abi information from url_config.
 

@@ -74,7 +74,10 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
             [
                 If(
                     has_modules(config.get('SPLIT_BY_BITS_MODULES', [])),
-                    [SplitByBits()],
+                    [
+                        If(bundle.abi is None, [SplitByAbi()]),
+                        SplitByBits(),
+                    ],
                 ),
                 Concat([
                     If(
@@ -133,7 +136,7 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                 # Assign suites and handle special cases.
                 AddSuites(config['INTERNAL_SUITE_NAMES']),
                 If(
-                    filter_and(bundle.abi == 'arm', has_modules(config['PERBUILD_TESTS'])),
+                    filter_and(bundle.abi == 'arm', has_modules(config.get('PERBUILD_TESTS', []))),
                     [AddSuites(['suite:bvt-arc'])],
                 ),
                 If(
@@ -212,7 +215,10 @@ def gen_qual(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
     passes = Concat([
         If(
             has_modules(config.get('SPLIT_BY_BITS_MODULES', [])),
-            [SplitByBits()],
+            [
+                If(bundle.abi is None, [SplitByAbi()]),
+                SplitByBits(),
+            ],
         ),
         Concat([
             If(
@@ -312,7 +318,10 @@ def gen_internal_hardwaresuite(bundle: Bundle,
     passes = Concat([
             If(
                     has_modules(config.get('SPLIT_BY_BITS_MODULES', [])),
-                    [SplitByBits()],
+                    [
+                            If(bundle.abi is None, [SplitByAbi()]),
+                            SplitByBits(),
+                    ],
             ),
             AddSuites([config['HARDWARE_SUITE_NAME']]),
             SetAttr('hardware_suite', True),
@@ -353,7 +362,10 @@ def gen_moblab(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
             If(
                     has_modules(config.get('PUBLIC_SPLIT_BY_BITS_MODULES',
                                            [])),
-                    [SplitByBits()],
+                    [
+                            If(bundle.abi is None, [SplitByAbi()]),
+                            SplitByBits(),
+                    ],
             ),
             AddSuites([config['MOBLAB_SUITE_NAME']]),
     ])
@@ -427,7 +439,7 @@ def gen_controlfiles_for_source_type(source_type: str, config: Config,
     config_path = config['BUNDLE_CONFIG_PATH']
     url_config = bundle_utils.load_config(config_path)
 
-    for abi in bundle_utils.get_abi_info(url_config):
+    for abi in bundle_utils.get_abis(url_config):
         bundle = Bundle.download(config, url_config, source_type, abi,
                                  cache_dir)
         groups = []

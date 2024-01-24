@@ -12,7 +12,16 @@ import generate_controlfiles_common as gcc
 
 
 class Bundle(typing.NamedTuple):
-    abi: str
+    """Represents a xTS bundle.
+
+    Attributes:
+        abi: The bundle's ABI, or None if unspecified (in the case of GTS).
+        build: The Tradefed build ID, e.g. '10555997'.
+        revision: The xTS revision string, e.g. '13_r5'.
+        source_type: Either of 'MOBLAB', 'LATEST', 'DEV'.
+        modules: Set of modules provided by this bundle.
+    """
+    abi: typing.Optional[str]
     build: str
     revision: str
     source_type: str

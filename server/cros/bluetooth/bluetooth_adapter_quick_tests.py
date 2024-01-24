@@ -25,6 +25,8 @@ from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_quick_tests_
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.bluetooth import bluetooth_peer_update
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
+     import DEFAULT_RPA_TIMEOUT_SEC
 from autotest_lib.server.cros.bluetooth import bluetooth_attenuator
 from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
 from autotest_lib.server.cros.multimedia import remote_facade_factory
@@ -542,6 +544,10 @@ class BluetoothAdapterQuickTests(
         for device_list in self.devices.values():
             for device in device_list:
                 if device is not None:
+                    if self.llprivacy:
+                        if device.GetRPATimeout() != DEFAULT_RPA_TIMEOUT_SEC:
+                            logging.info("Reset RPA timeout to default.")
+                            device.SetRPATimeout(DEFAULT_RPA_TIMEOUT_SEC)
                     self.stop_agent(device)
                     logging.info('Clear device %s from DUT', device.name)
                     self.bluetooth_facade.disconnect_device(device.address)

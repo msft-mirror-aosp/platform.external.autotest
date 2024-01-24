@@ -20,7 +20,7 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
-     import (BluetoothAdapterLLPrivacyTests, DEFAULT_RPA_TIMEOUT_SEC, MIN_RPA_TIMEOUT_SEC)
+     import (BluetoothAdapterLLPrivacyTests, DEFAULT_RPA_TIMEOUT_SEC, MIN_RPA_TIMEOUT_SEC, LOG_PEER_RESOLVED_PUBLIC)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_qr_tests import (
         BluetoothAdapterQRTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests\
@@ -132,6 +132,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                                     "Sleep %d s to wait for RPA rotation.",
                                     rpa_timeout - SUSPEND_SEC)
                             time.sleep(rpa_timeout - SUSPEND_SEC)
+                        self.bluetooth_facade.btmon_start()
                         # LE can't reconnect without advertising/discoverable
                         self.test_start_device_advertise_with_rpa(device)
                         logging.info('Device current RPA: %s', device.rpa)
@@ -141,10 +142,18 @@ class bluetooth_AdapterLLPrivacyHealth(
                             logging.warning("RPA does not rotate.")
                         previous_rpa = device.rpa
                         # Make sure we're actually connected
-                        self.test_device_is_connected(
+                        connect_status = self.test_device_is_connected(
                                 device.init_paired_addr,
                                 timeout=45,
                                 identity_address=device.address)
+                        self.bluetooth_facade.btmon_stop()
+                        # Set test as NA if the controller received a public
+                        # address advertisement.
+                        if connect_status and not self.bluetooth_facade.btmon_find(
+                                LOG_PEER_RESOLVED_PUBLIC):
+                            raise error.TestNAError(
+                                    "Peer address is not Resolved Public")
+
                         self.test_stop_device_advertise_with_rpa(device)
 
                 for _, device, device_test in devtuples:

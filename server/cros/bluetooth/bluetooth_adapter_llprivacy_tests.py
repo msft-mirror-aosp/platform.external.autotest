@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 """Server side bluetooth tests on LL Privacy"""
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 
 import logging
@@ -20,6 +21,7 @@ MIN_RPA_TIMEOUT_SEC = 30
 
 DEVICE_CONNECTED_TIMEOUT = 45
 
+LOG_PEER_RESOLVED_PUBLIC = 'Peer address type: Resolved Public (0x02)'
 
 class BluetoothAdapterLLPrivacyTests(
         bluetooth_adapter_tests.BluetoothAdapterTests):
@@ -50,8 +52,12 @@ class BluetoothAdapterLLPrivacyTests(
         # Clear wake before testing
         self.test_adapter_set_wake_disabled()
 
+        # Reduce RPA timeout
+        self.test_update_rpa_timeout(device, MIN_RPA_TIMEOUT_SEC)
+
         self.test_set_device_privacy(device, True)
         self.test_start_device_advertise_with_rpa(device)
+        curr_addr = device.GetRandomAddress()
         self.test_discover_device(device.rpa)
 
         time.sleep(self.TEST_SLEEP_SECS)
@@ -77,6 +83,10 @@ class BluetoothAdapterLLPrivacyTests(
                         'Running iteration {}/{} of suspend peer wake'.format(
                                 it + 1, iterations))
 
+                # Wait for RPA rotation
+                logging.info("Wait %d seconds for RPA rotation.",
+                             MIN_RPA_TIMEOUT_SEC)
+                time.sleep(MIN_RPA_TIMEOUT_SEC)
                 # Start a new suspend instance
                 suspend = self.suspend_async(suspend_time=sleep_time,
                                              expect_bt_wake=True)
@@ -86,6 +96,8 @@ class BluetoothAdapterLLPrivacyTests(
                                               identity_address=device.address)
                 # Also wait until powerd marks adapter as wake enabled
                 self.test_adapter_wake_enabled()
+
+                self.bluetooth_facade.btmon_start()
 
                 # Trigger suspend, asynchronously wake and wait for resume
                 self.test_suspend_and_wait_for_sleep(
@@ -106,17 +118,35 @@ class BluetoothAdapterLLPrivacyTests(
                 # Expect a quick resume. If a timeout occurs, test fails. Since
                 # we delay sending the wake signal, we should accommodate that
                 # in our expected timeout.
-                self.test_wait_for_resume(boot_id,
-                                          suspend,
-                                          resume_timeout=resume_timeout,
-                                          test_start_time=start_time,
-                                          resume_slack=0,
-                                          fail_on_timeout=True,
-                                          fail_early_wake=False,
-                                          collect_resume_time=measure_resume)
+                resume_success = self.test_wait_for_resume(
+                        boot_id,
+                        suspend,
+                        resume_timeout=resume_timeout,
+                        test_start_time=start_time,
+                        resume_slack=0,
+                        fail_on_timeout=True,
+                        fail_early_wake=False,
+                        collect_resume_time=measure_resume)
 
                 # Finish peer wake process
                 peer_wake.join()
+
+                self.bluetooth_facade.btmon_stop()
+                # Set the test NA if the controller received a public
+                # address advertisement.
+                if resume_success and not self.bluetooth_facade.btmon_find(
+                        LOG_PEER_RESOLVED_PUBLIC):
+                    raise error.TestNAError(
+                            "Peer address is not Resolved Public")
+
+                prev_addr = curr_addr
+                curr_addr = device.GetRandomAddress()
+                if prev_addr == curr_addr:
+                    logging.info(
+                            "RPA does not rotate. Using old address to reconnect."
+                    )
+                else:
+                    logging.info("New RPA address: {}".format(curr_addr))
 
                 # Make sure we're actually connected
                 self.test_device_is_connected(
@@ -133,6 +163,8 @@ class BluetoothAdapterLLPrivacyTests(
                                      identity_address=device.address)
             # Restore privacy setting
             self.test_set_device_privacy(device, False)
+            # Restore RPA timeout
+            self.test_update_rpa_timeout(device, DEFAULT_RPA_TIMEOUT_SEC)
 
     @test_retry_and_log(False)
     def test_set_device_privacy(self, device, enable):
@@ -251,7 +283,6 @@ class BluetoothAdapterLLPrivacyTests(
                 else:
                     self.test_power_off_adapter()
                     self.test_power_on_adapter()
-                self.test_disconnection_by_device(device)
 
                 # sleep for rpa_timeout seconds for RPA rotation
                 if rpa_timeout is not None:
@@ -259,6 +290,7 @@ class BluetoothAdapterLLPrivacyTests(
                                  rpa_timeout)
                     time.sleep(rpa_timeout)
 
+                self.bluetooth_facade.btmon_start()
                 start_time = time.time()
                 self.test_start_device_advertise_with_rpa(device)
                 # expect RPA rotation
@@ -268,11 +300,20 @@ class BluetoothAdapterLLPrivacyTests(
 
                 # Verify that the device is reconnected. Wait for the input device
                 # to become available before checking the profile connection.
-                self.test_device_is_connected(device.init_paired_addr,
-                                              timeout=DEVICE_CONNECTED_TIMEOUT,
-                                              identity_address=device.address)
+                connect_status = self.test_device_is_connected(
+                        device.init_paired_addr,
+                        timeout=DEVICE_CONNECTED_TIMEOUT,
+                        identity_address=device.address)
                 end_time = time.time()
                 time_diff = end_time - start_time
+
+                self.bluetooth_facade.btmon_stop()
+                # Set the test NA if the controller received a public
+                # address advertisement.
+                if connect_status and not self.bluetooth_facade.btmon_find(
+                        LOG_PEER_RESOLVED_PUBLIC):
+                    raise error.TestNAError(
+                            "Peer address is not Resolved Public")
 
                 self.test_hid_device_created(self._input_dev_uniq_addr(device))
                 check_connected_method(device)

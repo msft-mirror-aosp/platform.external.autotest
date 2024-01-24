@@ -51,7 +51,7 @@ class power_LowMemorySuspend(test.test):
             tabs.append(tab)
             tab.Navigate(URL);
             try:
-                tab.WaitForDocumentReadyStateToBeComplete(timeout=20)
+                tab.WaitForDocumentReadyStateToBeComplete()
             except Exception as e:
                 logging.warning('Exception when waiting page ready: %s', e)
 
@@ -112,8 +112,11 @@ class power_LowMemorySuspend(test.test):
 
         return suspend_count
 
-    def run_once(self, switches_per_suspend=15, total_suspend_duration=2400,
-                 suspend_seconds=10, additional_sleep=10):
+    def run_once(self,
+                 switches_per_suspend=15,
+                 total_suspend_duration=2400,
+                 suspend_seconds=10,
+                 additional_sleep=20):
         """Runs the test once."""
         with chrome.Chrome(logged_in=True) as cr:
             tabs = self.create_tabs(cr)

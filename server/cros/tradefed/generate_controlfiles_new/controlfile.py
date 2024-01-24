@@ -137,4 +137,5 @@ def get_controlfile_content(group: ModuleGroup, config: Config,
             authkey=gcc.get_authkey(is_public),
             sync_count=gcc.get_sync_count(modules, abi, is_public),
             camera_facing=camera_facing,
-            executable_test_count=executable_test_count)
+            executable_test_count=executable_test_count,
+            source_type=bundle.source_type)

@@ -7,6 +7,7 @@ import argparse
 import collections
 import copy
 import logging
+import os
 from typing import Any, Callable, Dict, Iterable, Optional
 
 import bundle_utils
@@ -455,6 +456,41 @@ def gen_controlfiles_for_source_type(source_type: str, config: Config,
                 f.write(content)
 
 
+def remove_legacy_generated_controlfiles(is_all: bool, is_public: bool,
+                                         is_latest: bool) -> None:
+    """Remove previous generated controlfiles.
+
+    Args:
+        is_all: whether generate controlfiles for all source type.
+        is_public: whether generate controlfiles for public source type.
+        is_latest:  whether generate controlfiles for latest source type.
+    """
+
+    control_files_need_remove = []
+    tags_to_match = []
+    if is_public or is_all:
+        tags_to_match.append('MOBLAB')
+    if is_latest or is_all:
+        tags_to_match.append('LATEST')
+    if (not is_public and not is_latest) or is_all:
+        tags_to_match.append('DEV')
+
+    for file_name in os.listdir():
+        if not os.path.isfile(file_name):
+            continue
+        with open(file_name) as f:
+            for line in f:
+                if not '__GENERATED_BY_GENERATE_CONTROLFILES_PY__' in line:
+                    continue
+                tag = line.strip().split(':', 1)[1]
+                if tag in tags_to_match:
+                    control_files_need_remove.append(file_name)
+                break
+
+    for f in control_files_need_remove:
+        os.remove(f)
+
+
 def main(config: Dict[str, Any]) -> None:
     """Entry point of the script.
 
@@ -498,6 +534,9 @@ def main(config: Dict[str, Any]) -> None:
     logging.basicConfig(level=args.log_level)
     gcc.inject_config(config)
     config = Config(config)
+
+    remove_legacy_generated_controlfiles(args.is_all, args.is_public,
+                                         args.is_latest)
 
     if args.is_public or args.is_all:
         gen_controlfiles_for_source_type('MOBLAB', config, args.cache_dir)

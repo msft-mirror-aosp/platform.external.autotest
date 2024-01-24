@@ -57,7 +57,7 @@ def render_config(year, name, base_name, test_func_name, attributes,
                   has_precondition_escape, max_retries, timeout, run_template,
                   retry_template, target_module, target_plan, test_length,
                   priority, extra_args, authkey, sync_count, camera_facing,
-                  executable_test_count):
+                  executable_test_count, source_type=''):
     """Render config for generated controlfiles, by hard-coded some templates here.
     This is to replace jinja2 dependencies.
     """
@@ -65,6 +65,7 @@ def render_config(year, name, base_name, test_func_name, attributes,
     rendered_template = f'# Copyright {year} The ChromiumOS Authors\n' + \
     '# Use of this source code is governed by a BSD-style license that can be\n' + \
     '# found in the LICENSE file.\n\n' + \
+    f'# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:{source_type}\n\n' + \
     '# This file has been automatically generated. Do not edit!\n'
     if servo_support_needed:
         rendered_template += 'from autotest_lib.server import utils as server_utils\n'

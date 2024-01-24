@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:LATEST
+
 # This file has been automatically generated. Do not edit!
 from autotest_lib.server import utils as server_utils
 

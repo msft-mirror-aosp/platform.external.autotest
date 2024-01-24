@@ -5,17 +5,17 @@
 # Do not edit manually. Generated using ~/chromiumos/src/platform/dev/net/gen_control_files.py
 
 AUTHOR = 'Chromium OS team'
-NAME = 'tast.cellular_ota-kddi-dut_check'
+NAME = 'tast.cellular-cq-att-cq'
 METADATA = {
     "contacts": ["chromeos-cellular-team@google.com"],
     "bug_component": "b:167157", # ChromeOS > Platform > Connectivity > Cellular
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cellular_ota, suite:cellular_repair'
+ATTRIBUTES = 'suite:cellular-cq'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:kddi, cellular_modem_state:NORMAL"
+DEPENDENCIES = "carrier:att, cellular_modem_state:NORMAL"
 
 DOC = '''
 
@@ -32,17 +32,19 @@ import yaml
 def run(machine):
     host = hosts.create_host(machine)
     with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w+') as temp_file:
+        # TODO: remove host_info.labels code after b/323422179 is fixed.
         host_info = host.host_info_store.get()
         yaml.safe_dump({'autotest_host_info_labels':
                         json.dumps(host_info.labels)},
                         stream=temp_file)
         temp_file.flush()
 
+        # TODO: remove reboot code after b/322063109 is fixed.
         host.reboot()
         job.run_test('tast',
                     host=host,
                     clear_tpm = False,
-                    test_exprs=['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_dut_check" && (!"cellular_carrier_dependent" || "cellular_carrier_kddi"))'],
+                    test_exprs=['("group:cellular" && "cellular_sim_active" && "cellular_cq" && (!"cellular_carrier_dependent" || "cellular_carrier_att"))'],
                     ignore_test_failures=True, max_run_sec=10800,
                     command_args=args,
                     varsfiles=[temp_file.name]

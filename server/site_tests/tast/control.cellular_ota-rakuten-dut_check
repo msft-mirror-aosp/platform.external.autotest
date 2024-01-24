@@ -42,7 +42,7 @@ def run(machine):
         job.run_test('tast',
                     host=host,
                     clear_tpm = False,
-                    test_exprs=['cellular.Identifiers', 'cellular.IsConnected.rakuten', 'cellular.Smoke.rakuten', 'cellular.SmokeIPConnectivity.rakuten', 'cellular.IsModemUp'],
+                    test_exprs=['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_dut_check" && (!"cellular_carrier_dependent" || "cellular_carrier_rakuten"))'],
                     ignore_test_failures=True, max_run_sec=10800,
                     command_args=args,
                     varsfiles=[temp_file.name]

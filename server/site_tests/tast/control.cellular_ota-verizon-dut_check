@@ -12,7 +12,7 @@ METADATA = {
     }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:cellular_ota, suite:cellular_repair, suite:cellular-cq'
+ATTRIBUTES = 'suite:cellular_ota, suite:cellular_repair'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 DEPENDENCIES = "carrier:verizon, cellular_modem_state:NORMAL"
@@ -42,7 +42,7 @@ def run(machine):
         job.run_test('tast',
                     host=host,
                     clear_tpm = False,
-                    test_exprs=['cellular.Identifiers', 'cellular.IsConnected.verizon', 'cellular.Smoke.verizon', 'cellular.SmokeIPConnectivity.verizon', 'cellular.IsModemUp'],
+                    test_exprs=['("group:cellular" && "cellular_sim_active" && !"cellular_unstable" && "cellular_dut_check" && (!"cellular_carrier_dependent" || "cellular_carrier_verizon"))'],
                     ignore_test_failures=True, max_run_sec=10800,
                     command_args=args,
                     varsfiles=[temp_file.name]

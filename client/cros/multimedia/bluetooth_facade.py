@@ -2852,14 +2852,11 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return True
 
     @dbus_safe(False, return_error=True)
-    def start_discovery(self, register_observer=True):
+    def start_discovery(self):
         """Start discovery of remote devices.
 
         Obtain the discovered device information using get_devices(), called
         stop_discovery() when done.
-
-        @param register_observer: simply a placeholder in order to
-                maintain consistency with FlossFacadeLocal
 
         @return True on success, False otherwise.
 
@@ -4806,15 +4803,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.floss_logger.set_debug_logging(self.enable_floss_debug)
         return
 
-    def start_discovery(self, register_observer=True):
-        """Start discovery of remote devices.
-
-        @param register_observer: register a dbus observer to conditionally
-                restart discovery when this flag is True.
-
-        @return True on success, False otherwise.
-
-        """
+    def start_discovery(self):
+        """Start discovery of remote devices."""
         if not self.adapter_client.has_proxy():
             return (False, 'Adapter not found')
 
@@ -4822,11 +4812,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.discovery_observer.cleanup()
             self.discovery_observer = None
 
-        if register_observer:
-            self.discovery_observer = self.DiscoveryObserver(
-                    self.adapter_client, self.DISCOVERY_TIMEOUT_SEC)
-            logging.info('Observer registered for restarting discovery')
-
+        self.discovery_observer = self.DiscoveryObserver(
+                self.adapter_client, self.DISCOVERY_TIMEOUT_SEC)
         return (self.adapter_client.start_discovery(), '')
 
     def stop_discovery(self):

@@ -14,7 +14,9 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rsuspend.proto\x12\rpower_manager\"\xef\x01\n\x0fSuspendImminent\x12\x12\n\nsuspend_id\x18\x01 \x01(\x05\x12\x35\n\x06reason\x18\x02 \x01(\x0e\x32%.power_manager.SuspendImminent.Reason\x12\x35\n\x06\x61\x63tion\x18\x03 \x01(\x0e\x32%.power_manager.SuspendImminent.Action\"-\n\x06Reason\x12\x08\n\x04IDLE\x10\x00\x12\x0e\n\nLID_CLOSED\x10\x01\x12\t\n\x05OTHER\x10\x02\"+\n\x06\x41\x63tion\x12\x0b\n\x07SUSPEND\x10\x00\x12\x14\n\x10HIBERNATE_RESUME\x10\x01\"\xa5\x02\n\x0bSuspendDone\x12\x12\n\nsuspend_id\x18\x01 \x01(\x05\x12\x18\n\x10suspend_duration\x18\x02 \x01(\x03\x12:\n\x0bwakeup_type\x18\x03 \x01(\x0e\x32%.power_manager.SuspendDone.WakeupType\x12>\n\rdeepest_state\x18\x04 \x01(\x0e\x32\'.power_manager.SuspendDone.SuspendState\"C\n\nWakeupType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x12\n\x0eNOT_APPLICABLE\x10\x01\x12\t\n\x05INPUT\x10\x02\x12\t\n\x05OTHER\x10\x03\"\'\n\x0cSuspendState\x12\n\n\x06TO_RAM\x10\x00\x12\x0b\n\x07TO_DISK\x10\x01\"C\n\x1bRegisterSuspendDelayRequest\x12\x0f\n\x07timeout\x18\x01 \x01(\x03\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\"K\n\x19RegisterSuspendDelayReply\x12\x10\n\x08\x64\x65lay_id\x18\x01 \x01(\x05\x12\x1c\n\x14min_delay_timeout_ms\x18\x02 \x01(\x05\"1\n\x1dUnregisterSuspendDelayRequest\x12\x10\n\x08\x64\x65lay_id\x18\x01 \x01(\x05\"<\n\x14SuspendReadinessInfo\x12\x10\n\x08\x64\x65lay_id\x18\x01 \x01(\x05\x12\x12\n\nsuspend_id\x18\x02 \x01(\x05\"+\n\x14\x44\x61rkResumeWakeReason\x12\x13\n\x0bwake_reason\x18\x01 \x01(\t\"*\n\x14HibernateResumeReady\x12\x12\n\nsuspend_id\x18\x01 \x01(\x05\x42-H\x03Z)chromiumos/system_api/power_manager_proto')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+        b'\n\rsuspend.proto\x12\rpower_manager\"\xef\x01\n\x0fSuspendImminent\x12\x12\n\nsuspend_id\x18\x01 \x01(\x05\x12\x35\n\x06reason\x18\x02 \x01(\x0e\x32%.power_manager.SuspendImminent.Reason\x12\x35\n\x06\x61\x63tion\x18\x03 \x01(\x0e\x32%.power_manager.SuspendImminent.Action\"-\n\x06Reason\x12\x08\n\x04IDLE\x10\x00\x12\x0e\n\nLID_CLOSED\x10\x01\x12\t\n\x05OTHER\x10\x02\"+\n\x06\x41\x63tion\x12\x0b\n\x07SUSPEND\x10\x00\x12\x14\n\x10HIBERNATE_RESUME\x10\x01\"\xa5\x02\n\x0bSuspendDone\x12\x12\n\nsuspend_id\x18\x01 \x01(\x05\x12\x18\n\x10suspend_duration\x18\x02 \x01(\x03\x12:\n\x0bwakeup_type\x18\x03 \x01(\x0e\x32%.power_manager.SuspendDone.WakeupType\x12>\n\rdeepest_state\x18\x04 \x01(\x0e\x32\'.power_manager.SuspendDone.SuspendState\"C\n\nWakeupType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x12\n\x0eNOT_APPLICABLE\x10\x01\x12\t\n\x05INPUT\x10\x02\x12\t\n\x05OTHER\x10\x03\"\'\n\x0cSuspendState\x12\n\n\x06TO_RAM\x10\x00\x12\x0b\n\x07TO_DISK\x10\x01\"C\n\x1bRegisterSuspendDelayRequest\x12\x0f\n\x07timeout\x18\x01 \x01(\x03\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\"K\n\x19RegisterSuspendDelayReply\x12\x10\n\x08\x64\x65lay_id\x18\x01 \x01(\x05\x12\x1c\n\x14min_delay_timeout_ms\x18\x02 \x01(\x05\"1\n\x1dUnregisterSuspendDelayRequest\x12\x10\n\x08\x64\x65lay_id\x18\x01 \x01(\x05\"<\n\x14SuspendReadinessInfo\x12\x10\n\x08\x64\x65lay_id\x18\x01 \x01(\x05\x12\x12\n\nsuspend_id\x18\x02 \x01(\x05\"+\n\x14\x44\x61rkResumeWakeReason\x12\x13\n\x0bwake_reason\x18\x01 \x01(\t\"*\n\x14HibernateResumeReady\x12\x12\n\nsuspend_id\x18\x01 \x01(\x05\x42-H\x03Z)go.chromium.org/chromiumos/system_api/power_manager_proto'
+)
 
 
 
@@ -88,30 +90,30 @@ _sym_db.RegisterMessage(HibernateResumeReady)
 
 if _descriptor._USE_C_DESCRIPTORS == False:
 
-  DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'H\003Z)chromiumos/system_api/power_manager_proto'
-  _SUSPENDIMMINENT._serialized_start=33
-  _SUSPENDIMMINENT._serialized_end=272
-  _SUSPENDIMMINENT_REASON._serialized_start=182
-  _SUSPENDIMMINENT_REASON._serialized_end=227
-  _SUSPENDIMMINENT_ACTION._serialized_start=229
-  _SUSPENDIMMINENT_ACTION._serialized_end=272
-  _SUSPENDDONE._serialized_start=275
-  _SUSPENDDONE._serialized_end=568
-  _SUSPENDDONE_WAKEUPTYPE._serialized_start=460
-  _SUSPENDDONE_WAKEUPTYPE._serialized_end=527
-  _SUSPENDDONE_SUSPENDSTATE._serialized_start=529
-  _SUSPENDDONE_SUSPENDSTATE._serialized_end=568
-  _REGISTERSUSPENDDELAYREQUEST._serialized_start=570
-  _REGISTERSUSPENDDELAYREQUEST._serialized_end=637
-  _REGISTERSUSPENDDELAYREPLY._serialized_start=639
-  _REGISTERSUSPENDDELAYREPLY._serialized_end=714
-  _UNREGISTERSUSPENDDELAYREQUEST._serialized_start=716
-  _UNREGISTERSUSPENDDELAYREQUEST._serialized_end=765
-  _SUSPENDREADINESSINFO._serialized_start=767
-  _SUSPENDREADINESSINFO._serialized_end=827
-  _DARKRESUMEWAKEREASON._serialized_start=829
-  _DARKRESUMEWAKEREASON._serialized_end=872
-  _HIBERNATERESUMEREADY._serialized_start=874
-  _HIBERNATERESUMEREADY._serialized_end=916
+    DESCRIPTOR._options = None
+    DESCRIPTOR._serialized_options = b'H\003Z)go.chromium.org/chromiumos/system_api/power_manager_proto'
+    _SUSPENDIMMINENT._serialized_start = 33
+    _SUSPENDIMMINENT._serialized_end = 272
+    _SUSPENDIMMINENT_REASON._serialized_start = 182
+    _SUSPENDIMMINENT_REASON._serialized_end = 227
+    _SUSPENDIMMINENT_ACTION._serialized_start = 229
+    _SUSPENDIMMINENT_ACTION._serialized_end = 272
+    _SUSPENDDONE._serialized_start = 275
+    _SUSPENDDONE._serialized_end = 568
+    _SUSPENDDONE_WAKEUPTYPE._serialized_start = 460
+    _SUSPENDDONE_WAKEUPTYPE._serialized_end = 527
+    _SUSPENDDONE_SUSPENDSTATE._serialized_start = 529
+    _SUSPENDDONE_SUSPENDSTATE._serialized_end = 568
+    _REGISTERSUSPENDDELAYREQUEST._serialized_start = 570
+    _REGISTERSUSPENDDELAYREQUEST._serialized_end = 637
+    _REGISTERSUSPENDDELAYREPLY._serialized_start = 639
+    _REGISTERSUSPENDDELAYREPLY._serialized_end = 714
+    _UNREGISTERSUSPENDDELAYREQUEST._serialized_start = 716
+    _UNREGISTERSUSPENDDELAYREQUEST._serialized_end = 765
+    _SUSPENDREADINESSINFO._serialized_start = 767
+    _SUSPENDREADINESSINFO._serialized_end = 827
+    _DARKRESUMEWAKEREASON._serialized_start = 829
+    _DARKRESUMEWAKEREASON._serialized_end = 872
+    _HIBERNATERESUMEREADY._serialized_start = 874
+    _HIBERNATERESUMEREADY._serialized_end = 916
 # @@protoc_insertion_point(module_scope)

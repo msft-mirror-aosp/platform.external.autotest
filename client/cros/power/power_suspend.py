@@ -119,11 +119,7 @@ class Suspender(object):
     _AUTOSUSPEND_DISABLE = 'on'
 
     # Dictionary of board-specific autosuspend paths to disable.
-    _AUTOSUSPEND_DISABLE_PATHS = {
-            'skyrim':
-            ['/sys/devices/pci0000:00/0000:00:08.3/0000:04:00.0/usb5/5-1', 
-            '/sys/devices/pci0000:00/0000:00:08.3/0000:05:00.0/usb5/5-1']
-    }
+    _AUTOSUSPEND_DISABLE_PATHS = {'skyrim': ['/sys/bus/usb/devices/usb5/5-1']}
 
     def __init__(self, logdir, method=sys_power.do_suspend,
                  throw=False, device_times=False, suspend_state=''):
@@ -214,9 +210,15 @@ class Suspender(object):
 
 
     def _get_board(self):
-        """Remove _freon from get_board if found."""
-        return (utils.get_board().replace("_freon", ""))
-
+        """Remove suffixes from get_board() if found."""
+        strings_to_remove = [
+                "_frecon",
+                "-kernelnext",
+        ]
+        board = utils.get_board()
+        for string_to_remove in strings_to_remove:
+            board = board.replace(string_to_remove, "")
+        return board
 
     def _retrive_last_matching_line_ts(self, filename, pattern):
         """

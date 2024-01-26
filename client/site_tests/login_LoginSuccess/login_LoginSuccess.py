@@ -43,7 +43,8 @@ class login_LoginSuccess(test.test):
                  arc_mode=None,
                  username=None,
                  password=None,
-                 dont_override_profile=False):
+                 dont_override_profile=False,
+                 session_start_timeout=None):
         """
         Runs the test.
 
@@ -54,11 +55,14 @@ class login_LoginSuccess(test.test):
         @param arc_mode: This value is passed to Chrome and determines how
                          the ARC/Android instance should start. Possible values
                          are defined in common_lib/cros/arc_common.py.
-        @dont_override_profile: Don't delete cryptohome before login.
+        @param dont_override_profile: Don't delete cryptohome before login.
+        @param session_start_timeout: Time (in seconds) to wait for the
+                                      'Session started' signal after logging in.
 
         """
         if stress_run:
             self._SESSION_STOP_TIMEOUT *= 2
+        start_timeout = (session_start_timeout or self._SESSION_START_TIMEOUT)
         self._listener.listen_for_session_state_change('started')
         # TPM ownership is not automatically taken by test logins until M103.
         # Take ownership here to prevent auth errors in AU tests with earlier
@@ -70,7 +74,7 @@ class login_LoginSuccess(test.test):
                            password=password,
                            dont_override_profile=dont_override_profile):
             self._listener.wait_for_signals(desc='Session started.',
-                                            timeout=self._SESSION_START_TIMEOUT)
+                                            timeout=session_start_timeout or self._SESSION_START_TIMEOUT)
             # To enable use as a 'helper test'.
             self.job.set_state('client_success', True)
 

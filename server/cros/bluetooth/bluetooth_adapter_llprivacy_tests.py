@@ -231,8 +231,10 @@ class BluetoothAdapterLLPrivacyTests(
         add_dev_to_resolv_list = self.bluetooth_facade.btmon_find_consecutive(
                 patterns)
 
-        use_accept_list = self.bluetooth_facade.btmon_find(
-                'Filter policy: Ignore not in accept list (0x01)')
+        accept_list_pattern = 'Filter policy: Ignore not in accept list (0x01)'
+        if self.floss:
+            accept_list_pattern = 'Filter policy: Accept list is used (0x01)'
+        use_accept_list = self.bluetooth_facade.btmon_find(accept_list_pattern)
 
         self.results = {
                 'enable_address_resolution': enable_address_resolution,

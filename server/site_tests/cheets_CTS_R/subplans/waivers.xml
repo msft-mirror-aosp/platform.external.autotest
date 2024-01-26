@@ -15,4 +15,7 @@
   <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testAsyncBeginEndSection" />
   <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testCounter" />
   <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testTracingContent" />
+  <!-- b/315920750; fixed in 11_r16 -->
+  <Entry include="CtsJniTestCases android.jni.cts.JniStaticTest#test_linker_namespaces" />
+  <Entry include="CtsJniTestCases[instant] android.jni.cts.JniStaticTest#test_linker_namespaces" />
 </SubPlan>

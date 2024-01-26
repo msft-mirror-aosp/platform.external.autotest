@@ -644,18 +644,6 @@ RPC_CATEGORIES = [
                                 ]
                         },
                         {
-                                "method_name": "set_version",
-                                "passing_args": [
-                                        ("a", 0),
-                                        ("b", 1),
-                                ],
-                                "failing_args": [
-                                        NO_ARGS,
-                                        ("a", ),
-                                        ("b", -1),
-                                ],
-                        },
-                        {
                                 "method_names": [
                                         "get_sig_one_byte",
                                         "get_body_one_byte",

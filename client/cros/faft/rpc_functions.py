@@ -320,16 +320,6 @@ class BiosServicer(object):
         """Retrieve firmware version of a section."""
         return self._bios_handler.get_section_version(section)
 
-    def set_version(self, section, version):
-        """Set firmware version of a section."""
-        flags = self._bios_handler.get_section_flags(section)
-        logging.info('Setting firmware section %s version to %d', section,
-                     version)
-        self._bios_handler.set_section_version(section,
-                                               version,
-                                               flags,
-                                               write_through=True)
-
     def get_datakey_version(self, section):
         """Return firmware data key version."""
         return self._bios_handler.get_section_datakey_version(section)

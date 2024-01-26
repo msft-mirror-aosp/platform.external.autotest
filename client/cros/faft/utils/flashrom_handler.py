@@ -687,51 +687,6 @@ class FlashromHandler(object):
                                                                    f.name))
             self.new_image(f.name)
 
-    def set_section_version(self, section, version, flags,
-                            write_through=False):
-        """
-        Re-sign the firmware section using the supplied version number and
-        flag.
-        """
-        if (self.get_section_version(section) == version
-                    and self.get_section_flags(section) == flags):
-            logging.info(f"Nothing to do existing "
-                         f"version {self.get_section_version(section)} "
-                         f"flags {self.get_section_flags(section)}")
-            return  # No version or flag change, nothing to do.
-        if version < 0:
-            raise FlashromHandlerError(
-                    'Attempt to set version %d on section %s' % (version,
-                                                                 section))
-        fv_section = self.fv_sections[section]
-        sig_name = self.section_file(fv_section.get_sig_name())
-        sig_size = os.path.getsize(sig_name)
-
-        # Construct the command line
-        args = ['--vblock %s' % sig_name]
-        args.append('--keyblock %s' % os.path.join(self.dev_key_path,
-                                                   self.FW_KEYBLOCK_FILE_NAME))
-        args.append('--fv %s' % self.section_file(fv_section.get_body_name()))
-        args.append('--version %d' % version)
-        args.append('--kernelkey %s' % os.path.join(
-                self.dev_key_path, self.KERNEL_SUBKEY_FILE_NAME))
-        args.append('--signprivate %s' % os.path.join(
-                self.dev_key_path, self.FW_PRIV_DATA_KEY_FILE_NAME))
-        args.append('--flags %d' % flags)
-        cmd = 'vbutil_firmware %s' % ' '.join(args)
-        self.os_if.run_shell_command(cmd)
-
-        #  Pad the new signature.
-        with open(sig_name, 'ab') as sig_f:
-            f_size = os.fstat(sig_f.fileno()).st_size
-            pad = b'\0' * (sig_size - f_size)
-            sig_f.write(pad)
-
-        # Inject the new signature block into the image
-        with open(sig_name, 'rb') as sig_f:
-            new_sig = sig_f.read()
-        self.write_partial(fv_section.get_sig_name(), new_sig, write_through)
-
     def _modify_section_fwid(self, section):
         """Modify a section's fwid on the handler, adding a tilde and the
         section name (in caps) to the end: ~RO, ~RW, ~A, ~B.

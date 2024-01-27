@@ -17,7 +17,6 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
     """Runs a forced autoupdate during OOBE."""
 
     version = 1
-    progress_after_interrupt = 0
 
     def cleanup(self):
         # Get the last two update_engine logs: before and after reboot.
@@ -113,17 +112,8 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         """
         Wait for the interrupted update to resume.
         """
-        def update_engine_resumed():
-            """
-            Check if the update engine is not idle.
-            """
-            return (self._get_update_progress() >
-                    self.progress_after_interrupt +
-                    self._RESUME_AFTER_INTERRUPT_PROGRESS_THRESHOLD)
-
-        self.progress_after_interrupt = self._get_update_progress()
         utils.poll_for_condition(
-                update_engine_resumed,
+                self._is_update_started,
                 timeout=self._RESUME_UPDATE_AFTER_REBOOT_WAIT_TIME_SECONDS,
                 desc="Update Engine failed to resume after reboot",
         )
@@ -235,10 +225,12 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
                 self._suspend_then_resume()
             self._take_screenshot(self._AFTER_INTERRUPT_FILENAME)
 
+            # Only handle resume status change, so we don't race with the
+            # platform side in raising an exception due to the updater being
+            # IDLE when during other stricter updater utility methods.
             self._wait_for_update_engine_to_resume()
-
-            if self._is_update_engine_idle():
-                raise error.TestFail("The update was IDLE after interrupt.")
+            # This check will continue from `completed` value so there is no
+            # need to check increase in progress value earlier in the code.
             if not self._update_continued_where_it_left_off(
                     completed, reboot_interrupt=interrupt is "reboot"):
                 raise error.TestFail("The update did not continue where it "

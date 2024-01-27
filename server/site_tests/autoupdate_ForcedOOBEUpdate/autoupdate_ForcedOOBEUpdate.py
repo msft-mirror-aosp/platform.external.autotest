@@ -4,7 +4,6 @@
 # found in the LICENSE file.
 
 import logging
-import random
 import time
 
 from autotest_lib.client.common_lib import error
@@ -208,11 +207,7 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
         progress = None
         if interrupt is not None:
-            # Choose a random downloaded progress to interrupt the update.
-            # Moblab may have higher download speeds and take longer to return
-            # from the client test, so use a reduced progress range there.
-            progress_limit = 0.3 if moblab else 0.6
-            progress = random.uniform(0.1, progress_limit)
+            progress = 0.3
             logging.info("Progress when we will interrupt: %f", progress)
 
         active, inactive = kernel_utils.get_kernel_state(self._host)

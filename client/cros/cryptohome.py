@@ -400,6 +400,7 @@ def unmount_vault(user=None):
     # Ensure that the vault is not mounted.
     if user is not None and is_vault_mounted(user, allow_fail=True):
         raise ChromiumOSError('Cryptohome did not unmount the user.')
+    __scan_for_dmcrypt_mounts_in_proc()
 
 
 def __get_mount_info(mount_point, allow_fail=False):
@@ -439,6 +440,32 @@ def __get_mount_info(mount_point, allow_fail=False):
                               'through %s. See logs for complete mount-point.'
                               % os.path.dirname(str(mount_point)))
     return mount_line.split()
+
+
+def __scan_for_dmcrypt_mounts_in_proc():
+    """Scan through proc to log lingering cryptohome mounts."""
+    logging.debug("Looking for dmcrypt mounts in proc")
+    grep_cmd = "grep dmcrypt /proc/*/mounts"
+    mount_lines = utils.system_output(grep_cmd,
+                                      ignore_status=True).splitlines()
+    if len(mount_lines) == 0:
+        logging.debug("No dmcrypt mounts in proc")
+        return
+    proc_map = dict()
+    for mount_line in mount_lines:
+        proc_mount_path = mount_line.split(':')[0]
+        proc_comm_path = proc_mount_path.replace("/mounts", "/comm")
+        proc_cmdline_path = proc_mount_path.replace("/mounts", "/cmdline")
+        commline = utils.system_output("cat %s" % proc_comm_path,
+                                       ignore_status=True)
+        cmdline = utils.system_output("cat %s" % proc_cmdline_path,
+                                      ignore_status=True)
+        proc_map[cmdline] = commline
+
+    logging.debug("The following process hold dmcrypt mounts:")
+    for k in sorted(proc_map.keys()):
+        logging.debug("    {}: {}".format(proc_map[k], k))
+
 
 
 def __get_user_mount_info(user, allow_fail=False):

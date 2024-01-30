@@ -92,6 +92,10 @@ class autoupdate_Interruptions(update_engine_test.UpdateEngineTest):
         # Check that update engine is ready after reboot.
         utils.poll_for_condition(self._get_update_engine_status,
                                  desc='update engine to start')
+
+        # Wait to not race with other conditions.
+        self._wait_for_update_to_idle()
+
         # Do a final update check with no_update=True to get post reboot event.
         self._check_for_update(self._get_nebraska_update_url())
 

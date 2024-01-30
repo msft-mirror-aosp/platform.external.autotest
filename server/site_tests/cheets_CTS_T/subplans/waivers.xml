@@ -9,4 +9,6 @@
   <!-- b/315920750; fixed in 13_r8 -->
   <Entry include="CtsJniTestCases android.jni.cts.JniStaticTest#test_linker_namespaces" />
   <Entry include="CtsJniTestCases[instant] android.jni.cts.JniStaticTest#test_linker_namespaces" />
+  <!-- b/322574317: fixed in 13_r8 -->
+  <Entry include="CtsLibcoreTestCases libcore.java.security.cert.X509CertificateTest#test_Provider" />
 </SubPlan>

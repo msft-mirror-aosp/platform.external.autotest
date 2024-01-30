@@ -876,5 +876,8 @@ class BluetoothAdapterQuickTests(
                         device_test(device)
 
         finally:
+            # test_wait_for_resume can throw exception
+            if peer_wake is not None and peer_wake.is_alive():
+                peer_wake.join()
             if should_pair and not keep_paired:
                 self.test_remove_pairing(device.address)

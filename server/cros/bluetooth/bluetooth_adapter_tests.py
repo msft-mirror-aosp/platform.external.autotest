@@ -6060,7 +6060,8 @@ class BluetoothAdapterTests(test.test):
                              fail_on_timeout=False,
                              fail_early_wake=True,
                              collect_resume_time=False):
-        """ Wait for device to resume from suspend.
+        """ Wait for device to resume from suspend. This test may throw a
+        TestNA exception if the test_last_resume_success check fails.
 
         @param boot_id: Current boot id
         @param suspend: Sub-process that does actual suspend call.

@@ -159,6 +159,9 @@ class BluetoothAdapterLLPrivacyTests(
 
                 self.test_stop_device_advertise_with_rpa(device)
         finally:
+            # test_wait_for_resume can throw exception
+            if peer_wake is not None and peer_wake.is_alive():
+                peer_wake.join()
             self.test_remove_pairing(device.init_paired_addr,
                                      identity_address=device.address)
             # Restore privacy setting

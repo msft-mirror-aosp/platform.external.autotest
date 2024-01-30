@@ -93,8 +93,12 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
             self._minios_cleanup()
             self._host.reboot()
 
-    def initialize(self, host, wifi_configs=None, running_at_desk=None,
-                   skip_provisioning=None):
+    def initialize(self,
+                   host,
+                   wifi_configs=None,
+                   running_at_desk=None,
+                   skip_provisioning=None,
+                   **kwargs):
         """
         Sets default variables for the test.
 
@@ -107,7 +111,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
             of inactive partition should be skipped.
 
         """
-        super(MiniOsTest, self).initialize(host)
+        super(MiniOsTest, self).initialize(host, **kwargs)
         self._nebraska = None
         self._use_public_bucket = minios_util.to_bool(running_at_desk)
         self._skip_provisioning = minios_util.to_bool(skip_provisioning)

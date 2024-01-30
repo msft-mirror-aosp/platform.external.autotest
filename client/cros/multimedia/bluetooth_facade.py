@@ -641,7 +641,12 @@ class BluetoothBaseFacadeLocal(object):
 
     def read_inquiry_mode(self):
         """Read inquiry mode of DUT"""
-        read_inquiry_mode_cmd = 'hciconfig hci0 inqmode'
+        index = self._raw_socket.get_hci()
+        if index is None:
+            logging.error('HCI is None')
+            return -1
+
+        read_inquiry_mode_cmd = 'hciconfig hci{} inqmode'.format(index)
 
         def _extract_inquiry_mode(hciconfig_str):
             if 'Extended Inquiry' in hciconfig_str:
@@ -674,7 +679,14 @@ class BluetoothBaseFacadeLocal(object):
         if mode > 2 or mode < 0:
             logging.info('Wrong inquiry mode value: out of range [0-2]')
             return False
-        write_inquiry_mode_cmd = 'hciconfig hci0 inqmode ' + str(mode)
+
+        index = self._raw_socket.get_hci()
+        if index is None:
+            logging.error('HCI is None')
+            return False
+
+        write_inquiry_mode_cmd = 'hciconfig hci{} inqmode {}'.format(index,
+                                                                     mode)
 
         try:
             logging.info('Write inquiry mode')
@@ -855,11 +867,16 @@ class BluetoothBaseFacadeLocal(object):
             return False
 
     def _get_wake_enabled_path(self):
-        # Walk up the parents from hci0 sysfs path and find the first one with
+        # Walk up the parents from hciN sysfs path and find the first one with
         # a power/wakeup property. Return that path (including power/wakeup).
 
         # Resolve hci path to get full device path (i.e. w/ usb or uart)
-        search_at = os.path.realpath('/sys/class/bluetooth/hci0')
+        index = self._raw_socket.get_hci()
+        if index is None:
+            logging.error('HCI is None')
+            return None
+
+        search_at = os.path.realpath('/sys/class/bluetooth/hci{}'.format(index))
 
         # Exit early if path doesn't exist
         if not os.path.exists(search_at):
@@ -911,11 +928,11 @@ class BluetoothBaseFacadeLocal(object):
     def is_wake_enabled(self):
         """Checks whether the bluetooth adapter has wake enabled.
 
-        This will walk through all parents of the hci0 sysfs path and try to
+        This will walk through all parents of the hciN sysfs path and try to
         find one with a 'power/wakeup' entry and returns whether its value is
         'enabled'.
 
-        @return True if 'power/wakeup' of an hci0 parent is 'enabled'
+        @return True if 'power/wakeup' of an hciN parent is 'enabled'
         """
         enabled = self._is_wake_enabled()
         return enabled
@@ -923,7 +940,7 @@ class BluetoothBaseFacadeLocal(object):
     def set_wake_enabled(self, value):
         """Sets wake enabled to the value if path exists.
 
-        This will walk through all parents of the hci0 sysfs path and write the
+        This will walk through all parents of the hciN sysfs path and write the
         value to the first one it finds.
 
         @param value: Sets power/wakeup to "enabled" if value is true, else
@@ -1214,9 +1231,15 @@ class BluetoothBaseFacadeLocal(object):
 
         @returns: USB/UART/SDIO on success; None on failure
         """
+        index = self._raw_socket.get_hci()
+        if index is None:
+            logging.error('HCI is None')
+            return None
+
         try:
             transport_str = os.path.realpath(
-                    '/sys/class/bluetooth/hci0/device/driver/module')
+                    '/sys/class/bluetooth/hci{}/device/driver/module'.format(
+                            index))
             logging.debug('transport is %s', transport_str)
             transport = transport_str.split('/')[-1]
             if transport == 'btusb':
@@ -1243,7 +1266,12 @@ class BluetoothBaseFacadeLocal(object):
                 'qcom,wcn6750-bt\x00': 'QCA-WCN6750',
         }
 
-        hci_device = '/sys/class/bluetooth/hci0'
+        index = self._raw_socket.get_hci()
+        if index is None:
+            logging.error('HCI is None')
+            return ''
+
+        hci_device = '/sys/class/bluetooth/hci{}'.format(index)
         real_path = os.path.realpath(hci_device)
 
         logging.debug('real path is %s', real_path)
@@ -1313,7 +1341,12 @@ class BluetoothBaseFacadeLocal(object):
                   [] otherwise
         """
 
-        hci_device = '/sys/class/bluetooth/hci0'
+        index = self._raw_socket.get_hci()
+        if index is None:
+            logging.error('HCI is None')
+            return []
+
+        hci_device = '/sys/class/bluetooth/hci{}'.format(index)
         real_path = os.path.realpath(hci_device)
 
         # real_path for a usb bluetooth controller will look something like:

@@ -613,6 +613,9 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('HID Wakeup from Suspend Test',
                   devices={"BLE_MOUSE": 1},
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
+                  ['bob'],
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_le_hid_with_rpa(self):
         """Use LE HID to wake from suspend."""

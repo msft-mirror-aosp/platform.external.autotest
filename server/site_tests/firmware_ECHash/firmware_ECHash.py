@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/323244152): Remove from PVS testplans and then delete this file.
+
 import logging
 import re
 

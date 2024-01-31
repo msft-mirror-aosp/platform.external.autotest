@@ -23,6 +23,7 @@ import six.moves.urllib.request
 from datetime import datetime, timedelta
 from xml.etree import ElementTree
 
+from autotest_lib.cache_server import constants as cache_server_constants
 from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import error
@@ -92,8 +93,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     # against lab DUTs. Tests running in the lab will instead use the
     # job_repo_url from the provisioning attributes, which contains a cache
     # server URL assigned by the lab.
-    _PINNED_CACHE_SERVER_IPS = ['100.115.220.100', '10.128.176.201',
-                                '100.115.21.232']
+    _PINNED_CACHE_SERVER_IPS = [
+            cache_server_constants.CHROMEOS_6_CACHE,
+            cache_server_constants.CHROMEOS_8_CACHE,
+            cache_server_constants.CHROMEOS_15_CACHE,
+    ]
     _CACHE_SERVER_URL_PATTERN = 'http://%s:8082'
     _CACHE_SERVER_HEALTH_CHECK_PATTERN = f'{_CACHE_SERVER_URL_PATTERN}/check_health'
 

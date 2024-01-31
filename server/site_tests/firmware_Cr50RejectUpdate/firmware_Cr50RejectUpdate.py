@@ -77,7 +77,7 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         result = self.host.run('gsctool -a %s %s' % (arg, self.TEST_PATH),
                 ignore_status=True, ignore_timeout=True, timeout=60)
 
-        logging.info('Update %s result: %s', path, result)
+        logging.info('Update %s result (exp %d): %s', path, err, result)
         # Check the result
         stderr = 'Error %d' % err
         if err and stderr not in result.stderr:

@@ -981,6 +981,7 @@ suite:touch_replay_touchpad
 suite:touch_replay_touchscreen
 suite:touch_replay_stylus
 suite:typec_lab
+suite:typec_mcci
 suite:unowned
 suite:usb_detect
 suite:usb_detect_stress

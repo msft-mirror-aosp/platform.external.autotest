@@ -8,7 +8,7 @@ METADATA = {
   "contacts": [
     "chromeos-core-services@google.com",
   ],
-  "bug_component": "b:908319",
+  "bug_component": "b:1341743",
   "criteria": "Test an NBR N-to-M recovery with Nebraska."
 }
 TIME = "MEDIUM"

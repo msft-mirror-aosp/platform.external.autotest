@@ -21,4 +21,6 @@
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_poly2poly" />
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_radial_gradient4" />
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_roundrects" />
+  <!-- b/322574317 -->
+  <Entry include="CtsLibcoreTestCases libcore.java.security.cert.X509CertificateTest#test_Provider" />
 </SubPlan>

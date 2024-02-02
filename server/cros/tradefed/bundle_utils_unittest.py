@@ -22,6 +22,16 @@ CTS_URL_CONFIG = {
         }
 }
 
+CTS_PREVIEW_ONLY_URL_CONFIG = {
+        "internal_base": "gs://chromeos-arc-images/cts/bundle/R/",
+        "preview_url_pattern": "android-cts-%s-linux_x86-%s.zip",
+        "preview_version_name": "9199760",
+        "abi_list": {
+                "arm": "test_suites_arm64",
+                "x86": "test_suites_x86_64"
+        }
+}
+
 GTS_URL_CONFIG = {
         "internal_base": "gs://chromeos-arc-images/cts/bundle/",
         "partner_base": "gs://chromeos-partner-gts/",
@@ -74,6 +84,12 @@ class BundelUtilsTest(unittest.TestCase):
     def test_get_suite_name(self):
         """Test for get_suite_name."""
         suite_name = bundle_utils.get_suite_name(url_config=CTS_URL_CONFIG)
+        self.assertEquals('cts', suite_name)
+
+    def test_get_suite_name_preview_only(self):
+        """Test for get_suite_name."""
+        suite_name = bundle_utils.get_suite_name(
+                url_config=CTS_PREVIEW_ONLY_URL_CONFIG)
         self.assertEquals('cts', suite_name)
 
     def test_get_official_version_cts(self):

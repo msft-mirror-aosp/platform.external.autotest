@@ -59,19 +59,17 @@ class UnsupportedSuiteVersion(Exception):
 class BundleSpecification:
     """Class containing xTS bundle information."""
 
-    def __init__(self, uri, password, official_version_name, suite_name):
+    def __init__(self, uri, password, suite_name):
         """Construct BundleSpecification
 
         Args:
             uri is the uri of the bundle.
             password is the password for extracting the bundle. Empty string means
                 no password.
-            official_version_name is the official release version for xTS.
             suite_name is the suite name (CTS/GTS/STS).
         """
         self.uri = uri
         self.password = password
-        self.official_version_name = official_version_name
         self.suite_name = suite_name
 
 
@@ -1555,13 +1553,11 @@ class TradefedTest(test.test):
             config_path = os.path.abspath(os.path.join(cheets_path, '..', config_file))
             url_config = bundle_utils.load_config(config_path)
             bundle_password = bundle_utils.get_bundle_password(url_config)
-            official_version_name = bundle_utils.get_official_version(
-                    url_config)
             suite_name = bundle_utils.get_suite_name(url_config).upper()
 
             return BundleSpecification(
                     bundle_utils.make_bundle_url(url_config, uri, bundle),
-                    bundle_password, official_version_name, suite_name)
+                    bundle_password, suite_name)
 
     def _wait_cpu_cooldown(self, timeout):
         crosvm_cpu_usage_cmd = "top -bn1 | awk '{if ($12 == \"crosvm\") print $9;}'"

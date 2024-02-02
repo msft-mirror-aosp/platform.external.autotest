@@ -79,7 +79,11 @@ def get_suite_name(url_config: Dict[str, str]) -> str:
     Returns:
         The suite name (cts/gts/sts) obtained from offcial_url_pattern.
     """
-    url_pattern = url_config[_OFFICIAL_URL_PATTERN]
+    url_pattern = url_config.get(_OFFICIAL_URL_PATTERN) or url_config.get(
+            _PREVIEW_URL_PATTERN)
+    if url_pattern is None:
+        raise NoSuiteNameException(
+                'Neither official/preview URL pattern is present')
     suite_name = url_pattern.split('-', 2)[1]
     valid_suites_set = {'cts', 'gts', 'sts', 'vts', 'cts_instant'}
     if suite_name in valid_suites_set:

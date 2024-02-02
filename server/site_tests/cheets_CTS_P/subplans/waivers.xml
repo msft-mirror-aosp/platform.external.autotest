@@ -23,4 +23,6 @@
   <Entry include="CtsSkQPTestCases org.skia.skqp.SkQPRunner#gles_roundrects" />
   <!-- b/322574317 -->
   <Entry include="CtsLibcoreTestCases libcore.java.security.cert.X509CertificateTest#test_Provider" />
+  <!-- b/323398287 -->
+  <Entry include="CtsLibcoreOjTestCases test.java.security.cert.AKISerialNumberTest#main" />
 </SubPlan>

@@ -20,6 +20,8 @@ class firmware_Cr50RejectUpdate(Cr50Test):
     TEST_BID_TYPE = 'TEST:ffffffff:0'
     TEST_BID_FLAGS = 'TEST:0:000fffff'
     TEST_PATH = '/tmp/test_image.bin'
+    WAIT_FOR_DUT_SSH_S = 40
+    DELAY_SSH_CHECK_S = 5
 
 
     def initialize(self, host, cmdline_args, full_args):
@@ -113,8 +115,12 @@ class firmware_Cr50RejectUpdate(Cr50Test):
             self.host.reset_via_servo()
         # After reboot, if the DUT hasn't responded within 45 seconds, it's not
         # going to.
-        time.sleep(45)
-        if not self.host.is_up_fast():
+        exp_time = time.time() + self.WAIT_FOR_DUT_SSH_S
+        while time.time() < exp_time:
+            time.sleep(self.DELAY_SSH_CHECK_S)
+            if self.host.is_up_fast():
+                break
+        else:
             raise error.TestError('DUT did not respond')
 
         # Wait for the host to respond to ping. Make sure it responded within

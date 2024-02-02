@@ -62,7 +62,6 @@ WAIT_FOR_CMD_TIMEOUT_SECS = 600
 # completed but failed in post-processing.
 TEST_SETUP_DURATION_LIMIT = 30
 
-# Reuse ssh and scp settings from telemetry_Crosperf
 RSA_KEY = '-i %s' % test_runner_utils.TEST_KEY_PATH
 DUT_SCP_OPTIONS = ' '.join([
         '-o StrictHostKeyChecking=no', '-o UserKnownHostsFile=/dev/null',

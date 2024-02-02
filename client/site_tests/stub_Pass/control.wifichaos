@@ -1,0 +1,20 @@
+# Copyright 2011 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This is a placeholder test for allowing the scheduler to install tests on the
+# chaos_dut machines
+NAME = "stub_Pass.wifichaos"
+METADATA = {
+    'contacts': ['tauto-core@google.com'],
+    'bug_component': "b:1284375", # ChromeOS > Test > Harness > Tauto > Examples
+    'criteria': 'Used to re-image chaos_dut machines nightly'
+}
+ATTRIBUTES = "suite:wifichaos"
+DEPENDENCIES = "chaos_dut"
+TEST_TYPE = "client"
+
+
+job.run_test('stub_Pass', tag='wifichaos')
+
+

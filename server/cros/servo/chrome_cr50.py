@@ -1678,6 +1678,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                     v = True
                 elif v == 'no':
                     v = False
+                elif 'no (' in v:
+                    # Some fields have a reason in parenthisis after the no
+                    # output. Convert that to False
+                    v = False
                 return k, v
         return None
 

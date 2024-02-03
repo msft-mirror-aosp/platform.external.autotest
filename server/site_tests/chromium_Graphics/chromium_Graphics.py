@@ -49,7 +49,8 @@ class chromium_Graphics(test.test):
         # chrome checkout on Drone, which contains the GPU test's server package.
         archive_type = 'chrome' if self.is_cros_chrome else 'lacros'
         self.server_pkg = chrome_sideloader.chromite_deploy_chrome(
-                self.host, self.args_dict.get('lacros_gcs_path'), archive_type)
+                self.host, self.args_dict.get('lacros_gcs_path'), archive_type,
+                **self.args_dict)
 
         os.environ['GTEST_TOTAL_SHARDS'] = self.args_dict.get(
                 'total_shards', '1')
@@ -98,6 +99,14 @@ class chromium_Graphics(test.test):
         cmd.append('--extra-browser-args={}'.format(
                 chrome_sideloader.get_test_args(self.args_dict,
                                                 'extra_browser_args')))
+        # In CFT mode, test driver is running inside a docker, which
+        # connects to the DUT via SSH proxy served by the host machine.
+        # Need to explicitly specify the port and identity.
+        if self.args_dict.get('is_cft'):
+            cmd.extend([
+                    '--identity=/home/chromeos-test/.ssh/testing_rsa',
+                    f'--remote-ssh-port={self.host.port}'
+            ])
 
         logging.debug('Running: %s', cmd)
         exit_code = 0
@@ -106,11 +115,12 @@ class chromium_Graphics(test.test):
         os.chdir(os.path.join(self.server_pkg, 'out', 'Release'))
         logging.debug('CWD: %s', os.getcwd())
         try:
-            result = utils.run(cmd,
-                               stdout_tee=sys.stdout,
-                               stderr_tee=sys.stderr,
-                               timeout=MAX_GPU_TELEMETRY_TIMEOUT_SEC,
-                               extra_paths=['/opt/infra-tools'])
+            result = utils.run(
+                    cmd,
+                    stdout_tee=sys.stdout,
+                    stderr_tee=sys.stderr,
+                    timeout=MAX_GPU_TELEMETRY_TIMEOUT_SEC,
+                    extra_paths=['/opt/infra-tools', '/opt/browser-tools'])
             exit_code = result.exit_status
         except error.CmdError as e:
             logging.debug('Error occurred executing GPU integration tests.')

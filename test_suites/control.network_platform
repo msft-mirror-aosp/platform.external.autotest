@@ -6,8 +6,9 @@ AUTHOR = 'Chromium OS team'
 NAME = 'network_platform'
 METADATA = {
     "contacts": ["cros-networking@google.com"],
-    "bug_component": "b:156085", # ChromeOS > Platform > System > Networking
-    }
+    # ChromeOS > Platform > System > Networking > Continuous Maintenance
+    "bug_component": "b:1493959",
+}
 PURPOSE = "Run stable platform-only network tests."
 
 TIME = "SHORT"

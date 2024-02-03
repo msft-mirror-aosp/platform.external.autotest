@@ -5,6 +5,7 @@
 NAME = 'network_WiFi_ChaosConnectDisconnect.static_5Ghz'
 METADATA = {
     'contacts': ['chromeos-connectivity-engprod@google.com'],
+    'requirements': ['wifi-gen-0002-v01', 'wifi-proc-0009-v01', 'wifi-proc-0012-v01', 'wifi-proc-0013-v01', 'wifi-proc-0016-v01', 'wifi-proc-0020-v01'],
     'bug_component': 'b:978946',
     'criteria': 'This test iterates through all 5Ghz APs in Chaos chamber '
                 'and connects/disconnects with DUT.',

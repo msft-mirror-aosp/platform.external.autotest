@@ -21,6 +21,7 @@ MIN_RPA_TIMEOUT_SEC = 30
 
 DEVICE_CONNECTED_TIMEOUT = 45
 
+LOG_PEER_RANDOM = 'Peer address type: Random (0x01)'
 LOG_PEER_RESOLVED_PUBLIC = 'Peer address type: Resolved Public (0x02)'
 
 class BluetoothAdapterLLPrivacyTests(
@@ -134,10 +135,12 @@ class BluetoothAdapterLLPrivacyTests(
                 self.bluetooth_facade.btmon_stop()
                 # Set the test NA if the controller received a public
                 # address advertisement.
+                addr_type_str = (LOG_PEER_RESOLVED_PUBLIC
+                                 if self.llprivacy else LOG_PEER_RANDOM)
                 if resume_success and not self.bluetooth_facade.btmon_find(
-                        LOG_PEER_RESOLVED_PUBLIC):
+                        addr_type_str):
                     raise error.TestNAError(
-                            "Peer address is not Resolved Public")
+                            "Peer address is not {}".format(addr_type_str))
 
                 prev_addr = curr_addr
                 curr_addr = device.GetRandomAddress()
@@ -315,10 +318,12 @@ class BluetoothAdapterLLPrivacyTests(
                 self.bluetooth_facade.btmon_stop()
                 # Set the test NA if the controller received a public
                 # address advertisement.
+                addr_type_str = (LOG_PEER_RESOLVED_PUBLIC
+                                 if self.llprivacy else LOG_PEER_RANDOM)
                 if connect_status and not self.bluetooth_facade.btmon_find(
-                        LOG_PEER_RESOLVED_PUBLIC):
+                        addr_type_str):
                     raise error.TestNAError(
-                            "Peer address is not Resolved Public")
+                            "Peer address is not {}".format(addr_type_str))
 
                 self.test_hid_device_created(self._input_dev_uniq_addr(device))
                 check_connected_method(device)

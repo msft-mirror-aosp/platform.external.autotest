@@ -20,7 +20,8 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
-     import (BluetoothAdapterLLPrivacyTests, DEFAULT_RPA_TIMEOUT_SEC, MIN_RPA_TIMEOUT_SEC, LOG_PEER_RESOLVED_PUBLIC)
+     import (BluetoothAdapterLLPrivacyTests, DEFAULT_RPA_TIMEOUT_SEC,
+             MIN_RPA_TIMEOUT_SEC, LOG_PEER_RESOLVED_PUBLIC, LOG_PEER_RANDOM)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_qr_tests import (
         BluetoothAdapterQRTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests\
@@ -163,10 +164,13 @@ class bluetooth_AdapterLLPrivacyHealth(
                         self.bluetooth_facade.btmon_stop()
                         # Set test as NA if the controller received a public
                         # address advertisement.
+                        addr_type_str = (LOG_PEER_RESOLVED_PUBLIC if
+                                         self.llprivacy else LOG_PEER_RANDOM)
                         if connect_status and not self.bluetooth_facade.btmon_find(
-                                LOG_PEER_RESOLVED_PUBLIC):
+                                addr_type_str):
                             raise error.TestNAError(
-                                    "Peer address is not Resolved Public")
+                                    "Peer address is not {}".format(
+                                            addr_type_str))
 
                         self.test_stop_device_advertise_with_rpa(device)
 

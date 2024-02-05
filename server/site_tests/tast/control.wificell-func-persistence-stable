@@ -6,6 +6,8 @@ AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.wificell-func-persistence-stable'
 METADATA = {
     'contacts': ['chromeos-wifi-champs@google.com'],
+    'bug_component': 'b:156085', # ChromeOS > Platform > System > Networking
+    'criteria': 'Tauto wrapper for specified tast tests',
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

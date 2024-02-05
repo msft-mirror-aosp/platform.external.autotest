@@ -12,7 +12,8 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Batch of Bluetooth enterprise policy health tests',
-    'hw_agnostic': False
+    'hw_agnostic': False,
+    'requirements': ['bt-gen-0001-v01'],
 }
 ATTRIBUTES = 'suite:bluetooth_floss'
 TEST_TYPE = 'server'

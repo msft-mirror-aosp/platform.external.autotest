@@ -28,5 +28,6 @@ def run(machine):
                                  'lars-kernelnext',    # Also b/147647051
                                  'strongbad',    # Device with no audiojack port
                                  'caroline',    # Skip, see dicussion at b/272391048 and b/273162963
+                                 'eve',  # b/294818332
                                 ])
 parallel_simple(run, machines)

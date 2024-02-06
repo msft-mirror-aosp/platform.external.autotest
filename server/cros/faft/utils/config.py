@@ -1,4 +1,4 @@
-# Lint as: python2, python3
+# Lint as: python3
 # Copyright 2019 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -12,15 +12,35 @@ from autotest_lib.client.common_lib import error
 
 
 # Path to the local checkout of the fw-testing-configs repo
-_CONFIG_DIR = os.path.abspath(os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), os.pardir,
-        'fw-testing-configs'))
+_SELF_DIR = os.path.dirname(os.path.realpath(__file__))
 _CONSOLIDATED_JSON_BASENAME = 'CONSOLIDATED.json'
 
 
 def _consolidated_json_fp():
     """Get the absolute path to CONSOLIDATED.json."""
-    return os.path.join(_CONFIG_DIR, _CONSOLIDATED_JSON_BASENAME)
+    search_paths = []
+    this_path = _SELF_DIR
+    # Search parent dirs for other possible locations of the json file.
+    while this_path and this_path != "/":
+        # The ebuild copies the file into the autotest root
+        if os.path.basename(this_path) == "autotest":
+            search_paths.append(
+                    os.path.join(this_path, _CONSOLIDATED_JSON_BASENAME))
+        # If running from the chroot, the file is in
+        # src/platform/fw-testing-configs
+        if os.path.basename(this_path) == "src":
+            search_paths.append(
+                    os.path.join(this_path, "platform/fw-testing-configs/",
+                                 _CONSOLIDATED_JSON_BASENAME))
+            break
+        this_path = os.path.dirname(this_path)
+
+    search_paths.append(os.path.join(os.path.abspath(os.path.join(_SELF_DIR, os.pardir, 'fw-testing-configs')), _CONSOLIDATED_JSON_BASENAME))
+    for path in search_paths:
+        if os.path.exists(path):
+            return path
+    raise error.TestError(
+            f"{_CONSOLIDATED_JSON_BASENAME} not found in {search_paths}")
 
 
 class Config(object):
@@ -29,7 +49,7 @@ class Config(object):
     This object is meant to be the interface to all configuration required
     by FAFT tests, including device specific overrides.
 
-    It gets the values from the JSON files in _CONFIG_DIR.
+    It gets the values from the JSON files in src/platform/fw-testing-configs.
     Default values are declared in the DEFAULTS.json.
     Platform-specific overrides come from <platform>.json.
     If the platform has model-specific overrides, then those take precedence

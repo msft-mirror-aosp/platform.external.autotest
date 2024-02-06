@@ -4,12 +4,12 @@
 
 from autotest_lib.server import utils
 
-AUTHOR = "kmshelton, waihong"
+AUTHOR = "seancarpenter, waihong"
 NAME = "firmware_FAFTRPC.updater"
 METADATA = {
     "contacts": [
         "chromeos-faft@google.com",
-        "kmshelton@chromium.org",
+        "seancarpenter@google.com",
         "waihong@chromium.org",
     ],
     "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT

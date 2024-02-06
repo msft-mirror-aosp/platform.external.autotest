@@ -13,6 +13,10 @@ SUITES=(
     "bvt-cq cq"
     "bvt-inline cq"
     "bvt-tast-cq cq"
+    "faft_pd firmware"
+    "faft_bios_rw_qual firmware"
+    "faft_bios_ro_qual firmware"
+    "faft_ec_fw_qual firmware"
 )
 
 CHROOT_DIR="$(cd "$(dirname "$(readlink -f "$0")")"/../../../../.. && pwd)"

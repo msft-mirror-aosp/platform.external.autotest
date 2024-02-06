@@ -815,6 +815,17 @@ suite:intel-type-c-usb
 suite:intel-usb-set1
 suite:intel-usb-set2
 suite:intel-wlan
+suite:intel-stability-bronze
+suite:intel-reliability-bronze
+suite:intel-stress
+suite:intel-flashing
+suite:intel-cswitch-set1
+suite:intel-cswitch-set2
+suite:intel-tbt3-dock
+suite:intel-tbt3-dock-usb
+suite:intel-tbt3-dp-dongle
+suite:intel-tbt3-hdmi-dongle
+suite:intel-tbt4-dock
 suite:jailed_build
 suite:kernel_daily_benchmarks
 suite:kernel_daily_regression

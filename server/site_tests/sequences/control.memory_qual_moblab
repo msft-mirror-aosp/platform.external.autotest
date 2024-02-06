@@ -6,9 +6,8 @@ from autotest_lib.client.common_lib import utils
 
 NAME = "MemoryQual.moblab"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
-    "author": "puthik",
-    "bug_component": "b:1361410",
+    "contacts": ["cros-avl-memory@google.com"],
+    "bug_component": "b:167260",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }

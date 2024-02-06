@@ -283,7 +283,8 @@ class FindJSONFile(_MockConfigTestCaseBaseClass):
         os.remove(autotest_path)
         self.assertEqual(config._consolidated_json_fp(), chroot_path)
         os.remove(chroot_path)
-        self.assertEqual(config._consolidated_json_fp(), legacy_path)
+        with self.assertRaises(error.TestError):
+            config._consolidated_json_fp()
         os.remove(legacy_path)
         with self.assertRaises(error.TestError):
             config._consolidated_json_fp()

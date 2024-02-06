@@ -10,8 +10,7 @@ import os
 import common
 from autotest_lib.client.common_lib import error
 
-
-# Path to the local checkout of the fw-testing-configs repo
+# Path to the directory of this file.
 _SELF_DIR = os.path.dirname(os.path.realpath(__file__))
 _CONSOLIDATED_JSON_BASENAME = 'CONSOLIDATED.json'
 
@@ -36,7 +35,6 @@ def _consolidated_json_fp():
             break
         this_path = os.path.dirname(this_path)
 
-    search_paths.append(os.path.join(os.path.abspath(os.path.join(_SELF_DIR, os.pardir, 'fw-testing-configs')), _CONSOLIDATED_JSON_BASENAME))
     for path in search_paths:
         if os.path.exists(path):
             return path

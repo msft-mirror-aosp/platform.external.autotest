@@ -5,11 +5,9 @@
 AUTHOR = "kyleshima, ChromiumOS"
 NAME = "rlz_CheckPing.future_embargo_date"
 METADATA = {
-  "contacts": [
-    "chromeos-sw-engprod@google.com"
-  ],
-  "bug_component": "crbug:Internals>Metrics>RLZ",
-  "criteria": "Test rlz related vpd setting: rlz_emargo_end_date."
+    "contacts": ["chromeos-sw-engprod@google.com"],
+    "bug_component": "b:1456157",
+    "criteria": "Test rlz related vpd setting: rlz_emargo_end_date.",
 }
 TIME = "Short"
 TEST_TYPE = "server"

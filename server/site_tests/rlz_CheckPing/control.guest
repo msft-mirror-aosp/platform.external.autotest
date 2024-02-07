@@ -5,11 +5,9 @@
 AUTHOR = "dhaddock, kyleshima, ChromiumOS"
 NAME = "rlz_CheckPing.guest"
 METADATA = {
-  "contacts": [
-    "chromeos-sw-engprod@google.com"
-  ],
-  "bug_component": "crbug:Internals>Metrics>RLZ",
-  "criteria": "Tests that CAI and CAF RLZ pings are sent in guest mode."
+    "contacts": ["chromeos-sw-engprod@google.com"],
+    "bug_component": "b:1456157",
+    "criteria": "Tests that CAI and CAF RLZ pings are sent in guest mode.",
 }
 TIME = "Short"
 TEST_TYPE = "server"

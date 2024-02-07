@@ -5,11 +5,9 @@
 AUTHOR = "kyleshima, ChromiumOS"
 NAME = "rlz_CheckPing.no_ping_after_reboot"
 METADATA = {
-  "contacts": [
-    "chromeos-sw-engprod@google.com"
-  ],
-  "bug_component": "crbug:Internals>Metrics>RLZ",
-  "criteria": "Tests that CAF RLZ ping is not sent after reboot."
+    "contacts": ["chromeos-sw-engprod@google.com"],
+    "bug_component": "b:1456157",
+    "criteria": "Tests that CAF RLZ ping is not sent after reboot.",
 }
 TIME = "Short"
 TEST_TYPE = "server"

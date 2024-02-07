@@ -5,11 +5,9 @@
 AUTHOR = "kyleshima, ChromiumOS"
 NAME = "rlz_CheckPing.should_send_rlz_ping_missing"
 METADATA = {
-  "contacts": [
-    "chromeos-sw-engprod@google.com"
-  ],
-  "bug_component": "crbug:Internals>Metrics>RLZ",
-  "criteria": "Test rlz related vpd setting: should_send_rlz_ping."
+    "contacts": ["chromeos-sw-engprod@google.com"],
+    "bug_component": "b:1456157",
+    "criteria": "Test rlz related vpd setting: should_send_rlz_ping.",
 }
 TIME = "Short"
 TEST_TYPE = "server"

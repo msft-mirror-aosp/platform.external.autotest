@@ -5,11 +5,10 @@
 AUTHOR = "dhaddock, The ChromiumOS Authors"
 NAME = "desktopui_CheckRlzPingSent"
 METADATA = {
-  "contacts": [
-    "chromeos-sw-engprod@google.com"
-  ],
-  "bug_component": "crbug:Internals>Metrics>RLZ",
-  "criteria": "Tests that the CAF and CAI rlz pings are sent after ping timeout."
+    "contacts": ["chromeos-sw-engprod@google.com"],
+    "bug_component": "b:1456157",
+    "criteria": ("Tests that the CAF and CAI rlz pings are sent after ping"
+                 "timeout."),
 }
 TEST_TYPE = "client"
 TIME = "SHORT"

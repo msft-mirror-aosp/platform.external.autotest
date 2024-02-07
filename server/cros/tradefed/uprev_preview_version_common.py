@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import subprocess
-import tempfile
 from typing import Dict
 
 import bundle_utils
@@ -70,51 +69,42 @@ def get_latest_version_name(branch_name: str, abi_list: Dict[str, str]) -> str:
     return max(common_build_ids, key=int)
 
 
-def fetch_artifact(download_dir, branch_name, target_name, xts_name,
-                   version_name) -> None:
-    """Function to download a test suite to download_dir using fetch_artifact.
-
-    Args:
-        download_dir: A string which means the file path where a test suite is downloaded.
-        branch_name: A string which means branch name where development is taking place.
-        target_name: A string which means the target name in the android-build page.
-        xts_name: A string which is one of the test names: (cts, vts).
-        version_name: A string which means target build version name.
-    """
-    fetch_cmd = [
-            'fetch_artifact', f'--branch={branch_name}',
-            f'--target={target_name}', f'android-{xts_name}.zip',
-            f'--bid={version_name}'
-    ]
-    logging.info(
-            f'Downloading to {download_dir}: the command is {fetch_cmd} in {download_dir}.'
-    )
-    subprocess.check_call(fetch_cmd, cwd=download_dir)
-
-
-def upload_preview_xts(file_path: str, url_config: Dict[str, str], abi: str,
-                       xts_name: str, version_name: str) -> None:
+def upload_preview_xts(branch_name: str, target_name: str,
+                       url_config: Dict[str, str], abi: str, xts_name: str,
+                       version_name: str) -> None:
     """Function to upload the preview xTS zip file to multiple places on gs.
 
     Multiple places are URLs beginning with gs://chromeos-arc-images/ for Googler,
     and gs://chromeos-partner-gts/ for Partner.
 
     Args:
-        file_path: A string which means the file path where a test suite is downloaded.
+        branch_name: A string which means branch name where development is taking place.
+        target_name: A string which means the target name in the android-build page.
         url_config: A (dictionary) configuration for this xts bundle.
         abi: A string which means one of the abis (None, 'arm', 'x86', 'arm64', 'x86_64').
         xts_name: A string which is one of the test names: (cts, vts).
         version_name: A string which means target build version name.
     """
+    gs_uri = f'gs://android-build/builds/{branch_name}-linux-{target_name}/{version_name}/'
+    ls_cmd = ['gsutil', 'ls', gs_uri]
+    ls_result = subprocess.check_output(ls_cmd).decode('utf-8').splitlines()
+
+    if len(ls_result) > 1:
+        logging.warning(
+                "Directory [%s] contains more than one subpath, using the "
+                "first one.",
+                gs_uri,
+        )
+
+    file_path = ls_result[0].strip()
+
     for remote_url in bundle_utils.make_preview_urls(url_config, abi):
         # TODO(b/256108932): Add a method to dryrun this to make it easier to
         # test without actually uploading. Alternatively inject a configuration
         # so that the upload destination can be changed.
         cmd = [
-            'gsutil',
-            'cp',
-            f'{file_path}/android-{xts_name}.zip',
-            f'{remote_url}'
+                'gsutil', 'cp', f'{file_path}android-{xts_name}.zip',
+                f'{remote_url}'
         ]
         logging.info(
             f'Uploading to {remote_url}: the command is {cmd}.'
@@ -193,12 +183,8 @@ def main(config_path: str, xts_name: str, branch_name: str,
     bundle_utils.set_preview_version(url_config, version_name)
 
     for target_abi, target_name in abi_info.items():
-        with tempfile.TemporaryDirectory(
-                prefix=f'fetch_artifact_{target_abi}_') as download_dir:
-            fetch_artifact(download_dir, branch_name, target_name, xts_name,
-                           version_name)
-            upload_preview_xts(download_dir, url_config, target_abi, xts_name,
-                               version_name)
+        upload_preview_xts(branch_name, target_name, url_config, target_abi,
+                           xts_name, version_name)
 
     # Only write config after bundles are correctly uploaded.
     bundle_utils.write_url_config(url_config, config_path)

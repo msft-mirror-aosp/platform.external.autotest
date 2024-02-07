@@ -45,30 +45,9 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
                             "x86": "test_suites_x86_64"
                     })
 
+    @mock.patch('subprocess.check_output')
     @mock.patch('subprocess.check_call')
-    def test_fetch_artifact_argument(self, check_call_mock):
-        """Test for argument of fetch_artifact."""
-
-        uprev_preview_version_common.fetch_artifact(
-                download_dir='test_dir',
-                branch_name='test_branch',
-                target_name='test_target',
-                xts_name='cts',
-                version_name='test_version')
-        args, kwargs = check_call_mock.call_args
-        fetch_cmd = args[0]
-        # fetch_cmd needs --branch, --target, file_name, and --bid options,
-        # so its length must be greater than or equal to 5 including command itself.
-        self.assertGreaterEqual(len(fetch_cmd), 5)
-        self.assertEquals('fetch_artifact', fetch_cmd[0])
-        self.assertEquals(
-                set([
-                        '--branch=test_branch', '--target=test_target',
-                        'android-cts.zip', '--bid=test_version'
-                ]), set(fetch_cmd[1:]))
-
-    @mock.patch('subprocess.check_call')
-    def test_upload_preview_xts(self, check_call_mock):
+    def test_upload_preview_xts(self, check_call_mock, check_output_mock):
         """Verify that gsutil cp is called with the right flags."""
 
         _TEST_CONFIG = {
@@ -85,25 +64,34 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
                 }
         }
 
+        check_output_mock.return_value = b'gs://android-build/builds/test_branch-linux-test_target/9199760/mock_hash/\n'
+
         uprev_preview_version_common.upload_preview_xts(
-                file_path='test_file_path',
+                branch_name='test_branch',
+                target_name='test_target',
                 url_config=_TEST_CONFIG,
                 abi='arm',
                 xts_name='cts',
                 version_name='9199760',
         )
 
+        self.assertEquals(check_output_mock.call_count, 1)
         self.assertEquals(check_call_mock.call_count, 2)
+        check_output_mock.assert_called_once_with([
+                'gsutil', 'ls',
+                'gs://android-build/builds/test_branch-linux-test_target/9199760/'
+        ])
+
         check_call_mock.assert_any_call([
                 'gsutil',
                 'cp',
-                'test_file_path/android-cts.zip',
+                'gs://android-build/builds/test_branch-linux-test_target/9199760/mock_hash/android-cts.zip',
                 'gs://chromeos-partner-gts/R/android-cts-9199760-linux_x86-arm.zip',
         ])
 
         check_call_mock.assert_any_call([
                 'gsutil',
                 'cp',
-                'test_file_path/android-cts.zip',
+                'gs://android-build/builds/test_branch-linux-test_target/9199760/mock_hash/android-cts.zip',
                 'gs://chromeos-arc-images/cts/bundle/R/android-cts-9199760-linux_x86-arm.zip',
         ])

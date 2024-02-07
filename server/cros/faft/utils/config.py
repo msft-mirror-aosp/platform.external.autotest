@@ -23,9 +23,10 @@ def _consolidated_json_fp():
     # Search parent dirs for other possible locations of the json file.
     while this_path and this_path != "/":
         # The ebuild copies the file into the autotest root
-        if os.path.basename(this_path) == "autotest":
+        if os.path.basename(this_path) == "server":
             search_paths.append(
-                    os.path.join(this_path, _CONSOLIDATED_JSON_BASENAME))
+                    os.path.join(os.path.dirname(this_path),
+                                 _CONSOLIDATED_JSON_BASENAME))
         # If running from the chroot, the file is in
         # src/platform/fw-testing-configs
         if os.path.basename(this_path) == "src":

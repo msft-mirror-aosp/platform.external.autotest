@@ -50,6 +50,10 @@ class _MockConfigTestCaseBaseClass(unittest.TestCase):
             return
 
         # Setup mock config._SELF_DIR, but remember the original.
+        # When running in ebuild, this looks like
+        # .../work/autotest-0.0.2/server/cros/faft/utils
+        # but when running from chroot it is
+        # .../src/third_party/autotest/files/server/cros/faft/utils
         self.temp_dir = tempfile.mkdtemp()
         self.original_self_dir = config._SELF_DIR
         config._SELF_DIR = os.path.join(
@@ -57,9 +61,10 @@ class _MockConfigTestCaseBaseClass(unittest.TestCase):
                 "src/third_party/autotest/files/server/cros/faft/utils")
         os.makedirs(config._SELF_DIR, exist_ok=True)
 
-        # Write mock config file.
-        with open(os.path.join(self.temp_dir,
-                               "src/third_party/autotest/CONSOLIDATED.json"),
+        # Write mock config file to dir above "server" like ebuild does.
+        with open(os.path.join(
+                self.temp_dir,
+                "src/third_party/autotest/files/CONSOLIDATED.json"),
                   'w',
                   encoding='utf-8') as f:
             json.dump(self.mock_configs, f)
@@ -245,7 +250,8 @@ class FindJSONFile(_MockConfigTestCaseBaseClass):
         """Check all the possible paths."""
         # Autotest ebuild location.
         autotest_path = os.path.join(
-                self.temp_dir, "src/third_party/autotest/CONSOLIDATED.json")
+                self.temp_dir,
+                "src/third_party/autotest/files/CONSOLIDATED.json")
         with open(autotest_path, 'w', encoding='utf-8') as f:
             json.dump(self.mock_configs, f)
         # Chroot location.

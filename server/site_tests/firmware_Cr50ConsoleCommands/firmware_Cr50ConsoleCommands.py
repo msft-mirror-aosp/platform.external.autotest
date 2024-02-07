@@ -76,7 +76,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     }
     CR50_GUC_BRANCH_STR = 'cr50_v1.9308_26_0.'
     CR50_MP_BRANCH_STR = 'cr50_v2.94_mp'
-    CR50_PREPVT_BRANCH_STR = 'cr50_v3.94_pp'
+    CR50_PREPVT_BRANCH_STR = 'cr50_v4.08_pp'
     CR50_TOT_STR = 'cr50_v2.0.'
     TI50_COMMON = 'ti50_common'
     VERSION_MAP = [

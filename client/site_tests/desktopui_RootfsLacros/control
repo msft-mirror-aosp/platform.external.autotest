@@ -5,12 +5,12 @@
 AUTHOR = "dhaddock, The ChromiumOS Authors"
 NAME = "desktopui_RootfsLacros"
 METADATA = {
-  "contacts": [
-    "chromeos-sw-engprod@google.com",
-    "lacros-team@google.com"
-  ],
-  "bug_component": "crbug:OS>LaCrOS",
-  "criteria": "Tests launching rootfs-lacros and checking version number."
+    "contacts": [
+        "chromeos-sw-engprod@google.com",
+        "lacros-team@google.com",
+    ],
+    "bug_component": "b:1456869",
+    "criteria": "Tests launching rootfs-lacros and checking version number.",
 }
 TEST_TYPE = "client"
 TIME = "SHORT"

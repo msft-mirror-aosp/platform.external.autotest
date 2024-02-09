@@ -5,6 +5,7 @@
 
 import logging
 import os
+import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -26,11 +27,21 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
         self._host.run(['echo', "'%s'" % POWERWASH_COMMAND, '>',
                         POWERWASH_MARKER_FILE])
         self._host.reboot()
+
         marker = self._host.run(['test', '-e', STATEFUL_MARKER_FILE],
                                 ignore_status=True, ignore_timeout=True)
         if marker is None or marker.exit_status == 0:
             raise error.TestFail("Powerwash cycle didn't remove the marker "
                                  "file on the stateful partition.")
+
+        # Post powerwashing, we MUST wait for the current boot to be marked
+        # as the higher priority again. Otherwise, we will be racing with the
+        # asynchronous task of marking the currently updated partition as
+        # successful post invocation of a rollback.
+        # However, simply check for the higher priority as well as success per
+        # kernel boot priority will not work because the currently booted kernel
+        # is already the highest priority.
+        time.sleep(60)
 
 
     def cleanup(self):

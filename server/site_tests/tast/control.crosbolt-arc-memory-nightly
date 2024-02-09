@@ -5,9 +5,10 @@
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.crosbolt-arc-memory-nightly'
 METADATA = {
-    'contacts': ['arcvm-software@google.com'],
-    'bug_component': 'b:298491915',
-    'criteria': 'Run platform.MemoryPressure.vm and platform.MemoryPressure.container',
+    "contacts": ["arcvm-software@google.com"],
+    "bug_component": "b:167286",
+    "criteria": ("Run platform.MemoryPressure.vm and"
+                 "platform.MemoryPressure.container"),
 }
 TIME = 'LENGTHY'
 TEST_TYPE = 'Server'

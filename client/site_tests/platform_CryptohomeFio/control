@@ -27,4 +27,4 @@ ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 job.run_test('platform_CryptohomeFio',
              script='surfing',
              disk_configs=['crypto'],
-             runtime=20)
+             runtime=60)

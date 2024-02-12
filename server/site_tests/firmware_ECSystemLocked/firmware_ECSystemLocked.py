@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/324928739): Remove this file when PVS no longer runs this test.
+
 import logging
 
 from autotest_lib.client.common_lib import error

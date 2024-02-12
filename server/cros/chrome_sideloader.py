@@ -18,6 +18,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils as common_utils
 from autotest_lib.client.common_lib.cros import dev_server
+from autotest_lib.server.cros import filesystem_util
 
 from distutils import version
 
@@ -48,6 +49,29 @@ _ARCH_LACROS_PLATFORM_DICT = {
     'i386': 'lacros',
     'x86_64': 'lacros'
 }
+
+
+def _gen_run_env_dict(**kwargs):
+    """Helper to generate the config for command execution on drone."""
+    res = {
+            'stdout_tee':
+            utils.TEE_TO_LOGS,
+            'stderr_tee':
+            utils.TEE_TO_LOGS,
+            'stdout_level':
+            logging.INFO,
+            'stderr_level':
+            logging.DEBUG,
+            'extra_paths': [
+                    #TODO(b/307657497): Path for cipd/vpython3 on LXC
+                    # container. Remove it once CFT migration is done.
+                    '/opt/infra-tools',
+                    # The default path for cipd/vpython3 on CFT container.
+                    '/opt/browser-tools',
+            ],
+    }
+    res.update(**kwargs)
+    return res
 
 
 def extract_from_image(host, image_name, dest_dir):
@@ -647,7 +671,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
             with zipfile.ZipFile(archive_file_path, 'r') as zip_ref:
                 zip_ref.extractall(chrome_dir)
         elif os.path.basename(archive_file_path).endswith(".squash"):
-            unsquashfs(archive_file_path, chrome_dir)
+            unsquashfs(archive_file_path, chrome_dir, **kwargs)
         else:
             raise Exception('Unsupported file extension: %s' %
                             archive_file_path)
@@ -655,11 +679,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
     # change file permissions to allow for script execution
     cmd = ['chmod', '-R', '755', chrome_dir]
     try:
-        common_utils.run(cmd,
-                         stdout_tee=utils.TEE_TO_LOGS,
-                         stderr_tee=utils.TEE_TO_LOGS,
-                         stdout_level=logging.INFO,
-                         stderr_level=logging.DEBUG)
+        common_utils.run(cmd, **_gen_run_env_dict())
     except error.CmdError as e:
         raise Exception('Error changing file permissions', e)
 
@@ -675,87 +695,80 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
 
     kill_proc_timeout = 180
     deploy_chrome_timeout = 600
-    vpython_spec = os.path.join(chrome_dir, '.vpython3')
     deploy_chrome_bin = os.path.join(chromite_dir, 'bin', 'deploy_chrome')
-    if archive_type == 'chrome':
-        board = _remove_prefix(host.get_board(), 'board:')
-        cmd = [
-                'vpython3', '-vpython-spec', vpython_spec, deploy_chrome_bin,
-                '--force', '--build-dir',
-                os.path.join(chrome_dir, 'out/Release/'), '--process-timeout',
-                str(kill_proc_timeout), '--device', host.host_port, '--board',
-                board, '--mount', '--nostrip',
+    vpython_spec = os.path.join(chrome_dir, '.vpython3')
 
-                # Sometimes a DUT stucks on deploy_chrome (b/313703515).
-                # Increases the log level for investigation.
-                '--log-level', 'debug',
+    cmd = [
+            'vpython3',
+            '-vpython-spec',
+            vpython_spec,
+            deploy_chrome_bin,
+    ]
+    # In CFT SSH session is built on a SSH proxy by the host.
+    # Chromite may not detect the reboot and later hit timeout
+    # error. As a workaround remove the rootfs verification
+    # and reboot prior to the chrome deployment.
+    if kwargs.get('is_cft'):
+        filesystem_util.make_rootfs_writable(host)
+        cmd = [
+                'python3',
+                deploy_chrome_bin,
+                '--noremove-rootfs-verification',
         ]
 
-        try:
-            common_utils.run(cmd,
-                             stdout_tee=utils.TEE_TO_LOGS,
-                             stderr_tee=utils.TEE_TO_LOGS,
-                             stdout_level=logging.INFO,
-                             stderr_level=logging.DEBUG,
-                             timeout=deploy_chrome_timeout,
-                             extra_paths=['/opt/infra-tools'])
-        except error.CmdError as e:
-            logging.debug(
-                    'Error occurred executing chromite.deploy_chrome for Chrome'
-            )
-            raise e
+    if archive_type == 'chrome':
+        board = _remove_prefix(host.get_board(), 'board:')
+        _deploy_with_retry(
+                cmd + [
+                        '--force',
+                        '--build-dir',
+                        os.path.join(chrome_dir, 'out/Release/'),
+                        '--process-timeout',
+                        str(kill_proc_timeout),
+                        '--device',
+                        host.host_port,
+                        '--board',
+                        board,
+                        '--mount',
+                        '--nostrip',
+                ], deploy_chrome_timeout,
+                'Error occurred executing chromite.deploy_chrome for Chrome')
 
         # During the transition phase, since not all the builders have Lacros packaged,
         # if the archive also contains lacros_clang, lacros will be deployed. If not,
         # a warning will be given.
         lacros_dir = os.path.join(chrome_dir, 'out/Release/lacros_clang/')
         if os.path.exists(lacros_dir):
-            cmd = [
-                    'vpython3', '-vpython-spec', vpython_spec,
-                    deploy_chrome_bin, '--force', '--build-dir', lacros_dir,
-                    '--process-timeout',
-                    str(kill_proc_timeout), '--device', host.host_port,
-                    '--lacros', '--nostrip', '--skip-modifying-config-file'
-            ]
-            try:
-                common_utils.run(cmd,
-                                 stdout_tee=utils.TEE_TO_LOGS,
-                                 stderr_tee=utils.TEE_TO_LOGS,
-                                 stdout_level=logging.INFO,
-                                 stderr_level=logging.DEBUG,
-                                 timeout=deploy_chrome_timeout,
-                                 extra_paths=['/opt/infra-tools'])
-            except error.CmdError as e:
-                logging.debug(
-                        'Error occurred executing chromite.deploy_chrome for Lacros'
-                )
-                raise e
-        else:
-            logging.warning(
-                    '%s does not contain lacros_clang. Skip deploying Lacros.',
-                    gs_path)
-
-    elif archive_type == 'lacros':
-        cmd = [
-                'vpython3', '-vpython-spec', vpython_spec, deploy_chrome_bin,
-                '--build-dir',
-                os.path.join(chrome_dir, 'out/Release/'), '--process-timeout',
-                str(kill_proc_timeout), '--device', host.host_port, '--lacros',
-                '--nostrip', '--force', '--skip-modifying-config-file'
-        ]
-        try:
-            common_utils.run(cmd,
-                             stdout_tee=utils.TEE_TO_LOGS,
-                             stderr_tee=utils.TEE_TO_LOGS,
-                             stdout_level=logging.INFO,
-                             stderr_level=logging.DEBUG,
-                             timeout=deploy_chrome_timeout,
-                             extra_paths=['/opt/infra-tools'])
-        except error.CmdError as e:
-            logging.debug(
+            _deploy_with_retry(
+                    cmd + [
+                            '--force',
+                            '--build-dir',
+                            lacros_dir,
+                            '--process-timeout',
+                            str(kill_proc_timeout),
+                            '--device',
+                            host.host_port,
+                            '--lacros',
+                            '--nostrip',
+                            '--skip-modifying-config-file',
+                    ], deploy_chrome_timeout,
                     'Error occurred executing chromite.deploy_chrome for Lacros'
             )
-            raise e
+    elif archive_type == 'lacros':
+        _deploy_with_retry(
+                cmd + [
+                        '--build-dir',
+                        os.path.join(chrome_dir, 'out/Release/'),
+                        '--process-timeout',
+                        str(kill_proc_timeout),
+                        '--device',
+                        host.host_port,
+                        '--lacros',
+                        '--nostrip',
+                        '--force',
+                        '--skip-modifying-config-file',
+                ], deploy_chrome_timeout,
+                'Error occurred executing chromite.deploy_chrome for Lacros')
     else:
         raise Exception('Unknown archive_type:%s' % archive_type)
 
@@ -814,13 +827,7 @@ def download_gs(gs_path, dest_dir):
                 'cp', gs_path, dest_dir
         ]
         file_path = os.path.join(dest_dir, file_name)
-        common_utils.run(cmd,
-                         stdout_tee=utils.TEE_TO_LOGS,
-                         stderr_tee=utils.TEE_TO_LOGS,
-                         stdout_level=logging.INFO,
-                         stderr_level=logging.DEBUG,
-                         timeout=1200,
-                         extra_paths=['/opt/infra-tools'])
+        common_utils.run(cmd, timeout=1200, **_gen_run_env_dict())
 
     except Exception as e:
         raise Exception('Error downloading with gsutil from %s to %s' %
@@ -863,13 +870,44 @@ def _parse_info_from_gs_path(gs_path):
     return archive_url, bucket, image, file_name
 
 
-def unsquashfs(file_path, dest_dir):
+def _deploy_with_retry(cmd, timeout, err_msg, retries=2):
+    """Helper to retry deploy chrome via chromite."""
+    cmd.extend(['--log-level', 'debug'])
+    attempt = 0
+    while attempt < retries:
+        try:
+            return common_utils.run(cmd,
+                                    timeout=timeout,
+                                    **_gen_run_env_dict())
+        except error.CmdError as e:
+            logging.info(err_msg)
+            attempt += 1
+            if attempt < retries:
+                continue
+            raise e
+
+
+def unsquashfs(file_path, dest_dir, **kwargs):
     """
     Unarchive squashfs file into a directory.
 
     @param file_path: The path for squashfs archive.
     @param dest_dir: The directory where the file is copied to.
+
+    @return a CmdResult object or None if the command timed out and
+        ignore_timeout is True. See common_lib.utils.run().
     """
+
+    def _run(cmd, err_msg, **kwargs):
+        try:
+            return common_utils.run(cmd, **_gen_run_env_dict(**kwargs))
+        except error.CmdError as e:
+            raise Exception(err_msg, ex)
+
+    if kwargs.get('is_cft'):
+        return _run(['unsquashfs', '-f', '-d', dest_dir, file_path],
+                    f'Error running unsquashfs on {file_path}')
+
     # Download artifacts onto drone server and unzip to a temp directory.
     with tempfile.TemporaryDirectory() as tmp_squashfs_dir:
         # create ensure-file for squashfs
@@ -883,29 +921,18 @@ def unsquashfs(file_path, dest_dir):
                 'cipd', 'ensure', '-ensure-file', ensure_file_path, '-root',
                 tmp_squashfs_dir
         ]
-        try:
-            common_utils.run(cmd,
-                             stdout_tee=utils.TEE_TO_LOGS,
-                             stderr_tee=utils.TEE_TO_LOGS,
-                             stdout_level=logging.INFO,
-                             stderr_level=logging.DEBUG,
-                             extra_paths=['/opt/infra-tools'])
-        except error.CmdError as e:
-            raise Exception('Error downloading squashfs from CIPD', e)
+        _run(cmd, 'Error downloading squashfs from CIPD')
 
         # unsquashfs archive into destination directory
-        env_dict = {'LD_LIBRARY_PATH': os.path.join(tmp_squashfs_dir, 'lib')}
-        cmd = [
+        return _run([
                 os.path.join(tmp_squashfs_dir, 'squashfs-tools', 'unsquashfs'),
-                '-f', '-d', dest_dir, file_path
-        ]
-        try:
-            common_utils.run(cmd,
-                             stdout_tee=utils.TEE_TO_LOGS,
-                             stderr_tee=utils.TEE_TO_LOGS,
-                             stdout_level=logging.INFO,
-                             stderr_level=logging.DEBUG,
-                             env=env_dict,
-                             extra_paths=['/opt/infra-tools'])
-        except error.CmdError as e:
-            raise Exception('Error running unsquashfs on %s' % file_path, e)
+                '-f',
+                '-d',
+                dest_dir,
+                file_path,
+        ],
+                    f'Error running unsquashfs on {file_path}',
+                    env={
+                            'LD_LIBRARY_PATH':
+                            os.path.join(tmp_squashfs_dir, 'lib'),
+                    })

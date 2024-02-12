@@ -57,7 +57,8 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
         super().initialize(host,
                            cmdline_args,
                            full_args,
-                           restore_cr50_image=True)
+                           restore_cr50_image=True,
+                           restore_cr50_board_id=True)
         if self.gsc.NAME not in self.OLD_VERSIONS:
             raise error.TestNAError(
                     '%r is unsupported. Add image version to OLD_VERSIONS' %
@@ -146,8 +147,7 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
 
         # Rollback to the old gsc image
         logging.info('Update to old gsc release')
-        self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
-        self._retry_gsc_update_with_ccd_and_ap(self._old_release_path, 3, True)
+        self.eraseflashinfo_and_restore_image(self._old_release_path)
         # Do a powerwash to clear the state.
         logging.info('Powerwash')
         self.host.run(

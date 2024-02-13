@@ -20,19 +20,19 @@ FAST = False
 
 from autotest_lib.client.common_lib import utils
 
-keyval = dict()
-keyval['storage_qual_version'] = 3
-try:
-    keyval['bug_id'] = bug_id
-    keyval['part_id'] = part_id
-except NameError:
-    # bug_id and/or part_id variables not defined
-    pass
-utils.write_keyval(job.resultdir, keyval)
-
 args_dict = utils.args_to_dict(args)
 assert 'servo_state:WORKING' in DEPENDENCIES
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+
+keyval = dict()
+keyval['storage_qual_version'] = 3
+try:
+    keyval['bug_id'] = args_dict['bug_id']
+    keyval['part_id'] = args_dict['part_id']
+except KeyError:
+    # bug_id and/or part_id variables not defined
+    pass
+utils.write_keyval(job.resultdir, keyval)
 
 def run(machine):
     job.run_test('tast',
@@ -40,6 +40,7 @@ def run(machine):
                 test_exprs=['{test_exprs}'],
                 ignore_test_failures=False,
                 max_run_sec={duration},
+                ephemeraldevserver=False,
                 command_args=args)
 
 parallel_simple(run, machines)

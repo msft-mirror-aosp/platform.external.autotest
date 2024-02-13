@@ -32,8 +32,7 @@ class chromium(test.test):
         with tempfile.TemporaryDirectory() as tmp_archive_dir:
             archive_file_path = chrome_sideloader.download_gs(
                     args_dict.get('lacros_gcs_path'), tmp_archive_dir)
-            chrome_sideloader.unsquashfs(archive_file_path, self.server_pkg,
-                                         **args_dict)
+            chrome_sideloader.unsquashfs(archive_file_path, self.server_pkg)
             cmd = ['chmod', '-R', '755', self.server_pkg]
             try:
                 utils.run(cmd, stdout_tee=sys.stdout, stderr_tee=sys.stderr)
@@ -60,7 +59,7 @@ class chromium(test.test):
                 '--test-launcher-total-shards',
                 f'{self.shard_number}',
                 '--device',
-                f'{self.host.hostname}:{self.host.port}',
+                self.host.hostname,
                 '--board',
                 self.host.host_info_store.get().board,
                 '--path-to-outdir',
@@ -71,12 +70,11 @@ class chromium(test.test):
         logging.debug('Running: %s', cmd)
         exit_code = 0
         try:
-            result = utils.run(
-                    cmd,
-                    stdout_tee=sys.stdout,
-                    stderr_tee=sys.stderr,
-                    timeout=self.max_run_sec,
-                    extra_paths=['/opt/infra-tools', '/opt/browser-tools'])
+            result = utils.run(cmd,
+                               stdout_tee=sys.stdout,
+                               stderr_tee=sys.stderr,
+                               timeout=self.max_run_sec,
+                               extra_paths=['/opt/infra-tools'])
             exit_code = result.exit_status
         except error.CmdError as e:
             logging.debug('Error occurred executing gtest tests.')

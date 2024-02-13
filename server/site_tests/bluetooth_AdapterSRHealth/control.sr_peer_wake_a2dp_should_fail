@@ -25,6 +25,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass test',
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-drv-0014-v01', 'bt-drv-0015-v01', 'bt-phy-0010-v01']
 }
 

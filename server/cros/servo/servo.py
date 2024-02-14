@@ -781,15 +781,25 @@ class Servo(object):
             # An actually unexpected error occurred, just raise.
             raise e
         sversion = result.stdout or result.stderr
-        # The sversion output contains 3 lines:
-        # servod v1.0.816-ff8e966 // the extended version with git hash
-        # 2020-04-08 01:10:29 // the time of the latest commit
-        # chromeos-ci-legacy-us-central1-b-x32-55-u8zc // builder information
+        # The sversion output is:
+        # [stdout] 2024-01-27 03:02:26,548 - servod - INFO - Attempting to parse servod command line: ['--sversion']
+        # [stdout] With environment variables: [('SERVOD_NAME', None), ('SERVOD_PORT', None)]
+        # [stdout] servod v1.0.2092-a44c688b
+        # [stdout] Date: 2023-11-13 16:52:57
+        # [stdout] Builder: chromeos-release-builder-us-central1-c-x32-18-arn3
+        # [stdout] Hash: -a44c688b
+        # [stdout] Branch:
         # For debugging purposes, we mainly care about the version, and the
         # timestamp.
         if type(sversion) == type(b' '):
             sversion = sversion.decode("utf-8")
-        return ' '.join(sversion.split()[1:4])
+        match = re.search(r'servod (v\S+)\s+(.*)', sversion)
+        if match is None:
+            return sversion.strip()
+        ver, date = match.groups()
+        # Be flexible about 'Date: ' since older versions didn't include it.
+        date = date.replace('Date: ', '')
+        return f'{ver} {date}'
 
 
     def power_long_press(self):

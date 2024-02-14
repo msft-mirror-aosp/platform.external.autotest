@@ -6,20 +6,7 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
-  <!-- b/307412242;  fixed in 11_r15 -->
-  <Entry include="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testBeginEndSection" />
-  <Entry include="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testAsyncBeginEndSection" />
-  <Entry include="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testCounter" />
-  <Entry include="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testTracingContent" />
-  <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testBeginEndSection" />
-  <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testAsyncBeginEndSection" />
-  <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testCounter" />
-  <Entry include="CtsAtraceHostTestCases[instant] android.atrace.cts.AtraceHostTest#testTracingContent" />
   <!-- b/315920750; fixed in 11_r16 -->
   <Entry include="CtsJniTestCases android.jni.cts.JniStaticTest#test_linker_namespaces" />
   <Entry include="CtsJniTestCases[instant] android.jni.cts.JniStaticTest#test_linker_namespaces" />
-  <!-- b/322574317: fixed in 11_r15 -->
-  <Entry include="CtsLibcoreTestCases libcore.java.security.cert.X509CertificateTest#test_Provider" />
-  <!-- b/323398287: fixed in 11_r15 (tbd?) -->
-  <Entry include="CtsLibcoreOjTestCases test.java.security.cert.AKISerialNumberTest#main" />
 </SubPlan>

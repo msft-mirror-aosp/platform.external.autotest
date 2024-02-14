@@ -110,7 +110,7 @@ class BluetoothAdapterLLPrivacyTests(
                     # this may lead to false positive test result.
                     # TODO: Uprev chameleon set address as random when set discoverable
                     # if privacy is enabled.
-                    device.SetDiscoverable(True)
+                    device.SetDiscoverableNoConfigAdv(True)
                     device.SetAdvertising(True)
 
                 peer_wake = threading.Thread(target=_action_device_connect)
@@ -184,7 +184,7 @@ class BluetoothAdapterLLPrivacyTests(
     @test_retry_and_log(False)
     def test_start_device_advertise_with_rpa(self, device):
         """Set discoverable, enable LE advertising, check random address is generated"""
-        device.SetDiscoverable(True)
+        device.SetDiscoverableNoConfigAdv(True)
         advertising = device.SetAdvertising(True)
         after_address = device.GetRandomAddress()
         if isinstance(device.rpa, str):

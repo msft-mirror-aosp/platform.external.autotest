@@ -5,7 +5,7 @@
 AUTHOR = "ChromeOS Team"
 NAME = "logging_UserCrash"
 METADATA = {
-  'contacts': ['cros-telemetry@google.com'],
+  'contacts': ['chromeos-data-eng@google.com'],
    # ChromeOS > Data > Engineering > Crash Reporting
   'bug_component': 'b:1032705',
   'criteria': 'Verify crash reporter initialization and metadata production',

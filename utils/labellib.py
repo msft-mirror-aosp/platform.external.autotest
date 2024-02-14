@@ -33,7 +33,7 @@ class Key(object):
     FIRMWARE_CR50_RW_VERSION = 'cr50-rw-version'
 
 
-class LabelsMapping(collections.MutableMapping):
+class LabelsMapping(collections.abc.MutableMapping):
     """dict-like interface for working with labels.
 
     The constructor takes an iterable of labels, either plain or keyval.

@@ -48,7 +48,7 @@ class chromium(test.test):
         shutil.rmtree(self.server_pkg)
 
     def run_once(self):
-        cmd = ' '.join([
+        cmd = [
                 'vpython3',
                 '-vpython-spec',
                 f'{self.server_pkg}/.vpython3',
@@ -59,16 +59,18 @@ class chromium(test.test):
                 f'{self.shard_index}',
                 '--test-launcher-total-shards',
                 f'{self.shard_number}',
-                '--device',
-                f'{self.host.hostname}:{self.host.port}',
                 '--board',
                 self.host.host_info_store.get().board,
                 '--path-to-outdir',
                 f'{self.server_pkg}/out/Release',
-        ])
+        ]
         if self.test_args:
-            cmd += ' ' + self.test_args
-        logging.debug('Running: %s', cmd)
+            cmd.append(self.test_args)
+        if self.host.port:
+            cmd.extend(['--device', f'{self.host.hostname}:{self.host.port}'])
+        else:
+            cmd.extend(['--device', self.host.hostname])
+        logging.info('Running: %s', cmd)
         exit_code = 0
         try:
             result = utils.run(

@@ -22,6 +22,7 @@ class firmware_Cr50WPG3(Cr50Test):
     WP_DISABLE_CMD = '--wp-disable'
     DISABLED = 'disabled'
     ENABLED = 'enabled'
+    CUSTOM_RST = ',custom_rst=true'
 
     def cleanup(self):
         """Reenable servo wp."""
@@ -43,8 +44,9 @@ class firmware_Cr50WPG3(Cr50Test):
     def generate_futility_wp_cmd(self):
         """Use the cr50 serialname to generate the futility command."""
         self._futility_cmd = (
-                'sudo futility flash -p raiden_debug_spi:target=AP,serial=%s '
-                % self.gsc.get_serial())
+                'sudo futility flash -p raiden_debug_spi:target=AP,serial=%s%s '
+                % (self.gsc.get_serial(),
+                   self.CUSTOM_RST if self._use_custom_rst else ''))
 
     def ccd_get_sw_wp(self):
         """Returns 'on' if write protect is enabled. 'off' if it's disabled."""
@@ -95,6 +97,11 @@ class firmware_Cr50WPG3(Cr50Test):
             except Exception as e:
                 logging.info('Issue getting ec wp: %s', e)
 
+    def set_ccd_cpu_fw_spi(self, state):
+        """Set ccd_cpu_fw_spi if the board uses custom reset."""
+        if self._use_custom_rst:
+            self.servo.set_nocheck('ccd_cpu_fw_spi', state)
+
     def enable_ccd_spi(self):
         """Enable ccd spi access.
 
@@ -102,9 +109,16 @@ class firmware_Cr50WPG3(Cr50Test):
         """
         # There's no need to switch servo control if the main device is ccd.
         if self.servo.main_device_is_ccd():
+            self.set_ccd_cpu_fw_spi('on')
             return
-        self.servo.set('ec_uart_en', 'off')
-        self.gsc.send_command('ccdblock IGNORE_SERVO enable')
+
+        # Setup the AP flash access. This could require EC uart access. It
+        # has to be done before making ccd active.
+        self.servo.enable_main_servo_device()
+        self.set_ccd_cpu_fw_spi('on')
+
+        # Enable the CCD servo device.
+        self.servo.enable_ccd_servo_device()
         self.gsc.send_command('rddkeepalive enable')
         time.sleep(2)
         self.gsc.get_ccdstate()
@@ -113,9 +127,11 @@ class firmware_Cr50WPG3(Cr50Test):
         """Enable servo control of ec uart."""
         # There's no need to switch servo control if the main device is ccd.
         if self.servo.main_device_is_ccd():
+            self.set_ccd_cpu_fw_spi('off')
             return
         self.servo.set('ec_uart_en', 'on')
         self.servo.enable_main_servo_device()
+        self.set_ccd_cpu_fw_spi('off')
         time.sleep(2)
         self.gsc.get_ccdstate()
 
@@ -133,6 +149,7 @@ class firmware_Cr50WPG3(Cr50Test):
 
     def run_once(self):
         """Verify WP in G3."""
+        self._use_custom_rst = self.servo.has_control('ccd_cpu_fw_spi')
         if not self.servo.get_ccd_servo_device():
             raise error.TestNAError('Only supported with dual-v4')
         if not self.check_ec_capability(suppress_warning=True):
@@ -148,6 +165,9 @@ class firmware_Cr50WPG3(Cr50Test):
         self.fast_ccd_open(enable_testlab=True)
         self.gsc.send_command('ccd set OverrideWP Always')
         self.gsc.send_command('ccd set FlashAP Always')
+
+        if self.servo.has_control('cold_reset_select'):
+            self.servo.set_nocheck('cold_reset_select', 'gsc_ec_reset')
 
         if self.servo.main_device_is_flex():
             self._start_fw_wp_state = self.servo.get('fw_wp_state')

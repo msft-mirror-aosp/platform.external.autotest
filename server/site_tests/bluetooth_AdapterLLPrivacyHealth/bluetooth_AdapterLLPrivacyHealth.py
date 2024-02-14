@@ -18,7 +18,8 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
      import (BluetoothAdapterAdvMonitorTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
+        LL_PRIVACY_NOT_SUPPORTED_CHIPSETS, SUSPEND_POWER_DOWN_CHIPSETS,
+        SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
      import (BluetoothAdapterLLPrivacyTests, DEFAULT_RPA_TIMEOUT_SEC,
              MIN_RPA_TIMEOUT_SEC, LOG_PEER_RESOLVED_PUBLIC, LOG_PEER_RANDOM)
@@ -268,7 +269,9 @@ class bluetooth_AdapterLLPrivacyHealth(
             for _, device, __ in devtuples:
                 self.test_remove_pairing(device.address)
 
-    @test_wrapper('Monitor Object Health Tests', supports_floss=True)
+    @test_wrapper('Monitor Object Health Tests',
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
+                  supports_floss=True)
     def advmon_monitor_health_tests(self):
         """Tests advertisement monitor object health."""
         self.advmon_test_monitor_creation()
@@ -279,7 +282,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Interleave Scan Tests',
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def advmon_interleaved_scan_tests(self):
         """Tests interleave scan."""
@@ -287,6 +291,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Reconnect Classic HID',
                   devices={'MOUSE': 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_reconnect_classic_hid(self):
         """ Reconnects a classic HID device after suspend/resume. """
@@ -296,6 +301,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Reconnect LE HID',
                   devices={'BLE_MOUSE': 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_reconnect_le_hid(self):
         """ Reconnects a LE HID device after suspend/resume. """
@@ -305,6 +311,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Reconnect LE HID',
                   devices={'BLE_MOUSE': 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_reconnect_le_hid_with_rpa(self):
         """ Reconnects a LE HID device in privacy mode after suspend/resume. """
@@ -319,7 +326,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={'MOUSE': 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
                   ['bob'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
@@ -334,7 +342,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={'BLE_MOUSE': 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
                   ['bob'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
@@ -350,6 +359,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                           'KEYBOARD': 1
                   },
                   skip_models=['hana'],
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
@@ -363,6 +373,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                           'BLE_MOUSE': 1,
                           'KEYBOARD': 1
                   },
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_reconnect_multiple_classic_le_hid(self):
         """ Reconnects one of each classic and LE HID devices after
@@ -377,6 +388,7 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Connect Disconnect by Device Loop',
                   devices={'BLE_MOUSE': 1},
                   flags=['Quick Health'],
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_connect_disconnect_by_device_loop(self):
         """Run connect/disconnect loop initiated by device.
@@ -393,6 +405,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Connect Disconnect Loop',
                   devices={'BLE_MOUSE': 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_connect_disconnect_loop(self):
         """Run connect/disconnect loop initiated by DUT.
@@ -408,6 +421,7 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('HID Reconnect Speed',
                   devices={'BLE_MOUSE': 1},
                   flags=['Quick Health'],
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_hid_reconnect_speed(self):
         """Test the speed of a LE HID device reconnect to DUT"""
@@ -417,6 +431,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Auto Reconnect',
                   devices={'BLE_MOUSE': 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_auto_reconnect(self):
         """LE reconnection loop by resetting HID and check reconnection"""
@@ -432,6 +447,7 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('LE Receiver Role Test',
                   devices={'BLE_KEYBOARD': 1},
                   skip_models=['bob'],
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
@@ -447,6 +463,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('LE Sender Role Test',
                   devices={'BLE_KEYBOARD': 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_role_sender(self):
         """Tests basic Nearby Sender role"""
@@ -465,6 +482,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
                   },
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_role_sender_during_hid(self):
         """Tests Nearby Sender role while already connected to HID device"""
@@ -487,6 +505,7 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Use Resolving List for RPA Test',
                   devices={"BLE_MOUSE": 1},
                   minimum_kernel_version='4.19',
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_address_resolution_power_cycle(self):
         """Test RPA is used when pairing and address resolution is enabled with
@@ -509,6 +528,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Pair Remove Use RPA with Privacy Mode Test',
                   devices={"BLE_MOUSE": 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_pair_remove_privacy(self):
         """Performs discovery test with mouse peripheral and pairing with
@@ -531,6 +551,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Pair Remove Use IRK with Privacy Mode Test',
                   devices={"BLE_MOUSE": 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_pair_remove_with_irk(self):
         """Performs discovery test with mouse peripheral which is in privacy
@@ -558,6 +579,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('RPA Timeout Test',
                   devices={"BLE_MOUSE": 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def privacy_rpa_timeout(self):
         """Change RPA timeout"""
@@ -592,6 +614,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Reconnect Test',
                   devices={"BLE_MOUSE": 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_auto_reconnect_with_privacy(self):
         """Test auto reconnect after adapter reboot with device RPA rotation."""
@@ -604,6 +627,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Reconnect Test',
                   devices={"BLE_MOUSE": 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_auto_reconnect_with_privacy_by_device(self):
         """Test auto reconnect after device disconnect with device RPA rotation."""
@@ -619,7 +643,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={"BLE_MOUSE": 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
                   ['bob'],
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
+                  LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_le_hid_with_rpa(self):
         """Use LE HID to wake from suspend."""

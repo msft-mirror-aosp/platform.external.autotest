@@ -114,6 +114,11 @@ RECONNECT_PLATFORM_TYPES = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
 #                            to check for suspend stability.
 SUSPEND_POWER_DOWN_CHIPSETS = ['Realtek-RTL8822C-USB', 'MVL-8897', 'MVL-8997']
 
+# b/323192775 Intel: Some chipsets do not have the MIC failure fix.
+#                    LL privacy cannot be launched on these chipsets.
+#                    Affected chipsets: StP2, JfP2
+LL_PRIVACY_NOT_SUPPORTED_CHIPSETS = ['Intel-AC7265', 'Intel-AC9560']
+
 # Models to skip since they power down on suspend.
 SUSPEND_POWER_DOWN_MODELS = ['dru', 'druwl', 'dumo']
 

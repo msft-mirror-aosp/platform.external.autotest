@@ -88,7 +88,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             # Make sure we are offline
             utils.poll_for_condition(lambda: utils.ping(ping_server,
                                                         deadline=5,
-                                                        timeout=5) != 0,
+                                                        timeout=10) != 0,
                                      timeout=60,
                                      sleep_interval=1,
                                      desc='Ping failure while offline.')
@@ -125,7 +125,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         self._disable_internet()
 
         # Check that we are offline.
-        result = utils.ping(ping_server, deadline=5, timeout=5)
+        result = utils.ping(ping_server, deadline=5, timeout=10)
         if result != 2:
             raise error.TestFail('Ping succeeded even though we were offline.')
 

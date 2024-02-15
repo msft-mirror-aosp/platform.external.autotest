@@ -41,6 +41,7 @@ def run(machine):
                 ignore_test_failures=False,
                 max_run_sec=1200,
                 ephemeraldevserver=False,
+                report_skipped=True,
                 command_args=args)
 
 parallel_simple(run, machines)

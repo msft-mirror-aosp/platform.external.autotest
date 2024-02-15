@@ -32,10 +32,10 @@ class Suite(Enum):
 
 deqp_dir = '/usr/local/deqp'
 caselists = 'caselists'
-GLES2_FILE = os.path.join(deqp_dir, caselists, 'gles2.txt')
-GLES3_FILE = os.path.join(deqp_dir, caselists, 'gles3.txt')
-GLES31_FILE = os.path.join(deqp_dir, caselists, 'gles31.txt')
-VK_FILE = os.path.join(deqp_dir, caselists, 'vk.txt')
+GLES2_FILE = os.path.join(deqp_dir, caselists, 'gles2.txt.zst')
+GLES3_FILE = os.path.join(deqp_dir, caselists, 'gles3.txt.zst')
+GLES31_FILE = os.path.join(deqp_dir, caselists, 'gles31.txt.zst')
+VK_FILE = os.path.join(deqp_dir, caselists, 'vk.txt.zst')
 
 tests = [
         Test('dEQP-GLES2',

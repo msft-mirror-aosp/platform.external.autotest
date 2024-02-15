@@ -29,7 +29,7 @@ job.run_test('graphics_parallel_dEQP',
              tag = 'gles3',
              opts = args + [
                  'api=gles3',
-                 'caselist=/usr/local/deqp/caselists/gles3.txt',
+                 'caselist=/usr/local/deqp/caselists/gles3.txt.zst',
                  'perf_failure_description=Failures_GLES3',
                  'shard_number=0',
                  'shard_count=1'

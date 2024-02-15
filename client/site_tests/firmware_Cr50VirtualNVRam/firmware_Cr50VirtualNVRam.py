@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import re
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
@@ -241,37 +242,51 @@ class firmware_Cr50VirtualNVRam(test.test):
 
         # For attribute details see Table 204, Part 2 of TPM2.0 spec
 
+        # TODO: remove support for old attributes.
+        attributes_old = hex(1 << 10 |  # TPMA_NV_POLICY_DELETE
+                         1 << 11 |      # TPMA_NV_WRITELOCKED
+                         1 << 13 |      # TPMA_NV_WRITEDEFINE
+                         1 << 18 |      # TPMA_NV_AUTHREAD
+                         1 << 29)      # TPMA_NV_WRITTEN
+        attributes_old = '%s %s %s %s ' % (attributes_old[2:4],
+                                           attributes_old[4:6],
+                                           attributes_old[6:8],
+                                           attributes_old[8:10])
+
         attributes = hex(1 << 10 |  # TPMA_NV_POLICY_DELETE
                          1 << 11 |  # TPMA_NV_WRITELOCKED
                          1 << 13 |  # TPMA_NV_WRITEDEFINE
                          1 << 16 |  # TPMA_NV_PPREAD
                          1 << 18 |  # TPMA_NV_AUTHREAD
                          1 << 29)  # TPMA_NV_WRITTEN
-
         attributes = '%s %s %s %s ' % (attributes[2:4],
                                        attributes[4:6],
                                        attributes[6:8],
                                        attributes[8:10])
 
-        expected = ('80 01 '        # TPM_ST_NO_SESSIONS
-                    '00 00 00 3e '  # responseSize
-                    '00 00 00 00 '  # responseCode
+        # Support the old and new NvRam attributes for now
+        valid_attributes = '(%s|%s)' % (attributes_old, attributes)
+        expected = ('80 01 '                # TPM_ST_NO_SESSIONS
+                    '00 00 00 3e '          # responseSize
+                    '00 00 00 00 '          # responseCode
 
                     # TPM2B_PUBLIC: nvPublic
-                      '00 0e '        # size
-                      '01 3f ff 00 '  # nvIndex
-                      '00 0b ' +      # TPM_ALG_SHA256
-                      attributes +    # attributes
-                      '00 00 '        # authPolicy
-                      '00 0c '        # dataSize
+                      '00 0e '              # size
+                      '01 3f ff 00 '        # nvIndex
+                      '00 0b ' +            # TPM_ALG_SHA256
+                      valid_attributes +    # old or new attributes
+                      '00 00 '              # authPolicy
+                      '00 0c '              # dataSize
 
-                   # TPM2B_NAME: name
-                     '00 22 '  # size
+                    # TPM2B_NAME: name
+                     '00 22 '               # size
                      '([0-9a-f] ?){34} ')
 
-        if (not re.match(expected, re.sub('0x', '', public))):
+        m = re.match(expected, re.sub('0x', '', public))
+        if not m:
             raise error.TestError('%s does not match expected (%s)'
                                   % (public, expected))
+        logging.info('Read public groups: %s', m.groups())
 
     def __readlock_test(self):
         # Virtual NV indices explicitly cannot be read locked, and attempts

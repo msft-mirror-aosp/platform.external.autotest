@@ -103,9 +103,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
             self.test_bluetoothd_running()
 
 
-    # TODO(b/182172118) - Winky has suspend test issues
     @test_wrapper('Adapter suspend resume test',
-                  skip_models=['winky'],
                   supports_floss=True)
     def sa_adapter_suspend_resume_test(self):
         """Test dapter power states is perserved through suspend resume."""
@@ -176,9 +174,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
 
 
 
-    # TODO(b/145302986): Silencing known firmware issue with AC7260 (WP2)
-    @test_wrapper('Adapter DiscoverableTimeout test',
-                  skip_chipsets=['Intel-AC7260'], supports_floss=True)
+    @test_wrapper('Adapter DiscoverableTimeout test', supports_floss=True)
     def sa_adapter_discoverable_timeout_test(self):
         """Verify that DiscoverableTimout Property works."""
         result = self.test_discoverable_timeout(timeout_values=[0, 7, 15])

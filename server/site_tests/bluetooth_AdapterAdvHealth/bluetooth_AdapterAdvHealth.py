@@ -57,11 +57,8 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                 num_iterations=1)
 
 
-    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
-    # TODO(b/182172118) - Winky has suspend test issues
-    # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
     @test_wrapper('Suspend resume LE advertising test',
-                  skip_models=SUSPEND_POWER_DOWN_MODELS + ['winky'],
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   skip_common_errors=True,
                   supports_floss=True)
@@ -114,8 +111,6 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                 'broadcast',
                 num_iterations=1)
 
-    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
-    # TODO(b/189813813) - Scarlet Dumo loses firmware around suspend
     @test_wrapper('Advertising suspend peer test',
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,

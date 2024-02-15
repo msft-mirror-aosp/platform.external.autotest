@@ -315,12 +315,9 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.run_reconnect_device_with_rpa(
                 [(device_type, device, self._test_mouse)], rpa_timeout=30)
 
-    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
-    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID',
                   devices={'MOUSE': 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
@@ -331,12 +328,9 @@ class bluetooth_AdapterLLPrivacyHealth(
                                     device,
                                     device_test=self._test_mouse)
 
-    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
-    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
@@ -437,11 +431,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                 loops=3,
                 check_connected_method=self.test_mouse_left_click)
 
-    # TODO (b/165949047) Flaky behavior on MVL/4.4 kernel causes flakiness when
-    # connection is initiated by the peripheral. Skip the test until 2021 uprev
     @test_wrapper('LE Receiver Role Test',
                   devices={'BLE_KEYBOARD': 1},
-                  skip_models=['bob'],
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_role_receiver(self):
@@ -638,8 +629,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('HID Wakeup from Suspend Test',
                   devices={"BLE_MOUSE": 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)

@@ -270,12 +270,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                 auto_reconnect=True)
 
 
-    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
-    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID',
                   devices={'MOUSE': 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_classic_hid(self):
@@ -287,8 +284,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('Peer wakeup dark resume Classic HID',
                   devices={'MOUSE': 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_dark_resume_classic_hid(self):
@@ -299,12 +295,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                                     device_test=self._test_mouse,
                                     dark_resume=True)
 
-    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
-    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_le_hid(self):
@@ -316,8 +309,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
     @test_wrapper('Peer wakeup dark resume LE HID',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_dark_resume_le_hid(self):
@@ -328,15 +320,12 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                                     device_test=self._test_mouse,
                                     dark_resume=True)
 
-    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
-    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID with reconnect LE HID',
                   devices={
                           'BLE_MOUSE': 1,
                           'BLE_KEYBOARD': 1
                   },
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_le_hid_reconnect_le_hid(self):
@@ -361,12 +350,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self._test_keyboard_with_string(device_reconnect)
 
 
-    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
-    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup Classic HID',
                   devices={'MOUSE': 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def sr_peer_wake_classic_hid_stress(self):
         """ Use classic HID device to wake from suspend. """
@@ -376,12 +362,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                                     device_test=self._test_mouse,
                                     iterations=STRESS_ITERATIONS)
 
-    # TODO(b/151332866) - Bob can't wake from suspend due to wrong power/wakeup
-    # TODO(b/150897528) - Dru is powered down during suspend, won't wake up
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},
-                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS +
-                  ['bob'],
+                  skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
     def sr_peer_wake_le_hid_stress(self):
         """ Use LE HID device to wake from suspend. """
@@ -410,7 +393,6 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     # Suspend while discovering and advertising
     # ---------------------------------------------------------------
 
-    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Suspend while discovering',
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
@@ -470,7 +452,6 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         self.test_is_discovering()
         self.test_stop_discovery()
 
-    # TODO(b/150897528) - Scarlet Dru loses firmware around suspend
     @test_wrapper('Suspend while advertising',
                   devices={'MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,

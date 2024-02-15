@@ -352,7 +352,6 @@ class BluetoothBaseFacadeLocal(object):
 
             # Marvell chipsets
             'MVL-8897': [(('0x02df', '0x912d'), 'SDIO')],
-            'MVL-8997': [(('0x1b4b', '0x2b42'), 'USB')],
     }
 
     def __init__(self):
@@ -4556,13 +4555,11 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     # A list of device models that do not support the role of
     # 'central-peripheral'.
     NON_CENTRAL_PERIPHERAL_MODELS = [
-            "akali", "asuka", "babymega", "barla", "basking", "bob", "burnet",
-            "careena", "caroline", "cave", "cerise", "chell", "cozmo",
-            "delbin", "dru", "electro", "elm", "esche", "eve", "fennel",
-            "hana", "juniper", "kakadu", "kappa", "karma", "katsu", "kench",
-            "kenzo", "kevin", "krane", "lars", "nocturne", "pantheon", "pyro",
-            "sand", "sentry", "snappy", "sona", "soraka", "stern", "teemo",
-            "treeya360", "willow"
+            "akali", "babymega", "barla", "basking", "burnet", "careena",
+            "cerise", "cozmo", "delbin", "electro", "elm", "esche", "eve",
+            "fennel", "hana", "juniper", "kakadu", "kappa", "karma", "katsu",
+            "kench", "kenzo", "krane", "nocturne", "pantheon", "pyro", "sand",
+            "snappy", "sona", "soraka", "stern", "teemo", "treeya360", "willow"
     ]
     FLOSS_ADVERTISING_INTERVAL_UNIT = 0.625  # ms
 

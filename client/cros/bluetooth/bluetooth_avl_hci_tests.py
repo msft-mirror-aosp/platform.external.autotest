@@ -66,22 +66,21 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
     CVSD_SYNCHRONOUS_DATA_FEATURE = 'CVSD synchronous data'
 
     CHIPSETS_UNSUPPORT_LEGACY = [
-            'MVL-8897', 'MVL-8997', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB'
+            'MVL-8897', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB'
     ]
     CHIPSETS_UNSUPPORT_LEGACY_OPTIONAL = [
             'Intel-AC7265', 'Intel-AC9260', 'Intel-AC9560', 'Intel-AX200',
             'Intel-AX201', 'Intel-AX211'
     ]
-    CHIPSETS_UNSUPPORT_4_1 = ['MVL-8897', 'MVL-8997']
-    CHIPSETS_UNSUPPORT_4_2 = ['MVL-8897', 'MVL-8997']
+    CHIPSETS_UNSUPPORT_4_1 = ['MVL-8897']
+    CHIPSETS_UNSUPPORT_4_2 = ['MVL-8897']
     CHIPSETS_UNSUPPORT_5_0 = [
-            'MVL-8897', 'MVL-8997', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB',
-            'Intel-AC7265'
+            'MVL-8897', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB', 'Intel-AC7265'
     ]
     CHIPSETS_UNSUPPORT_5_2 = [
-            'MVL-8897', 'MVL-8997', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB',
-            'QCA-WCN3991', 'Intel-AC7265', 'Intel-AC9260', 'Intel-AC9560',
-            'Intel-AX200', 'Intel-AX201', 'Intel-AX203', 'Intel-AX211',
+            'MVL-8897', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB', 'QCA-WCN3991',
+            'Intel-AC7265', 'Intel-AC9260', 'Intel-AC9560', 'Intel-AX200',
+            'Intel-AX201', 'Intel-AX203', 'Intel-AX211',
             'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
             'Realtek-RTL8852A-USB', 'QCA-WCN6750'
     ]

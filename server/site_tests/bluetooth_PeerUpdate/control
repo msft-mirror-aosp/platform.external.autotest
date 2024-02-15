@@ -34,6 +34,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Bluetooth peer should be present',
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
 }
 
 

@@ -21,6 +21,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass all the Bluetooth log checking',
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-hciExt-0011-v01', 'bt-hciExt-0012-v01',
                      'bt-dbg-0009-v01', 'bt-dbg-0010-v01', 'bt-dbg-0011-v01']
 }

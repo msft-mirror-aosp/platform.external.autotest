@@ -19,6 +19,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Connection attempt during inquiry should succeed.',
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
 }
 
 

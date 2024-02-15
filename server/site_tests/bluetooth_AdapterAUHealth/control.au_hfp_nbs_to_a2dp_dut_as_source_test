@@ -24,6 +24,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass all audio file checking',
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-gen-0001-v01'],
 }
 

@@ -25,6 +25,7 @@ METADATA = {
     'criteria': (
     'Pass audio chunk testing before and after the BT device connects'),
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-audPath-0006-v01']
 }
 

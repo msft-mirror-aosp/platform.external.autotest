@@ -21,6 +21,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass the test',
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
 }
 
 

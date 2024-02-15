@@ -11,6 +11,7 @@ METADATA = {
     "bug_component": "b:167317",
     "criteria": "Test auto-reconnect after power cycle with peer in privacy mode. DUT with LL privacy turned off.",
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-gen-0001-v01', 'bt-spec-0019-v01'],
 }
 ATTRIBUTES = 'suite:bluetooth_flaky'

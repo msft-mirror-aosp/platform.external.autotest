@@ -11,6 +11,7 @@ METADATA = {
     "bug_component": "b:167317",
     "criteria": "Reconnect after suspend in floss with LE hid in privacy mode. DUT with LL privacy turned on.",
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-gen-0001-v01', 'bt-spec-0019-v01'],
 }
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'

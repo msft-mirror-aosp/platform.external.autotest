@@ -22,6 +22,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Adapter should advertise with correct parameters',
     'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
 }
 
 

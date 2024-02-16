@@ -9,6 +9,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from autotest_lib.client.common_lib import error
 import fcntl
 import logging
 import os
@@ -61,6 +62,7 @@ class OutputRecorder(object):
     START_DELAY_SECS = 1        # Delay after starting recording.
     STOP_DELAY_SECS = 1         # Delay before stopping recording.
     POLLING_DELAY_SECS = 0.1    # Delay before next polling.
+    PROCESS_TERMINATE_TIMEOUT = 1
     TMP_FILE = '/tmp/output_recorder.dat'
 
     def __init__(self, cmd, open_mode=DEFAULT_OPEN_MODE,
@@ -84,6 +86,7 @@ class OutputRecorder(object):
         self.contents = []
 
         # Create a thread dedicated to record the output.
+        self._recorder = None
         self._recording_thread = None
         self._stop_recording_thread_event = threading.Event()
 
@@ -103,6 +106,9 @@ class OutputRecorder(object):
         try:
             popen_kwargs = {'stdout': self._node, 'stderr': self._node}
             _may_append_encoding_kwargs(popen_kwargs)
+            if self._recorder is not None:
+                logging.error('Recorder process is already running, killing')
+                self._recorder.kill()
             self._recorder = subprocess.Popen(self.cmd, **popen_kwargs)
         except:
             raise OutputRecorderError('Failed to run "%s"' %
@@ -142,6 +148,9 @@ class OutputRecorder(object):
     def start(self):
         """Start the recording thread."""
         logging.info('Start recording thread.')
+        if self._recording_thread is not None:
+            logging.error('Recording thread is already running, stopping')
+            self.stop()
         self.clear_contents()
         self._recording_thread = threading.Thread(target=self.record)
         self._recording_thread.start()
@@ -152,12 +161,24 @@ class OutputRecorder(object):
         """Stop the recording thread."""
         logging.info('Stop recording thread.')
         time.sleep(self.stop_delay_secs)
+
+        # Stop the process.
+        if self._recorder is None:
+            raise error.TestError('Recorder process is not running')
+        self._recorder.terminate()
+        try:
+            self._recorder.wait(timeout=self.PROCESS_TERMINATE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            logging.error('Timeout waiting for the process to stop, killing')
+            self._recorder.kill()
+        self._recorder = None
+
+        # Stop the thread.
+        if self._recording_thread is None:
+            raise error.TestError('Recorder thread is not running')
         self._stop_recording_thread_event.set()
         self._recording_thread.join()
-
-        # Kill the process.
-        self._recorder.terminate()
-        self._recorder.kill()
+        self._recording_thread = None
 
 
     def clear_contents(self):

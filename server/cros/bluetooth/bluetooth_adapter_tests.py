@@ -3021,32 +3021,16 @@ class BluetoothAdapterTests(test.test):
         return codec
 
     @test_retry_and_log(False)
-    def test_audio_codec(self, device):
+    def test_audio_codec(self):
         """Test that the expected audio codec is configured successfully.
 
-        The btmon thread started at test_pairing_for_audio should be
-        stopped here.
-
-        @param device: the meta device containing a Bluetooth device
+        This function checks the btmon output. The caller should take care of
+        the |btmon_start| and |btmon_stop| calls.
 
         @returns: True if the expected codec is configured correctly.
                   False otherwise.
-
         """
-        try:
-            codec_found = utils.poll_for_condition(
-                    condition=self.get_codec_from_btmon,
-                    sleep_interval=self.ADAPTER_POLLING_DEFAULT_SLEEP_SECS,
-                    desc='get codec from btmon')
-        except utils.TimeoutError as e:
-            logging.error('get_codec_from_btmon: %s', e)
-            codec_found = None
-        except:
-            logging.error('get_codec_from_btmon: unexpected error')
-            codec_found = None
-
-        self.bluetooth_facade.btmon_stop()
-
+        codec_found = self.get_codec_from_btmon()
         codec_expected = self.get_a2dp_codec_name()
         logging.info('codec configured: %s (expected %s)', codec_found,
                      codec_expected)

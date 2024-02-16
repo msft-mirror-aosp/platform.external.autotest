@@ -66,7 +66,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         # Stop the btmon log and verify the codec.
         if self.is_a2dp_profile(test_profile):
             self.bluetooth_facade.btmon_stop()
-            self.test_audio_codec(device)
+            self.test_audio_codec()
 
         self.collect_audio_diagnostics()
         if collect_audio_files:

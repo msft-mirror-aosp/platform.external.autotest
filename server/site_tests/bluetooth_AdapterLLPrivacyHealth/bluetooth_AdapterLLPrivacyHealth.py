@@ -514,11 +514,11 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.test_discover_device(device.rpa)
 
         self.test_pairing_with_rpa(device)
+        self.test_stop_device_advertise_with_rpa(device)
 
         self.test_power_cycle_with_address_resolution()
 
         self.test_remove_pairing(device.rpa, identity_address=device.address)
-        self.test_stop_device_advertise_with_rpa(device)
         self.test_set_device_privacy(device, False)
 
     @test_wrapper('Pair Remove Use RPA with Privacy Mode Test',
@@ -537,11 +537,11 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.test_discover_device(device.rpa)
 
         self.test_pairing_with_rpa(device)
+        self.test_stop_device_advertise_with_rpa(device)
         self.run_mouse_tests(device=device)
 
         self.test_remove_pairing(device.rpa, identity_address=device.address)
         # Restore privacy setting
-        self.test_stop_device_advertise_with_rpa(device)
         self.test_set_device_privacy(device, False)
 
     @test_wrapper('Pair Remove Use IRK with Privacy Mode Test',

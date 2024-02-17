@@ -202,6 +202,30 @@ def get_cras_nodes_cmd():
             'org.chromium.cras.Control.GetNodes')
 
 
+def _dbus_uint64(x):
+    """Returns a UINT64 python-dbus object.
+
+    *Sometimes* python-dbus fails into the following cases:
+      - Attempt to convert a 64-bit integer into int32 and overflow
+      - Convert `dbus.UInt64(12345678900, variant_level=1)` (we usually get
+        this from some DBus calls) into VARIANT rather than UINT64
+
+    This function is a helper to avoid the above flakiness.
+
+    @raises: ImportError if this is not called on Cros device.
+
+    """
+    try:
+        import dbus
+    except ImportError as e:
+        logging.exception(
+                'Can not import dbus: %s. This method should only be '
+                'called on Cros device.', e)
+        raise
+
+    return dbus.types.UInt64(int(x), variant_level=0)
+
+
 def set_system_volume(volume):
     """Set the system volume.
 
@@ -218,7 +242,8 @@ def set_node_volume(node_id, volume):
     @param volume: the volume to be set(0-100).
 
     """
-    get_cras_control_interface().SetOutputNodeVolume(node_id, volume)
+    get_cras_control_interface().SetOutputNodeVolume(_dbus_uint64(node_id),
+                                                     volume)
 
 
 def get_cras_control_interface(private=False):
@@ -573,7 +598,7 @@ def set_active_input_node(node_id):
     @param node_id: node id.
 
     """
-    get_cras_control_interface().SetActiveInputNode(node_id)
+    get_cras_control_interface().SetActiveInputNode(_dbus_uint64(node_id))
 
 
 def set_active_output_node(node_id):
@@ -582,7 +607,7 @@ def set_active_output_node(node_id):
     @param node_id: node id.
 
     """
-    get_cras_control_interface().SetActiveOutputNode(node_id)
+    get_cras_control_interface().SetActiveOutputNode(_dbus_uint64(node_id))
 
 
 def add_active_output_node(node_id):
@@ -591,7 +616,7 @@ def add_active_output_node(node_id):
     @param node_id: node id.
 
     """
-    get_cras_control_interface().AddActiveOutputNode(node_id)
+    get_cras_control_interface().AddActiveOutputNode(_dbus_uint64(node_id))
 
 
 def add_active_input_node(node_id):
@@ -600,7 +625,7 @@ def add_active_input_node(node_id):
     @param node_id: node id.
 
     """
-    get_cras_control_interface().AddActiveInputNode(node_id)
+    get_cras_control_interface().AddActiveInputNode(_dbus_uint64(node_id))
 
 
 def remove_active_output_node(node_id):
@@ -609,7 +634,7 @@ def remove_active_output_node(node_id):
     @param node_id: node id.
 
     """
-    get_cras_control_interface().RemoveActiveOutputNode(node_id)
+    get_cras_control_interface().RemoveActiveOutputNode(_dbus_uint64(node_id))
 
 
 def remove_active_input_node(node_id):
@@ -618,7 +643,7 @@ def remove_active_input_node(node_id):
     @param node_id: node id.
 
     """
-    get_cras_control_interface().RemoveActiveInputNode(node_id)
+    get_cras_control_interface().RemoveActiveInputNode(_dbus_uint64(node_id))
 
 
 def get_node_id_from_node_type(node_type, is_input):

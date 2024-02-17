@@ -31,7 +31,7 @@ class AudioTest(test.test):
 
         self.host = host
         self.factory = remote_facade_factory.RemoteFacadeFactory(
-            host, results_dir=self.resultsdir)
+                host, disable_arc=True, results_dir=self.resultsdir)
         self.widget_factory = chameleon_audio_helper.AudioWidgetFactory(
             self.factory, self.host)
         self.facade = self.factory.create_audio_facade()

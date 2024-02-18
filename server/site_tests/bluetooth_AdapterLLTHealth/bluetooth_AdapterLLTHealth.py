@@ -66,7 +66,6 @@ class bluetooth_AdapterLLTHealth(BluetoothAdapterHIDReportTests,
         # Pair the central device first -
         # necessary for later connection to peripheral
         self.pair_adapter_to_device(peripheral)
-        self.test_device_set_discoverable(peripheral, False)
 
         self.start_connectable_advertisement()
         # Discover DUT from peer

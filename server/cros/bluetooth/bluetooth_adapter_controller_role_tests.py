@@ -45,6 +45,11 @@ class bluetooth_AdapterControllerRoleTests(
         self.test_discover_device(device.address)
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=False)
+
+        # DUT could reconnect to the peer right after the disconnection below
+        # if peer keeps advertising. Disable it first.
+        self.test_device_set_discoverable(device, False)
+
         # Disconnect from different sides depending on the stack.
         # This prevents the unexpected reconnection issue of BlueZ,
         # and the failing to send traffic issue of Floss.
@@ -143,7 +148,6 @@ class bluetooth_AdapterControllerRoleTests(
         # Pair the primary device first - necessary for later connection to
         # secondary device
         self.pair_adapter_to_device(primary_device)
-        self.test_device_set_discoverable(primary_device, False)
 
         # If test requires it, connect and test secondary device
         if secondary_info is not None and device_use == 'pre':
@@ -166,7 +170,15 @@ class bluetooth_AdapterControllerRoleTests(
         time.sleep(self.TEST_SLEEP_SECS)
 
         # Connect to DUT from peer, putting DUT in secondary role
-        self.test_connection_by_device(primary_device)
+        if self.floss:
+            # Floss doesn't connect to HOG profile if it's not the initiator.
+            # Explicitly connect to HOG with |test_connection_by_adapter| right
+            # after the peer is connected.
+            self.test_connection_by_device(primary_device,
+                                           post_connection_delay=0)
+            self.test_connection_by_adapter(primary_device.address)
+        else:
+            self.test_connection_by_device(primary_device)
 
         # If test requires it, connect and test secondary device
         if secondary_info is not None and device_use == 'mid':
@@ -224,9 +236,6 @@ class bluetooth_AdapterControllerRoleTests(
         # secondary device
         self.pair_adapter_to_device(nearby_device)
 
-        # We don't want peer advertising until it hears our broadcast
-        self.test_device_set_discoverable(nearby_device, False)
-
         # If test requires it, connect and test secondary device
         if secondary_info is not None and device_use == 'pre':
             self.connect_and_test_secondary_device(
@@ -252,15 +261,19 @@ class bluetooth_AdapterControllerRoleTests(
         peer_discover = self._receiver_discovery_async(nearby_device)
         peer_discover.start()
 
-        # Verify that we correctly receive advertisement from nearby device
-        self.test_receive_advertisement(address=nearby_device.address,
-                                        timeout=30)
+        if self.floss:
+            # Floss automatically connects to the peer as soon as it's
+            # discovered, without reporting any Adv events.
+            self.test_device_is_connected(nearby_device.address, timeout=30)
+        else:
+            # Verify that we correctly receive advertisement from nearby device
+            self.test_receive_advertisement(address=nearby_device.address,
+                                            timeout=30)
+            # Connect to peer from DUT
+            self.test_connection_by_adapter(nearby_device.address)
 
         # Make sure peer thread completes
         peer_discover.join()
-
-        # Connect to peer from DUT
-        self.test_connection_by_adapter(nearby_device.address)
 
         # TODO(b/164131633) On 4.4 kernel, sometimes the input device is not
         # created if we connect a second device too quickly
@@ -358,7 +371,15 @@ class bluetooth_AdapterControllerRoleTests(
         self.test_discover_by_device(nearby_device)
 
         # Connect to DUT from peer
-        self.test_connection_by_device(nearby_device)
+        if self.floss:
+            # Floss doesn't connect to HOG profile if it's not the initiator.
+            # Explicitly connect to HOG with |test_connection_by_adapter| right
+            # after the peer is connected.
+            self.test_connection_by_device(nearby_device,
+                                           post_connection_delay=0)
+            self.test_connection_by_adapter(nearby_device.address)
+        else:
+            self.test_connection_by_device(nearby_device)
 
         # TODO(b/164131633) On 4.4 kernel, sometimes the input device is not
         # created if we connect a second device too quickly

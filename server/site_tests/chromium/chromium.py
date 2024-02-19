@@ -64,17 +64,20 @@ class chromium(test.test):
                 '--path-to-outdir',
                 f'{self.server_pkg}/out/Release',
         ]
-        if self.test_args:
-            cmd.append(self.test_args)
         if self.host.port:
             cmd.extend(['--device', f'{self.host.hostname}:{self.host.port}'])
         else:
             cmd.extend(['--device', self.host.hostname])
-        logging.info('Running: %s', cmd)
+        cmd_str = (' ').join(cmd)
+        # Test args from chromium builders are unknown to the autotest wrapper,
+        # so just append whatever received here to the command string.
+        if self.test_args:
+            cmd_str += ' ' + self.test_args
+        logging.info('Running: %s', cmd_str)
         exit_code = 0
         try:
             result = utils.run(
-                    cmd,
+                    cmd_str,
                     stdout_tee=sys.stdout,
                     stderr_tee=sys.stderr,
                     timeout=self.max_run_sec,

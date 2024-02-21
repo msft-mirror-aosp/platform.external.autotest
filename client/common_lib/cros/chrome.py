@@ -81,7 +81,7 @@ class Chrome(object):
                  enable_web_app_auto_install=False,
                  disable_arc_opt_in=True,
                  disable_arc_opt_in_verification=True,
-                 disable_arc_cpu_restriction=True,
+                 disable_arc_cpu_restriction=False,
                  disable_app_sync=False,
                  disable_play_auto_install=False,
                  disable_locale_sync=True,
@@ -132,11 +132,10 @@ class Chrome(object):
              with opted-in state before login, this option needs to be set to
              False with disable_arc_opt_in=True to make ARC container work.
         @param disable_arc_cpu_restriction:
-             Adds --disable-arc-cpu-restriction to browser args. This is enabled
-             by default and will make tests run faster and is generally
-             desirable unless a test is actually trying to test performance
-             where ARC is running in the background for some porition of the
-             test.
+             Adds --disable-arc-cpu-restriction to browser args. This is disabled
+             by default and will make tests running close to end-user tests.
+             Enable it in case of testing ARC specific feature. In all other cases
+             keep it disabled.
         @param disable_app_sync:
             Adds --arc-disable-app-sync to browser args and this disables ARC
             app sync flow. By default it is enabled.

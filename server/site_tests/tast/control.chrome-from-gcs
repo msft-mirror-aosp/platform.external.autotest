@@ -58,8 +58,8 @@ More details at go/lacros-on-skylab.
 
 def run(machine):
     host = hosts.create_host(machine)
-    varslist = []
-    args_dict = utils.args_to_dict(args)
+    command_args, varslist = tast.split_arguments(args)
+    args_dict = utils.args_to_dict(command_args)
 
     # Setup DUT to use the chrome binary from gcs archive.
     chrome_dir = chrome_sideloader.chromite_deploy_chrome(host,

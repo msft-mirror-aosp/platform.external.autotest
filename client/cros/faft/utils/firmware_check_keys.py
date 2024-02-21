@@ -25,7 +25,15 @@ class firmwareCheckKeys(object):
         for evdev in glob.glob("/dev/input/event*"):
             device = InputDevice(evdev)
             if device.is_keyboard():
-                print('keyboard device %s' % evdev)
+                # Ignore Google Servo devices, since the test can't capture
+                # keyboard inputs for those devices, nor would it be correct
+                # to anyway.
+                if device.name and b'Google Servo' in device.name:
+                    logging.debug("%s: '%s' is a servo. Ignoring.",
+                                  self.__class__.__name__, device.name)
+                    continue
+                logging.debug("%s: keyboard device '%s'",
+                              self.__class__.__name__, device.name)
                 self.device = device
             if 'cros_ec_buttons' in str(device.name):
                 self.power_key_device = device
@@ -60,9 +68,14 @@ class firmwareCheckKeys(object):
                 uniq_actual_output.append(key)
 
         if uniq_actual_output != expected_sequence:
-            print('Keys mismatched %s' % pprint.pformat(uniq_actual_output))
+            logging.error(
+                    "%s: Keys mismatched: uniq_actual_output = %s, expected_sequence = %s",
+                    self.__class__.__name__,
+                    pprint.pformat(uniq_actual_output),
+                    pprint.pformat(expected_sequence))
             return -1
-        print('Key match expected: %s' % pprint.pformat(uniq_actual_output))
+        logging.info("%s: Key match expected: %s", self.__class__.__name__,
+                     pprint.pformat(uniq_actual_output))
         return len(uniq_actual_output)
 
     def check_keys(self, expected_sequence):

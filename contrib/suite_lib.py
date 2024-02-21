@@ -308,7 +308,10 @@ class TestManager(object):
         except KeyError:
             return None
 
-    def list_suite_named(self, suite_name, pretty=False):
+    def list_suite_named(self,
+                         suite_name,
+                         pretty=False,
+                         use_type_prefix=False):
         suite_tests = set()
         suite = self.find_suite_named(suite_name)
 
@@ -329,7 +332,10 @@ class TestManager(object):
                 for test in found_tests:
                     suite_tests.add(test)
             else:
-                suite_tests.add(test)
+                test_name = test
+                if use_type_prefix:
+                    test_name = '{}.{}'.format(self.tests[test].type, test)
+                suite_tests.add(test_name)
 
         if pretty:
             out_as_string = ''

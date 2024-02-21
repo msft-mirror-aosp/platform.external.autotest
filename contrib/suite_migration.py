@@ -125,7 +125,7 @@ def main(args):
                               (basepath + '/../server/site_tests'),
                               (basepath + '/../client/site_tests')])
     tests.process_all_tests()
-    suite_tests = tests.list_suite_named(args.suite)
+    suite_tests = tests.list_suite_named(args.suite, use_type_prefix=True)
 
     export_suite_to_starlark(args.suite, suite_tests, args.output)
 

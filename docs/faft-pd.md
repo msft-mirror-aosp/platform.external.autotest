@@ -34,9 +34,7 @@ way.
 
 PD FAFT requires hardware to emulate the PD port partner, e.g. a PD-capable
 power adapter, a USB-C hub, a USB-C debug accessory, a USB-C protocol converter,
-a USB-C monitor, etc. The first version of PD FAFT uses
-[Plankton](https://www.chromium.org/chromium-os/plankton) as PDTester. The
-latest version uses
+a USB-C monitor, etc. PD FAFT uses
 [ServoV4](https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/main/docs/servo_v4.md)
 as PDTester.
 
@@ -72,7 +70,7 @@ firmware\_PDResetHard, checks:
 firmware\_PDResetSoft, checks:
 
 *   Ability of DUT to initiate soft resets
-*   Ability of DUT to receive soft reset requests from Plankton
+*   Ability of DUT to receive soft reset requests from servo
 *   If DUT is dualrole capable, soft resets are done with the DUT in each power
     role
 

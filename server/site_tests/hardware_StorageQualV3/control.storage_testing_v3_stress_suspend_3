@@ -9,7 +9,7 @@ METADATA = {
     'criteria': 'Part of Storage Testing v3',
     'hw_agnostic': False
 }
-ATTRIBUTES = 'suite:storage-qual-avl-v3, suite:storage-qual-avl-v3-batch3'
+ATTRIBUTES = 'suite:storage-qual-avl-v3'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
 PRIORITY = 189

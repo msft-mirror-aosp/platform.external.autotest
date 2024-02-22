@@ -28,6 +28,7 @@ keyval = dict()
 keyval['storage_qual_version'] = 3
 try:
     keyval['bug_id'] = args_dict['bug_id']
+    keyval['avl_qual_run_id'] = args_dict['avl_qual_run_id']
     keyval['part_id'] = args_dict['part_id']
 except KeyError:
     # bug_id and/or part_id variables not defined

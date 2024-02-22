@@ -4141,8 +4141,13 @@ class BluetoothAdapterTests(test.test):
 
         # Verify that the advertisement is removed.
         if self.floss:
-            advertisement_removed = (self.bluetooth_facade.btmon_find(
-                    'LE Remove Advertising Set'))
+            # For Floss software rotation stack there won't be a "remove"
+            # command in btmon.
+            if not self.bluetooth_facade.is_multi_adv_supported():
+                advertisement_removed = True
+            else:
+                advertisement_removed = (self.bluetooth_facade.btmon_find(
+                        'LE Remove Advertising Set'))
         else:
             advertisement_removed = (
                     self.bluetooth_facade.btmon_find('Advertising Removed')
@@ -4347,7 +4352,11 @@ class BluetoothAdapterTests(test.test):
         # looks like:
         #   LE Remove Advertising Set
         #       Handle: 0
-        if len(instance_ids) > 0:
+        #
+        # Floss software rotation: No remove command can be observed in btmon
+        #
+        if len(instance_ids
+               ) > 0 and self.bluetooth_facade.is_multi_adv_supported():
             if self.floss:
                 remove_adv_data_str = 'LE Remove Advertising Set'
             else:

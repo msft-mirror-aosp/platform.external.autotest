@@ -325,7 +325,7 @@ def _load_config():
 
 class ResultsManager:
     def __init__(self, results_parser, results_sender):
-        self.parent_directories = []
+        self.parent_directory = ""
         self.result_directories = set()
         self.results = []
         self.results_parser = results_parser
@@ -333,15 +333,17 @@ class ResultsManager:
         self.bug_id = None
         self.suite_name = ""
 
-        self.moblab_id = self.get_fake_moblab_id()
+        if "PUBLISH_HOSTNAME" in os.environ:
+            self.moblab_id = os.environ["PUBLISH_HOSTNAME"]
+        else:
+            self.moblab_id = self.get_fake_moblab_id()
 
-    def new_directory(self, parent_dir: str):
-        self.parent_directories.append(parent_dir)
+    def set_directory(self, parent_dir: str):
+        self.parent_directory = parent_dir
 
     def enumerate_all_directories(self):
         self.result_directories = set()
-        for parent_dir in self.parent_directories:
-            self.enumerate_result_directories(parent_dir)
+        self.enumerate_result_directories(self.parent_directory)
 
     def enumerate_result_directories(self, parent_dir):
         """ Gets all test directories.
@@ -383,6 +385,7 @@ class ResultsManager:
         Returns:
             A string representing a fake moblab id.
         """
+
         script_dir = os.path.dirname(__file__)
         fake_moblab_id_path = os.path.join(CONFIG_DIR, FAKE_MOBLAB_ID_FILE)
 
@@ -497,6 +500,9 @@ class ResultsParserClass:
         job.afe_job_id = str(job_id)
         if not job.afe_parent_job_id:
             job.afe_parent_job_id = str(job_id + 1)
+            if "avl_qual_run_id" in job.keyval_dict:
+                logging.info("found avl_qual_run_id in keyval dict")
+                job.afe_parent_job_id = str(job.keyval_dict["avl_qual_run_id"])
         name = self.job_tag(job_id, job.machine)
         export_tko_job_to_file(job, name, serialize_path)
 
@@ -825,6 +831,7 @@ def main(args):
 
     persistent_settings = dict()
     if parsed_args.bucket != "" and parsed_args.sa_path != "":
+        logging.info("setting bucket and sa_path from flags")
         persistent_settings["bucket"] = parsed_args.bucket
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = parsed_args.sa_path
     else:
@@ -836,7 +843,7 @@ def main(args):
 
     results_manager = ResultsManager(ResultsParser, ResultsSender)
     results_manager.set_destination(persistent_settings["bucket"])
-    results_manager.new_directory(parsed_args.directory)
+    results_manager.set_directory(parsed_args.directory)
 
     if parsed_args.bug:
         results_manager.annotate_results_with_bugid(parsed_args.bug)

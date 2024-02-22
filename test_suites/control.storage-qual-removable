@@ -1,0 +1,22 @@
+# Copyright 2024 The ChromiumOS Authors.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'storage-qual-removable'
+METADATA = {
+    'contacts': ['chromeos-storage@google.com'],
+    'bug_component': 'b:974567',
+    'criteria': 'Storage Qualification card reader suite',
+    'hw_agnostic': False
+}
+TEST_TYPE = 'Server'
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['max_runtime_mins'] = 120
+args_dict['name'] = 'storage-qual-removable'
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

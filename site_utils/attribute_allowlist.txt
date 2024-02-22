@@ -987,6 +987,7 @@ suite:storage-qual-avl-v3-batch1
 suite:storage-qual-avl-v3-batch2
 suite:storage-qual-avl-v3-batch3
 suite:storage-qual-avl-v3-batch4
+suite:storage-qual-removable
 suite:storagequal
 suite:stress
 suite:stub

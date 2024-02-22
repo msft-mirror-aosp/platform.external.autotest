@@ -17,7 +17,6 @@ from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.chameleon import chameleon_audio_helper
 from autotest_lib.client.cros.chameleon import chameleon_audio_ids
 from autotest_lib.server.cros.audio import audio_test
-from autotest_lib.server.cros.multimedia import remote_facade_factory
 
 
 class audio_AudioAfterSuspend(audio_test.AudioTest):
@@ -53,8 +52,8 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
         jack_plugger = self.audio_board.get_jack_plugger()
         if plug_state:
             jack_plugger.plug()
-            audio_test_utils.check_plugged_nodes_contain(self.audio_facade,
-                                                         self.audio_nodes)
+            audio_test_utils.check_plugged_nodes_contain(
+                    self.facade, self.audio_nodes)
         else:
             jack_plugger.unplug()
         time.sleep(self.SHORT_WAIT)
@@ -107,7 +106,7 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
 
     def check_correct_audio_node_selected(self):
         """Checks the node selected by Cras is correct."""
-        audio_test_utils.check_audio_nodes(self.audio_facade, self.audio_nodes)
+        audio_test_utils.check_audio_nodes(self.facade, self.audio_nodes)
 
 
     def play_and_record(self, source_widget, recorder_widget):
@@ -117,9 +116,9 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
         @param recorder_widget: widget to do the recording
 
         """
-        audio_test_utils.dump_cros_audio_logs(
-                self.host, self.audio_facade, self.resultsdir,
-                'before_playback')
+        audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                              self.resultsdir,
+                                              'before_playback')
 
         self.check_correct_audio_node_selected()
 
@@ -138,9 +137,9 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
         recorder_widget.stop_recording()
         logging.debug('Stopped recording.')
 
-        audio_test_utils.dump_cros_audio_logs(
-                self.host, self.audio_facade, self.resultsdir,
-                'after_recording')
+        audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                              self.resultsdir,
+                                              'after_recording')
 
         recorder_widget.read_recorded_binary()
 
@@ -243,9 +242,6 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
         self.errors = []
         self.golden_file, self.low_pass_freq = golden_data
         chameleon_board = self.host.chameleon
-        self.factory = remote_facade_factory.RemoteFacadeFactory(
-                self.host, results_dir=self.resultsdir)
-        self.audio_facade = self.factory.create_audio_facade()
         chameleon_board.setup_and_reset(self.outputdir)
         widget_factory = chameleon_audio_helper.AudioWidgetFactory(
                 self.factory, host)
@@ -298,8 +294,8 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
             # Explicitly select the node as there is a known issue
             # that the selected node might change after a suspension.
             # We should remove this after the issue is addressed(crbug:987529).
-            self.audio_facade.set_selected_node_types(self.audio_nodes[0],
-                                                      self.audio_nodes[1])
+            self.facade.set_selected_node_types(self.audio_nodes[0],
+                                                self.audio_nodes[1])
 
             if binder_widget != None:
                 with chameleon_audio_helper.bind_widgets(binder_widget):

@@ -189,9 +189,10 @@ class network_WiFi_AttenuatedPerf(wifi_cell_test_base.WiFiCellTestBase):
             # Midpoint round to keep results somewhat consistent.
             knee_atten = round(knee_atten)
             step_size = max(1, self._attenuation_increment // 2)
+            min_atten = self.context.attenuator.get_minimal_total_attenuation()
             for atten in numpy.arange(knee_atten - step_size,
                                       knee_atten + step_size + 1, step_size):
-                if atten in used_attens:
+                if atten in used_attens or atten < min_atten:
                     continue
                 # Just run a single point.
                 new_points = self._run_sweep(session, [config], atten,

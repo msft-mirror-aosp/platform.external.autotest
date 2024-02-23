@@ -160,6 +160,14 @@ def serialized_deps(data):
     return serialized_deps
 
 
+def serialized_build_deps(data):
+    """Return a serialized build_deps obj (list)."""
+    serialized_build_deps = []
+    for value in data.hw_deps:
+        serialized_build_deps.append(tc_pb.TestCase.BuildDeps(value=value))
+    return serialized_build_deps
+
+
 def serialize_tags(data):
     """Return a serialized tags obj (list)."""
     serialized_tags = []
@@ -177,8 +185,12 @@ def serialize_test_case(data):
     serialized_testcase_id = tc_pb.TestCase.Id(value="tauto." + data.name)
     tags = serialize_tags(data)
     deps = serialized_deps(data)
-    return tc_pb.TestCase(id=serialized_testcase_id, name=data.name, tags=tags,
-                          dependencies=deps)
+    build_deps = serialized_build_deps(data)
+    return tc_pb.TestCase(id=serialized_testcase_id,
+                          name=data.name,
+                          tags=tags,
+                          dependencies=deps,
+                          build_dependencies=build_deps)
 
 
 def serialized_test_case_exec(data):

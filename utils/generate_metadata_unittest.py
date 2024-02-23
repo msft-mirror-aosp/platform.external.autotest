@@ -49,6 +49,7 @@ METADATA = {
 ATTRIBUTES = 'suite:fake_suite1, suite:fake_suite2'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'fakedep2'
+HW_DEPS = []
 
 job.run_test('fake_test2')
 """
@@ -72,6 +73,7 @@ METADATA = {
     'requirements': ['req1', 'req2'],
     'variant_category': 'xyz123'
 }
+HW_DEPS = ['dep1','dep2']
 DOC = '''
 a doc
 '''
@@ -152,6 +154,14 @@ class MetadataTest(unittest.TestCase):
         actual_deps = set(
                 [item.value for item in metadata.test_case.dependencies])
         self.assertEqual(expected_deps, actual_deps)
+
+        # Verify BuildDeps.
+        expected_buildDeps = ['dep1', 'dep2']
+        actual_buildDeps = [
+                item.value for item in metadata.test_case.build_dependencies
+        ]
+        self.assertEqual(expected_buildDeps, actual_buildDeps)
+
 
         # Verify harness. This is a bit of a hack but works and keeps import
         # hacking down.

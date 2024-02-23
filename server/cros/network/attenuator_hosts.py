@@ -8,6 +8,9 @@
 # This map represents the fixed loss overhead on a given antenna line.
 # The map maps from:
 #     attenuator hostname -> attenuator number -> frequency -> loss in dB.
+# Note: This is the single source of truth for wificell attenuator DB.
+#       Sync changes here to:
+#       tast-tests/cros/remote/wificell/attenuator/attenuator_hosts.go
 # yapf: disable
 HOST_FIXED_ATTENUATIONS = {
         'fake-atten-host': {

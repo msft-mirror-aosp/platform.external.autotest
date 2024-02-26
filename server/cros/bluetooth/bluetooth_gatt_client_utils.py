@@ -221,7 +221,7 @@ class GATT_Service(object):
         @return: GATT service properties.
         """
         for prop_name in self.FLOSS_PROPERTIES:
-            if prop_name is 'uuid':
+            if prop_name == 'uuid':
                 self.properties[prop_name] = str(
                         UUID(bytes=bytes(service[prop_name])))
             else:
@@ -345,7 +345,7 @@ class GATT_Characteristic(object):
         @return: GATT characteristic properties.
         """
         for prop_name in self.FLOSS_PROPERTIES:
-            if prop_name is 'uuid':
+            if prop_name == 'uuid':
                 self.properties[prop_name] = str(
                         UUID(bytes=bytes(char[prop_name])))
             else:
@@ -477,7 +477,7 @@ class GATT_Descriptor(object):
         @return: GATT descriptor properties.
         """
         for prop_name in self.FLOSS_PROPERTIES:
-            if prop_name is 'uuid':
+            if prop_name == 'uuid':
                 self.properties[prop_name] = str(
                         UUID(bytes=bytes(desc[prop_name])))
             else:

@@ -14,7 +14,6 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-perbuild-chrome"
 DOC = """
 Logs in and launches rootfs-lacros before and after a N-to-N autoupdate.
 

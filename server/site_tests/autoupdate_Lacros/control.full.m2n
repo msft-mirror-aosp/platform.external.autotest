@@ -14,7 +14,6 @@ METADATA = {
 }
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:au-m2n-chrome"
 DOC = """
 Logs in and launches rootfs-lacros before and after a M-to-N autoupdate.
 

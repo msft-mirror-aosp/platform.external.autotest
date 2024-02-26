@@ -72,7 +72,8 @@ from autotest_lib.client.cros.bluetooth.floss.gatt_client import FlossGattClient
 from autotest_lib.client.cros.bluetooth.floss.logger import FlossLogger
 from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
 from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClient
-from autotest_lib.client.cros.bluetooth.floss.scanner_client import FlossScannerClient
+from autotest_lib.client.cros.bluetooth.floss.scanner_client import (
+        FlossScannerClient, BluetoothScannerCallbacks)
 from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketManagerClient
 from autotest_lib.client.cros.bluetooth.floss.battery_manager_client import FlossBatteryManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import (
@@ -3673,6 +3674,30 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         """
         return self.advmon_interleave_logger.cancel_events
 
+    def advmon_scanner_performance_test(self,
+                                        peer_addr,
+                                        patterns,
+                                        iteration=10,
+                                        padding_interval=10,
+                                        scan_timeout=5):
+        """Evaluate the latency between the scan started and adv is received.
+
+        CAUTIONS: The RPC call would timeout if the method doesn't return in 3
+        min. Make sure that iteration * (padding_interval + scan_timeout) < 180.
+
+        @param peer_addr: str the target BT address
+        @param patterns: list of the scan patterns
+        @param iteration: num of the measurement for the scan performance
+        @param padding_interval: interval in seconds between each measurement
+        @param scan_timeout: timeout in seconds for waiting the scan result
+
+        @returns: A list containing |iteration| latency results on success.
+                  None on failure.
+                  Latency could be None if no adv is received.
+        """
+
+        raise NotImplementedError('Not implemented on BlueZ')
+
     def register_advertisement(self, advertisement_data):
         """Register an advertisement.
 
@@ -5737,6 +5762,116 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @return: True on success, False otherwise.
         """
         return self.scanner_client.remove_monitor(scanner_id)
+
+    def advmon_scanner_performance_test(self,
+                                        peer_addr,
+                                        patterns,
+                                        iteration=10,
+                                        padding_interval=10,
+                                        scan_timeout=5):
+        """Evaluate the latency between the scan started and adv is received.
+
+        CAUTIONS: The RPC call would timeout if the method doesn't return in 3
+        min. Make sure that iteration * (padding_interval + scan_timeout) < 180.
+
+        @param peer_addr: str the target BT address
+        @param patterns: list of the scan patterns
+        @param iteration: num of the measurement for the scan performance
+        @param padding_interval: interval in seconds between each measurement
+        @param scan_timeout: timeout in seconds for waiting the scan result
+
+        @returns: A list containing |iteration| latency results on success.
+                  None on failure.
+                  Latency could be None if no adv is received.
+        """
+
+        class ScannerObserver(BluetoothScannerCallbacks):
+            """Observer of certain callbacks for BLE scanner."""
+
+            def __init__(self, scanner_client, done_event, peer_addr, iter):
+                self.scanner_client = scanner_client
+                self.peer_addr = peer_addr
+                self.iter = iter
+                self.done_event = done_event
+
+                self.scanner_client.register_callback_observer(
+                        f'Perf test ScannerObserver {self.peer_addr} {self.iter}',
+                        self)
+
+            def __enter__(self):
+                pass
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                del exc_type, exc_value, traceback  # unused
+                self.cleanup()
+
+            def cleanup(self):
+                """Clean up after this observer."""
+                if self.scanner_client:
+                    self.scanner_client.unregister_callback_observer(
+                            f'Perf test ScannerObserver {self.peer_addr} {self.iter}',
+                            self)
+                    self.scanner_client = None
+
+            def on_scan_result(self, scan_result):
+                scanned_addr = scan_result.get('address')
+                if scanned_addr is not None and scanned_addr == self.peer_addr:
+                    self.done_event.set()
+
+        scanner_id = self.scanner_client.register_scanner_sync()
+        if scanner_id is None:
+            return None
+
+        # Use the same scan settings and filters as the Cross Device features.
+        scan_settings = make_kv_optional_value(None)
+        scan_filter = make_kv_optional_value(None)
+        if patterns:
+            rssi_high_threshold = -65  # kNearDeviceFoundRSSIThreshold
+            rssi_low_threshold = -80  # kNearDeviceLostRSSIThreshold
+            rssi_low_timeout = 7  # kScanningDeviceLostTimeout
+            rssi_sampling_period = 10  # kScanningRssiSamplingPeriod
+
+            rssi_high_threshold = self.convert_rssi_value_to_unsigned_byte(
+                    rssi_high_threshold)
+            rssi_low_threshold = self.convert_rssi_value_to_unsigned_byte(
+                    rssi_low_threshold)
+
+            condition = []
+            for pattern in patterns:
+                condition.append({
+                        'start_position': pattern[0],
+                        'ad_type': pattern[1],
+                        'content': pattern[2]
+                })
+
+            scan_filter = make_kv_optional_value(
+                    self.scanner_client.make_dbus_scan_filter(
+                            rssi_high_threshold, rssi_low_threshold,
+                            rssi_low_timeout, rssi_sampling_period, condition))
+
+        results = []
+        for iter in range(iteration):
+            time.sleep(padding_interval)
+            done_evt = threading.Event()
+            start_time = time.time()
+            with ScannerObserver(self.scanner_client, done_evt, peer_addr,
+                                 iter):
+                started = self.scanner_client.start_scan(
+                        scanner_id, scan_settings, scan_filter)
+                if not started:
+                    logging.error('Failed to start scan on iter %d', iter)
+                    results.append(None)
+                    continue
+                done_evt.wait(timeout=scan_timeout)
+                if not done_evt.is_set():
+                    logging.error('Timed out waiting for the scan result.')
+                    results.append(None)
+                else:
+                    results.append(time.time() - start_time)
+                if not self.scanner_client.stop_scan(scanner_id):
+                    logging.error('Failed to stop scan on iter %d', iter)
+                    continue
+        return results
 
     def get_battery_property(self, address, prop_name):
         """Read a property from GetBatteryInformation interface.

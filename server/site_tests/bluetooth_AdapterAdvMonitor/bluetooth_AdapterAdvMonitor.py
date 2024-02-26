@@ -153,6 +153,14 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         """Tests HCI events are correctly filtered."""
         self.advmon_test_hci_events_filtered()
 
+    @test_wrapper('Scan performance test',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True,
+                  flags=['Quick Health'])
+    def advmon_scanner_performance_tests(self):
+        """Tests scanner performance in different params."""
+        self.advmon_test_scanner_performance()
+
     @batch_wrapper('Advertisement Monitor API')
     def advmon_health_batch_run(self, num_iterations=1, test_name=None):
         """Run the Advertisement Monitor test batch or a specific given test.
@@ -179,6 +187,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_interleaved_scan_tests()
         self.advmon_condition_device_count_tests()
         self.advmon_hci_events_filtered_tests()
+        self.advmon_scanner_performance_tests()
 
     def run_once(self,
                  host,

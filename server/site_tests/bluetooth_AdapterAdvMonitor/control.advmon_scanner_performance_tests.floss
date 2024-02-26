@@ -1,0 +1,37 @@
+# Copyright 2024 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Tests scanner performance.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterAdvMonitor.advmon_scanner_performance_tests.floss'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Pass',
+    'hw_agnostic': False,
+    'life_cycle_stage': 'owner_monitored',
+    'requirements': ['bt-hciExt-0006-v01', 'bt-hciExt-0007-v01',
+                     'bt-hciExt-0008-v01', 'bt-hciExt-0009-v01']
+}
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterAdvMonitor',
+                 host=host,
+                 num_iterations=1,
+                 args_dict=args_dict,
+                 test_name=NAME.split('.')[1],
+                 tag='.'.join(NAME.split('.')[1:]),
+                 floss=True)
+
+
+parallel_simple(run, machines)

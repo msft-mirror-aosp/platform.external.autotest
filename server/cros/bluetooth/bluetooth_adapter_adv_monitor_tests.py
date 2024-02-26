@@ -2205,3 +2205,32 @@ class BluetoothAdapterAdvMonitorTests(
 
         # Terminate the test app instance.
         self.test_exit_app(app1)
+
+    def advmon_test_scanner_performance(self):
+        """Measures the scanner performance for different params"""
+
+        # Brya (AX211), Trogdor (WCN3991), and Cherry (MT7921) take about
+        # 0.18, 0.24, and 0.26 seconds respectively.
+        PASSING_AVG = 0.3
+
+        def avg(resutls):
+            filtered = list(filter(lambda x: x is not None, resutls))
+            if not filtered:
+                return None
+            return sum(filtered) / len(filtered)
+
+        device_address = self.devices['BLE_MOUSE'][0].address
+
+        patterns = [[0, 0x19, [0xc2, 0x03]]]
+
+        results = self.bluetooth_facade.advmon_scanner_performance_test(
+                device_address, patterns)
+        if results is None:
+            raise error.TestError('Failed to measture the scan performance')
+
+        results_avg = avg(results)
+        logging.info('avg=%s results=%s', results_avg, results)
+
+        if results_avg > PASSING_AVG:
+            raise error.TestFail('Scan performance drop, got %s, want =< %s',
+                                 results_avg, PASSING_AVG)

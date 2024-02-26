@@ -1036,6 +1036,31 @@ class BluetoothDevice(object):
         return self._proxy.get_advmon_interleave_durations()
 
     @proxy_thread_safe
+    def advmon_scanner_performance_test(self,
+                                        peer_addr,
+                                        patterns,
+                                        iteration=10,
+                                        padding_interval=10,
+                                        scan_timeout=5):
+        """Evaluate the latency between the scan started and adv is received.
+
+        CAUTIONS: The RPC call would timeout if the method doesn't return in 3
+        min. Make sure that iteration * (padding_interval + scan_timeout) < 180.
+
+        @param peer_addr: str the target BT address
+        @param patterns: list of the scan patterns
+        @param iteration: num of the measurement for the scan performance
+        @param padding_interval: interval in seconds between each measurement
+        @param scan_timeout: timeout in seconds for waiting the scan result
+
+        @returns: A list containing |iteration| latency results on success.
+                  None on failure.
+                  Latency could be None if no adv is received.
+        """
+        return self._proxy.advmon_scanner_performance_test(
+                peer_addr, patterns, iteration, padding_interval, scan_timeout)
+
+    @proxy_thread_safe
     def messages_start(self):
         """Start messages monitoring."""
         self._proxy.messages_start()

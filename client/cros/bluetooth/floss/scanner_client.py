@@ -408,6 +408,24 @@ class FlossScannerClient(BluetoothScannerCallbacks):
         self.callback_id = self.proxy().RegisterScannerCallback(objpath)
         return True
 
+    def register_callback_observer(self, name, observer):
+        """Add an observer for BluetoothScannerCallbacks.
+
+        @param name: Name of the observer.
+        @param observer: Observer that implements BluetoothScannerCallbacks.
+        """
+        if isinstance(observer, BluetoothScannerCallbacks):
+            self.callbacks.add_observer(name, observer)
+
+    def unregister_callback_observer(self, name, observer):
+        """Remove an observer for BluetoothScannerCallbacks.
+
+        @param name: Name of the observer.
+        @param observer: Observer that implements BluetoothScannerCallbacks.
+        """
+        if isinstance(observer, BluetoothScannerCallbacks):
+            self.callbacks.remove_observer(name, observer)
+
     def wait_for_on_scanner_registered(self, uuid):
         """Waits for register scanner.
 
@@ -502,7 +520,7 @@ class FlossScannerClient(BluetoothScannerCallbacks):
             return False
         return True
 
-    @glib_call(None)
+    @glib_call(False)
     def stop_scan(self, scanner_id):
         """Stops scan set using scanner_id.
 
@@ -510,7 +528,7 @@ class FlossScannerClient(BluetoothScannerCallbacks):
 
         @return: BtStatus as int on success, None otherwise.
         """
-        return self.proxy().StopScan(scanner_id)
+        return BtStatus(self.proxy().StopScan(scanner_id)) == BtStatus.SUCCESS
 
     @glib_call(None)
     def get_scan_suspend_mode(self):
@@ -578,11 +596,6 @@ class FlossScannerClient(BluetoothScannerCallbacks):
 
         @return: True on success, False otherwise.
         """
-        stop_scan = self.stop_scan(scanner_id)
-        unregister_scanner = self.unregister_scanner(scanner_id)
-
-        if stop_scan == BtStatus.SUCCESS:
-            stop_scan = True
-        else:
-            return False
-        return stop_scan and unregister_scanner
+        stopped_scan = self.stop_scan(scanner_id)
+        unregistered_scanner = self.unregister_scanner(scanner_id)
+        return stopped_scan and unregistered_scanner

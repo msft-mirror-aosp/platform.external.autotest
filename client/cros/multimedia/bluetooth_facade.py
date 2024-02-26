@@ -485,7 +485,7 @@ class BluetoothBaseFacadeLocal(object):
         # Set the number of columns to avoid output truncating when not using
         # a terminal.
         data = utils.run(
-                'btmon --columns 90 -Tr {} --no-pager'.format(path)).stdout
+                'btmon --columns 95 -Tr {} --no-pager'.format(path)).stdout
         return data
 
     def get_btmon_packets(self, path):

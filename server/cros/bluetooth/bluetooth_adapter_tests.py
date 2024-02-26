@@ -948,7 +948,7 @@ class BluetoothAdapterTests(test.test):
     #         Handle: 256
     #         Address: DC:A6:32:AE:EC:13
     CL_ACL_CONNECTED_REGEX = (
-            r"HCI Event: Connect(?: Complete| C\.\.|\.\.\.).* #\d+ \[hci\d+\] "
+            r"HCI Event: Connect(?: Complete| C\.\.|.*\.\.).* #\d+ \[hci\d+\] "
             r"(\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\n.*Status: "
             r"Success \(0x00\)\n.*\n.*Address: {}")
     # > HCI Event: Extended Inquiry Result (0x2f) plen 255

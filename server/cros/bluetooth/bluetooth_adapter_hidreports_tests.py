@@ -40,25 +40,22 @@ class BluetoothAdapterHIDReportTests(
     # ACL Data RX: Handle 256 flags 0x02 dlen 10
     # #1069 [hci0] 2024-02-12 10:57:10.947278
     #       Channel: 68 len 6 [PSM 19 mode Basic (0x00)] {chan 2}
-    #         a1 02 00 00 00 00
     # PSM with value 19 was taken from this refrence:
     # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Assigned_Numbers.pdf
-    CL_HID_NOTIFICATION_REGEX = (
-            r"ACL Data (?:RX|TX): Handle {}.* #\d+ \["
-            r"hci\d+\] ("
-            r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM 19 .*\s.*a1")
+    CL_HID_NOTIFICATION_REGEX = (r"ACL Data (?:RX|TX): Handle {}.* #\d+ \["
+                                 r"hci\d+\] ("
+                                 r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM 19")
 
     # Regex to find ACL data event time for Bluetooth BR in peer btmon log, e.g.
     # ACL Data RX: Ha.. flags 0x02 dlen 10
     # #1069 [hci0] 2024-02-12 10:57:10.947278
     #       Channel: 68 len 6 [PSM 19 mode Basic (0x00)] {chan 2}
-    #         a1 02 00 00 00 00
     # PSM with value 19 was taken from this refrence:
     # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Assigned_Numbers.pdf
     PEER_CL_HID_NOTIFICATION_REGEX = (r"ACL Data (?:RX|TX): ("
                                       r"?:Handle|H.*\.\.) .* #\d+ \[hci\d+\] "
                                       r"(\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM "
-                                      r"19 .*\s.*a1")
+                                      r"19")
     # Regex to find ACL data event time for Bluetooth LE in btmon log, e.g.
     # ACL Data RX: H.. flags 0x02 dlen 11
     # #708 [hci0] 2024-02-12 10:57:10.947278

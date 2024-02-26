@@ -60,7 +60,9 @@ class PerfTestManager(object):
                 PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL
         ]:
             return iperf_runner.IperfConfig(
-                    self._iperf_type_from_perf_type(test_type), is_openwrt)
+                    self._iperf_type_from_perf_type(test_type),
+                    is_openwrt,
+                    test_time=test_time)
         return netperf_runner.NetperfConfig(
                 self._netperf_type_from_perf_type(test_type),
                 test_time=test_time)
@@ -119,6 +121,32 @@ class PerfTestManager(object):
                 client_interface=test_device_interface,
                 server_interface=peer_device_interface,
                 ignore_failures=ignore_failures)
+
+    def run(self,
+            client_proxy,
+            server_proxy,
+            config,
+            client_interface=None,
+            server_interface=None,
+            ignore_failures=False,
+            retry_count=3):
+        """Runs Iperf command.
+        @param client_proxy: Client linux system object.
+        @param server_proxy: Server linux system object.
+        @param config: Perf manager config.
+        @param client_interface: Client interface object.
+        @param server_interface: Server interface object.
+        @param ignore_failures: A boolean value indicates whether we ignore
+                                run failures or not.
+        @param retry_count: Number of times to retry the iperf command if it
+                            fails due to an internal timeout within iperf.
+
+        """
+
+        with iperf_runner.IperfRunner(client_proxy, server_proxy, config,
+                                      client_interface,
+                                      server_interface) as runner:
+            return runner.run(ignore_failures, retry_count)
 
     def get_result(self, results, config):
         """Get a single performance result from a list of results.

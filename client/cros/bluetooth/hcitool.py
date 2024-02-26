@@ -115,6 +115,22 @@ class Hcitool(object):
                     str(status))
         return result
 
+    def read_clock(self, connection_handle='0000', clock='LocalClock'):
+        """Reads bluetooth internal clock value.
+
+        @param connection_handle: Two octet connection handle -xxxx-.
+        @param clock: Which clock to use, LocalClock or Piconet.
+
+        @return: (status, connection_handle, clock, accuracy).
+        """
+        clock = '0' if clock == 'LocalClock' else (
+                '1' if clock == 'Piconet' else '')
+        return self._execute_hcitool_cmd_or_raise(btsocket.OGF_STATUS_PARAM,
+                                                  btsocket.OCF_READ_CLOCK,
+                                                  connection_handle[2:],
+                                                  connection_handle[:2],
+                                                  clock)[0]
+
     def read_buffer_size(self):
         """Reads the buffer size of the BT controller.
 
@@ -359,6 +375,11 @@ class HciToolParser:
             # Read Buffer Size command
             (btsocket.OGF_INFO_PARAM, btsocket.OCF_READ_BUFFER_SIZE):
             '<BHBHH',
+
+            ################## OGF=0X05 (OGF_STATUS_PARAM) ##################
+            # Read clock command
+            (btsocket.OGF_STATUS_PARAM, btsocket.OCF_READ_CLOCK):
+            '<BHIH',
 
             ################## OGF=0X08 (OGF_LE_CTL) ##################
             # LE Read Local Supported Features command

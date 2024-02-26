@@ -78,6 +78,7 @@ from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketM
 from autotest_lib.client.cros.bluetooth.floss.battery_manager_client import FlossBatteryManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         GLIB_THREAD_NAME, make_kv_optional_value, GLIB_THREAD_NAME)
+from autotest_lib.client.cros.bluetooth.hcitool import Hcitool
 
 from autotest_lib.client.cros.power import power_suspend_delay
 from autotest_lib.client.cros.power import sys_power
@@ -461,6 +462,16 @@ class BluetoothBaseFacadeLocal(object):
         # Did we successfully start the cras daemon?
         return started
 
+    def request_bt_clock(self):
+        """Requests Bluetooth internal clock value.
+
+        @return: True on success, False otherwise.
+        """
+        hcitool = Hcitool()
+        if not hcitool.read_clock():
+            return False
+        return True
+
     def get_btmon_log(self, path):
         """Gets DUT btmon log.
 
@@ -468,7 +479,10 @@ class BluetoothBaseFacadeLocal(object):
 
         @return: DUT btmon log as string.
         """
-        data = utils.run('btmon -r {} --no-pager'.format(path)).stdout
+        # Set the number of columns to avoid output truncating when not using
+        # a terminal.
+        data = utils.run(
+                'btmon --columns 90 -Tr {} --no-pager'.format(path)).stdout
         return data
 
     def get_btmon_packets(self, path):

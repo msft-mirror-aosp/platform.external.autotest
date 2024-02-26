@@ -63,14 +63,23 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
     # Regex to find ACL data event time for Bluetooth A2DP audio packets in
     # btmon log, e.g.
-    # ACL Data RX: Handle 12 flags 0x02 dlen 612         #700 [hci0] 82.540952
+    # ACL Data RX: Handle 12 flags 0x02 dlen 612
+    # #700 [hci0] 2024-02-12 10:57:10.947278
     #   Channel: 64 len 608 [PSM 25 mode Basic (0x00)] {chan 0}
     # PSM with value 25 was taken from this reference:
-    # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/
-    # Assigned%20Number%20Types/Assigned_Numbers.pdf
-    A2DP_NOTIFICATION_REGEX = (
-            r"ACL Data (?:RX|TX): Handle {} .*\[hci\d+\] (\d+\.\d+)\s.*PSM 25")
-
+    # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Assigned_Numbers.pdf
+    A2DP_DUT_NOTIFICATION_REGEX = (r"ACL Data TX: Handle {} .*\[hci\d+\] ("
+                                   r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM 25")
+    # Regex to find ACL data event time for Bluetooth peer A2DP audio packets in
+    # btmon log, e.g.
+    # ACL Data RX: H.. 12 flags 0x02 dlen 612
+    # #700 [hci0] 2024-02-12 10:57:10.947278
+    #   Channel: 64 len 608 [PSM 25 mode Basic (0x00)] {chan 0}
+    # PSM with value 25 was taken from this reference:
+    # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Assigned_Numbers.pdf
+    A2DP_PEER_NOTIFICATION_REGEX = (
+            r"ACL Data RX: (?:Handle {}|H.*\.\.) .*\[hci\d+\] ("
+            r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM 25")
     # The real IP replacent when used in ssh tunneling environment
     real_ip = None
 
@@ -471,7 +480,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @return: List of peer notifications timestamp.
         """
         return self.get_peer_protocol_notif_timestamps(
-                self.A2DP_NOTIFICATION_REGEX, device)
+                self.A2DP_PEER_NOTIFICATION_REGEX, device)
 
     def get_dut_a2dp_notif_timestamps(self, device):
         """Gets DUT A2DP notifications timestamp.
@@ -481,7 +490,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @return: List of DUT notifications timestamp.
         """
         return self.get_dut_protocol_notif_timestamps(
-                self.A2DP_NOTIFICATION_REGEX, device)
+                self.A2DP_DUT_NOTIFICATION_REGEX, device)
 
     def initialize_bluetooth_player(self, device):
         """Initialize the Bluetooth media player.

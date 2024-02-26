@@ -26,25 +26,49 @@ class BluetoothAdapterHIDReportTests(
 
     HID_TEST_SLEEP_SECS = 5
     # Regex to find ACL data event time for Bluetooth LE in btmon log, e.g.
-    # ACL Data RX: Handle 3585 flags 0x02 dlen 11         #708 [hci0] 45.644842
+    # ACL Data RX: Handle 3585 flags 0x02 dlen 11
+    # #708 [hci0] 2024-02-12 10:57:10.947278
     #       ATT: Handle Value Notification (0x1b) len 6
     #         Handle: 0x000c
     #           Data: 02000000
     LE_HID_NOTIFICATION_REGEX = (
             r"ACL Data (?:RX|TX): Handle {}.* #\d+ \["
             r"hci\d+\] ("
-            r"\d+\.\d+)\s.*ATT: Handle Value Notification")
+            r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*ATT: Handle Value Notification")
 
     # Regex to find ACL data event time for Bluetooth BR in btmon log, e.g.
-    # ACL Data RX: Handle 256 flags 0x02 dlen 10         #1069 [hci0] 60.837835
+    # ACL Data RX: Handle 256 flags 0x02 dlen 10
+    # #1069 [hci0] 2024-02-12 10:57:10.947278
     #       Channel: 68 len 6 [PSM 19 mode Basic (0x00)] {chan 2}
     #         a1 02 00 00 00 00
     # PSM with value 19 was taken from this refrence:
-    # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/
-    # Assigned%20Number%20Types/Assigned_Numbers.pdf
-    CL_HID_NOTIFICATION_REGEX = (r"ACL Data (?:RX|TX): Handle {}.* #\d+ \["
-                                 r"hci\d+\] ("
-                                 r"\d+\.\d+)\s.*PSM 19 .*\s.*a1")
+    # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Assigned_Numbers.pdf
+    CL_HID_NOTIFICATION_REGEX = (
+            r"ACL Data (?:RX|TX): Handle {}.* #\d+ \["
+            r"hci\d+\] ("
+            r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM 19 .*\s.*a1")
+
+    # Regex to find ACL data event time for Bluetooth BR in peer btmon log, e.g.
+    # ACL Data RX: Ha.. flags 0x02 dlen 10
+    # #1069 [hci0] 2024-02-12 10:57:10.947278
+    #       Channel: 68 len 6 [PSM 19 mode Basic (0x00)] {chan 2}
+    #         a1 02 00 00 00 00
+    # PSM with value 19 was taken from this refrence:
+    # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Assigned_Numbers.pdf
+    PEER_CL_HID_NOTIFICATION_REGEX = (r"ACL Data (?:RX|TX): ("
+                                      r"?:Handle|H.*\.\.) .* #\d+ \[hci\d+\] "
+                                      r"(\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM "
+                                      r"19 .*\s.*a1")
+    # Regex to find ACL data event time for Bluetooth LE in btmon log, e.g.
+    # ACL Data RX: H.. flags 0x02 dlen 11
+    # #708 [hci0] 2024-02-12 10:57:10.947278
+    #       ATT: Handle Value Notification (0x1b) len 6
+    #         Handle: 0x000c
+    #           Data: 02000000
+    PEER_LE_HID_NOTIFICATION_REGEX = (r"ACL Data (?:RX|TX): (?:Handle {"
+                                      r"}|H.*\.\.) .* #\d+ \[hci\d+\] ("
+                                      r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*ATT: "
+                                      r"Handle Value Notification")
 
     def run_mouse_tests(self, device):
         """Run all bluetooth mouse reports tests.
@@ -91,6 +115,16 @@ class BluetoothAdapterHIDReportTests(
         return self.LE_HID_NOTIFICATION_REGEX if 'ble_' in device._name else (
                 self.CL_HID_NOTIFICATION_REGEX)
 
+    def __get_peer_hid_notification_regex(self, device):
+        """Gets peer HID notification regex.
+
+        @param device: Peer Bluetooth device.
+
+        @return: HID connection regex.
+        """
+        return (self.PEER_LE_HID_NOTIFICATION_REGEX if 'ble_' in device._name
+                else self.PEER_CL_HID_NOTIFICATION_REGEX)
+
     # This function currently only works with public addresses.
     # TODO(b/308882697): Make HID performance tests compatible with random
     #  address.
@@ -102,7 +136,7 @@ class BluetoothAdapterHIDReportTests(
         @return: List of peer notifications timestamp.
         """
         return self.get_peer_protocol_notif_timestamps(
-                self.__get_hid_notification_regex(device), device)
+                self.__get_peer_hid_notification_regex(device), device)
 
     # This function currently only works with public addresses.
     # TODO(b/308882697): Make HID performance tests compatible with random

@@ -909,14 +909,16 @@ class BluetoothAdapterTests(test.test):
 
     # Regex to find HCI connection event handle for Bluetooth LE in btmon log,
     # e.g.
-    # HCI Event: LE Meta Event (0x3e) plen 31             #509 [hci0] 37.342083
+    # HCI Event: LE Meta Event (0x3e) plen 31
+    # #509 [hci0] 2024-02-12 11:36:44.910669
     #       LE Enhanced Connection Complete (0x0a)
     #         Status: Success (0x00)
     #         Handle: 3585
     #         Role: Central (0x00)
     #         Peer address type: Public (0x00)
     #         Peer address: DC:A6:32:AE:EC:13
-    LE_ACL_CONNECTION_HANDLE_REGEX = (r"HCI Event: LE Meta Event .* #\d+ \["
+    LE_ACL_CONNECTION_HANDLE_REGEX = (r"HCI Event: LE Meta (?:Event|E\.\.) .* "
+                                      r"#\d+ \["
                                       r"hci\d+\].*\s.*(?:LE Enhanced "
                                       r"Connection Complete|LE Connection "
                                       r"Complete).*\n.*Status: Success \("
@@ -925,7 +927,8 @@ class BluetoothAdapterTests(test.test):
 
     # Regex to find HCI connection event time for Bluetooth LE in btmon log,
     # e.g.
-    # HCI Event: LE Meta Event (0x3e) plen 31             #509 [hci0] 37.342083
+    # HCI Event: LE Meta Event (0x3e) plen 31
+    # #509 [hci0] 2024-02-12 11:36:44.910669
     #       LE Enhanced Connection Complete (0x0a)
     #         Status: Success (0x00)
     #         Handle: 3585
@@ -933,31 +936,64 @@ class BluetoothAdapterTests(test.test):
     #         Peer address type: Public (0x00)
     #         Peer address: DC:A6:32:AE:EC:13
     LE_ACL_CONNECTED_REGEX = (r"HCI Event: LE Meta Event .* #\d+ \[hci\d+\] ("
-                              r"\d+\.\d+)\s.*(?:LE Enhanced Connection "
-                              r"Complete|LE Connection Complete).*\s.*Status: "
-                              r"Success \(0x00\)(?:.|\n)*Peer address: {}")
+                              r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*(?:LE "
+                              r"Enhanced Connection Complete|LE Connection "
+                              r"Complete).*\s.*Status: Success \(0x00\)("
+                              r"?:.|\n)*Peer address: {}")
 
     # Regex to find HCI connection event handle for Bluetooth BR in btmon log,
     # e.g.
-    # HCI Event: Connect Complete (0x03) plen 11          #881 [hci0] 47.119272
+    # HCI Event: Connect Complete (0x03) plen 11
+    # #881 [hci0] 2024-02-12 11:36:44.910669
     #         Status: Success (0x00)
     #         Handle: 256
     #         Address: DC:A6:32:AE:EC:13
     CL_ACL_CONNECTION_HANDLE_REGEX = (
-            r"HCI Event: Connect Complete.* #\d+ \["
+            r"HCI Event: Connect(?: Complete| C\.\.|\.\.\.).* #\d+ \["
             r"hci\d+\].*\n.*Status: Success \("
             r"0x00\)\n.*Handle: (\d+)\n.*Address: {}")
 
     # Regex to find HCI connection event time for Bluetooth BR in btmon log,
     # e.g.
-    # HCI Event: Connect Complete (0x03) plen 11          #881 [hci0] 47.119272
+    # HCI Event: Connect Complete (0x03) plen 11
+    # #881 [hci0] 2024-02-12 11:36:44.910669
     #         Status: Success (0x00)
     #         Handle: 256
     #         Address: DC:A6:32:AE:EC:13
     CL_ACL_CONNECTED_REGEX = (
-            r"HCI Event: Connect Complete.* #\d+ \[hci\d+\] ("
-            r"\d+\.\d+)\n.*Status: Success \("
-            r"0x00\)\n.*\n.*Address: {}")
+            r"HCI Event: Connect(?: Complete| C\.\.|\.\.\.).* #\d+ \[hci\d+\] "
+            r"(\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\n.*Status: "
+            r"Success \(0x00\)\n.*\n.*Address: {}")
+    # > HCI Event: Extended Inquiry Result (0x2f) plen 255
+    # #280 [hci0] 2024-02-12 11:36:44.910669
+    #         Num responses: 1
+    #         Address: D8:3A:DD:1D:D2:EB (OUI D8-3A-DD)
+    #         Page scan repetition mode: R1 (0x01)
+    #         Page period mode: P0 (0x00)
+    #         Class: 0x002580
+    #           Major class: Peripheral (mouse, joystick, keyboards)
+    #           Minor class: 0x20
+    #           Limited Discoverable Mode
+    #         Clock offset: 0x7464
+    #         RSSI: -26 dBm (0xe6)
+    #         Name (complete): MOUSE_REF
+    #         TX power: 0 dBm
+    CL_EXTENDED_INQUIRY_REGEX = (
+            r"HCI Event: Extended Inquiry .* #\d+ \[hci\d+\] .*\n.*Num "
+            r"responses: \d+\n.*Address: {} (?:.*\n){7,14}.*Clock "
+            r"offset: (0x[0-9A-Fa-f]+)")
+    # > HCI Event: Command Complete (0x0e) plen 12
+    # #343 [hci0] 2024-02-12 11:36:47.120523
+    #       Read Clock (0x05|0x0007) ncmd 1
+    #         Status: Success (0x00)
+    #         Handle: 0
+    #         Clock: 0x00015504
+    #         Accuracy: 0.0000 msec (0x0000)
+    READ_CLOCK_EVENT_REGEX = (
+            r"HCI Event: .* #\d+ \[hci\d+\] (\d+-\d+-\d+ "
+            r"\d+:\d+:\d+\.\d+)\n.*Read Clock \(0x05\|0x0007\).*\n.*Status: "
+            r"Success \(0x00\)\n.*\n.*Clock: (0x[0-9A-Fa-f]+)")
+
 
     def __get_chameleon_board(self, device):
         """Gets device chameleon board object.
@@ -990,6 +1026,163 @@ class BluetoothAdapterTests(test.test):
         return self.LE_ACL_CONNECTED_REGEX if 'ble_' in device._name else (
                 self.CL_ACL_CONNECTED_REGEX)
 
+    def convert_to_timestamp(self, time_str):
+        """Converts time string to timestamp.
+
+        Convert time string from YYYY-MM-dd HH:MM:SS.uuuu to timestamp.
+
+        @param time_str: String represents time YYYY-MM-dd HH:MM:SS.uuuu.
+
+        @return: Timestamp.
+        """
+        date_format = '%Y-%m-%d %H:%M:%S.%f'
+        return datetime.strptime(time_str, date_format).timestamp()
+
+    def get_os_time_difference(self, device):
+        """Gets time difference between paired DUT and peer device.
+
+        NOTEs:
+            - Only use this method at the end of the test.
+            - For BLE devices, they will be cleared to emulate BR/EDR device.
+            - At the end of this method, a cleared BLE device will be generated.
+
+        @param device: The remote Bluetooth device.
+
+        @return: Time difference between DUT and remote peer in seconds.
+        """
+
+        def convert_bt_clock_to_time(clock):
+            """Converts Bluetooth clock to second.
+
+            The least significant bit (LSB) shall tick in units of 312.5 μs (
+            i.e. half a time slot), giving a clock rate of 3.2 kHz. For more
+            details please refer to BLUETOOTH CORE SPECIFICATION Version 5.4
+            | Vol 2, part B 1.1 Bluetooth Clock.
+
+            @param clock: Bluetooth internal clock value.
+
+            @return: Time in seconds.
+            """
+            return clock * 312.5 * 4 * 10**-6
+
+        def convert_clock_to_offset(clock):
+            """Converts clock to clock offset.
+
+            Offset value callculated be the following equation: (CLKN16-2
+            Peripheral - CLKN16-2 Central) mod 2^15. For more
+            details please refer to BLUETOOTH CORE SPECIFICATION Version 5.4
+            | Vol 2, part C 4.3.2 Clock offset.
+
+            @param clock: Bluetooth internal clock value.
+
+            @return: Time offset in seconds.
+            """
+            return convert_bt_clock_to_time((int(clock, 16) >> 2) & 0x7fff)
+
+        def get_dut_connection_time():
+            """Gets DUT connection time.
+
+            @return: DUT connection time.
+            """
+            dut_connect_times = (self.bluetooth_facade.find_btmon_patterns(
+                    [connect_regex.format(device.address)],
+                    self.dut_btmon_log_path))[-1]
+
+            return dut_connect_times[-1] if len(dut_connect_times) else 0
+
+        def get_dut_clock():
+            """Gets DUT Bluetooth clock value.
+
+            @return: DUT internal clock value.
+            """
+            return self.bluetooth_facade.find_btmon_patterns(
+                    [self.READ_CLOCK_EVENT_REGEX],
+                    self.dut_btmon_log_path)[-1][-1]
+
+        def get_peer_connection_time(peer):
+            """Gets peer connection time.
+
+            @param peer: The remote Bluetooth peer.
+
+            @return: Peer connection time.
+            """
+            peer_connect_times = (peer.find_btmon_patterns(
+                    [connect_regex.format(self.bluetooth_facade.address)]))[-1]
+
+            return peer_connect_times[-1] if len(peer_connect_times) else 0
+
+        def get_peer_clock(peer):
+            """Gets peer Bluetooth clock value.
+
+            @param peer: The remote Bluetooth peer.
+
+            @return: Peer internal clock value.
+            """
+            return peer.find_btmon_patterns([self.READ_CLOCK_EVENT_REGEX
+                                             ])[-1][-1]
+
+        def request_bluetooth_clocks(device):
+            """Requests paired DUT and peer bluetooth internal clock.
+
+             @param device: The remote Bluetooth device.
+
+             NOTE: This method will cause BLE device to be cleared.
+
+            """
+            self.bluetooth_facade.request_bt_clock()
+
+            peer_device = self.__get_chameleon_board(device)
+            if 'ble' not in device._name:
+                peer_device.request_bt_clock()
+            else:
+                classic_device = self.reset_btpeer(peer_device,
+                                                   device.device_type, 1, True)
+
+                self.test_discover_device(classic_device.address)
+                time.sleep(3)
+                self.test_stop_discovery()
+
+                self.test_pairing(classic_device.address,
+                                  classic_device.pin,
+                                  trusted=True)
+                self.test_connection_by_adapter(classic_device.address)
+                peer_device.request_bt_clock()
+
+        peer = self.__get_chameleon_board(device)
+        request_bluetooth_clocks(device)
+        connect_regex = self.CL_ACL_CONNECTED_REGEX
+        clock_offset = self.bluetooth_facade.find_btmon_patterns(
+                [self.CL_EXTENDED_INQUIRY_REGEX.replace('{}', device.address)],
+                self.dut_btmon_log_path)[-1][-1]
+
+        dut_connection_time = get_dut_connection_time()
+        peer_connection_time = get_peer_connection_time(peer)
+        dut_clock_event_time, dut_clock_value = get_dut_clock()
+        peer_clock_event_time, peer_clock_value = get_peer_clock(peer)
+
+        clock_offset = convert_bt_clock_to_time(int(clock_offset, 16))
+        dut_connection_time = self.convert_to_timestamp(dut_connection_time)
+        peer_connection_time = self.convert_to_timestamp(peer_connection_time)
+        dut_clock_event_time = self.convert_to_timestamp(dut_clock_event_time)
+        peer_clock_event_time = self.convert_to_timestamp(
+                peer_clock_event_time)
+        dut_clock_value = convert_clock_to_offset(dut_clock_value)
+        peer_clock_value = convert_clock_to_offset(peer_clock_value)
+
+        n = round((peer_connection_time -
+                   (dut_connection_time +
+                    (peer_clock_event_time - dut_clock_event_time) +
+                    (dut_clock_value + clock_offset - peer_clock_value))) /
+                  40.96)
+
+        osys = (peer_clock_event_time -
+                dut_clock_event_time) + (dut_clock_value + clock_offset -
+                                         peer_clock_value) + (40.96 * n)
+
+        logging.debug('Time difference between DUT and peer %s is %s second',
+                      device.address, osys)
+        return osys
+
     # This function currently only works with public addresses.
     # TODO(b/308882697): Make HID performance tests compatible with random
     #  address.
@@ -999,29 +1192,19 @@ class BluetoothAdapterTests(test.test):
         @param protocol_regex: Protocol notification message regex in btmon.
         @param device: The Bluetooth device.
 
-        @return: List of DUT notifications timestamp.
+        @return: Timestamp of notifications from the last connection session
+                of the |device|.
         """
         connection_handle = self.bluetooth_facade.find_btmon_patterns([
                 self.__get_acl_connection_handle_regex(device).format(
                         device.address)
-        ], self.dut_btmon_log_path)[0][0]
+        ], self.dut_btmon_log_path)[-1][-1]
 
-        connect_regex = self.__get_acl_connection_regex(device)
         notification_regex = protocol_regex.format(connection_handle)
 
-        dut_connect_times, dut_data_times = (
-                self.bluetooth_facade.find_btmon_patterns([
-                        connect_regex.format(device.address),
-                        notification_regex
-                ], self.dut_btmon_log_path))
-
-        connect_time = dut_connect_times[-1] if len(dut_connect_times) else 0
-        notification_time_stamps = []
-        if connect_time and len(dut_data_times):
-            for data_time in dut_data_times:
-                notification_time_stamps.append(
-                        float(data_time) - float(connect_time))
-        return notification_time_stamps
+        dut_data_times = (self.bluetooth_facade.find_btmon_patterns(
+                [notification_regex], self.dut_btmon_log_path))[0]
+        return [self.convert_to_timestamp(value) for value in dut_data_times]
 
     def get_peer_protocol_notif_timestamps(self, protocol_regex, device):
         """Gets peer protocol notifications timestamp.
@@ -1035,23 +1218,13 @@ class BluetoothAdapterTests(test.test):
         connection_handle = peer.find_btmon_patterns([
                 self.__get_acl_connection_handle_regex(device).format(
                         self.bluetooth_facade.address)
-        ])[0][0]
+        ])[-1][-1]
 
-        connect_regex = self.__get_acl_connection_regex(device)
         notification_regex = protocol_regex.format(connection_handle)
 
-        peer_connect_times, peer_data_times = (peer.find_btmon_patterns([
-                connect_regex.format(self.bluetooth_facade.address),
-                notification_regex
-        ]))
+        peer_data_times = peer.find_btmon_patterns([notification_regex])[0]
 
-        connect_time = peer_connect_times[-1] if len(peer_connect_times) else 0
-        notification_time_stamps = []
-        if connect_time and len(peer_data_times):
-            for data_time in peer_data_times:
-                notification_time_stamps.append(
-                        float(data_time) - float(connect_time))
-        return notification_time_stamps
+        return [self.convert_to_timestamp(value) for value in peer_data_times]
 
     def assert_on_fail(self, result, raiseNA=False):
         """ If the called function returns a false-like value, raise an error.

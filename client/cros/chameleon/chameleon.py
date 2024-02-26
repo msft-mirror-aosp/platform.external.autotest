@@ -254,12 +254,26 @@ class ChameleonBoard(object):
             BluetoothRefController(chameleon_connection)
             )
 
+    def request_bt_clock(self, connection_handle='0000', clock='LocalClock'):
+        """Requests the Bluetooth clock from a peer device.
+
+        @param connection_handle: Two octet connection handle -xxxx-.
+        @param clock: Which clock to use, LocalClock or Piconet.
+        """
+
+        clock = '0' if clock == 'LocalClock' else (
+                '1' if clock == 'Piconet' else '')
+
+        self.host.run("hcitool cmd 0x05 0x07 {} {} {}".format(
+                connection_handle[2:], connection_handle[:2], clock))
+
     def get_rpi_btmon_log(self):
         """Gets RPI btmon log.
 
         @return: A string contains all RPI btmon log.
         """
-        data = self.host.run("btmon -r /var/log/btsnoop.log --no-pager").stdout
+        data = self.host.run(
+                "btmon -Tr /var/log/btsnoop.log --no-pager").stdout
         return data
 
     def get_btmon_packets(self):

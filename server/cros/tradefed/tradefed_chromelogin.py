@@ -108,6 +108,8 @@ class ChromeLogin(object):
         # We want to suppress the Google doodle as it is not part of the image
         # and can be different content every day interacting with testing.
         cmd += ' --no-startup-window'
+        # Disable CPU restriction to de-flake perf sensitive tests.
+        cmd += ' --disable-arc-cpu-restriction'
         # Disable several forms of auto-installation to stablize the tests.
         cmd += ' --no-arc-syncs'
         # Disable popup notifications to stabilize the tests.

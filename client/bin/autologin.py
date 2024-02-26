@@ -116,6 +116,9 @@ def main(args):
                         help='Log in with provided password.')
     parser.add_argument('-w', '--no-startup-window', action='store_true',
                         help='Prevent startup window from opening (no doodle).')
+    parser.add_argument('--disable-arc-cpu-restriction',
+                        action='store_true',
+                        help='Disables ARC CPU restriction.')
     parser.add_argument('--no-arc-syncs', action='store_true',
                         help='Prevent ARC sync behavior as much as possible.')
     parser.add_argument('--no-popup-notification',
@@ -163,18 +166,20 @@ def main(args):
                     'Setting resolution is only supported on VM displays')
 
     # Avoid calling close() on the Chrome object; this keeps the session active.
-    cr = chrome.Chrome(extra_browser_args=browser_args,
-                       extension_paths=extension_paths,
-                       arc_mode=('enabled' if args.arc else None),
-                       arc_timeout=args.arc_timeout,
-                       autotest_ext=args.vm_force_max_resolution,
-                       disable_app_sync=args.no_arc_syncs,
-                       disable_play_auto_install=args.no_arc_syncs,
-                       username=args.username,
-                       password=(password if args.username else None),
-                       gaia_login=(args.username is not None),
-                       disable_default_apps=(not args.enable_default_apps),
-                       dont_override_profile=args.dont_override_profile)
+    cr = chrome.Chrome(
+            extra_browser_args=browser_args,
+            extension_paths=extension_paths,
+            arc_mode=('enabled' if args.arc else None),
+            arc_timeout=args.arc_timeout,
+            autotest_ext=args.vm_force_max_resolution,
+            disable_arc_cpu_restriction=args.disable_arc_cpu_restriction,
+            disable_app_sync=args.no_arc_syncs,
+            disable_play_auto_install=args.no_arc_syncs,
+            username=args.username,
+            password=(password if args.username else None),
+            gaia_login=(args.username is not None),
+            disable_default_apps=(not args.enable_default_apps),
+            dont_override_profile=args.dont_override_profile)
 
     # Change display resolution
     if args.vm_force_max_resolution:

@@ -241,11 +241,10 @@ class firmware_Cr50VirtualNVRam(test.test):
 
         # For attribute details see Table 204, Part 2 of TPM2.0 spec
 
-        attributes = hex(1 << 10 |  # TPMA_NV_POLICY_DELETE
-                         1 << 11 |  # TPMA_NV_WRITELOCKED
-                         1 << 13 |  # TPMA_NV_WRITEDEFINE
-                         1 << 16 |  # TPMA_NV_PPREAD
-                         1 << 18 |  # TPMA_NV_AUTHREAD
+        attributes = hex(1 << 10 | # TPMA_NV_POLICY_DELETE
+                         1 << 11 | # TPMA_NV_WRITELOCKED
+                         1 << 13 | # TPMA_NV_WRITEDEFINE
+                         1 << 18 | # TPMA_NV_AUTHREAD
                          1 << 29)  # TPMA_NV_WRITTEN
 
         attributes = '%s %s %s %s ' % (attributes[2:4],

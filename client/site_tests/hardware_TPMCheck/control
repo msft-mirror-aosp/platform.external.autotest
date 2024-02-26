@@ -4,13 +4,14 @@
 
 AUTHOR = "n/a"
 NAME = "hardware_TPMCheck"
-ATTRIBUTES = "suite:kernel_per-build_regression, suite:pvs-kernel"
+ATTRIBUTES = "suite:kernel_per-build_regression, suite:pvs-kernel, suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv1"
 PURPOSE = "Basic check of the TPM state"
 CRITERIA = "Check that the TPM is in the expected state for use in ChromeOS."
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "seancarpenter@google.com"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Used during AP/EC firmware suspend stress testing"
+        "criteria": "Used during AP/EC firmware suspend stress testing",
+        "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"

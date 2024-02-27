@@ -15,7 +15,7 @@ ATTRIBUTES = "suite:faft_cr50_tot"
 # first in the suite.
 TIME = "LENGTHY"
 TEST_TYPE = "Server"
-DEPENDENCIES = "servo_state:WORKING,cr50-ro-keyid:dev"
+DEPENDENCIES = "servo_state:WORKING"
 
 DOC = """
 Update the Cr50 to the TOT image from the latest reef build. This requires that

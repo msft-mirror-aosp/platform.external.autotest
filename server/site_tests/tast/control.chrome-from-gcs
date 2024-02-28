@@ -7,6 +7,7 @@ import os
 
 from autotest_lib.server.cros import chrome_sideloader
 from autotest_lib.server import utils
+from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'ChromeOS SW Engprod Team (chromeos-sw-engprod@google.com)'
 METADATA = {

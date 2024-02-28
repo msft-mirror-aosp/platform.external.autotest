@@ -508,10 +508,13 @@ class Cr50Test(FirmwareTest):
                       image is given.
         """
         image = image if image else self.get_saved_cr50_original_path()
-        self.run_update_to_eraseflashinfo()
-        self._retry_gsc_update_with_ccd_and_ap(image, 3, False)
+        self.update_cr50_image_and_board_id(image, cr50_utils.ERASED_CHIP_BID,
+                                            False)
 
-    def update_cr50_image_and_board_id(self, image_path, bid):
+    def update_cr50_image_and_board_id(self,
+                                       image_path,
+                                       bid,
+                                       remove_images=True):
         """Set the chip board id and updating the cr50 image.
 
         Make 3 attempts to update to the original image. Use a rollback from
@@ -520,6 +523,7 @@ class Cr50Test(FirmwareTest):
 
         @param image_path: path of the image to update to.
         @param bid: the board id to set.
+        @param remove_images: if True remove the OS gsc images.
         """
         current_bid = cr50_utils.GetChipBoardId(self.host)
         bid_mismatch = current_bid != bid
@@ -533,7 +537,8 @@ class Cr50Test(FirmwareTest):
 
         # Make sure the DUT doesn't have any gsc firmware images otherwise it'll
         # enter a reboot loop when it updates to the EFI image.
-        self.remove_gsc_firmware_images()
+        if remove_images:
+            self.remove_gsc_firmware_images()
 
         if eraseflashinfo:
             self.run_update_to_eraseflashinfo()

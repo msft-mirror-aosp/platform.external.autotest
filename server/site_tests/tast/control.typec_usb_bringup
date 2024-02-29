@@ -7,7 +7,7 @@ from autotest_lib.server.site_tests.tast import tast
 
 # TODO: will remove this control file after b/323418491 fixed.
 AUTHOR = 'The ChromiumOS Authors'
-NAME = 'tast.typec_usb3_storage'
+NAME = 'tast.typec_usb_bringup'
 METADATA = {
     'contacts': ['chromeos-usb@google.com'],
     'bug_component': 'b:958036', # ChromeOS > Platform > Connectivity > USB

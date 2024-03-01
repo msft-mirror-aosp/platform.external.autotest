@@ -75,14 +75,14 @@ class touch_TouchscreenScroll(
 
     def run_once(self):
         """Entry point of this test."""
-        if not self._is_testable():
-            raise error.TestNAError('Missing input data for this board name.')
 
         # Log in and start test.
         with chrome.Chrome(autotest_ext=True,
                            init_network_controller=True) as cr:
             self._open_events_page(cr)
             self._events.expand_page()
+            if not self._is_testable():
+                raise error.TestNAError('Missing input data for this board name.')
             self._events.set_prevent_defaults(False)
             for direction in self._DIRECTIONS:
                 self._check_scroll_direction(self._filepaths[direction],

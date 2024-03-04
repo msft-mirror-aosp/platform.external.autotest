@@ -28,11 +28,19 @@ keyval = dict()
 keyval['storage_qual_version'] = 3
 try:
     keyval['bug_id'] = args_dict['bug_id']
-    keyval['avl_qual_run_id'] = args_dict['avl_qual_run_id']
     keyval['part_id'] = args_dict['part_id']
 except KeyError:
     # bug_id and/or part_id variables not defined
     pass
+
+try:
+    # process qual_run_id separately to ensure that bug_id and part_id
+    # are captured even if it's not a qual run
+    keyval['qual_run_id'] = args_dict['qual_run_id']
+except KeyError:
+    # qual_run_id not defined
+    pass
+
 utils.write_keyval(job.resultdir, keyval)
 
 def run(machine):

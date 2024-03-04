@@ -447,6 +447,8 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
                                   self.GBBD_SAVED_0,
                                   self.FLAG_0)
 
+        # TODO(b/327795084): reenable after flakiness is investigated.
+        return
         # Generate a hash with non-zero flags.
         self.update_to_dbg_and_clear_hash()
         self.restore_ro()

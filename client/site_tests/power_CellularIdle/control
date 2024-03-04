@@ -9,7 +9,8 @@ METADATA = {
     "criteria": "This test is a benchmark.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:cellular_power"
+# Disabling tauto test. b/328059571
+# ATTRIBUTES = "suite:cellular_power"
 TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)

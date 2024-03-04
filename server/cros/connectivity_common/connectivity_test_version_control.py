@@ -58,9 +58,9 @@ def get_latest_stable_autotest_commit_url(phy):
     generate_commit_url = lambda bundle_url: os.path.join(
             HTTP_MIRROR_URL, bundle_url, LATEST_STABLE_AUTOTEST_COMMIT)
 
-    if phy is 'bluetooth':
+    if phy == 'bluetooth':
         url = generate_commit_url(BT_BUNDLE_PATH)
-    elif phy is 'wifi':
+    elif phy == 'wifi':
         url = generate_commit_url(WIFI_BUNDLE_PATH)
     else:
         raise error.TestError('Invalid phy provided. Got {0}. Supported phys: ' \
@@ -110,7 +110,7 @@ def fetch_target_commit(phy):
         logging.info(output.stdout)
         logging.info(output.stderr)
     else:
-            target_commit = output.stdout.strip()
+        target_commit = output.stdout.strip()
 
     logging.info('The latest commit will be used is:\n%s', target_commit)
     return current_commit, target_commit

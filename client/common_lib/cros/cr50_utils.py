@@ -103,8 +103,6 @@ gsctool.add_argument('-o', '--ccd_open', dest='ccd_open', action='store_true')
 # something went wrong.
 gsctool.add_argument('-b',
                      '--binvers',
-                     '-c',
-                     '--corrupt',
                      '-f',
                      '--fwver',
                      '-g',

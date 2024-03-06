@@ -65,12 +65,12 @@ class touch_TouchscreenZoom(touch_playback_test_base.touch_playback_test_base):
 
     def run_once(self):
         """Entry point of this test."""
-        if not self._is_testable():
-            raise error.TestNAError('Missing input data for this board name.')
 
         # Log in and start test.
         with chrome.Chrome(init_network_controller=True) as cr:
             self._open_events_page(cr)
+            if not self._is_testable():
+                raise error.TestNAError('Missing input data for this board name.')
             self._events.set_prevent_defaults(False)
 
             # Zoom in and out on test page.

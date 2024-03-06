@@ -500,9 +500,9 @@ class ResultsParserClass:
         job.afe_job_id = str(job_id)
         if not job.afe_parent_job_id:
             job.afe_parent_job_id = str(job_id + 1)
-            if "avl_qual_run_id" in job.keyval_dict:
-                logging.info("found avl_qual_run_id in keyval dict")
-                job.afe_parent_job_id = str(job.keyval_dict["avl_qual_run_id"])
+            if "qual_run_id" in job.keyval_dict:
+                logging.info("found qual_run_id in keyval dict")
+                job.afe_parent_job_id = str(job.keyval_dict["qual_run_id"])
         name = self.job_tag(job_id, job.machine)
         export_tko_job_to_file(job, name, serialize_path)
 

@@ -188,6 +188,16 @@ class ChromeLogin(object):
                             install_autotest=True)
             except Exception as e2:
                 logging.error('Failed to login to Chrome', exc_info=e2)
+
+                # b/327969092: Provide more precise failure reason for analysis
+                grep = self._host.run(
+                        'grep "migrated to dircrypto" /var/log/chrome/chrome',
+                        ignore_status=True,
+                        timeout=10)
+                if grep.exit_status == 0:
+                    raise error.TestError(
+                            'Failed to login to Chrome (b/327969092)')
+
                 raise error.TestError('Failed to login to Chrome')
 
         # Disable multicast for stable testing. This is done after the login,

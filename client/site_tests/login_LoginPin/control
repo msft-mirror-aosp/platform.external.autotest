@@ -10,7 +10,7 @@
 
 NAME = "login_LoginPin"
 METADATA = {
-    "contacts": ["cros-lurs@google.com", "anastasiian@chromium.org"],
+    "contacts": ["cros-lurs@google.com", "antrim@chromium.org"],
     "bug_component": "b:1207311", # ChromeOS > Software > Commercial (Enterprise) > Identity > LURS
     "criteria": "Login as a new user, setup pin, login again with the pin",
 }

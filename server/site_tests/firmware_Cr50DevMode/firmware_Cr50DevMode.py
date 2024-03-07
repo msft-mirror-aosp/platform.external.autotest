@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
@@ -10,10 +12,16 @@ class firmware_Cr50DevMode(Cr50Test):
     """Verify cr50 can tell the state of the dev mode switch."""
     version = 1
 
+    MRC_FILE = '/tmp/mrc.txt'
+    MRC_INDEX = '0x0000100B'
+    READ_MRC_CMD = 'tpm_manager_client read_space --index=%s --file=%s ; cat %s' % (
+            MRC_INDEX, MRC_FILE, MRC_FILE)
 
     def switch_to_mode(self, mode):
         """Switch to the given mode (dev or normal)."""
         to_dev = mode == 'dev'
+        logging.info('Entering: %s', mode)
+        logging.info(self.host.run(self.READ_MRC_CMD, ignore_status=True))
         self.switcher.reboot_to_mode(to_mode=mode)
 
         if to_dev != self.gsc.in_dev_mode():

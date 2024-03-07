@@ -1,0 +1,59 @@
+# Copyright 2024 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.client.common_lib import utils
+from autotest_lib.server.site_tests.tast import tast
+
+# TODO: will remove this control file after b/323418491 fixed.
+
+# We need different control files for MCCI switch-port combinations, so
+# list out which board this is used for here, so that it easier to look
+# up when we need to swap DUTs or upgrade the fixture to a new DUT:
+# MODEL = Skolas EVT
+AUTHOR = 'The ChromiumOS Authors'
+NAME = 'tast.typec_dp_bringup-2'
+METADATA = {
+    'contacts': ['chromeos-usb@google.com'],
+    'bug_component': 'b:958036', # ChromeOS > Platform > Connectivity > USB
+    'criteria': 'Tauto wrapper for specified tast tests',
+}
+TIME = 'MEDIUM'
+TEST_TYPE = 'Server'
+DEPENDENCIES = 'servo_state:WORKING'
+ATTRIBUTES = 'suite:typec_dp_bringup-2'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run Tast tests for typec DP functionality with an MCCI switch.
+
+The tests are part of 'group:typec_dp_bringup'. The 'group:typec_dp_bringup'
+sub-attribute limits it to DP bringup tests.
+
+Tast is an integration-testing framework analagous to the test-running portion
+of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/
+for more information.
+
+See http://go/tast-failures for information about investigating failures.
+'''
+
+# TODO: b/323418491 Create Swarming Labels in UFS for peripherals Tests.
+command_args, varslist = tast.split_arguments(args)
+varslist += ['typec.McciSerial=0002CC0004C9', 'typec.McciPort=2']
+
+def run(machine):
+    args_dict = utils.args_to_dict(command_args)
+    assert 'servo_state:WORKING' in DEPENDENCIES
+    servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+    job.run_test('tast',
+                 host=hosts.create_host(machine, servo_args=servo_args),
+                 test_exprs=['("group:typec" && typec_dp_bringup)'],
+                 ignore_test_failures=False, max_run_sec=10800,
+                 command_args=command_args,
+                 varslist=varslist,
+                 is_cft=is_cft)
+
+parallel_simple(run, machines)

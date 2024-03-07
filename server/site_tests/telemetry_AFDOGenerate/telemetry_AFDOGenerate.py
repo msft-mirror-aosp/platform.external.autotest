@@ -34,6 +34,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.server import autotest
 from autotest_lib.server import test
 from autotest_lib.server import utils
+from autotest_lib.server.cros import provision
 from autotest_lib.server.cros import filesystem_util
 from autotest_lib.server.cros import telemetry_runner
 from autotest_lib.site_utils import test_runner_utils
@@ -260,6 +261,36 @@ class telemetry_AFDOGenerate(test.test):
                 'W/o strobing perf profiles can have 100x increase in size.')
             raise RuntimeError
 
+    # TODO(b/328620954): remove this once the deeper issue here is fixed.
+    # In particular, see comment #4 on the bug for some rationale/pointers.
+    def _inject_host_info_into_host(self, host):
+        """Hack to inject info scraped from the device into `host`."""
+        # N.B., ignore_status defaults to False, so this is checked by default.
+        run_result = self._host.run('cat /etc/lsb-release')
+        stdout = run_result.stdout
+        logging.info("/etc/lsb-release contents:\n%s", stdout)
+
+        want_key = 'CHROMEOS_RELEASE_BUILDER_PATH'
+        want_key_eq = f'{want_key}='
+        builder_path_lines = [
+                x for x in stdout.splitlines() if x.startswith(want_key_eq)
+        ]
+        if not builder_path_lines:
+            logging.info('No %s found; skip injection.', want_key)
+            return
+
+        if len(builder_path_lines) > 1:
+            raise ValueError(
+                    f'Want 1 {want_key} line in /etc/lsb-release; got '
+                    f'{builder_path_lines}')
+
+        release_builder_path = builder_path_lines[0].split('=', 1)[1]
+        logging.info('Detected %s%s', want_key_eq, release_builder_path)
+
+        host_info_store = host.host_info_store.get()
+        host_info_store.set_version_label(provision.CROS_VERSION_PREFIX,
+                                          release_builder_path)
+
     def run_once(self, host, args):
         """Run a set of telemetry benchmarks.
 
@@ -277,6 +308,7 @@ class telemetry_AFDOGenerate(test.test):
         # try to remove write protection that causes the machine to
         # reboot and remount during run_benchmark. We want to avoid it.
         filesystem_util.make_rootfs_writable(self._host)
+        self._inject_host_info_into_host(host)
 
         with ExitStack() as stack:
             if self._is_arm():

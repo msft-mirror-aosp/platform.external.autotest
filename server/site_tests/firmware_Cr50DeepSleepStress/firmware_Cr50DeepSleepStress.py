@@ -159,6 +159,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                               ('dev' if cr50_dev_mode else 'normal'))
             if errors:
                 msg = 'Reboot %d failed (%s)' % (i, ' and '.join(errors))
+                logging.info(msg)
                 raise error.TestFail(msg)
 
 

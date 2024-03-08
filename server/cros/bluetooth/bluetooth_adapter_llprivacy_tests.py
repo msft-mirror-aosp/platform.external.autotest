@@ -23,8 +23,10 @@ DEVICE_CONNECTED_TIMEOUT = 45
 
 LOG_PEER_RANDOM = 'Peer address type: Random (0x01)'
 LOG_PEER_RESOLVED_PUBLIC = 'Peer address type: Resolved Public (0x02)'
-# b/325354194 Some chipsets may report a wrong address type for resolved RPA.
-CONTROLLER_RPA_ADDRESS_AS_PUBLIC_CHIPSETS = ['Realtek-RTL8852A-USB']
+# b/325354194, b/328687227 Some chipsets may report a wrong address type for resolved RPA.
+CONTROLLER_RPA_ADDRESS_AS_PUBLIC_CHIPSETS = [
+        'Realtek-RTL8852A-USB', 'Realtek-RTL8822C-USB'
+]
 
 class BluetoothAdapterLLPrivacyTests(
         bluetooth_adapter_tests.BluetoothAdapterTests):
@@ -295,7 +297,9 @@ class BluetoothAdapterLLPrivacyTests(
                                         device.address)
 
         self.test_stop_device_advertise_with_rpa(device)
-        self.test_hid_device_created(self._input_dev_uniq_addr(device))
+        self.assert_on_fail(
+                self.test_hid_device_created(
+                        self._input_dev_uniq_addr(device)))
         check_connected_method(device)
 
         try:
@@ -336,7 +340,9 @@ class BluetoothAdapterLLPrivacyTests(
                 if connect_status:
                     self.resolved_address_type_check()
 
-                self.test_hid_device_created(self._input_dev_uniq_addr(device))
+                self.assert_on_fail(
+                        self.test_hid_device_created(
+                                self._input_dev_uniq_addr(device)))
                 check_connected_method(device)
                 logging.info('reconnect time %s', str(time_diff))
                 self.test_stop_device_advertise_with_rpa(device)

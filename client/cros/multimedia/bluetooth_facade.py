@@ -3384,17 +3384,19 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
         return self._is_connected(device)
 
     @dbus_safe(False)
-    def disconnect_device(self, address):
+    def disconnect_device(self, address, identity_address=None):
         """Disconnects a device.
 
         Disconnects a device if it is connected.
 
         @param address: Address of the device to disconnect.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True on success. False otherwise.
 
         """
-        device = self._find_device(address)
+        device = self._find_device(address, identity_address)
         if not device:
             logging.error('Device not found')
             return False
@@ -5148,8 +5150,13 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """
         return self.adapter_client.connect_all_enabled_profiles(address)
 
-    def disconnect_device(self, address):
-        """Disconnect a specific address."""
+    def disconnect_device(self, address, identity_address=None):
+        """Disconnect a specific address.
+
+        @param address: Address of the device
+        @param identity_address: If device uses RPA, address is different from
+            the identity address. Here to match BlueZ interface.
+        """
         return self.adapter_client.disconnect_device(address)
 
     def get_device_property(self, address, prop_name, identity_address=None):

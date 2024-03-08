@@ -2233,7 +2233,14 @@ class BluetoothAdapterTests(test.test):
     def test_set_ll_privacy(self, enable):
         """Test set ll privacy status."""
         logging.info('Set LL privacy status to %r for this test.', enable)
-        return self.bluetooth_facade.set_ll_privacy(enable)
+        set_llp_success = self.bluetooth_facade.set_ll_privacy(enable)
+        is_powered_on = self._wait_for_condition(
+                self.bluetooth_facade.is_powered_on, method_name())
+        self.results = {
+                'set_llp_success': set_llp_success,
+                'adapter_on': is_powered_on
+        }
+        return all(self.results)
 
     @test_retry_and_log
     def test_start_discovery(self):

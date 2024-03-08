@@ -790,17 +790,19 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
-    def disconnect_device(self, address):
+    def disconnect_device(self, address, identity_address=None):
         """Disconnects a device.
 
         Disconnects a device if it is connected.
 
         @param address: Address of the device to disconnect.
+        @param identity_address: If device uses RPA, address is different from
+            the identity address.
 
         @returns: True on success. False otherwise.
 
         """
-        return self._proxy.disconnect_device(address)
+        return self._proxy.disconnect_device(address, identity_address)
 
 
     @proxy_thread_safe

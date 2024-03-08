@@ -519,13 +519,6 @@ class BluetoothAdapterQuickTests(
         # to make sure we can fully remove pairing info between tests
         self.test_is_facade_valid()
 
-        # Set ll privacy to false because default is false
-        if self.llprivacy:
-            if not self.test_set_ll_privacy(False):
-                logging.error("Failed to reset ll privacy.")
-            else:
-                logging.info("Reset ll privacy to False.")
-
         self.bluetooth_facade.stop_discovery()
 
         # Catch possible exceptions in test_reset_allowlist().
@@ -536,8 +529,14 @@ class BluetoothAdapterQuickTests(
         except:
             msg = ('Failed to reset the policy allowlist.\n'
                    '### Note: reset the allowlist manually if needed. ###\n\n'
+                   'BlueZ dbus command:\n'
                    'dbus-send --system --print-reply --dest=org.bluez '
                    '/org/bluez/hci0 org.bluez.AdminPolicy1.SetServiceAllowList '
+                   'array:string:"" \n'
+                   'Floss dbus command:\n'
+                   'dbus-send --system --print-reply --dest=org.chromium.bluetooth '
+                   '/org/chromium/bluetooth/hci0/admin '
+                   'org.chromium.bluetooth.BluetoothAdmin.SetAllowedServices '
                    'array:string:"" \n')
             logging.error(msg)
 
@@ -560,12 +559,23 @@ class BluetoothAdapterQuickTests(
                             device.SetRPATimeout(DEFAULT_RPA_TIMEOUT_SEC)
                     self.stop_agent(device)
                     logging.info('Clear device %s from DUT', device.name)
-                    self.bluetooth_facade.disconnect_device(device.address)
-                    device_is_paired = self.bluetooth_facade.device_is_paired(
-                            device.address)
-                    if device_is_paired:
-                        self.bluetooth_facade.remove_device_object(
+                    # If init_paired_addr is set, the pairing is done with RPA.
+                    # Then the device path in Floss is determined by the RPA.
+                    if self.floss and isinstance(device.init_paired_addr, str):
+                        self.bluetooth_facade.disconnect_device(
+                                device.init_paired_addr, device.address)
+                        device_is_paired = self.bluetooth_facade.device_is_paired(
+                                device.init_paired_addr, device.address)
+                        if device_is_paired:
+                            self.bluetooth_facade.remove_device_object(
+                                    device.init_paired_addr, device.address)
+                    else:
+                        self.bluetooth_facade.disconnect_device(device.address)
+                        device_is_paired = self.bluetooth_facade.device_is_paired(
                                 device.address)
+                        if device_is_paired:
+                            self.bluetooth_facade.remove_device_object(
+                                    device.address)
 
                     # If DUT's adapter address is empty, likely the adapter is
                     # dead. Skip clearing DUT from peers.
@@ -583,6 +593,12 @@ class BluetoothAdapterQuickTests(
                             logging.info('Couldn\'t Remove: {}'.format(e))
                             raise
 
+        # Set ll privacy to false because default is false
+        if self.llprivacy:
+            if not self.test_set_ll_privacy(False):
+                logging.error("Failed to reset ll privacy.")
+            else:
+                logging.info("Reset ll privacy to False.")
 
         # Repopulate btpeer_group for next tests
         # Clear previous tets's leftover entries. Don't delete the

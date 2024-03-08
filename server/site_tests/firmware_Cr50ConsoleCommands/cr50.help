@@ -7,6 +7,7 @@ ccd
 -ccdblock
 ccdstate
 chan
+dump_nvcache
 dump_nvmem
 ec_comm
 ecrst

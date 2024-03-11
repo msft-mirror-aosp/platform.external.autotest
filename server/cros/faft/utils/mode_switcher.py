@@ -178,7 +178,8 @@ class _KeyboardBypasser(_BaseFwBypasser):
 
     def trigger_rec_to_dev(self):
         """Trigger to the dev mode from the rec screen."""
-        self.faft_framework.wait_for('firmware_screen', 'Pressing ctrl+d')
+        self.faft_framework.wait_for('firmware_screen_rec_mode',
+                                     'Pressing ctrl+d')
         self.servo.ctrl_d()
         self.faft_framework.wait_for('keypress_delay',
                                      'Pressing button to switch to dev mode')

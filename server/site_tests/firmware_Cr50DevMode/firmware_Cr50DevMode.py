@@ -22,7 +22,12 @@ class firmware_Cr50DevMode(Cr50Test):
         to_dev = mode == 'dev'
         logging.info('Entering: %s', mode)
         logging.info(self.host.run(self.READ_MRC_CMD, ignore_status=True))
-        self.switcher.reboot_to_mode(to_mode=mode)
+        try:
+            self.switcher.reboot_to_mode(to_mode=mode)
+        except Exception as e:
+            ap_info = self.try_to_get_ap_state()
+            raise error.TestFail('Unable to enter %s mode %s: %r' %
+                                 (mode, ap_info, e))
 
         if to_dev != self.gsc.in_dev_mode():
             raise error.TestFail('Cr50 should%s think dev mode is active' %

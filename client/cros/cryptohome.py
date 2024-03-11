@@ -19,6 +19,7 @@ from autotest_lib.client.cros.tpm import *
 
 ATTESTATION_CMD = '/usr/bin/attestation_client'
 CRYPTOHOME_CMD = '/usr/sbin/cryptohome'
+DEVICE_MANAGEMENT_CMD = '/usr/sbin/device_management_client'
 GUEST_USER_NAME = '$guest'
 UNAVAILABLE_ACTION = 'Unknown action or no action given.'
 MOUNT_RETRY_COUNT = 20
@@ -88,15 +89,15 @@ def get_fwmp(cleared_fwmp=False):
         }
         or a dictionary with the Error if the FWMP doesn't exist and
         cleared_fwmp is True
-        { 'error': 'CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS_INVALID' }
+        { 'error': 'DEVICE_MANAGEMENT_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS_INVALID' }
 
     Raises:
-         ChromiumOSError if any expected field is not found in the cryptohome
+         ChromiumOSError if any expected field is not found in the device_management_client
          output. This would typically happen when FWMP state does not match
          'cleared_fwmp'
     """
-    out = run_cmd(CRYPTOHOME_CMD +
-                    ' --action=get_firmware_management_parameters')
+    out = run_cmd(DEVICE_MANAGEMENT_CMD +
+                  ' --action=get_firmware_management_parameters')
 
     if cleared_fwmp:
         if tpm_utils.FwmpIsAllZero(out):
@@ -124,9 +125,9 @@ def set_fwmp(flags, developer_key_hash=None):
     Raises:
          ChromiumOSError cryptohome cannot set the FWMP contents
     """
-    cmd = (CRYPTOHOME_CMD +
-          ' --action=set_firmware_management_parameters '
-          '--flags=' + flags)
+    cmd = (DEVICE_MANAGEMENT_CMD +
+           ' --action=set_firmware_management_parameters '
+           '--flags=' + flags)
     if developer_key_hash:
         cmd += ' --developer_key_hash=' + developer_key_hash
 
@@ -163,7 +164,8 @@ def get_install_attribute_status():
           "VALID"
           "INVALID"
     """
-    out = run_cmd(CRYPTOHOME_CMD + ' --action=install_attributes_get_status')
+    out = run_cmd(DEVICE_MANAGEMENT_CMD +
+                  ' --action=install_attributes_get_status')
     return out.strip()
 
 
@@ -177,7 +179,7 @@ def lock_install_attributes(attrs):
     wait_for_install_attributes_ready()
     for name, value in attrs.items():
         args = [
-                CRYPTOHOME_CMD, '--action=install_attributes_set',
+                DEVICE_MANAGEMENT_CMD, '--action=install_attributes_set',
                 '--name="%s"' % name,
                 '--value="%s"' % value
         ]
@@ -185,14 +187,15 @@ def lock_install_attributes(attrs):
         if (utils.system(cmd, ignore_status=True) != 0):
             return False
 
-    out = run_cmd(CRYPTOHOME_CMD + ' --action=install_attributes_finalize')
+    out = run_cmd(DEVICE_MANAGEMENT_CMD +
+                  ' --action=install_attributes_finalize')
     return (out.strip() == 'InstallAttributesFinalize(): 1')
 
 
 def wait_for_install_attributes_ready():
     """Wait until install attributes are ready.
     """
-    cmd = CRYPTOHOME_CMD + ' --action=install_attributes_is_ready'
+    cmd = DEVICE_MANAGEMENT_CMD + ' --action=install_attributes_is_ready'
     utils.poll_for_condition(
             lambda: run_cmd(cmd).strip() == 'InstallAttributesIsReady(): 1',
             timeout=300,

@@ -469,10 +469,10 @@ class BluetoothAdapterQuickTests(
             raise error.TestError('Failed to set LL privacy to {}'.format(
                     self.llprivacy))
 
-        # b/317736407 Reset the adapter, otherwise the test_start_discovery
-        # fails when the LL privacy is enabled.
-        if self.llprivacy:
-            self.test_reset_on_adapter()
+        # Reset the adapter, otherwise the test_start_discovery in the below
+        # start_peers could fail because of the previous test, see b/329207061.
+        # It could also fail when the LL privacy is enabled, see b/317736407.
+        self.test_reset_on_adapter()
 
         # Initialize bluetooth_adapter_tests class (also clears self.fails)
         self.initialize()
@@ -480,7 +480,8 @@ class BluetoothAdapterQuickTests(
         # Start and emulate the peer devices
         self.start_peers(device_configs)
 
-        # Reset the adapter
+        # Reset the adapter, otherwise the DUT could cache the wrong peer device
+        # type, see b/312096641.
         self.test_reset_on_adapter()
 
         # Reset the policy allowlist so that all UUIDs are allowed.

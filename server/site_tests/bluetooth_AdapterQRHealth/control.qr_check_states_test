@@ -26,7 +26,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bluetooth_sa2'
+ATTRIBUTES = ''
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth'  # This test does not need btpeer devices.
 

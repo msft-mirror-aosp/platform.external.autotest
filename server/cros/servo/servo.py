@@ -745,7 +745,6 @@ class Servo(object):
         if self._servo_info is None:
             self._servo_info = {
                     'servo_host_os_version': self.get_os_version(),
-                    'servod_version': self.get_servod_version(),
                     'servo_type': self.get_servo_type()
             }
             self._servo_info.update(self.get_servo_fw_versions())
@@ -766,40 +765,6 @@ class Servo(object):
                                                  ignore_status=True)
         return lsbrelease_utils.get_chromeos_release_builder_path(
                     lsb_release_content=lsb_release_content)
-
-
-    def get_servod_version(self):
-        """Returns the servod version."""
-        # TODO: use system_output once servod --sversion prints to stdout
-        try:
-            result = self._servo_host.run('servod --sversion 2>&1')
-        except error.AutoservRunError as e:
-            if 'command execution error' in str(e):
-                # Fall back to version if sversion is not supported yet.
-                result = self._servo_host.run('servod --version 2>&1')
-                return result.stdout.strip() or result.stderr.strip()
-            # An actually unexpected error occurred, just raise.
-            raise e
-        sversion = result.stdout or result.stderr
-        # The sversion output is:
-        # [stdout] 2024-01-27 03:02:26,548 - servod - INFO - Attempting to parse servod command line: ['--sversion']
-        # [stdout] With environment variables: [('SERVOD_NAME', None), ('SERVOD_PORT', None)]
-        # [stdout] servod v1.0.2092-a44c688b
-        # [stdout] Date: 2023-11-13 16:52:57
-        # [stdout] Builder: chromeos-release-builder-us-central1-c-x32-18-arn3
-        # [stdout] Hash: -a44c688b
-        # [stdout] Branch:
-        # For debugging purposes, we mainly care about the version, and the
-        # timestamp.
-        if type(sversion) == type(b' '):
-            sversion = sversion.decode("utf-8")
-        match = re.search(r'servod (v\S+)\s+(.*)', sversion)
-        if match is None:
-            return sversion.strip()
-        ver, date = match.groups()
-        # Be flexible about 'Date: ' since older versions didn't include it.
-        date = date.replace('Date: ', '')
-        return f'{ver} {date}'
 
 
     def power_long_press(self):

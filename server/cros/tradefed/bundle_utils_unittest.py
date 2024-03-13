@@ -175,7 +175,8 @@ class BundelUtilsTest(unittest.TestCase):
         "arm": "test_suites_arm64",
         "x86": "test_suites_x86_64"
     }
-}""")
+}
+""")
 
     def test_make_urls_for_all_abis_cts_public(self):
         """Test for cts make_urls_for_all_abis in the case of public."""

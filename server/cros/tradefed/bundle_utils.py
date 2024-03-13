@@ -207,6 +207,8 @@ def write_url_config(url_config: Dict[str, str], config_path: str):
     """
     with open(config_path, mode="w") as f:
         json.dump(url_config, f, indent=4)
+        # json.dump doesn't append newline at end of file.
+        f.write('\n')
 
 
 def make_urls_for_all_abis(url_config: Dict[str, str], bundle_type: Optional[str]) -> List[str]:

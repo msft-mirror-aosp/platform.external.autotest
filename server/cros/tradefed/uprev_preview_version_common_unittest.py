@@ -1,3 +1,4 @@
+import pathlib
 import sys
 import unittest
 from unittest import mock
@@ -22,7 +23,7 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
                         "arm": "test_suites_arm64",
                         "x86": "test_suites_x86_64"
                 })
-        self.assertEquals('100', common_latest_version)
+        self.assertEqual('100', common_latest_version)
 
     @mock.patch('subprocess.check_output')
     def test_get_latest_version_name_no_common_version(self,
@@ -95,3 +96,55 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
                 'gs://android-build/builds/test_branch-linux-test_target/9199760/mock_hash/android-cts.zip',
                 'gs://chromeos-arc-images/cts/bundle/R/android-cts-9199760-linux_x86-arm.zip',
         ])
+
+    @mock.patch('subprocess.check_call')
+    def test_upload_preview_xts_gts(self, check_call_mock):
+        """Tests if upload_preview_xts works with GTS bundles."""
+
+        _TEST_CONFIG = {
+                "internal_base": "gs://chromeos-arc-images/cts/bundle/",
+                "partner_base": "gs://chromeos-partner-gts/",
+                "official_url_pattern": "android-gts-%s.zip",
+                "preview_url_pattern": "android-gts-%s.zip",
+                "preview_version_name": "11-R4-R-Preview4-11561875",
+        }
+
+        uprev_preview_version_common.upload_preview_xts(
+                branch_name='test_branch',
+                target_name='test_target',
+                url_config=_TEST_CONFIG,
+                abi=None,
+                xts_name='gts',
+                version_name="11-R4-R-Preview4-11561875",
+                local_file=pathlib.Path(
+                        '/path/to/android-gts-11-R4-R-Preview4-11561875.zip'),
+        )
+
+        check_call_mock.assert_has_calls([
+                mock.call([
+                        'gsutil', 'cp',
+                        '/path/to/android-gts-11-R4-R-Preview4-11561875.zip',
+                        'gs://chromeos-arc-images/cts/bundle/android-gts-11-R4-R-Preview4-11561875.zip'
+                ]),
+                mock.call([
+                        'gsutil', 'cp',
+                        'gs://chromeos-arc-images/cts/bundle/android-gts-11-R4-R-Preview4-11561875.zip',
+                        'gs://chromeos-partner-gts/android-gts-11-R4-R-Preview4-11561875.zip'
+                ]),
+        ])
+
+    def test_get_gts_version_name(self):
+        """Tests if get_gts_version_name returns the correct version name."""
+        path = pathlib.Path(
+                '/path/to/android-gts-11-R4-R-Preview4-11561875.zip')
+
+        version_name = uprev_preview_version_common.get_gts_version_name(path)
+        self.assertEqual(version_name, '11-R4-R-Preview4-11561875')
+
+    def test_get_gts_version_name_invalid_format(self):
+        """Tests if get_gts_version_name raises ValueError when name is invalid."""
+        path = pathlib.Path(
+                '/path/to/android-gts-11-R4(11-14)-Preview4-11561875.zip')
+
+        with self.assertRaises(ValueError):
+            uprev_preview_version_common.get_gts_version_name(path)

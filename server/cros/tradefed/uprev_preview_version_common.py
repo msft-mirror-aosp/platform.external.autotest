@@ -2,6 +2,9 @@ import argparse
 import json
 import logging
 import os
+import pathlib
+import re
+import shlex
 import subprocess
 from typing import Dict
 
@@ -69,9 +72,13 @@ def get_latest_version_name(branch_name: str, abi_list: Dict[str, str]) -> str:
     return max(common_build_ids, key=int)
 
 
-def upload_preview_xts(branch_name: str, target_name: str,
-                       url_config: Dict[str, str], abi: str, xts_name: str,
-                       version_name: str) -> None:
+def upload_preview_xts(branch_name: str,
+                       target_name: str,
+                       url_config: Dict[str, str],
+                       abi: str,
+                       xts_name: str,
+                       version_name: str,
+                       local_file: pathlib.Path = None) -> None:
     """Function to upload the preview xTS zip file to multiple places on gs.
 
     Multiple places are URLs beginning with gs://chromeos-arc-images/ for Googler,
@@ -84,33 +91,61 @@ def upload_preview_xts(branch_name: str, target_name: str,
         abi: A string which means one of the abis (None, 'arm', 'x86', 'arm64', 'x86_64').
         xts_name: A string which is one of the test names: (cts, vts).
         version_name: A string which means target build version name.
+        local_file: (optional) Path to local file to upload instead of copying from remote.
     """
-    gs_uri = f'gs://android-build/builds/{branch_name}-linux-{target_name}/{version_name}/'
-    ls_cmd = ['gsutil', 'ls', gs_uri]
-    ls_result = subprocess.check_output(ls_cmd).decode('utf-8').splitlines()
+    if local_file is None:
+        assert xts_name != 'gts'
+        gs_uri = f'gs://android-build/builds/{branch_name}-linux-{target_name}/{version_name}/'
+        ls_cmd = ['gsutil', 'ls', gs_uri]
+        ls_result = subprocess.check_output(ls_cmd).decode(
+                'utf-8').splitlines()
 
-    if len(ls_result) > 1:
-        logging.warning(
-                "Directory [%s] contains more than one subpath, using the "
-                "first one.",
-                gs_uri,
-        )
+        if len(ls_result) > 1:
+            logging.warning(
+                    "Directory [%s] contains more than one subpath, using the "
+                    "first one.",
+                    gs_uri,
+            )
 
-    file_path = ls_result[0].strip()
+        file_path = f'{ls_result[0].strip()}android-{xts_name}.zip'
+    else:
+        file_path = str(local_file)
 
     for remote_url in bundle_utils.make_preview_urls(url_config, abi):
         # TODO(b/256108932): Add a method to dryrun this to make it easier to
         # test without actually uploading. Alternatively inject a configuration
         # so that the upload destination can be changed.
-        cmd = [
-                'gsutil', 'cp', f'{file_path}android-{xts_name}.zip',
-                f'{remote_url}'
-        ]
-        logging.info(
-            f'Uploading to {remote_url}: the command is {cmd}.'
-        )
+        cmd = ['gsutil', 'cp', file_path, remote_url]
+        logging.info('Executing: %s', shlex.join(cmd))
         subprocess.check_call(cmd)
-    return
+
+        # If we were uploading from a local file, speed up subsequent uploads
+        # by copying from the file we have just uploaded.
+        if not file_path.startswith('gs://'):
+            file_path = remote_url
+
+
+_GTS_FILENAME_PATTERN = r'android-gts-([A-Za-z0-9-_]*)\.zip'
+
+
+def get_gts_version_name(path: pathlib.Path) -> str:
+    """Infers GTS version from its file name.
+
+    Args:
+        path: Path to the GTS bundle file.
+
+    Returns:
+        The inferred version name.
+
+    Raises:
+        ValueError if the file name is invalid.
+    """
+    m = re.fullmatch(_GTS_FILENAME_PATTERN, path.name)
+    if m is None:
+        raise ValueError(
+                f'GTS file name should match the following pattern: {_GTS_FILENAME_PATTERN}'
+        )
+    return m.group(1)
 
 
 def main(config_path: str, xts_name: str, branch_name: str,
@@ -130,22 +165,35 @@ def main(config_path: str, xts_name: str, branch_name: str,
             description=
             'Update the preview version number in bundle_url_config and upload to gs if necessary.',
             formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument(
-            '--to',
-            dest='preview_version',
-            default=None,
-            help=
-            'If updating with the latest preview version of CTS, this option is not required.'
-            ' Update the version number of preview_version in bundle_url_config and'
-            ' upload to gs if necessary. Example:\n'
-            '--to 9164413')
-    parser.add_argument(
-            '--to_latest',
-            dest='to_latest',
-            default=False,
-            action='store_true',
-            help='Update with the latest preview version of CTS. Example:\n'
-            '--to_latest')
+
+    if xts_name == 'gts':
+        # GTS bundles are published on Google Drive. For now we require the user
+        # to download the bundle manually and supply it to the script.
+        parser.add_argument(
+                '--to_file',
+                dest='preview_file',
+                type=pathlib.Path,
+                required=True,
+                help=
+                'Update to the preview version provided by the GTS bundle file. '
+                'Version name is inferred from the file name. Example:\n'
+                '--to_file /path/to/android-gts-11-R4-R-Preview4-11561875.zip')
+    else:
+        to_group = parser.add_mutually_exclusive_group(required=True)
+        to_group.add_argument(
+                '--to',
+                dest='preview_version',
+                help=
+                'If updating with the latest preview version of CTS, this option is not required.'
+                ' Update the version number of preview_version in bundle_url_config and'
+                ' upload to gs if necessary. Example:\n'
+                '--to 9164413')
+        to_group.add_argument(
+                '--to_latest',
+                action='store_true',
+                help='Update with the latest preview version of CTS. Example:\n'
+                '--to_latest')
+
     parser.add_argument(
             '--generate_gerrit_cl',
             dest='generate_gerrit_cl',
@@ -160,10 +208,6 @@ def main(config_path: str, xts_name: str, branch_name: str,
     )
     args = parser.parse_args()
 
-    if not args.preview_version and not args.to_latest:
-        parser.print_help()
-        return
-
     if not os.path.isfile(config_path):
         raise bundle_utils.ConfigFileNotFoundException(
                 f'invalid input: {config_path} does not exist in the directory.'
@@ -171,10 +215,20 @@ def main(config_path: str, xts_name: str, branch_name: str,
 
     url_config = bundle_utils.load_config(config_path)
     current_version_name = bundle_utils.get_preview_version(url_config)
-    abi_info = bundle_utils.get_abi_info(url_config)
-    version_name = args.preview_version
-    if not version_name:
-        version_name = get_latest_version_name(branch_name, abi_info)
+
+    local_file = None
+    if xts_name == 'gts':
+        # GTS doesn't separate ABIs.
+        abi_info = {None: None}
+        local_file = args.preview_file
+        if not local_file.is_file():
+            raise ValueError(f'Not a file: {local_file}')
+        version_name = get_gts_version_name(local_file)
+    else:
+        abi_info = bundle_utils.get_abi_info(url_config)
+        version_name = args.preview_version
+        if not version_name:
+            version_name = get_latest_version_name(branch_name, abi_info)
 
     if version_name == current_version_name:
         logging.info(f'{version_name} is the latest version. No work to do.')
@@ -183,13 +237,18 @@ def main(config_path: str, xts_name: str, branch_name: str,
     bundle_utils.set_preview_version(url_config, version_name)
 
     for target_abi, target_name in abi_info.items():
-        upload_preview_xts(branch_name, target_name, url_config, target_abi,
-                           xts_name, version_name)
+        upload_preview_xts(branch_name,
+                           target_name,
+                           url_config,
+                           target_abi,
+                           xts_name,
+                           version_name,
+                           local_file=local_file)
 
-    # Only write config after bundles are correctly uploaded.
+    # Only write config after bundles are correctly updated.
     bundle_utils.write_url_config(url_config, config_path)
     logging.info(
-            f'The value of {bundle_utils._PREVIEW_VERSION_NAME} was correctly uploaded to {version_name}.'
+            f'The value of {bundle_utils._PREVIEW_VERSION_NAME} was correctly updated to {version_name}.'
     )
 
     # Call generate_controlfiles.py
@@ -208,6 +267,7 @@ def main(config_path: str, xts_name: str, branch_name: str,
                   'r') as load_json:
             load_dict = json.load(load_json)
             preview_version = load_dict['preview_version_name']
+            # TODO: allow specifying commit message from command line
             commit_msg = f'{xts_name}: Uprev to {preview_version}.\n\nBUG=b:308865172\nTEST=None'
             subprocess.run(['git', 'commit', '-m', commit_msg, '-e'],
                            check=True)

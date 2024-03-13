@@ -287,9 +287,10 @@ class telemetry_AFDOGenerate(test.test):
         release_builder_path = builder_path_lines[0].split('=', 1)[1]
         logging.info('Detected %s%s', want_key_eq, release_builder_path)
 
-        host_info_store = host.host_info_store.get()
-        host_info_store.set_version_label(provision.CROS_VERSION_PREFIX,
-                                          release_builder_path)
+        host_info = host.host_info_store.get()
+        host_info.set_version_label(provision.CROS_VERSION_PREFIX,
+                                    release_builder_path)
+        host.host_info_store.commit(host_info)
 
     def run_once(self, host, args):
         """Run a set of telemetry benchmarks.

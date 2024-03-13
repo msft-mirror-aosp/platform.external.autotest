@@ -26,6 +26,7 @@ class BluetoothCallbacks:
     Implement this to observe these callbacks when exporting callbacks via
     register_callback.
     """
+
     def on_address_changed(self, addr):
         """Adapter address changed.
 
@@ -36,7 +37,14 @@ class BluetoothCallbacks:
     def on_device_found(self, remote_device):
         """Device found via discovery.
 
-        @param remote_device: Remove device found during discovery session.
+        @param remote_device: Remote device found during discovery session.
+        """
+        pass
+
+    def on_device_cleared(self, remote_device):
+        """Device cleared from discovered devices cache.
+
+        @param remote_device: Remote device cleared from cache.
         """
         pass
 
@@ -209,6 +217,9 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
                 <method name="OnDeviceFound">
                     <arg type="a{sv}" name="remote_device_dbus" direction="in" />
                 </method>
+                <method name="OnDeviceCleared">
+                    <arg type="a{sv}" name="remote_device_dbus" direction="in" />
+                </method>
                 <method name="OnDiscoveringChanged">
                     <arg type="b" name="discovering" direction="in" />
                 </method>
@@ -252,6 +263,18 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
 
             for observer in self.observers.values():
                 observer.on_device_found(remote_device)
+
+        def OnDeviceCleared(self, remote_device_dbus):
+            """Handle device cleared."""
+            parsed, remote_device = FlossAdapterClient.parse_dbus_device(
+                    remote_device_dbus)
+            if not parsed:
+                logging.debug('OnDeviceCleared parse error: {}'.format(
+                        remote_device_dbus))
+                return
+
+            for observer in self.observers.values():
+                observer.on_device_cleared(remote_device)
 
         def OnDiscoveringChanged(self, discovering):
             """Handle discovering state changed."""
@@ -381,11 +404,19 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         address, name = remote_device
 
         # Update a new device
-        if not address in self.known_devices:
+        if address not in self.known_devices:
             self.known_devices[address] = self._make_device(address, name)
         # Update name if previous cached value didn't have a name
         elif not self.known_devices[address]:
             self.known_devices[address]['name'] = name
+
+    @glib_callback()
+    def on_device_cleared(self, remote_device):
+        """Remote device was cleared from the cache."""
+        address, name = remote_device
+
+        if address in self.known_devices:
+            self.known_devices.remove(address)
 
     @glib_callback()
     def on_discovering_changed(self, discovering):
@@ -396,17 +427,6 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
 
         # Cache the value
         self.discovering = discovering
-
-        # If we are freshly starting discoveyr, clear all locally cached known
-        # devices (that are not bonded or connected)
-        if discovering:
-            # Filter known devices to currently bonded or connected devices
-            self.known_devices = {
-                    key: value
-                    for key, value in self.known_devices.items()
-                    if value.get('bond_state', 0)
-                    or value.get('connected', False)
-            }
 
     @glib_callback()
     def on_bond_state_changed(self, status, address, state):

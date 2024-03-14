@@ -488,6 +488,17 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 lambda: self.hfp_telephony_incoming_call_answer_by_dut(device),
                 HFP_TELEPHONY)
 
+    @test_wrapper('Trigger incoming call on dut and reject call from peer',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
+    def au_hfp_telephony_incoming_call_reject_by_peer_test(self):
+        """Trigger incoming call on dut and reject call from peer."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_run_method(
+                device,
+                lambda: self.hfp_telephony_incoming_call_reject_by_peer(
+                        device), HFP_TELEPHONY)
+
     def au_run_avrcp_method(self, device, test_method):
         """avrcp procedure of running a specified test method.
 

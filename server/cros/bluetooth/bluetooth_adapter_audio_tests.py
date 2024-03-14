@@ -1337,6 +1337,21 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         return all(self.results.values())
 
     @test_retry_and_log(False)
+    def test_check_mic_volume_on_peer(self, device, expect_mic_volume):
+        """Test that if microphone volume is correct on peer
+
+        @param device: the Bluetooth peer device.
+        @param expect_mic_volume: volume 0-100
+
+        @returns: True if expect_mic_volume == peer mic volume
+        """
+        volume = device.GetMicVolume()
+        self.results = {
+                "test_check_mic_volume_on_peer": volume == expect_mic_volume
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
     def test_check_input_event_on_dut(self,
                                       hook_switch=False,
                                       phone_mute=False):
@@ -2308,3 +2323,30 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.SetMicVolume(100)
         time.sleep(hfp_test_data['telephony_event_propagate_duration'])
         self.test_check_input_event_on_dut(hook_switch=False, phone_mute=False)
+
+    def hfp_telephony_micmute_from_dut(self, device):
+        """Trigger microphone mute from DUT and verify the mic volume on peer.
+
+        Since the HFP does not define a microphone mute event, Floss stores the
+        original volume level and sends out a volume=0 event to the peer on
+        muting. On unmuting, the saved volume level is sent to the peer.
+        This test send HID mute output report and verify the mic volume is
+        changed on peer side.
+
+        @param device: the Bluetooth peer device.
+        """
+        hfp_test_data = audio_test_data[HFP_TELEPHONY]
+        self.test_select_audio_input_device(device.name)
+        self.test_select_audio_output_node_bluetooth()
+        device.SetMicVolume(100)
+
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+
+        self.bluetooth_facade.open_telephony_device(device.name)
+        self.bluetooth_facade.send_mic_mute(True)
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+
+        self.test_check_mic_volume_on_peer(device, 0)
+        self.bluetooth_facade.send_mic_mute(False)
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+        self.test_check_mic_volume_on_peer(device, 100)

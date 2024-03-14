@@ -38,7 +38,7 @@ def run(machine):
     host = hosts.create_host(machine)
     with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w') as temp_file:
         host_info = host.host_info_store.get()
-        yaml.safe_dump({'autotest_host_info_labels':
+        yaml.safe_dump({'autotesthostinfolabels':
                         json.dumps(host_info.labels)}, stream=temp_file)
         temp_file.flush()
         job.run_test('tast',

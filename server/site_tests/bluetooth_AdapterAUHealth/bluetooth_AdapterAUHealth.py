@@ -510,6 +510,17 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 lambda: self.hfp_telephony_incoming_call_reject_by_dut(device),
                 HFP_TELEPHONY)
 
+    @test_wrapper('Place an active call on dut and hangup call from dut',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
+    def au_hfp_telephony_active_call_hangup_by_dut_test(self):
+        """Place an active call on dut and hangup call from dut."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_run_method(
+                device,
+                lambda: self.hfp_telephony_active_call_hangup_by_dut(device),
+                HFP_TELEPHONY)
+
     def au_run_avrcp_method(self, device, test_method):
         """avrcp procedure of running a specified test method.
 

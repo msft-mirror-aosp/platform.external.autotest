@@ -4703,6 +4703,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         # Stores the advertisement sets that are registered.
         self.adv_names_to_ids = {}
 
+        self.crash_detector = logger_helper.LogManager()
+
     def __del__(self):
         if not self.is_clean:
             self.cleanup()
@@ -4733,6 +4735,36 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         while not self.mainloop_quit.is_set():
             self.mainloop.run()
+
+    def crash_detect_start(self):
+        """Start crash detector."""
+
+        self.crash_detector.ResetLogMarker()
+        self.crash_detector.StartRecording()
+
+    def crash_detect_stop(self):
+        """Stop crash detector.
+
+        @returns: True if logs were successfully gathered since started,
+                  else False
+        """
+        try:
+            self.crash_detector.StopRecording()
+            return True
+
+        except Exception as e:
+            logging.error('Failed to stop crash detector with error: %s', e)
+
+        return False
+
+    def crash_detected(self):
+        """Find if btadapterd has crashed during the test.
+
+        @returns: True on detected. False otherwise.
+
+        """
+        return self.crash_detector.LogContains(
+                'VirtHci[0-9]+ stopped unexpectedly')
 
     def get_floss_enabled(self):
         """Is Floss enabled right now?

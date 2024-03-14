@@ -490,6 +490,9 @@ class BluetoothAdapterQuickTests(
         # Reset power/wakeup to disabled.
         self.test_adapter_set_wake_disabled()
 
+        if self.floss:
+            self.bluetooth_facade.crash_detect_start()
+
         time.sleep(self.TEST_SLEEP_SECS)
         self.log_message('Starting test: %s' % test_name)
 
@@ -501,6 +504,12 @@ class BluetoothAdapterQuickTests(
 
         logging.info('Cleanning up and restarting towards next test...')
         self.log_message(self.bat_tests_results[-1])
+
+        if self.floss:
+            if self.bluetooth_facade.crash_detect_stop():
+                self.test_crash_detected()
+            else:
+                logging.error("Failed to stop crash detector.")
 
         # Every test_method should pass by default.
         self._expected_result = True

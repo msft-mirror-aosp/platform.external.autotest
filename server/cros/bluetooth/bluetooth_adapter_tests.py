@@ -2003,6 +2003,18 @@ class BluetoothAdapterTests(test.test):
         """Test that bluetoothd could be stopped successfully."""
         return self.bluetooth_facade.stop_bluetoothd()
 
+    @test_retry_and_log(False, messages_start=False, messages_stop=False)
+    def test_crash_detected(self):
+        """Find if btadapterd has crashed during the test.
+
+        @returns: True if no crash (success), else False.
+
+        """
+        self.results = {
+                'btadapterd crash detected':
+                self.bluetooth_facade.crash_detected(),
+        }
+        return not self.results['btadapterd crash detected']
 
     @test_retry_and_log
     def test_has_adapter(self):

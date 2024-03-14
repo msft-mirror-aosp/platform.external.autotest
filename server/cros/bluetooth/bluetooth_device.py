@@ -227,6 +227,31 @@ class BluetoothDevice(object):
         """Collect wrt logs on Intel adapters."""
         return self._proxy.collect_wrt_logs()
 
+    @proxy_thread_safe
+    def crash_detect_start(self):
+        """Start crash detector.
+
+        @returns: True if started successfully, else False
+        """
+        return self._proxy.crash_detect_start()
+
+    @proxy_thread_safe
+    def crash_detect_stop(self):
+        """Stop crash detector.
+
+        @returns: True if logs were successfully gathered since started,
+                  else False
+        """
+        return self._proxy.crash_detect_stop()
+
+    @proxy_thread_safe
+    def crash_detected(self):
+        """Find if btadapterd has crashed during the test.
+
+        @returns: True on detected. False otherwise.
+
+        """
+        return self._proxy.crash_detected()
 
     @proxy_thread_safe
     def start_bluetoothd(self):

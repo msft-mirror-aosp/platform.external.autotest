@@ -693,6 +693,10 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # Definitions of all bluetooth audio test cases
     # ---------------------------------------------------------------
 
+    @test_retry_and_log(False)
+    def test_set_bluetooth_telephony(self, enable):
+        """Enable bluetooth telephony on the DUT."""
+        return self.bluetooth_facade.set_phone_ops_enabled(enable)
 
     @test_retry_and_log(False)
     def test_select_audio_input_device(self, device_name):

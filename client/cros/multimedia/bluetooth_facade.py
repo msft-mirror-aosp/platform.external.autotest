@@ -75,6 +75,7 @@ from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClie
 from autotest_lib.client.cros.bluetooth.floss.scanner_client import (
         FlossScannerClient, BluetoothScannerCallbacks)
 from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketManagerClient
+from autotest_lib.client.cros.bluetooth.floss.telephony_client import FlossTelephonyClient
 from autotest_lib.client.cros.bluetooth.floss.battery_manager_client import FlossBatteryManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         GLIB_THREAD_NAME, make_kv_optional_value, GLIB_THREAD_NAME)
@@ -4563,7 +4564,6 @@ class BluezFacadeLocal(BluetoothBaseFacadeLocal):
                 'no filter': NoFilterScanDuration
         }
 
-
 class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     """Exposes DUT methods called remotely during Bluetooth autotests for the
     Floss daemon.
@@ -4700,12 +4700,15 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.admin_client = FlossAdminClient(self.bus,
                                              self.DEFAULT_ADAPTER)
         self.media_client = FlossMediaClient(self.bus, self.DEFAULT_ADAPTER)
+        self.telephony_client = FlossTelephonyClient(self.bus,
+                                                     self.DEFAULT_ADAPTER)
         self.scanner_client = FlossScannerClient(self.bus,
                                                  self.DEFAULT_ADAPTER)
         self.battery_client = FlossBatteryManagerClient(
                 self.bus, self.DEFAULT_ADAPTER)
         self.floss_logger = FlossLogger(self.bus, self.DEFAULT_ADAPTER)
         self.gatt_client = FlossGattClient(self.bus, self.DEFAULT_ADAPTER)
+
         self.is_clean = False
         self.enable_floss_debug = False
 
@@ -4877,6 +4880,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                 self.admin_client.has_proxy(),
                 self.scanner_client.has_proxy(),
                 self.battery_client.has_proxy(),
+                self.telephony_client.has_proxy(),
                 self.floss_logger.has_proxy()
         ])
 
@@ -4992,6 +4996,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.scanner_client = FlossScannerClient(self.bus, default_adapter)
         self.battery_client = FlossBatteryManagerClient(
                 self.bus, default_adapter)
+        self.telephony_client = FlossTelephonyClient(self.bus, default_adapter)
         self.floss_logger = FlossLogger(self.bus, default_adapter)
 
         try:
@@ -5652,6 +5657,13 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @returns: True if supported, False otherwise.
         """
         return self.adapter_client.is_swb_supported()
+
+    def set_phone_ops_enabled(self, enable):
+        """Set bluetooth telephony flag in floss.
+
+        @returns: True if no error raised.
+        """
+        return self.telephony_client.set_phone_ops_enabled(enable)
 
     def set_player_playback_status(self, status):
         """Sets player playback status.

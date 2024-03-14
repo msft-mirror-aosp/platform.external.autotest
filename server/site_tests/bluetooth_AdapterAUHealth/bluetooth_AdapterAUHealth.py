@@ -47,6 +47,9 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         """
         self.test_reset_on_adapter()
         self.test_bluetoothd_running()
+        # TODO: b/277702522 remove this after bluetooth telephony launch.
+        if self.floss:
+            self.test_set_bluetooth_telephony(True)
         self.initialize_bluetooth_audio(device,
                                         test_profile,
                                         audio_config=audio_config)

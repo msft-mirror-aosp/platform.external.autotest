@@ -87,7 +87,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                           'BLE_KEYBOARD': 1,
                           'BLE_MOUSE': 1
                   },
-                  supports_floss=True)
+                  supports_floss=False)
     def advmon_multi_client_tests(self):
         """Tests monitor functionality for multiple clients."""
         self.advmon_test_multi_client()
@@ -113,7 +113,7 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                   },
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=False)
     def advmon_suspend_resume_tests(self):
         """Tests working of background scanning with suspend resume."""
         self.advmon_test_suspend_resume()

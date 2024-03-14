@@ -76,6 +76,7 @@ from autotest_lib.client.cros.bluetooth.floss.scanner_client import (
         FlossScannerClient, BluetoothScannerCallbacks)
 from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketManagerClient
 from autotest_lib.client.cros.bluetooth.floss.telephony_client import FlossTelephonyClient
+from autotest_lib.client.cros.bluetooth.floss.floss_telephony_hid_device import FlossTelephonyHIDDevice
 from autotest_lib.client.cros.bluetooth.floss.battery_manager_client import FlossBatteryManagerClient
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         GLIB_THREAD_NAME, make_kv_optional_value, GLIB_THREAD_NAME)
@@ -4709,6 +4710,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.floss_logger = FlossLogger(self.bus, self.DEFAULT_ADAPTER)
         self.gatt_client = FlossGattClient(self.bus, self.DEFAULT_ADAPTER)
 
+        self.telephony_hid_device = FlossTelephonyHIDDevice()
+
         self.is_clean = False
         self.enable_floss_debug = False
 
@@ -5988,3 +5991,42 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @return: True on success, False on failure, None on DBus error.
         """
         return self.floss_logger.is_debug_enabled()
+
+    def open_telephony_device(self, device_name):
+        """open floss telephony hid device.
+
+        @param device_name: name of device e.g. RASPI_AUDIO
+        """
+        self.telephony_hid_device.open(device_name)
+
+    def close_telephony_device(self):
+        """close floss telephony hid device."""
+        self.telephony_hid_device.close()
+
+    def send_incoming_call(self):
+        """trigger floss telephony hid device incoming call."""
+        self.telephony_hid_device.send_incoming_call()
+
+    def send_answer_call(self):
+        """trigger floss telephony hid device answer call."""
+        self.telephony_hid_device.send_answer_call()
+
+    def send_reject_call(self):
+        """trigger floss telephony hid device reject call."""
+        self.telephony_hid_device.send_reject_call()
+
+    def send_hangup_call(self):
+        """trigger floss telephony hid device hangup call."""
+        self.telephony_hid_device.send_hangup_call()
+
+    def send_mic_mute(self, mute):
+        """trigger floss telephony hid device mic mute."""
+        self.telephony_hid_device.send_mic_mute(mute)
+
+    def get_input_event(self):
+        """get input event from floss telephony hid device.
+
+        @return:
+            A dictionary with two keys: "hook-switch" and "phone-mute," with bool value.
+        """
+        return self.telephony_hid_device.get_input_event()

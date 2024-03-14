@@ -65,6 +65,7 @@ HFP_NBS = 'hfp_nbs'
 HFP_NBS_MEDIUM = 'hfp_nbs_medium'
 HFP_WBS = 'hfp_wbs'
 HFP_WBS_MEDIUM = 'hfp_wbs_medium'
+HFP_TELEPHONY = 'hfp_telephony'
 HFP_SWB = 'hfp_swb'
 VISQOL_BUFFER_LENGTH = 10.0
 
@@ -462,6 +463,9 @@ hfp_wbs_medium_test_data = {
 }
 
 
+# Audio test data for bt telephony
+hfp_telephony_test_data = {'telephony_event_propagate_duration': 5}
+
 # Audio test data for a2dp
 a2dp_test_data = {
     'rate': 48000,
@@ -541,4 +545,5 @@ audio_test_data = {
         HFP_NBS: hfp_nbs_test_data,
         HFP_NBS_MEDIUM: hfp_nbs_medium_test_data,
         HFP_SWB: hfp_swb_test_data,
+        HFP_TELEPHONY: hfp_telephony_test_data
 }

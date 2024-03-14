@@ -20,7 +20,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
-        A2DP, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS, HFP_WBS_MEDIUM,
+        A2DP, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS, HFP_WBS_MEDIUM, HFP_TELEPHONY,
         AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH, DATA_DIR, VISQOL_PATH,
         VISQOL_SIMILARITY_MODEL, VISQOL_TEST_DIR, AUDIO_RECORD_DIR,
         AUDIO_SERVER, PULSEAUDIO, PIPEWIRE, A2DP_CODEC, SBC, AAC, HFP_CODEC,
@@ -278,6 +278,25 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         device.ScpToDut(src_file, dest_file, self.real_ip)
 
+    def _create_call_state(self,
+                           active=0,
+                           held=0,
+                           dialing=0,
+                           alerting=0,
+                           incoming=0,
+                           waiting=0,
+                           disconnected=0):
+        """"create call state dictionary"""
+        return {
+                "active": active,
+                "held": held,
+                "dialing": dialing,
+                "alerting": alerting,
+                "incoming": incoming,
+                "waiting": waiting,
+                "disconnected": disconnected
+        }
+
     def check_wbs_capability(self):
         """Check if the DUT supports WBS capability.
 
@@ -409,7 +428,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
             raise error.TestError('Failed to start %s.' % audio_server)
         logging.info('%s is started.', audio_server)
 
-        if test_profile in (HFP_WBS, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS_MEDIUM):
+        if test_profile in (HFP_WBS, HFP_NBS, HFP_NBS_MEDIUM, HFP_WBS_MEDIUM,
+                            HFP_TELEPHONY):
             if device.StartOfono():
                 logging.debug('ofono is started.')
             else:
@@ -1299,6 +1319,42 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         return all(self.results.values())
 
+    @test_retry_and_log(False)
+    def test_check_call_state_on_peer(self, device, expected_call_state):
+        """Test that if call state correct on peer
+
+        @param device: the Bluetooth peer device.
+        @param expected_call_state: Dictionary of total number of states for all
+        current calls.
+
+        @returns: True if the all call states in the Dictionary is same as
+        expected.
+        """
+        call_result = device.GetCurrentCallState()
+        self.results = {
+                "expected_call_state": call_result == expected_call_state
+        }
+        return all(self.results.values())
+
+    @test_retry_and_log(False)
+    def test_check_input_event_on_dut(self,
+                                      hook_switch=False,
+                                      phone_mute=False):
+        """Test that if input report result is correct on dut
+
+        @param hook_switch: call is active or not.
+        @param phone_mute: mic is mute or not.
+
+        @returns: True if hook_switch and phone_mute result from hid input event
+        is correct.
+        """
+        input_event = self.bluetooth_facade.get_input_event()
+        self.results = {
+                "expected_hook_switch":
+                input_event["hook-switch"] == hook_switch,
+                "expected_phone_mute": input_event["phone-mute"] == phone_mute
+        }
+        return all(self.results.values())
 
     @test_retry_and_log(False)
     def test_avrcp_commands(self, device):
@@ -2046,3 +2102,35 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_check_audio_file(device, test_profile, hfp_test_data,
                                    'recorded_by_peer')
         self.test_device_to_stop_recording_audio_subprocess(device)
+
+    def hfp_telephony_incoming_call_answer_by_peer(self, device):
+        """Trigger incoming call on DUT and answer the call by Bluetooth peer.
+
+        The purpose of this test is to assess the functionality of the DUT
+        telephony HID device in handling incoming calls via the HFP profile.
+        The test begins by sending an incoming call event to the DUT telephony
+        HID device check if the incoming call exists on the peer device.
+        The test then proceeds to answer the call from the Bluetooth peer device
+        and verifies that the DUT telephony HID device sends an off-hook
+        (call is active) input report to indicate that the call is active.
+
+        @param device: the Bluetooth peer device.
+        """
+        hfp_test_data = audio_test_data[HFP_TELEPHONY]
+        self.test_select_audio_input_device(device.name)
+        self.test_select_audio_output_node_bluetooth()
+
+        self.bluetooth_facade.open_telephony_device(device.name)
+        self.bluetooth_facade.send_incoming_call()
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+        expected_call_state = self._create_call_state(incoming=1)
+        self.test_check_call_state_on_peer(device, expected_call_state)
+
+        device.AnswerCall()
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+
+        expected_call_state = self._create_call_state(active=1)
+        self.test_check_input_event_on_dut(hook_switch=True, phone_mute=False)
+        self.test_check_call_state_on_peer(device, expected_call_state)
+
+        self.bluetooth_facade.close_telephony_device()

@@ -13,7 +13,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, A2DP_MEDIUM, A2DP_LONG, A2DP_RATE_44100, AVRCP, HFP_WBS, HFP_NBS,
         HFP_WBS_MEDIUM, HFP_NBS_MEDIUM, A2DP_CODEC, AAC, CAP_PIPEWIRE,
-        HFP_CODEC, HFP_SWB, LC3)
+        HFP_CODEC, HFP_SWB, HFP_TELEPHONY, LC3)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -47,6 +47,9 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         """
         self.test_reset_on_adapter()
         self.test_bluetoothd_running()
+        # This is necessary for OFONO to find the correct modem when querying
+        # the bt peer call's state.
+        device.SetRemoteAddress(self.bluetooth_facade.address)
         # TODO: b/277702522 remove this after bluetooth telephony launch.
         if self.floss:
             self.test_set_bluetooth_telephony(True)
@@ -463,6 +466,16 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_hfp_run_method(device, self.hfp_to_a2dp_dut_as_source,
                                HFP_WBS_MEDIUM)
 
+    @test_wrapper('Trigger incoming call on dut and answer call from peer',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
+    def au_hfp_telephony_incoming_call_answer_by_peer_test(self):
+        """Trigger incoming call on dut and answer call from peer."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_run_method(
+                device,
+                lambda: self.hfp_telephony_incoming_call_answer_by_peer(
+                        device), HFP_TELEPHONY)
 
     def au_run_avrcp_method(self, device, test_method):
         """avrcp procedure of running a specified test method.

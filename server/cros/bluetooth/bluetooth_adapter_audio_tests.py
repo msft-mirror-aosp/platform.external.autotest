@@ -2251,3 +2251,32 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         expected_call_state = self._create_call_state(active=0)
         self.test_check_call_state_on_peer(device, expected_call_state)
         self.bluetooth_facade.close_telephony_device()
+
+    def hfp_telephony_active_call_hangup_by_peer(self, device):
+        """Place an active call on DUT hangup the call from peer.
+
+        The test begins by sending an active call event to the DUT telephony HID
+        device and checks if an active call exists on the peer device.
+        The test then proceeds to hangup the call from peer and verifies that
+        that the DUT telephony HID device sends an off-hook=0 (call is hanguped)
+        input report and no call exists on peer side.
+
+        @param device: the Bluetooth peer device.
+        """
+        hfp_test_data = audio_test_data[HFP_TELEPHONY]
+        self.test_select_audio_input_device(device.name)
+        self.test_select_audio_output_node_bluetooth()
+
+        self.bluetooth_facade.open_telephony_device(device.name)
+        self.bluetooth_facade.send_answer_call()
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+
+        expected_call_state = self._create_call_state(active=1)
+        self.test_check_call_state_on_peer(device, expected_call_state)
+
+        device.HangupCall()
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+
+        expected_call_state = self._create_call_state(active=0)
+        self.test_check_call_state_on_peer(device, expected_call_state)
+        self.bluetooth_facade.close_telephony_device()

@@ -222,6 +222,10 @@ class network_WiFi_AttenuatedPerf(wifi_cell_test_base.WiFiCellTestBase):
         for i in range(len(throughput_data) - 1):
             dp1 = throughput_data[i]
             dp2 = throughput_data[i + 1]
+            # Point cannot occur before peak throughput (b/303452801).
+            if dp1.attenuation < max_throughput.attenuation:
+                continue
+
             if dp1.throughput > find and dp2.throughput < find:
                 atten = _interpolate(find, dp1.attenuation, dp2.attenuation,
                                      dp1.throughput, dp2.throughput)

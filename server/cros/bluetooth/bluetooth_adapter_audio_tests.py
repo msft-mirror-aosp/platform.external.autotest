@@ -2280,3 +2280,31 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         expected_call_state = self._create_call_state(active=0)
         self.test_check_call_state_on_peer(device, expected_call_state)
         self.bluetooth_facade.close_telephony_device()
+
+    def hfp_telephony_micmute_from_peer(self, device):
+        """Trigger microphone mute from peer and verify the event sent to DUT.
+
+        Since the HFP does not define a microphone mute event, Floss converts
+        volume=0 to a muted event and sends it through the telephony HID input
+        report.
+        Upon unmuting, the volume is restored to its original level.
+        This test sets the peer microphone volume to 0 and verify that the
+        microphone mute event is sent from the telephony HID input report.
+
+        @param device: the Bluetooth peer device.
+        """
+        hfp_test_data = audio_test_data[HFP_TELEPHONY]
+        self.test_select_audio_input_device(device.name)
+        self.test_select_audio_output_node_bluetooth()
+        device.SetMicVolume(100)
+
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+
+        self.bluetooth_facade.open_telephony_device(device.name)
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+        device.SetMicVolume(0)
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+        self.test_check_input_event_on_dut(hook_switch=False, phone_mute=True)
+        device.SetMicVolume(100)
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+        self.test_check_input_event_on_dut(hook_switch=False, phone_mute=False)

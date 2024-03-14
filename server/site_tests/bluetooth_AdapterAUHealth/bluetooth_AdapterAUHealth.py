@@ -532,6 +532,16 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                 lambda: self.hfp_telephony_active_call_hangup_by_peer(device),
                 HFP_TELEPHONY)
 
+    @test_wrapper('Trigger microphone mute from peer',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
+    def au_hfp_telephony_micmute_from_peer_test(self):
+        """Trigger microphone mute from peer"""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.au_run_method(
+                device, lambda: self.hfp_telephony_micmute_from_peer(device),
+                HFP_TELEPHONY)
+
     def au_run_avrcp_method(self, device, test_method):
         """avrcp procedure of running a specified test method.
 

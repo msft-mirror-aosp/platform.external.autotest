@@ -431,6 +431,15 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
     @glib_callback()
     def on_bond_state_changed(self, status, address, state):
         """Bond state has changed."""
+        # If the state is not bonded, don't modify the local cache.
+        # It is because:
+        # - If it is triggered by |forget_device|, the cache is removed in the
+        #   function.
+        # - If it is triggered by pairing failed, we should not remove the
+        #   cache.
+        if state == BondState.NOT_BONDED:
+            return
+
         # You can bond unknown devices if it was previously bonded
         if not address in self.known_devices:
             self.known_devices[address] = self._make_device(

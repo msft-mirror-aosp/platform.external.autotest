@@ -50,9 +50,10 @@ class BluetoothQuickTests(test.test,
         # Init bluetooth facade
         self.bluetooth_facade = bluetooth_facade.BluezFacadeLocal()
 
-        # Make sure adapter is available
-        if not self.bluetooth_facade.has_adapter():
-            raise error.TestNAError('Adapter is missing')
+        # This variable is unused but is necessary to be init-ed here.
+        # FlossFacadeLocal sets up the glib thread used by the Floss clients,
+        # which is needed for the BlueZ facade to configure the stack.
+        self._bluetooth_facade_floss = bluetooth_facade.FlossFacadeLocal()
 
         self.enable_disable_debug_log(enable=True)
 
@@ -352,10 +353,16 @@ class BluetoothQuickTests(test.test,
 
     def pretest_function(self):
         """Runs before each test."""
+
+        # Make sure we re running on the desired stack.
+        if not self.bluetooth_facade.is_bluetoothd_proxy_valid():
+            if not self.bluetooth_facade.start_bluetoothd():
+                raise error.TestNAError('Failed to start daemon')
+
         if not self.bluetooth_facade.has_adapter():
             raise error.TestNAError('Adapter is missing')
-
         self.bluetooth_facade.reset_on()
+
         time.sleep(self.TEST_SLEEP_SECS)
 
     @staticmethod

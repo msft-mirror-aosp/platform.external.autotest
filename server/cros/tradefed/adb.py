@@ -8,6 +8,7 @@
 # instance "adb" which would collide with this file name (unless they always
 # use "import adb as someothername".
 
+import contextlib
 import logging
 import random
 import re
@@ -26,6 +27,7 @@ class Adb:
     def __init__(self):
         self._install_paths = set()
         self._port = _DEFAULT_ADB_PORT
+        self._tunnel = NullAdbTunnel()
 
     def pick_random_port(
             self,
@@ -99,6 +101,30 @@ class Adb:
         """Returns the ADB server port being used."""
         return self._port
 
+    def set_tunnel(self, tunnel):
+        """Sets the ADB tunnel to use.
+
+        By default the "null" tunnel is used. This method allows setting ADB
+        tunnel implementations for environments that require it.
+        See: NullAdbTunnel, SshAdbTunnel
+        """
+        self._tunnel = tunnel
+
+    def create_tunnel(self):
+        """Returns a context manager that creates the ADB tunnel when entered.
+
+        The tunnel has to be created before executing run() commands.
+        """
+        return self._tunnel.create()
+
+    def get_adb_target(self, host):
+        """Returns the ADB target corresponding to given host."""
+        return self._tunnel.get_adb_target(host)
+
+    def get_adb_targets(self, hosts):
+        """Returns a list of adb targets."""
+        return [self.get_adb_target(host) for host in hosts]
+
     def run(self, host, *args, **kwargs):
         """Runs an ADB command on the host.
 
@@ -127,30 +153,85 @@ class Adb:
         """
         opts = ['-L', self.get_socket()]
         if host:
-            host_port = get_adb_target(host)
+            host_port = self.get_adb_target(host)
             opts.extend(('-s', host_port))
         return tuple(opts)
 
 
-def get_adb_target(host):
-    """Get the adb target format.
+class NullAdbTunnel:
+    """Null tunnel allows direct ADB connection via network without a tunnel."""
 
-    This method is slightly different from host.host_port as we need to
-    explicitly specify the port so the serial name of adb target would
-    match.
+    def create(self):
+        """Returns a context manager that manages the tunnel connection.
 
-    @param host: a DUT accessible via adb.
-    @return a string for specifying the host using adb command.
-    """
-    port = 22 if host.port is None else host.port
-    if re.search(r':.*:', host.hostname):
-        # Add [] for raw IPv6 addresses, stripped for ssh.
-        # In the Python >= 3.3 future, 'import ipaddress' will parse
-        # addresses.
-        return '[{}]:{}'.format(host.hostname, port)
-    return '{}:{}'.format(host.hostname, port)
+        The null tunnel does nothing here.
+        """
+        return contextlib.nullcontext()
+
+    def get_adb_target(self, host):
+        """Returns the ADB target corresponding to given host.
+
+        This method is slightly different from host.host_port as we need to
+        explicitly specify the port so the serial name of adb target would
+        match.
+        """
+        port = 22 if host.port is None else host.port
+        if re.search(r':.*:', host.hostname):
+            # Add [] for raw IPv6 addresses, stripped for ssh.
+            # In the Python >= 3.3 future, 'import ipaddress' will parse
+            # addresses.
+            return '[{}]:{}'.format(host.hostname, port)
+        return '{}:{}'.format(host.hostname, port)
 
 
-def get_adb_targets(hosts):
-    """Get a list of adb targets."""
-    return [get_adb_target(host) for host in hosts]
+class SshAdbTunnel:
+    """Connects ADB via SSH tunnel to each host."""
+
+    _BEGIN_PORT = 9222
+
+    def __init__(self, hosts):
+        self._hosts = hosts
+        self._host_port_map = {}
+        self._created = False
+
+    @contextlib.contextmanager
+    def create(self):
+        """Returns a context manager that manages the tunnel connection.
+
+        Entering the context creates SSH tunnels to each host's port 22 in the
+        background, listening on local port 9222+n.
+        """
+        jobs = []
+        for i, host in enumerate(self._hosts):
+            local_port = self._BEGIN_PORT + i
+            ssh_cmd = self._get_ssh_tunnel_command(host, local_port)
+            jobs.append(
+                    utils.
+                    BgJob(ssh_cmd,
+                          nickname=f'adb_tunnel:{host.hostname}:{local_port}',
+                          stderr_level=logging.DEBUG,
+                          stdout_tee=utils.TEE_TO_LOGS,
+                          stderr_tee=utils.TEE_TO_LOGS))
+            self._host_port_map[host.hostname] = local_port
+
+        self._created = True
+        try:
+            yield
+        finally:
+            self._created = False
+            for job in jobs:
+                utils.nuke_subprocess(job.sp)
+            utils.join_bg_jobs(jobs)
+
+    def get_adb_target(self, host):
+        """Returns the ADB target corresponding to given host.
+
+        This is always localhost:9222 (+n if multiple hosts).
+        """
+        assert self._created
+        return f'localhost:{self._host_port_map[host.hostname]}'
+
+    @staticmethod
+    def _get_ssh_tunnel_command(host, local_port):
+        """Returns the SSH command to create a tunnel to the host."""
+        return host.ssh_command(options=f'-v -N -L{local_port}:localhost:22')

@@ -235,6 +235,11 @@ class TradefedTest(test.test):
         else:
             logging.info('Non-lab environment: should be using JDK9+')
 
+        # On go/cloudbots DUTs are not reachable via network directly. We need
+        # to tunnal ADB connections via SSH.
+        if self._is_cloudbot():
+            self._adb.set_tunnel(adb_utils.SshAdbTunnel(hosts))
+
         # TODO(kinaba): Remove the hack and fully enable the feature.
         # For release branches (Rx-yyyyy.3.0 or above), always use the
         # official build instead of the release build. See b/210369548
@@ -254,6 +259,10 @@ class TradefedTest(test.test):
         self._waivers = None
 
         self._hard_reboot_on_failure = hard_reboot_on_failure
+
+    def _is_cloudbot(self):
+        """Returns True if the test job is running on cloudbot."""
+        return os.environ.get('SWARMING_BOT_ID', '').startswith('cloudbots-')
 
     def _load_local_waivers(self, directory, is_dev=False):
         return self._get_expected_failures(os.path.join(self.bindir, directory), is_dev)
@@ -444,7 +453,7 @@ class TradefedTest(test.test):
             # This may fail return failure due to a race condition in adb
             # connect (b/29370989). If adb is already connected, this command
             # will immediately return success.
-            host_port = adb_utils.get_adb_target(host)
+            host_port = self._adb.get_adb_target(host)
             result = self._adb.run(
                     host,
                     args=('connect', host_port),
@@ -1374,7 +1383,7 @@ class TradefedTest(test.test):
         """
         target_argument = []
         for host in self._hosts:
-            target_argument += ['-s', adb_utils.get_adb_target(host)]
+            target_argument += ['-s', self._adb.get_adb_target(host)]
         shard_argument = []
         if len(self._hosts) > 1:
             if self._SHARD_CMD:
@@ -1601,9 +1610,10 @@ class TradefedTest(test.test):
 
     def _run_tradefed_with_timeout(self, command, timeout):
         tradefed = self._tradefed_cmd_path()
-        with tradefed_utils.adb_keepalive(
-                adb_utils.get_adb_targets(self._hosts), self._install_paths,
-                socket=self._adb.get_socket()):
+        with tradefed_utils.adb_keepalive(self._adb.get_adb_targets(
+                self._hosts),
+                                          self._install_paths,
+                                          socket=self._adb.get_socket()):
             logging.info('RUN(timeout=%d): %s', timeout,
                          ' '.join([tradefed] + command))
             output = self._run(
@@ -1700,7 +1710,8 @@ class TradefedTest(test.test):
                     enable_default_apps=enable_default_apps,
                     vm_force_max_resolution=vm_force_max_resolution,
                     log_dir=session_log_dir,
-                    feature=chrome_feature) as current_logins:
+                    feature=chrome_feature) as current_logins, \
+                            self._adb.create_tunnel():
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation

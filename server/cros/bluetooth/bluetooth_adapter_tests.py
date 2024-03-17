@@ -4919,21 +4919,27 @@ class BluetoothAdapterTests(test.test):
         """
         return self._test_mouse_click(device, 'RIGHT')
 
-    def _test_mouse_bulk_actions(self, device, action_list, delay=0.2):
+    def _test_mouse_bulk_actions(self,
+                                 device,
+                                 action_list,
+                                 num_iterations,
+                                 delay=0.2):
         """Tests that the events of mouse bulk actions could be received
         correctly.
 
         @param device: The meta device containing a bluetooth HID device.
         @param action_list: List of tuples (action_type, action_args)
                             representing mouse actionsList.
+        @param num_iterations: The number of iterations to perform.
         @param delay: Time in seconds between actions.
 
         @returns: True if the report received by the host matches the
                   expected one. False otherwise.
         """
-        gesture = lambda: device.BulkActions(action_list, delay)
+        bulk_action_list = action_list * num_iterations
+        gesture = lambda: device.BulkActions(bulk_action_list, delay)
         actual_events = self._record_input_events(
-            device, gesture, address=self._input_dev_uniq_addr(device))
+                device, gesture, address=self._input_dev_uniq_addr(device))
 
         expected_events = []
         pressed_buttons = []
@@ -4971,11 +4977,27 @@ class BluetoothAdapterTests(test.test):
                 expected_events.extend([recorder.SYN_EVENT])
                 pressed_buttons = []
 
-        self.results = {
-            'actual_events': list(map(str, actual_events)),
-            'expected_events': list(map(str, expected_events))
-        }
-        return actual_events == expected_events
+        actual_events = list(map(str, actual_events))
+        expected_events = list(map(str, expected_events))
+
+        for iteration, expected_slice in enumerate([expected_events] * num_iterations):
+            start_index = iteration * len(expected_slice)
+            end_index = (iteration + 1) * len(expected_slice)
+
+            if end_index > len(actual_events):
+                return False
+
+            actual_slice = actual_events[start_index:end_index]
+            for index, expected_event in enumerate(expected_slice):
+                actual_event = actual_slice[index]
+                if actual_event != expected_event:
+                    self.results = {
+                            'first_failed_iteration': iteration,
+                            'first_failed_actual_events': actual_slice,
+                            'first_failed_expected_events': expected_slice,
+                    }
+                    return False
+        return True
 
     def _test_continuous_mouse_click(self, device, button, num_clicks, delay):
         """Tests continuous mouse clicks for the specified number of times.
@@ -4992,7 +5014,7 @@ class BluetoothAdapterTests(test.test):
              None), ('ReleaseAllButtons', None)
         ]
         if not self._test_mouse_bulk_actions(
-                device, action_list * num_clicks, delay=delay):
+                device, action_list, num_clicks, delay=delay):
             return False
 
         return True
@@ -5213,7 +5235,7 @@ class BluetoothAdapterTests(test.test):
             ('ReleaseAllButtons', None)
         ]
         if not self._test_mouse_bulk_actions(
-                device, action_list * num_iterations, delay=delay):
+                device, action_list, num_iterations, delay=delay):
             return False
 
         return True
@@ -5299,8 +5321,6 @@ class BluetoothAdapterTests(test.test):
             logging.info("The string is empty, return true.")
             return True
 
-        length_correct = True
-        content_correct = True
         holding_shift = False
         key_events = []
         for i, c in enumerate(string_to_send):
@@ -5338,23 +5358,25 @@ class BluetoothAdapterTests(test.test):
         rec_key_events = [ev for ev in rec_events if ev.type == EV_KEY]
 
         # Fail if we didn't record the correct number of events.
-        if len(rec_key_events) != len(predicted_events):
-            logging.error('Expected %d events, received %d',
-                          len(predicted_events), len(rec_key_events))
-            length_correct = False
+        if len(predicted_events) != len(rec_key_events):
+            self.results = {
+                    'error':
+                    'Mismatch in the number of predicted and recorded events',
+                    'num_predicted_events': len(predicted_events),
+                    'num_recorded_events': len(rec_key_events),
+            }
+            return False
 
-        for predicted, recorded in zip(predicted_events, rec_key_events):
+        for index, (predicted, recorded) in (enumerate(
+                zip(predicted_events, rec_key_events))):
             if not predicted == recorded:
-                content_correct = False
-                break
-
-        self.results = {
-            'received_events': len(rec_key_events) > 0,
-            'length_correct': length_correct,
-            'content_correct': content_correct,
-        }
-
-        return all(self.results.values())
+                self.results = {
+                        'first_failed_key': index,
+                        'first_failed_recorded_event': recorded,
+                        'first_failed_predicted_event': predicted,
+                }
+                return False
+        return True
 
     # -------------------------------------------------------------------
     # Bluetooth gamepad related tests

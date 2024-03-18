@@ -15,7 +15,6 @@ METADATA = {
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
-DEPENDENCIES = 'servo_state:WORKING'
 ATTRIBUTES = 'suite:typec_usb_bringup'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 
@@ -41,7 +40,6 @@ varslist += ['typec.McciSerial=0002CC0004D7', 'typec.McciPort=1']
 
 def run(machine):
     args_dict = utils.args_to_dict(command_args)
-    assert 'servo_state:WORKING' in DEPENDENCIES
     servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
     job.run_test('tast',
                  host=hosts.create_host(machine, servo_args=servo_args),

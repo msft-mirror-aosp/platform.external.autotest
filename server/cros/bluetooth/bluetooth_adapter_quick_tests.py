@@ -507,7 +507,19 @@ class BluetoothAdapterQuickTests(
 
         if self.floss:
             if self.bluetooth_facade.crash_detect_stop():
-                self.test_crash_detected()
+                chipset = self.quick_test_get_chipset_name()
+                # On SUSPEND_POWER_DOWN_CHIPSETS, only detect the unexpected
+                # stop when the test is already failed because these chipsets
+                # remove the hci index on suspend and cause crashes.
+                if (
+                        chipset
+                        in bluetooth_adapter_tests.SUSPEND_POWER_DOWN_CHIPSETS
+                        and not self.fails):
+                    logging.info(
+                            "Skipped crash detection because the test has "
+                            "passed")
+                else:
+                    self.test_crash_detected()
             else:
                 logging.error("Failed to stop crash detector.")
 

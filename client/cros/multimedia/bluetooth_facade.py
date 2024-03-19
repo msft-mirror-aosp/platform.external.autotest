@@ -339,6 +339,7 @@ class BluetoothBaseFacadeLocal(object):
                             (('0x8086', '0x51f1'), 'USB'),
                             (('0x8086', '0x54f0'), 'USB'),
                             (('0x8086', '0x7e40'), 'USB')],  # GfP2
+            'Intel-BE200': [(('0x8086', '0x272b'), 'USB')],  # GaP2
 
             # Realtek chipsets
             'Realtek-RTL8822C-USB': [(('0x10ec', '0xc822'), 'USB')],

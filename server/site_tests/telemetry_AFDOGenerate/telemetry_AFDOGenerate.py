@@ -97,11 +97,14 @@ def _wait_for_process(host, pid, timeout=-1):
 # to have a short list that is as representative as possible and takes a
 # short time to execute. At this point the list of benchmarks is in flux.
 TELEMETRY_AFDO_BENCHMARKS = (
-        {
-                'name': 'rendering.desktop',
-                'args': ('--story-tag-filter=motionmark', ),
-                'archs': ('amd64', 'arm')
-        },
+        # b/330611586: this is currently disabled due to permissions issues.
+        # Ideally it should be reenabled, or we should have a solid reason to
+        # remove it entirely.
+        # {
+        #         'name': 'rendering.desktop.notracing',
+        #         'args': ('--story-tag-filter=motionmark', ),
+        #         'archs': ('amd64', 'arm')
+        # },
         {
                 'name': 'system_health.common_desktop',
                 'args': ('--run-abridged-story-set', ),

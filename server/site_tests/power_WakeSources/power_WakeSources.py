@@ -59,6 +59,9 @@ USB_PRESENT_DELAY = 1
 # process is slower than network reconnection.
 WAIT_DARK_RESUME_COUNT_SECS = 2
 
+# Time to wait for basestate reset to avoid wakeup_count increased during next
+# suspend process lead to suspend failed
+BASE_STATE_RESET_DELAY_SECS = 2
 
 class power_WakeSources(test.test):
     """
@@ -85,6 +88,7 @@ class power_WakeSources(test.test):
         usb_count = self._get_usb_count()
         if wake_source in ['BASE_ATTACH', 'BASE_DETACH']:
             self._force_base_state(BASE_STATE.RESET)
+            time.sleep(BASE_STATE_RESET_DELAY_SECS)
         elif wake_source == 'USB_KB':
             self._host.servo.set_nocheck('init_usb_keyboard', 'off')
             usb_count -= 1

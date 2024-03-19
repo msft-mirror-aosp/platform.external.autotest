@@ -4161,7 +4161,7 @@ class BluetoothAdapterTests(test.test):
         if self.floss:
             # For Floss software rotation stack there won't be a "remove"
             # command in btmon.
-            if not self.bluetooth_facade.is_multi_adv_supported():
+            if not self.ext_adv_enabled():
                 advertisement_removed = True
             else:
                 advertisement_removed = (self.bluetooth_facade.btmon_find(
@@ -4376,7 +4376,7 @@ class BluetoothAdapterTests(test.test):
         if not instance_ids:
             # Nothing to remove, skipped check
             advertisement_removed = True
-        elif self.floss and not self.bluetooth_facade.is_multi_adv_supported():
+        elif self.floss and not self.ext_adv_enabled():
             # Floss software rotation, skipped check
             advertisement_removed = True
         else:

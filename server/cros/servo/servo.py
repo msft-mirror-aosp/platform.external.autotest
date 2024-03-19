@@ -666,7 +666,6 @@ class Servo(object):
             self._power_state = _PowerStateController(self)
         return self._power_state
 
-
     def initialize_dut(self, cold_reset=False, enable_main=True):
         """Initializes a dut for testing purposes.
 
@@ -745,10 +744,10 @@ class Servo(object):
         if self._servo_info is None:
             self._servo_info = {
                     'servo_host_os_version': self.get_os_version(),
+                    'servod_version': self.get_servod_version(),
                     'servo_type': self.get_servo_type()
             }
             self._servo_info.update(self.get_servo_fw_versions())
-
 
     def is_localhost(self):
         """Is the servod hosted locally?
@@ -758,7 +757,6 @@ class Servo(object):
         """
         return self._servo_host.is_localhost()
 
-
     def get_os_version(self):
         """Returns the chromeos release version."""
         lsb_release_content = self.system_output('cat /etc/lsb-release',
@@ -766,6 +764,29 @@ class Servo(object):
         return lsbrelease_utils.get_chromeos_release_builder_path(
                     lsb_release_content=lsb_release_content)
 
+    def get_servod_version(self):
+        """Returns the servod version."""
+        try:
+            sversion = self._server.servod_version()
+        except Exception as e:
+            if 'method "servod_version" is not supported' in str(e):
+                return ""
+            raise e
+        # The servod_version output is:
+        # v1.0.2252+f0bbc466
+        # Date: 2024-03-18 20:20:26
+        # Builder: buildkitsandbox
+        # Hash: +f0bbc466
+        # Branch: sversion_api2
+        # For debugging purposes, we mainly care about the version, and the
+        # timestamp.
+        match = re.search(r'^(v\S+)\s+(.*)', sversion)
+        if match is None:
+            return sversion.strip()
+        ver, date = match.groups()
+        # Be flexible about 'Date: ' since older versions didn't include it.
+        date = date.replace('Date: ', '')
+        return f'{ver} {date}'
 
     def power_long_press(self):
         """Simulate a long power button press."""
@@ -776,18 +797,15 @@ class Servo(object):
         # long_press is defined as 8.5s in servod
         self.power_key('long_press')
 
-
     def power_normal_press(self):
         """Simulate a normal power button press."""
         # press is defined as 1.2s in servod
         self.power_key('press')
 
-
     def power_short_press(self):
         """Simulate a short power button press."""
         # tab is defined as 0.2s in servod
         self.power_key('tab')
-
 
     def power_key(self, press_secs='tab'):
         """Simulate a power button press.
@@ -814,7 +832,6 @@ class Servo(object):
         time.sleep(press_secs)
         self.set_nocheck('pwr_button', 'release')
 
-
     def pwr_button(self, action='press'):
         """Simulate a power button press.
 
@@ -822,11 +839,9 @@ class Servo(object):
         """
         self.set_nocheck('pwr_button', action)
 
-
     def lid_open(self):
         """Simulate opening the lid and raise exception if all attempts fail"""
         self.set('lid_open', 'yes')
-
 
     def lid_close(self):
         """Simulate closing the lid and raise exception if all attempts fail
@@ -836,11 +851,9 @@ class Servo(object):
         self.set('lid_open', 'no')
         time.sleep(Servo.SLEEP_DELAY)
 
-
     def vbus_power_get(self):
         """Get current vbus_power."""
         return self.get('vbus_power')
-
 
     def volume_up(self, timeout=300):
         """Simulate pushing the volume down button.
@@ -912,7 +925,6 @@ class Servo(object):
         """
         self.set_nocheck('ctrl_d', press_secs)
 
-
     def ctrl_r(self, press_secs='tab'):
         """Simulate Ctrl-r simultaneous button presses.
 
@@ -929,7 +941,6 @@ class Servo(object):
         """
         self.set_nocheck('ctrl_s', press_secs)
 
-
     def ctrl_u(self, press_secs='tab'):
         """Simulate Ctrl-u simultaneous button presses.
 
@@ -937,7 +948,6 @@ class Servo(object):
                            known shorthand: 'tab' 'press' 'long_press'
         """
         self.set_nocheck('ctrl_u', press_secs)
-
 
     def ctrl_enter(self, press_secs='tab'):
         """Simulate Ctrl-enter simultaneous button presses.
@@ -947,7 +957,6 @@ class Servo(object):
         """
         self.set_nocheck('ctrl_enter', press_secs)
 
-
     def ctrl_key(self, press_secs='tab'):
         """Simulate Enter key button press.
 
@@ -955,7 +964,6 @@ class Servo(object):
                            known shorthand: 'tab' 'press' 'long_press'
         """
         self.set_nocheck('ctrl_key', press_secs)
-
 
     def enter_key(self, press_secs='tab'):
         """Simulate Enter key button press.
@@ -965,7 +973,6 @@ class Servo(object):
         """
         self.set_nocheck('enter_key', press_secs)
 
-
     def refresh_key(self, press_secs='tab'):
         """Simulate Refresh key (F3) button press.
 
@@ -973,7 +980,6 @@ class Servo(object):
                            known shorthand: 'tab' 'press' 'long_press'
         """
         self.set_nocheck('refresh_key', press_secs)
-
 
     def ctrl_refresh_key(self, press_secs='tab'):
         """Simulate Ctrl and Refresh (F3) simultaneous press.
@@ -985,7 +991,6 @@ class Servo(object):
         """
         self.set_nocheck('ctrl_refresh_key', press_secs)
 
-
     def imaginary_key(self, press_secs='tab'):
         """Simulate imaginary key button press.
 
@@ -995,7 +1000,6 @@ class Servo(object):
                            known shorthand: 'tab' 'press' 'long_press'
         """
         self.set_nocheck('imaginary_key', press_secs)
-
 
     def sysrq_x(self, press_secs='tab'):
         """Simulate Alt VolumeUp X simulataneous press.
@@ -1023,16 +1027,13 @@ class Servo(object):
         time.sleep(self.REC_TOGGLE_DELAY)
         self.disable_recovery_mode()
 
-
     def enable_recovery_mode(self):
         """Enable recovery mode on device."""
         self.set('rec_mode', 'on')
 
-
     def disable_recovery_mode(self):
         """Disable recovery mode on device."""
         self.set('rec_mode', 'off')
-
 
     def toggle_development_switch(self):
         """Toggle development switch on and off."""
@@ -1040,11 +1041,9 @@ class Servo(object):
         time.sleep(self.DEV_TOGGLE_DELAY)
         self.disable_development_mode()
 
-
     def enable_development_mode(self):
         """Enable development mode on device."""
         self.set('dev_mode', 'on')
-
 
     def disable_development_mode(self):
         """Disable development mode on device."""
@@ -1055,19 +1054,16 @@ class Servo(object):
         self.power_short_press()
         self.pass_devmode()
 
-
     def pass_devmode(self):
         """Pass through boot screens in dev-mode."""
         time.sleep(Servo.BOOT_DELAY)
         self.ctrl_d()
         time.sleep(Servo.BOOT_DELAY)
 
-
     def get_board(self):
         """Get the board connected to servod."""
         with _WrapServoErrors(servo=self, description='get_board()'):
             return self._server.get_board()
-
 
     def get_base_board(self):
         """Get the board of the base connected to servod."""
@@ -1219,7 +1215,6 @@ class Servo(object):
         with _WrapServoErrors(servo=self, description=description):
             return self._server.set_get_all(controls)
 
-
     def probe_host_usb_dev(self):
         """Probe the USB disk device plugged-in the servo from the host side.
 
@@ -1229,7 +1224,6 @@ class Servo(object):
         """
         # Set up Servo's usb mux.
         return self.get('image_usbkey_dev') or None
-
 
     def image_to_servo_usb(self, image_path=None,
                            make_image_noninteractive=False,
@@ -1339,7 +1333,6 @@ class Servo(object):
             time.sleep(10)
         self.boot_in_recovery_mode(snk_mode=snk_mode)
 
-
     def _scp_image(self, image_path):
         """Copy image to the servo host.
 
@@ -1368,7 +1361,6 @@ class Servo(object):
         rv = os.path.join(dest_path, os.path.basename(src_path))
         return os.path.join(rv, os.path.basename(image_path))
 
-
     def system(self, command, timeout=3600):
         """Execute the passed in command on the servod host.
 
@@ -1378,7 +1370,6 @@ class Servo(object):
         """
         logging.info('Will execute on servo host: %s', command)
         self._servo_host.run(command, timeout=timeout)
-
 
     def system_output(self, command, timeout=3600,
                       ignore_status=False, args=()):
@@ -1396,7 +1387,6 @@ class Servo(object):
         return self._servo_host.run(command, timeout=timeout,
                                     ignore_status=ignore_status,
                                     args=args).stdout.strip()
-
 
     def get_servo_version(self, active=False):
         """Get the version of the servo, e.g., servo_v2 or servo_v3.
@@ -1421,7 +1411,6 @@ class Servo(object):
         logging.warning("%s is active even though it's not in servo type",
                      active_device)
         return servo_type
-
 
     def get_servo_type(self):
         if self._servo_type is None:
@@ -1448,7 +1437,6 @@ class Servo(object):
     def get_main_servo_device(self):
         """Return the main servo device"""
         return self.get_servo_type().split('_with_')[-1].split('_and_')[0]
-
 
     def enable_main_servo_device(self):
         """Make sure the main device has control of the dut."""
@@ -1528,7 +1516,6 @@ class Servo(object):
                     'No firmware programmer for servo version: %s' %
                     self.get_servo_type())
 
-
     def program_bios(self, image, rw_only=False, copy_image=True):
         """Program bios on DUT with given image.
 
@@ -1550,7 +1537,6 @@ class Servo(object):
             self._programmer.program_bios(image)
         return image
 
-
     def program_ec(self, image, rw_only=False, copy_image=True):
         """Program ec on DUT with given image.
 
@@ -1571,7 +1557,6 @@ class Servo(object):
         else:
             self._programmer.program_ec(image)
         return image
-
 
     def get_ec_image_candidate_filenames(self, board, model):
         """Gets all EC filenames needed for flashing firmware.
@@ -1652,7 +1637,6 @@ class Servo(object):
             raise error.TestError('Failed to extract EC image from %s' %
                                   tarball_path)
 
-
     def get_bios_image_candidate_filenames(self, board, model):
         """Gets all BIOS filenames needed for flashing firmware.
 
@@ -1716,7 +1700,6 @@ class Servo(object):
         else:
             raise error.TestError('Failed to extract BIOS image from %s' %
                                   tarball_path)
-
 
     def switch_usbkey(self, usb_state):
         """Connect USB flash stick to either host or DUT, or turn USB port off.
@@ -1939,7 +1922,6 @@ class Servo(object):
         if enable_watchdog:
             self.ccd_watchdog_enable(True)
 
-
     def _get_servo_type_fw_version(self, servo_type, prefix=''):
         """Helper to handle fw retrieval for micro/v4 vs ccd.
 
@@ -1960,7 +1942,6 @@ class Servo(object):
             # Do not fail here, simply report the version as unknown.
             logging.warning('Unable to query %r to get servo fw version.', cmd)
             return 'unknown'
-
 
     def get_servo_fw_versions(self):
         """Retrieve a summary of attached servos and their firmware.
@@ -2006,7 +1987,6 @@ class Servo(object):
     def uart_logs_dir(self):
         """Return the directory to save UART logs."""
         return self._uart.logs_dir if self._uart else ""
-
 
     @uart_logs_dir.setter
     def uart_logs_dir(self, logs_dir):

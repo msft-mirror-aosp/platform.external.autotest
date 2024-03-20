@@ -83,6 +83,7 @@ def run(machine):
     run_private_tests=args_dict.get('run_private_tests', 'true') == 'true'
     total_shards=args_dict.get('total_shards', 1)
     shard_index=args_dict.get('shard_index', 0)
+    shard_method=args_dict.get('shard_method', None)
     max_run_sec=int(args_dict.get('max_run_sec', 21600)) # 6 hours.
     retries=int(args_dict.get('retries', 1))
     logging.info("Running %s on host: %s with Tast expression:%s "
@@ -107,6 +108,7 @@ def run(machine):
                  varslist=varslist,
                  totalshards=total_shards,
                  shardindex=shard_index,
+                 shardmethod=shard_method,
                  clear_tpm=False,
                  run_private_tests=run_private_tests)
 

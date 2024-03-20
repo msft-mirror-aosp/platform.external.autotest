@@ -212,6 +212,7 @@ class tast(test.test):
                    clear_tpm=True,
                    totalshards=1,
                    shardindex=0,
+                   shardmethod=None,
                    companion_duts={},
                    varslist=[],
                    maybemissingvars='',
@@ -256,6 +257,7 @@ class tast(test.test):
         @param clear_tpm: clear the TPM first before running the tast tests.
         @param totalshards: Total number of shards.
         @param shardindex: The shard index to be run.
+        @param shardmethod: The shard method how to distribute the tests.
         @param companion_duts: A map of role to DUT name to tast run command as
             |-companiondut| arguments. Each entry in the map will be formatted
             as "role:dut" for each -companiondut argument.
@@ -314,6 +316,7 @@ class tast(test.test):
         self._clear_tpm = clear_tpm
         self._totalshards = totalshards
         self._shardindex = shardindex
+        self._shardmethod = shardmethod
         self._companion_duts = companion_duts
         self._maybemissingvars = maybemissingvars
         self._vars_gs_path = vars_gs_path
@@ -762,6 +765,8 @@ class tast(test.test):
             '-totalshards=%s' % self._totalshards,
             '-shardindex=%s' % self._shardindex,
         ]
+        if self._shardmethod:
+            cmd.append(f'-shardmethod={self._shardmethod}')
         if self._f20_container:
             cmd.extend(['-build=false'])
             if self._run_private_tests:

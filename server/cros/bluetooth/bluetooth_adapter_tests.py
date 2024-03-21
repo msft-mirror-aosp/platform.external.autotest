@@ -4812,11 +4812,11 @@ class BluetoothAdapterTests(test.test):
 
         return True
 
-    @test_retry_and_log
-    def test_continues_mouse_left_click(self,
-                                        device,
-                                        num_clicks=1000,
-                                        delay=0.01):
+    @test_retry_and_log(False)
+    def test_continuous_mouse_left_click(self,
+                                         device,
+                                         num_clicks=1000,
+                                         delay=0.01):
         """Tests continuous mouse left click events for the specified number
         of times.
 

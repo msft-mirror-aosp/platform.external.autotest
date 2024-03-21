@@ -461,17 +461,33 @@ class Cr50Test(FirmwareTest):
         """
         return self._retry_gsc_update(image, retries, rollback, False)
 
-    def _retry_gsc_update_with_ccd(self, image, retries, rollback):
+    def _retry_gsc_update_with_ccd(self,
+                                   image,
+                                   retries,
+                                   rollback,
+                                   dut_reset=None):
         """Try to update to the given image retries amount of times with ccd.
 
         @param image: The image path.
         @param retries: The number of times to try to update.
         @param rollback: Run rollback after the update.
+        @param dut_reset: Put the device in reset before running the update.
         @raises TestFail if the update failed.
         """
+        if dut_reset and not self.servo.has_control(dut_reset):
+            logging.info('Servo does not have %r contro', dut_reset)
+            return
         if not self.ccd_programmer_connected_to_servo_host():
             raise error.TestError('CCD not connected to servo_host')
-        return self._retry_gsc_update(image, retries, rollback, True)
+        logging.info('Trying update over ccd')
+        try:
+            if dut_reset:
+                logging.info('Asserting %r before update', dut_reset)
+                self.servo.set_nocheck(dut_reset, 'on')
+            return self._retry_gsc_update(image, retries, rollback, True)
+        finally:
+            if dut_reset:
+                self.servo.set_nocheck(dut_reset, 'off')
 
     def _retry_gsc_update_with_ccd_and_ap(self, image, retries, rollback):
         """Try to update to the given with ccd then try the ap.
@@ -484,7 +500,18 @@ class Cr50Test(FirmwareTest):
         try:
             return self._retry_gsc_update_with_ccd(image, retries, rollback)
         except error.TestError as e:
-            logging.info('Failed to update with ccd. Trying AP.')
+            logging.info('Failed to update with ccd.')
+        try:
+            return self._retry_gsc_update_with_ccd(image, retries, rollback,
+                                                   'cold_reset')
+        except error.TestError as e:
+            logging.info('Failed to update with ccd with cold_reset on.')
+        try:
+            return self._retry_gsc_update_with_ccd(image, retries, rollback,
+                                                   'warm_reset')
+        except error.TestError as e:
+            logging.info('Failed to update with ccd with warm_reset on.')
+
         # Make sure the DUT is up for a AP update.
         self._try_to_bring_dut_up()
         self._retry_gsc_update_from_ap(image, retries, rollback)
@@ -543,7 +570,18 @@ class Cr50Test(FirmwareTest):
         if eraseflashinfo:
             self.run_update_to_eraseflashinfo()
 
-        self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
+        # Try to do a GSC power-on reset to clear the rollback counter and
+        # switch back to the DBG image.
+        if self.servo.has_control('gsc_reset'):
+            self.servo.set_nocheck('gsc_reset', 'on')
+            self.servo.set_nocheck('gsc_reset', 'off')
+            self.gsc.wait_for_reboot(timeout=10)
+
+        ver = self.gsc.get_version()
+        logging.info('Running %s', ver)
+        if 'DBG' not in ver:
+            self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3,
+                                                   False)
 
         chip_bid = bid[0]
         chip_flags = bid[2]

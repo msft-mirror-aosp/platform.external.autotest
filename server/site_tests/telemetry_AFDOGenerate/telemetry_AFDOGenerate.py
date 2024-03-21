@@ -376,11 +376,10 @@ class telemetry_AFDOGenerate(test.test):
                 f'This test cannot be run on board {self._board}. '
                 f'Try one of {sorted(LLVM_BOARDS)}')
         self._arch = LLVM_BOARDS[self._board]
-        # Use an alternate GS location where everyone can write.
-        # Set default depending on whether this is executing in
-        # the lab environment or not
-        self._gs_test_location = not utils.host_is_in_lab_zone(
-            self._host.hostname)
+        # By default, write to production storage. You can upload to a
+        # more-accessible (and more temporary) location by passing
+        # 'gs_test_location=True'.
+        self._gs_test_location = False
         # Ignore individual test failures unless they failed to start.
         self._ignore_failures = True
         # Use local copy of telemetry instead of using the dev server copy.

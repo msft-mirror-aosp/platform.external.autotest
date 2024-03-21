@@ -49,6 +49,7 @@ args_dict = utils.args_to_dict(args)
 def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterEPHealth', host=host,
+                 tag='.'.join(NAME.split('.')[1:]),
                  num_iterations=1, args_dict=args_dict, floss=True)
 
 parallel_simple(run, machines)

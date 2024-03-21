@@ -89,6 +89,7 @@ class FingerprintTest(test.test):
 
         # helipilot
         'ff60ba1fe2cf13f60d0debfb350f7c321115e59a': _KEY_TYPE_PRE_MP,
+        '3c0b147809e06f279ba0cf221c18995d7b4e3f1a': _KEY_TYPE_MP,
 
     }
 

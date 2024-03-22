@@ -21,12 +21,11 @@
 NAME = "power_VideoCall.FDO_25min_lacros"
 METADATA = {
     "contacts": ["chromeos-platform-power@google.com"],
-    "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:power_daily_video_call")
+# ATTRIBUTES = ("suite:power_daily_video_call")
 TEST_TYPE = "client"
 
 args_dict = utils.args_to_dict(args)

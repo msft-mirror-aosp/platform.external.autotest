@@ -239,6 +239,9 @@ def do_suspend(suspend_for_sec, delay_seconds=0):
     ]
     logging.info("Running '%s'", ' '.join(suspend_cmd_argv))
     result = subprocess.run(suspend_cmd_argv, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        logging.warn("Command '{}' returned non-zero exit status {}".format(
+                ' '.join(suspend_cmd_argv), result.returncode))
     m = re.search("rtc wakealarm: (\d+)", result.stdout.decode())
     if m is None:
         logging.warn(

@@ -6172,6 +6172,7 @@ class BluetoothAdapterTests(test.test):
             # time in suspend than expected. If we can't find info via powerd,
             # we can use measured time instead.
             info = self.bluetooth_facade.find_last_suspend_via_powerd_logs()
+            results['suspend attempt found'] = info is not None
             if info:
                 start_suspend_at, end_suspend_at, retcode = info
                 logging.debug('find_last_suspend_via_powerd_logs returned: '

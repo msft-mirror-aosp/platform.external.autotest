@@ -20,9 +20,7 @@ METADATA = {
 }
 
 
-# TODO: start executing this test once a new chameleon bundle, capable of
-#       supporting pipewire, has been deployed.
-# ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

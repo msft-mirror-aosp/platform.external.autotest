@@ -20,6 +20,7 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
     _MINIOS_BACKUP = "minios.gz"
     _MINIOS_PREFS_DIR = "minios"
     _TMP_DIR = "/usr/local/tmp"
+    _MINIOS_BOOT_EXCLUDED_MODELS = ("tomato", )
 
     def initialize(self, host=None, wifi_configs=None, running_at_desk=None):
         """
@@ -126,7 +127,7 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
             self._remove_update_engine_pref(pref=pref[0], is_dir=pref[1])
 
     def _setup_minios_update(self,
-                             has_update,
+                             verify_minios_boot,
                              with_exclusion=False,
                              build=None):
         # Get payload URL for the MiniOS update.
@@ -147,7 +148,7 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
                     sub_dir=self._EXCLUSION_PREFS_DIR)
 
         # MiniOS booting to be verified.
-        if has_update:
+        if verify_minios_boot:
             self._verifications.append(self._verify_boot_minios)
 
     def _setup_cros_update(self, has_update, build=None):
@@ -284,7 +285,10 @@ class autoupdate_MiniOS(minios_test.MiniOsTest):
         self._setup_cros_update(has_update=with_os, build=build)
         if with_dlc:
             self._setup_dlc_update(build=build)
-        self._setup_minios_update(has_update=minios_update,
+        verify_minios_boot = (minios_update
+                              and not self._host.get_model_from_cros_config()
+                              in self._MINIOS_BOOT_EXCLUDED_MODELS)
+        self._setup_minios_update(verify_minios_boot=verify_minios_boot,
                                   with_exclusion=with_exclusion,
                                   build=build)
 

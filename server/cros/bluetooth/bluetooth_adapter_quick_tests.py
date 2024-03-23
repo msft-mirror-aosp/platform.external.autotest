@@ -220,7 +220,8 @@ class BluetoothAdapterQuickTests(
         logging.debug("Bluetooth attenuator is %s", self.bt_attenuator)
 
         # Check whether this device supports floss
-        if self.floss:
+        # LL privacy tests run on models support floss
+        if self.floss or self.llprivacy:
             self.check_floss_support()
 
         if self.use_btpeer:

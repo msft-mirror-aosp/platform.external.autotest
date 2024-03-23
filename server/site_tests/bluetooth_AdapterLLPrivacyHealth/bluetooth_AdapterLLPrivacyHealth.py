@@ -635,6 +635,11 @@ class bluetooth_AdapterLLPrivacyHealth(
                   supports_floss=True)
     def sr_peer_wake_le_hid_with_rpa(self):
         """Use LE HID to wake from suspend."""
+        # b/324975178 LL privacy is not planned to launch in BlueZ. Skip
+        # until the bug is fixed.
+        if not self.floss:
+            raise error.TestNAError(
+                    "Test not supported in BlueZ for known reason.")
         device = self.devices['BLE_MOUSE'][0]
         self.run_hid_wakeup_with_rpa(device, device_test=self._test_mouse)
 

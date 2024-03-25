@@ -1370,9 +1370,7 @@ class FirmwareTest(test.test):
         self._restore_power_mode = True
 
         if target_power_state == self.POWER_STATE_G3:
-            self.run_shutdown_cmd()
-            # TODO(b/151156740): Poll for G3 instead of sleeping.
-            time.sleep(self.faft_config.shutdown)
+            self.servo.get_power_state_controller().power_off()
         elif target_power_state == self.POWER_STATE_SUSPEND:
             self.suspend()
 

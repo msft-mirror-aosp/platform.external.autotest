@@ -844,6 +844,13 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         return bid_erased
 
 
+    def clear_rollback(self):
+        """Clear the rollback counter and reboot."""
+        if not self.has_command('clear_rollback'):
+            logging.info('gsc does not have clear_rollback')
+            return
+        self.wait_for_reboot(cmd='clear_rollback', timeout=10)
+
     def rollback(self):
         """Set the reset counter high enough to force a rollback and reboot."""
         if not self.has_command('rollback'):

@@ -576,6 +576,10 @@ class Cr50Test(FirmwareTest):
             self.servo.set_nocheck('gsc_reset', 'on')
             self.servo.set_nocheck('gsc_reset', 'off')
             self.gsc.wait_for_reboot(timeout=10)
+        else:
+            # Try using the command to clear the rollback counter if servo
+            # doesn't have access to the gsc reset signal.
+            self.gsc.clear_rollback()
 
         ver = self.gsc.get_version()
         logging.info('Running %s', ver)

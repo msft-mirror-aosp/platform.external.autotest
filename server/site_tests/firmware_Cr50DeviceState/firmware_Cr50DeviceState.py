@@ -174,9 +174,12 @@ class firmware_Cr50DeviceState(Cr50Test):
         max_tpm_init = (getattr(self.faft_config, 'custom_max_tpm_init_us',
                                 None) or self.gsc.TPM_INIT_MAX)
         self.EXPECTED_IRQ_COUNT_RANGE[self.KEY_TPM_INIT] = [0, max_tpm_init]
+        # Use the sleep time or the amount of time it takes for the dut to respond
+        # to a ping after reboot.
         # Multiply sleep time by 2 in case it takes a long time for the device
         # to boot. It's supposed to be a conservative maximum.
-        self.EXPECTED_IRQ_COUNT_RANGE[self.KEY_TIME] = [0, self.sleep_time * 2]
+        sleep_time = self.sleep_time + self.faft_config.delay_reboot_to_ping
+        self.EXPECTED_IRQ_COUNT_RANGE[self.KEY_TIME] = [0, sleep_time]
 
     def get_tpm_init_time(self):
         """If the AP is on, return the time it took the tpm to initialize."""

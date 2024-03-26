@@ -41,7 +41,8 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
         # However, simply check for the higher priority as well as success per
         # kernel boot priority will not work because the currently booted kernel
         # is already the highest priority.
-        time.sleep(60)
+        # Reason for 90 seconds is 150% of actual platform delay in the updater.
+        time.sleep(90)
 
 
     def cleanup(self):

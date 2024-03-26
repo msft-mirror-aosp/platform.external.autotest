@@ -47,6 +47,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     UNLOCK = 'unlock'
     LOCK = 'lock'
     PP_SHORT_INT = 1
+    # Cr50 command to erase board id and rollback space.
+    EFI_CMD = 'eraseflashinfo'
     # The amount of time you need to show physical presence.
     PP_SHORT = 15
     PP_LONG = 300
@@ -834,7 +836,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             # Retry if the command times out. It's ok to run eraseflashinfo
             # multiple times.
             rv = self.send_command_retry_get_output(
-                    'eraseflashinfo', ['eraseflashinfo(.*)>'])[0][1].strip()
+                    self.EFI_CMD, [self.EFI_CMD + '(.*)>'])[0][1].strip()
             logging.info('eraseflashinfo output: %r', rv)
             bid_erased = self.get_board_id()[1]
             eraseflashinfo_issue = 'Busy' in rv or 'do_flash_op' in rv

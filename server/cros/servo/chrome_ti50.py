@@ -52,6 +52,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     DUT_PREPVT = DUT_FW + 'ti50.bin.prepvt'
     # ===============================================================
 
+    # Ti50 command to erase board id and rollback space.
+    EFI_CMD = 'eraseflashinfo both'
     # Ti50 reset flags as defined in PMU_RSTSRC.
     RESET_FLAGS = {
            'RESET_FLAG_POWER_ON'         : 1 << 0, # POR

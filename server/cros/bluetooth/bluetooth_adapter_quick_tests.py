@@ -820,6 +820,7 @@ class BluetoothAdapterQuickTests(
             measure_resume = False
 
         try:
+            peer_wake = None
             if should_pair:
                 # Clear wake before testing
                 self.test_adapter_set_wake_disabled()

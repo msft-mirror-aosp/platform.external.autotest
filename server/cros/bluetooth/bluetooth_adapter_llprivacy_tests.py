@@ -100,6 +100,7 @@ class BluetoothAdapterLLPrivacyTests(
             time.sleep(PROFILE_CONNECT_WAIT_SEC)
 
         try:
+            peer_wake = None
             for it in range(iterations):
                 logging.info(
                         'Running iteration {}/{} of suspend peer wake'.format(

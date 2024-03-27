@@ -450,6 +450,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def ap_is_on_after_power_button_press(self):
         """Returns True if the AP is on after pressing the power button"""
+        logging.info('Pressing the power button to turn on the AP')
         self.servo.power_normal_press()
         # Give the AP some time to turn on
         time.sleep(self.gsc.SHORT_WAIT)
@@ -467,7 +468,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         logging.warning('Had to press power button twice to wake the AP')
 
 
-    def enter_state(self, state):
+    def enter_state(self, state, from_state=''):
         """Get the command to enter the power state"""
         target_state = state
         if state == 'S0':
@@ -507,8 +508,10 @@ class firmware_Cr50DeviceState(Cr50Test):
         if target_state and not self.wait_power_state(
                 state, self.POWER_STATE_CHECK_TRIES):
             self._record_uart_capture()
-            raise error.TestFail('Platform failed to reach %s state. %s' %
-                                 (state, self.try_to_get_ap_state()))
+            from_state = 'from ' + from_state if from_state else ''
+            raise error.TestFail(
+                    'Platform failed to reach %s state %s. %s' %
+                    (state, from_state, self.try_to_get_ap_state()))
         power_state = self.get_power_state()
         logging.info('%s: Entered %s', state, power_state)
         # If the target state is unknown, track it for logging.
@@ -581,7 +584,9 @@ class firmware_Cr50DeviceState(Cr50Test):
                      'yes' if self.check_tpm_init else 'no')
 
         # Return to S0
-        self.enter_state('S0')
+        logging.info('entering S0 from %s', state)
+        self.enter_state('S0', state)
+        logging.info('entered S0 from %s', state)
         self.stage_irq_add('entered S0')
 
         logging.info('waiting %d seconds', self.sleep_time)

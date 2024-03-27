@@ -78,7 +78,11 @@ class touch_TouchscreenScroll(
 
         # Log in and start test.
         with chrome.Chrome(autotest_ext=True,
-                           init_network_controller=True) as cr:
+                           init_network_controller=True,
+                           # b/330347607: Enable PrivacySandboxSettings4
+                           # to avoid the Privacy Sandbox settings page popup
+                           # from being shown.
+                           enable_features="PrivacySandboxSettings4") as cr:
             self._open_events_page(cr)
             self._events.expand_page()
             if not self._is_testable():

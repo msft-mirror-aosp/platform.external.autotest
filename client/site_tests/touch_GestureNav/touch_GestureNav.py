@@ -72,7 +72,11 @@ class touch_GestureNav(touch_playback_test_base.touch_playback_test_base):
 
         # Log in and start test.
         with chrome.Chrome(autotest_ext=True,
-                           init_network_controller=True) as cr:
+                           init_network_controller=True,
+                           # b/330347607: Enable PrivacySandboxSettings4
+                           # to avoid the Privacy Sandbox settings page popup
+                           # from being shown.
+                           enable_features="PrivacySandboxSettings4") as cr:
             self.tab = cr.browser.tabs[0]
 
             url_back = self._get_navigate_url(self._PAGE_BACK)

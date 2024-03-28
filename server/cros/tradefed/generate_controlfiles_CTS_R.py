@@ -532,6 +532,15 @@ _WIFI_CONNECT_COMMANDS_V2 = [
         "'adb shell dumpsys wifi transports -eth'",
 ]
 
+CONFIG['WIFI_MODULES'] = [
+        'CtsJobSchedulerTestCases',
+        'CtsNetApi23TestCases',
+        'CtsNetTestCases',
+        'CtsStatsdHostTestCases',
+        'CtsUsageStatsTestCases',
+        'CtsWifiTestCases',
+]
+
 # R-container: Behave more like in the verififed mode.
 _SECURITY_PARANOID_COMMAND = (
     "\'echo 3 > /proc/sys/kernel/perf_event_paranoid\'")
@@ -546,15 +555,12 @@ CONFIG['PRECONDITION'] = {
 
 CONFIG['LOGIN_PRECONDITION'] = {}
 
-# Preconditions applicable to ublic tests.
-CONFIG['PUBLIC_PRECONDITION'] = {
-        'CtsNetApi23TestCases': _WIFI_CONNECT_COMMANDS_V2,
-        'CtsNetTestCases': _WIFI_CONNECT_COMMANDS_V2,
-        'CtsJobSchedulerTestCases': _WIFI_CONNECT_COMMANDS_V2,
-        'CtsUsageStatsTestCases': _WIFI_CONNECT_COMMANDS_V2,
-        'CtsStatsdHostTestCases': _WIFI_CONNECT_COMMANDS_V2,
-        'CtsWifiTestCases': _WIFI_CONNECT_COMMANDS_V2,
-}
+# Preconditions applicable to public tests.
+CONFIG['PUBLIC_PRECONDITION'] = {}
+
+for m in CONFIG['WIFI_MODULES']:
+    CONFIG['PUBLIC_PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
+    CONFIG['PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
 
 CONFIG['PUBLIC_DEPENDENCIES'] = {
         'CtsCameraTestCases': ['lighting'],

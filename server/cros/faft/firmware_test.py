@@ -16,6 +16,7 @@ import uuid
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.client.common_lib.cros import retry
 from autotest_lib.client.common_lib.cros import tpm_utils
@@ -351,18 +352,34 @@ class FirmwareTest(test.test):
 
         @return: True if build is verified to be on USB key, False otherwise.
         """
+        build = None
         info = self._client.host_info_store.get()
         if info.build and info.build != test_runner_utils.NO_BUILD:
+            build = info.build
+        else:
+            # fallback to using same version as the DUT's build
+            # if not found in host_info_store
+            dut_lsb = "\n".join(
+                    self.faft_client.system.run_shell_command_get_output(
+                            "cat /etc/lsb-release"))
+            build = lsbrelease_utils.get_chromeos_release_builder_path(
+                    lsb_release_content=dut_lsb)
+            if build and build.find('-postsubmit') > 0:
+                logging.warning(
+                        "Current build on DUT (%s) is not a release image"
+                        " will use existing image in Servo USB.")
+                return False
+        if build:
             current_build = self._client._servo_host.validate_image_usbkey()
-            if current_build != info.build:
+            if current_build != build:
                 logging.debug(
-                    "Current build on USB: %s differs from test"
-                    " build: %s, proceed with download.",
-                    current_build,
-                    info.build,
+                        "Current build on USB: %s differs from test"
+                        " build: %s, proceed with download.",
+                        current_build,
+                        build,
                 )
                 try:
-                    self._client.stage_build_to_usb(info.build)
+                    self._client.stage_build_to_usb(build)
                     return True
                 except (
                     error.AutotestError,

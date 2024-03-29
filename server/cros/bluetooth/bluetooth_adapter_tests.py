@@ -2839,6 +2839,7 @@ class BluetoothAdapterTests(test.test):
     @test_retry_and_log(False)
     def test_discover_device(self,
                              device_address,
+                             poll_device_name=False,
                              start_discovery=True,
                              stop_discovery=True,
                              identity_address=None,
@@ -2846,6 +2847,8 @@ class BluetoothAdapterTests(test.test):
         """Test that the adapter could discover the specified device address.
 
         @param device_address: Address of the device.
+        @param poll_device_name: If True, poll for the device name property
+                                 until it's non-empty
         @param start_discovery: Whether to start discovery. Set to False if you
                                 call start_discovery before calling this.
         @param stop_discovery: Whether to stop discovery at the end. If this is
@@ -2865,6 +2868,15 @@ class BluetoothAdapterTests(test.test):
         discovery_started = not start_discovery
         has_device = self.bluetooth_facade.has_device
 
+        def has_device_and_name():
+            if not has_device(device_address):
+                return False
+            if not poll_device_name:
+                return True
+            return bool(
+                    self.bluetooth_facade.get_device_property(
+                            device_address, 'Name'))
+
         if start_discovery:
             if has_device(device_address, identity_address):
                 # Before starting a new discovery, remove the found device since
@@ -2882,7 +2894,7 @@ class BluetoothAdapterTests(test.test):
         if discovery_started:
             try:
                 utils.poll_for_condition(
-                        condition=(lambda: has_device(device_address)),
+                        condition=has_device_and_name,
                         timeout=self.ADAPTER_DISCOVER_TIMEOUT_SECS,
                         sleep_interval=self.
                         ADAPTER_DISCOVER_POLLING_SLEEP_SECS,

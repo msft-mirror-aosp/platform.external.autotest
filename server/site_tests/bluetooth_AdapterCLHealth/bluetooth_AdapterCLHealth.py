@@ -38,7 +38,10 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         """Performs pairing test with mouse peripheral"""
         device = self.devices['MOUSE'][0]
 
-        self.test_discover_device(device.address)
+        # Floss needs to poll the device name in test_discover_device because
+        # it sometimes doesn't receive the device name in EIR and needs extra
+        # time for RNR.
+        self.test_discover_device(device.address, poll_device_name=self.floss)
         self.test_device_name(device.address, device.name)
 
 

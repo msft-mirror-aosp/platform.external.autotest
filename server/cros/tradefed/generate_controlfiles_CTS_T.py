@@ -54,6 +54,15 @@ CONFIG['CONTROLFILE_WRITE_EXTRA'] = True
 _COLLECT = 'tradefed-run-collect-tests-only-internal'
 _PUBLIC_COLLECT = 'tradefed-run-collect-tests-only'
 
+# Modules to skip in collect-tests-only job.
+# TODO(b/329176953): Re-include these modules once fixed in upstream.
+CONFIG['COLLECT_EXCLUDE_MODULES'] = [
+        'CtsIcu4cTestCases',
+        'CtsMediaDecoderTestCases',
+        'CtsSkQPTestCases',
+        'CtsVideoTestCases',
+]
+
 CONFIG['LAB_DEPENDENCY'] = {'x86': ['cts_abi_x86']}
 
 CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 1

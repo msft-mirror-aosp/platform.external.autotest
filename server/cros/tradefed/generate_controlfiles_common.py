@@ -691,6 +691,9 @@ def _format_collect_cmd(is_public,
     elif is_hardware:
         cmd.append('--subplan')
         cmd.append('cts-hardware')
+    if not is_camera:
+        for m in CONFIG.get('COLLECT_EXCLUDE_MODULES'):
+            cmd.extend(['--exclude-filter', m])
     for m in CONFIG['MEDIA_MODULES']:
         cmd.append('--module-arg')
         cmd.append('%s:skip-media-download:true' % m)

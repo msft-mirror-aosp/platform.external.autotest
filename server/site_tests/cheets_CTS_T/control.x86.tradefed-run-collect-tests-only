@@ -31,7 +31,7 @@ def run_TS(machine):
         max_retry=0,
         tag='x86.tradefed-run-collect-tests-only',
         test_name='cheets_CTS_T.x86.tradefed-run-collect-tests-only',
-        run_template=['run', 'commandAndExit', 'collect-tests-only', '--disable-reboot', '--module-arg', 'CtsMediaStressTestCases:skip-media-download:true', '--module-arg', 'CtsMediaBitstreamsTestCases:skip-media-download:true'],
+        run_template=['run', 'commandAndExit', 'collect-tests-only', '--disable-reboot', '--exclude-filter', 'CtsIcu4cTestCases', '--exclude-filter', 'CtsMediaDecoderTestCases', '--exclude-filter', 'CtsSkQPTestCases', '--exclude-filter', 'CtsVideoTestCases', '--module-arg', 'CtsMediaStressTestCases:skip-media-download:true', '--module-arg', 'CtsMediaBitstreamsTestCases:skip-media-download:true'],
         retry_template=None,
         target_module=None,
         target_plan=None,

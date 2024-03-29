@@ -178,7 +178,7 @@ class firmware_Cr50DeviceState(Cr50Test):
         # to a ping after reboot.
         # Multiply sleep time by 2 in case it takes a long time for the device
         # to boot. It's supposed to be a conservative maximum.
-        sleep_time = self.sleep_time + self.faft_config.delay_reboot_to_ping
+        sleep_time = self.sleep_time * 2 + self.faft_config.delay_reboot_to_ping
         self.EXPECTED_IRQ_COUNT_RANGE[self.KEY_TIME] = [0, sleep_time]
 
     def get_tpm_init_time(self):

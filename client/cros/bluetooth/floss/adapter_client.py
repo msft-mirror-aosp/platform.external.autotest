@@ -416,7 +416,7 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         address, name = remote_device
 
         if address in self.known_devices:
-            self.known_devices.remove(address)
+            del self.known_devices[address]
 
     @glib_callback()
     def on_discovering_changed(self, discovering):

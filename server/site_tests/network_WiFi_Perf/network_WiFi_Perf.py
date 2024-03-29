@@ -138,7 +138,7 @@ class network_WiFi_Perf(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         signal_description = '_'.join([ap_config_tag, 'signal'])
         self.write_perf_keyval({signal_description: signal_level})
         for test_type in self.PERF_TEST_TYPES:
-            config = manager.get_config(test_type)
+            config = manager.get_config(test_type, self._is_openwrt)
             if not self._use_2way_setup:
                 peer_router = self.context.pcap_host
                 pcap_lan_iface = interface.Interface(

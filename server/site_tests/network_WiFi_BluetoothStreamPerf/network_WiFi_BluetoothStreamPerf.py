@@ -248,7 +248,7 @@ class network_WiFi_BluetoothStreamPerf(
         device = self.bt_device
 
         for test_type in self.PERF_TEST_TYPES:
-            config = manager.get_config(test_type)
+            config = manager.get_config(test_type, self._is_openwrt)
             pcap_lan_iface = interface.Interface(self._pcap_lan_iface_name,
                                                  self.context.pcap_host.host)
             session = manager.get_session(test_type,

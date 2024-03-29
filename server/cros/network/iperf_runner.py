@@ -75,7 +75,7 @@ class IperfResult(object):
         # don't show server side results for UDP. The fallback approach to
         # calculate the throughput is to use client side results, although
         # they are missing packet loss columns.
-        if config.udp and len(test_durations) == 0:
+        if config.udp and config.is_openwrt:
             for line in lines:
                 fields = line.split(',')
                 # Negative Log ID values are used for sum total output which we
@@ -143,7 +143,11 @@ class IperfResult(object):
         throughput_mean = numpy.mean(throughput_samples)
         throughput_dev = numpy.std(throughput_samples)
 
-        if not config.udp:
+        # Cases with tcp or openWrt clients are excluded.
+        # Tcp by definition does not have packet loss data.
+        # OpenWrt iperf clients and the ones connected to OpenWrt iperf server
+        # don't show server side results for UDP.
+        if config.is_openwrt or not config.udp:
             percent_loss_mean = None
             jitter_mean = None
         else:
@@ -312,12 +316,14 @@ class IperfConfig(object):
 
     def __init__(self,
                  test_type,
+                 is_openwrt,
                  max_bandwidth=DEFAULT_MAX_BANDWIDTH,
                  test_time=DEFAULT_TEST_TIME,
                  num_ports=DEFAULT_NUM_PORTS):
         """ Construct an IperfConfig.
 
         @param test_type string, PerfTestTypes test type.
+        @param is_openwrt bool if the host is openwrt.
         @param max_bandwidth string maximum bandwidth to be used during the test
         e.x. 100M (100 Mbps).
         @param test_time int number of seconds to run the test for.
@@ -346,6 +352,7 @@ class IperfConfig(object):
             raise error.TestFail(
                     'Test type %s is not supported by iperf_runner.' %
                     test_type)
+        self.is_openwrt = is_openwrt
         self.max_bandwidth = max_bandwidth
         self.test_time = test_time
         self.num_ports = num_ports

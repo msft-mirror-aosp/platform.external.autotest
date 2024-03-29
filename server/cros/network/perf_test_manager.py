@@ -43,12 +43,13 @@ class PerfTestManager(object):
         """
         self._use_iperf = use_iperf
 
-    def get_config(self, test_type, test_time=DEFAULT_TEST_TIME):
+    def get_config(self, test_type, is_openwrt, test_time=DEFAULT_TEST_TIME):
         """Get a config object for a performance tests based on the test
         type and other parameters. Will return either a NetperfConfig or
         IperfConfig based on the use_iperf value of the class.
 
         @param test_type string, test type from performance_test_types.
+        @param is_openwrt bool if the host is openwrt.
         @param test_time int number of seconds to run the test for.
 
         @return NetperfConfig or IperfConfig object.
@@ -59,7 +60,7 @@ class PerfTestManager(object):
                 PerfTestTypes.TEST_TYPE_UDP_BIDIRECTIONAL
         ]:
             return iperf_runner.IperfConfig(
-                    self._iperf_type_from_perf_type(test_type))
+                    self._iperf_type_from_perf_type(test_type), is_openwrt)
         return netperf_runner.NetperfConfig(
                 self._netperf_type_from_perf_type(test_type),
                 test_time=test_time)

@@ -115,7 +115,7 @@ class network_WiFi_BluetoothScanPerf(
             ap_config_tag = ap_config.perf_loggable_description
 
             for test_type in self.PERF_TEST_TYPES:
-                config = manager.get_config(test_type)
+                config = manager.get_config(test_type, self._is_openwrt)
 
                 session = manager.get_session(test_type, self.context.client,
                                               self.context.router)

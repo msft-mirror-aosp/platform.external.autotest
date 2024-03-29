@@ -82,7 +82,7 @@ class network_WiFi_PerfNoisyEnv(wifi_cell_perf_test_base.WiFiCellPerfTestBase):
         signal_description = '_'.join([ap_config_tag, 'signal'])
         self.write_perf_keyval({signal_description: signal_level})
         for test_type in self.PERF_TEST_TYPES:
-            config = manager.get_config(test_type)
+            config = manager.get_config(test_type, self._is_openwrt)
             pcap_lan_iface = interface.Interface(self._pcap_lan_iface_name,
                                                  self.context.pcap_host.host)
             session = manager.get_session(test_type,

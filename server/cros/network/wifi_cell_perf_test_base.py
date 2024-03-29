@@ -40,8 +40,10 @@ class WiFiCellPerfTestBase(wifi_cell_test_base.WiFiCellTestBase):
         # under discussion.
         if self.context.get_wifi_host().get_os_type() == 'openwrt':
             self._use_2way_setup = True
+            self._is_openwrt = True
         else:
             self._use_2way_setup = False
+            self._is_openwrt = False
 
         self._power_save_off = 'power_save_off' in commandline_args
 

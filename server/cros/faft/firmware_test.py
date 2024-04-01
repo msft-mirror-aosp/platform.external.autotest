@@ -14,6 +14,7 @@ import time
 import uuid
 
 from autotest_lib.client.bin import utils
+from autotest_lib.client.cros import cryptohome
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import global_config
 from autotest_lib.client.common_lib import lsbrelease_utils
@@ -128,9 +129,7 @@ class FirmwareTest(test.test):
     # TODO(b/308823182): only accept status 0 and 26 after the fwmp exit status
     # has been changed for a while.
     FWMP_IS_CLEARED_EXIT_STATUSES = [0, 1, 26]
-    FWMP_CLEARED_ERROR_MSG = (
-        "CRYPTOHOME_ERROR_FIRMWARE_MANAGEMENT_PARAMETERS" "_INVALID"
-    )
+    FWMP_CLEARED_ERROR_MSG = ("ERROR_FIRMWARE_MANAGEMENT_PARAMETERS_INVALID")
 
     _ROOTFS_PARTITION_NUMBER = 3
 
@@ -202,6 +201,7 @@ class FirmwareTest(test.test):
         self._restore_power_mode = None
         self._uart_file_dict = {}
         self._dts_mode = False
+        self._fwmp_cmd = None
 
         logging.info("FirmwareTest initialize begin (id=%s)", self.run_id)
 
@@ -2488,18 +2488,34 @@ class FirmwareTest(test.test):
                     errors.append(msg)
         return errors
 
+    def _init_fwmp_cmd(self):
+        """Use device_management_client to access the fwmp if it exists"""
+        fwmp_cmd = cryptohome.DEVICE_MANAGEMENT_CMD
+        res = self.host.run("which " + fwmp_cmd, ignore_status=True)
+        if res.exit_status == 0:
+            self._fwmp_cmd = fwmp_cmd
+        else:
+            self._fwmp_cmd = cryptohome.CRYPTOHOME_CMD
+        logging.info('Using %s to set fwmp', self._fwmp_cmd)
+
+    def run_fwmp_cmd(self, cmd, ignore_status=False):
+        """Run a fwmp command."""
+        # TODO(b/332288643): only use device_management_client after all stable
+        # versions use it.
+        if not self._fwmp_cmd:
+            self._init_fwmp_cmd()
+        return self.host.run("%s %s" % (self._fwmp_cmd, cmd),
+                             ignore_status=ignore_status)
+
     def fwmp_is_cleared(self):
         """Return True if the FWMP has been created"""
         if self.gsc and self.gsc.fwmp_forcing_wp():
             return False
-        res = self.host.run(
-            "cryptohome " "--action=get_firmware_management_parameters",
-            ignore_status=True,
-        )
-        fwmp_is_cleared_error = (
-            self.FWMP_CLEARED_ERROR_MSG in res.stdout
-            and res.exit_status in self.FWMP_IS_CLEARED_EXIT_STATUSES
-        )
+        res = self.run_fwmp_cmd("--action=get_firmware_management_parameters",
+                                True)
+        fwmp_is_cleared_error = (self.FWMP_CLEARED_ERROR_MSG in res.stdout
+                                 and res.exit_status
+                                 in self.FWMP_IS_CLEARED_EXIT_STATUSES)
         logging.info("FWMP is cleared error: %s", fwmp_is_cleared_error)
         if res.exit_status and not fwmp_is_cleared_error:
             raise error.TestError("Could not run cryptohome command %r" % res)
@@ -2535,17 +2551,11 @@ class FirmwareTest(test.test):
         self.host.run("tpm_manager_client take_ownership")
         if not utils.wait_for_value(self._tpm_is_owned, expected_value=True):
             raise error.TestError("Unable to own tpm while clearing fwmp.")
-        self.host.run(
-            "cryptohome " "--action=remove_firmware_management_parameters"
-        )
+        self.run_fwmp_cmd("--action=remove_firmware_management_parameters")
         # Set the flags to 0, so the fwmp wp enable gets cleared.
-        self.host.run(
-            "cryptohome "
-            "--action=set_firmware_management_parameters --flags=0"
-        )
-        self.host.run(
-            "cryptohome " "--action=remove_firmware_management_parameters"
-        )
+        self.run_fwmp_cmd(
+                "--action=set_firmware_management_parameters --flags=0")
+        self.run_fwmp_cmd("--action=remove_firmware_management_parameters")
 
     def wait_for(self, cfg_field, action_msg=None, extra_time=0):
         """Waits for time specified in a config.

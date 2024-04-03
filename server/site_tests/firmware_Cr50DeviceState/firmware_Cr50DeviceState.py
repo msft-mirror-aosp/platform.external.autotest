@@ -609,8 +609,9 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def print_fwmp(self, desc, initialized=True, check_pcr=True):
         """Print FWMP and PCR0 state for debugging."""
-        self.run_fwmp_cmd('--action=get_firmware_management_parameters',
-                          ignore_status=True)
+        result = self.run_fwmp_cmd(
+                '--action=get_firmware_management_parameters',
+                ignore_status=True)
         logging.info('FWMP %r exp(%s) act: %s', desc, self.fwmp,
                      result.stdout if result else None)
         if result.exit_status and self.fwmp and initialized:

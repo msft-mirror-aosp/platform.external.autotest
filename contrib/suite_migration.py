@@ -121,9 +121,13 @@ def main(args):
 
     tests = TestManager()
     basepath = os.path.dirname(os.path.abspath(__file__))
+    cheetspath = os.path.abspath(
+            os.path.join(basepath, '..', '..', '..', 'autotest-tests-cheets'))
     tests.initialize_from_fs([(basepath + '/../test_suites'),
                               (basepath + '/../server/site_tests'),
-                              (basepath + '/../client/site_tests')])
+                              (basepath + '/../client/site_tests'),
+                              (cheetspath + '/test_suites'),
+                              (cheetspath + '/server/site_tests')])
     tests.process_all_tests()
     suite_tests = tests.list_suite_named(args.suite, use_type_prefix=True)
 

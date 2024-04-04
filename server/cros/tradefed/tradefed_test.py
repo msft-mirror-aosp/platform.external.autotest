@@ -469,12 +469,29 @@ class TradefedTest(test.test):
                     args=('devices', ),
                     env=env,
                     timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
-            if not re.search(r'{}\s+(device|unauthorized)'.format(
-                    re.escape(host_port)), result.stdout):
-                logging.info('No result found in with pattern: %s',
-                             r'{}\s+(device|unauthorized)'.format(
-                                 re.escape(host_port)))
+            pat = rf'^{re.escape(host_port)}\s+(.*)$'
+            m = re.search(pat, result.stdout, re.MULTILINE)
+            if not m:
+                logging.info('No result found in with pattern: %s', pat)
                 return False
+
+            conn_state = m.group(1)
+            if conn_state == 'offline':
+                # An offline device is considered connected, to force reconnect
+                # we need to explicitly disconnect first.
+                logging.warn(
+                        'ADB is offline, trying disconnect then reconnect')
+                self._adb.run(None,
+                              args=('disconnect', host_port),
+                              verbose=True,
+                              env=env,
+                              ignore_status=True,
+                              timeout=constants.ADB_CONNECT_TIMEOUT_SECONDS)
+                return False
+            if conn_state != 'device':
+                logging.warn(
+                        'ADB is in unknown state "%s", tests may fail to run',
+                        conn_state)
 
             # Actually test the connection with an adb command as there can be
             # a race between detecting the connected device and actually being

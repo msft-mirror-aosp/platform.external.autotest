@@ -12,6 +12,7 @@ import stat
 from unittest.mock import Mock, ANY, patch, call
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.tradefed import tradefed_test
+from autotest_lib.server.utils import CmdResult
 
 
 class TradefedTestTest(unittest.TestCase):
@@ -42,8 +43,37 @@ class TradefedTestTest(unittest.TestCase):
         self._mockjob_tmpdirs.append(mock_job.tmpdir)
         return mock_job
 
-    # Verify that try_adb_connect fails when run_adb_cmd fails.
+    def test_try_adb_connect(self):
+        """Test when try_adb_connect succeeds."""
+        self.mock_adb.get_adb_target.return_value = '123.76.0.29:3467'
+        adb_run_retvals = [
+                # adb connect
+                CmdResult(exit_status=0),
+                # adb devices
+                CmdResult(exit_status=0, stdout=f'123.76.0.29:3467 device\n'),
+                # adb shell exit
+                CmdResult(exit_status=0),
+        ]
+        self.mock_adb.run.side_effect = adb_run_retvals
+
+        self.assertTrue(self.tradefed._try_adb_connect(Mock()))
+        self.mock_adb.run.assert_has_calls([
+                call(ANY,
+                     args=('connect', '123.76.0.29:3467'),
+                     verbose=ANY,
+                     env=ANY,
+                     ignore_status=ANY,
+                     timeout=ANY),
+                call(ANY, args=('devices', ), env=ANY, timeout=ANY),
+                call(ANY,
+                     args=('shell', 'exit'),
+                     env=ANY,
+                     ignore_status=ANY,
+                     timeout=ANY),
+        ])
+
     def test_try_adb_connect_run_adb_fail(self):
+        """Verify that try_adb_connect fails when run_adb_cmd fails."""
         mock_run_adb_cmd = self.mock_adb.run
 
         # Exit status is set to non-0 to exit _try_adb_connect() early.
@@ -58,6 +88,36 @@ class TradefedTestTest(unittest.TestCase):
                                             env=ANY,
                                             ignore_status=ANY,
                                             timeout=ANY)
+
+    def test_try_adb_connect_offline_disconnect(self):
+        """Verify if try_adb_connect disconnects if device is offline."""
+        self.mock_adb.get_adb_target.return_value = '123.76.0.29:3467'
+        adb_run_retvals = [
+                # adb connect
+                CmdResult(exit_status=0),
+                # adb devices
+                CmdResult(exit_status=0, stdout=f'123.76.0.29:3467 offline\n'),
+                # adb disconnect
+                CmdResult(exit_status=0),
+        ]
+        self.mock_adb.run.side_effect = adb_run_retvals
+
+        self.assertFalse(self.tradefed._try_adb_connect(Mock()))
+        self.mock_adb.run.assert_has_calls([
+                call(ANY,
+                     args=('connect', '123.76.0.29:3467'),
+                     verbose=ANY,
+                     env=ANY,
+                     ignore_status=ANY,
+                     timeout=ANY),
+                call(ANY, args=('devices', ), env=ANY, timeout=ANY),
+                call(ANY,
+                     args=('disconnect', '123.76.0.29:3467'),
+                     verbose=ANY,
+                     env=ANY,
+                     ignore_status=ANY,
+                     timeout=ANY),
+        ])
 
     # Verify that _run_tradefed_with_timeout works.
     @patch('autotest_lib.server.cros.tradefed.tradefed_test.TradefedTest._run')

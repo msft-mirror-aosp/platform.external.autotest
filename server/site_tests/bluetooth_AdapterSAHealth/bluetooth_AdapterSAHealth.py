@@ -36,10 +36,6 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    @test_wrapper('Stand Alone noop test', supports_floss=True)
-    def sa_noop(self):
-        """A no-op test to validate Floss"""
-        logging.info("sa_noop ran")
 
     @test_wrapper('Stand Alone basic test', supports_floss=True)
     def sa_basic_test(self):
@@ -245,7 +241,6 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
            @param test_name: specific test to run otherwise None to run the
                              whole batch
         """
-        self.sa_noop()
         self.sa_basic_test()
         self.sa_adapter_suspend_resume_test()
         self.sa_adapter_present_test()

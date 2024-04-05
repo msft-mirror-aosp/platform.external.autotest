@@ -890,6 +890,9 @@ class TradefedTest(test.test):
                                      self._get_tradefed_base_dir(), 'tools')
             os.rename(os.path.join(tools_dir, 'tradefed-no-fwk.jar'),
                       os.path.join(tools_dir, 'zz-tradefed-no-fwk.jar'))
+            # Workaround for STS b/332649786
+            os.rename(os.path.join(tools_dir, 'tradefed-test-framework.jar'),
+                      os.path.join(tools_dir, 'zz-tradefed-test-framework.jar'))
         except OSError:
             pass
         return instance_path

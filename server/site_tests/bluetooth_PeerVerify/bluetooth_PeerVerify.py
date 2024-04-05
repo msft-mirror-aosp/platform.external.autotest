@@ -35,7 +35,8 @@ class bluetooth_PeerVerify(BluetoothAdapterQuickTests):
     @test_wrapper(
             'Check if rssi of peers > -70 and whether 4 btpeers are present',
             devices={'MOUSE': -1},
-            use_all_peers=True)
+            use_all_peers=True,
+            supports_floss=True)
     @test_retry_and_log(False)
     def check_rssi(self):
         """Check if RSSI > -70. """
@@ -81,7 +82,8 @@ class bluetooth_PeerVerify(BluetoothAdapterQuickTests):
                  num_iterations=1,
                  args_dict=None,
                  test_name=None,
-                 flag='Quick Health'):
+                 flag='Quick Health',
+                 floss=False):
         """Running Bluetooth adapter suspend resume with peer autotest.
 
         @param host: the DUT, usually a chromebook
@@ -102,6 +104,7 @@ class bluetooth_PeerVerify(BluetoothAdapterQuickTests):
         self.quick_test_init(host,
                              use_btpeer=True,
                              flag=flag,
-                             args_dict=args_dict)
+                             args_dict=args_dict,
+                             floss=floss)
         self.verify_peer_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -187,6 +187,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         if self._host:
             for filename in (
                     self._MESSAGES_LOG,
+                    self._MINIOS_LOG,
                     self._NET_LOG,
                     self._UPDATE_ENGINE_LOG_DIR,
                     self._UPSTART_LOG,

@@ -4,7 +4,7 @@
 
 NAME = 'audio_CrasGetNodes'
 METADATA = {
-    "contacts": ["chromeos-audio-sw@google.com"],
+    "contacts": ["chromeos-audio-bugs@google.com"],
     "bug_component": "b:875558",
     "criteria": """
                 Check if the values of active, volume, and max supported

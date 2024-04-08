@@ -6,7 +6,7 @@ from autotest_lib.client.common_lib import utils
 
 NAME = "audio_AudioBasicAssistant.dsp"
 METADATA = {
-    "contacts": ["chromeos-audio-sw@google.com"],
+    "contacts": ["chromeos-audio-bugs@google.com"],
     "bug_component": "b:875558",
     "criteria": "This test will fail if the assistant can't open a tab requested by voice command.",
     "doc" : """

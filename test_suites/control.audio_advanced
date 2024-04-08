@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "The ChromiumOS Authors,chromeos-audio-sw@google.com"
+AUTHOR = "The ChromiumOS Authors,chromeos-audio-bugs@google.com"
 NAME = "audio_advanced"
 PURPOSE = "Suite for testing advanced audio functionalities."
 

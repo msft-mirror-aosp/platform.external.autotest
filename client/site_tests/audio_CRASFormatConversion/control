@@ -4,7 +4,7 @@
 
 NAME = 'audio_CRASFormatConversion'
 METADATA = {
-    "contacts": ["chromeos-audio-sw@google.com"],
+    "contacts": ["chromeos-audio-bugs@google.com"],
     "bug_component": "b:875558",
     "criteria": "Check that converting between different sample rates doesn't crash."
 }

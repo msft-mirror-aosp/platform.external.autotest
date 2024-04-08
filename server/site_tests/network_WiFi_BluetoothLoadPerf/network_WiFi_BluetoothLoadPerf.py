@@ -63,6 +63,20 @@ class network_WiFi_BluetoothLoadPerf(
             (DEFAULT_BT_LOAD_TIME + DEFAULT_BT_EXTRA_PREPARE_TIME) /
             DEFAULT_BT_CLICK_DELAY / 2)
 
+    # Define global constants for the amount of movement in the gamepad
+    # thumbstick.
+    DELTA_X = 6000
+    DELTA_Y = 7000
+    # The default delay, in seconds, between consecutive gamepad events.
+    DEFAULT_GAMEPAD_EVENT_DELAY = 0.05
+    # Number of gamepad events to be considered: button press, thumbstick
+    # movements and button release including thumbstick stop.
+    NUM_GAMEPAD_EVENTS = 3
+    # The default number of iterations for the gamepad test.
+    DEFAULT_NUM_ITERATIONS = int(
+        (DEFAULT_BT_LOAD_TIME + DEFAULT_BT_EXTRA_PREPARE_TIME) /
+        DEFAULT_GAMEPAD_EVENT_DELAY / NUM_GAMEPAD_EVENTS)
+
     # Define the default press/release delay for each keystroke.
     DEFAULT_PRESS_RELEASE_DELAY = 0.01
     # Define the default delay between consecutive keystrokes.
@@ -266,6 +280,20 @@ class network_WiFi_BluetoothLoadPerf(
                 num_clicks=self.DEFAULT_BT_TOTAL_CLICK,
                 delay=self.DEFAULT_BT_CLICK_DELAY)
 
+    def do_gamepad_load_test(self, device):
+        """Runs the body of the gamepad load test.
+
+        @param device: The BT peer device.
+        """
+        self.test_gamepad_continuous_press_button_and_move_thumbstick(
+                device=device,
+                button='GAMEPAD_BUTTON_A',
+                stick='GAMEPAD_LEFT_THUMBSTICK',
+                delta_x=self.DELTA_X,
+                delta_y=self.DELTA_Y,
+                num_iterations=self.DEFAULT_NUM_ITERATIONS,
+                delay=self.DEFAULT_GAMEPAD_EVENT_DELAY)
+
     def do_keyboard_load_test(self, device):
         """Runs the body of the keyboard load test.
 
@@ -291,6 +319,8 @@ class network_WiFi_BluetoothLoadPerf(
         """
         if device_type == 'MOUSE':
             return self.do_mouse_click_load_test
+        elif device_type == 'GAMEPAD':
+            return self.do_gamepad_load_test
         elif device_type == 'KEYBOARD':
             return self.do_keyboard_load_test
         elif device_type == 'BLUETOOTH_AUDIO':
@@ -546,6 +576,14 @@ class network_WiFi_BluetoothLoadPerf(
         self.bt_devices = [self.devices['MOUSE'][0]]
         self.setup_and_run_tests()
 
+    @test_wrapper('Coex test with gamepad load',
+                  devices={'GAMEPAD': 1},
+                  supports_floss=True)
+    def gamepad_load(self):
+        """Tests Wi-Fi BT coex with gamepad load."""
+        self.bt_devices = [self.devices['GAMEPAD'][0]]
+        self.setup_and_run_tests()
+
     @test_wrapper('Coex test with BLE mouse, BLE keyboard and Audio loads',
                   devices={
                           'BLE_KEYBOARD': 1,
@@ -620,6 +658,7 @@ class network_WiFi_BluetoothLoadPerf(
                           batch.
         """
         self.mouse_load()
+        self.gamepad_load()
         self.md_ble_hid_and_audio_loads()
         self.md_ble_hid_load()
         self.md_hid_load()

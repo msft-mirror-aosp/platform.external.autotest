@@ -1762,6 +1762,88 @@ expected_throughput_drop = {
             }
         }
     },
+    'coex_test_with_gamepad_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 3),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 2),
+                        'BT_connected_with_load': (0, 7),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 4),
+                        'BT_connected_with_load': (0, 3),
+                        'BT_disconnected_again': (0, 1),
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 2),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 2),
+                        'BT_connected_with_load': (0, 5),
+                        'BT_disconnected_again': (0, 0),
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 1),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 1)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 6),
+                        'BT_connected_with_load': (0, 10),
+                        'BT_disconnected_again': (0, 0),
+                    }
+                }
+            }
+        }
+    },
     'coex_test_with_ble_mouse_ble_keyboard_and_audio_loads': {
         perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
             hostap_config.HostapConfig.MODE_11AX_MIXED: {
@@ -2365,6 +2447,88 @@ expected_throughput_values = {
             }
         }
     },
+    'coex_test_with_gamepad_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (408.41, 377.04),
+                        'BT_connected_with_load': (385.03, 316.82),
+                        'BT_disconnected_again': (426.51, 422.26)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (27.09, 26.84),
+                        'BT_connected_with_load': (25.54, 25.23),
+                        'BT_disconnected_again': (27.60, 27.41)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (391.28, 389.51),
+                        'BT_connected_with_load': (394.76, 393.28),
+                        'BT_disconnected_again': (391.83, 391.71)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (39.05, 37.70),
+                        'BT_connected_with_load': (36.86, 36.62),
+                        'BT_disconnected_again': (39.12, 38.83),
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (761.08, 760.25),
+                        'BT_connected_with_load': (752.94, 751.81),
+                        'BT_disconnected_again': (759.41, 756.95)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (21.22, 21.09),
+                        'BT_connected_with_load': (20.49, 20.30),
+                        'BT_disconnected_again': (21.62, 21.46),
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (351.06, 350.47),
+                        'BT_connected_with_load': (347.18, 315.70),
+                        'BT_disconnected_again': (347.08, 324.51)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (21.44, 20.52),
+                        'BT_connected_with_load': (23.30, 19.85),
+                        'BT_disconnected_again': (22.61, 22.32),
+                    }
+                }
+            }
+        }
+    },
     'coex_test_with_ble_mouse_ble_keyboard_and_audio_loads': {
         perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
             hostap_config.HostapConfig.MODE_11AX_MIXED: {
@@ -2960,6 +3124,88 @@ expected_latency_values = {
                         'BT_connected': 3.80,
                         'BT_connected_with_load': 2.96,
                         'BT_disconnected_again': 5.28
+                    }
+                }
+            }
+        }
+    },
+    'coex_test_with_gamepad_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.35,
+                        'BT_connected_with_load': 1.38,
+                        'BT_disconnected_again': 1.30
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 1.17,
+                        'BT_connected_with_load': 3.11,
+                        'BT_disconnected_again': 3.81
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.46,
+                        'BT_connected_with_load': 1.39,
+                        'BT_disconnected_again': 1.81
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 2.37,
+                        'BT_connected_with_load': 2.29,
+                        'BT_disconnected_again': 1.45,
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.37,
+                        'BT_connected_with_load': 1.46,
+                        'BT_disconnected_again': 1.39
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 2.25,
+                        'BT_connected_with_load': 1.59,
+                        'BT_disconnected_again': 1.51,
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.40,
+                        'BT_connected_with_load': 1.38,
+                        'BT_disconnected_again': 1.44
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 1.38,
+                        'BT_connected_with_load': 1.34,
+                        'BT_disconnected_again': 1.51,
                     }
                 }
             }

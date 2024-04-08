@@ -112,6 +112,7 @@ class ControlData(object):
         self.priority = priorities.Priority.DEFAULT
         self.extended_timeout = None
         self.hw_deps = []
+        self.variant_category = ''
         self.fast = True
         # This will only be honored via `test_that`, and not in lab (for now).
         self.py_version = None
@@ -348,6 +349,9 @@ class ControlData(object):
     def set_py_version(self, val):
         """In majors, ie: 2 or 3."""
         self._set_int('py_version', val)
+
+    def set_variant_category(self, val):
+        self._set_string('variant_category', val.lower())
 
 
 def _extract_const(expr):

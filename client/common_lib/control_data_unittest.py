@@ -34,6 +34,7 @@ TEST_TYPE='client'
 REQUIRE_SSP = False
 ATTRIBUTES = "suite:smoke, suite:bvt"
 SUITE = "suite-listed-only-in-suite-line"
+VARIANT_CATEGORY = "v1"
 """
 
 # Control data being wrapped into step* functions.
@@ -111,6 +112,7 @@ class ParseControlTest(unittest.TestCase):
         self.assertEqual(cd.require_ssp, False)
         self.assertEqual(cd.attributes, set(["suite:smoke", "suite:bvt"]))
         self.assertEqual(cd.suite, "bvt,smoke,suite-listed-only-in-suite-line")
+        self.assertEqual(cd.variant_category, "v1")
 
 
 class ParseWrappedControlTest(unittest.TestCase):

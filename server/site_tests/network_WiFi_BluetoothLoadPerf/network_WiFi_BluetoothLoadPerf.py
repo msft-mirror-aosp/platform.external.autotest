@@ -59,6 +59,18 @@ class network_WiFi_BluetoothLoadPerf(
             (DEFAULT_BT_LOAD_TIME + DEFAULT_BT_EXTRA_PREPARE_TIME) /
             DEFAULT_BT_CLICK_DELAY / 2)
 
+    # Define the default press/release delay for each keystroke.
+    DEFAULT_PRESS_RELEASE_DELAY = 0.01
+    # Define the default delay between consecutive keystrokes.
+    DEFAULT_DELAY_BETWEEN_KEYSTROKES = 0.05
+    # Calculate the total number of keystrokes.
+    DEFAULT_BT_TOTAL_KEYSTROKES = int(
+            (DEFAULT_BT_LOAD_TIME + DEFAULT_BT_EXTRA_PREPARE_TIME) /
+            (DEFAULT_PRESS_RELEASE_DELAY + DEFAULT_DELAY_BETWEEN_KEYSTROKES))
+    # Generate the input string with 'a' repeated for the total number of
+    # keystrokes.
+    INPUT_STRING = 'a' * DEFAULT_BT_TOTAL_KEYSTROKES
+
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hooks into super class to take control files parameters.
 
@@ -245,6 +257,16 @@ class network_WiFi_BluetoothLoadPerf(
                 num_clicks=self.DEFAULT_BT_TOTAL_CLICK,
                 delay=self.DEFAULT_BT_CLICK_DELAY)
 
+    def do_keyboard_load_test(self, device):
+        """Runs the body of the keyboard load test.
+
+        @param device: The BT peer device.
+        """
+        self.test_keyboard_input_from_string(
+                device=device,
+                string_to_send=self.INPUT_STRING,
+                delay=self.DEFAULT_DELAY_BETWEEN_KEYSTROKES)
+
     def get_device_load(self, device_type):
         """Helper function to get load method based on input device type.
 
@@ -252,8 +274,11 @@ class network_WiFi_BluetoothLoadPerf(
         """
         if device_type == 'MOUSE':
             return self.do_mouse_click_load_test
-        raise error.TestError('Failed to find load method for device type %s' %
-                              device_type)
+        elif device_type == 'KEYBOARD':
+            return self.do_keyboard_load_test
+        else:
+            raise error.TestError('Failed to find load method for device type '
+                                  '%s' % device_type)
 
     def run_tests_with_ip_configuration(self):
         """Configures IP settings and run tests.
@@ -500,6 +525,14 @@ class network_WiFi_BluetoothLoadPerf(
         self.bt_devices = [self.devices['MOUSE'][0]]
         self.setup_and_run_tests()
 
+    @test_wrapper('Coex test with keyboard load',
+                  devices={'KEYBOARD': 1},
+                  supports_floss=True)
+    def keyboard_load(self):
+        """Tests Wi-Fi BT coex with keyboard load."""
+        self.bt_devices = [self.devices['KEYBOARD'][0]]
+        self.setup_and_run_tests()
+
     @test_wrapper('Coex test with BLE mouse click load',
                   devices={'BLE_MOUSE': 1},
                   supports_floss=True)
@@ -517,6 +550,7 @@ class network_WiFi_BluetoothLoadPerf(
                           batch.
         """
         self.mouse_load()
+        self.keyboard_load()
         self.ble_mouse_load()
 
     def run_once(self,

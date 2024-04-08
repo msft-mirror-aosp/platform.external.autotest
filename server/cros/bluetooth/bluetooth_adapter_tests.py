@@ -2952,8 +2952,13 @@ class BluetoothAdapterTests(test.test):
                   is correct. False otherwise.
 
         """
-        self._get_btmon_log(lambda: self.test_discover_device(
-                device_address, True, False, None, True))
+        self._get_btmon_log(
+                lambda: self.test_discover_device(device_address,
+                                                  poll_device_name=False,
+                                                  start_discovery=True,
+                                                  stop_discovery=False,
+                                                  identity_address=None,
+                                                  wait_complete=True))
 
         # Make sure that the RNR command is not found during the inquiry
         # procedure. An example of RNR command:

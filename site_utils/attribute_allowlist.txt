@@ -631,6 +631,7 @@ suite:crosbolt_perf_parallels_perbuild
 suite:crosbolt_perf_parallels_weekly
 suite:crosbolt_perf_perbuild
 suite:crosbolt_perf_weekly
+suite:crospts
 suite:cross-device
 suite:cross-device-cellular
 suite:cross-device-cq

@@ -1,0 +1,38 @@
+# Copyright 2024 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = 'ChromeOS Core Performance Team'
+NAME = 'tast.crospts-arm64'
+METADATA = {
+    'contacts': ['cros-core-systems-perf@google.com'],
+    'bug_component': 'b:331566754', # ChromeOS > Platform > System > Performance
+    'criteria': 'Microbenchmarks for kernel and hardward performance',
+}
+TIME = 'LONG'
+TEST_TYPE = 'Server'
+ATTRIBUTES = 'suite:crospts'
+MAX_RESULT_SIZE_KB = 1024 * 1024
+PY_VERSION = 3
+
+# tast.py uses binaries installed from autotest_server_package.tar.bz2.
+REQUIRE_SSP = True
+
+DOC = '''
+Run the Tast tests used for CrosPTS performance test suite.
+CrosPTS is a set of microbenchmark performance tests.
+See http://go/crospts for the details.
+'''
+
+def run(machine):
+    job.run_test('tast',
+                 host=hosts.create_host(machine),
+                 test_exprs=['('
+                             '"group:crospts" && '
+                             'crospts_arm64'
+                             ')'],
+                 ignore_test_failures=True,
+                 max_run_sec=12*60*60,  # 12 hours.
+                 command_args=args)
+
+parallel_simple(run, machines)

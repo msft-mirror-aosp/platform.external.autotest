@@ -187,12 +187,16 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         if self._host:
             for filename in (
                     self._MESSAGES_LOG,
-                    self._MINIOS_LOG,
                     self._NET_LOG,
                     self._UPDATE_ENGINE_LOG_DIR,
                     self._UPSTART_LOG,
             ):
                 CopyLog(filename)
+            if self._host.is_file_exists(self._MINIOS_LOG):
+                CopyLog(filename)
+            else:
+                logging.warning("Skipping copy of %s, file not present.",
+                                self._MINIOS_LOG)
 
         if self._nebraska:
             nebraska_log_file = os.path.join("/tmp", self._NEBRASKA_LOG)

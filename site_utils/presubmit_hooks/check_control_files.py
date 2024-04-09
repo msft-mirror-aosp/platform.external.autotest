@@ -215,7 +215,7 @@ def CheckMetadataFormatting(ctrl_data, ctrl_file_path):
     # Note: allowed metadata values should align with TestCaseMetadataInfo values.
     ALLOWED_METADATA_VALS = set([
             'contacts', 'doc', 'requirements', 'bug_component', 'criteria',
-            'hw_agnostic', 'life_cycle_stage'
+            'hw_agnostic', 'life_cycle_stage', 'variant_category'
     ])
     ALLOWED_LIFE_CYCLE_VALS = set([
             'production_ready', 'disabled', 'in_development', 'manual_only',

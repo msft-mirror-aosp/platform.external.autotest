@@ -348,8 +348,13 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                         'Invalid configuration, S0ix not supported, but '
                         'deep_sleep_in_s0i3 is true')
 
-            if (self.faft_config.s3_override_to_unsupported
-                        or not self.s3_supported):
+            # TODO(b/333523918): deep sleep stress works on fizz.
+            # Remove this when s3 override to unsupported is set back to false
+            # on fizz.
+            if self.faft_config.platform == 'fizz':
+                logging.info('Ignore fizz s3 config')
+            elif (self.faft_config.s3_override_to_unsupported
+                  or not self.s3_supported):
                 logging.info(
                         'S3 unsupported. Switching suspend type from "mem" '
                         'to "freeze"')

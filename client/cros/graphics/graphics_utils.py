@@ -1125,12 +1125,30 @@ class GraphicsStateChecker(object):
     dirty_writeback_centisecs = 0
     existing_hangs = {}
 
-    _BROWSER_VERSION_COMMAND = '/opt/google/chrome/chrome --version'
-    _HANGCHECK = ['drm:i915_hangcheck_elapsed', 'drm:i915_hangcheck_hung',
-                  'Hangcheck timer elapsed...',
-                  'drm/i915: Resetting chip after gpu hang']
-    _HANGCHECK_WARNING = ['render ring idle']
-    _MESSAGES_FILE = '/var/log/messages'
+    _BROWSER_VERSION_COMMAND = "/opt/google/chrome/chrome --version"
+    _HANGCHECK = [
+            # i915
+            "drm:i915_hangcheck_elapsed",
+            "drm:i915_hangcheck_hung",
+            "GPU HANG: ecode ",
+            "Hangcheck timer elapsed...",
+            "drm/i915: Resetting chip after gpu hang",
+            # msm, freedreno
+            "hangcheck recover!",
+            # amdgpu
+            "GPU reset",
+            "IB test failed on gfx",
+            "failed testing IB on GFX ring",
+            "No more free UVD handles!",
+            "VRAM is lost",
+            # mediatek
+            "cmdq timeout",
+            # mediatek/PowerVR
+            "Possible stalled client RGX contexts detected",
+            "Trying to identify stalled context...(force)",
+    ]
+    _HANGCHECK_WARNING = ["render ring idle"]
+    _MESSAGES_FILE = "/var/log/messages"
 
     def __init__(self, raise_error_on_hang=True, run_on_sw_rasterizer=False):
         """

@@ -623,27 +623,11 @@ def retry(test_method, instance, *args, **kwargs):
                                   instance, *args, **kwargs)):
         return True
 
-    # Try to fix the serial device if applicable.
     logging.error('%s failed at the 1st time: (%s)', test_method.__name__,
                   str(instance.results))
-
-    # If this test does not use any attached serial device, just re-run
-    # the test.
     logging.info('%s: retry the 2nd time.', test_method.__name__)
     time.sleep(1)
 
-
-    if not hasattr(instance, 'use_btpeer'):
-        return _is_successful(_run_method(test_method, test_method.__name__,
-                                          instance, *args, **kwargs))
-    for device_type in SUPPORTED_DEVICE_TYPES:
-        for device in getattr(instance, 'devices')[device_type]:
-            #fix_serial_device in 'recreate' mode doesn't require btpeer
-            #so just pass None for convenient.
-            if not fix_serial_device(None, device, "recreate"):
-                return False
-
-    logging.info('%s: retry the 2nd time.', test_method.__name__)
     return _is_successful(_run_method(test_method, test_method.__name__,
                                       instance, *args, **kwargs))
 

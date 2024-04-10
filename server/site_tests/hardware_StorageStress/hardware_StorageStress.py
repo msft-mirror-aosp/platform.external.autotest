@@ -212,8 +212,3 @@ class hardware_StorageStress(test.test):
                                  wait=0, integrity=True)
 
         self._power_func()
-
-        self._client_at.run_test('hardware_StorageWearoutDetect',
-                                 tag='%s_%d' % ('wearout', self._loop_count),
-                                 wait=0, use_cached_result=False)
-        # No checkout for wearout, to test device pass their limits.

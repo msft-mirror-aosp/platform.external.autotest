@@ -875,7 +875,7 @@ class LoggerDashboardFactory(object):
 
 def generate_parallax_report(output_dir, local_dir='/usr/local', testname='PowerQual'):
     """Generate parallax report in the result directory."""
-    parallax_url = 'http://crospower.page.link/parallax'
+    parallax_url = 'https://storage.googleapis.com/chromiumos-test-assets-public/parallax/parallax.tar.xz'
     parallax_tar = os.path.join(local_dir, 'parallax.tar.xz')
     parallax_dir = os.path.join(local_dir, 'report_analysis')
     parallax_exe = os.path.join(parallax_dir, 'process.py')

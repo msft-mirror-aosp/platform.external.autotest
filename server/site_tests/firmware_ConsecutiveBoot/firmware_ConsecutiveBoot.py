@@ -73,6 +73,7 @@ class firmware_ConsecutiveBoot(FirmwareTest):
         are testing firmware and mainly want to focus on power on sequence.
         """
         boot_id = self.get_bootid()
+        self._ap_info = ''
 
         # Call shutdown instead of long press the power key, since we're
         # testing the firmware, not the power manager and button handling.
@@ -94,13 +95,12 @@ class firmware_ConsecutiveBoot(FirmwareTest):
                 self.wait_for_client_aux()
             except ConnectionError:
                 logging.error('wait_for_client exception %d.', i)
-                if self.check_ec_capability(['x86'], suppress_warning=True):
-                    match = self.ec.send_command_get_output("port80", ['.*new'], retries=3)
-                    logging.debug("port80: %r", match)
+                self._ap_info = self.try_to_get_ap_state()
+                logging.error('AP state: %s', self._ap_info)
             else:
                 logging.info('wait_for_client online done %d.', i)
                 return
-        raise ConnectionError()
+        raise ConnectionError('Unable to ssh into dut:%s' % self._ap_info)
 
     def cleanup(self):
         try:

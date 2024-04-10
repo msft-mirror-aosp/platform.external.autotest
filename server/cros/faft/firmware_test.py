@@ -2847,3 +2847,27 @@ class FirmwareTest(test.test):
         )
         if restore_crs:
             self.servo.set("cold_reset_select", restore_crs)
+
+    def try_to_get_ap_state(self):
+        """Return a string with the AP state."""
+        gsc_info = ''
+        ec_info = ''
+        try:
+            # Get the AP state and PCR0 value from GSC.
+            if self.check_cr50_capability(suppress_warning=True):
+                gsc_info = self.gsc.get_debug_ap_state() + ','
+        except Exception as e:
+            logging.warning('Ignoring error getting AP state from cr50: %s', e)
+
+        try:
+            # Get the port80 codes from the EC.
+            if self.check_ec_capability(['x86'], suppress_warning=True):
+                match = self.ec.send_command_get_output("port80", ['.*new'],
+                                                        retries=3)
+                logging.debug('port80: %r', match)
+                ec_info = 'port80:%r' % match[0].strip().splitlines(
+                )[-1].strip()
+        except Exception as e:
+            logging.warning('Ignoring error getting AP state from the EC: %s',
+                            e)
+        return '%s %s %s' % (self.get_power_state(), gsc_info, ec_info)

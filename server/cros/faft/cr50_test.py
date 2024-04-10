@@ -1288,12 +1288,3 @@ class Cr50Test(FirmwareTest):
         logging.warning('New Flog messages (%s)', ','.join(diff))
         # TODO: return unexpected flog events.
         return None
-
-    def try_to_get_ap_state(self):
-        """Return a string with the AP state."""
-        try:
-            return self.gsc.get_debug_ap_state()
-        except Exception as e:
-            logging.info('Ignoring error getting ap state: %s', e)
-        # If something went wrong, return an empty string.
-        return ''

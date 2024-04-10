@@ -882,15 +882,12 @@ class TradefedTest(test.test):
                          instance_path)
             shutil.copytree(cache_path, instance_path)
 
-        # Hacky workaround for b/271219433 until GTS is fixed.
-        # 'tradefed.jar' needs to be listed before 'tradefed-no-fwk.jar'
+        # Hacky workaround for b/332649786 until STS is fixed.
+        # 'tradefed.jar' needs to be listed before other jar files.
         # regardless of the locale. So here we just rename the latter.
         try:
             tools_dir = os.path.join(instance_path,
                                      self._get_tradefed_base_dir(), 'tools')
-            os.rename(os.path.join(tools_dir, 'tradefed-no-fwk.jar'),
-                      os.path.join(tools_dir, 'zz-tradefed-no-fwk.jar'))
-            # Workaround for STS b/332649786
             os.rename(os.path.join(tools_dir, 'tradefed-test-framework.jar'),
                       os.path.join(tools_dir, 'zz-tradefed-test-framework.jar'))
         except OSError:

@@ -2302,7 +2302,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         Since the HFP does not define a microphone mute event, Floss converts
         volume=0 to a muted event and sends it through the telephony HID input
         report.
-        Upon unmuting, the volume is restored to its original level.
+        Upon receiving a non-zero volume, Floss converts it to an unmute event
+        instead.
         This test sets the peer microphone volume to 0 and verify that the
         microphone mute event is sent from the telephony HID input report.
 

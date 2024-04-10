@@ -4623,6 +4623,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         time it is stopped up until a given timeout.
         """
 
+        ABORT_TIMEOUT_SEC = 3
+
         def __init__(self, adapter_client, timeout_secs):
             """Constructor.
 
@@ -4634,10 +4636,23 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.adapter_client.register_callback_observer(
                     'DiscoveryObserver', self)
             self.discovering = None
+            self.done_event = threading.Event()
+            self.aborting = False
 
         def __del__(self):
             if self.adapter_client:
                 self.cleanup()
+
+        def abort(self):
+            """Aborts the discovery"""
+
+            logging.info('Aborting discovering')
+
+            self.aborting = True
+            if self.adapter_client and self.discovering:
+                self.adapter_client.stop_discovery()
+            self.done_event.wait(timeout=self.ABORT_TIMEOUT_SEC)
+            return self.done_event.is_set()
 
         def cleanup(self):
             """Clean up after this observer."""
@@ -4653,14 +4668,21 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             prev = self.discovering
             self.discovering = discovering
 
-            # No-op if this is the same notification sent multiple times
-            if prev == discovering:
-                pass
-            # If discovering ended, check if the observer has timed out yet. If
-            # not, re-start the discovery.
-            if not discovering and datetime.now() < self.deadline:
-                self.adapter_client.start_discovery(
-                        method_callback=self.start_discovery_rsp)
+            # No-op if we're done or no status change.
+            if self.done_event.is_set() or prev == discovering:
+                return
+
+            if discovering:
+                if self.aborting:
+                    self.adapter_client.stop_discovery()
+            else:
+                # If aborting or timeout-ed, then we're done. Otherwise re-start
+                # the discovery.
+                if self.aborting or datetime.now() >= self.deadline:
+                    self.done_event.set()
+                else:
+                    self.adapter_client.start_discovery(
+                            method_callback=self.start_discovery_rsp)
 
         def start_discovery_rsp(self, err, result):
             """Result to |adapter_client.start_discovery|."""
@@ -4933,10 +4955,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             return (False, 'Adapter not found')
 
         if self.discovery_observer:
+            res = self.discovery_observer.abort()
             self.discovery_observer.cleanup()
             self.discovery_observer = None
-
-        return (self.adapter_client.stop_discovery(), '')
+            return (res, '')
+        else:
+            return (self.adapter_client.stop_discovery(), '')
 
     def unregister_discovery_observer(self):
         """Unregister discovery observer."""

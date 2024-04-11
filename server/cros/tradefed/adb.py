@@ -161,12 +161,13 @@ class Adb:
 class NullAdbTunnel:
     """Null tunnel allows direct ADB connection via network without a tunnel."""
 
+    @contextlib.contextmanager
     def create(self):
         """Returns a context manager that manages the tunnel connection.
 
         The null tunnel does nothing here.
         """
-        return contextlib.nullcontext()
+        yield
 
     def get_adb_target(self, host):
         """Returns the ADB target corresponding to given host.

@@ -108,15 +108,11 @@ TELEMETRY_AFDO_BENCHMARKS = (
                 'archs': ('amd64', 'arm')
         },
         {
-                'name': 'octane',
-                'archs': ('amd64', 'arm')
-        },
-        {
                 'name': 'jetstream2',
                 'archs': ('amd64', 'arm')
         },
         {
-                'name': 'speedometer2',
+                'name': 'speedometer3',
                 'archs': ('amd64', 'arm')
         },
 )

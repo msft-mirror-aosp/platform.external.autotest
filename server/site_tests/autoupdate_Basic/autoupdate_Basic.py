@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 import logging
+import os
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import kernel_utils
@@ -17,6 +18,25 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
     def cleanup(self):
         super(autoupdate_Basic, self).cleanup()
 
+    def touch_pil(self):
+        """
+        Create empty files for PIL to avoid import failures during the
+        login_LoginSuccess test when pillow is missing from older images.
+        """
+        # telemetry is using python3.8 on the images where pillow is
+        # missing. Later images that might be using a different python
+        # should have PIL installed.
+        pildir = '/usr/local/lib/python3.8/site-packages/PIL'
+        # Create an empty PIL/ImageGrab since <R125 reven images will
+        # always fail login_LoginSuccess due to the missing import.
+        # b/317793587
+        try:
+            self._run('python "import PIL"')
+        except error.AutoservRunError:
+            logging.info("touching PIL to ensure it exists on the old image")
+            self._run('mkdir -p %s' % pildir)
+            self._run('touch %s %s' % (os.path.join(pildir, '__init__.py'),
+                                       os.path.join(pildir, 'ImageGrab.py')))
 
     def run_once(self,
                  full_payload,
@@ -59,6 +79,7 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
                                skip_board_suffixes=skip_board_suffixes,
                                oldest_stable=oldest_stable)
 
+        self.touch_pil()
         # Login to device before update
         if pin_login:
             self._run_client_test_and_check_result(self._LOGIN_TEST_PIN,
@@ -88,6 +109,8 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
             # Bring stateful version to the same version as rootfs.
             logging.info('Restoring stateful partition to ToT version')
             self._update_stateful()
+
+        self.touch_pil()
         # Check we can login with the same user after update.
         if pin_login:
             self._run_client_test_and_check_result(self._LOGIN_TEST_PIN,

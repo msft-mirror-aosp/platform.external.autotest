@@ -99,8 +99,14 @@ def _wait_for_process(host, pid, timeout=-1):
 # short time to execute. At this point the list of benchmarks is in flux.
 TELEMETRY_AFDO_BENCHMARKS = (
         {
-                'name': 'rendering.desktop.notracing',
-                'args': ('--story-tag-filter=motionmark', ),
+                'name':
+                'rendering.desktop',
+                'args': (
+                        '--story-tag-filter=motionmark_fixed_2_seconds',
+                        '--also-run-disabled-tests',
+                        '--assert-gpu-compositing',
+                        '--extra-browser-args=--disable-features=SkiaGraphite',
+                ),
                 'archs': ('amd64', 'arm')
         },
         {

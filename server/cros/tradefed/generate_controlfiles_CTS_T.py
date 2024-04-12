@@ -593,6 +593,11 @@ CONFIG['WIFI_MODULES'] = [
 
 # Preconditions applicable to public and internal tests.
 CONFIG['PRECONDITION'] = {
+        # b/330127117#comment42: sound_effects_enabled can be set to 1 during
+        # retries, causing test failures.
+        'CtsMediaAudioTestCases': [
+                "'adb shell settings put system sound_effects_enabled 0'",
+        ],
 }
 
 CONFIG['LOGIN_PRECONDITION'] = {
@@ -600,6 +605,11 @@ CONFIG['LOGIN_PRECONDITION'] = {
 
 # Preconditions applicable to public tests.
 CONFIG['PUBLIC_PRECONDITION'] = {
+        # b/330127117#comment42: sound_effects_enabled can be set to 1 during
+        # retries, causing test failures.
+        'CtsMediaAudioTestCases': [
+                "'adb shell settings put system sound_effects_enabled 0'",
+        ],
 }
 
 for m in IPV6_MODULES:

@@ -28,6 +28,10 @@ class firmware_GSCUpdatePCR(FirmwareTest):
         super(firmware_GSCUpdatePCR, self).initialize(host, cmdline_args)
         if 'ccd' in self.servo.get_servo_version():
             self.servo.disable_ccd_watchdog_for_test()
+
+        if self.faft_config.ec_forwards_short_pp_press:
+            raise error.TestNAError(
+                    'Not supported on devices with ec_forwards_short_pp_press')
         self.fast_ccd_open(True)
         self.gsc.ccd_reset_and_wipe_tpm()
         self.gsc.send_command('rddkeepalive disable')

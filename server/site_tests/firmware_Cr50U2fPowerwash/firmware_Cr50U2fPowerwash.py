@@ -65,7 +65,7 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
 
         # Check that we managed to register.
         if not g2f_reg.exit_status == 0:
-            raise error.TestError('Register failed.')
+            raise error.TestError('Register failed: %d' % g2f_reg.exit_status)
 
         # Extract newly created key handle.
         key_handle = self.parse_g2ftool_output(g2f_reg.stdout)['key_handle']

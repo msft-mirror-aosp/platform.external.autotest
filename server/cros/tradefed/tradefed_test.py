@@ -885,13 +885,20 @@ class TradefedTest(test.test):
         # Hacky workaround for b/332649786 until STS is fixed.
         # 'tradefed.jar' needs to be listed before other jar files.
         # regardless of the locale. So here we just rename the latter.
-        try:
-            tools_dir = os.path.join(instance_path,
-                                     self._get_tradefed_base_dir(), 'tools')
-            os.rename(os.path.join(tools_dir, 'tradefed-test-framework.jar'),
-                      os.path.join(tools_dir, 'zz-tradefed-test-framework.jar'))
-        except OSError:
-            pass
+        # Restrict the workaround to T STS as it's incompatible with R CTS
+        # (b/334726012)
+        if 'android-sts-13' in instance_path:
+            logging.info('Applying JAR import order workaround (b/332649786)')
+            try:
+                tools_dir = os.path.join(instance_path,
+                                         self._get_tradefed_base_dir(),
+                                         'tools')
+                os.rename(
+                        os.path.join(tools_dir, 'tradefed-test-framework.jar'),
+                        os.path.join(tools_dir,
+                                     'zz-tradefed-test-framework.jar'))
+            except OSError as e:
+                logging.warn('Workaround failed to apply: %s', e)
         return instance_path
 
     def _install_bundle(self, gs_uri, password=''):

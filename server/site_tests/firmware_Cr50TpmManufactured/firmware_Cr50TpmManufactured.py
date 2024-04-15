@@ -31,7 +31,7 @@ class firmware_Cr50TpmManufactured(FirmwareTest):
         # Reset the AP a couple of times in case the console drops any
         # characters.
         for i in range(self.NUM_RESETS):
-            self.servo.get_power_state_controller().warm_reset()
+            self.servo.get_power_state_controller().reset()
             time.sleep(10)
         # Use cr50 uart capture to check the cr50 console messages. We could
         # send sysrst pulse and check the cr50 response, but that would require

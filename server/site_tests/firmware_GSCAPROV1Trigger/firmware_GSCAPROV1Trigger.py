@@ -80,6 +80,9 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
     GBBD_SAVED_0 = GBBD_SAVED % STATUS_0
     GBBD_SAVED_LAST_FLAG = GBBD_SAVED % STATUS_LAST_FLAG
     GBBD_SAVED_FLAGS_NOT_IN_HASH = GBBD_SAVED % STATUS_OUTSIDE_HASH
+    # These messages should never happen. Fail if they show up in any AP RO
+    # verificaton output.
+    ERR_MESSAGES = ['Could not find GBB area', 'WATCHDOG']
 
     def initialize(self, host, cmdline_args, full_args={}):
         """Initialize servo"""
@@ -328,12 +331,19 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
             self._close_apro_start()
         logging.info('finished %r:%s', self._desc, contents)
 
-        if self.verification_in_progress():
-            raise error.TestFail('%s: Verification did not finish in %ds' %
-                                 (self._desc, timeout))
+        try:
+            if self.verification_in_progress():
+                raise error.TestFail('%s: Verification did not finish in %ds' %
+                                     (self._desc, timeout))
 
-        ap_ro_info = self.gsc.get_ap_ro_info()
-        self.recover_dut()
+            for msg in self.ERR_MESSAGES:
+                if msg in contents:
+                    raise error.TestFail('%s: %r showed up in contents %s' %
+                                         (self._desc, msg, contents))
+        finally:
+            ap_ro_info = self.gsc.get_ap_ro_info()
+            # Make sure to recover the dut.
+            self.recover_dut()
 
         # cr50 only prints calculated and stored hashes after AP RO verificaiton
         # fails. These sets will be empty if verification passed every time.

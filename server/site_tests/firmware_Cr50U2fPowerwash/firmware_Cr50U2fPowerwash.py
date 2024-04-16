@@ -39,6 +39,12 @@ class firmware_Cr50U2fPowerwash(FirmwareTest):
 
     def run_once(self, host=None):
         """Tests that U2F keys are invalidated by powerwash."""
+        if not host.servo:
+            raise error.TestNAError('Test requires servo.')
+        # Test needs to control the GSC power button input.
+        if not host.servo.main_device_is_flex():
+            raise error.TestNAError('Run with c2d2 or servo micro.')
+
         self.client = host
 
         # Start by clearing TPM to make sure the device is in a known state.

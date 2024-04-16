@@ -47,6 +47,9 @@ CONFIG['CONTROLFILE_WRITE_SIMPLE_QUAL_AND_REGRESS'] = False
 CONFIG['CONTROLFILE_WRITE_CAMERA'] = True
 CONFIG['CONTROLFILE_WRITE_EXTRA'] = True
 
+# Tests are only run if ANY of the following USE flags are on for the board.
+CONFIG['TAUTO_HW_DEPS'] = ['android-container-rvc', 'android-vm-rvc']
+
 # The dashboard suppresses upload to APFE for GS directories (based on autotest
 # tag) that contain 'tradefed-run-collect-tests'. b/119640440
 # Do not change the name/tag without adjusting the dashboard.

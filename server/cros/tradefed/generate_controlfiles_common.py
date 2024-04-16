@@ -57,7 +57,7 @@ def render_config(year, name, base_name, test_func_name, attributes,
                   has_precondition_escape, max_retries, timeout, run_template,
                   retry_template, target_module, target_plan, test_length,
                   priority, extra_args, authkey, sync_count, camera_facing,
-                  executable_test_count, source_type=''):
+                  executable_test_count, source_type='', hw_deps=None):
     """Render config for generated controlfiles, by hard-coded some templates here.
     This is to replace jinja2 dependencies.
     """
@@ -83,6 +83,9 @@ def render_config(year, name, base_name, test_func_name, attributes,
         '    \"criteria\": \"A part of Android CTS\",\n}\n'
     rendered_template += f'ATTRIBUTES = \'{attributes}\'\n'
     rendered_template += f'DEPENDENCIES = \'{dependencies}\'\n'
+    if hw_deps is not None:
+        hw_deps_str = ','.join(f"'{s}'" for s in hw_deps)
+        rendered_template += f'HW_DEPS = [{hw_deps_str}]\n'
     rendered_template += f'JOB_RETRIES = {job_retries}\n'
     rendered_template += f'TEST_TYPE = \'server\'\n'
     rendered_template += f'TIME = \'{test_length}\'\n'
@@ -1119,7 +1122,9 @@ def get_controlfile_content(combined,
             authkey=get_authkey(is_public),
             sync_count=get_sync_count(modules, abi, is_public),
             camera_facing=camera_facing,
-            executable_test_count=executable_test_count)
+            executable_test_count=executable_test_count,
+            hw_deps=CONFIG.get('TAUTO_HW_DEPS'),
+    )
 
 
 def fixup_tradefed_executable_bits(basepath, executables):

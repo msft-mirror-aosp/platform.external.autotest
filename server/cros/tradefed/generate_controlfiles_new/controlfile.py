@@ -138,4 +138,6 @@ def get_controlfile_content(group: ModuleGroup, config: Config,
             sync_count=gcc.get_sync_count(modules, abi, is_public),
             camera_facing=camera_facing,
             executable_test_count=executable_test_count,
-            source_type=bundle.source_type)
+            source_type=bundle.source_type,
+            hw_deps=config.get('TAUTO_HW_DEPS'),
+    )

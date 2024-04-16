@@ -396,9 +396,10 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
             return {}
 
         missing_parameters = {
-                'connectable', 'scannable', 'is_legacy', 'is_anonymous',
-                'include_tx_power', 'primary_phy', 'secondary_phy', 'interval',
-                'tx_power_level', 'own_address_type'
+                'discoverable', 'connectable', 'scannable', 'is_legacy',
+                'is_anonymous', 'include_tx_power', 'primary_phy',
+                'secondary_phy', 'interval', 'tx_power_level',
+                'own_address_type'
         } - set(adv_set_parameters.keys())
 
         if missing_parameters:
@@ -406,7 +407,7 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                           ','.join(missing_parameters))
             return {}
 
-        return {
+        param = {
                 'connectable':
                 GLib.Variant('b', adv_set_parameters['connectable']),
                 'scannable':
@@ -428,6 +429,12 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                 'own_address_type':
                 GLib.Variant('i', adv_set_parameters['own_address_type'])
         }
+
+        if self.api_version >= 5:
+            param['discoverable'] = GLib.Variant(
+                    'u', adv_set_parameters['discoverable'])
+
+        return param
 
     def make_dbus_advertise_data(self, adv_data):
         """Makes a struct for advertising data D-Bus.

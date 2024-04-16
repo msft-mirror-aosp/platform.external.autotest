@@ -29,6 +29,14 @@ class GattWriteType(IntEnum):
     WRITE_PREPARE = 3
 
 
+class LeDiscMode(IntEnum):
+    """ Bluetooth LE discoverable modes."""
+    INVALID = 0
+    NON_DISCOVERABLE = 1
+    LIMITED_DISCOVERABLE = 2
+    GENERAL_DISCOVERABLE = 3
+
+
 class LePhy(IntEnum):
     """Bluetooth LE physical type."""
     INVALID = 0

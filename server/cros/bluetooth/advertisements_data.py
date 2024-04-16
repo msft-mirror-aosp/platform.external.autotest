@@ -14,10 +14,13 @@ import random
 
 from six.moves import range
 
+from autotest_lib.client.cros.bluetooth.floss import floss_enums
 
 _ADV_TEMPLATE0_FLOSS = {
         'advertise_name': 'template_data_floss_0',
         'parameters': {
+                'discoverable':
+                int(floss_enums.LeDiscMode.GENERAL_DISCOVERABLE),
                 'connectable': True,
                 'scannable': True,
                 'is_legacy': True,
@@ -68,6 +71,8 @@ _ADV_TEMPLATE0_FLOSS = {
 _ADV_TEMPLATE1_FLOSS = {
         'advertise_name': 'template_data_floss_1',
         'parameters': {
+                'discoverable':
+                int(floss_enums.LeDiscMode.GENERAL_DISCOVERABLE),
                 'connectable': True,
                 'scannable': True,
                 'is_legacy': True,
@@ -118,6 +123,8 @@ _ADV_TEMPLATE1_FLOSS = {
 _ADV_TEMPLATE2_FLOSS = {
         'advertise_name': 'template_data_floss_2',
         'parameters': {
+                'discoverable':
+                int(floss_enums.LeDiscMode.GENERAL_DISCOVERABLE),
                 'connectable': True,
                 'scannable': True,
                 'is_legacy': True,
@@ -168,6 +175,8 @@ _ADV_TEMPLATE2_FLOSS = {
 _ADV_TEMPLATE3_FLOSS = {
         'advertise_name': 'template_data_floss_3',
         'parameters': {
+                'discoverable':
+                int(floss_enums.LeDiscMode.GENERAL_DISCOVERABLE),
                 'connectable': True,
                 'scannable': True,
                 'is_legacy': True,
@@ -218,6 +227,8 @@ _ADV_TEMPLATE3_FLOSS = {
 _ADV_TEMPLATE4_FLOSS = {
         'advertise_name': 'template_data_floss_4',
         'parameters': {
+                'discoverable':
+                int(floss_enums.LeDiscMode.GENERAL_DISCOVERABLE),
                 'connectable': True,
                 'scannable': True,
                 'is_legacy': True,
@@ -268,6 +279,8 @@ _ADV_TEMPLATE4_FLOSS = {
 _ADV_TEMPLATE5_FLOSS = {
         'advertise_name': 'template_data_floss_5',
         'parameters': {
+                'discoverable':
+                int(floss_enums.LeDiscMode.GENERAL_DISCOVERABLE),
                 'connectable': True,
                 'scannable': True,
                 'is_legacy': True,
@@ -318,6 +331,8 @@ _ADV_TEMPLATE5_FLOSS = {
 _NEARBY_BROADCAST_ADV_TEMPLATE_FLOSS = {
         'advertise_name': 'template_data_broadcast_floss',
         'parameters': {
+                'discoverable':
+                int(floss_enums.LeDiscMode.GENERAL_DISCOVERABLE),
                 'connectable': False,
                 'scannable': True,
                 'is_legacy': True,
@@ -368,6 +383,8 @@ _NEARBY_BROADCAST_ADV_TEMPLATE_FLOSS = {
 _NEARBY_MEDIUMS_FAST_ADV_TEMPLATE_FLOSS = {
         'advertise_name': 'template_data_nearby_floss',
         'parameters': {
+                'discoverable':
+                int(floss_enums.LeDiscMode.GENERAL_DISCOVERABLE),
                 'connectable': False,
                 'scannable': True,
                 'is_legacy': True,

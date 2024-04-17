@@ -1011,7 +1011,7 @@ class FingerprintTest(test.test):
         # value read from a section to a file (will not just print it to
         # stdout).
         cmd = 'dump_fmap -x ' + fw_file + ' ' + section +\
-              ':/dev/stderr /dev/stderr >& /dev/stdout > /dev/null'
+              ':/dev/stderr >& /dev/stdout > /dev/null'
         result = self.run_cmd(cmd)
         if result.exit_status != 0:
             raise error.TestFail('Failed to read section: %s' % section)

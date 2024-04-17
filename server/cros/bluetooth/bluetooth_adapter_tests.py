@@ -5310,7 +5310,7 @@ class BluetoothAdapterTests(test.test):
 
         return all(self.results.values())
 
-    @test_retry_and_log
+    @test_retry_and_log(False)
     def test_keyboard_input_from_string(self,
                                         device,
                                         string_to_send,
@@ -5869,7 +5869,7 @@ class BluetoothAdapterTests(test.test):
             device, button, num_iterations, delay
         )
 
-    @test_retry_and_log
+    @test_retry_and_log(False)
     def test_gamepad_continuous_press_button_and_move_thumbstick(
         self,
         device,

@@ -163,21 +163,8 @@ class BluetoothAdapterQuickTests(
         self.llprivacy = llprivacy
         self.floss_lm_quirk = floss_lm_quirk
         self.args_dict = args_dict if args_dict else {}
-
-        try:
-            logging.info("Initialize dark resume utils.")
-            self._dr_utils = DarkResumeUtils(self.host)
-            # Bluetooth should lead to a full resume, but if dark resume is on,
-            # it may go into dark suspend again in case the test fails, so the
-            # DUT may not wake up.
-            # This function is to prevent the DUT from dark suspend.
-            self._dr_utils.stop_resuspend_on_dark_resume()
-            self._ec = chrome_ec.ChromeEC(self.host.servo)
-        except Exception as e:
-            logging.error('Exception %s while initializing dark resume utils',
-                          str(e))
-            self._dr_utils = None
-            self._ec = None
+        self._dr_utils = None
+        self._ec = None
 
         logging.debug('args_dict %s', args_dict)
         update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
@@ -800,8 +787,24 @@ class BluetoothAdapterQuickTests(
         @param dark_resume: Enable dark resume.
         """
 
-        if dark_resume and self._dr_utils is None:
-            raise error.TestNAError('Dark resume utils are not initialized.')
+        if dark_resume:
+            try:
+                logging.info("Initialize dark resume utils.")
+                self._dr_utils = DarkResumeUtils(self.host)
+                # Bluetooth should lead to a full resume, but if dark resume is on,
+                # it may go into dark suspend again in case the test fails, so the
+                # DUT may not wake up.
+                # This function is to prevent the DUT from dark suspend.
+                self._dr_utils.stop_resuspend_on_dark_resume()
+                self._ec = chrome_ec.ChromeEC(self.host.servo)
+            except Exception as e:
+                logging.error(
+                        'Exception %s while initializing dark resume utils',
+                        str(e))
+                self._dr_utils = None
+                self._ec = None
+                raise error.TestNAError(
+                        'Dark resume utils are not initialized.')
 
         boot_id = self.host.get_boot_id()
 
@@ -896,7 +899,10 @@ class BluetoothAdapterQuickTests(
                 if dark_resume:
                     dark_resume_after = self._dr_utils.count_dark_resumes()
                     # Apply key press to guarantee full resume
-                    self._ec.key_press('<ctrl_l>')
+                    if self.host.servo:
+                        self._ec.key_press('<ctrl_l>')
+                    else:
+                        logging.info("Servo is not detected.")
                     logging.info("Dark resume before %d after %d",
                                  dark_resume_before, dark_resume_after)
                     if dark_resume_after != dark_resume_before:

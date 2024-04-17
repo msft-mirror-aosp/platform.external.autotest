@@ -99,8 +99,15 @@ class firmware_Cr50WPG3(Cr50Test):
 
     def set_ccd_cpu_fw_spi(self, state):
         """Set ccd_cpu_fw_spi if the board uses custom reset."""
-        if self._use_custom_rst:
-            self.servo.set_nocheck('ccd_cpu_fw_spi', state)
+        if not self._use_custom_rst:
+            return
+        logging.info('Setting ccd_cpu_fw_spi %s', state)
+        logging.info('%s is active', self.servo.get('active_dut_controller'))
+        self.servo.set_nocheck('ccd_cpu_fw_spi', state)
+        time.sleep(2)
+        logging.info('Set ccd_cpu_fw_spi %s', state)
+        logging.info('%s is active', self.servo.get('active_dut_controller'))
+        self.gsc.get_ccdstate()
 
     def enable_ccd_spi(self):
         """Enable ccd spi access.
@@ -112,6 +119,7 @@ class firmware_Cr50WPG3(Cr50Test):
             self.set_ccd_cpu_fw_spi('on')
             return
 
+        self.gsc.send_command('rddkeepalive enable')
         # Setup the AP flash access. This could require EC uart access. It
         # has to be done before making ccd active.
         self.servo.enable_main_servo_device()
@@ -119,9 +127,7 @@ class firmware_Cr50WPG3(Cr50Test):
 
         # Enable the CCD servo device.
         self.servo.enable_ccd_servo_device()
-        self.gsc.send_command('rddkeepalive enable')
         time.sleep(2)
-        self.gsc.get_ccdstate()
 
     def enable_servo_ec_uart(self):
         """Enable servo control of ec uart."""

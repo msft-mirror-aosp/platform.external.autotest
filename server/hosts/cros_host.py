@@ -2603,17 +2603,19 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                                    % (ACCEPTABLE_STATES,))
 
         if power_method == self.POWER_CONTROL_SERVO:
-            logging.info('Setting servo port J10 to %s', state)
+            logging.info('set_power: Setting servo port J10 to %s', state)
             self.servo.set('prtctl3_pwren', state.lower())
             time.sleep(self._USB_POWER_TIMEOUT)
         elif power_method == self.POWER_CONTROL_MANUAL:
-            logging.info('You have %d seconds to set the AC power to %s.',
-                         self._POWER_CYCLE_TIMEOUT, state)
+            logging.info(
+                    'set_power: You have %d seconds to set the AC power to %s.',
+                    self._POWER_CYCLE_TIMEOUT, state)
             time.sleep(self._POWER_CYCLE_TIMEOUT)
         elif power_method == self.POWER_CONTROL_CCD:
             servo_role = 'src' if state == 'ON' else 'snk'
-            logging.info('servo ccd power pass through detected,'
-                         ' changing servo_role to %s.', servo_role)
+            logging.info(
+                    'set_power: servo ccd power pass through detected,'
+                    ' changing servo_role to %s.', servo_role)
             self.servo.set_servo_v4_role(servo_role)
             if not self.ping_wait_up(timeout=self._CHANGE_SERVO_ROLE_TIMEOUT):
                 # Make sure we don't leave DUT with no power(servo_role=snk)
@@ -2624,6 +2626,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     'DUT failed to regain network connection after %d seconds.'
                     % self._CHANGE_SERVO_ROLE_TIMEOUT)
         else:
+            logging.info('set_power: checking RPM')
             if not self.has_power():
                 raise error.TestFail('DUT does not have RPM connected.')
             self._add_rpm_changed_tag()

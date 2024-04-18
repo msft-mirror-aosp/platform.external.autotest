@@ -273,7 +273,7 @@ class telemetry_AFDOGenerate(test.test):
         ]
         if not builder_path_lines:
             logging.info('No %s found; skip injection.', want_key)
-            return
+            return None
 
         if len(builder_path_lines) > 1:
             raise ValueError(
@@ -287,6 +287,7 @@ class telemetry_AFDOGenerate(test.test):
         host_info.set_version_label(provision.CROS_VERSION_PREFIX,
                                     release_builder_path)
         host.host_info_store.commit(host_info)
+        return release_builder_path
 
     def run_once(self, host, args):
         """Run a set of telemetry benchmarks.
@@ -305,7 +306,9 @@ class telemetry_AFDOGenerate(test.test):
         # try to remove write protection that causes the machine to
         # reboot and remount during run_benchmark. We want to avoid it.
         filesystem_util.make_rootfs_writable(self._host)
-        self._inject_host_info_into_host(host)
+        builder_path = self._inject_host_info_into_host(host)
+        self._gs_staging_location = (builder_path is not None
+                                     and builder_path.startswith("staging-"))
 
         with ExitStack() as stack:
             if self._is_arm():
@@ -385,6 +388,9 @@ class telemetry_AFDOGenerate(test.test):
         self._minimal_telemetry = False
         # Set when the telemetry test pass.
         self._passed = False
+        # Set to True if this should upload to a staging bucket instead of the
+        # production one.
+        self._gs_staging_location = False
 
         # Ignored servo arguments.
         ignored_options = (
@@ -580,12 +586,16 @@ class telemetry_AFDOGenerate(test.test):
         """
         GS_LLVM_DEST = ('gs://chromeos-toolchain-artifacts/afdo/unvetted/'
                         f'benchmark/{remote_basename}')
+        GS_STAGING_DEST = ('gs://staging-chromeos-toolchain-artifacts/afdo/'
+                           f'unvetted/benchmark/{remote_basename}')
         GS_TEST_DEST = ('gs://chromeos-throw-away-bucket/afdo-job/canonicals/'
                         f'{remote_basename}')
         GS_ACL = 'project-private'
 
         if self._gs_test_location:
             remote_file = GS_TEST_DEST
+        elif self._gs_staging_location:
+            remote_file = GS_STAGING_DEST
         elif self._board in LLVM_BOARDS:
             remote_file = GS_LLVM_DEST
         else:

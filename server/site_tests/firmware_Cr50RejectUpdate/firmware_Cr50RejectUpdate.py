@@ -111,15 +111,14 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         # original_path is the image already on cr50, so this won't have any
         # real effect. It will just reboot Cr50.
         self.try_update('', self.original_path, stdout='image updated')
-        if not self.faft_config.ap_up_after_cr50_reboot:
-            self.host.reset_via_servo()
         # After reboot, if the DUT hasn't responded within 45 seconds, it's not
         # going to.
         exp_time = time.time() + self.WAIT_FOR_DUT_SSH_S
+        self.gsc.wait_for_reboot(timeout=10)
         while time.time() < exp_time:
-            time.sleep(self.DELAY_SSH_CHECK_S)
             if self.host.is_up_fast():
                 break
+            time.sleep(self.DELAY_SSH_CHECK_S)
         else:
             raise error.TestError('DUT did not respond')
 

@@ -1,0 +1,34 @@
+# Copyright 2024 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Core Performance Team"
+NAME = "crospts_x86"
+METADATA = {
+        "contacts": ["cros-core-systems-perf@google.com"],
+        "bug_component": "b:331566754", # ChromeOS > Platform > System > Performance
+        "criteria": "Microbenchmarks for kernel and hardward performance for x86 platforms"
+}
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+Run the Tast tests used for CrosPTS performance test suite.
+CrosPTS is a set of microbenchmark performance tests.
+See http://go/crospts for the details.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['max_runtime_mins'] = 240
+args_dict['timeout_mins'] = 360
+args_dict['file_bugs'] = False
+args_dict['name'] = NAME
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

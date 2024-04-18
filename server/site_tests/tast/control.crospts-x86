@@ -11,7 +11,7 @@ METADATA = {
 }
 TIME = 'LONG'
 TEST_TYPE = 'Server'
-ATTRIBUTES = 'suite:crospts'
+ATTRIBUTES = 'suite:crospts_x86'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

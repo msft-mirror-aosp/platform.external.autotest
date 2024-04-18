@@ -629,8 +629,10 @@ class Cr50Test(FirmwareTest):
         Try to run the sequence to get the Wilco EC out of the factory mode
         state, so it reenables charging.
         """
+        logging.info('Cleaning up factory mode')
         if self.faft_config.chrome_ec:
             return
+        self._try_to_bring_dut_up()
         charge_state = self.host.get_power_supply_info()['Battery']['state']
         logging.info('Charge state: %r', charge_state)
         if 'Discharging' not in charge_state:
@@ -791,6 +793,13 @@ class Cr50Test(FirmwareTest):
             # least been reset.
             # DO NOT PUT ANYTHING BEFORE THIS.
             self._try_quick_ccd_cleanup()
+
+            # Try to restore charging on sarien. This is a noop on most devices.
+            try:
+                self._discharging_factory_mode_cleanup()
+            except Exception as e:
+                logging.info('Unable to restore charging state %s', e)
+                logging.info('Continuing with cleanup')
 
             self.servo.enable_main_servo_device()
 

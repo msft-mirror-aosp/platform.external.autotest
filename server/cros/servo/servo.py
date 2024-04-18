@@ -1967,6 +1967,8 @@ class Servo(object):
         v4_tag = get_fw_version_tag('root', v4_flavor)
         fw_versions[v4_tag] = self._get_servo_type_fw_version('servo_fw',
                                                               prefix='root')
+        fw_versions['servo_v4-dut_connection_type'] = self.get_servo_v4_type()
+
         if 'with' in self.get_servo_type():
             dut_devs = self.get_servo_type().split('_with_')[1].split('_and_')
             main_tag = get_fw_version_tag('main', dut_devs[0])

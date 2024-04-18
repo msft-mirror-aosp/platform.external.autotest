@@ -3,11 +3,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging, numpy, random, time
+import dbus, logging, numpy, random, time
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import interface
+from autotest_lib.client.cros import dbus_util, upstart
 from autotest_lib.client.cros.networking import shill_proxy
 from autotest_lib.client.cros.power import power_suspend, sys_power
 
@@ -70,8 +71,22 @@ class power_SuspendStress(test.test):
 
     def run_once(self):
         time.sleep(self._init_delay)
+
+        # TODO(b/324513129): remove this once we have a better solution in place.
+        # **DO NOT COPY-PASTE THIS CODE IF YOU ARE NOT AFFECTED BY b/324513129**
+        # If you are affected by b/324513129, please add a comment on that bug
+        # and retain this comment block in the new location.
+        if not upstart.is_running('powerd'):
+            logging.info('starting powerd because it is not running')
+            upstart.restart_job('powerd')
+        logging.info('waiting for powerd availability')
+        dbus_util.get_dbus_object(dbus.SystemBus(),
+                                  "org.chromium.PowerManager",
+                                  "/org/chromium/PowerManager", 30)
+
         self._suspender = power_suspend.Suspender(
-                self.resultsdir, method=self._method,
+                self.resultsdir,
+                method=self._method,
                 suspend_state=self._suspend_state)
         # TODO(b/164255562) Temporary workaround for misbehaved modemfwd
         if self._modemfwd_workaround:

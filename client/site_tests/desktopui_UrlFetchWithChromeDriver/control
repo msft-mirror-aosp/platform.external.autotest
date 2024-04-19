@@ -1,0 +1,25 @@
+# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "spadhi@google.com, dshi@chromium.org"
+NAME = "desktopui_UrlFetchWithChromeDriver"
+
+METADATA = {
+    "contacts": ["tauto-core@google.com"],
+    "bug_component": "b:1284375", # ChromeOS > Test > Harness > Tauto > Examples
+    "criteria": "This test will fail if the URL fails to load or the cookie is not saved.",
+    "hw_agnostic": True
+}
+
+TIME = "SHORT"
+TEST_TYPE = "client"
+PY_VERSION = 3
+
+DOC = """
+This test uses ChromeDriver to load the given URL and waits for the specified
+cookie to be saved.
+"""
+
+job.run_test('desktopui_UrlFetchWithChromeDriver', live=True, tag='live')
+job.run_test('desktopui_UrlFetchWithChromeDriver', live=False, tag='not-live')

@@ -525,6 +525,14 @@ class network_WiFi_BluetoothLoadPerf(
         self.bt_devices = [self.devices['MOUSE'][0]]
         self.setup_and_run_tests()
 
+    @test_wrapper('Coex test with BLE keyboard load',
+                  devices={'BLE_KEYBOARD': 1},
+                  supports_floss=True)
+    def ble_keyboard_load(self):
+        """Tests Wi-Fi BT coex with BLE keyboard load."""
+        self.bt_devices = [self.devices['BLE_KEYBOARD'][0]]
+        self.setup_and_run_tests()
+
     @test_wrapper('Coex test with keyboard load',
                   devices={'KEYBOARD': 1},
                   supports_floss=True)
@@ -550,6 +558,7 @@ class network_WiFi_BluetoothLoadPerf(
                           batch.
         """
         self.mouse_load()
+        self.ble_keyboard_load()
         self.keyboard_load()
         self.ble_mouse_load()
 

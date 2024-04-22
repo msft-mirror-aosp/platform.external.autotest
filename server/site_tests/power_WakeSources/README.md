@@ -58,8 +58,10 @@ The steps below describe how to test wake sources manually.
 2.  Suspend the device using the following command.
     *   `$ powerd_dbus_suspend --print_wakeup_type`
 3.  Once the device suspends, trigger the wake using the specific wake source.
-4.  For full wake sources, you should see output similar to `[0916/110326.423855
-    :INFO:powerd_dbus_suspend.cc(57)] Wakeup type : input`.
+4.  For full wake sources except display, you should see output similar to
+    `[0916/110326.423855:INFO:powerd_dbus_suspend.cc(57)] Wakeup type : input`.
+    *   For display, you may see output similar to `[dark_resume.cc(63)] Transitioning from dark resume to full resume`
+        in /var/log/power_manager/powerd.LATEST.
 5.  For dark wake sources, you should see output similar to `[0916/110326.423855
     :INFO:powerd_dbus_suspend.cc(57)] Wakeup type : other`.
 

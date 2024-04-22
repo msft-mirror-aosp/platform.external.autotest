@@ -23,6 +23,7 @@ METADATA = {
     'criteria': (
         'The Bluetooth adapter can be reset without affecting WiFi component'),
     'hw_agnostic': False,
+    'variant_category': 'BT_Chipset_Kernel',
     'requirements': ['bt-phy-0011-v01']
 }
 

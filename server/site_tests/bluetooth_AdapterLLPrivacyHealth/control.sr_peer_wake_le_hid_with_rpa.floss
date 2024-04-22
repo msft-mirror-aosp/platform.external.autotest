@@ -12,6 +12,7 @@ METADATA = {
     "bug_component": "b:167317",
     "criteria": "Suspend/resume test in floss with HID peer in privacy mode. DUT with LL privacy turned on.",
     'hw_agnostic': False,
+    'variant_category': 'BT_Chipset_Kernel',
     'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-gen-0001-v01', 'bt-spec-0019-v01'],
 }

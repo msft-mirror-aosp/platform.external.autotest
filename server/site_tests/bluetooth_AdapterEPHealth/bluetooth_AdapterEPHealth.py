@@ -141,7 +141,12 @@ class bluetooth_AdapterEPHealth(
         @param device: the peer device
         """
 
-        self.test_disconnection_by_adapter(device.address)
+        # Disconnection by adapter on Floss could break the HID
+        # state on RasPi. See b/280534346 for more details.
+        if self.floss and device.device_type in ('BLE_MOUSE', 'BLE_KEYBOARD'):
+            self.test_disconnection_by_device(device)
+        else:
+            self.test_disconnection_by_adapter(device.address)
         self.test_remove_pairing(device.address)
 
     def run_test_method(self, pre_test_method, devices, uuids='',
@@ -188,7 +193,13 @@ class bluetooth_AdapterEPHealth(
                 # devices could be disconnected as they don't have connectable
                 # profiles.
                 if expected_pass:
-                    self.test_disconnection_by_adapter(device.address)
+                    # Disconnection by adapter on Floss could break the HID
+                    # state on RasPi. See b/280534346 for more details.
+                    if self.floss and device.device_type in ('BLE_MOUSE',
+                                                             'BLE_KEYBOARD'):
+                        self.test_disconnection_by_device(device)
+                    else:
+                        self.test_disconnection_by_adapter(device.address)
 
         for device, expected_pass in zip(devices, expected_passes):
             self.check_if_affected_by_policy(device, not expected_pass)
@@ -210,7 +221,13 @@ class bluetooth_AdapterEPHealth(
                 self.expect_test(expected_pass, verifier, device)
 
             if multi_conn_workaround:
-                self.test_disconnection_by_adapter(device.address)
+                # Disconnection by adapter on Floss could break the HID
+                # state on RasPi. See b/280534346 for more details.
+                if self.floss and device.device_type in ('BLE_MOUSE',
+                                                         'BLE_KEYBOARD'):
+                    self.test_disconnection_by_device(device)
+                else:
+                    self.test_disconnection_by_adapter(device.address)
 
         for device in devices:
             self.post_test_method(device)

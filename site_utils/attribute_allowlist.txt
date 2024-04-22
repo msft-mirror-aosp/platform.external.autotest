@@ -880,8 +880,12 @@ suite:network_nightly
 suite:offloads
 suite:omaha_per-week
 suite:partners
+suite:pasit_camera
+suite:pasit_display
 suite:pasit_fast
 suite:pasit_full
+suite:pasit_hid
+suite:pasit_storage
 suite:perfalerts
 suite:performance_cuj
 suite:performance_cuj_benchmarks

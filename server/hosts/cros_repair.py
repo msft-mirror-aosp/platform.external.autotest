@@ -546,7 +546,6 @@ class HWIDVerifier(hosts.Verifier):
                 # update serial_number for VPD
                 cmd = 'vpd -s serial_number=%s'
                 host.run(cmd % serial_number, ignore_status=True)
-                host.run('dump_vpd_log --force', ignore_status=True)
                 # reading from VPD to see what we updated
                 req = host.run('vpd -g serial_number', ignore_status=True)
         return req.stdout

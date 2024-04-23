@@ -95,7 +95,7 @@ def upload_preview_xts(branch_name: str,
     """
     if local_file is None:
         assert xts_name != 'gts'
-        gs_uri = f'gs://android-build/builds/{branch_name}-linux-{target_name}/{version_name}/'
+        gs_uri = f'gs://android-build-chromeos/builds/{branch_name}-linux-{target_name}/{version_name}/'
         ls_cmd = ['gsutil', 'ls', gs_uri]
         ls_result = subprocess.check_output(ls_cmd).decode(
                 'utf-8').splitlines()

@@ -65,7 +65,7 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
                 }
         }
 
-        check_output_mock.return_value = b'gs://android-build/builds/test_branch-linux-test_target/9199760/mock_hash/\n'
+        check_output_mock.return_value = b'gs://android-build-chromeos/builds/test_branch-linux-test_target/9199760/mock_hash/\n'
 
         uprev_preview_version_common.upload_preview_xts(
                 branch_name='test_branch',
@@ -80,20 +80,20 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
         self.assertEquals(check_call_mock.call_count, 2)
         check_output_mock.assert_called_once_with([
                 'gsutil', 'ls',
-                'gs://android-build/builds/test_branch-linux-test_target/9199760/'
+                'gs://android-build-chromeos/builds/test_branch-linux-test_target/9199760/'
         ])
 
         check_call_mock.assert_any_call([
                 'gsutil',
                 'cp',
-                'gs://android-build/builds/test_branch-linux-test_target/9199760/mock_hash/android-cts.zip',
+                'gs://android-build-chromeos/builds/test_branch-linux-test_target/9199760/mock_hash/android-cts.zip',
                 'gs://chromeos-partner-gts/R/android-cts-9199760-linux_x86-arm.zip',
         ])
 
         check_call_mock.assert_any_call([
                 'gsutil',
                 'cp',
-                'gs://android-build/builds/test_branch-linux-test_target/9199760/mock_hash/android-cts.zip',
+                'gs://android-build-chromeos/builds/test_branch-linux-test_target/9199760/mock_hash/android-cts.zip',
                 'gs://chromeos-arc-images/cts/bundle/R/android-cts-9199760-linux_x86-arm.zip',
         ])
 

@@ -26,7 +26,7 @@ from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         AUDIO_SERVER, PULSEAUDIO, PIPEWIRE, A2DP_CODEC, SBC, AAC, HFP_CODEC,
         LC3, audio_test_data, get_audio_test_data, get_visqol_binary)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-    BluetoothAdapterTests, test_retry_and_log)
+        FLOSS_NO_WBS_CHIPSETS, BluetoothAdapterTests, test_retry_and_log)
 from six.moves import range
 
 
@@ -302,6 +302,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         @raises: TestNAError if the dut does not support wbs.
         """
+        # For floss we don't check the supported_capabilities since eventually
+        # WBS is determined by CRAS.
+        if self.floss:
+            chipset = self.bluetooth_facade.get_chipset_name()
+            return not chipset in FLOSS_NO_WBS_CHIPSETS
+
         capabilities, err = self.bluetooth_facade.get_supported_capabilities()
         logging.debug("get_supported_capabilities %s", capabilities)
         return err is None and bool(capabilities.get('wide band speech'))

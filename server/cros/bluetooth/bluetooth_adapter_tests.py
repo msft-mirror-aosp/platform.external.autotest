@@ -123,11 +123,14 @@ LL_PRIVACY_NOT_SUPPORTED_CHIPSETS = ['Intel-AC7265']
 # empty as of now.
 SUSPEND_POWER_DOWN_MODELS = []
 
-# Chipsets which do not support Bluetooth Hardware Filtering.
-UNSUPPORTED_BT_HW_FILTERING_CHIPSETS = [
-        'MVL-8897', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB', 'Intel-AC7265',
-        'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
-        'Realtek-RTL8852A-USB', 'Realtek-RTL8852C-USB'
+# Some chipsets don't support hardware offloaded WBS, some don't support the
+# software WBS (don't support the erroneous data reporting or whatnot), and
+# some don't support any.
+# In floss, we turn off WBS capabilities for all the chipset listed here.
+# BlueZ directly looks for quirks from the kernel which might be wrong.
+# See b/335597904 and b/322088207 for additional context.
+FLOSS_NO_WBS_CHIPSETS = [
+        'MVL-8897', 'Intel-AC7265', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB'
 ]
 
 CHAR_TO_KEY_MAP = {

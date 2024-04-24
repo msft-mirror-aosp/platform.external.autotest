@@ -788,6 +788,7 @@ class Cr50Test(FirmwareTest):
     def cleanup(self):
         """Attempt to cleanup the cr50 state. Then run firmware cleanup"""
         try:
+            logging.info('Cr50Test cleaning up')
             # Reset the password as the first thing in cleanup. It is important
             # that if some other part of cleanup fails, the password has at
             # least been reset.
@@ -813,11 +814,13 @@ class Cr50Test(FirmwareTest):
 
             # Make sure the sarien EC isn't stuck in factory mode.
             self._discharging_factory_mode_cleanup()
+            self._try_to_bring_dut_up()
+            logging.info('Finished Cr50Test cleaning up')
         finally:
             super(Cr50Test, self).cleanup()
 
         # Check the logs captured during firmware_test cleanup for cr50 errors.
-        self.gsc.check_for_console_errors('Test Cleanup')
+        self.gsc.check_for_console_errors('Check logs for GSC errors')
         self.servo.allow_ccd_watchdog_for_test()
 
     def _update_device_images_and_running_cr50_firmware(

@@ -143,7 +143,7 @@ class bluetooth_AdapterEPHealth(
 
         # Disconnection by adapter on Floss could break the HID
         # state on RasPi. See b/280534346 for more details.
-        if self.floss and device.device_type in ('BLE_MOUSE', 'BLE_KEYBOARD'):
+        if self.floss and device.device_type in ('MOUSE', 'KEYBOARD'):
             self.test_disconnection_by_device(device)
         else:
             self.test_disconnection_by_adapter(device.address)
@@ -195,8 +195,8 @@ class bluetooth_AdapterEPHealth(
                 if expected_pass:
                     # Disconnection by adapter on Floss could break the HID
                     # state on RasPi. See b/280534346 for more details.
-                    if self.floss and device.device_type in ('BLE_MOUSE',
-                                                             'BLE_KEYBOARD'):
+                    if self.floss and device.device_type in ('MOUSE',
+                                                             'KEYBOARD'):
                         self.test_disconnection_by_device(device)
                     else:
                         self.test_disconnection_by_adapter(device.address)
@@ -223,8 +223,7 @@ class bluetooth_AdapterEPHealth(
             if multi_conn_workaround:
                 # Disconnection by adapter on Floss could break the HID
                 # state on RasPi. See b/280534346 for more details.
-                if self.floss and device.device_type in ('BLE_MOUSE',
-                                                         'BLE_KEYBOARD'):
+                if self.floss and device.device_type in ('MOUSE', 'KEYBOARD'):
                     self.test_disconnection_by_device(device)
                 else:
                     self.test_disconnection_by_adapter(device.address)

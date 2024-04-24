@@ -15,7 +15,7 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
         """Test for get_latest_version_name."""
 
         check_output_mock.side_effect = [
-                '1000\n100\n10\n2\n1', '100\n99\n11\n2\n1'
+                b'1000\n100\n10\n2\n1', b'100\n99\n11\n2\n1'
         ]
         common_latest_version = uprev_preview_version_common.get_latest_version_name(
                 branch_name='test',
@@ -35,7 +35,7 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
         """
 
         check_output_mock.side_effect = [
-                '1000\n100\n10\n2\n1', '1001\n101\n11\n4\n3'
+                b'1000\n100\n10\n2\n1', b'1001\n101\n11\n4\n3'
         ]
         with self.assertRaises(
                 uprev_preview_version_common.GreenBuildNotFoundException):

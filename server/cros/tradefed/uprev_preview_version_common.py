@@ -12,6 +12,10 @@ import bundle_utils
 
 logging.basicConfig(level=logging.INFO)
 
+# The bucket where Android infra publishes build artifacts. Files are only kept
+# for 90 days.
+ANDROID_BUCKET_URL = "gs://android-build-chromeos/builds"
+
 
 class GreenBuildNotFoundException(Exception):
     """Raised when there is no version with all builds being successful."""
@@ -31,34 +35,32 @@ def get_latest_version_name(branch_name: str, abi_list: Dict[str, str]) -> str:
     Raises:
         GreenBuildNotFoundException: An error when latest 5 builds have all failed to build correctly.
     """
-    _MAX_RESULT_SIZE = 5
 
     build_ids_per_target = []
     for target_name in abi_list.values():
-        ab_cmd = [
-                '/google/bin/releases/android/ab/ab.par',
-                'list_builds',
-                f'--branch={branch_name}',
-                '--build_status=complete',
-                f'--target={target_name}',
-                f'--max_results={_MAX_RESULT_SIZE}',
-                '--raw',
-                '--custom_raw_format={o[buildId]}',
-        ]
-        # Get the latest 5 correctly built ids whose type is string in the specified branch and target.
-        # For example: ['9204700', '9199760', '9198611', '9196948', '9196848']
-        logging.info(f'getting build ids: the command is {ab_cmd}.')
-        build_ids = subprocess.check_output(ab_cmd,
-                                            encoding='utf-8').splitlines()
+        build_dir = f"{branch_name}-linux-{target_name}"
+        base_path = os.path.join(ANDROID_BUCKET_URL, build_dir)
+        build_ids = []
+        for gs_result in subprocess.check_output(
+                ['gsutil', 'ls', base_path]).decode('utf-8').splitlines():
+            # Remove trailing slashes and get the base name, which is the
+            # build_id.
+            build_id = os.path.basename(gs_result.strip().rstrip("/"))
+            if not build_id.isdigit():
+                logging.warning(
+                        "Directory [%s] does not look like a valid build_id.",
+                        gs_result.strip(),
+                )
+                continue
+            build_ids.append(build_id)
+        logging.info(
+                f'getting build ids: the command is gsutil ls {base_path}.')
         build_ids_per_target.append(build_ids)
 
     if not build_ids_per_target:
         raise bundle_utils.AbiNotFoundException(
                 f'invalid input: To get the latest version number in {branch_name} branch, target name is needed. '
                 'But now, the abi_list is empty.')
-
-    if len(build_ids_per_target) == 1 and build_ids_per_target[0]:
-        return build_ids_per_target[0][0]
 
     # Find the most recent id in common among all build ids.
     common_build_ids = set(build_ids_per_target[0])
@@ -67,7 +69,7 @@ def get_latest_version_name(branch_name: str, abi_list: Dict[str, str]) -> str:
 
     if not common_build_ids:
         raise GreenBuildNotFoundException(
-                f'The latest {_MAX_RESULT_SIZE} builds have all failed to build correctly,'
+                f'The latest builds have all failed to build correctly,'
                 ' so pleas use --is_preview option with specifying build id')
     return max(common_build_ids, key=int)
 

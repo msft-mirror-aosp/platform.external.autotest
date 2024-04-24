@@ -500,6 +500,14 @@ class network_WiFi_BluetoothLoadPerf(
         self.bt_devices = [self.devices['MOUSE'][0]]
         self.setup_and_run_tests()
 
+    @test_wrapper('Coex test with BLE mouse click load',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
+    def ble_mouse_load(self):
+        """Tests Wi-Fi BT coex with click BLE mouse load."""
+        self.bt_devices = [self.devices['BLE_MOUSE'][0]]
+        self.setup_and_run_tests()
+
     @batch_wrapper('Bluetooth Load/Wi-Fi Coex Test Batch')
     def coex_health_batch_run(self, num_iterations=1, test_name=None):
         """Runs Bluetooth Load/Wi-Fi coex health test batch or specific test.
@@ -509,6 +517,7 @@ class network_WiFi_BluetoothLoadPerf(
                           batch.
         """
         self.mouse_load()
+        self.ble_mouse_load()
 
     def run_once(self,
                  host,

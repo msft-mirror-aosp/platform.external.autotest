@@ -1671,10 +1671,13 @@ def get_expected_value(measurement, expected_dict, test_type, test_name,
 """The tuples defined below represent thresholds for drop rate values, where
 drop rate refers to the decrease in measured throughput during different
 BT status: BT_connected, BT_connected_with_load and BT_disconnected_again. The
-tuples are structured as (should not exceed, must not exceed). Currently, the
-'should not exceed' value is set to 0 as a turnaround. Meanwhile, the
-'must not exceed' value was derived from the highest drop rate observed during
-100 runs of Wi-Fi and Bluetooth load coexistence tests.
+tuples are structured as (should not exceed, must not exceed). The
+'should not exceed' value is set to 0 as a turnaround. For 'mouse_load' test,
+the 'must not exceed' value was derived from the highest drop rate observed
+during 100 runs of Wi-Fi and Bluetooth load coexistence tests. For other
+tests the 'must not exceed' value for these tests is determined based on the
+highest observed drop rate across 10 runs. These values may be enhanced later
+by running additional tests for 100 runs.
 """
 expected_throughput_drop = {
     'coex_test_with_mouse_click_load': {
@@ -1758,6 +1761,88 @@ expected_throughput_drop = {
                 }
             }
         }
+    },
+    'coex_test_with_ble_mouse_click_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 2),
+                        'BT_connected_with_load': (0, 2),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 2),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (0, 0),
+                        'BT_connected_with_load': (0, 0),
+                        'BT_disconnected_again': (0, 0)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1779,10 +1864,13 @@ def get_expected_wifi_throughput_drop_rate(test_type, test_name, ap_config,
 
 
 """The tuples defined below represent thresholds for throughput values as
-(should not exceed, must not exceed). The 'should not exceed' value is derived
-from the highest throughput observed during 100 runs of Wi-Fi and Bluetooth
-load coexistence tests. Conversely, the 'must not exceed' value is derived from
-the lowest throughput observed during the same tests.
+(should not exceed, must not exceed). For 'mouse_load' test, the
+'should not exceed' value is derived from the highest throughput observed
+during 100 runs of Wi-Fi and Bluetooth load coexistence tests, while the
+'must not exceed' value is derived from the lowest throughput observed
+during the same tests. For other tests, these thresholds are determined based
+on 10 runs. These values may be enhanced later by running additional tests
+for 100 runs.
 """
 expected_throughput_values = {
     'coex_test_with_mouse_click_load': {
@@ -1866,6 +1954,88 @@ expected_throughput_values = {
                 }
             }
         }
+    },
+    'coex_test_with_ble_mouse_click_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (283.10, 278.15),
+                        'BT_connected_with_load': (279.69, 279.34),
+                        'BT_disconnected_again': (280.30, 274.91)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (27.42, 27.12),
+                        'BT_connected_with_load': (27.32, 26.55),
+                        'BT_disconnected_again': (26.24, 25.34)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (391.55, 378.68),
+                        'BT_connected_with_load': (388.72, 384.03),
+                        'BT_disconnected_again': (389.44, 375.16)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (38.78, 36.16),
+                        'BT_connected_with_load': (38.94, 32.47),
+                        'BT_disconnected_again': (38.88, 38.10)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (447.12, 445.63),
+                        'BT_connected_with_load': (442.34, 407.31),
+                        'BT_disconnected_again': (445.74, 415.24)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (21.86, 21.45),
+                        'BT_connected_with_load': (21.62, 21.33),
+                        'BT_disconnected_again': (22.06, 21.84)
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': (324.96, 247.41),
+                        'BT_connected_with_load': (314.27, 232.56),
+                        'BT_disconnected_again': (335.73, 226.84)
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': (22.18, 21.85),
+                        'BT_connected_with_load': (22.20, 21.58),
+                        'BT_disconnected_again': (22.24, 21.55)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1885,9 +2055,12 @@ def get_expected_wifi_throughput(test_type, test_name, ap_config, bt_tag):
                               test_type, test_name, ap_config, bt_tag)
 
 
-"""The below defined values serve as thresholds for latency measurements.
-They are determined based on the highest observed latency across 100
-runs of Wi-Fi and Bluetooth load coexistence tests.
+"""The thresholds defined below are for latency measurements. For the
+'mouse_load' test, they are determined based on the highest observed latency
+across 100 runs of Wi-Fi and Bluetooth load coexistence tests. For other
+tests, they are determined based on the highest observed latency across 10
+runs. These values may be enhanced later by running additional tests for 100
+runs.
 """
 expected_latency_values = {
     'coex_test_with_mouse_click_load': {
@@ -1967,6 +2140,88 @@ expected_latency_values = {
                         'BT_connected': 3.80,
                         'BT_connected_with_load': 2.96,
                         'BT_disconnected_again': 5.28
+                    }
+                }
+            }
+        }
+    },
+    'coex_test_with_ble_mouse_click_load': {
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.48,
+                        'BT_connected_with_load': 1.45,
+                        'BT_disconnected_again': 1.36
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 2.52,
+                        'BT_connected_with_load': 1.44,
+                        'BT_disconnected_again': 1.52
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.57,
+                        'BT_connected_with_load': 1.48,
+                        'BT_disconnected_again': 2.37
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 1.37,
+                        'BT_connected_with_load': 1.28,
+                        'BT_disconnected_again': 2.47
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_TX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.45,
+                        'BT_connected_with_load': 1.56,
+                        'BT_disconnected_again': 1.53
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 2.18,
+                        'BT_connected_with_load': 1.67,
+                        'BT_disconnected_again': 4.58
+                    }
+                }
+            }
+        },
+        perf_manager.PerfTestTypes.TEST_TYPE_TCP_RX: {
+            hostap_config.HostapConfig.MODE_11AX_MIXED: {
+                hostap_config.HostapConfig.FREQ_BAND_5G: {
+                    hostap_config.HostapConfig.HE_CHANNEL_WIDTH_80: {
+                        'BT_connected': 1.62,
+                        'BT_connected_with_load': 1.61,
+                        'BT_disconnected_again': 1.60
+                    }
+                }
+            },
+            hostap_config.HostapConfig.MODE_11G: {
+                hostap_config.HostapConfig.FREQ_BAND_2_4G: {
+                    hostap_config.HostapConfig.CHANNEL_WIDTH_22: {
+                        'BT_connected': 1.32,
+                        'BT_connected_with_load': 1.32,
+                        'BT_disconnected_again': 1.52
                     }
                 }
             }

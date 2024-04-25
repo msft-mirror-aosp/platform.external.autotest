@@ -8,6 +8,7 @@ NAME = 'network_WiFi_ChromeEndToEnd.findVerifyWiFiNetworks'
 TEST_TYPE = 'Server'
 ATTRIBUTES = ('suite:wifi_endtoend, suite:infra_qual_wifi')
 DEPENDENCIES = 'wificell, peripheral_wifi_state:WORKING'
+HW_DEPS = ['!chromeless_tty,!chromeless_tests']
 
 DOC = """
 WiFi_ChromeEndToEnd test configures two APs and runs the client side

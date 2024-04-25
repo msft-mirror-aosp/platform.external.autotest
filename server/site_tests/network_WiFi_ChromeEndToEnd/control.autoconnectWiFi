@@ -8,6 +8,7 @@ NAME = 'network_WiFi_ChromeEndToEnd.autoconnectWiFi'
 TEST_TYPE = 'Server'
 ATTRIBUTES = ''
 DEPENDENCIES = 'wificell,peripheral_wifi_state:WORKING'
+HW_DEPS = ['!chromeless_tty,!chromeless_tests']
 DOC = """
 Configures wifi APs and tests that the DUT autoconnects to a previously
 connected wifi network.

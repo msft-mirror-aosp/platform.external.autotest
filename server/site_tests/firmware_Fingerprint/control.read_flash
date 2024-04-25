@@ -18,6 +18,7 @@ METADATA = {
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"
+HW_DEPS = ['biod']
 JOB_RETRIES = 0
 
 args_dict = utils.args_to_dict(args)

@@ -15,6 +15,7 @@ METADATA = {
 ATTRIBUTES = "suite:audio, suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 TEST_TYPE = 'client'
 DEPENDENCIES = ''
+HW_DEPS = ['!chromeless_tty']
 
 '''
 Test that dbus GetNodes API of CRAS is working.

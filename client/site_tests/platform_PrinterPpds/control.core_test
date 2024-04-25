@@ -11,6 +11,7 @@ METADATA = {
 TEST_TYPE = "client"
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard2"
 JOB_RETRIES = 0
+HW_DEPS = ['cups']
 
 job.run_test(
         'platform_PrinterPpds',

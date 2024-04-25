@@ -15,6 +15,7 @@ METADATA = {
 }
 ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-x86-3'
 DEPENDENCIES = 'arc, cts_abi_x86'
+HW_DEPS = ['android-vm-tm']
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'MEDIUM'

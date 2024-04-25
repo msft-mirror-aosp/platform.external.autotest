@@ -20,6 +20,7 @@ METADATA = {
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"
+HW_DEPS = ['biod']
 JOB_RETRIES = 0
 
 # This test uses futility and dev keys from autotest/files/server/cros/faft.

@@ -29,6 +29,7 @@ METADATA = {
 ATTRIBUTES = "suite:fingerprint"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING, fingerprint"
+HW_DEPS = ['biod']
 JOB_RETRIES = 0
 
 test_images = ["TEST_IMAGE_ORIGINAL"]

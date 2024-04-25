@@ -13,6 +13,7 @@ METADATA = {
 }
 ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-long, suite:arc-cts-qual, suite:arc-cts-qual-long'
 DEPENDENCIES = 'arc, cts_cpu_arm'
+HW_DEPS = ['android-container-pi']
 JOB_RETRIES = 0
 TEST_TYPE = 'server'
 TIME = 'LENGTHY'

@@ -19,6 +19,7 @@ Verify that the signer ID is correct
 """
 TEST_TYPE = "server"
 DEPENDENCIES = "fingerprint, servo_state:WORKING"
+HW_DEPS = ['biod']
 JOB_RETRIES = 0
 
 args_dict = utils.args_to_dict(args)

@@ -13,6 +13,7 @@ METADATA = {
 }
 ATTRIBUTES = 'suite:arc-cts-camera'
 DEPENDENCIES = 'arc, camerabox_facing:back'
+HW_DEPS = ['android-container-pi']
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 TIME = 'LONG'

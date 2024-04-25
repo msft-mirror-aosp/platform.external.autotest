@@ -14,6 +14,7 @@ METADATA = {
 # TODO(b/287160788): Move away from long suite
 ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-long, suite:arc-cts-unibuild, suite:arc-cts-hardware'
 DEPENDENCIES = 'arc'
+HW_DEPS = ['android-container-pi']
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
 MAX_RESULT_SIZE_KB = 512000

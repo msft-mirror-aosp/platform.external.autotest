@@ -87,6 +87,7 @@ METADATA = {
 }
 ATTRIBUTES = ''
 DEPENDENCIES = 'arc'
+HW_DEPS = ['android-container-pi']
 JOB_RETRIES = 0
 TEST_TYPE = 'server'
 MAX_RESULT_SIZE_KB = 256000

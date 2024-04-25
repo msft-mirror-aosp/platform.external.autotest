@@ -14,6 +14,7 @@ METADATA = {
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 ATTRIBUTES = "suite:au-perbuild"
+HW_DEPS = ['dlc']
 JOB_RETRIES = 2
 DOC = """
 This test will install the 'scaled-dlc' DLC, which is a DLC specifically

@@ -11,6 +11,7 @@ METADATA = {
 TEST_TYPE = "client"
 ATTRIBUTES = "suite:cups_weekly"
 JOB_RETRIES = 0
+HW_DEPS = ['cups']
 
 job.run_test(
         'platform_PrinterPpds',

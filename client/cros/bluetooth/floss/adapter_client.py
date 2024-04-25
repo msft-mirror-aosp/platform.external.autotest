@@ -14,6 +14,7 @@ import logging
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.cros.bluetooth.floss.floss_enums import (BondState,
+                                                                  BtStatus,
                                                                   SdpType)
 from autotest_lib.client.cros.bluetooth.floss.observer_base import ObserverBase
 from autotest_lib.client.cros.bluetooth.floss.utils import (
@@ -782,7 +783,11 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             name = self.known_devices[address]['name']
 
         remote_device = self._make_dbus_device(address, name)
-        return bool(self.proxy().CreateBond(remote_device, int(transport)))
+        if self.api_version >= 4:
+            return BtStatus(self.proxy().CreateBond(
+                    remote_device, int(transport))) == BtStatus.SUCCESS
+        else:
+            return bool(self.proxy().CreateBond(remote_device, int(transport)))
 
     @glib_call(False)
     def cancel_bond(self, address):
@@ -898,7 +903,11 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
         device = self._make_dbus_device(
                 address,
                 self.known_devices.get(address, {}).get('name', 'Test device'))
-        return bool(self.proxy().ConnectAllEnabledProfiles(device))
+        if self.api_version >= 4:
+            return BtStatus(self.proxy().ConnectAllEnabledProfiles(
+                    device)) == BtStatus.SUCCESS
+        else:
+            return bool(self.proxy().ConnectAllEnabledProfiles(device))
 
     @glib_call(False)
     def disconnect_all_enabled_profiles(self, address):

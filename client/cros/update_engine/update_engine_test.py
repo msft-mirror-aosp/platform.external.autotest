@@ -6,7 +6,6 @@
 import logging
 import shutil
 import time
-import six.moves.urllib.parse
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error

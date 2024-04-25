@@ -59,6 +59,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # test may not receive the message. So we wait a bit longer for the
         # DUT to be reconnected.
         utils.poll_for_condition(lambda: utils.ping(ping_server,
+                                                    deadline=5,
                                                     tries=3, timeout=10) == 0,
                                  timeout=120,
                                  sleep_interval=1,

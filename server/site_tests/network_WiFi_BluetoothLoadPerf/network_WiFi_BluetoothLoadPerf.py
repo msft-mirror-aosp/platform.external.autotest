@@ -8,6 +8,9 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import ping_runner
+from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
+        BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests import (
         BluetoothAdapterHIDReportTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -20,7 +23,8 @@ from autotest_lib.server.cros.network import wifi_cell_perf_test_base
 
 class network_WiFi_BluetoothLoadPerf(
         wifi_cell_perf_test_base.WiFiCellPerfTestBase,
-        BluetoothAdapterHIDReportTests, BluetoothAdapterQuickTests):
+        BluetoothAdapterHIDReportTests, BluetoothAdapterQuickTests,
+        BluetoothAdapterAudioTests):
     """Tests the effect of bluetooth load on Wi-Fi performance.
 
     Conducts a performance test for a set of specified router configurations
@@ -70,6 +74,9 @@ class network_WiFi_BluetoothLoadPerf(
     # Generate the input string with 'a' repeated for the total number of
     # keystrokes.
     INPUT_STRING = 'a' * DEFAULT_BT_TOTAL_KEYSTROKES
+
+    # Duration in seconds for BT audio streaming.
+    BT_AUDIO_STREAMING_DURATION = 110
 
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hooks into super class to take control files parameters.
@@ -242,6 +249,8 @@ class network_WiFi_BluetoothLoadPerf(
 
         @param device: The BT peer device.
         """
+        if device.device_type == 'BLUETOOTH_AUDIO':
+            self.initialize_bluetooth_audio(device, A2DP)
         self.test_device_set_discoverable(device, True)
         self.test_discover_device(device.address)
         self.test_pairing(device.address, device.pin, trusted=True)
@@ -267,6 +276,14 @@ class network_WiFi_BluetoothLoadPerf(
                 string_to_send=self.INPUT_STRING,
                 delay=self.DEFAULT_DELAY_BETWEEN_KEYSTROKES)
 
+    def do_audio_load_test(self, device):
+        """Runs the body of the audio load test.
+
+        @param device: The BT peer device.
+        """
+        self.test_a2dp_sinewaves(device, A2DP,
+                                 self.BT_AUDIO_STREAMING_DURATION)
+
     def get_device_load(self, device_type):
         """Helper function to get load method based on input device type.
 
@@ -276,6 +293,8 @@ class network_WiFi_BluetoothLoadPerf(
             return self.do_mouse_click_load_test
         elif device_type == 'KEYBOARD':
             return self.do_keyboard_load_test
+        elif device_type == 'BLUETOOTH_AUDIO':
+            return self.do_audio_load_test
         else:
             raise error.TestError('Failed to find load method for device type '
                                   '%s' % device_type)
@@ -387,7 +406,9 @@ class network_WiFi_BluetoothLoadPerf(
             self.base_through = result.throughput
 
         elif self.base_through > 0:
-            test_name = self.test_name.lower().replace(' ', '_')
+            test_name = self.test_name.lower().replace(' ',
+                                                       '_').replace(',', '')
+
             expected_drop = (
                     expected_perf_data.get_expected_wifi_throughput_drop_rate(
                             test_type, test_name, ap_config, bt_tag))
@@ -525,6 +546,21 @@ class network_WiFi_BluetoothLoadPerf(
         self.bt_devices = [self.devices['MOUSE'][0]]
         self.setup_and_run_tests()
 
+    @test_wrapper('Coex test with BLE mouse, BLE keyboard and Audio loads',
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1,
+                          'BLUETOOTH_AUDIO': 1
+                  },
+                  supports_floss=True)
+    def md_ble_hid_and_audio_loads(self):
+        """Tests Wi-Fi BT coex with multiple BLE HID and Audio loads."""
+        self.bt_devices = [
+                self.devices['BLE_KEYBOARD'][0], self.devices['BLE_MOUSE'][0],
+                self.devices['BLUETOOTH_AUDIO'][0]
+        ]
+        self.setup_and_run_tests()
+
     @test_wrapper('Coex test with BLE mouse and BLE keyboard loads',
                   devices={
                           'BLE_KEYBOARD': 1,
@@ -584,6 +620,7 @@ class network_WiFi_BluetoothLoadPerf(
                           batch.
         """
         self.mouse_load()
+        self.md_ble_hid_and_audio_loads()
         self.md_ble_hid_load()
         self.md_hid_load()
         self.ble_keyboard_load()

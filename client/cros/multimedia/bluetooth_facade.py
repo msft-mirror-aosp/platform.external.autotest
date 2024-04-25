@@ -4579,6 +4579,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     # default adapter after the manager client is initialized.
     DEFAULT_ADAPTER = 0
 
+    # Default to this version during init. We will initialize to the correct
+    # version after the manager client is initialized. This version would
+    # also be used in case the test is running on an image that hasn't support
+    # GetFlossApiVersion.
+    DEFAULT_API_VERSION = 0
+
     # How long we wait for the adapter to come up after we start it
     ADAPTER_DAEMON_TIMEOUT_SEC = 20
 
@@ -4714,23 +4720,30 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         # Always initialize the manager client since there is a single instance.
         self.manager_client = FlossManagerClient(self.bus)
         self.adapter_client = FlossAdapterClient(self.bus,
-                                                 self.DEFAULT_ADAPTER)
+                                                 self.DEFAULT_ADAPTER,
+                                                 self.DEFAULT_API_VERSION)
         self.advertising_client = FlossAdvertisingClient(
-                self.bus, self.DEFAULT_ADAPTER)
+                self.bus, self.DEFAULT_ADAPTER, self.DEFAULT_API_VERSION)
 
         self.socket_client = FlossSocketManagerClient(self.bus,
-                                                      self.DEFAULT_ADAPTER)
-        self.admin_client = FlossAdminClient(self.bus,
-                                             self.DEFAULT_ADAPTER)
-        self.media_client = FlossMediaClient(self.bus, self.DEFAULT_ADAPTER)
+                                                      self.DEFAULT_ADAPTER,
+                                                      self.DEFAULT_API_VERSION)
+        self.admin_client = FlossAdminClient(self.bus, self.DEFAULT_ADAPTER,
+                                             self.DEFAULT_API_VERSION)
+        self.media_client = FlossMediaClient(self.bus, self.DEFAULT_ADAPTER,
+                                             self.DEFAULT_API_VERSION)
         self.telephony_client = FlossTelephonyClient(self.bus,
-                                                     self.DEFAULT_ADAPTER)
+                                                     self.DEFAULT_ADAPTER,
+                                                     self.DEFAULT_API_VERSION)
         self.scanner_client = FlossScannerClient(self.bus,
-                                                 self.DEFAULT_ADAPTER)
+                                                 self.DEFAULT_ADAPTER,
+                                                 self.DEFAULT_API_VERSION)
         self.battery_client = FlossBatteryManagerClient(
-                self.bus, self.DEFAULT_ADAPTER)
-        self.floss_logger = FlossLogger(self.bus, self.DEFAULT_ADAPTER)
-        self.gatt_client = FlossGattClient(self.bus, self.DEFAULT_ADAPTER)
+                self.bus, self.DEFAULT_ADAPTER, self.DEFAULT_API_VERSION)
+        self.floss_logger = FlossLogger(self.bus, self.DEFAULT_ADAPTER,
+                                        self.DEFAULT_API_VERSION)
+        self.gatt_client = FlossGattClient(self.bus, self.DEFAULT_ADAPTER,
+                                           self.DEFAULT_API_VERSION)
 
         self.telephony_hid_device = FlossTelephonyHIDDevice()
 
@@ -5011,20 +5024,29 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     def restart_floss_client(self):
         """Re-init all clients and wait until they're ready"""
         default_adapter = self.manager_client.get_default_adapter()
-        self.adapter_client = FlossAdapterClient(self.bus, default_adapter)
+        api_version = self.manager_client.get_floss_api_version(
+        ) or self.DEFAULT_API_VERSION
+        self.adapter_client = FlossAdapterClient(self.bus, default_adapter,
+                                                 api_version)
         self.advertising_client = FlossAdvertisingClient(
-                self.bus, default_adapter)
-        self.gatt_client = FlossGattClient(self.bus, default_adapter)
-        self.media_client = FlossMediaClient(self.bus, default_adapter)
+                self.bus, default_adapter, api_version)
+        self.gatt_client = FlossGattClient(self.bus, default_adapter,
+                                           api_version)
+        self.media_client = FlossMediaClient(self.bus, default_adapter,
+                                             api_version)
 
         self.socket_client = FlossSocketManagerClient(self.bus,
-                                                      default_adapter)
-        self.admin_client = FlossAdminClient(self.bus, default_adapter)
-        self.scanner_client = FlossScannerClient(self.bus, default_adapter)
+                                                      default_adapter,
+                                                      api_version)
+        self.admin_client = FlossAdminClient(self.bus, default_adapter,
+                                             api_version)
+        self.scanner_client = FlossScannerClient(self.bus, default_adapter,
+                                                 api_version)
         self.battery_client = FlossBatteryManagerClient(
-                self.bus, default_adapter)
-        self.telephony_client = FlossTelephonyClient(self.bus, default_adapter)
-        self.floss_logger = FlossLogger(self.bus, default_adapter)
+                self.bus, default_adapter, api_version)
+        self.telephony_client = FlossTelephonyClient(self.bus, default_adapter,
+                                                     api_version)
+        self.floss_logger = FlossLogger(self.bus, default_adapter, api_version)
 
         try:
             utils.poll_for_condition(

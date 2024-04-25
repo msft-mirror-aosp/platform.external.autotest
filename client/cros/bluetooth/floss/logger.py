@@ -13,16 +13,18 @@ class FlossLogger:
     LOGGER_INTERFACE = 'org.chromium.bluetooth.Logging'
     LOGGER_OBJ_PATH_PATTERN = '/org/chromium/bluetooth/hci{}/logging'
 
-    def __init__(self, bus, hci):
+    def __init__(self, bus, hci, api_version):
         """Constructs the logger client.
 
         @param bus: D-Bus bus over which we'll establish connections.
         @param hci: HCI adapter index. Get this value from `get_default_adapter`
                     on FlossManagerClient.
+        @param api_version: The Floss API version.
         """
         self.bus = bus
         self.hci = hci
         self.objpath = self.LOGGER_OBJ_PATH_PATTERN.format(hci)
+        self.api_version = api_version
 
     def proxy(self):
         """Gets proxy object to Logger interface for method calls."""

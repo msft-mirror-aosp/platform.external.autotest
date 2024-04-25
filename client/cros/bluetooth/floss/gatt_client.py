@@ -418,12 +418,13 @@ class FlossGattClient(GattClientCallbacks):
             for observer in self.observers.values():
                 observer.on_service_changed(addr)
 
-    def __init__(self, bus, hci):
+    def __init__(self, bus, hci, api_version):
         """Constructs the client.
 
         @param bus: D-Bus bus over which we'll establish connections.
         @param hci: HCI adapter index. Get this value from `get_default_adapter`
                     on FlossManagerClient.
+        @param api_version: The Floss API version.
         """
 
         self.bus = bus
@@ -434,6 +435,7 @@ class FlossGattClient(GattClientCallbacks):
         self.client_id = None
         self.gatt_services = {}
         self.connected_clients = {}
+        self.api_version = api_version
 
     def __del__(self):
         """Destructor"""

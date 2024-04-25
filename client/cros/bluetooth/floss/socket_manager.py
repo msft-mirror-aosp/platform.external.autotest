@@ -151,12 +151,13 @@ class FlossSocketManagerClient(SocketManagerCallbacks):
                         socket,
                         dbus_unix_fd_list=dbus_unix_fd_list)
 
-    def __init__(self, bus, hci):
+    def __init__(self, bus, hci, api_version):
         self.bus = bus
         self.hci = hci
         self.callbacks = None
         self.callback_id = None
         self.objpath = self.ADAPTER_OBJECT_PATTERN.format(hci)
+        self.api_version = api_version
 
         # key = listener_id, val = (socket_info, status)
         self.ready_sockets = {}

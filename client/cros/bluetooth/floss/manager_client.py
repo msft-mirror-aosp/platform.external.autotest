@@ -207,3 +207,8 @@ class FlossManagerClient(ManagerCallbacks):
             self.adapters[hci] = enabled
 
         return all_adapters
+
+    @glib_call(None)
+    def get_floss_api_version(self):
+        """Gets the Floss API version."""
+        return self.proxy().GetFlossApiVersion()

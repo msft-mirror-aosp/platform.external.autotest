@@ -351,16 +351,18 @@ class FlossAdapterClient(BluetoothCallbacks, BluetoothConnectionCallbacks):
             for observer in self.observers.values():
                 observer.on_device_disconnected(remote_device)
 
-    def __init__(self, bus, hci):
+    def __init__(self, bus, hci, api_version):
         """Construct the client.
 
         @param bus: DBus bus over which we'll establish connections.
         @param hci: HCI adapter index. Get this value from `get_default_adapter`
                     on FlossManagerClient.
+        @param api_version: The Floss API version.
         """
         self.bus = bus
         self.hci = hci
         self.objpath = self.ADAPTER_OBJECT_PATTERN.format(hci)
+        self.api_version = api_version
 
         # We don't register callbacks by default.
         self.callbacks = None

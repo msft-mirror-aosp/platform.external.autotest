@@ -239,16 +239,18 @@ class FlossAdvertisingClient(BluetoothAdvertisingCallbacks):
                 observer.on_periodic_advertising_enabled(
                         advertiser_id, enable, status)
 
-    def __init__(self, bus, hci):
+    def __init__(self, bus, hci, api_version):
         """Construct the client.
 
         @param bus: DBus bus over which we'll establish connections.
         @param hci: HCI adapter index. Get this value from `get_default_adapter`
                     on FlossAdvertisingClient.
+        @param api_version: The Floss API version.
         """
         self.bus = bus
         self.hci = hci
         self.objpath = self.ADVERTISING_OBJECT_PATTERN.format(hci)
+        self.api_version = api_version
 
         # We don't register callbacks by default.
         self.callbacks = None

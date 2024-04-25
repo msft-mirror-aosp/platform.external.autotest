@@ -525,6 +525,19 @@ class network_WiFi_BluetoothLoadPerf(
         self.bt_devices = [self.devices['MOUSE'][0]]
         self.setup_and_run_tests()
 
+    @test_wrapper('Coex test with mouse and keyboard loads',
+                  devices={
+                          'KEYBOARD': 1,
+                          'MOUSE': 1
+                  },
+                  supports_floss=True)
+    def md_hid_load(self):
+        """Tests Wi-Fi BT coex with multiple Classic HID devices loads."""
+        self.bt_devices = [
+                self.devices['KEYBOARD'][0], self.devices['MOUSE'][0]
+        ]
+        self.setup_and_run_tests()
+
     @test_wrapper('Coex test with BLE keyboard load',
                   devices={'BLE_KEYBOARD': 1},
                   supports_floss=True)
@@ -558,6 +571,7 @@ class network_WiFi_BluetoothLoadPerf(
                           batch.
         """
         self.mouse_load()
+        self.md_hid_load()
         self.ble_keyboard_load()
         self.keyboard_load()
         self.ble_mouse_load()

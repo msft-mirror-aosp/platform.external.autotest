@@ -36,9 +36,14 @@ def get_docker_client(timeout=300):
                       ) and DEFAULT_DOCKER_SERVER_IP == DOCKER_TCP_SERVER_IP:
         client = docker.from_env(timeout=timeout)
     else:
-        tcp_connection = "tcp://{}:{}".format(DOCKER_TCP_SERVER_IP,
-                                              DOCKER_TCP_SERVER_PORT)
-        client = docker.DockerClient(base_url=tcp_connection, timeout=timeout)
+        if env_vars.get('DOCKER_CERT_PATH'):
+            # dockerd TLS data set in env variables.
+            client = docker.from_env(timeout=timeout)
+        else:
+            tcp_connection = "tcp://{}:{}".format(DOCKER_TCP_SERVER_IP,
+                                                  DOCKER_TCP_SERVER_PORT)
+            client = docker.DockerClient(base_url=tcp_connection,
+                                         timeout=timeout)
     return client
 
 

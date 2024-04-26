@@ -5469,7 +5469,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Return whether the adapter is currently discoverable."""
         return self.adapter_client.get_property('Discoverable')
 
-    def set_discoverable(self, discoverable, duration=60):
+    def set_discoverable(self, discoverable, duration=180):
         """Sets the adapter as discoverable for given duration in seconds."""
         discoverable_mode = self.NONE_DISCOVERABLE_MODE
         if discoverable:

@@ -753,7 +753,6 @@ suite:faft_lv4
 suite:faft_lv5
 suite:faft_pd
 suite:faft_pd_unstable
-suite:faft_setup
 suite:faft_smoke
 suite:faft_stress
 suite:faft_trial

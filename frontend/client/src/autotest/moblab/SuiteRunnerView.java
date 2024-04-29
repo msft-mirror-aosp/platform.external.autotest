@@ -267,8 +267,7 @@ public class SuiteRunnerView extends TabView {
     }
     // Account for their being an extra item in the drop down
     int listIndex = selectedIndex - 1;
-    if (listIndex  == suiteNames.indexOf("faft_setup") ||
-      listIndex == suiteNames.indexOf("faft_bios") ||
+    if (listIndex == suiteNames.indexOf("faft_bios") ||
       listIndex == suiteNames.indexOf("faft_ec")) {
       loadFirmwareBuilds(getSelectedBoard());
     } else {

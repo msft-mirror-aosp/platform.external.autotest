@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import ctypes
+from datetime import datetime
 import logging
 import os
 import pprint
@@ -1978,20 +1979,18 @@ class FirmwareTest(test.test):
         """
         self._call_action(func, check_status=True)
 
-    # This assumes that Linux and the firmware use the same RTC. elogtool uses
-    # timestamps in localtime, and so do we (by calling date without --utc).
+    # This assumes that Linux and the firmware use the same RTC.
 
     def _now(self):
         time_string = self.faft_client.system.run_shell_command_get_output(
-            'date +"%s"' % self._TIME_FORMAT
-        )[0]
+                'date +"%s"' % self._TIME_FORMAT_ZONE)[0]
         logging.debug('Current local system time on DUT is "%s"', time_string)
-        return time.strptime(time_string, self._TIME_FORMAT)
+        return datetime.strptime(time_string, self._TIME_FORMAT_ZONE)
 
     def check_recovery_reason_since(self, time_since, expected_rec_reason):
         """Check if the recovery reason matches the expected recovery reason.
 
-        @param time_since: a timestamp. Ignore recovery reasons before
+        @param time_since: A datetime object. Ignore recovery reasons before
                             time_since.
         @param expected_rec_reason: A list or tuple of vboot RECOVERY_REASONs
         @returns None if the recovery reason was found in expected_rec_reason
@@ -2002,14 +2001,16 @@ class FirmwareTest(test.test):
             "elogtool list"
         )
         found_rec_reasons = []
-        time_since_str = time.strftime(self._TIME_FORMAT_ZONE, time_since)
-        logging.debug("Looking for recovery reasons after '%s'", time_since_str)
+        time_since_str = time_since.strftime(self._TIME_FORMAT_ZONE)
+        logging.debug("Looking for recovery reasons after '%s'",
+                      time_since_str)
         for i, line in enumerate(reversed(entries)):
             tokens = line.split(" | ")
             try:
-                timestamp = time.strptime(tokens[1], self._TIME_FORMAT)
+                timestamp = datetime.strptime(tokens[1], self._TIME_FORMAT)
             except ValueError:
-                timestamp = time.strptime(tokens[1], self._TIME_FORMAT_ZONE)
+                timestamp = datetime.strptime(tokens[1],
+                                              self._TIME_FORMAT_ZONE)
 
             if timestamp < time_since:
                 if i == 0:
@@ -2028,9 +2029,9 @@ class FirmwareTest(test.test):
                 rec_value = rec_reason.group(1)
                 rec_value = str(int(rec_value, 16))
                 logging.debug(
-                    'Found recovery reason: "%s" at "%s"',
-                    rec_value,
-                    time.strftime(self._TIME_FORMAT_ZONE, timestamp),
+                        'Found recovery reason: "%s" at "%s"',
+                        rec_value,
+                        timestamp.strftime(self._TIME_FORMAT_ZONE),
                 )
                 found_rec_reasons.append(rec_value)
                 if rec_value in expected_rec_reason:

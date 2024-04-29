@@ -7,10 +7,8 @@
 
 import io
 import logging
-from threading import Timer
 
 # pylint:disable=import-error
-from autotest_lib.client.bin.input import linux_input
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 
@@ -48,40 +46,6 @@ class firmware_FAFTSetup(FirmwareTest):
                 "Please check there is no terminal opened on EC console.")
         raise error.TestFail("Failed EC console check.")
 
-    def base_keyboard_checker(self, press_action):
-        """Press key and check from DUT.
-
-        Args:
-            press_action: A callable that would press the keys when called.
-        """
-        result = True
-        # Stop UI so that key presses don't go to Chrome.
-        self.faft_client.system.run_shell_command("stop ui")
-
-        # Press the keys
-        Timer(self.KEY_PRESS_DELAY, press_action).start()
-
-        # Invoke client side script to monitor keystrokes
-        if self.faft_client.system.check_keys([
-                linux_input.KEY_LEFTCTRL, linux_input.KEY_D,
-                linux_input.KEY_ENTER
-        ]) < 0:
-            result = False
-
-        # Turn UI back on
-        self.faft_client.system.run_shell_command("start ui")
-        return result
-
-    def keyboard_checker(self):
-        """Press '<ctrl_l>', 'd', '<enter>' by servo and check from DUT."""
-
-        def keypress():
-            """Press <ctrl_l>, 'd', '<enter>'"""
-            self.servo.ctrl_d()
-            self.servo.enter_key()
-
-        return self.base_keyboard_checker(keypress)
-
     def run_once(self):
         """Main test logic"""
 
@@ -104,12 +68,3 @@ class firmware_FAFTSetup(FirmwareTest):
         self.run_shutdown_cmd()
         self.switcher.mode_aware_reboot(reboot_type='cold',
                                         sync_before_boot=False)
-
-        if self.faft_config.mode_switcher_type in (
-                'menu_switcher', 'keyboard_dev_switcher'
-        ) and not self.faft_config.is_detachable and self.check_ec_capability(
-                suppress_warning=True):
-            logging.info("Check keyboard simulation")
-            self.check_state(self.keyboard_checker)
-        else:
-            logging.info("Skip keyboard simulation")

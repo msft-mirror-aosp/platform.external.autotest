@@ -298,8 +298,11 @@ class bluetooth_AdapterControllerRoleTests(
 
     # Nearby receiver role test
 
-    def nearby_receiver_role_test(self, nearby_device, nearby_device_test_func,
-                                  secondary_info=None):
+    def nearby_receiver_role_test(self,
+                                  nearby_device,
+                                  nearby_device_test_func,
+                                  secondary_info=None,
+                                  use_privacy=False):
         """Test Nearby Receiver role
 
         Optional secondary device arguments allows us to try test with existing
@@ -359,8 +362,10 @@ class bluetooth_AdapterControllerRoleTests(
         if not self.floss:
             self.test_set_advertising_intervals(DEFAULT_MIN_ADV_INTERVAL,
                                                 DEFAULT_MAX_ADV_INTERVAL)
-        self.test_register_advertisement(
-                advertisements_data.gen_advertisements(0, floss=self.floss), 1)
+        adv_data = advertisements_data.gen_advertisements(0, floss=self.floss)
+        if use_privacy:
+            adv_data["parameters"]["own_address_type"] = 1
+        self.test_register_advertisement(adv_data, 1)
 
         # If test requires it, connect and test secondary device
         if secondary_info is not None and device_use == 'mid':

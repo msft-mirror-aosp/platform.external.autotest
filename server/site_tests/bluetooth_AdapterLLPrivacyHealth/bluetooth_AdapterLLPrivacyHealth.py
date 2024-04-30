@@ -445,7 +445,7 @@ class bluetooth_AdapterLLPrivacyHealth(
         kbd_test_func = lambda device: self.test_keyboard_input_from_trace(
                 device, 'simple_text')
 
-        self.nearby_receiver_role_test(kbd, kbd_test_func)
+        self.nearby_receiver_role_test(kbd, kbd_test_func, use_privacy=True)
 
     @test_wrapper('LE Sender Role Test',
                   devices={'BLE_KEYBOARD': 1},

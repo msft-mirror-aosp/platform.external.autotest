@@ -22,10 +22,8 @@ METADATA = {
     'life_cycle_stage': 'owner_monitored',
 }
 
-# RSSI is hardcoded to -50 in floss so this test reports
-# misleading results. Add to suite when b/267806069 is fixed
 
-ATTRIBUTES = ''
+ATTRIBUTES = 'suite:wificell_dut_validation'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth, working_bluetooth_btpeer:1'
 

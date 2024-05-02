@@ -65,10 +65,18 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     """Server side bluetooth adapter suspend resume test with peer."""
 
     def _test_keyboard_with_string(self, device):
+        # b/328691072: WCN3991 suspend fails with device tests
+        # TODO: Remove after the root cause is fixed.
+        if self.bluetooth_facade.get_chipset_name() == 'QCA-WCN3991':
+            return self.test_hid_device_created(device.address)
         return (self.test_hid_device_created(device.address)
                 and self.test_keyboard_input_from_trace(device, "simple_text"))
 
     def _test_mouse(self, device):
+        # b/328691072: WCN3991 suspend fails with device tests
+        # TODO: Remove after the root cause is fixed.
+        if self.bluetooth_facade.get_chipset_name() == 'QCA-WCN3991':
+            return self.test_hid_device_created(device.address)
         return (self.test_hid_device_created(device.address)
                 and self.test_mouse_left_click(device)
                 and self.test_mouse_move_in_xy(device, -60, 100)

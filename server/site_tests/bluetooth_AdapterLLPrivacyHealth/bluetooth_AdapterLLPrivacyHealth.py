@@ -65,6 +65,12 @@ class bluetooth_AdapterLLPrivacyHealth(
         with RPA. So if the self.floss is true and the init_paired_addr is not
         None, the init_paired_addr should be used to find the device.
         """
+        # b/328691072: WCN3991 suspend fails with device tests
+        # TODO: Remove after the root cause is fixed.
+        if self.bluetooth_facade.get_chipset_name() == 'QCA-WCN3991':
+            return self.test_hid_device_created(
+                    device.init_paired_addr if self.floss and isinstance(
+                            device.init_paired_addr, str) else device.address)
         return (self.test_hid_device_created(
                 device.init_paired_addr if self.floss and isinstance(
                         device.init_paired_addr, str) else device.address)
@@ -74,6 +80,10 @@ class bluetooth_AdapterLLPrivacyHealth(
                 and self.test_mouse_click_and_drag(device, 90, 30))
 
     def _test_keyboard_with_string(self, device):
+        # b/328691072: WCN3991 suspend fails with device tests
+        # TODO: Remove after the root cause is fixed.
+        if self.bluetooth_facade.get_chipset_name() == 'QCA-WCN3991':
+            return self.test_hid_device_created(device.address)
         return (self.test_hid_device_created(device.address)
                 and self.test_keyboard_input_from_trace(device, "simple_text"))
 

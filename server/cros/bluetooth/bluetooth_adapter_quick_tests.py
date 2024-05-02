@@ -23,7 +23,6 @@ import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_quick_tests_base
 from autotest_lib.server import site_utils
-from autotest_lib.server.cros.bluetooth import bluetooth_peer_update
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
      import DEFAULT_RPA_TIMEOUT_SEC
@@ -167,7 +166,6 @@ class BluetoothAdapterQuickTests(
         self._ec = None
 
         logging.debug('args_dict %s', args_dict)
-        update_btpeers = self._get_bool_arg('update_btpeers', args_dict, True)
         self.rssi_check = self._get_bool_arg('rssi_check', args_dict, True)
         clean_log = self._get_clean_kernel_log_arguments(args_dict)
         btpeer_args = []
@@ -221,13 +219,6 @@ class BluetoothAdapterQuickTests(
 
             if len(self.host.btpeer_list) == 0:
                 raise error.TestNAError('Unable to find a Bluetooth peer')
-
-            # Check the chameleond version on the peer and update if necessary
-            if update_btpeers:
-                if not bluetooth_peer_update.update_all_btpeers(self.host):
-                    logging.error('Updating btpeers failed. Ignored')
-            else:
-                logging.info('No attempting peer update.')
 
             # Query connected devices on our btpeer at init time
             self.available_devices = self.list_devices_available()

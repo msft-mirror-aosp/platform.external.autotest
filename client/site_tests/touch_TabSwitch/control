@@ -7,7 +7,8 @@ METADATA = {
     "contacts": ["chromeos-tango@google.com"],
     "bug_component": "b:167253",
     "criteria": "Three finger swipe left/right changes tabs. Not affected by Australian.",
-    "hw_agnostic": False
+    "hw_agnostic": False,
+    'variant_category': '{"name": "Touchpad_SoC_Controller_ProductId_Variant-def-plus-kernelnext"}',
 }
 ATTRIBUTES = "suite:touch_replay_touchpad"
 TEST_TYPE = "client"

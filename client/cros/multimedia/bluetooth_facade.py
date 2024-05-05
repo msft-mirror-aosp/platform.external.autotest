@@ -70,7 +70,8 @@ from autotest_lib.client.cros.bluetooth.floss.floss_enums import (BondState,
                                                                   SdpType)
 from autotest_lib.client.cros.bluetooth.floss.gatt_client import FlossGattClient
 from autotest_lib.client.cros.bluetooth.floss.logger import FlossLogger
-from autotest_lib.client.cros.bluetooth.floss.manager_client import FlossManagerClient
+from autotest_lib.client.cros.bluetooth.floss.manager_client import (
+        ManagerCallbacks, FlossManagerClient)
 from autotest_lib.client.cros.bluetooth.floss.media_client import FlossMediaClient
 from autotest_lib.client.cros.bluetooth.floss.scanner_client import (
         FlossScannerClient, BluetoothScannerCallbacks)
@@ -4769,6 +4770,10 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         # that re-enables discovery up to some timeout.
         self.discovery_observer = None
 
+        # Monitor the power state, and if Floss unexpectedly restarts we should
+        # re-register the callbacks.
+        self.powered_observer = None
+
         # Cache some mock properties for testing. These may be properties that
         # are required in bluez but don't carry over well into Floss.
         self.mock_properties = {}
@@ -4869,6 +4874,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         Returns:
             True if default adapter is enabled successfully. False otherwise.
         """
+
+        # Reset the observer as we are re-init-ing the manager client.
+        if self.powered_observer is not None:
+            self.powered_observer.cleanup()
+            self.powered_observer = None
+
         # Start manager and enable Floss if not already up
         if not self.configure_floss(enabled=True):
             return False
@@ -5083,6 +5094,58 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
     def set_powered(self, powered):
         """Sets the default adapter's enabled state."""
+
+        class PoweredObserver(ManagerCallbacks):
+            """Observes power state and restart the clients on powered-on"""
+
+            def __init__(self, hci, facade):
+                self.hci = hci
+                self.facade = facade
+                self.powered = True
+                self.facade.manager_client.register_callback_observer(
+                        'PoweredObserver', self)
+
+            def on_hci_enabled_changed(self, hci, enabled):
+                if self.facade is None:
+                    return
+                if self.hci != hci:
+                    return
+                if self.powered == enabled:
+                    return
+                self.powered = enabled
+
+                if enabled:
+                    logging.warning('PoweredObserver: Restarting Floss client')
+
+                    def restart_clients_and_set_logging(facade):
+                        if not facade.restart_floss_client():
+                            logging.warning(
+                                    'PoweredObserver: Failed to restart Floss clients'
+                            )
+                        if not facade.floss_logger.set_debug_logging(
+                                facade.enable_floss_debug):
+                            logging.warning(
+                                    'PoweredObserver: Failed to set debug logging'
+                            )
+
+                    # Floss DBus methods can't be directly called here because
+                    # that makes dead lock in the GLib thread. Thus, make the
+                    # calls in a new thread.
+                    threading.Thread(name='PoweredObserver',
+                                     target=restart_clients_and_set_logging,
+                                     args=(self.facade, )).start()
+
+            def __del__(self):
+                self.cleanup()
+
+            def cleanup(self):
+                """Cleans up this observer."""
+                if self.facade is None:
+                    return
+                self.facade.manager_client.unregister_callback_observer(
+                        'PoweredObserver', self)
+                self.facade = None
+
         default_adapter = self.manager_client.get_default_adapter()
 
         def _is_adapter_down(client):
@@ -5097,7 +5160,15 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             if not self.restart_floss_client():
                 return False
             self.floss_logger.set_debug_logging(self.enable_floss_debug)
+
+            if self.powered_observer is not None:
+                self.powered_observer.cleanup()
+            self.powered_observer = PoweredObserver(default_adapter, self)
         else:
+            if self.powered_observer is not None:
+                self.powered_observer.cleanup()
+                self.powered_observer = None
+
             self.manager_client.stop(default_adapter)
             try:
                 utils.poll_for_condition(
@@ -5122,6 +5193,12 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
     def do_reset(self, power_on):
         """Resets the default adapter."""
+
+        # Reset the observer as we are re-init-ing the manager client.
+        if self.powered_observer is not None:
+            self.powered_observer.cleanup()
+            self.powered_observer = None
+
         # Start manager and enable Floss if not already up
         if not self.configure_floss(enabled=True):
             return False

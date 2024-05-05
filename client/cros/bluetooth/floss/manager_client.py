@@ -134,6 +134,24 @@ class FlossManagerClient(ManagerCallbacks):
 
         return True
 
+    def register_callback_observer(self, name, observer):
+        """Add an observer for manager callbacks.
+
+        @param name: Name of the observer.
+        @param observer: Observer that implements manager callback class.
+        """
+        if isinstance(observer, ManagerCallbacks):
+            self.callbacks.add_observer(name, observer)
+
+    def unregister_callback_observer(self, name, observer):
+        """Remove an observer for manager callbacks.
+
+        @param name: Name of the observer.
+        @param observer: Observer that implements manager callback class.
+        """
+        if isinstance(observer, ManagerCallbacks):
+            self.callbacks.remove_observer(name, observer)
+
     @glib_callback()
     def on_hci_device_changed(self, hci, present):
         """Handle device presence change."""

@@ -4696,7 +4696,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
             if discovering:
                 if self.aborting:
-                    self.adapter_client.stop_discovery()
+                    self.adapter_client.stop_discovery(
+                            method_callback=self.stop_discovery_rsp)
             else:
                 # If aborting or timeout-ed, then we're done. Otherwise re-start
                 # the discovery.
@@ -4709,10 +4710,14 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         def start_discovery_rsp(self, err, result):
             """Result to |adapter_client.start_discovery|."""
             # Log any errors that may have occurred
-            if err:
-                logging.error('Error on start_discovery: %s', err)
-            elif result:
-                logging.error('Error on start_discovery: Status=%s', result)
+            if err or not result:
+                logging.error('Error on start_discovery: err=%s', err)
+
+        def stop_discovery_rsp(self, err, result):
+            """Result to |adapter_client.stop_discovery|."""
+            # Log any errors that may have occurred
+            if err or not result:
+                logging.error('Error on stop_discovery: err=%s', err)
 
     def __init__(self):
         # Init the BaseFacade first
@@ -5424,14 +5429,22 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                     # If not connected, connect profiles and wait for connected
                     # callback. Else, unblock the main thread.
                     if not self.connected:
-                        if not self.adapter_client.connect_all_enabled_profiles(
-                                self.address):
-                            logging.error(
-                                    '[%s] failed on connect_all_enabled_profiles',
-                                    self.address)
-                            self.done_event.set()
+                        self.adapter_client.connect_all_enabled_profiles(
+                                self.address,
+                                method_callback=self.
+                                on_connect_all_enabled_profiles)
                     else:
                         self.done_event.set()
+
+            def on_connect_all_enabled_profiles(self, err, result):
+                """Result to |adapter_client.connect_all_enabled_profiles|."""
+                # Log any errors that may have occurred. Unblock the main thread
+                # on failure since there won't be a on_device_connected event.
+                if err or not result:
+                    logging.error(
+                            '[%s] failed on connect_all_enabled_profiles: err=%s',
+                            self.address, err)
+                    self.done_event.set()
 
             def on_ssp_request(self, remote_device, class_of_device, variant,
                                passkey):

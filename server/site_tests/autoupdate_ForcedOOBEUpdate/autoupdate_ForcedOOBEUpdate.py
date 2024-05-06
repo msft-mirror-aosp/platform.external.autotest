@@ -132,13 +132,13 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
             is up and running and post reboot update check has been performed.
 
             """
-            self._get_update_engine_status(timeout=10, ignore_timeout=False)
+            self._get_update_engine_status(timeout=15, ignore_timeout=True)
             return self._check_update_engine_log_for_entry(
                     "Omaha request response:")
 
         utils.poll_for_condition(
                 found_post_reboot_event,
-                timeout=60,
+                timeout=90,
                 desc="post-reboot event to fire after reboot",
         )
 

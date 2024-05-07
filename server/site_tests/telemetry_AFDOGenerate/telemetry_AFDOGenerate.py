@@ -37,6 +37,7 @@ from autotest_lib.server import utils
 from autotest_lib.server.cros import provision
 from autotest_lib.server.cros import filesystem_util
 from autotest_lib.server.cros import telemetry_runner
+from autotest_lib.server.cros import telemetry_setup
 from autotest_lib.site_utils import test_runner_utils
 
 from typing import Optional
@@ -307,8 +308,11 @@ class telemetry_AFDOGenerate(test.test):
         # reboot and remount during run_benchmark. We want to avoid it.
         filesystem_util.make_rootfs_writable(self._host)
         builder_path = self._inject_host_info_into_host(host)
-        self._gs_staging_location = (builder_path is not None
-                                     and builder_path.startswith("staging-"))
+        is_staging_run = (builder_path is not None
+                          and builder_path.startswith("staging-"))
+        self._gs_staging_location = is_staging_run
+        setup_bucket_override = (telemetry_setup.STAGING_DEPS_BUCKET
+                                 if is_staging_run else None)
 
         with ExitStack() as stack:
             if self._is_arm():
@@ -320,8 +324,12 @@ class telemetry_AFDOGenerate(test.test):
                 self._run_tests_minimal_telemetry()
             else:
                 tr = stack.enter_context(
-                    telemetry_runner.TelemetryRunnerFactory().get_runner(
-                        self._host, self._local, telemetry_on_dut=False))
+                        telemetry_runner.TelemetryRunnerFactory().get_runner(
+                                self._host,
+                                self._local,
+                                telemetry_on_dut=False,
+                                override_setup_gs_bucket=setup_bucket_override,
+                        ))
                 for benchmark_info in TELEMETRY_AFDO_BENCHMARKS:
                     if self._arch not in benchmark_info['archs']:
                         continue

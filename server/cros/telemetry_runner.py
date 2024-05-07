@@ -86,12 +86,17 @@ class TelemetryRunnerFactory(object):
                    host,
                    local=False,
                    telemetry_on_dut=True,
-                   is_lacros=False):
+                   is_lacros=False,
+                   override_setup_gs_bucket=None):
         """Method to determine which TelemetryRunner subclass to use."""
         if local:
             return LocalTelemetryRunner(host, telemetry_on_dut)
         else:
-            return DroneTelemetryRunner(host, telemetry_on_dut, is_lacros)
+            return DroneTelemetryRunner(
+                    host,
+                    telemetry_on_dut,
+                    is_lacros,
+                    override_setup_gs_bucket=override_setup_gs_bucket)
 
 
 class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
@@ -666,7 +671,7 @@ class DroneTelemetryRunner(TelemetryRunner):
     the user to Python.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, override_setup_gs_bucket=None, **kwargs):
         """Initialize DroneTelemetryRunner.
 
         The telemetry test will run on the drone. Depending on whether
@@ -683,8 +688,13 @@ class DroneTelemetryRunner(TelemetryRunner):
                      complete list of accepted arguments.
         @param kwargs: Any keyword arguments to be passed. See Base class for a
                        complete list of accepted keyword arguments.
+        @param override_setup_gs_bucket: Override for the gs:// bucket to fetch
+                                         telemetry deps from. The default from
+                                         telemetry_setup will be used if this
+                                         is None.
         """
         self._telemetry_setup = None
+        self._override_setup_gs_bucket = override_setup_gs_bucket
         super(DroneTelemetryRunner, self).__init__(*args, **kwargs)
 
     def __enter__(self):
@@ -709,7 +719,9 @@ class DroneTelemetryRunner(TelemetryRunner):
         logging.debug('Setting up telemetry for build: %s', info.build)
         try:
             self._telemetry_setup = telemetry_setup.TelemetrySetup(
-                    hostname=self._host.hostname, build=info.build)
+                    hostname=self._host.hostname,
+                    build=info.build,
+                    override_gs_bucket=self._override_setup_gs_bucket)
             self._telemetry_path = self._telemetry_setup.Setup()
         except telemetry_setup.TelemetrySetupError as e:
             raise error.AutotestError('Telemetry Environment could not be '

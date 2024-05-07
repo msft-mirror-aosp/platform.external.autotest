@@ -24,6 +24,10 @@ import requests
 _READ_BUFFER_SIZE_BYTES = 1024 * 1024  # 1 MB
 
 
+DEFAULT_DEPS_BUCKET = "chromeos-image-archive"
+STAGING_DEPS_BUCKET = "staging-chromeos-image-archive"
+
+
 @contextlib.contextmanager
 def lock_dir(dir_name):
     """Lock a directory exclusively by placing a file lock in it.
@@ -66,10 +70,9 @@ class TelemetrySetup(object):
 
     # Partial devserver URLs.
     _STATIC_URL_TEMPLATE = (
-            '%s/extract/chromeos-image-archive/%s/autotest_packages.tar'
-            '?file=autotest/packages/%s')
+            '%s/extract/%s/%s/autotest_packages.tar?file=autotest/packages/%s')
 
-    def __init__(self, hostname, build):
+    def __init__(self, hostname, build, override_gs_bucket=None):
         """Initializes the TelemetrySetup class.
 
         Args:
@@ -77,8 +80,12 @@ class TelemetrySetup(object):
             is important for devserver resolution.
         build: The build for which telemetry environment should be setup. It is
             typically in the format <board>/<version>.
+        override_gs_bucket: The name of the bucket to grab artifacts from. If
+            None is passed, DEFAULT_DEPS_BUCKET will be used.
         """
         self._build = build
+        self._gs_bucket = (DEFAULT_DEPS_BUCKET if override_gs_bucket is None
+                           else override_gs_bucket)
         self._ds = dev_server.ImageServer.resolve(self._build,
                                                   hostname=hostname)
         self._setup_dir_path = tempfile.mkdtemp(prefix='telemetry-setupdir_')
@@ -137,7 +144,7 @@ class TelemetrySetup(object):
         """
         dep_path = os.path.join(dest_path, filename)
         url = (self._STATIC_URL_TEMPLATE %
-               (self._ds.url(), self._build, filename))
+               (self._ds.url(), self._gs_bucket, self._build, filename))
         try:
             resp = requests.get(url, timeout=60)
             resp.raise_for_status()

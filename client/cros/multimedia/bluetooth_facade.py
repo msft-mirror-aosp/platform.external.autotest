@@ -4591,14 +4591,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     future calls.
     """
 
-    # Default to this adapter during init. We will initialize to the correct
-    # default adapter after the manager client is initialized.
-    DEFAULT_ADAPTER = 0
-
-    # Default to this version during init. We will initialize to the correct
-    # version after the manager client is initialized. This version would
-    # also be used in case the test is running on an image that hasn't support
-    # GetFlossApiVersion.
+    # Default to this API version. This version would be used in case the test
+    # is running on an image that hasn't support GetFlossApiVersion.
     DEFAULT_API_VERSION = 0
 
     # How long we wait for the adapter to come up after we start it
@@ -4740,31 +4734,21 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         # Always initialize the manager client since there is a single instance.
         self.manager_client = FlossManagerClient(self.bus)
-        self.adapter_client = FlossAdapterClient(self.bus,
-                                                 self.DEFAULT_ADAPTER,
-                                                 self.DEFAULT_API_VERSION)
-        self.advertising_client = FlossAdvertisingClient(
-                self.bus, self.DEFAULT_ADAPTER, self.DEFAULT_API_VERSION)
 
-        self.socket_client = FlossSocketManagerClient(self.bus,
-                                                      self.DEFAULT_ADAPTER,
-                                                      self.DEFAULT_API_VERSION)
-        self.admin_client = FlossAdminClient(self.bus, self.DEFAULT_ADAPTER,
-                                             self.DEFAULT_API_VERSION)
-        self.media_client = FlossMediaClient(self.bus, self.DEFAULT_ADAPTER,
-                                             self.DEFAULT_API_VERSION)
-        self.telephony_client = FlossTelephonyClient(self.bus,
-                                                     self.DEFAULT_ADAPTER,
-                                                     self.DEFAULT_API_VERSION)
-        self.scanner_client = FlossScannerClient(self.bus,
-                                                 self.DEFAULT_ADAPTER,
-                                                 self.DEFAULT_API_VERSION)
-        self.battery_client = FlossBatteryManagerClient(
-                self.bus, self.DEFAULT_ADAPTER, self.DEFAULT_API_VERSION)
-        self.floss_logger = FlossLogger(self.bus, self.DEFAULT_ADAPTER,
-                                        self.DEFAULT_API_VERSION)
-        self.gatt_client = FlossGattClient(self.bus, self.DEFAULT_ADAPTER,
-                                           self.DEFAULT_API_VERSION)
+        # Floss clients require the API version to work, which would depend on
+        # the readiness of manager_client. Keep them None for now so
+        # |is_bluetoothd_proxy_valid| would return False and trigger the tests
+        # to |start_bluetoothd|.
+        self.adapter_client = None
+        self.advertising_client = None
+        self.socket_client = None
+        self.admin_client = None
+        self.media_client = None
+        self.telephony_client = None
+        self.scanner_client = None
+        self.battery_client = None
+        self.floss_logger = None
+        self.gatt_client = None
 
         self.telephony_hid_device = FlossTelephonyHIDDevice()
 
@@ -4941,16 +4925,17 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """
         proxy_ready = all([
                 self.manager_client.has_proxy(),
-                self.adapter_client.has_proxy(),
-                self.advertising_client.has_proxy(),
-                self.gatt_client.has_proxy(),
-                self.media_client.has_proxy(),
-                self.socket_client.has_proxy(),
-                self.admin_client.has_proxy(),
-                self.scanner_client.has_proxy(),
-                self.battery_client.has_proxy(),
-                self.telephony_client.has_proxy(),
-                self.floss_logger.has_proxy()
+                (self.adapter_client and self.adapter_client.has_proxy()),
+                (self.advertising_client
+                 and self.advertising_client.has_proxy()),
+                (self.gatt_client and self.gatt_client.has_proxy()),
+                (self.media_client and self.media_client.has_proxy()),
+                (self.socket_client and self.socket_client.has_proxy()),
+                (self.admin_client and self.admin_client.has_proxy()),
+                (self.scanner_client and self.scanner_client.has_proxy()),
+                (self.battery_client and self.battery_client.has_proxy()),
+                (self.telephony_client and self.telephony_client.has_proxy()),
+                (self.floss_logger and self.floss_logger.has_proxy())
         ])
 
         if not proxy_ready:
@@ -4976,9 +4961,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         @param kernel_vb: verbosity of kernel debug log (ignored in Floss).
         """
         self.enable_floss_debug = bool(floss_vb)
-        if self.floss_logger.has_proxy():
+        if self.floss_logger and self.floss_logger.has_proxy():
             self.floss_logger.set_debug_logging(self.enable_floss_debug)
-        return
 
     def start_discovery(self):
         """Start discovery of remote devices."""
@@ -5052,8 +5036,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             return False
         return True
 
-    def restart_floss_client(self):
-        """Re-init all clients and wait until they're ready"""
+    def start_floss_clients(self):
+        """Initializes all clients and wait until they're ready"""
         default_adapter = self.manager_client.get_default_adapter()
         api_version = self.manager_client.get_floss_api_version(
         ) or self.DEFAULT_API_VERSION
@@ -5065,7 +5049,6 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                                            api_version)
         self.media_client = FlossMediaClient(self.bus, default_adapter,
                                              api_version)
-
         self.socket_client = FlossSocketManagerClient(self.bus,
                                                       default_adapter,
                                                       api_version)
@@ -5123,7 +5106,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                     logging.warning('PoweredObserver: Restarting Floss client')
 
                     def restart_clients_and_set_logging(facade):
-                        if not facade.restart_floss_client():
+                        if not facade.start_floss_clients():
                             logging.warning(
                                     'PoweredObserver: Failed to restart Floss clients'
                             )
@@ -5162,7 +5145,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         if powered:
             self.manager_client.start(default_adapter)
-            if not self.restart_floss_client():
+            if not self.start_floss_clients():
                 return False
             self.floss_logger.set_debug_logging(self.enable_floss_debug)
 

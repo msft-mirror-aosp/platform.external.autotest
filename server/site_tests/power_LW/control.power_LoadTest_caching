@@ -4,7 +4,7 @@
 
 NAME = "power_LW.power_LoadTest_caching"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com", "dbasehore@google.com"],
+    "contacts": ["chromeos-platform-power@google.com", "puthik@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a power benchmark test.",
     "hw_agnostic": False,

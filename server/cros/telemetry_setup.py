@@ -65,7 +65,9 @@ class TelemetrySetup(object):
     ]
 
     # Partial devserver URLs.
-    _STATIC_URL_TEMPLATE = '%s/static/%s/autotest/packages/%s'
+    _STATIC_URL_TEMPLATE = (
+            '%s/extract/chromeos-image-archive/%s/autotest_packages.tar'
+            '?file=autotest/packages/%s')
 
     def __init__(self, hostname, build):
         """Initializes the TelemetrySetup class.

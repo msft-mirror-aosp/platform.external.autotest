@@ -4697,7 +4697,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             if discovering:
                 if self.aborting:
                     self.adapter_client.stop_discovery(
-                            method_callback=self.stop_discovery_rsp)
+                            non_blocking_callback=self.stop_discovery_rsp)
             else:
                 # If aborting or timeout-ed, then we're done. Otherwise re-start
                 # the discovery.
@@ -4705,7 +4705,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                     self.done_event.set()
                 else:
                     self.adapter_client.start_discovery(
-                            method_callback=self.start_discovery_rsp)
+                            non_blocking_callback=self.start_discovery_rsp)
 
         def start_discovery_rsp(self, err, result):
             """Result to |adapter_client.start_discovery|."""
@@ -5431,7 +5431,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                     if not self.connected:
                         self.adapter_client.connect_all_enabled_profiles(
                                 self.address,
-                                method_callback=self.
+                                non_blocking_callback=self.
                                 on_connect_all_enabled_profiles)
                     else:
                         self.done_event.set()
@@ -5462,7 +5462,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
                     self.adapter_client.set_pairing_confirmation(
                             remote_address,
                             True,
-                            method_callback=self.on_set_pairing_confirmation)
+                            non_blocking_callback=self.
+                            on_set_pairing_confirmation)
 
                 logging.info('Exited ssp request.')
 

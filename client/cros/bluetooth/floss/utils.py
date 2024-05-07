@@ -114,10 +114,10 @@ def glib_call(default_result=None,
 
             event.set()
 
-            # If method callback is set, this will call that method with results
-            # of this method call and any error that may have resulted.
-            if 'method_callback' in data:
-                data['method_callback'](err, data['result'])
+            # If non-blocking callback is set, this will call that method with
+            # results of this method call and any error that may have resulted.
+            if 'non_blocking_callback' in data:
+                data['non_blocking_callback'](err, data['result'])
 
             return False
 
@@ -127,21 +127,22 @@ def glib_call(default_result=None,
 
             @param args: Positional arguments to method.
             @param kwargs: Keyword arguments to method. Some special keywords:
-                |method_callback|: Returns result via callback without blocking.
+                |non_blocking_callback|: Returns result via callback without
+                                         blocking.
             """
-            method_callback = None
-            # If a method callback is given, we will not block on the completion
-            # of the call but expect the response in the callback instead. The
-            # callback has the signature: def callback(err, result)
-            if 'method_callback' in kwargs:
-                method_callback = kwargs['method_callback']
-                del kwargs['method_callback']
+            non_blocking_callback = None
+            # If a non-blocking callback is given, we will not block on the
+            # completion of the call but expect the response in the callback
+            # instead. The callback has the signature: def callback(err, result)
+            if 'non_blocking_callback' in kwargs:
+                non_blocking_callback = kwargs['non_blocking_callback']
+                del kwargs['non_blocking_callback']
 
             # Make sure we're not scheduling in the GLib thread since that'll
-            # cause a deadlock. An exception is if we have a method callback
-            # which is async.
+            # cause a deadlock. An exception is if we have a non-blocking
+            # callback which is async.
             current_thread_name = threading.current_thread().name
-            if current_thread_name is thread_name and not method_callback:
+            if current_thread_name is thread_name and not non_blocking_callback:
                 raise GlibDeadlockException(
                         '{} called in GLib thread'.format(method))
 
@@ -153,14 +154,14 @@ def glib_call(default_result=None,
                     'kwargs': kwargs,
                     'result': default_result,
             }
-            if method_callback:
-                data['method_callback'] = method_callback
+            if non_blocking_callback:
+                data['non_blocking_callback'] = non_blocking_callback
 
             logging.info('%s: Adding %s to GLib.idle_add',
                          threading.current_thread().name, str(method))
             GLib.idle_add(call_and_signal, data)
 
-            if not method_callback:
+            if not non_blocking_callback:
                 # Wait for the result from the GLib call
                 if not done_event.wait(timeout=timeout):
                     logging.warn('%s timed out after %d s', str(method),

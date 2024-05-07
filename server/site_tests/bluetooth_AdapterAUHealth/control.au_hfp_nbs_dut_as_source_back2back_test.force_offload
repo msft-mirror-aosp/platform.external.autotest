@@ -40,6 +40,6 @@ def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterAUHealth', host=host, num_iterations=1,
                  args_dict=args_dict, test_name=NAME.split('.')[1], tag='.'.join(NAME.split('.')[1:]),
-		 force_offload=True)
+                 hfp_force_offload=True)
 
 parallel_simple(run, machines)

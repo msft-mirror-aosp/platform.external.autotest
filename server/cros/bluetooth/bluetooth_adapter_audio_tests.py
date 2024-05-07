@@ -421,6 +421,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 to update the default one
 
         """
+        self.cleanup_audio_config()
         self.generate_audio_config(audio_config)
 
         audio_server = self.get_audio_server_name()

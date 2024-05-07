@@ -144,7 +144,8 @@ class BluetoothAdapterQuickTests(
                         llprivacy=False,
                         floss_lm_quirk=False,
                         enable_cellular=False,
-                        enable_ui=False):
+                        enable_ui=False,
+                        hfp_force_offload=False):
         """Inits the test batch
 
         @param floss_lm_quirk True to enable the quirk for b/260539322 to
@@ -164,6 +165,7 @@ class BluetoothAdapterQuickTests(
         self.args_dict = args_dict if args_dict else {}
         self._dr_utils = None
         self._ec = None
+        self.hfp_force_offload = hfp_force_offload
 
         logging.debug('args_dict %s', args_dict)
         self.rssi_check = self._get_bool_arg('rssi_check', args_dict, True)

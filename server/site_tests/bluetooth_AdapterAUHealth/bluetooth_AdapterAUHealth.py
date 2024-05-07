@@ -230,8 +230,9 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         @param test_profile: which test profile is used, HFP_SWB, HFP_WBS, or HFP_NBS
         @param audio_config: the test specific audio config
         """
-        apply_offload = self.will_apply_hfp_offload_path(self.force_offload)
-        if self.force_offload and not apply_offload:
+        apply_offload = self.will_apply_hfp_offload_path(
+                self.hfp_force_offload)
+        if self.hfp_force_offload and not apply_offload:
             raise error.TestNAError(
                     'The DUT does not support offload path. Skip the test.')
 
@@ -277,7 +278,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
             # the DUT should always choose the best codec reported by the peer
             self.test_set_force_hfp_swb_enabled(True)
 
-        if self.force_offload:
+        if self.hfp_force_offload:
             self.set_force_hfp_offload_on_support(True)
 
         try:
@@ -288,7 +289,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         finally:
             # unset flags for testing purposes by finally clause to ensure they
             # will be executed under all circumstances.
-            if self.force_offload:
+            if self.hfp_force_offload:
                 self.set_force_hfp_offload_on_support(False)
 
             # remove this flag toggle once it is enabled by default (b/308859926)
@@ -653,16 +654,13 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                  floss=False,
                  enable_cellular=False,
                  enable_ui=False,
-                 force_offload=False):
+                 hfp_force_offload=False):
         """Run the batch of Bluetooth stand health tests
 
         @param host: the DUT, usually a chromebook
         @param num_iterations: the number of rounds to execute the test
         @param test_name: the test to run, or None for all tests
         """
-        self.host = host
-        self.cleanup_audio_config()
-        self.force_offload = force_offload
 
         self.quick_test_init(host,
                              use_btpeer=True,
@@ -670,6 +668,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                              args_dict=args_dict,
                              floss=floss,
                              enable_cellular=enable_cellular,
-                             enable_ui=enable_ui)
+                             enable_ui=enable_ui,
+                             hfp_force_offload=hfp_force_offload)
         self.au_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

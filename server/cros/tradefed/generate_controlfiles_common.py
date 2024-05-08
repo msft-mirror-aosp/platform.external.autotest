@@ -1149,12 +1149,13 @@ def get_tradefed_data(path, tradefed_path=None, extra_executables=None):
     fixup_tradefed_executable_bits(path, executables)
 
     tradefed = os.path.join(path, tradefed_path)
-    cmd_list = [tradefed, 'list', 'modules']
     logging.info('Calling tradefed for list of modules.')
-    with open(os.devnull, 'w') as devnull:
-        # tradefed terminates itself if stdin is not a tty.
-        tradefed_output = subprocess.check_output(cmd_list,
-                                                  stdin=devnull).decode()
+    # tradefed terminates itself if stdin is not a tty.
+    # Starting V the modules list is printed to stderr.
+    tradefed_output = subprocess.check_output(
+            [tradefed, 'list', 'modules'],
+            stdin=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT).decode()
 
     _ABI_PREFIXES = ('arm', 'x86')
     _MODULE_PREFIXES = ('Cts', 'cts-', 'signed-Cts', 'vm-tests-tf', 'Sts')

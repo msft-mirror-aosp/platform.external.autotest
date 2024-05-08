@@ -6450,13 +6450,6 @@ class BluetoothAdapterTests(test.test):
 
         logging.info('test_wait_for_resume(): %r', results)
 
-        # Some chipsets reset on suspend so we lose client connection and need
-        # to restart it.
-        chipset = self.quick_test_get_chipset_name()
-        if self.floss and chipset in SUSPEND_POWER_DOWN_CHIPSETS:
-            results['floss client restarted'] = self.bluetooth_facade.restart_floss_client(
-            )
-
         self.test_last_resume_success()
         self.results = results
         return all([success, suspend.exitcode == 0])

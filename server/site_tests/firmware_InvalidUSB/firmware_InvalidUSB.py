@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/339345717): Remove from PVS testplans and remove this file.
+
 import logging
 
 from autotest_lib.client.common_lib import error
@@ -61,7 +63,7 @@ class firmware_InvalidUSB(FirmwareTest):
         # Switch servo v4 (if present) as a SNK. Make sure USB key is bootable.
         # Only do this when the battery is presented on the DUT.
         if self.has_battery:
-          self.set_servo_v4_role_to_snk()
+            self.set_servo_v4_role_to_snk()
 
         self.switcher.reboot_to_mode(to_mode='rec', wait_for_dut_up=False)
         logging.info('Wait to ensure the USB image is unable to boot...')

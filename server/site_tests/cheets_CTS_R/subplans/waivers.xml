@@ -6,7 +6,4 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
-  <!-- b/315920750; fixed in 11_r16 -->
-  <Entry include="CtsJniTestCases android.jni.cts.JniStaticTest#test_linker_namespaces" />
-  <Entry include="CtsJniTestCases[instant] android.jni.cts.JniStaticTest#test_linker_namespaces" />
 </SubPlan>

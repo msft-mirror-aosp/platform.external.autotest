@@ -7,14 +7,14 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_T.13_r7.x86.tradefed-run-collect-tests-only-internal'
+NAME = 'cheets_CTS_T.13_r8.arm.tradefed-run-collect-tests-only-internal'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
 ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-qual, suite:arc-cts-qual-long'
-DEPENDENCIES = 'arc, cts_abi_x86'
+DEPENDENCIES = 'arc'
 HW_DEPS = ['android-vm-tm']
 JOB_RETRIES = 0
 TEST_TYPE = 'server'
@@ -29,13 +29,13 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=0,
-        tag='13_r7.x86.tradefed-run-collect-tests-only-internal',
-        test_name='cheets_CTS_T.13_r7.x86.tradefed-run-collect-tests-only-internal',
+        tag='13_r8.arm.tradefed-run-collect-tests-only-internal',
+        test_name='cheets_CTS_T.13_r8.arm.tradefed-run-collect-tests-only-internal',
         run_template=['run', 'commandAndExit', 'collect-tests-only', '--disable-reboot', '--exclude-filter', 'CtsIcu4cTestCases', '--exclude-filter', 'CtsMediaDecoderTestCases', '--exclude-filter', 'CtsSkQPTestCases', '--exclude-filter', 'CtsVideoTestCases', '--module-arg', 'CtsMediaStressTestCases:skip-media-download:true', '--module-arg', 'CtsMediaBitstreamsTestCases:skip-media-download:true'],
         retry_template=None,
         target_module=None,
         target_plan=None,
-        bundle='x86',
+        bundle='arm',
         uri='LATEST',
         timeout=9000)
 

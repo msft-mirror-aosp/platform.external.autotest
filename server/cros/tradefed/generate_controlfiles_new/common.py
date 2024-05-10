@@ -423,6 +423,13 @@ class Config(collections.UserDict):
             cmd += self['EXTRA_COMMANDLINE'].get(module, [])
         return cmd
 
+    def get_tauto_hw_deps(self, source_type):
+        """Returns the value for HW_DEPS control file field."""
+        hw_deps_dev = self.get('TAUTO_HW_DEPS_DEV')
+        if hw_deps_dev and source_type == 'DEV':
+            return hw_deps_dev
+        return self.get('TAUTO_HW_DEPS')
+
 
 class ModuleGroup(collections.UserDict):
     pass

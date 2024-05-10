@@ -476,5 +476,5 @@ def get_controlfile_content(group: ModuleGroup, config: Config,
             camera_facing=camera_facing,
             executable_test_count=executable_test_count,
             source_type=bundle.source_type,
-            hw_deps=config.get('TAUTO_HW_DEPS'),
+            hw_deps=config.get_tauto_hw_deps(bundle.source_type),
     )

@@ -138,6 +138,10 @@ def main(args):
                         help='Disable the specified Chrome feature flag')
 
     parser.add_argument('--url', help='Navigate to URL.')
+
+    # Parse the remaining "unknown" args (those appearing after `--`),
+    # as additional args for the browser.
+    parser.add_argument('browser_args', nargs='*')
     args = parser.parse_args(args)
 
     if args.password:
@@ -145,7 +149,7 @@ def main(args):
     elif args.username:
         password = getpass.getpass()
 
-    browser_args = []
+    browser_args = args.browser_args
     if args.no_popup_notification:
         browser_args.append('--suppress-message-center-popups')
     if args.no_startup_window:

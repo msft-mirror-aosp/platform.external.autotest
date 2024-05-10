@@ -31,7 +31,7 @@ def run_TS(machine):
         tag='internal.x86.tradefed-run-collect-tests-only-hardware-internal.camerabox.front',
         test_name='cheets_CTS_R.internal.x86.tradefed-run-collect-tests-only-hardware-internal.camerabox.front',
         run_template=['run', 'commandAndExit', 'collect-tests-only', '--disable-reboot', '--module', 'CtsCameraTestCases', '--module-arg', 'CtsMediaTestCases:skip-media-download:true', '--module-arg', 'CtsMediaStressTestCases:skip-media-download:true', '--module-arg', 'CtsMediaBitstreamsTestCases:skip-media-download:true'],
-        retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
+        retry_template=None,
         target_module='tradefed-run-collect-tests-only-hardware-internal.camerabox.front',
         target_plan=None,
         bundle='x86',

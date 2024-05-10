@@ -11,7 +11,6 @@ import os
 from typing import Any, Callable, Dict, Iterable, Optional
 
 import bundle_utils
-import generate_controlfiles_common as gcc
 
 from .bundle import *
 from .combine import *
@@ -71,7 +70,7 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
         # Camera tests are generated separately for camerabox.
         # See gen_extra_camera()
         IfNot(
-            has_modules(gcc.get_camera_modules()),
+            has_modules(config.get_camera_modules()),
             [
                 If(
                     has_modules(config.get('SPLIT_BY_BITS_MODULES', [])),
@@ -242,7 +241,7 @@ def gen_qual(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
         # DUT suite.
         AddSuites(config['QUAL_SUITE_NAMES']),
         If(
-            has_modules(gcc.get_camera_modules()),
+            has_modules(config.get_camera_modules()),
             [
                 RemoveSuites(config['QUAL_SUITE_NAMES'] +
                              [split_config['QUAL_SUITE_LONG']]),
@@ -449,7 +448,7 @@ def gen_controlfiles_for_source_type(source_type: str, config: Config,
 
         logging.info('Writing controlfiles for abi: %s', abi)
         for group in groups:
-            filename = get_controlfile_name(group, bundle)
+            filename = get_controlfile_name(group, config, bundle)
             content = get_controlfile_content(group, config, bundle)
             logging.debug('Writing file: %s', filename)
             with open(filename, 'w') as f:
@@ -532,7 +531,6 @@ def main(config: Dict[str, Any]) -> None:
     args = parser.parse_args()
 
     logging.basicConfig(level=args.log_level)
-    gcc.inject_config(config)
     config = Config(config)
 
     remove_legacy_generated_controlfiles(args.is_all, args.is_public,

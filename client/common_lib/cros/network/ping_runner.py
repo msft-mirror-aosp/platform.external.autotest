@@ -9,6 +9,7 @@ from __future__ import print_function
 
 import logging
 import math
+import os
 import re
 import six
 
@@ -226,7 +227,8 @@ class LinuxPingDelegate(object):
         """
         loss_line = _extract_ping_loss(ping_output)
         sent = _regex_int_from_string('([0-9]+) packets transmitted', loss_line)
-        received = _regex_int_from_string('([0-9]+) received', loss_line)
+        received = _regex_int_from_string('([0-9]+) (packets )?received',
+                                          loss_line)
         loss = _regex_float_from_string('([0-9]+(\.[0-9]+)?)% packet loss',
                                         loss_line)
         if None in (sent, received, loss):
@@ -240,6 +242,17 @@ class LinuxPingDelegate(object):
                               avg_latency=float(m.group(3)),
                               max_latency=float(m.group(4)),
                               dev_latency=float(m.group(5)))
+        # CloudBots openssh ping does not have std dev value.
+        m = re.search(
+                'round-trip min\/avg\/max = ([0-9.]+)\/([0-9.]+)'
+                '\/([0-9.]+) ms', ping_output)
+        if m is not None:
+            return PingResult(sent,
+                              received,
+                              loss,
+                              min_latency=float(m.group(1)),
+                              avg_latency=float(m.group(2)),
+                              max_latency=float(m.group(3)))
         if received > 0:
             raise error.TestFail('Failed to parse latency statistics.')
 
@@ -306,6 +319,7 @@ class PingResult(object):
 class PingRunner(object):
     """Delegate to run the ping command on a local or remote host."""
     DEFAULT_PING_COMMAND = 'ping'
+    CLOUDBOTS_PING_COMMAND = 'ssh openssh-server sudo ping'
     PING_LOSS_THRESHOLD = 20  # A percentage.
 
 
@@ -321,7 +335,10 @@ class PingRunner(object):
         self._run = utils.run
         if host is not None:
             self._run = host.run
-        self.command_ping = command_ping
+        if os.environ.get("SWARMING_BOT_ID", "").startswith("cloudbots-"):
+            self.command_ping = self.CLOUDBOTS_PING_COMMAND
+        else:
+            self.command_ping = command_ping
         self._platform_delegate = _get_platform_delegate(platform)
 
 

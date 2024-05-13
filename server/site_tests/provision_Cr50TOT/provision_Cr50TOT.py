@@ -27,7 +27,7 @@ CR50_IMAGE_PATH = 'cr50/ec.bin'
 
 # Ti50 file info
 TI50_GS_URL = 'gs://chromeos-releases/firmware-ti50-postsubmit/%s-*/ti50.tar.bz2'
-TI50_FILENAME = 'ti50_Unknown_PrePVT_ti50-accessory-nodelocked-ro-premp.bin'
+TI50_FILENAME = 'ti50_Unknown_*_ti50-accessory-nodelocked-ro-premp.bin'
 
 REMOTE_TMPDIR = '/tmp/gsc_tot_update'
 VER_RE = r'R(\d*)-(\d*).(\d*).(\d*)'

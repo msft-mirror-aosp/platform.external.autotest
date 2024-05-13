@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+prefix ?= /usr/local
+exec_prefix ?= $(prefix)
+bindir ?= $(exec_prefix)/bin
+
 fortify-test-src := clang-fortify-tests.cpp
 # -U_FORTIFY_SOURCE: Clang gets unhappy being passed `-D_FORTIFY_SOURCE=2
 #  -D_FORTIFY_SOURCE=1` (the first of which comes from our wrapper).
@@ -32,7 +36,6 @@ clean:
 	rm -f clang-fortify-*.o fortify-runtime-tests
 
 install:
-	install -m 0755 -d $(DESTDIR)/usr/local/bin
-	install -m 0755 toolchain-tests $(DESTDIR)/usr/local/bin
-	install -m 0755 fortify-runtime-tests $(DESTDIR)/usr/local/bin
-
+	install -m 0755 -d $(DESTDIR)$(bindir)
+	install -m 0755 toolchain-tests $(DESTDIR)$(bindir)
+	install -m 0755 fortify-runtime-tests $(DESTDIR)$(bindir)

@@ -258,12 +258,12 @@ static void testMqueue() {
 }
 
 static void testFormatStrings() {
-  const auto unsigned_value = std::declval<unsigned long long>();
-  const auto *unknown_string = std::declval<const char *>();
-  const auto va = std::declval<va_list>();
+  const unsigned long long unsigned_value{};
+  const char *unknown_string{};
+  va_list va{};
 
   {
-    auto some_fd = std::declval<int>();
+    int some_fd{};
     // expected-warning@+1{{format specifies type 'int'}}
     dprintf(some_fd, "%d", unsigned_value);
     // expected-warning@+1{{format string is not a string literal}}
@@ -273,7 +273,7 @@ static void testFormatStrings() {
   }
 
   {
-    auto *retval = std::declval<char *>();
+    char *retval{};
     // expected-warning@+2{{ignoring return value}}
     // expected-warning@+1{{format specifies type 'int'}}
     asprintf(&retval, "%d", unsigned_value);
@@ -286,7 +286,7 @@ static void testFormatStrings() {
   }
 
   {
-    auto *obs = std::declval<obstack *>();
+    obstack *obs{};
     // expected-warning@+1{{format specifies type 'int'}}
     obstack_printf(obs, "%d", unsigned_value);
     // expected-warning@+1{{format string is not a string literal}}
@@ -303,7 +303,7 @@ static void testFormatStrings() {
   vsyslog(0, unknown_string, va);
 
   {
-    auto *file = std::declval<FILE *>();
+    FILE *file{};
     // expected-warning@+1{{format specifies type 'int'}}
     fprintf(file, "%d", unsigned_value);
     // expected-warning@+1{{format string is not a string literal}}

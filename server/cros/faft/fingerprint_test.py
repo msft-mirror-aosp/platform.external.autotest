@@ -124,77 +124,77 @@ class FingerprintTest(test.test):
     #      what we release) is exactly what we expect.
     _FIRMWARE_VERSION_MAP = {
             _FP_BOARD_NAME_BLOONCHIPPER: {
-                    'bloonchipper_v2.0.4277-9f652bb3-RO_v2.0.23521-642195b-RW.bin':
+                    'bloonchipper_v2.0.4277-9f652bb3-RO_v2.0.24900-aa15589-RW.bin':
                     {
                             _FIRMWARE_VERSION_SHA256SUM:
-                            'f471b70b825e4281461d7d4d29836c9805b8467111a8dcb33ae57c0fd452b22a',
+                            '9973b944e2a7aa0cb53cd71b90e77e6fb5536b5f91e5ca5241a7d1e5551e7027',
                             _FIRMWARE_VERSION_RO_VERSION:
                             'bloonchipper_v2.0.4277-9f652bb3',
                             _FIRMWARE_VERSION_RW_VERSION:
-                            'bloonchipper_v2.0.23521-642195b',
+                            'bloonchipper_v2.0.24900-aa15589',
                             _FIRMWARE_VERSION_KEY_ID:
                             '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
                     },
-                    'bloonchipper_v2.0.5938-197506c1-RO_v2.0.23521-642195b-RW.bin':
+                    'bloonchipper_v2.0.5938-197506c1-RO_v2.0.24900-aa15589-RW.bin':
                     {
                             _FIRMWARE_VERSION_SHA256SUM:
-                            'b95121eecf05e3e7cdcab6ff5b66afbb793b1cc132cf5182af8c2ab4fe230e73',
+                            'bb804ce91480cf022649b3c548596333366e669e37ea09178d00993198cfd482',
                             _FIRMWARE_VERSION_RO_VERSION:
                             'bloonchipper_v2.0.5938-197506c1',
                             _FIRMWARE_VERSION_RW_VERSION:
-                            'bloonchipper_v2.0.23521-642195b',
+                            'bloonchipper_v2.0.24900-aa15589',
                             _FIRMWARE_VERSION_KEY_ID:
                             '1c590ef36399f6a2b2ef87079c135b69ef89eb60',
                     },
             },
             _FP_BOARD_NAME_NOCTURNE: {
-                    'nocturne_fp_v2.2.64-58cf5974e-RO_v2.0.23516-f14ac415-RW.bin':
+                    'nocturne_fp_v2.2.64-58cf5974e-RO_v2.0.24905-73bc70b5-RW.bin':
                     {
                             _FIRMWARE_VERSION_SHA256SUM:
-                            'ff46c1a423511344043ddd5ab12abf58d844f3eb3d84562efd1bedb661a889a9',
+                            '2d7263e80e3efef19c2792e735db3df781ea43cd10c12b0a32f7c1f550959c11',
                             _FIRMWARE_VERSION_RO_VERSION:
                             'nocturne_fp_v2.2.64-58cf5974e',
                             _FIRMWARE_VERSION_RW_VERSION:
-                            'nocturne_fp_v2.0.23516-f14ac415',
+                            'nocturne_fp_v2.0.24905-73bc70b5',
                             _FIRMWARE_VERSION_KEY_ID:
                             '6f38c866182bd9bf7a4462c06ac04fa6a0074351',
                     },
             },
             _FP_BOARD_NAME_NAMI: {
-                    'nami_fp_v2.2.144-7a08e07eb-RO_v2.0.23516-f14ac4155d-RW.bin':
+                    'nami_fp_v2.2.144-7a08e07eb-RO_v2.0.24905-73bc70b511-RW.bin':
                     {
                             _FIRMWARE_VERSION_SHA256SUM:
-                            'b20d80b73516c42c986a9991744a55abbf5ccaf830253e517ff7532ba53135da',
+                            '8792b0cdeaa888e1fbe66f6b0758054925fd31060dfdc6241c8bcecb1a585d36',
                             _FIRMWARE_VERSION_RO_VERSION:
                             'nami_fp_v2.2.144-7a08e07eb',
                             _FIRMWARE_VERSION_RW_VERSION:
-                            'nami_fp_v2.0.23516-f14ac4155d',
+                            'nami_fp_v2.0.24905-73bc70b511',
                             _FIRMWARE_VERSION_KEY_ID:
                             '35486c0090ca390408f1fbbf2a182966084fe2f8',
                     },
             },
             _FP_BOARD_NAME_DARTMONKEY: {
-                    'dartmonkey_v2.0.2887-311310808-RO_v2.0.23516-f14ac4155-RW.bin':
+                    'dartmonkey_v2.0.2887-311310808-RO_v2.0.24905-73bc70b51-RW.bin':
                     {
                             _FIRMWARE_VERSION_SHA256SUM:
-                            '69eb6282df93eb970e110ea957a8c3b1a951fff3c856c15b4c592dc667201e5e',
+                            '2b386815737d4ae90509a16f983ea2045b967102fa393e32b9c65ff6d004ae35',
                             _FIRMWARE_VERSION_RO_VERSION:
                             'dartmonkey_v2.0.2887-311310808',
                             _FIRMWARE_VERSION_RW_VERSION:
-                            'dartmonkey_v2.0.23516-f14ac4155',
+                            'dartmonkey_v2.0.24905-73bc70b51',
                             _FIRMWARE_VERSION_KEY_ID:
                             '257a0aa3ac9e81aa4bc3aabdb6d3d079117c5799',
                     },
             },
             _FP_BOARD_NAME_HELIPILOT: {
-                    'helipilot_v2.0.24337-2726e9f149.bin':
+                    'helipilot_v2.0.24337-2726e9f149-RO_v2.0.24901-b1c5caa35e-RW.bin':
                     {
                             _FIRMWARE_VERSION_SHA256SUM:
-                            'ab6a3561676c58c8ce0f37e85b8ffa762259dd2f7dab15890750a2a1f6f369b1',
+                            '892d9a196027ed15f2bdd5c2b77bfdd8ae70a6abbe4681ed6cc1a4518fa44704',
                             _FIRMWARE_VERSION_RO_VERSION:
                             'helipilot_v2.0.24337-2726e9f149',
                             _FIRMWARE_VERSION_RW_VERSION:
-                            'helipilot_v2.0.24337-2726e9f149',
+                            'helipilot_v2.0.24901-b1c5caa35e',
                             _FIRMWARE_VERSION_KEY_ID:
                             '3c0b147809e06f279ba0cf221c18995d7b4e3f1a',
                     },

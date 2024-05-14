@@ -12,6 +12,7 @@ import stat
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import upstart
 from cryptography import x509
 
 EXTERNAL_DRIVE_LABEL = "FWUPDTESTS"
@@ -103,6 +104,24 @@ def check_device(dev_id, devices):
     raise error.TestError(f"Device {dev_id} not found")
 
 
+def get_device_version(dev_id):
+    """Returns the version of the device
+
+    Args:
+      dev_id: the id of the device to check (string). It can be an
+          fwupd instance id or a GUID
+
+    Returns:
+      A string containing the device version.
+    """
+    # Verify that the device FW version has changed
+    devices = get_devices()
+    device = check_device(dev_id, devices)
+    logging.debug('Device %s (%s) has version %s', dev_id, device['Name'],
+                  str(device['Version']))
+    return str(device['Version'])
+
+
 def get_fwupdmgr_version():
     """Returns the fwupdmgr version as a string
 
@@ -123,6 +142,7 @@ def get_fwupdmgr_version():
     try:
         cmd = "fwupdmgr --version --json"
         output = utils.system_output(cmd)
+        logging.debug(output)
     except error.CmdError as e:
         logging.error("fwupd not running, not found or broken")
         logging.error(e)
@@ -326,12 +346,22 @@ def ensure_certificate(req_serial=''):
     return True
 
 
-def send_signed_report():
+def send_signed_report(req_serial=''):
     """Send signed report.
 
     Try to sign the report from the successful update and send it to LVFS.
     See https://lvfs.readthedocs.io/en/latest/testing.html?highlight=report#signed-reports
+    Certificate ID should be passed explicitly, otherwise the report
+    would be skipped.
+
+    Args:
+      req_serial: requested serial ID in hex format as shown on LVFS.
     """
+
+    # Omit the report signing if certificate ID not passed explicitly
+    if not req_serial:
+        logging.info('Skip the signed report sending')
+        return None
 
     # Ignore the result -- should not affect to test
     try:
@@ -339,7 +369,31 @@ def send_signed_report():
         output = utils.system_output(cmd)
         logging.info('Report sent successfully')
     except Exception as e:
-        logging.error("Unable to sign the report")
-        logging.error(e)
+        logging.warning("Unable to sign the report")
+        logging.warning(e)
+
+    return None
+
+
+def clear_history():
+    """Clear the results from the previous updates.
+    """
+
+    # Ignore the result -- should not affect the test
+    try:
+        # FIXME: usage of fwupdtool is preferable, however CQ is failing
+        # due the tool absence in test environment:
+        # fwupdtool clear-history
+        # Workaround: remove DB and restart service
+        pending_db = '/var/lib/fwupd/pending.db'
+        if os.path.isfile(pending_db):
+            os.remove(pending_db)
+            logging.info('Restarting fwupd')
+            upstart.restart_job('fwupd')
+
+        logging.info('History cleared successfully')
+    except Exception as e:
+        logging.warning('Unable to clear reports history fwupd')
+        logging.warning(e)
 
     return None

@@ -20,6 +20,9 @@ class fwupd_FirmwareInstallVersion(test.test):
     """
     version = 1
 
+    def setup(self):
+        fwupd.clear_history()
+
     def install_firmware(self, device_id, version):
         """Installs a specific firmware version in a device.
 
@@ -74,13 +77,12 @@ class fwupd_FirmwareInstallVersion(test.test):
                     f"on {device_id} ({dev_name}): {output}")
         logging.info("Firmware flashing: done")
         # Verify that the device FW version has changed
-        devices = fwupd.get_devices()
-        dev_post = fwupd.check_device(device_id, devices)
-        if dev_post['Version'] != version:
+        ver_post = fwupd.get_device_version(device_id)
+        if ver_post != version:
             raise error.TestFail(
                     f"Error installing firmware release {version} "
                     f"on {device_id} ({dev_name}): "
-                    f"Current FW version: {dev_post['Version']}")
+                    f"Current FW version: {ver_post}")
 
     def run_once(self, device_id, version, cert_id):
         """Install a FW version in a device FW and check the result.
@@ -104,5 +106,8 @@ class fwupd_FirmwareInstallVersion(test.test):
             raise error.TestError("Error checking fwupd status")
         fwupd.ensure_remotes()
         fwupd.ensure_certificate(cert_id)
-        self.install_firmware(device_id, version)
-        fwupd.send_signed_report()
+        fwupd.get_device_version(device_id)
+        try:
+            self.install_firmware(device_id, version)
+        finally:
+            fwupd.send_signed_report(cert_id)

@@ -19,6 +19,9 @@ class fwupd_FirmwareUpdate(test.test):
     """
     version = 1
 
+    def setup(self):
+        fwupd.clear_history()
+
     def update_firmware(self, device_id):
         """Updates the FW release of a device to its latest version.
 
@@ -35,11 +38,12 @@ class fwupd_FirmwareUpdate(test.test):
         """
         devices = fwupd.get_devices()
         dev_pre = fwupd.check_device(device_id, devices)
+        ver_pre = fwupd.get_device_version(device_id)
         dev_name = dev_pre.get('Name', 'Unknown Device')
         if 'Releases' not in dev_pre:
             raise error.TestError("No FW releases found for "
                                   f"{device_id} ({dev_name})")
-        if dev_pre['Version'] == dev_pre['Releases'][0]['Version']:
+        if ver_pre == dev_pre['Releases'][0]['Version']:
             raise error.TestError(f"Device {device_id} ({dev_name}) "
                                   "already at latest FW release")
         try:
@@ -54,13 +58,12 @@ class fwupd_FirmwareUpdate(test.test):
         logging.info("Firmware flashing: done")
 
         # Verify that the device FW version has changed
-        devices = fwupd.get_devices()
-        dev_post = fwupd.check_device(device_id, devices)
-        if dev_post['Version'] == dev_pre['Version']:
+        ver_post = fwupd.get_device_version(device_id)
+        if ver_post == ver_pre:
             raise error.TestFail("Error updating firmware for device "
                                  f"{device_id} ({dev_name}): "
                                  "the FW release version hasn't changed "
-                                 f"({dev_post['Version']})")
+                                 f"({ver_post})")
 
     def run_once(self, device_id, cert_id):
         """Update a device FW and check the result.
@@ -79,5 +82,7 @@ class fwupd_FirmwareUpdate(test.test):
             raise error.TestError("Error checking fwupd status")
         fwupd.ensure_remotes()
         fwupd.ensure_certificate(cert_id)
-        self.update_firmware(device_id)
-        fwupd.send_signed_report()
+        try:
+            self.update_firmware(device_id)
+        finally:
+            fwupd.send_signed_report(cert_id)

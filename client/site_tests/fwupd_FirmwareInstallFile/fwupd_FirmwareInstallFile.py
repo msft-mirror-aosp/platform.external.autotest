@@ -21,6 +21,9 @@ class fwupd_FirmwareInstallFile(test.test):
     """
     version = 1
 
+    def setup(self):
+        fwupd.clear_history()
+
     def install_firmware(self, device_id, fwfile):
         """Installs a specific firmware file in a device.
 
@@ -88,5 +91,9 @@ class fwupd_FirmwareInstallFile(test.test):
         if not self.fwupd_version:
             raise error.TestError("Error checking fwupd status")
         fwupd.ensure_certificate(cert_id)
-        self.install_firmware(device_id, fwfile)
-        fwupd.send_signed_report()
+        fwupd.get_device_version(device_id)
+        try:
+            self.install_firmware(device_id, fwfile)
+        finally:
+            fwupd.get_device_version(device_id)
+            fwupd.send_signed_report(cert_id)

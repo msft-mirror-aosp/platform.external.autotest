@@ -21,6 +21,9 @@ class fwupd_FirmwareDowngrade(test.test):
     """
     version = 1
 
+    def setup(self):
+        fwupd.clear_history()
+
     def downgrade_firmware(self, device_id):
         """Downgrades the FW release of a device to the previous version.
 
@@ -38,6 +41,7 @@ class fwupd_FirmwareDowngrade(test.test):
         """
         devices = fwupd.get_devices()
         dev_pre = fwupd.check_device(device_id, devices)
+        ver_pre = fwupd.get_device_version(device_id)
         dev_name = dev_pre.get('Name', 'Unknown Device')
         bus = dbus.SystemBus()
         proxy = bus.get_object("org.freedesktop.fwupd", "/")
@@ -74,13 +78,12 @@ class fwupd_FirmwareDowngrade(test.test):
                                  f"{device_id} ({dev_name}): {output}")
         logging.info("Firmware flashing: done")
         # Verify that the device FW version has changed
-        devices = fwupd.get_devices()
-        dev_post = fwupd.check_device(device_id, devices)
-        if dev_post['Version'] == dev_pre['Version']:
+        ver_post = fwupd.get_device_version(device_id)
+        if ver_post == ver_pre:
             raise error.TestFail("Error downgrading firmware for device "
                                  f"{device_id} ({dev_name}): "
                                  "the FW release version hasn't changed "
-                                 f"({dev_post['Version']})")
+                                 f"({ver_post})")
 
     def run_once(self, device_id, cert_id):
         """Downgrade a device FW and check the result.
@@ -99,5 +102,7 @@ class fwupd_FirmwareDowngrade(test.test):
             raise error.TestError("Error checking fwupd status")
         fwupd.ensure_remotes()
         fwupd.ensure_certificate(cert_id)
-        self.downgrade_firmware(device_id)
-        fwupd.send_signed_report()
+        try:
+            self.downgrade_firmware(device_id)
+        finally:
+            fwupd.send_signed_report(cert_id)

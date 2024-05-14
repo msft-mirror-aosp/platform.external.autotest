@@ -6,6 +6,7 @@
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import SUSPEND_POWER_DOWN_CHIPSETS
 
 import logging
 import time
@@ -38,6 +39,13 @@ class BluetoothAdapterLLPrivacyTests(
 
     test_case_log = bluetooth_adapter_tests.test_case_log
     test_retry_and_log = bluetooth_adapter_tests.test_retry_and_log
+
+    def power_down_on_suspend_chipsets(self):
+        """
+        Check if the chipset powers down on suspend
+        """
+        return self.bluetooth_facade.get_chipset_name(
+        ) in SUSPEND_POWER_DOWN_CHIPSETS
 
     def resolved_address_type_check(self):
         """ Check the address type is Resolved Public in btsnoop log.

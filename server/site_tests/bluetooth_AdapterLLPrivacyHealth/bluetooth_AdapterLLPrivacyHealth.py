@@ -308,6 +308,13 @@ class bluetooth_AdapterLLPrivacyHealth(
                   supports_floss=True)
     def sr_reconnect_le_hid_with_rpa(self):
         """ Reconnects a LE HID device in privacy mode after suspend/resume. """
+        # b/330637283: The LL privacy status is not restored after resume for
+        # some chipsets in BlueZ. The test is skipped for these chipsets.
+        if not self.floss and self.power_down_on_suspend_chipsets():
+            raise error.TestNAError(
+                    "Test not supported in BlueZ due to power down on suspend."
+            )
+
         device_type = 'BLE_MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device_with_rpa(

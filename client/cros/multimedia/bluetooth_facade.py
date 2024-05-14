@@ -5136,8 +5136,10 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
 
         default_adapter = self.manager_client.get_default_adapter()
 
-        def _is_adapter_down(client):
-            return lambda: not client.has_proxy()
+        def _is_adapter_down(adapter, manager):
+            default_adapter = manager.get_default_adapter()
+            return lambda: (not adapter.has_proxy() and not manager.
+                            get_adapter_enabled(default_adapter))
 
         if powered and not self.manager_client.has_default_adapter():
             logging.warning('set_powered: Default adapter not available.')
@@ -5160,7 +5162,8 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.manager_client.stop(default_adapter)
             try:
                 utils.poll_for_condition(
-                        condition=_is_adapter_down(self.adapter_client),
+                        condition=_is_adapter_down(self.adapter_client,
+                                                   self.manager_client),
                         desc='Wait for adapter stop',
                         sleep_interval=self.ADAPTER_CLIENT_POLL_INTERVAL,
                         timeout=self.ADAPTER_DAEMON_TIMEOUT_SEC)

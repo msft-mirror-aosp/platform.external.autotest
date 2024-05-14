@@ -85,8 +85,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.test_nonpairable()
         self.test_pairable()
 
-
-    @test_wrapper('Stand Alone power reset test')
+    @test_wrapper('Stand Alone power reset test', supports_floss=True)
     def sa_power_reset(self):
         """Adapter power reset test
 

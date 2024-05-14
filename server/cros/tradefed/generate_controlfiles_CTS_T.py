@@ -356,6 +356,7 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsIcuTestCases': 2.0,
         'CtsKeystoreTestCases': 2.0,
         'CtsLibcoreOjTestCases': 2.0,
+        'CtsMediaEncoderTestCases': 2.0,
         'CtsMediaStressTestCases': 5.0,
         'CtsMediaPlayerTestCases': 2.0,
         'CtsMediaDecoderTestCases': 2.0,

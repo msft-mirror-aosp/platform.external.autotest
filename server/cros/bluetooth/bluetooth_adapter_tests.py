@@ -6825,7 +6825,9 @@ class BluetoothAdapterTests(test.test):
         @raises error.TestNA if any device isn't found or RSSI is too low
         """
         try:
-            self.test_start_discovery()
+            if not self.test_start_discovery():
+                raise error.TestNAError(
+                        'Failing to start discovery for RSSI check')
             for device in device_list:
                 # The RSSI property is only maintained while discovery is
                 # enabled.  Stopping discovery removes the property. Thus, look

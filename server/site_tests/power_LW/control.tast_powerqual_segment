@@ -1,0 +1,33 @@
+# Copyright 2024 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = "power_LW.tast_powerqual_segment"
+METADATA = {
+    "contacts": ["chromeos-platform-power@google.com", "jingmuli@google.com"],
+    "bug_component": "b:1361410",
+    "criteria": "This test is a power benchmark test.",
+    "hw_agnostic": False,
+    "doc" : "Control file for running meta.PowerQual.segment in power lab."
+}
+
+TEST_TYPE = "server"
+DEPENDENCIES = "servo_state:WORKING"
+EXTENDED_TIMEOUT = 43200
+ATTRIBUTES = "suite:power_segment"
+
+from autotest_lib.client.common_lib import utils
+
+args_dict = utils.args_to_dict(args)
+servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
+test = 'tast'
+args = {'test_exprs': ["meta.PowerQual.segment"],
+            'max_run_sec': 43200,
+            'clear_tpm': False}
+
+def run(machine):
+    host = hosts.create_host(machine, servo_args=servo_args)
+    job.run_test("power_LW", host=host, test=test, args=args,
+                 machine=machine, server_test=True)
+
+parallel_simple(run, machines)

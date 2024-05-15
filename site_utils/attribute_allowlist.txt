@@ -925,6 +925,7 @@ suite:power_qual_full
 suite:power_qual_webrtc_fast
 suite:power_qual_webrtc_full
 suite:power_requirements
+suite:power_segment
 suite:power_weekly_load_test_v10
 suite:power_weekly_video_playback
 suite:printscan

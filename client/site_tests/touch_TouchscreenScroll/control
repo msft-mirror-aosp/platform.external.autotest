@@ -7,7 +7,8 @@ METADATA = {
     "contacts": ["chromeos-tango@google.com"],
     "bug_component": "b:167277",
     "criteria": "One finger touchscreen scroll in 4 directions.",
-    "hw_agnostic": False
+    "hw_agnostic": False,
+    'variant_category': '{"name": "Touchscreen_SoC_Controller_ProductId_Variant-def-plus-kernelnext"}',
 }
 ATTRIBUTES = "suite:touch_replay_touchscreen"
 TEST_TYPE = "client"

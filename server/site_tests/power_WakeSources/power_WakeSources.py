@@ -59,9 +59,8 @@ USB_PRESENT_DELAY = 1
 # process is slower than network reconnection.
 WAIT_DARK_RESUME_COUNT_SECS = 2
 
-# Time to wait for basestate reset to avoid wakeup_count increased during next
-# suspend process lead to suspend failed
-BASE_STATE_RESET_DELAY_SECS = 2
+# Time to wait for basestate change to take effect.
+BASE_STATE_TRANSITION_SECS = 3
 
 class power_WakeSources(test.test):
     """
@@ -88,7 +87,7 @@ class power_WakeSources(test.test):
         usb_count = self._get_usb_count()
         if wake_source in ['BASE_ATTACH', 'BASE_DETACH']:
             self._force_base_state(BASE_STATE.RESET)
-            time.sleep(BASE_STATE_RESET_DELAY_SECS)
+            time.sleep(BASE_STATE_TRANSITION_SECS)
         elif wake_source == 'USB_KB':
             self._host.servo.set_nocheck('init_usb_keyboard', 'off')
             usb_count -= 1
@@ -112,9 +111,11 @@ class power_WakeSources(test.test):
         if wake_source == 'BASE_ATTACH':
             # Force detach before suspend so that attach won't be ignored.
             self._force_base_state(BASE_STATE.DETACH)
+            time.sleep(BASE_STATE_TRANSITION_SECS)
         elif wake_source == 'BASE_DETACH':
             # Force attach before suspend so that detach won't be ignored.
             self._force_base_state(BASE_STATE.ATTACH)
+            time.sleep(BASE_STATE_TRANSITION_SECS)
         elif wake_source == 'LID_OPEN':
             # Set the power policy for lid closed action to suspend.
             return self._host.run(

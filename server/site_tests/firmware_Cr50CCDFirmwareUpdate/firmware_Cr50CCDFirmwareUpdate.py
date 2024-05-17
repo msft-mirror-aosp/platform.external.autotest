@@ -186,12 +186,7 @@ class firmware_Cr50CCDFirmwareUpdate(Cr50Test):
             self.install_ec = False
         # If it is ITE EC, then allow CCD I2C access for flashing EC.
         if self.servo.get('ec_chip').startswith('it8'):
-            # TODO(b/302193501): enable test on ite devices once the labstation
-            # supports it.
-            logging.info(
-                    'Skip flash_ec. i2c-pseudo not supported on labstation')
-            self.install_ec = False
-            #self.gsc.set_cap('I2C', 'Always')
+            self.gsc.set_cap('I2C', 'Always')
 
         # Make sure to use the GSC ec_reset command for cold reset snce that's
         # what normal ccd devices will use.

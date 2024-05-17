@@ -299,6 +299,9 @@ class FlashECProgrammer(_BaseProgrammer):
                              (self._ec_chip, image, port))
         if self._ec_chip == 'stm32':
             self._program_cmd += ' --bitbang_rate=57600'
+        # If it is ITE EC, then disable i2c-pseudo.
+        if self._ec_chip.startswith('it8'):
+            self._program_cmd += ' --nouse_i2c_pseudo'
         self._program_cmd += ' --verify'
         self._program_cmd += ' --verbose'
 

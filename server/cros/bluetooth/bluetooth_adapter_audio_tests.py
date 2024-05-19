@@ -77,9 +77,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     #   Channel: 64 len 608 [PSM 25 mode Basic (0x00)] {chan 0}
     # PSM with value 25 was taken from this reference:
     # https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Assigned_Numbers.pdf
-    A2DP_PEER_NOTIFICATION_REGEX = (
-            r"ACL Data RX: (?:Handle {}|H.*\.\.) .*\[hci\d+\] ("
-            r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM 25")
+    A2DP_PEER_NOTIFICATION_REGEX = (r"ACL Data RX.*\[hci\d+\] ("
+                                    r"\d+-\d+-\d+ \d+:\d+:\d+\.\d+)\s.*PSM 25")
 
     # Boards which only have the offload path available for BT HFP.
     BOARDS_OFFLOAD_ONLY_FOR_HFP = ['kukui', 'jacuzzi', 'corsola', 'staryu']

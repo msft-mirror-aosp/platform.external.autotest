@@ -9,6 +9,9 @@ import threading
 import time
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
+        BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests import (
         BluetoothAdapterHIDReportTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -36,6 +39,13 @@ def calculate_events_average_delay(devices_events_time_diff,
     for key_ev in devices_os_time_diff:
         events = devices_events_time_diff[key_ev]
         os_time_diff = devices_os_time_diff[key_ev]
+        # Adjust the OS time difference to align the Bluetooth audio device's
+        # clock with the sender's clock (DUT). For HID devices, the peer device
+        # is the sender. For A2DP (audio) devices, the DUT is the sender.
+        # Therefore, os_time_diff for Bluetooth audio need to be negated to
+        # align the clocks.
+        if key_ev == 'bluetooth_audio':
+            os_time_diff = -os_time_diff
         average = sum(events) / len(events) + os_time_diff
         result[key_ev] = average
     return result
@@ -43,7 +53,8 @@ def calculate_events_average_delay(devices_events_time_diff,
 
 class bluetooth_WiFiCoexPerformance(
         wifi_cell_perf_test_base.WiFiCellPerfTestBase,
-        BluetoothAdapterHIDReportTests, BluetoothAdapterQuickTests):
+        BluetoothAdapterHIDReportTests, BluetoothAdapterQuickTests,
+        BluetoothAdapterAudioTests):
     """Test the effect of Wi-Fi load on Bluetooth HID performance.
 
     Conducts a performance test for a set of Bluetooth device types.
@@ -86,6 +97,12 @@ class bluetooth_WiFiCoexPerformance(
                                       EXPECTED_EVENTS_PER_GAMEPAD_ACTION)
     GAMEPAD_EVENTS_COUNTS = (GAMEPAD_DEFAULT_NUM_ACTIONS *
                              EXPECTED_EVENTS_PER_GAMEPAD_ACTION)
+
+    # Duration in seconds for BT audio streaming.
+    BT_AUDIO_STREAMING_DURATION = 20
+    AUDIO_DEVICE_TYPE = 'BLUETOOTH_AUDIO'
+    # Number of transmitted events in the previous audio run.
+    previous_audio_run_events_count = 0
 
     IPERF_RUN_TIME = 30
 
@@ -145,6 +162,14 @@ class bluetooth_WiFiCoexPerformance(
                 num_iterations=self.GAMEPAD_DEFAULT_NUM_ACTIONS,
                 delay=self.GAMEPAD_DEFAULT_EVENT_DELAY)
 
+    def __do_audio_load_test(self, audio):
+        """Runs audio load test.
+
+        @param audio: Audio device.
+        """
+        time.sleep(2)
+        self.test_a2dp_sinewaves(audio, A2DP, self.BT_AUDIO_STREAMING_DURATION)
+
     def connect_wifi(self):
         """Connects DUT to router."""
         for ap_config in self._ap_configs:
@@ -155,6 +180,9 @@ class bluetooth_WiFiCoexPerformance(
         """Clears router connection with DUT."""
         self.context.client.shill.disconnect(self.context.router.get_ssid())
         self.context.router.deconfig()
+
+    def is_audio_device(self, device):
+        return device.device_type == self.AUDIO_DEVICE_TYPE
 
     def run_iperf(self, run_time, test_type):
         """Runs Iperf for a specific time.
@@ -183,8 +211,24 @@ class bluetooth_WiFiCoexPerformance(
         """
         devices_events_time_diff = {}
         for device, event_count in zip(devices, events_count):
-            receiver_results = self.get_dut_hid_notif_timestamps(device)
-            transmitter_result = self.get_peer_hid_notif_timestamps(device)
+            if self.is_audio_device(device):
+                # btmon needs additional time to write audio data.
+                time.sleep(5)
+                receiver_results = self.get_peer_a2dp_notif_timestamps(device)
+                transmitter_result = self.get_dut_a2dp_notif_timestamps(device)
+
+                # Calculate the number of new events transmitted during the
+                # current audio run.
+                # btmon returns accumulated audio data for all runs, so to get
+                # the count of events for the current run, subtract the count
+                # of events from the previous runs from the total count of
+                # events in transmitter_result.
+                event_count = len(transmitter_result
+                                  ) - self.previous_audio_run_events_count
+                self.previous_audio_run_events_count = len(transmitter_result)
+            else:
+                receiver_results = self.get_dut_hid_notif_timestamps(device)
+                transmitter_result = self.get_peer_hid_notif_timestamps(device)
             address = device.address
 
             last_receiver_index = self.devices_latest_index[address]
@@ -242,8 +286,17 @@ class bluetooth_WiFiCoexPerformance(
             devices_os_time[device._name] = round(time_diff, 4)
         return devices_os_time
 
-    def pair_hid_devices(self, devices):
-        """Pairs the HID device pre-test to simplify later re-connection.
+    def initialize_bluetooth_audio_devices(self, devices):
+        """Initializes bluetooth audio devices.
+
+        @param devices: List of Bluetooth devices.
+        """
+        for device in devices:
+            if self.is_audio_device(device):
+                self.initialize_bluetooth_audio(device, A2DP)
+
+    def pair_bluetooth_devices(self, devices):
+        """Pairs the devices pre-test to simplify later re-connection.
 
         @param devices: List of Bluetooth devices.
         """
@@ -252,8 +305,8 @@ class bluetooth_WiFiCoexPerformance(
             self.test_pairable()
             self.test_pairing(device.address, device.pin, trusted=True)
 
-    def connect_hid_devices(self, devices):
-        """Connects HID devices with DUT.
+    def connect_bluetooth_devices(self, devices):
+        """Connects devices with DUT.
 
         @param devices: List of Bluetooth HID devices.
         """
@@ -261,21 +314,22 @@ class bluetooth_WiFiCoexPerformance(
             self.test_connection_by_device(device)
             self.test_connection_by_adapter(device.address)
 
-    def disconnect_hid_devices(self, devices):
-        """Disconnects HID devices from DUT.
+    def disconnect_bluetooth_devices(self, devices):
+        """Disconnects devices from DUT.
 
         @param devices: List of Bluetooth devices.
         """
         for device in devices:
             self.test_disconnection_by_adapter(device.address)
 
-    def unpair_hid_devices(self, devices):
-        """Unpairs HID devices.
+    def cleanup_bluetooth_audio_devices(self, devices):
+        """Cleanup for Bluetooth audio devices.
 
         @param devices: List of Bluetooth devices.
         """
         for device in devices:
-            self.test_remove_pairing(device.address)
+            if self.is_audio_device(device):
+                self.cleanup_bluetooth_audio(device, A2DP)
 
     def run_bt_load_tests(self, devices, load_tests):
         """Runs Bluetooth load tests.
@@ -284,6 +338,9 @@ class bluetooth_WiFiCoexPerformance(
          @param load_tests: List of load tests for each device.
         """
         for device, load_test in zip(devices, load_tests):
+            if self.is_audio_device(device):
+                device.StartAudioServer(A2DP)
+                self.test_connection_by_device(device)
             thread = threading.Thread(target=load_test, args=(device, ))
             self.running_threads.append(thread)
             thread.start()
@@ -336,8 +393,9 @@ class bluetooth_WiFiCoexPerformance(
         for device in devices:
             self.devices_latest_index[device.address] = 0
 
-        self.pair_hid_devices(devices)
-        self.connect_hid_devices(devices)
+        self.initialize_bluetooth_audio_devices(devices)
+        self.pair_bluetooth_devices(devices)
+        self.connect_bluetooth_devices(devices)
         # Before Wi-Fi connection.
         logging.info('Start testing: Before Wi-Fi connection')
         self.run_bt_load_tests(devices, load_tests)
@@ -385,8 +443,8 @@ class bluetooth_WiFiCoexPerformance(
         logging.info('Finish testing: After Wi-Fi Load.')
 
         self.check_bluetooth_delay(devices, time_diff)
-        self.unpair_hid_devices(devices)
-        self.disconnect_hid_devices(devices)
+        self.disconnect_bluetooth_devices(devices)
+        self.cleanup_bluetooth_audio_devices(devices)
 
     @test_wrapper('Coex tests with mouse click load',
                   devices={'MOUSE': 1},
@@ -439,6 +497,17 @@ class bluetooth_WiFiCoexPerformance(
                                             [self.__do_gamepad_load_test],
                                             [self.GAMEPAD_EVENTS_COUNTS])
 
+    @test_wrapper(
+            'Coex tests with audio load',
+            devices={'BLUETOOTH_AUDIO': 1},
+            supports_floss=True,
+    )
+    def audio_load(self):
+        """Performs Bluetooth audio load."""
+        self._bluetooth_wifi_coex_load_test(
+                [self.devices['BLUETOOTH_AUDIO'][0]],
+                [self.__do_audio_load_test], [None])
+
     @test_wrapper('Coex tests with keyboard and mouse load',
                   devices={
                           'KEYBOARD': 1,
@@ -466,6 +535,19 @@ class bluetooth_WiFiCoexPerformance(
         ], [self.__do_keyboard_click_load_test, self.__do_gamepad_load_test
             ], [self.KEYBOARD_EVENTS_COUNTS, self.GAMEPAD_EVENTS_COUNTS])
 
+    @test_wrapper('Coex tests with gamepad and audio load',
+                  devices={
+                          'GAMEPAD': 1,
+                          'BLUETOOTH_AUDIO': 1
+                  },
+                  supports_floss=True)
+    def gamepad_with_audio_load(self):
+        """Performs Bluetooth gamepad and audio load."""
+        self._bluetooth_wifi_coex_load_test([
+                self.devices['GAMEPAD'][0], self.devices['BLUETOOTH_AUDIO'][0]
+        ], [self.__do_gamepad_load_test, self.__do_audio_load_test],
+                                            [self.GAMEPAD_EVENTS_COUNTS, None])
+
     @test_wrapper('Coex tests with BLE keyboard and BLE mouse load',
                   devices={
                           'BLE_KEYBOARD': 1,
@@ -480,6 +562,54 @@ class bluetooth_WiFiCoexPerformance(
                 self.__do_keyboard_click_load_test,
                 self.__do_mouse_click_load_test
         ], [self.KEYBOARD_EVENTS_COUNTS, self.MOUSE_EVENTS_COUNTS])
+
+    @test_wrapper('Coex tests with BLE mouse and audio load',
+                  devices={
+                          'BLE_MOUSE': 1,
+                          'BLUETOOTH_AUDIO': 1
+                  },
+                  supports_floss=True)
+    def ble_mouse_with_audio_load(self):
+        """Performs BLE mouse and audio load."""
+        self._bluetooth_wifi_coex_load_test([
+                self.devices['BLE_MOUSE'][0],
+                self.devices['BLUETOOTH_AUDIO'][0]
+        ], [self.__do_mouse_click_load_test, self.__do_audio_load_test],
+                                            [self.MOUSE_EVENTS_COUNTS, None])
+
+    @test_wrapper('Coex tests with mouse, gamepad and audio load',
+                  devices={
+                          'MOUSE': 1,
+                          'GAMEPAD': 1,
+                          'BLUETOOTH_AUDIO': 1
+                  },
+                  supports_floss=True)
+    def mouse_gamepad_audio_load(self):
+        """Performs mouse, gamepad and audio load."""
+        self._bluetooth_wifi_coex_load_test([
+                self.devices['MOUSE'][0], self.devices['GAMEPAD'][0],
+                self.devices['BLUETOOTH_AUDIO'][0]
+        ], [
+                self.__do_mouse_click_load_test, self.__do_gamepad_load_test,
+                self.__do_audio_load_test
+        ], [self.MOUSE_EVENTS_COUNTS, self.GAMEPAD_EVENTS_COUNTS, None])
+
+    @test_wrapper('Coex tests with BLE keyboard, BLE mouse and audio load',
+                  devices={
+                          'BLE_KEYBOARD': 1,
+                          'BLE_MOUSE': 1,
+                          'BLUETOOTH_AUDIO': 1
+                  },
+                  supports_floss=True)
+    def ble_keyboard_ble_mouse_audio_load(self):
+        """Performs BLE keyboard, BLE mouse and audio load."""
+        self._bluetooth_wifi_coex_load_test([
+                self.devices['BLE_KEYBOARD'][0], self.devices['BLE_MOUSE'][0],
+                self.devices['BLUETOOTH_AUDIO'][0]
+        ], [
+                self.__do_keyboard_click_load_test,
+                self.__do_mouse_click_load_test, self.__do_audio_load_test
+        ], [self.KEYBOARD_EVENTS_COUNTS, self.MOUSE_EVENTS_COUNTS, None])
 
     @batch_wrapper('HID bluetooth Wi-Fi coex batch')
     def coex_health_batch_run(self, num_iterations=1, test_name=None):

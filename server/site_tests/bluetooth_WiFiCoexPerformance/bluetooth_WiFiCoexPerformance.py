@@ -71,6 +71,22 @@ class bluetooth_WiFiCoexPerformance(
     MOUSE_EVENTS_COUNTS = MOUSE_CLICKS_NUMBER * EXPECTED_EVENTS_PER_CLICK
     KEYBOARD_EVENTS_COUNTS = len(KEYBOARD_STRING) * EXPECTED_EVENTS_PER_CLICK
 
+    # Define global constants for the amount of movement in the gamepad
+    # thumbstick.
+    DELTA_X = 6000
+    DELTA_Y = 7000
+    # The default delay, in seconds, between consecutive gamepad events.
+    GAMEPAD_DEFAULT_EVENT_DELAY = 0.05
+    # Number of gamepad events to be considered: button press, thumbstick
+    # movements and button release including thumbstick stop.
+    EXPECTED_EVENTS_PER_GAMEPAD_ACTION = 3
+    # The default number of actions for the gamepad test.
+    GAMEPAD_DEFAULT_NUM_ACTIONS = int(DEFAULT_BT_LOAD_TIME /
+                                      GAMEPAD_DEFAULT_EVENT_DELAY /
+                                      EXPECTED_EVENTS_PER_GAMEPAD_ACTION)
+    GAMEPAD_EVENTS_COUNTS = (GAMEPAD_DEFAULT_NUM_ACTIONS *
+                             EXPECTED_EVENTS_PER_GAMEPAD_ACTION)
+
     IPERF_RUN_TIME = 30
 
     PASS_RATE = 0.95  # 95%
@@ -113,6 +129,21 @@ class bluetooth_WiFiCoexPerformance(
                 device=keyboard,
                 string_to_send=self.KEYBOARD_STRING,
                 delay=self.DEFAULT_BT_CLICK_DELAY)
+
+    def __do_gamepad_load_test(self, gamepad):
+        """Runs gamepad load test.
+
+        @param gamepad: gamepad device.
+        """
+        time.sleep(2)
+        self.test_gamepad_continuous_press_button_and_move_thumbstick(
+                device=gamepad,
+                button='GAMEPAD_BUTTON_A',
+                stick='GAMEPAD_LEFT_THUMBSTICK',
+                delta_x=self.DELTA_X,
+                delta_y=self.DELTA_Y,
+                num_iterations=self.GAMEPAD_DEFAULT_NUM_ACTIONS,
+                delay=self.GAMEPAD_DEFAULT_EVENT_DELAY)
 
     def connect_wifi(self):
         """Connects DUT to router."""
@@ -397,6 +428,17 @@ class bluetooth_WiFiCoexPerformance(
                 [self.__do_keyboard_click_load_test],
                 [self.KEYBOARD_EVENTS_COUNTS])
 
+    @test_wrapper(
+            'Coex tests with gamepad load',
+            devices={'GAMEPAD': 1},
+            supports_floss=True,
+    )
+    def gamepad_load(self):
+        """Performs Bluetooth gamepad load."""
+        self._bluetooth_wifi_coex_load_test([self.devices['GAMEPAD'][0]],
+                                            [self.__do_gamepad_load_test],
+                                            [self.GAMEPAD_EVENTS_COUNTS])
+
     @test_wrapper('Coex tests with keyboard and mouse load',
                   devices={
                           'KEYBOARD': 1,
@@ -410,6 +452,19 @@ class bluetooth_WiFiCoexPerformance(
                         self.__do_keyboard_click_load_test,
                         self.__do_mouse_click_load_test
                 ], [self.KEYBOARD_EVENTS_COUNTS, self.MOUSE_EVENTS_COUNTS])
+
+    @test_wrapper('Coex tests with keyboard and gamepad load',
+                  devices={
+                          'KEYBOARD': 1,
+                          'GAMEPAD': 1
+                  },
+                  supports_floss=True)
+    def keyboard_with_gamepad_load(self):
+        """Performs Bluetooth keyboard and gamepad load."""
+        self._bluetooth_wifi_coex_load_test([
+                self.devices['KEYBOARD'][0], self.devices['GAMEPAD'][0]
+        ], [self.__do_keyboard_click_load_test, self.__do_gamepad_load_test
+            ], [self.KEYBOARD_EVENTS_COUNTS, self.GAMEPAD_EVENTS_COUNTS])
 
     @test_wrapper('Coex tests with BLE keyboard and BLE mouse load',
                   devices={

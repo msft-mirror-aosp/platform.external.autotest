@@ -15,6 +15,7 @@ import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
+from autotest_lib.client.cros import cryptohome
 from autotest_lib.server.cros.minios import minios_util
 from autotest_lib.server.cros.network import wifi_test_context_manager
 from autotest_lib.server.cros.update_engine import update_engine_test
@@ -193,7 +194,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
             ):
                 CopyLog(filename)
             if self._host.is_file_exists(self._MINIOS_LOG):
-                CopyLog(filename)
+                CopyLog(self._MINIOS_LOG)
             else:
                 logging.warning("Skipping copy of %s, file not present.",
                                 self._MINIOS_LOG)
@@ -517,3 +518,17 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
                 ssid=ap_ssid, security_config=ap_config.security_config)
         self._wifi_context.assert_connect_wifi(assoc_params)
         return ap_ssid
+
+    def _verify_device_ownership(self, owned):
+        """Verify DUT ownership, fail if ownership does not match `owned`"""
+        login_status = self._host.run_output(cryptohome.CRYPTOHOME_CMD +
+                                             ' --action=get_login_status')
+        match = re.search('%s: (true|false)' % cryptohome.OWNER_EXISTS,
+                          login_status)
+        if not match:
+            raise error.TestFail('Invalid login status: "%s".' % login_status)
+        device_owned_status = match.group(1) == 'true'
+        if device_owned_status != owned:
+            raise error.TestFail(
+                    'Unexpeced ownership, expected=%s, actual=%s.' %
+                    (owned, device_owned_status))

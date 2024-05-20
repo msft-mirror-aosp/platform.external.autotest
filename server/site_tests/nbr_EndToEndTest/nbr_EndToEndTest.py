@@ -11,6 +11,7 @@ from autotest_lib.server.cros.minios import minios_test
 class nbr_EndToEndTest(minios_test.MiniOsTest):
     """Test network based recovery of a DUT."""
     version = 1
+    _TEST_USERNAME = 'test@chromium.org'
 
     def run_once(self,
                  build=None,
@@ -37,6 +38,15 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
                 public_bucket=self._use_public_bucket)
 
         logging.info('Performing recovery with payload url: %s', payload_url)
+
+        # Login and verify that the device is now owned.
+        self._run_client_test_and_check_result(
+                self._LOGIN_TEST,
+                username=self._TEST_USERNAME,
+                password=self._LOGIN_TEST_PASSWORD,
+                dont_override_profile=True,
+                session_start_timeout=30)
+        self._verify_device_ownership(True)
 
         logging.info("Booting into MiniOS")
         self._boot_minios()
@@ -67,4 +77,6 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
                                               host=self._host)
         # Verify the update engine events that happened during the recovery.
         self.verify_update_events(self._RECOVERY_VERSION, minios_hostlog)
+        # Verify device is no longer owned.
+        self._verify_device_ownership(False)
         logging.info('Verification complete.')

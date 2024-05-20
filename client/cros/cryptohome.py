@@ -25,6 +25,7 @@ UNAVAILABLE_ACTION = 'Unknown action or no action given.'
 MOUNT_RETRY_COUNT = 20
 TEMP_MOUNT_PATTERN = '/home/.shadow/%s/temporary_mount'
 VAULT_PATH_PATTERN = '/home/.shadow/%s/vault'
+OWNER_EXISTS = 'owner_user_exists'
 
 LEC_KEY = 'low_entropy_credentials_supported'
 
@@ -145,7 +146,7 @@ def get_login_status():
     """
     out = run_cmd(CRYPTOHOME_CMD + ' --action=get_login_status')
     status = {}
-    for field in ['owner_user_exists']:
+    for field in [OWNER_EXISTS]:
         match = re.search('%s: (true|false)' % field, out)
         if not match:
             raise ChromiumOSError('Invalid login status: "%s".' % out)

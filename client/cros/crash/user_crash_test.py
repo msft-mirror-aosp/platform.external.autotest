@@ -148,7 +148,7 @@ class UserCrashTest(crash_test.CrashTest):
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
 
-            output = crasher.communicate()[1].decode()
+            output = crasher.communicate()[1].decode(errors='backslashreplace')
             exit_code = crasher.returncode
             pid = None
 

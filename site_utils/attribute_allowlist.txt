@@ -679,7 +679,6 @@ suite:cuj_loginperf_2
 suite:cups_weekly
 suite:data-leak-prevention-dmserver-enrollment-daily
 suite:debug_kernel_testing
-suite:deqp
 suite:dev_drone_image_test
 suite:display
 suite:distributed_bvt_tast_info_chrome_shard_0
@@ -776,6 +775,17 @@ suite:fwupd_install_version
 suite:fwupd_update
 suite:graphics
 suite:graphics_browser
+suite:graphics_deqp_0
+suite:graphics_deqp_1
+suite:graphics_deqp_2
+suite:graphics_deqp_3
+suite:graphics_deqp_4
+suite:graphics_deqp_5
+suite:graphics_deqp_6
+suite:graphics_deqp_7
+suite:graphics_deqp_8
+suite:graphics_deqp_9
+suite:graphics_deqp_10
 suite:graphics_per-build
 suite:graphics_per-day
 suite:graphics_per-week

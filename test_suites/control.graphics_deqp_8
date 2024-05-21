@@ -1,11 +1,14 @@
-# Copyright 2016 The ChromiumOS Authors
+# Copyright 2024 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-AUTHOR = "ihf@chromium.org"
-NAME = "deqp"
+AUTHOR = "pwang@chromium.org"
+NAME = "graphics_deqp_8"
+METADATA = {
+    "contacts": ["chromeos-gfx@google.com"],
+    "bug_component": "b:995569", # ChromeOS > Platform > Graphics > GPU,
+}
 PURPOSE = "Special suite for specifically running dEQP on ChromeOS"
-CRITERIA = "All tests with SUITE=deqp must pass."
 
 TIME = "LONG"
 TEST_CATEGORY = "Graphics"
@@ -13,7 +16,7 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-ChromeOS ARC++ tests.
+ChromeOS tests.
 
 @param build: The name of the image to test.
               Ex: x86-mario-release/R17-1412.33.0-a1-b29
@@ -34,14 +37,15 @@ from autotest_lib.server.cros.dynamic_suite import dynamic_suite
 # the bug filer will fallback to its defaults.
 _BUG_TEMPLATE = {
     'labels': ['Type-Bug'],
-    'owner': 'ihf@chromium.org'
+    'owner': 'chromeos-gfx@google.com'
 }
 
 HOURS = 60  # minutes in an hour
 DAYS = 24 * HOURS  # minutes in a day
-# A bit longer than the longest running job in the suite.
-args_dict['max_runtime_mins'] = 1.5 * DAYS
-# Accept result delays for this suite due to temporary lab overload.
+# Each shard should complete within 3 hours.
+args_dict['max_runtime_mins'] = 3 * HOUR
+# We are willing to accept delays in results for this suite due to temporary
+# lab overload for up to 3 days.
 args_dict['timeout_mins'] = 3 * DAYS
 
 args_dict['name'] = NAME

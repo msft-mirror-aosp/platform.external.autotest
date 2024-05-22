@@ -14,7 +14,7 @@ METADATA = {
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'fingerprint, servo_state:WORKING'
-ATTRIBUTES = 'suite:fingerprint-cq, suite:cft-nightly'
+ATTRIBUTES = 'suite:fingerprint-cq'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
 

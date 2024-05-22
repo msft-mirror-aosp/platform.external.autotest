@@ -9,7 +9,8 @@ METADATA = {
     "contacts": ["crosep-intertech@google.com"],
     "bug_component": "b:1280385",
     "criteria": "This test will trigger chameleon reboot.",
-    "doc" : "Reboot chameleon per test bed type within the audio pool."
+    "doc" : "Reboot chameleon per test bed type within the audio pool.",
+    'variant_category': '{"name": "Audio_Board"}',
 }
 
 ATTRIBUTES = "suite:audio_advanced"

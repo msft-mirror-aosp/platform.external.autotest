@@ -9,7 +9,8 @@ METADATA = {
     "contacts": ["chromeos-audio-sw@google.com"],
     "bug_component": "b:875558",
     "criteria": "This test will fail if the captured audio does not match original file.",
-    "doc" : "Tests USB audio playback after suspend-resume"
+    "doc" : "Tests USB audio playback after suspend-resume",
+    'variant_category': '{"name": "Audio_Board"}',
 }
 ATTRIBUTES = "suite:audio_advanced"
 TEST_TYPE = "server"

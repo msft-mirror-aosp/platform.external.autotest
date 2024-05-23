@@ -24,11 +24,11 @@ from autotest_lib.client.common_lib import utils
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 test = 'tast'
-args_ash = {'test_exprs': ["meta.PowerQualV2.videoplayback_ash_test"],
+args_ash = {'test_exprs': ["meta.PowerQual.videoplayback_ash_test"],
             'max_run_sec': 13000,
             'clear_tpm': False,
             'tag': 'ash'}
-args_lacros = {'test_exprs': ["meta.PowerQualV2.videoplayback_lacros_test"],
+args_lacros = {'test_exprs': ["meta.PowerQual.videoplayback_lacros_test"],
             'max_run_sec': 13000,
             'clear_tpm': False,
             'tag': 'lacros'}

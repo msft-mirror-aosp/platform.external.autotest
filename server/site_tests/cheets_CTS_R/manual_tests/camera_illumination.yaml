@@ -1,4 +1,0 @@
-android.hardware.camera2.cts.CaptureRequestTest#testAntiBandingModes[1]: [strongbad]
-android.hardware.camera2.cts.CaptureRequestTest#testEdgeModeControl[1]: [nautilus]
-android.hardware.camera2.cts.StillCaptureTest#testAeCompensation[1]: [coachz,homestar,quackingstick]
-android.hardware.cts.CameraGLTest#testCameraToSurfaceTextureMetadata: [nautilus]

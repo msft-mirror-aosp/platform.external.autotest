@@ -726,9 +726,10 @@ class BaseServoHost(ssh_host.SSHHost):
                 return False
             elif with_servod:
                 # For container with servod process, check if servod process started.
-                (exit_code, output) = containers[0].exec_run("ps")
+                (exit_code, output) = containers[0].exec_run(
+                    "servodtool instance wait-for-active -p 9999")
                 logging.info("Is Up output %s", output)
-                if b"servod" not in output:
+                if exit_code != 0:
                     return False
             return True
         else:

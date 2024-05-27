@@ -2,15 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/342928657): Remove from PVS testplans and remove this file.
+
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_FWupdateThenSleep.batteryonly"
 METADATA = {
     "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
     "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
     "criteria": "Run RW firmware update while on battery, then sleep and wake",
-    "requirements": ["sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
-ATTRIBUTES = "suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_bios"
 DEPENDENCIES = "servo_state:WORKING"
 TIME = "MEDIUM"
 TEST_TYPE = "server"

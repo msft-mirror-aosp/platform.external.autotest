@@ -112,16 +112,17 @@ class BluetoothAVLHCITests(BluetoothQuickTests):
         """Initializes Autotest."""
         self.hcitool = Hcitool()
 
-    # TODO(b/236922299): Un-skip QCA chipsets after the firmware fix landed.
     # TODO(b/241605219): Un-skip MTK7921-SDIO chipset after either the AVL
     #                    requirement fix or the firmware fix is landed.
     @test_wrapper('spec_legacy_test',
                   skip_chipsets=CHIPSETS_UNSUPPORT_LEGACY +
-                  ['QCA-WCN6856', 'QCA-WCN3991', 'Mediatek-MTK7921-SDIO'])
+                  ['Mediatek-MTK7921-SDIO'])
     def spec_legacy_test(self):
         """Checks Bluetooth legacy specification."""
         self.test_flushable_data_packets()
-        self.test_erroneous_data_reporting()
+        if self.bluetooth_facade.get_chipset_name() != 'QCA-WCN3991':
+            # QCA has stopped the FW upstream of WCN3991. See b/236922299
+            self.test_erroneous_data_reporting()
         self.test_event_filter_size()
         self.test_acl_min_buffer_number()
         self.test_acl_min_buffer_size()

@@ -23,11 +23,12 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 test = 'tast'
 args = {'test_exprs': ["meta.PowerQual.segment"],
             'max_run_sec': 43200,
-            'clear_tpm': False}
+            'clear_tpm': False, 'tag': 'meta.PowerQual.segment'}
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
     job.run_test("power_LW", host=host, test=test, args=args,
-                 machine=machine, server_test=True)
+                 machine=machine, server_test=True, tast_server_test=True,
+                 tag='power_segment')
 
 parallel_simple(run, machines)

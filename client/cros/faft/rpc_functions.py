@@ -1149,15 +1149,13 @@ class UpdaterServicer(object):
         return self._updater.get_firmwareupdate_command(mode, append, options)
 
     def run_firmwareupdate(self, mode, append=None, options=()):
-        """Run updater with the given options
+        """Run updater with the given options.
 
         @param mode: mode for the updater
         @param append: extra string appended to shellball filename to run
         @param options: options for chromeos-firmwareupdate
-        @return: returncode of the updater
-        @rtype: int
         """
-        return self._updater.run_firmwareupdate(mode, append, options)
+        self._updater.run_firmwareupdate(mode, append, options)
 
     def run_autoupdate(self, append):
         """Run chromeos-firmwareupdate with autoupdate mode."""

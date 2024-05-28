@@ -505,7 +505,7 @@ class FirmwareUpdater(object):
         @type mode: str
         @type options: list | tuple | None
         """
-        return self.os_if.run_shell_command_get_status(
+        self.os_if.run_shell_command(
                 self.get_firmwareupdate_command(mode, append, options))
 
     def cbfs_setup_work_dir(self):

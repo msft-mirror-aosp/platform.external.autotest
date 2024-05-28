@@ -152,7 +152,6 @@ def _get_tradefed_data(path, tradefed_path, extra_executables=None):
             stderr=subprocess.STDOUT).decode()
 
     _ABI_PREFIXES = ('arm', 'x86')
-    _MODULE_PREFIXES = ('Cts', 'cts-', 'signed-Cts', 'vm-tests-tf', 'Sts')
 
     modules = set()
     build = '<unknown>'
@@ -169,9 +168,6 @@ def _get_tradefed_data(path, tradefed_path, extra_executables=None):
         elif line.startswith(_ABI_PREFIXES):
             # Newer CTS shows ABI-module pairs like "arm64-v8a CtsNetTestCases"
             modules.add(line.split()[1])
-        elif line.startswith(_MODULE_PREFIXES):
-            # Old CTS plainly lists up the module name
-            modules.add(line)
         elif line.isspace() or line.startswith('Use "help"'):
             pass
         else:

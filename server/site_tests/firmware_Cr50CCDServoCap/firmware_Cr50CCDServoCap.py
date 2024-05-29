@@ -176,13 +176,15 @@ class firmware_Cr50CCDServoCap(Cr50Test):
 
     def ccd_ec_uart_works(self):
         """Returns True if the CCD ec uart works."""
-        try:
-            self.servo.get('ec_board', prefix=self._ccd_prefix)
-            logging.info('ccd ec console is responsive')
-            return True
-        except:
-            logging.info('ccd ec console is unresponsive')
-            return False
+        for i in range(3):
+            try:
+                self.servo.get('ec_board', prefix=self._ccd_prefix)
+                logging.info('ccd ec console is responsive')
+                return True
+            except:
+                logging.info('run %d: ccd ec console is unresponsive', i)
+            time.sleep(self.SLEEP)
+        return False
 
 
     def check_state_flags(self, ccdstate):

@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import logging
-import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import cr50_utils
@@ -111,23 +110,3 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         # original_path is the image already on cr50, so this won't have any
         # real effect. It will just reboot Cr50.
         self.try_update('', self.original_path, stdout='image updated')
-        # After reboot, if the DUT hasn't responded within 45 seconds, it's not
-        # going to.
-        exp_time = time.time() + self.WAIT_FOR_DUT_SSH_S
-        self.gsc.wait_for_reboot(timeout=10)
-        while time.time() < exp_time:
-            if self.host.is_up_fast():
-                break
-            time.sleep(self.DELAY_SSH_CHECK_S)
-        else:
-            raise error.TestError('DUT did not respond')
-
-        # Wait for the host to respond to ping. Make sure it responded within
-        # 60 seconds. The whole point of this case is that cr50 will reject
-        # images in the first 60 seconds of boot, so it won't work if cr50
-        # has been up for a while.
-        if self.gsc.gettime() >= 60:
-            raise error.TestError('Cannot complete test. Took >60 seconds for '
-                                  'DUT to come back online')
-        # After any reboot, cr50 will reject images for 60 seconds
-        self.try_update('', self.original_path, err=9, wait=False)

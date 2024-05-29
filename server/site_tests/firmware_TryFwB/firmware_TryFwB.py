@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(b/342929556): Remove from PVS testplans and remove this file.
+
 import logging
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 

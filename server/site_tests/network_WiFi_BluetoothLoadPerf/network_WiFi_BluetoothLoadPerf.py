@@ -399,9 +399,17 @@ class network_WiFi_BluetoothLoadPerf(
         # Runs the iperf tool and log the results.
         results = session.run(config)
         if not results:
-            logging.error('Failed to take measurement for %s',
-                          config.test_type)
+            logging.error(
+                    'Failed to obtain results from iperf runs. Unable '
+                    'to take measurements for bt_status: %s, test_type: '
+                    '%s, channel: %s.', bt_tag, config.test_type,
+                    ap_config.channel)
+            failed_test_types.add(f'[Failed to take the measurements from '
+                                  f'iperf runs results for bt_status: '
+                                  f'{bt_tag}, test_type: {config.test_type}, '
+                                  f'channel: {ap_config.channel}]')
             return
+
         values = [result.throughput for result in results]
         self.output_perf_value(
                 config.test_type + '_' + bt_tag,
@@ -481,8 +489,6 @@ class network_WiFi_BluetoothLoadPerf(
                                             failed_test_types, ap_config_tag,
                                             bt_tag)
 
-        return failed_test_types
-
     def test_bt_device_connection(self):
         """Tests the connection of BT devices."""
         for device in self.bt_devices:
@@ -516,18 +522,18 @@ class network_WiFi_BluetoothLoadPerf(
                                           self.context.router)
 
             # Performs the test without any BT connection.
-            self.test_one(manager, session, config, test_type, None, ap_config,
-                          ap_config_tag, self.CONNECTION_STATE_DISCONNECTED)
+            self.test_one(manager, session, config, test_type,
+                          failed_test_types, ap_config, ap_config_tag,
+                          self.CONNECTION_STATE_DISCONNECTED)
 
             # Tests Bluetooth device connection.
             self.test_bt_device_connection()
 
             # Performs the test after BT connection and update the failed test
             # types.
-            failed_test_types.update(
-                    self.test_one(manager, session, config, test_type,
-                                  failed_test_types, ap_config, ap_config_tag,
-                                  self.CONNECTION_STATE_CONNECTED))
+            self.test_one(manager, session, config, test_type,
+                          failed_test_types, ap_config, ap_config_tag,
+                          self.CONNECTION_STATE_CONNECTED)
 
             # List to hold the load device and its load test.
             devices_load_tests = []
@@ -547,10 +553,9 @@ class network_WiFi_BluetoothLoadPerf(
                 load_test_threads.append(load_test_thread)
 
             # Performs the test with BT load and update the failed test types.
-            failed_test_types.update(
-                    self.test_one(manager, session, config, test_type,
-                                  failed_test_types, ap_config, ap_config_tag,
-                                  self.CONNECTION_STATE_WITH_LOAD))
+            self.test_one(manager, session, config, test_type,
+                          failed_test_types, ap_config, ap_config_tag,
+                          self.CONNECTION_STATE_WITH_LOAD)
 
             # Waits for all load test threads to complete.
             for load_test_thread in load_test_threads:
@@ -561,10 +566,9 @@ class network_WiFi_BluetoothLoadPerf(
 
             # Performs the test after BT disconnection and update the failed
             # test types.
-            failed_test_types.update(
-                    self.test_one(manager, session, config, test_type,
-                                  failed_test_types, ap_config, ap_config_tag,
-                                  self.CONNECTION_STATE_DISCONNECTED_AGAIN))
+            self.test_one(manager, session, config, test_type,
+                          failed_test_types, ap_config, ap_config_tag,
+                          self.CONNECTION_STATE_DISCONNECTED_AGAIN)
 
         return failed_test_types
 

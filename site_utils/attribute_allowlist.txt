@@ -894,6 +894,7 @@ suite:pasit_display
 suite:pasit_fast
 suite:pasit_full
 suite:pasit_hid
+suite:pasit_pd
 suite:pasit_storage
 suite:perfalerts
 suite:performance_cuj

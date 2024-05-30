@@ -477,7 +477,7 @@ class network_WiFi_BluetoothLoadPerf(
                     {'_'.join([config.test_type, test_str, 'drop']): drop})
 
             # Tests latency with ping.
-            result_ping = self.context.client.ping(get_ping_config(3))
+            result_ping = self.context.client.ping(get_ping_config(10))
             self.write_perf_keyval(
                     {'_'.join(['ping', test_str]): result_ping.avg_latency})
             logging.info('Ping statistics with %s: %r', bt_tag, result_ping)

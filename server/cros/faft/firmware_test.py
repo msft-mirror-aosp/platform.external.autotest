@@ -2598,7 +2598,7 @@ class FirmwareTest(test.test):
         time.sleep(self.gsc.SHORT_WAIT)
         if not self.gsc.ap_is_on():
             logging.info("Pressing power button to turn on AP")
-            self.servo.power_short_press()
+            self.servo.power_normal_press()
 
         end_time = time.time() + self.RESPONSE_TIMEOUT
         while not self.host.ping_wait_up(

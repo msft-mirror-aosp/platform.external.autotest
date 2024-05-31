@@ -809,6 +809,29 @@ def download_gs_to_host(host, gs_path, dest_dir, cache_endpoint):
     return file_path
 
 
+def _get_gs_credential():
+    """
+    Select the proper service account credentials based on what is available.
+
+    Skylab and VMLab drone bot have different credentials.
+    """
+    selected_credential = None
+    available_credentials = [
+            '/creds/service_accounts/skylab-drone.json',
+            '/creds/service_accounts/service-account-chromeos.json',
+    ]
+
+    for cred in available_credentials:
+        if os.path.exists(cred):
+            selected_credential = cred
+            break
+
+    if selected_credential:
+        return 'Credentials:gs_service_key_file=%s' % (selected_credential)
+    else:
+        raise Exception("No credential file is found.")
+
+
 def download_gs(gs_path, dest_dir):
     """
     Download GCS file to drone server.
@@ -823,8 +846,7 @@ def download_gs(gs_path, dest_dir):
         # Download gs file from Cache Server.
         cmd = [
                 'BOTO_CONFIG=', 'gsutil', '-o',
-                'Credentials:gs_service_key_file=/creds/service_accounts/skylab-drone.json',
-                'cp', gs_path, dest_dir
+                _get_gs_credential(), 'cp', gs_path, dest_dir
         ]
         file_path = os.path.join(dest_dir, file_name)
         common_utils.run(cmd, timeout=1200, **_gen_run_env_dict())

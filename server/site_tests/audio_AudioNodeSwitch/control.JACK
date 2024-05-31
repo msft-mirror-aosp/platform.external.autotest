@@ -11,7 +11,8 @@ METADATA = {
     "contacts": ["chromeos-audio-bugs@google.com"],
     "bug_component": "b:875558",
     "criteria": "This test will fail if the audio node is not as expected.",
-    "doc" : "Tests selection of audiojack audio node"
+    "doc" : "Tests selection of audiojack audio node",
+    'variant_category': '{"name": "Audio_SoC_Codec_Amp"}',
 }
 ATTRIBUTES = "suite:audio_essential"
 TEST_TYPE = "server"

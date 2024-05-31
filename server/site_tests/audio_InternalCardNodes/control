@@ -8,7 +8,8 @@ NAME = "audio_InternalCardNodes"
 METADATA = {
     "contacts": ["chromeos-audio-bugs@google.com"],
     "bug_component": "b:875558",
-    "criteria": "This test will fail if the plugged nodes are not expected."
+    "criteria": "This test will fail if the plugged nodes are not expected.",
+    'variant_category': '{"name": "Audio_SoC_Codec_Amp"}',
 }
 
 TEST_TYPE = "server"

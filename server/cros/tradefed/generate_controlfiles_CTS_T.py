@@ -696,10 +696,15 @@ CONFIG['HARDWARE_MODULES'] = [
 ]
 
 
-R_REGRESSION_SUITES = ['suite:arc-cts']
-R_REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + R_REGRESSION_SUITES
+REGRESSION_SUITES = ['suite:arc-cts']
+REGRESSION_AND_QUAL_SUITES = CONFIG['QUAL_SUITE_NAMES'] + REGRESSION_SUITES
 
-CONFIG['EXTRA_MODULES'] = { }
+CONFIG['EXTRA_MODULES'] = {
+        'CtsDeqpTestCases': {
+                'CtsDeqpTestCases.isolated-flaky-tests':
+                ['suite:arc-cts-long', 'suite:arc-cts-qual-long'],
+        },
+}
 
 # In addition to EXTRA_MODULES, these modules do require separate control files
 # for internal and moblab.
@@ -739,6 +744,12 @@ CONFIG['EXTRA_COMMANDLINE'] = {
         'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
                 '--module', 'CtsDeqpTestCases', '--test',
                 'dEQP-GLES3.functional.prerequisite#*'
+        ],
+        'CtsDeqpTestCases.isolated-flaky-tests': [
+                '--module',
+                'CtsDeqpTestCases',
+                '--test',
+                'dEQP-VK.pipeline.render_to_image.core.2d_array.huge.height_layers#r8g8b8a8_unorm_d24_unorm_s8_uint',
         ],
         'CtsMediaStressTestCases.camera': [
                 '--module',

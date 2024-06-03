@@ -881,13 +881,6 @@ class SystemServicer(object):
         """
         return self._os_if.get_root_part()
 
-    def set_try_fw_b(self, count=1):
-        """Set 'Try Firmware B' flag in crossystem.
-
-        @param count: # times to try booting into FW B
-        """
-        self._os_if.cs.fwb_tries = count
-
     def set_fw_try_next(self, next, count=0):
         """Set fw_try_next to A or B.
 

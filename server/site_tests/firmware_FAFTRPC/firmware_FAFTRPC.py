@@ -493,16 +493,6 @@ RPC_CATEGORIES = [
                                 "failing_args": [NO_ARGS],
                         },
                         {
-                                "method_name": "set_try_fw_b",
-                                "passing_args": [
-                                        NO_ARGS,
-                                        (1, ),
-                                ],
-                                "failing_args": [
-                                        (1, 1),
-                                ],
-                        },
-                        {
                                 "method_name": "set_fw_try_next",
                                 "passing_args": [
                                         ("A", ),

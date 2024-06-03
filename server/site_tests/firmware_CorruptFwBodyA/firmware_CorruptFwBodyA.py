@@ -42,7 +42,7 @@ class firmware_CorruptFwBodyA(FirmwareTest):
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected firmware B boot and restore firmware A.")
-        self.check_state((self.checkers.fw_tries_checker, ('B', False)))
+        self.check_state((self.checkers.fw_tries_checker, 'B'))
         self.faft_client.bios.modify_body('a', offset_a, byte_a)
         self.switcher.mode_aware_reboot()
 

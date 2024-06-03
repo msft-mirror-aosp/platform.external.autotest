@@ -40,7 +40,7 @@ class firmware_CorruptFwSigA(FirmwareTest):
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected firmware B boot and set fwb_tries flag.")
-        self.check_state((self.checkers.fw_tries_checker, ('B', False)))
+        self.check_state((self.checkers.fw_tries_checker, 'B'))
 
         self.try_fwb()
         self.switcher.mode_aware_reboot()

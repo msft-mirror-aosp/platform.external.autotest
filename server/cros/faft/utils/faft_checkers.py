@@ -17,7 +17,6 @@ class FAFTCheckers(object):
         self.faft_framework = faft_framework
         self.faft_client = faft_framework.faft_client
         self.faft_config = faft_framework.faft_config
-        self.fw_vboot2 = self.faft_client.system.get_fw_vboot2()
 
     def _parse_crossystem_output(self, lines):
         """Parse the crossystem output into a dict.
@@ -118,43 +117,20 @@ class FAFTCheckers(object):
                     'Unexpected boot mode %s: want normal, rec, or dev' % mode)
         return self.faft_client.system.get_boot_mode() == mode
 
-    def fw_tries_checker(self,
-                         expected_mainfw_act,
-                         expected_fw_tried=True,
-                         expected_try_count=0):
+    def fw_tries_checker(self, expected_mainfw_act, expected_try_count=0):
         """Check the current FW booted and try_count
-
-        Mainly for dealing with the vboot1-specific flags fwb_tries and
-        tried_fwb fields in crossystem.  In vboot2, fwb_tries is meaningless and
-        is ignored while tried_fwb is translated into fw_try_count.
 
         @param expected_mainfw_act: A string of expected firmware, 'A', 'B', or
                        None if don't care.
-        @param expected_fw_tried: True if tried expected FW at last boot.
-                       This means that mainfw_act=A,tried_fwb=0 or
-                       mainfw_act=B,tried_fwb=1. Set to False if want to
-                       check the opposite case for the mainfw_act.  This
-                       check is only performed in vboot1 as tried_fwb is
-                       never set in vboot2.
         @param expected_try_count: Number of times to try a FW slot.
 
         @return: True if the correct boot firmware fields matched.  Otherwise,
                        False.
         """
-        crossystem_dict = {'mainfw_act': expected_mainfw_act.upper()}
-
-        if not self.fw_vboot2:
-            if expected_mainfw_act == 'B':
-                tried_fwb_val = True
-            else:
-                tried_fwb_val = False
-            if not expected_fw_tried:
-                tried_fwb_val = not tried_fwb_val
-            crossystem_dict['tried_fwb'] = '1' if tried_fwb_val else '0'
-
-            crossystem_dict['fwb_tries'] = str(expected_try_count)
-        else:
-            crossystem_dict['fw_try_count'] = str(expected_try_count)
+        crossystem_dict = {
+                'mainfw_act': expected_mainfw_act.upper(),
+                'fw_try_count': str(expected_try_count),
+        }
         return self.crossystem_checker(crossystem_dict)
 
     def dev_boot_usb_checker(self, dev_boot_usb=True, kernel_key_hash=False):

@@ -13,7 +13,6 @@ from autotest_lib.server.hosts import servo_constants
 from autotest_lib.server.hosts import host_info
 
 CROSSYSTEM_RESULT = '''
-fwb_tries              = 0                              # Fake comment
 fw_vboot2              = 1                              # Fake comment
 fwid                   = Google_Reef.9933.0.0           # Fake comment
 fwupdate_tries         = 0                              #

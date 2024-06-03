@@ -2308,16 +2308,6 @@ class FirmwareTest(test.test):
         self.switcher.mode_aware_reboot()
         logging.info("Successfully restored CGPT table.")
 
-    def try_fwb(self, count=0):
-        """set to try booting FWB count # times
-
-        Wrapper to set fw_try_count and fw_try_next for vboot2.
-
-        @param count: an integer specifying value to program into
-                      fwb_tries(vb1)/fw_try_next(vb2)
-        """
-        self.faft_client.system.set_fw_try_next("B", count)
-
     def identify_shellball(self, include_ec=None):
         """Get the FWIDs of all targets and sections in the shellball
 

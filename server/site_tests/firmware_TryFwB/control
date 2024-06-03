@@ -19,7 +19,7 @@ TEST_TYPE = "server"
 JOB_RETRIES = 0
 
 DOC = """
-This test sets fwb_tries flag and boots firmware B.
+This test sets fw_try_next=B and boots firmware B.
 """
 
 args_dict = utils.args_to_dict(args)

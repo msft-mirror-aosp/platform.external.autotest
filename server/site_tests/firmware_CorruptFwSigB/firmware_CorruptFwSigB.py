@@ -40,9 +40,9 @@ class firmware_CorruptFwSigB(FirmwareTest):
         self.faft_client.bios.modify_sig('b', offset_b, byte_b + 1)
         self.switcher.mode_aware_reboot()
 
-        logging.info("Expected firmware A boot and set try_fwb flag.")
+        logging.info("Expected firmware A boot and set fw_try_next to B.")
         self.check_state((self.checkers.fw_tries_checker, 'A'))
-        self.try_fwb()
+        self.faft_client.system.set_fw_try_next('B')
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected firmware A boot and restore firmware B.")

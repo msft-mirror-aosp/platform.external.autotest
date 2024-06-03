@@ -59,14 +59,14 @@ class firmware_CorruptBothFwSigAB(FirmwareTest):
         self.switcher.bypass_rec_mode()
         self.switcher.wait_for_client()
 
-        logging.info("Expected recovery boot and set fwb_tries flag.")
+        logging.info("Expected recovery boot and set fw_try_next to B.")
         self.check_state((self.checkers.crossystem_checker, {
                           'mainfw_type': 'recovery',
                           'recovery_reason': (
                               vboot.RECOVERY_REASON['RO_INVALID_RW'],
                               vboot.RECOVERY_REASON['RW_VERIFY_KEYBLOCK']),
                           }))
-        self.faft_client.system.set_try_fw_b()
+        self.faft_client.system.set_fw_try_next('B')
 
         self.servo.switch_usbkey('host')
         # The EC is still in RO. This makes the next reset, which will be

@@ -25,9 +25,9 @@ class firmware_TryFwB(FirmwareTest):
 
     def run_once(self):
         """Runs a single iteration of the test."""
-        logging.info("Set fwb_tries flag")
+        logging.info("Set fw_try_next to B")
         self.check_state((self.checkers.fw_tries_checker, 'A'))
-        self.try_fwb()
+        self.faft_client.system.set_fw_try_next('B')
         self.switcher.mode_aware_reboot()
 
         logging.info("Expected firmware B boot, reboot")

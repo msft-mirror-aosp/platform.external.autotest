@@ -159,7 +159,7 @@ All the FAFT test cases are server side tests, meaning that all the actions are 
 ### Test Case Example
 
 Here is an example to demonstrate how easy it is to write a FAFT test case. It test the firmware like:
-1. FW A normal boot -> enable devsw + set try_fwb -> reboot -> press ctrl-d
+1. FW A normal boot -> enable devsw + set `fw_try_next=B` -> reboot -> press ctrl-d
 2. FW B developer boot -> do nothing -> reboot -> press ctrl-d
 3. FW A developer boot -> disable devsw -> reboot -> do nothing
 4. FW A normal boot -> finished

@@ -41,9 +41,9 @@ class firmware_CorruptFwBodyB(FirmwareTest):
         self.faft_client.bios.modify_body('b', offset_b, byte_b + 1)
         self.switcher.mode_aware_reboot()
 
-        logging.info("Expected firmware A boot and set try_fwb flag.")
+        logging.info("Expected firmware A boot and set fw_try_next to B.")
         self.check_state((self.checkers.fw_tries_checker, 'A'))
-        self.try_fwb(1)
+        self.faft_client.system.set_fw_try_next('B', 1)
         self.switcher.mode_aware_reboot()
 
         logging.info("Still expected A boot since B is corrupted. "

@@ -38,8 +38,7 @@ class firmware_UpdateKernelSubkeyVersion(FirmwareTest):
 
     def check_kernel_subkey_version(self, expected_ver):
         """Checks the kernel subkey version."""
-        actual_ver = self.faft_client.bios.get_kernel_subkey_version(
-                'b' if self.fw_vboot2 else 'a')
+        actual_ver = self.faft_client.bios.get_kernel_subkey_version('b')
         if actual_ver != expected_ver:
             raise error.TestFail(
                     'Kernel subkey version should be %s, but got %s.' %
@@ -109,6 +108,5 @@ class firmware_UpdateKernelSubkeyVersion(FirmwareTest):
         self.check_state((self.checkers.crossystem_checker, {
                           'fwid': self._fwid
                           }))
-        self.check_state((self.checkers.fw_tries_checker,
-                          'B' if self.fw_vboot2 else 'A'))
+        self.check_state((self.checkers.fw_tries_checker, 'B'))
         self.check_kernel_subkey_version(self._update_version - 1)

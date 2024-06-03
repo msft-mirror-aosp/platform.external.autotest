@@ -313,26 +313,21 @@ class FirmwareTest(test.test):
         self._record_uart_capture()
         self._record_system_info()
         self.faft_client.system.set_dev_default_boot()
-        self.fw_vboot2 = self.faft_client.system.get_fw_vboot2()
-        logging.info("vboot version: %d", 2 if self.fw_vboot2 else 1)
-        if self.fw_vboot2:
-            self.faft_client.system.set_fw_try_next("A")
-            if (
-                self.faft_client.system.get_crossystem_value("mainfw_act")
-                == "B"
-            ):
-                logging.info("mainfw_act is B. rebooting to set it A")
-                # TODO(crbug.com/1018322): remove try/catch once that bug is
-                # marked as fixed and verified. In that case the overlay for
-                # the board itself will map warm_reset to cold_reset.
-                try:
-                    self.switcher.mode_aware_reboot()
-                except ConnectionError as e:
-                    if "DUT is still up unexpectedly" in str(e):
-                        # In this case, try doing a cold_reset instead
-                        self.switcher.mode_aware_reboot(reboot_type="cold")
-                    else:
-                        raise
+        assert self.faft_client.system.get_fw_vboot2()
+        self.faft_client.system.set_fw_try_next("A")
+        if self.faft_client.system.get_crossystem_value("mainfw_act") == "B":
+            logging.info("mainfw_act is B. rebooting to set it A")
+            # TODO(crbug.com/1018322): remove try/catch once that bug is
+            # marked as fixed and verified. In that case the overlay for
+            # the board itself will map warm_reset to cold_reset.
+            try:
+                self.switcher.mode_aware_reboot()
+            except ConnectionError as e:
+                if "DUT is still up unexpectedly" in str(e):
+                    # In this case, try doing a cold_reset instead
+                    self.switcher.mode_aware_reboot(reboot_type="cold")
+                else:
+                    raise
 
         # Check flashrom before first use, to avoid xmlrpclib.Fault.
         if not self.faft_client.bios.is_available():
@@ -1507,27 +1502,6 @@ class FirmwareTest(test.test):
         logging.info("***")
         self.unmark_setup_done("gbb_flags")
 
-    def setup_tried_fwb(self, tried_fwb):
-        """Setup for fw B tried state.
-
-        It makes sure the system in the requested fw B tried state. If not, it
-        tries to do so.
-
-        @param tried_fwb: True if requested in tried_fwb=1;
-                          False if tried_fwb=0.
-        """
-        if tried_fwb:
-            if not self.checkers.crossystem_checker({"tried_fwb": "1"}):
-                logging.info(
-                    "Firmware is not booted with tried_fwb. Reboot into it."
-                )
-                self.faft_client.system.set_try_fw_b()
-        else:
-            if not self.checkers.crossystem_checker({"tried_fwb": "0"}):
-                logging.info(
-                    "Firmware is booted with tried_fwb. Reboot to clear."
-                )
-
     def power_on(self):
         """Switch DUT AC power on."""
         self._client.power_on(self.power_control)
@@ -2337,19 +2311,12 @@ class FirmwareTest(test.test):
     def try_fwb(self, count=0):
         """set to try booting FWB count # times
 
-        Wrapper to set fwb_tries for vboot1 and fw_try_count,fw_try_next for
-        vboot2
+        Wrapper to set fw_try_count and fw_try_next for vboot2.
 
         @param count: an integer specifying value to program into
                       fwb_tries(vb1)/fw_try_next(vb2)
         """
-        if self.fw_vboot2:
-            self.faft_client.system.set_fw_try_next("B", count)
-        else:
-            # vboot1: we need to boot into fwb at least once
-            if not count:
-                count = count + 1
-            self.faft_client.system.set_try_fw_b(count)
+        self.faft_client.system.set_fw_try_next("B", count)
 
     def identify_shellball(self, include_ec=None):
         """Get the FWIDs of all targets and sections in the shellball

@@ -50,6 +50,5 @@ class firmware_CorruptFwSigA(FirmwareTest):
         self.faft_client.bios.modify_sig('a', offset_a, byte_a)
         self.switcher.mode_aware_reboot()
 
-        expected_slot = 'B' if self.fw_vboot2 else 'A'
-        logging.info("Expected firmware %s boot, done.", expected_slot)
-        self.check_state((self.checkers.fw_tries_checker, expected_slot))
+        logging.info("Expected firmware B boot, done.")
+        self.check_state((self.checkers.fw_tries_checker, 'B'))

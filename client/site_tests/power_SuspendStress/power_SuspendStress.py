@@ -3,7 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import dbus, logging, numpy, random, time
+import dbus, logging, numpy, os, random, shutil, time
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
@@ -100,6 +100,14 @@ class power_SuspendStress(test.test):
                         desc='Find default network interface')
             logging.info('Found default network interface: %s', iface.name)
 
+        has_substate_requirements = os.path.exists(
+                '/sys/kernel/debug/pmc_core/substate_requirements')
+        pmc_core_dir = os.path.join(self.resultsdir, 'pmc_core')
+        if has_substate_requirements:
+            if not os.path.exists(pmc_core_dir):
+                os.mkdir(pmc_core_dir)
+
+        suspend_iter = 1
         while not self._done():
             time.sleep(self._min_resume +
                        random.randint(0, self._max_resume_window))
@@ -123,8 +131,13 @@ class power_SuspendStress(test.test):
                     # though the server likely won't see this.
                     raise error.TestFail('Link is gone; rebooting')
 
+            logging.info("Suspend %d", suspend_iter)
             self._suspender.suspend(random.randint(0, 3) + self._min_suspend)
-
+            if has_substate_requirements:
+                outfilename = f'substate_requirements.{suspend_iter}'
+                shutil.copy('/sys/kernel/debug/pmc_core/substate_requirements',
+                            os.path.join(pmc_core_dir, outfilename))
+            suspend_iter += 1
 
     def postprocess_iteration(self):
         if self._suspender.successes:

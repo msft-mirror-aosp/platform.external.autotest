@@ -31,7 +31,7 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
-    duration = int(args_dict.get("uart_duration", "600"))
+    duration = int(args_dict.get("uart_duration", "60"))
     job.run_test(
         "firmware_Cr50CCDUartStress",
         host=host,

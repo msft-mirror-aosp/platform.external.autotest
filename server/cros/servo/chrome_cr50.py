@@ -1629,7 +1629,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if servo_en:
             self.enable_servo_control_caps()
 
-    def check_for_console_errors(self, desc):
+    def check_for_console_errors(self, desc, error_strings=None):
         """Check cr50 uart output for errors.
 
         Use the logs captured during firmware_test cleanup to check for cr50
@@ -1645,17 +1645,20 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             logging.info('There is not a cr50 uart file')
             return
 
-        error_counts = [0 for i in range(len(self.ERROR_DESC_LIST))]
+        if error_strings == None:
+            error_strings = self.ERROR_DESC_LIST
+
+        error_counts = [0 for i in range(len(error_strings))]
         with open(cr50_uart_file, 'r') as f:
             for line in f:
-                for i, gsc_err in enumerate(self.ERROR_DESC_LIST):
+                for i, gsc_err in enumerate(error_strings):
                     srch_str = gsc_err[0]
                     if srch_str in line:
                         error_counts[i] += 1
 
         error_msg = []
         for i, count in enumerate(error_counts):
-            error_str, is_fatal = self.ERROR_DESC_LIST[i]
+            error_str, is_fatal = error_strings[i]
             fatal_str = ''
             if is_fatal and count:
                 error_msg.append('Found %r %d times in logs' %

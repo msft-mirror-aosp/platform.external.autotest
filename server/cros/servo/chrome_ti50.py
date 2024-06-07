@@ -91,7 +91,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     # Ti50 inhibits deep sleep for 60 seconds after AP power on.
     DEEP_SLEEP_DELAY = 60
     # Maximum TPM init time.
-    TPM_INIT_MAX = 40000
+    TPM_INIT_MAX = 42000
     TIMESTAMP_RE = r'\[[ 0-9.]+.\] '
     WAKE_RESPONSE = [r'\n(|%s)> ' % TIMESTAMP_RE]
     TIME_RE = r'Since %s: [x0-9a-f]* = ([0-9\.]*) s'

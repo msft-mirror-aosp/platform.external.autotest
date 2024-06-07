@@ -10,8 +10,7 @@ _Self-link: [go/faft-running](https://goto.google.com/faft-running)_
 infrastructure that exercise and verify capabilities of ChromeOS.
 The features tested by FAFT are implemented through low-level software
 (firmware/BIOS) and hardware. FAFT evolved from SAFT
-(Semi-Automated Firmware Tests) and you can locate tests in the [FAFT suite]
-in the Autotest tree as directories with the prefix `firmware_`.
+(Semi-Automated Firmware Tests) and you can locate tests in the [FAFT suite].
 
 The founding principles of FAFT are:
 
@@ -22,7 +21,7 @@ The founding principles of FAFT are:
 
 To access some of these low-level capabilities, the tests require a
 [servod] instance running and executing controls with the help of physical
-[servo] board ([servo v2], [servo v4] with [servo micro] or [servo v4 Type-C])
+[servo] board ([servo v4] with [servo micro] or [servo v4 Type-C])
 
 The servo board is connected directly to the DUT (Device Under Test) to enable
 access to low-level hardware interfaces, as well as staging areas for backup
@@ -168,23 +167,6 @@ To check or upgrade the FW on the servo v4 and servo micro, respectively, before
 If you forget, servod will remind you when it starts, if you look carefully
 through its output.
 
-### (Deprecated) ServoV2 {#servov2-deprecated}
-
-(Deprecated) The following photo shows the details how to connect the older,
-deprecated servo v2 board to the test controller, test device, and network.
-
-![Figure4](assets/faft_rc_servov2_deprecated.jpg)
-
-**Figure 4.Diagram of hardware configuration for a ServoV2 board.**
-
-Details of servo v2 connections:
-
-1. Connect one end(ribbon cable) of the flex cable to servoV2 and the other end to the debug header on the chrome device.
-1. Connect DUT_HUB_IN(micro USB port) of the servo to the DUT.
-1. Prepare a USB flash drive with valid ChromeOS image and plug into the USB port of the servo as shown in the photo.
-1. Connect the micro USB port of the servo to the host machine(workstation or a labstation).
-1. Connect an Ethernet cable to the Ethernet jack of the servo.
-
 ### Installing Test Image onto USB Stick {#image-onto-usb}
 
 After the hardware components are correctly connected,
@@ -265,35 +247,32 @@ Before running any tests, go into the chroot:
 
 1.  Make sure your tools are up to date.
     1.  Run `repo sync -j8`
-    1.  Run `./update_chroot`
-1.  (chroot 1) Run `$ sudo servod --board=$BOARD` where `$BOARD` is the code
-    name of the board you are testing. For example: `$ sudo servod --board=eve`.
-    If you forget to do that, or use the wrong board, some tests may fail. There
-    is also a `model` option that is needed by some models.
-1.  Go into a second chroot
+1.  Start [servod]. Be sure to pass the `-b` and `-m` flags. If you are using both
+    [CCD] and [servo micro] or [c2d2], add `-- -D full` to your `start-servod`
+    command.
+1.  Enter chroot
 1.  Try to ssh to your board (`ssh $DUT_IP) within the chroot and make sure it
     works. If it doesn't, figure that out first. Googlers look at [SshHelp].
-
-1.  (chroot 2) Run the `firmware_FAFTSetup` test to verify basic functionality and ensure that your setup is correct.
-1.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP firmware_FAFTSetup`
-1.  Run the `firmware.Fixture.normal` test to verify tast tests are working also. `tast run --var=servo=localhost:9999 $DUT_IP firmware.Fixture.normal`
+1.  (chroot) There are very few tests left in autotest, and soon will be none,
+    but autotest can still run both TAST and Autotests.
+1.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_ec`
 
 You can omit the --autotest_dir if you have built packages for the board and want to use the build version of the tests, i.e.:
 
 (chroot) `$ ./build_packages --board=$BOARD` where `$BOARD` is the code name of the board under test
-(chroot) `$ /usr/bin/test_that --board=$BOARD $DUT_IP firmware_FAFTSetup`
+(chroot) `$ /usr/bin/test_that --board=$BOARD $DUT_IP suite:faft_ec`
 
 ### PVS Setup Confirmation {#pvs-setup-confirmation}
 
 This setup confirmation section is for the PVS workflow if using chroot go back
-to [Setup Confirmation].
+to [Setup Confirmation]. Use of PVS host should be confirmed with project TAM.
 
 1. Ensure you have a PVS Host setup by following the [PVS - Partner Setup Guide]
-1. Ensure you have updated your servo and c2d2 or servo micro firmware by following [PVS - Updating the Servo Firmware]
+1. Ensure you have updated your servo and C2D2 or servo micro firmware by following [PVS - Updating the Servo Firmware]
 1. To get setup to run FAFT tests, on your PVS host run (for more info on PVS arguments see [PVS User Guide]):
     1. `(outside container) shop unpack -d <DUT_IP> --servo-serial <servo serial> [--milestone <milestone> --chromeos-version <chromeOS version>]`
     1. `(outside container) docker attach pvs`
-1. Run `firmware_FAFTSetup` and `firmware.Fixture.rec` test to verify basic functionality and ensure that your setup is correct. `(inside container) pvs run --qual-type firmware --test-plan-name RO/RW --filter "sys-fw-0024,test:tast.firmware.Fixture.rec|firmware_FAFTSetup"`
+1. Run a test to verify basic functionality and ensure that your setup is correct. `(inside container) pvs run --qual-type firmware --test-plan-name RO/RW --filter "sys-fw-0024,test:tast.firmware.Fixture.rec"`
 
 ### Sample Commands {#sample-commands}
 
@@ -381,10 +360,9 @@ The key point is to ensure that the USB and DUT contain a kernelnext image.
 
 Q: All of my FAFT tests are failing. What should I do?
 
-- A1: Run `firmware_FAFTSetup` as a single test. Once it fails, check the log and determine which step failed and why.
-- A2: Check that the servo has all the wired connections and a USB drive with the valid OS plugged in.  A missing USB drive is guaranteed to make `firmware_FAFTSetup` fail.
-- A3: Make sure [CCD] is open. Locked CCD guarantees to make `firmware_FAFTSetup` fail.
-- A4: Make sure AP FW is dev-signed. MP-signed AP FW guarantees to make `firmware_FAFTSetup` fail with test-image USB.
+- A1: Check that the servo has all the wired connections and a USB drive with the valid OS plugged in.  A missing USB drive is guaranteed to make many tests fail.
+- A2: Make sure [CCD] is open. Locked CCD guarantees to make most every test fail.
+- A3: Make sure AP FW is dev-signed. MP-signed AP FW guarantees to make all normal mode and recovery mode tests fail with test-image USB.
 
 Q: A few of my FAFT tests failed, but most tests are passing. What should I do?
 
@@ -431,16 +409,16 @@ Q: How can I obtain a device for a local FAFT execution?
 
 - A: The lab is a good source of devices for FAFT per go/cros-testing-kernelnext. If DUTs are not available or cannot be repaired by the lab team, request a DUT for development via go/hwrequest.
 
-Q: My USB stick keeps getting corrupted and I can't get firmware_FAFTSetup to pass.
+Q: My USB stick keeps getting corrupted and I can't get tests that use USB to pass.
 
 - A: Check that your OS is not auto-mounting USB storage devices. On Ubuntu the
   command to disable is `gsettings set org.gnome.desktop.media-handling automount false`
 
 [FAFT suite]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/main/server/site_tests/
 [servo]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/README.md#Power-Measurement
-[servo v2]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_v2.md
 [servo v4]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_v4.md
 [servo micro]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_micro.md
+[C2D2]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/HEAD/docs/c2d2.md
 [servo v4 Type-C]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/docs/servo_v4.md#Type_C-Version
 [stateful partition is too small]: https://crrev.com/c/1935408
 [FAFT]: https://chromium.googlesource.com/chromiumos/third_party/autotest/+/refs/heads/main/docs/faft-design-doc.md

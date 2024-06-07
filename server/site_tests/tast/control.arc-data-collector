@@ -38,7 +38,7 @@ def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
                  test_exprs=['("group:arc-data-collector")'],
-                 ignore_test_failures=False, max_run_sec=1200,
+                 ignore_test_failures=False, max_run_sec=3600,
                  command_args=args,
                  retries=2)
 

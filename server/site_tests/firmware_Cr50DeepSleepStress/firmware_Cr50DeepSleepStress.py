@@ -165,7 +165,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
 
     def _dut_is_responsive(self):
         """Returns True if the DUT eventually responds"""
-        return self.host.ping_wait_up(180)
+        return self.ping_dut_with_eth_reset()
 
 
     def wait_for_client_after_changing_ccd(self, enable):

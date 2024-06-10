@@ -1472,8 +1472,9 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
     def dump_nvmem(self):
         """Print nvmem objects."""
-        rv = self.send_safe_command_get_output('dump_nvmem',
-                                               ['dump_nvmem(.*)>'])[0][1]
+        rv = self.send_command_retry_get_output('dump_nvmem',
+                                                ['dump_nvmem(.*)>'],
+                                                safe=True)[0][1]
         logging.info('NVMEM OUTPUT:\n%s', rv)
 
 

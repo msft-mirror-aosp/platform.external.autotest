@@ -16,7 +16,7 @@ METADATA = {
     "criteria": "A part of Android CTS",
 }
 ATTRIBUTES = 'suite:arc-cts-vm, suite:arc-cts-vm-stable, suite:arc-cts-vm-stable-arm-20'
-DEPENDENCIES = 'arc'
+DEPENDENCIES = 'arc, wifi_on_site'
 HW_DEPS = ['android-container-rvc','android-vm-rvc']
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

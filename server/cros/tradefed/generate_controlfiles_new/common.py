@@ -118,6 +118,10 @@ class Config(collections.UserDict):
         if camera_facing is not None:
             dependencies.append('camerabox_facing:' + camera_facing)
 
+        if not is_public and any(module in self.get('WIFI_MODULES', [])
+                                 for module in modules):
+            dependencies.append('wifi_on_site')
+
         for module in modules:
             if is_public and module in self['PUBLIC_DEPENDENCIES']:
                 dependencies.extend(self['PUBLIC_DEPENDENCIES'][module])

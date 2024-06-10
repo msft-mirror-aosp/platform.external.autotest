@@ -2540,6 +2540,27 @@ class FirmwareTest(test.test):
         time.sleep(wait_time)
         logging.info("Done waiting.")
 
+    def ping_dut_with_eth_reset(self):
+        """Reset the ethernet hub if the device is on, but not pingable.
+
+        Returns:
+            True if the device is pingable.
+        """
+        if self._client.ping_wait_up(self.faft_config.delay_reboot_to_ping):
+            return True
+        ap_state = self.try_to_get_ap_state()
+        power_state = self.get_power_state()
+        logging.info('Unable to ping dut in %s %s', power_state, ap_state)
+        if not self.servo.supports_eth_power_control():
+            return False
+        if power_state and power_state != self.POWER_STATE_S0:
+            logging.info('Dut is down. Resetting ethernet will not help')
+            return False
+        # If the AP is on and servo supports resetting the ethernet hub,
+        # try to reset it to restore the ethernet connection.
+        self.servo.eth_power_reset()
+        return self._client.ping_wait_up(self.faft_config.delay_reboot_to_ping)
+
     def _try_to_bring_dut_up(self):
         """Try to quickly get the dut in a pingable state"""
         if not hasattr(self, "gsc"):

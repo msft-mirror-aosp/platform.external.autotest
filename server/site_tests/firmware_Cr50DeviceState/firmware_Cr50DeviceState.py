@@ -595,8 +595,9 @@ class firmware_Cr50DeviceState(Cr50Test):
         self.stage_irq_add('idle in S0')
 
         # The DUT has already been up for 60 seconds. It should be pingable.
-        if not self.host.ping_wait_up(self.faft_config.delay_reboot_to_ping):
-            raise error.TestFail('Unable to ping dut after %s resume %s' %
+        if not self.ping_dut_with_eth_reset():
+            raise error.TestFail('Unable to ping dut after %s resume %s '
+                                 '(reset eth)' %
                                  (state, self.try_to_get_ap_state()))
 
         self.print_fwmp('%s resume' % state)

@@ -2449,7 +2449,7 @@ class FirmwareTest(test.test):
     def _init_fwmp_cmd(self):
         """Use device_management_client to access the fwmp if it exists"""
         fwmp_cmd = cryptohome.DEVICE_MANAGEMENT_CMD
-        res = self.host.run("which " + fwmp_cmd, ignore_status=True)
+        res = self._client.run("which " + fwmp_cmd, ignore_status=True)
         if res.exit_status == 0:
             self._fwmp_cmd = fwmp_cmd
         else:
@@ -2462,8 +2462,8 @@ class FirmwareTest(test.test):
         # versions use it.
         if not self._fwmp_cmd:
             self._init_fwmp_cmd()
-        return self.host.run("%s %s" % (self._fwmp_cmd, cmd),
-                             ignore_status=ignore_status)
+        return self._client.run("%s %s" % (self._fwmp_cmd, cmd),
+                                ignore_status=ignore_status)
 
     def fwmp_is_cleared(self):
         """Return True if the FWMP has been created"""
@@ -2485,9 +2485,8 @@ class FirmwareTest(test.test):
 
     def _tpm_is_owned(self):
         """Returns True if the tpm is owned"""
-        result = self.host.run(
-            "tpm_manager_client status --nonsensitive", ignore_status=True
-        )
+        result = self._client.run("tpm_manager_client status --nonsensitive",
+                                  ignore_status=True)
         logging.debug(result)
         return result.exit_status == 0 and "is_owned: true" in result.stdout
 
@@ -2498,15 +2497,11 @@ class FirmwareTest(test.test):
         if self.fwmp_is_cleared():
             return
         # wait for cryptohome.
-        self.host.run(
-            "/usr/bin/gdbus wait --system --timeout 15 "
-            "org.chromium.UserDataAuth"
-        )
-        self.host.run(
-            "/usr/bin/gdbus wait --system --timeout 15 "
-            "org.chromium.TpmManager"
-        )
-        self.host.run("tpm_manager_client take_ownership")
+        self._client.run("/usr/bin/gdbus wait --system --timeout 15 "
+                         "org.chromium.UserDataAuth")
+        self._client.run("/usr/bin/gdbus wait --system --timeout 15 "
+                         "org.chromium.TpmManager")
+        self._client.run("tpm_manager_client take_ownership")
         if not utils.wait_for_value(self._tpm_is_owned, expected_value=True):
             raise error.TestError("Unable to own tpm while clearing fwmp.")
         self.run_fwmp_cmd("--action=remove_firmware_management_parameters")
@@ -2579,9 +2574,8 @@ class FirmwareTest(test.test):
             self.servo.power_normal_press()
 
         end_time = time.time() + self.RESPONSE_TIMEOUT
-        while not self.host.ping_wait_up(
-            self.faft_config.delay_reboot_to_ping * 2
-        ):
+        while not self._client.ping_wait_up(
+                self.faft_config.delay_reboot_to_ping * 2):
             if time.time() > end_time:
                 logging.warning(
                     "DUT is unresponsive after trying to bring it up"
@@ -2675,8 +2669,8 @@ class FirmwareTest(test.test):
 
         ccd_open_cmd = utils.sh_escape("gsctool -a -o")
         full_ssh_cmd = '%s "%s"' % (
-            self.host.ssh_command(options="-tt"),
-            ccd_open_cmd,
+                self._client.ssh_command(options="-tt"),
+                ccd_open_cmd,
         )
         # Start running the Cr50 Open process in the background.
         self._ccd_open_job = utils.BgJob(

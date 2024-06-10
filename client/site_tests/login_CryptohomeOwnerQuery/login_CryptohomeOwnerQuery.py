@@ -15,8 +15,8 @@ except ImportError:
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
-from autotest_lib.client.common_lib.cros import session_manager
-from autotest_lib.client.cros import cros_ui, cryptohome, ownership
+from autotest_lib.client.common_lib.cros import session_manager, chrome
+from autotest_lib.client.cros import cryptohome, ownership
 
 class login_CryptohomeOwnerQuery(test.test):
     """Verify that the cryptohome owner user query works properly."""
@@ -29,7 +29,6 @@ class login_CryptohomeOwnerQuery(test.test):
         ownership.restart_ui_to_clear_ownership_files()
 
         bus_loop = DBusGMainLoop(set_as_default=True)
-        self._session_manager = session_manager.connect(bus_loop)
         self._listener = session_manager.OwnershipSignalListener(
                 GObject.MainLoop())
         self._listener.listen_for_new_key_and_policy()
@@ -42,14 +41,9 @@ class login_CryptohomeOwnerQuery(test.test):
             raise error.TestFail('Owner existed before login')
 
         cryptohome.ensure_clean_cryptohome_for(owner)
-        self._session_manager.StartSession(owner, '')
 
-        self._listener.wait_for_signals(desc='Device ownership complete.')
+        with chrome.Chrome(logged_in=True, username=owner):
+            self._listener.wait_for_signals(desc='Device ownership complete.')
 
-        if not cryptohome.get_login_status()['owner_user_exists']:
-            raise error.TestFail('Owner does not exist after login')
-
-
-    def cleanup(self):
-        self._session_manager.StopSession('')
-        cros_ui.start(allow_fail=True, wait_for_login_prompt=False)
+            if not cryptohome.get_login_status()['owner_user_exists']:
+                raise error.TestFail('Owner does not exist after login')

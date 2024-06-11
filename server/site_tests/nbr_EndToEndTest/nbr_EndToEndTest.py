@@ -12,6 +12,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
     """Test network based recovery of a DUT."""
     version = 1
     _TEST_USERNAME = 'test@chromium.org'
+    _UI_UPSTART_JOB_NAME = 'ui'
 
     def run_once(self,
                  build=None,
@@ -38,6 +39,12 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
                 public_bucket=self._use_public_bucket)
 
         logging.info('Performing recovery with payload url: %s', payload_url)
+
+        # Wifi setup stops UI task, but UI service is required for login and
+        # device ownership tests. Restart UI and wait before proceeding.
+        if self._wifi_configs is not None:
+            self._host.upstart_restart(self._UI_UPSTART_JOB_NAME)
+            self._host.wait_for_service(self._UI_UPSTART_JOB_NAME)
 
         # Login and verify that the device is now owned.
         self._run_client_test_and_check_result(

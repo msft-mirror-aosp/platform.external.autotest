@@ -39,7 +39,7 @@ from autotest_lib.client.bin.input.linux_input import (
         REL_WHEEL_HI_RES, KEY_PLAYCD, KEY_PAUSECD, KEY_STOPCD, KEY_NEXTSONG,
         KEY_PREVIOUSSONG, KEY_LEFTSHIFT, BTN_A, BTN_B, BTN_X, BTN_Y, BTN_TL,
         BTN_TR, EV_ABS, ABS_HAT0X, ABS_HAT0Y, ABS_BRAKE, ABS_GAS, ABS_X, ABS_Y,
-        ABS_Z, ABS_RZ, BTN_THUMBL, BTN_THUMBR, BTN_START)
+        ABS_Z, ABS_RZ, BTN_THUMBL, BTN_THUMBR, BTN_START, EV_KEY_HOLD)
 from autotest_lib.server.cros.bluetooth.bluetooth_gatt_client_utils import (
         GATT_ClientFacade, GATT_Application, GATT_HIDApplication,
         Floss_GATT_HIDApplication)
@@ -5363,8 +5363,16 @@ class BluetoothAdapterTests(test.test):
                                                gesture,
                                                address=device.address)
 
-        # Filter out any input events that were not from the keyboard.
-        rec_key_events = [ev for ev in rec_events if ev.type == EV_KEY]
+        # Filter out any input events that were not from the keyboard and any
+        # hold event.
+
+        # Hold event will be ignored because in case the release event was
+        # not received before (0.25) second, evtest will assume that the key
+        # is held, and that is not an actual Bluetooth event.
+        rec_key_events = [
+                ev for ev in rec_events
+                if (ev.type == EV_KEY and ev.value != EV_KEY_HOLD)
+        ]
 
         # Fail if we didn't record the correct number of events.
         if len(predicted_events) != len(rec_key_events):

@@ -186,6 +186,12 @@ SYN_CONFIG      = 1
 SYN_MT_REPORT   = 2
 SYN_DROPPED     = 3
 
+# Key event values.
+
+EV_KEY_RELEASED = 0
+EV_KEY_PRESSED = 1
+EV_KEY_HOLD = 2
+
 """
  * Keys and buttons
  *

@@ -177,6 +177,14 @@ class BluetoothAdapterQuickTests(
             if ip_args:
                 self.local_host_ip = ip_args['local_host_ip']
 
+        # Extra arguments for Chrome. It has no effect if we don't start chrome
+        extra_browser_args = []
+
+        if self.floss:
+            extra_browser_args.append('--enable-features=Floss')
+        else:
+            extra_browser_args.append('--disable-features=Floss')
+
         #factory can not be declared as local variable, otherwise
         #factory._proxy.__del__ will be invoked, which shutdown the xmlrpc
         # server, which log out the user.
@@ -185,7 +193,8 @@ class BluetoothAdapterQuickTests(
                 host,
                 no_chrome=not self.start_browser,
                 disable_arc=True,
-                force_python3=True)
+                force_python3=True,
+                extra_browser_args=extra_browser_args)
         try:
             self.bluetooth_facade = self.factory.create_bluetooth_facade(
                     self.floss)

@@ -781,14 +781,14 @@ class Servo(object):
                 return ""
             raise e
         # The servod_version output is:
-        # servod v1.0.2234-3a697f03
-        # Date: 2024-03-26 00:28:38
-        # Builder: chromeos-release-builder-us-east1-d-x32-3-97p8
-        # Hash: -3a697f03
-        # Branch:
+        # v1.0.2252+f0bbc466
+        # Date: 2024-03-18 20:20:26
+        # Builder: buildkitsandbox
+        # Hash: +f0bbc466
+        # Branch: sversion_api2
         # For debugging purposes, we mainly care about the version, and the
         # timestamp.
-        match = re.search(r'^(servod v\S+)\s+(.*)', sversion)
+        match = re.search(r'^(v\S+)\s+(.*)', sversion)
         if match is None:
             return sversion.strip()
         ver, date = match.groups()

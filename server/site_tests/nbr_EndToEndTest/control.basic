@@ -43,8 +43,6 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args, **args_dict)
-    # TODO(b//221263849): n2m is disabled till we have stable versions for
-    # guybrush and/or brya.
-    job.run_test("nbr_EndToEndTest", host=host, n2m=False, **args_dict)
+    job.run_test("nbr_EndToEndTest", host=host, n2m=True, **args_dict)
 
 job.parallel_simple(run, machines)

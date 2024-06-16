@@ -48,6 +48,31 @@ def _cgpt(flag, kernel, host=None):
     return int(_run(['cgpt', 'show', '-n', '-i', str(kernel['kernel']), flag,
                      rootdev], host).stdout.strip())
 
+
+def copy_kernel(host=None):
+    """
+    Helper function to copy active kernel and root to the inactive slot.
+
+    @param host: The DUT to execute the command on. None to execute locally.
+
+    """
+    rootdev = _run(['rootdev', '-s', '-d'], host).stdout.strip()
+    active, inactive = get_kernel_state(host)
+
+    _run([
+            'dd',
+            'if=%s' % utils.concat_partition(rootdev, active['kernel']),
+            'of=%s' % utils.concat_partition(rootdev, inactive['kernel']),
+            'bs=4M', 'conv=fsync'
+    ], host)
+    _run([
+            'dd',
+            'if=%s' % utils.concat_partition(rootdev, active['root']),
+            'of=%s' % utils.concat_partition(rootdev, inactive['root']),
+            'bs=4M', 'conv=fsync'
+    ], host)
+
+
 def get_kernel_state(host=None):
     """
     Returns the (<active>, <inactive>) kernel state as a pair.

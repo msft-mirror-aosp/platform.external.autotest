@@ -4,7 +4,7 @@
 
 from autotest_lib.server import utils
 
-NAME = 'bluetooth_AdapterAUHealth.au_hfp_telephony_micmute_from_dut_test.floss'
+NAME = 'bluetooth_AdapterAUHealth.au_hfp_telephony_incoming_call_answer_call_test.floss'
 METADATA = {
     'contacts': ['whalechang@google.com', 'chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth

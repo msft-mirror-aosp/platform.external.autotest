@@ -484,90 +484,46 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.au_hfp_run_method(device, self.hfp_to_a2dp_dut_as_source,
                                HFP_WBS_MEDIUM)
 
-    @test_wrapper('Trigger incoming call on dut and answer call from peer',
+    @test_wrapper('Trigger incoming call on dut and answer call',
                   devices={'BLUETOOTH_AUDIO': 1},
                   supports_floss=True)
-    def au_hfp_telephony_incoming_call_answer_by_peer_test(self):
-        """Trigger incoming call on dut and answer call from peer."""
+    def au_hfp_telephony_incoming_call_answer_call_test(self):
+        """Trigger incoming call on dut and answer call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_run_method(
                 device,
-                lambda: self.hfp_telephony_incoming_call_answer_by_peer(
-                        device), HFP_TELEPHONY)
-
-    @test_wrapper('Trigger incoming call on dut and answer call from dut',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_hfp_telephony_incoming_call_answer_by_dut_test(self):
-        """Trigger incoming call on dut and answer call from dut."""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(
-                device,
-                lambda: self.hfp_telephony_incoming_call_answer_by_dut(device),
+                lambda: self.hfp_telephony_incoming_call_answer_call(device),
                 HFP_TELEPHONY)
 
-    @test_wrapper('Trigger incoming call on dut and reject call from peer',
+    @test_wrapper('Trigger incoming call on dut and reject call',
                   devices={'BLUETOOTH_AUDIO': 1},
                   supports_floss=True)
-    def au_hfp_telephony_incoming_call_reject_by_peer_test(self):
-        """Trigger incoming call on dut and reject call from peer."""
+    def au_hfp_telephony_incoming_call_reject_call_test(self):
+        """Trigger incoming call on dut and reject call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_run_method(
                 device,
-                lambda: self.hfp_telephony_incoming_call_reject_by_peer(
-                        device), HFP_TELEPHONY)
+                lambda: self.hfp_telephony_incoming_call_reject_call(device),
+                HFP_TELEPHONY)
 
-    @test_wrapper('Trigger incoming call on dut and reject call from dut',
+    @test_wrapper('Place an active call on dut and hangup call',
                   devices={'BLUETOOTH_AUDIO': 1},
                   supports_floss=True)
-    def au_hfp_telephony_incoming_call_reject_by_dut_test(self):
-        """Trigger incoming call on dut and reject call from dut"""
+    def au_hfp_telephony_active_call_hangup_call_test(self):
+        """Place an active call on dut and hangup call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
         self.au_run_method(
                 device,
-                lambda: self.hfp_telephony_incoming_call_reject_by_dut(device),
+                lambda: self.hfp_telephony_active_call_hangup_call(device),
                 HFP_TELEPHONY)
 
-    @test_wrapper('Place an active call on dut and hangup call from dut',
+    @test_wrapper('Trigger microphone mute and unmute',
                   devices={'BLUETOOTH_AUDIO': 1},
                   supports_floss=True)
-    def au_hfp_telephony_active_call_hangup_by_dut_test(self):
-        """Place an active call on dut and hangup call from dut."""
+    def au_hfp_telephony_micmute_test(self):
+        """Trigger microphone mute and unmute"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(
-                device,
-                lambda: self.hfp_telephony_active_call_hangup_by_dut(device),
-                HFP_TELEPHONY)
-
-    @test_wrapper('Place an active call on dut and hangup call from peer',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_hfp_telephony_active_call_hangup_by_peer_test(self):
-        """Place an active call on dut and hangup call from peer."""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(
-                device,
-                lambda: self.hfp_telephony_active_call_hangup_by_peer(device),
-                HFP_TELEPHONY)
-
-    @test_wrapper('Trigger microphone mute from peer',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_hfp_telephony_micmute_from_peer_test(self):
-        """Trigger microphone mute from peer"""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(
-                device, lambda: self.hfp_telephony_micmute_from_peer(device),
-                HFP_TELEPHONY)
-
-    @test_wrapper('Trigger microphone mute from dut',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_hfp_telephony_micmute_from_dut_test(self):
-        """Trigger microphone mute on dut"""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(device,
-                           lambda: self.hfp_telephony_micmute_from_dut(device),
+        self.au_run_method(device, lambda: self.hfp_telephony_micmute(device),
                            HFP_TELEPHONY)
 
     def au_run_avrcp_method(self, device, test_method):

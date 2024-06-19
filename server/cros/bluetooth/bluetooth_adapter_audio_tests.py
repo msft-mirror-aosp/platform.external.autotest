@@ -2150,8 +2150,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                                    'recorded_by_peer')
         self.test_device_to_stop_recording_audio_subprocess(device)
 
-    def hfp_telephony_incoming_call_answer_by_peer(self, device):
-        """Trigger incoming call on DUT and answer the call by Bluetooth peer.
+    def hfp_telephony_incoming_call_answer_call(self, device):
+        """Trigger incoming call on DUT and answer the call.
 
         The purpose of this test is to assess the functionality of the DUT
         telephony HID device in handling incoming calls via the HFP profile.
@@ -2159,7 +2159,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         HID device check if the incoming call exists on the peer device.
         The test then proceeds to answer the call from the Bluetooth peer device
         and verifies that the DUT telephony HID device sends an off-hook
-        (call is active) input report to indicate that the call is active.
+        (call is active) input report. Then the test will send hook-switch=1
+        (call is active) to peer to update call state in peer.
 
         @param device: the Bluetooth peer device.
         """
@@ -2176,32 +2177,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.AnswerCall()
         time.sleep(hfp_test_data['telephony_event_propagate_duration'])
 
-        expected_call_state = self._create_call_state(active=1)
-        self.test_check_input_event_on_dut(hook_switch=True, phone_mute=False)
-        self.test_check_call_state_on_peer(device, expected_call_state)
-
-        self.bluetooth_facade.close_telephony_device()
-
-    def hfp_telephony_incoming_call_answer_by_dut(self, device):
-        """Trigger incoming call on DUT and answer the call by DUT.
-
-        The test sends an incoming call event to the DUT telephony HID device
-        and checks if the incoming call exists on the peer device.
-        The test then sends an off-hook (call is active) event on dut
-        to answer the call and verifies that the peer has an active call.
-
-        @param device: the Bluetooth peer device.
-        """
-
-        hfp_test_data = audio_test_data[HFP_TELEPHONY]
-        self.test_select_audio_input_device(device.name)
-        self.test_select_audio_output_node_bluetooth()
-
-        self.bluetooth_facade.open_telephony_device(device.name)
-        self.bluetooth_facade.send_incoming_call()
-        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
-
         expected_call_state = self._create_call_state(incoming=1)
+
+        self.test_check_input_event_on_dut(hook_switch=True, phone_mute=False)
         self.test_check_call_state_on_peer(device, expected_call_state)
 
         self.bluetooth_facade.send_answer_call()
@@ -2212,15 +2190,15 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
 
         self.bluetooth_facade.close_telephony_device()
 
-    def hfp_telephony_incoming_call_reject_by_peer(self, device):
+    def hfp_telephony_incoming_call_reject_call(self, device):
         """Trigger incoming call on DUT and reject the call by Bluetooth peer.
 
         The test begins by sending an incoming call event to the DUT telephony
         HID device and checks if the incoming call exists on the peer device.
         The test then proceeds to reject the call from the Bluetooth peer device
         and verifies that the DUT telephony HID device sends an
-        off-hook=0 (call is rejected) input report to indicate that the call is
-        rejected.
+        off-hook=0 (call is rejected) input report. Then the test will send
+        hook-switch=0(call is rejected) to peer to update call state in peer.
 
         @param device: the Bluetooth peer device.
         """
@@ -2238,30 +2216,8 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.RejectCall()
         time.sleep(hfp_test_data['telephony_event_propagate_duration'])
 
-        expected_call_state = self._create_call_state(active=0)
-        self.test_check_input_event_on_dut(hook_switch=False, phone_mute=False)
-        self.test_check_call_state_on_peer(device, expected_call_state)
-        self.bluetooth_facade.close_telephony_device()
-
-    def hfp_telephony_incoming_call_reject_by_dut(self, device):
-        """Trigger incoming call on DUT and reject the call from DUT.
-
-        The test begins by sending an incoming call event to the DUT telephony
-        HID device and checks if the incoming call exists on the peer device.
-        The test then proceeds to reject the call from DUT and verifies that the
-        call is rejected on peer side.
-
-        @param device: the Bluetooth peer device.
-        """
-        hfp_test_data = audio_test_data[HFP_TELEPHONY]
-        self.test_select_audio_input_device(device.name)
-        self.test_select_audio_output_node_bluetooth()
-
-        self.bluetooth_facade.open_telephony_device(device.name)
-        self.bluetooth_facade.send_incoming_call()
-        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
         expected_call_state = self._create_call_state(incoming=1)
-
+        self.test_check_input_event_on_dut(hook_switch=False, phone_mute=False)
         self.test_check_call_state_on_peer(device, expected_call_state)
 
         self.bluetooth_facade.send_reject_call()
@@ -2271,42 +2227,15 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.test_check_call_state_on_peer(device, expected_call_state)
         self.bluetooth_facade.close_telephony_device()
 
-    def hfp_telephony_active_call_hangup_by_dut(self, device):
-        """Place an active call on DUT and hangup the call from DUT.
-
-        The test begins by sending an active call event to the DUT telephony HID
-        device and checks if an active call exists on the peer device.
-        The test then proceeds to hangup the call from DUT and verifies that no
-        call exists on peer side.
-
-        @param device: the Bluetooth peer device.
-        """
-        hfp_test_data = audio_test_data[HFP_TELEPHONY]
-        self.test_select_audio_input_device(device.name)
-        self.test_select_audio_output_node_bluetooth()
-
-        self.bluetooth_facade.open_telephony_device(device.name)
-        self.bluetooth_facade.send_answer_call()
-        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
-
-        expected_call_state = self._create_call_state(active=1)
-        self.test_check_call_state_on_peer(device, expected_call_state)
-
-        self.bluetooth_facade.send_hangup_call()
-        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
-
-        expected_call_state = self._create_call_state(active=0)
-        self.test_check_call_state_on_peer(device, expected_call_state)
-        self.bluetooth_facade.close_telephony_device()
-
-    def hfp_telephony_active_call_hangup_by_peer(self, device):
-        """Place an active call on DUT hangup the call from peer.
+    def hfp_telephony_active_call_hangup_call(self, device):
+        """Place an active call on DUT and then hangup the call.
 
         The test begins by sending an active call event to the DUT telephony HID
         device and checks if an active call exists on the peer device.
         The test then proceeds to hangup the call from peer and verifies that
-        that the DUT telephony HID device sends an off-hook=0 (call is hanguped)
-        input report and no call exists on peer side.
+        that the DUT telephony HID device sends an off-hook=0 (call is hungup)
+        input report. Then the test will send hook-switch=0(call is hungup)
+        to peer to update call state in peer.
 
         @param device: the Bluetooth peer device.
         """
@@ -2324,12 +2253,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.HangupCall()
         time.sleep(hfp_test_data['telephony_event_propagate_duration'])
 
+        expected_call_state = self._create_call_state(active=1)
+        self.test_check_call_state_on_peer(device, expected_call_state)
+
+        self.bluetooth_facade.send_hangup_call()
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+
         expected_call_state = self._create_call_state(active=0)
         self.test_check_call_state_on_peer(device, expected_call_state)
+
         self.bluetooth_facade.close_telephony_device()
 
-    def hfp_telephony_micmute_from_peer(self, device):
-        """Trigger microphone mute from peer and verify the event sent to DUT.
+    def hfp_telephony_micmute(self, device):
+        """Trigger microphone mute and verify the event.
 
         Since the HFP does not define a microphone mute event, Floss converts
         volume=0 to a muted event and sends it through the telephony HID input
@@ -2337,7 +2273,14 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         Upon receiving a non-zero volume, Floss converts it to an unmute event
         instead.
         This test sets the peer microphone volume to 0 and verify that the
-        microphone mute event is sent from the telephony HID input report.
+        phone-mute=1 input event is sent from the telephony HID device. Then
+        DUT sends MUTE=1 output report to peer and verify that the peer
+        microphone volume is set to 0.
+
+        Then this test sets the peer microphone volume to 100 and verify that
+        the phone-mute input event is sent from the telephony HID device. Then
+        DUT sends MUTE=0 output report to peer and verify that the peer
+        microphone volume is set to 100.
 
         @param device: the Bluetooth peer device.
         """
@@ -2353,33 +2296,18 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         device.SetMicVolume(0)
         time.sleep(hfp_test_data['telephony_event_propagate_duration'])
         self.test_check_input_event_on_dut(hook_switch=False, phone_mute=True)
-        device.SetMicVolume(100)
-        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
-        self.test_check_input_event_on_dut(hook_switch=False, phone_mute=False)
 
-    def hfp_telephony_micmute_from_dut(self, device):
-        """Trigger microphone mute from DUT and verify the mic volume on peer.
-
-        Since the HFP does not define a microphone mute event, Floss stores the
-        original volume level and sends out a volume=0 event to the peer on
-        muting. On unmuting, the saved volume level is sent to the peer.
-        This test send HID mute output report and verify the mic volume is
-        changed on peer side.
-
-        @param device: the Bluetooth peer device.
-        """
-        hfp_test_data = audio_test_data[HFP_TELEPHONY]
-        self.test_select_audio_input_device(device.name)
-        self.test_select_audio_output_node_bluetooth()
-        device.SetMicVolume(100)
-
-        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
-
-        self.bluetooth_facade.open_telephony_device(device.name)
         self.bluetooth_facade.send_mic_mute(True)
         time.sleep(hfp_test_data['telephony_event_propagate_duration'])
-
         self.test_check_mic_volume_on_peer(device, 0)
+
+        device.SetMicVolume(100)
+        time.sleep(hfp_test_data['telephony_event_propagate_duration'])
+        # check aosp/3039001 for detail about floss will send additoal mute
+        # before unmute
+        self.test_check_input_event_on_dut(hook_switch=False, phone_mute=True)
+        self.test_check_input_event_on_dut(hook_switch=False, phone_mute=False)
+
         self.bluetooth_facade.send_mic_mute(False)
         time.sleep(hfp_test_data['telephony_event_propagate_duration'])
         self.test_check_mic_volume_on_peer(device, 100)

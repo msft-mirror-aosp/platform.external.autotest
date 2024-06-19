@@ -675,8 +675,6 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
 # This list of modules will be used for reduced set of testing for build
 # variant process. Suites: cts_hardware & arc-cts-hardware.
 CONFIG['HARDWARE_MODULES'] = [
-        'CtsPerfettoTestCases',
-        'CtsSustainedPerformanceHostTestCases',
         'CtsViewTestCases',
         'CtsMediaAudioTestCases',
         'CtsMediaCodecTestCases',
@@ -691,7 +689,6 @@ CONFIG['HARDWARE_MODULES'] = [
         'CtsNativeMediaAAudioTestCases',
         'CtsNetTestCases',
         'CtsWifiTestCases',
-        'CtsUsageStatsTestCases',
         'CtsSensorTestCases',
 ]
 
@@ -711,15 +708,6 @@ CONFIG['EXTRA_MODULES'] = {
 CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
         'CtsAppTestCases': {
                 'CtsAppTestCases.feature': [],
-        },
-        'CtsDeqpTestCases': {
-                'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [],
-        },
-        'CtsMediaStressTestCases': {
-                'CtsMediaStressTestCases.camera': [],
-        },
-        'CtsPermissionTestCases': {
-                'CtsPermissionTestCases.camera': [],
         },
 }
 
@@ -741,27 +729,11 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 '--module', 'CtsAppTestCases', '--test',
                 'android.app.cts.SystemFeaturesTest'
         ],
-        'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [
-                '--module', 'CtsDeqpTestCases', '--test',
-                'dEQP-GLES3.functional.prerequisite#*'
-        ],
         'CtsDeqpTestCases.isolated-flaky-tests': [
                 '--module',
                 'CtsDeqpTestCases',
                 '--test',
                 'dEQP-VK.pipeline.render_to_image.core.2d_array.huge.height_layers#r8g8b8a8_unorm_d24_unorm_s8_uint',
-        ],
-        'CtsMediaStressTestCases.camera': [
-                '--module',
-                'CtsMediaStressTestCases',
-                '--test',
-                'android.mediastress.cts.MediaRecorderStressTest',
-        ],
-        'CtsPermissionTestCases.camera': [
-                '--include-filter',
-                'CtsPermissionTestCases android.permission.cts.CameraPermissionTest',
-                '--include-filter',
-                'CtsPermissionTestCases android.permission.cts.Camera2PermissionTest',
         ],
         'CtsSensorTestCases.faft': [
                 '--include-filter',

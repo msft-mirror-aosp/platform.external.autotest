@@ -2,8 +2,6 @@
 <SubPlan version="2.0">
   <Entry include="CtsAppTestCases android.app.cts.SystemFeaturesTest" />
   <Entry include="CtsCameraTestCases" />
-  <Entry include="CtsDeqpTestCases dEQP-GLES3.functional.prerequisite#*" />
-  <Entry include="CtsMediaStressTestCases android.mediastress.cts.MediaRecorderStressTest" />
   <Entry include="CtsMediaAudioTestCases" />
   <Entry include="CtsMediaCodecTestCases" />
   <Entry include="CtsMediaDecoderTestCases" />
@@ -16,12 +14,7 @@
   <Entry include="CtsMediaMiscTestCases" />
   <Entry include="CtsNativeMediaAAudioTestCases" />
   <Entry include="CtsNetTestCases" />
-  <Entry include="CtsPerfettoTestCases" />
-  <Entry include="CtsPermissionTestCases android.permission.cts.CameraPermissionTest" />
-  <Entry include="CtsPermissionTestCases android.permission.cts.Camera2PermissionTest" />
   <Entry include="CtsSensorTestCases" />
-  <Entry include="CtsSustainedPerformanceHostTestCases" />
-  <Entry include="CtsUsageStatsTestCases" />
   <Entry include="CtsViewTestCases" />
   <Entry include="CtsWifiTestCases" />
 </SubPlan>

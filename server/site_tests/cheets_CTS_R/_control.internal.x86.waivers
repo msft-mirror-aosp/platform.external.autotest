@@ -13,7 +13,7 @@ METADATA = {
     "criteria": "A part of Android CTS",
 }
 # TODO(b/287160788): Move away from long suite
-ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-long, suite:arc-cts-hardware'
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-long'
 DEPENDENCIES = 'arc, cts_abi_x86'
 HW_DEPS = ['android-container-rvc','android-vm-rvc']
 JOB_RETRIES = 1

@@ -608,20 +608,6 @@ CONFIG['DISABLE_LOGCAT_ON_FAILURE'] = set([
         'CtsLibcoreTestCases',
 ])
 
-# This list of modules will be used for reduced set of testing for build
-# variant process. Suites: cts_hardware & arc-cts-hardware. that is run in camerabox infra
-CONFIG['HARDWARE_MODULES'] = [
-        'CtsPerfettoTestCases',
-        'CtsSustainedPerformanceHostTestCases',
-        'CtsViewTestCases',
-        'CtsMediaTestCases',
-        'CtsNativeMediaAAudioTestCases',
-        'CtsNetTestCases',
-        'CtsWifiTestCases',
-        'CtsUsageStatsTestCases',
-        'CtsSensorTestCases',
-]
-
 R_QUAL_SUITES = ['suite:arc-cts-qual']
 R_QUAL_AND_REGRESSION_SUITES = R_QUAL_SUITES + ['suite:arc-cts']
 
@@ -629,20 +615,7 @@ CONFIG['EXTRA_MODULES'] = {}
 
 # In addition to EXTRA_MODULES, these modules do require separate control files
 # for internal and moblab.
-CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
-        'CtsAppTestCases': {
-                'CtsAppTestCases.feature': [],
-        },
-        'CtsDeqpTestCases': {
-                'CtsDeqpTestCases.dEQP-GLES3.functional.prerequisite': [],
-        },
-        'CtsMediaStressTestCases': {
-                'CtsMediaStressTestCases.camera': [],
-        },
-        'CtsPermissionTestCases': {
-                'CtsPermissionTestCases.camera': [],
-        },
-}
+CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {}
 
 ARC_PERF_SUITE = ['suite:arc-cts-perf']
 CONFIG['PERF_MODULES'] = {
@@ -691,10 +664,6 @@ CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {
 }
 
 CONFIG['EXTRA_COMMANDLINE'] = {
-        'CtsAppTestCases.feature': [
-                '--module', 'CtsAppTestCases', '--test',
-                'android.app.cts.SystemFeaturesTest'
-        ],
         'CtsDeqpTestCases.dEQP-EGL': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test', 'dEQP-EGL.*'
@@ -718,18 +687,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
         'CtsDeqpTestCases.dEQP-VK': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test', 'dEQP-VK.*'
-        ],
-        'CtsMediaStressTestCases.camera': [
-                '--module',
-                'CtsMediaStressTestCases',
-                '--test',
-                'android.mediastress.cts.MediaRecorderStressTest',
-        ],
-        'CtsPermissionTestCases.camera': [
-                '--include-filter',
-                'CtsPermissionTestCases android.permission.cts.CameraPermissionTest',
-                '--include-filter',
-                'CtsPermissionTestCases android.permission.cts.Camera2PermissionTest',
         ],
         'CtsSensorTestCases.faft': [
                 '--include-filter',

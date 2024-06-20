@@ -13,7 +13,7 @@ METADATA = {
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-arm-13'
+ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-arm-13, suite:arc-cts-media'
 DEPENDENCIES = 'arc'
 HW_DEPS = ['android-container-rvc','android-vm-rvc']
 JOB_RETRIES = 1

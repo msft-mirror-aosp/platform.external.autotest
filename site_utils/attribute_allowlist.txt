@@ -44,6 +44,7 @@ suite:arc-cts-camera-opendut
 suite:arc-cts-deqp
 suite:arc-cts-hardware
 suite:arc-cts-long
+suite:arc-cts-media
 suite:arc-cts-perbuild
 suite:arc-cts-perf
 suite:arc-cts-qual

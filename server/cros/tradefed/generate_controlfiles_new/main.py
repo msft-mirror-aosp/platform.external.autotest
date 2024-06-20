@@ -154,6 +154,10 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                     lambda g: vm_config.get('RUN_SINGLE_ABI', bundle.abi) == bundle.abi and g.get('vm'),
                     [AddSuites([vm_config.get('SUITE_NAME')])],
                 ),
+                If(
+                    match_modules(config.get('MEDIA_SUITE_MODULES', [])),
+                    [AddSuites(['suite:arc-cts-media'])],
+                ),
 
                 # Apply extra attributes (suites).
                 Concat(

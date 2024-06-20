@@ -431,6 +431,12 @@ CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
         'CtsMediaStressTestCases.camera',
 ]
 
+# Modules to add to suite:arc-cts-media
+CONFIG['MEDIA_SUITE_MODULES'] = [
+        'CtsMedia.*',
+        'CtsVideo.*',
+]
+
 CONFIG['NEEDS_CTS_HELPERS'] = [
         'CtsPrintTestCases',
 ]

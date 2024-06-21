@@ -278,6 +278,9 @@ def gen_internal_collect(bundle: Bundle,
     for hardware_suite in for_hardware_suite:
         if hardware_suite:
             suites = [config['HARDWARE_SUITE_NAME']]
+            # Generates hardware suite only for the ARM abi.
+            if bundle.abi != 'arm':
+                continue
         else:
             suites = (config['INTERNAL_SUITE_NAMES'] +
                       config.get('QUAL_SUITE_NAMES', []))
@@ -305,6 +308,9 @@ def gen_internal_collect(bundle: Bundle,
 def gen_internal_hardwaresuite(bundle: Bundle,
                                config: Config) -> Iterable[ModuleGroup]:
     """Generates internal hardware suite controlfiles."""
+    # Generates hardware suite only for the ARM abi.
+    if bundle.abi != 'arm':
+        return []
     modules = config.get('HARDWARE_MODULES', [])
     extra_modules = config.get('HARDWAREONLY_EXTRA_MODULES', {})
     if not modules and not extra_modules:

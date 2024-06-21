@@ -344,6 +344,11 @@ class TradefedTest(test.test):
         self._prepare_synchronous_offloads()
         self._output_perf()
 
+        # Tests that modify arcvm_dev.conf should make a copy at
+        # arcvm_dev.conf.orig. Restore original if exists.
+        self._run_commands(['mv /usr/local/vms/etc/arcvm_dev.conf{.orig,}'],
+                           ignore_status=True)
+
         try:
             # Clean up test data that may not be deletable on previous
             # ChromeOS versions. See b/170276268.

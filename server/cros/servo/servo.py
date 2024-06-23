@@ -730,10 +730,10 @@ class Servo(object):
         # TODO(b/337319810): stop setting cold_reset_select on grunt when the
         # labstation uses `ecrst pulse` for cold_reset on grunt ccd devices.
         if (self.main_device_is_ccd() and 'grunt' == self.get_board()
-                    and self.servo.has_control("gsc_ecrst_pulse")
-                    and self.servo.has_control("cold_reset_select")):
+                    and self.has_control("gsc_ecrst_pulse")
+                    and self.has_control("cold_reset_select")):
             logging.info('Setup cold_reset_select on grunt')
-            self.servo.set("cold_reset_select", "gsc_ecrst_pulse")
+            self.set_nocheck("cold_reset_select", "gsc_ecrst_pulse")
         # Run testlab open if servo relies on ccd to control the dut.
         if self.main_device_uses_gsc_drv():
             self.set_nocheck('cr50_testlab', 'open')

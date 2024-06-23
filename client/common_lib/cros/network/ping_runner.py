@@ -9,7 +9,6 @@ from __future__ import print_function
 
 import logging
 import math
-import os
 import re
 import six
 
@@ -335,7 +334,7 @@ class PingRunner(object):
         self._run = utils.run
         if host is not None:
             self._run = host.run
-        if os.environ.get("SWARMING_BOT_ID", "").startswith("cloudbots-"):
+        if utils.is_cloudbot():
             self.command_ping = self.CLOUDBOTS_PING_COMMAND
         else:
             self.command_ping = command_ping

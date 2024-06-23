@@ -237,7 +237,7 @@ class TradefedTest(test.test):
 
         # On go/cloudbots DUTs are not reachable via network directly. We need
         # to tunnal ADB connections via SSH.
-        if self._is_cloudbot():
+        if client_utils.is_cloudbot():
             self._adb.set_tunnel(adb_utils.SshAdbTunnel(hosts))
 
         # TODO(kinaba): Remove the hack and fully enable the feature.
@@ -259,10 +259,6 @@ class TradefedTest(test.test):
         self._waivers = None
 
         self._hard_reboot_on_failure = hard_reboot_on_failure
-
-    def _is_cloudbot(self):
-        """Returns True if the test job is running on cloudbot."""
-        return os.environ.get('SWARMING_BOT_ID', '').startswith('cloudbots-')
 
     def _load_local_waivers(self, directory, is_dev=False):
         return self._get_expected_failures(os.path.join(self.bindir, directory), is_dev)

@@ -2542,3 +2542,8 @@ def bytes_to_str_recursive(obj):
             return 'ERROR_DECODE_BYTES_TO_STR'
 
     return recursive_func(obj, bytes_to_str, (bytes, bytearray))
+
+
+def is_cloudbot():
+    """Determine if current process is running on cloudbot env."""
+    return os.environ.get('CLOUDBOTS_LAB_DOMAIN', '') != ''

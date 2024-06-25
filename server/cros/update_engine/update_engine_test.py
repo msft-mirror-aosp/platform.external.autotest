@@ -1244,7 +1244,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             stable_paygen_data = self._paygen_json_lookup(
                     board, channel, 'FSI')
         if not stable_paygen_data:
-            raise error.TestFail(
+            raise error.TestNAError(
                     'No stable build found in paygen.json for %s' % board)
         find = min if oldest_stable else max
         target_stable_paygen_data = find(

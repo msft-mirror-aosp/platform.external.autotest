@@ -253,3 +253,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         rv = self.wp_is_forced_enabled()
         logging.info('WP reset - WP forced enabled: %s', rv)
         return rv
+
+    def clear_system_reset_enforcement(self):
+        """Try to clear system reset enforcement"""
+        self.send_command('ap_ro_verify erase')

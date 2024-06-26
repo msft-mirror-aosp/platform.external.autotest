@@ -522,15 +522,22 @@ class Cr50Test(FirmwareTest):
         self._try_to_bring_dut_up()
         self._retry_gsc_update_from_ap(image, retries, rollback)
 
+    def _retry_update_to_dbg_image(self):
+        """Update to the DBG image"""
+        self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
+        # Updating to the debug image clears ccd open. Make sure the AP RO
+        # verification system reset enforcement is also cleared.
+        self.gsc.clear_system_reset_enforcement()
+
     def run_update_to_eraseflashinfo(self):
         """Erase flashinfo using the eraseflashinfo image.
 
         Update to the DBG image, rollback to the eraseflashinfo, and run
         eraseflashinfo.
         """
-        self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
+        self._retry_update_to_dbg_image()
         self._retry_gsc_update_with_ccd_and_ap(self._eraseflashinfo_image_path,
-                3, True)
+                                               3, True)
         if not self.gsc.eraseflashinfo():
             raise error.TestError('Unable to erase the board id')
 
@@ -590,8 +597,7 @@ class Cr50Test(FirmwareTest):
         ver = self.gsc.get_version()
         logging.info('Running %s', ver)
         if 'DBG' not in ver:
-            self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3,
-                                                   False)
+            self._retry_update_to_dbg_image()
 
         chip_bid = bid[0]
         chip_flags = bid[2]

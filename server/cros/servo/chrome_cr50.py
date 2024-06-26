@@ -1834,3 +1834,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """Return the flog contents"""
         return self.send_command_retry_get_output('flog', ['flog(.*)>'],
                                                   safe=True)[0][1].strip()
+
+    def clear_system_reset_enforcement(self):
+        """Cr50 doesn't enforce system reset with AP RO verification"""
+        pass

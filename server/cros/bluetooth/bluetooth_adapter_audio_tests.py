@@ -86,6 +86,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # The real IP replacent when used in ssh tunneling environment
     real_ip = None
 
+    # Pulseaudio config directory on the peer device.
+    PULSEAUDIO_CONFIG_DIR = '/home/pi/.config'
+
     def _get_pulseaudio_bluez_source(self, get_source_method, device,
                                      test_profile):
         """Get the specified bluez device number in the pulseaudio source list.
@@ -431,6 +434,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                 AUDIO_RECORD_DIR):
             raise error.TestError('Failed to create %s on the DUT' %
                                   AUDIO_RECORD_DIR)
+
+        # TODO(b/342333371): Some process changes the config directory owner,
+        # causing PulseAudio to fail to start. Remove this once we can root
+        # cause the issue.
+        for btpeer_host in self.host._btpeer_host_list:
+            btpeer_host.run(f'sudo chown pi:pi {self.PULSEAUDIO_CONFIG_DIR}')
 
         device.SetAudioConfig(self._audio_config)
 

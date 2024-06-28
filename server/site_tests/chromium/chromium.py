@@ -32,8 +32,8 @@ class chromium(test.test):
         with tempfile.TemporaryDirectory() as tmp_archive_dir:
             archive_file_path = chrome_sideloader.download_gs(
                     args_dict.get('lacros_gcs_path'), tmp_archive_dir)
-            chrome_sideloader.unsquashfs(archive_file_path, self.server_pkg,
-                                         **args_dict)
+            chrome_sideloader.unarchive(archive_file_path, self.server_pkg,
+                                        **args_dict)
             cmd = ['chmod', '-R', '755', self.server_pkg]
             try:
                 utils.run(cmd, stdout_tee=sys.stdout, stderr_tee=sys.stderr)

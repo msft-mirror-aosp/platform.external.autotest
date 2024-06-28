@@ -649,6 +649,28 @@ def is_lacros_version_skew_valid(lacros_version_str, ash_version_str):
     return True
 
 
+def unarchive(file_path, dest_dir, **kwargs):
+    """
+    Unarchive any lacros_gcs_path archives into destination directory.
+
+    @param file_path: The path for archive.
+    @param dest_dir: The directory where the file is copied to.
+    """
+    if os.path.basename(file_path).endswith(".zip"):
+        with zipfile.ZipFile(file_path, 'r') as zip_ref:
+            zip_ref.extractall(dest_dir)
+    elif os.path.basename(file_path).endswith('.tar.zst'):
+        try:
+            cmd = ['tar', '-I', 'zstd', '-xf', file_path, '-C', dest_dir]
+            common_utils.run(cmd, **_gen_run_env_dict())
+        except error.CmdError as e:
+            raise Exception(f'Error running tar on {file_path}', e)
+    elif os.path.basename(file_path).endswith(".squash"):
+        unsquashfs(file_path, dest_dir, **kwargs)
+    else:
+        raise Exception('Unsupported file extension: %s' % file_path)
+
+
 def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
     """
     Deploy chrome onto DUT using chromite.
@@ -667,14 +689,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
     # Download artifacts onto drone server and unarchive to a temp directory.
     with tempfile.TemporaryDirectory() as tmp_archive_dir:
         archive_file_path = download_gs(gs_path, tmp_archive_dir)
-        if os.path.basename(archive_file_path).endswith(".zip"):
-            with zipfile.ZipFile(archive_file_path, 'r') as zip_ref:
-                zip_ref.extractall(chrome_dir)
-        elif os.path.basename(archive_file_path).endswith(".squash"):
-            unsquashfs(archive_file_path, chrome_dir, **kwargs)
-        else:
-            raise Exception('Unsupported file extension: %s' %
-                            archive_file_path)
+        unarchive(archive_file_path, chrome_dir, **kwargs)
 
     # change file permissions to allow for script execution
     cmd = ['chmod', '-R', '755', chrome_dir]

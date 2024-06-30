@@ -1,0 +1,41 @@
+# Copyright 2024 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'bluetooth_WiFiCoexPerformance.ble_keyboard_with_ble_mouse_load.11n'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    # Network: Open 802.11n, Channel 6.
+    'criteria': ('Measure and verify the Bluetooth low energy keyboard and '
+                 'mouse delay while operating a Wi-Fi load 11n standard.'),
+    'hw_agnostic': False,
+}
+ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+TEST_TYPE = 'Server'
+DEPENDENCIES = ('wificell, working_bluetooth_btpeer:2, '
+                'peripheral_wifi_state:WORKING, '
+                'wifi_router_models:OPENWRT[Ubiquiti_Unifi_6_Lite]')
+from autotest_lib.server import utils
+from autotest_lib.server.cros.network import hostap_config
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    caps = [hostap_config.HostapConfig.N_CAPABILITY_HT20]
+    mode = hostap_config.HostapConfig.MODE_11N_PURE
+    configs = [hostap_config.HostapConfig(n_capabilities=caps, channel=channel,
+                                          mode=mode) for channel in (6,)]
+    use_iperf=True
+    job.run_test('bluetooth_WiFiCoexPerformance',
+                 tag=NAME.split('.')[2],
+                 host=host,
+                 raw_cmdline_args=args,
+                 args_dict=args_dict,
+                 additional_params=(configs, use_iperf),
+                 test_name=NAME.split('.')[1],
+                 floss=True)
+
+parallel_simple(run, machines)

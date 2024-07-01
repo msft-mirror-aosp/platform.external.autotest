@@ -27,6 +27,12 @@ DISPLAY_POWER_INTERNAL_ON_EXTERNAL_OFF = 3
 # for bounds checking
 DISPLAY_POWER_MAX = 4
 
+# Default location of the stb_read file used with amd-stb
+STB_READ_PATH = '/sys/kernel/debug/amd_pmc/stb_read'
+# Output files from the amd-stb command. Useful with decode_raw_stb_data().
+AMD_STB_OUTFILE_STB_REPORT = 'stb_read_stb_report.txt'
+AMD_STB_OUTFILE_STB_DICT = 'stb_read_stb_dictionary.json'
+AMD_STB_OUTFILE_FW_REPORT = 'stb_firmware_report.txt'
 
 def set_fullscreen(chrome):
     """Make the current focused window fullscreen.
@@ -82,6 +88,28 @@ def get_x86_cpu_arch():
 
     logging.info(cpuinfo)
     return None
+
+
+def decode_raw_stb_data(out_dir, in_path=STB_READ_PATH):
+    """ Run the amd-stb command to decode the contents of
+    /sys/kernel/debug/amd_pmc/stb_read. Resulting decoded files are placed in
+    'out_dir'.
+
+    Args:
+      out_dir: directory to store output files when amd-stb is run. Note the
+        list of filenames asssigned to the AMD_STB_OUTFILE_* values in this
+        file.
+      in_path: stb_read data to be decoded.
+    Returns:
+      CmdResult from the invocations of amd-stb.
+    """
+    if not shutil.which('amd-stb'):
+        logging.warning('Could not find amd-stb tool.')
+        return None
+    cmd = 'amd-stb --input=%s --output_folder=%s' % (in_path, out_dir)
+    result = utils.run(cmd)
+    return result
+
 
 def get_stb_firmware_resume_stats(kernel_resume_time):
     """ Get additional data related to firmware resume stats using

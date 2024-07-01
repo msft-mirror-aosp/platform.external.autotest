@@ -3,14 +3,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import dbus, logging, numpy, os, random, shutil, time
+import dbus, logging, numpy, os, random, shutil, tempfile, time
 
 from autotest_lib.client.bin import test, utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import interface
 from autotest_lib.client.cros import dbus_util, upstart
 from autotest_lib.client.cros.networking import shill_proxy
-from autotest_lib.client.cros.power import power_suspend, sys_power
+from autotest_lib.client.cros.power import power_suspend, power_utils, sys_power
 
 class power_SuspendStress(test.test):
     """Class for test."""
@@ -107,6 +107,14 @@ class power_SuspendStress(test.test):
             if not os.path.exists(pmc_core_dir):
                 os.mkdir(pmc_core_dir)
 
+        has_stb_read = os.path.exists(power_utils.STB_READ_PATH)
+        amd_pmc_dir = os.path.join(self.resultsdir, 'amd_pmc')
+        stb_read_tempdir = None
+        if has_stb_read:
+            stb_read_tempdir = tempfile.mkdtemp(prefix='stb')
+            if not os.path.exists(amd_pmc_dir):
+                os.mkdir(amd_pmc_dir)
+
         suspend_iter = 1
         while not self._done():
             time.sleep(self._min_resume +
@@ -137,6 +145,14 @@ class power_SuspendStress(test.test):
                 outfilename = f'substate_requirements.{suspend_iter}'
                 shutil.copy('/sys/kernel/debug/pmc_core/substate_requirements',
                             os.path.join(pmc_core_dir, outfilename))
+            if has_stb_read:
+                outfilename = power_utils.AMD_STB_OUTFILE_STB_REPORT
+                power_utils.decode_raw_stb_data(stb_read_tempdir,
+                                                power_utils.STB_READ_PATH)
+                shutil.copy(
+                        os.path.join(stb_read_tempdir, outfilename),
+                        os.path.join(amd_pmc_dir,
+                                     f'{outfilename}.{suspend_iter}'))
             suspend_iter += 1
 
     def postprocess_iteration(self):

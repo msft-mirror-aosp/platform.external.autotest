@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "Check if the echo cancellation works good under various recording formats."
 }
 
-ATTRIBUTES = 'suite:audio'
+# ATTRIBUTES = 'suite:audio'
 TEST_TYPE = 'client'
 
 '''

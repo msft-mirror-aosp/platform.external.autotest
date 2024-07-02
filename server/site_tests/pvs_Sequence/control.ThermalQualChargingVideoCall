@@ -14,6 +14,7 @@ METADATA = {
 import datetime
 
 from autotest_lib.server import utils
+from autotest_lib.server.cros.pvs.bounds import Bound
 
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
@@ -38,6 +39,12 @@ SEQUENCE = [
     ('power_Speedometer2', {'pdash_note': pdash_note}, False)
 ]
 
+BOUNDS = [
+    Bound('power_Speedometer2\.result', min=0),
+    Bound('power_VideoCall\.keypress_latency_us_avg', max=50000),
+    Bound('power_VideoCall\.video_720p30_vp.*min', min=29),
+]
+
 def run(machine):
     # Setup the client machine.
     host = hosts.create_host(machine, servo_args=servo_args)
@@ -47,6 +54,7 @@ def run(machine):
     job.run_test('pvs_Sequence',
                            tag=NAME.split('.')[1],
                            host=host,
-                           sequence=SEQUENCE)
+                           sequence=SEQUENCE,
+                           bounds=BOUNDS)
 
 parallel_simple(run, machines)

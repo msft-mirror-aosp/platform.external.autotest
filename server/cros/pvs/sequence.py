@@ -2,12 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import os
+import re
 import shutil
 
 from autotest_lib.server import autotest, test
 from autotest_lib.client.common_lib import error
-
+from autotest_lib.server.cros.pvs import bounds
 
 class test_sequence(test.test):
     """
@@ -16,7 +18,7 @@ class test_sequence(test.test):
     be run in a given sequence.
     """
 
-    def initialize(self, sequence):
+    def initialize(self, sequence, bounds=None):
         """
         initialize implements the initialize call in test.test, is called before
         execution of the test
@@ -31,6 +33,8 @@ class test_sequence(test.test):
         self._results_path = self.job._server_offload_dir_path()
         self._wrapper_results_dir = os.path.join(self._results_path,
                                                  self.tagged_testname)
+        self._perf_dict = {}
+        self._bounds = bounds
 
     def process_test_results_post_hook(self):
         """
@@ -75,10 +79,31 @@ class test_sequence(test.test):
                 client.run_test(test,
                                 timeout=87300,
                                 check_client_result=True, **argv)
+            self._process_keyvals(test)
         except BaseException as err:
             self._sequence_verdicts[test] = False
             self.postprocess()
             raise error.TestFail('Sequenced test error: %s' % err)
+
+    def _process_keyvals(self, test):
+        results_keyval_path = os.path.join(self._wrapper_results_dir, test,
+                                           'results/keyval')
+        logging.info('processing keyvals for %s: from %s', test,
+                     results_keyval_path)
+        if os.path.exists(results_keyval_path):
+            with open(results_keyval_path) as results_keyval_file:
+                keyval_result = results_keyval_file.readline()
+                while keyval_result:
+                    regmatch = re.search(r'(.*){(.*)}=(.*)', keyval_result)
+                    if regmatch is None:
+                        break
+                    key = regmatch.group(1)
+                    which_dict = regmatch.group(2)
+                    value = regmatch.group(3)
+                    if which_dict != 'perf':
+                        continue
+                    self._perf_dict[test + "." + key] = value
+                    keyval_result = results_keyval_file.readline()
 
     def surface_client_test_resultsdir(self, test):
         """
@@ -114,6 +139,7 @@ class test_sequence(test.test):
         client_at = autotest.Autotest(host)
         for test, argv, server_test in self._sequenced_tests:
             self.execute_sequenced_test(client_at, test, argv, server_test)
+        bounds.evaluate_test_bounds(self._perf_dict, self._bounds)
 
     def postprocess(self):
         """

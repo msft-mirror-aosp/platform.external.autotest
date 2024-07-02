@@ -18,4 +18,5 @@ class pvs_Sequence(sequence.test_sequence):
         initialize implements the initialize call in test.test, and is called before
         execution of the test.
         """
-        super(pvs_Sequence, self).initialize(sequence=args_dict['sequence'])
+        super(pvs_Sequence, self).initialize(sequence=args_dict['sequence'],
+                                             bounds=args_dict['bounds'])

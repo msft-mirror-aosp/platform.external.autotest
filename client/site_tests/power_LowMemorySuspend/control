@@ -15,7 +15,7 @@ METADATA = {
     "criteria": "Fails if system hang or reboot during this test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = ("suite:crosbolt_perf_weekly")
+ATTRIBUTES = ("")
 TEST_TYPE = "client"
 
 job.run_test('power_LowMemorySuspend')

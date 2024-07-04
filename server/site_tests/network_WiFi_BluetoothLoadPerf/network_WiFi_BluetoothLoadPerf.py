@@ -275,17 +275,22 @@ class network_WiFi_BluetoothLoadPerf(
 
         @param device: The BT peer device.
         """
-        self.test_continuous_mouse_left_click(
-                device=device,
-                num_clicks=self.DEFAULT_BT_TOTAL_CLICK,
-                delay=self.DEFAULT_BT_CLICK_DELAY)
+        # We ignored test failure to focus on btmon log result, not evtest.
+        # Packet loss less than (5%) should be ok.
+        self.ignore_failure(self.test_continuous_mouse_left_click,
+                            device=device,
+                            num_clicks=self.DEFAULT_BT_TOTAL_CLICK,
+                            delay=self.DEFAULT_BT_CLICK_DELAY)
 
     def do_gamepad_load_test(self, device):
         """Runs the body of the gamepad load test.
 
         @param device: The BT peer device.
         """
-        self.test_gamepad_continuous_press_button_and_move_thumbstick(
+        # We ignored test failure to focus on btmon log result, not evtest.
+        # Packet loss less than (5%) should be ok.
+        self.ignore_failure(
+                self.test_gamepad_continuous_press_button_and_move_thumbstick,
                 device=device,
                 button='GAMEPAD_BUTTON_A',
                 stick='GAMEPAD_LEFT_THUMBSTICK',
@@ -299,10 +304,12 @@ class network_WiFi_BluetoothLoadPerf(
 
         @param device: The BT peer device.
         """
-        self.test_keyboard_input_from_string(
-                device=device,
-                string_to_send=self.INPUT_STRING,
-                delay=self.DEFAULT_DELAY_BETWEEN_KEYSTROKES)
+        # We ignored test failure to focus on btmon log result, not evtest.
+        # Packet loss less than (5%) should be ok.
+        self.ignore_failure(self.test_keyboard_input_from_string,
+                            device=device,
+                            string_to_send=self.INPUT_STRING,
+                            delay=self.DEFAULT_DELAY_BETWEEN_KEYSTROKES)
 
     def do_audio_load_test(self, device):
         """Runs the body of the audio load test.

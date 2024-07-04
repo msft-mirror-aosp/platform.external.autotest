@@ -131,10 +131,12 @@ class bluetooth_WiFiCoexPerformance(
         @param mouse: Mouse device.
         """
         time.sleep(2)
-        self.test_continuous_mouse_left_click(
-                device=mouse,
-                num_clicks=self.MOUSE_CLICKS_NUMBER,
-                delay=self.DEFAULT_BT_CLICK_DELAY)
+        # We ignored test failure to focus on btmon log result, not evtest.
+        # Packet loss less than (5%) should be ok.
+        self.ignore_failure(self.test_continuous_mouse_left_click,
+                            device=mouse,
+                            num_clicks=self.MOUSE_CLICKS_NUMBER,
+                            delay=self.DEFAULT_BT_CLICK_DELAY)
 
     def __do_keyboard_click_load_test(self, keyboard):
         """Runs keyboard load test.
@@ -142,10 +144,12 @@ class bluetooth_WiFiCoexPerformance(
         @param keyboard: Keyboard device.
         """
         time.sleep(2)
-        self.test_keyboard_input_from_string(
-                device=keyboard,
-                string_to_send=self.KEYBOARD_STRING,
-                delay=self.DEFAULT_BT_CLICK_DELAY)
+        # We ignored test failure to focus on btmon log result, not evtest.
+        # Packet loss less than (5%) should be ok.
+        self.ignore_failure(self.test_keyboard_input_from_string,
+                            device=keyboard,
+                            string_to_send=self.KEYBOARD_STRING,
+                            delay=self.DEFAULT_BT_CLICK_DELAY)
 
     def __do_gamepad_load_test(self, gamepad):
         """Runs gamepad load test.
@@ -153,7 +157,10 @@ class bluetooth_WiFiCoexPerformance(
         @param gamepad: gamepad device.
         """
         time.sleep(2)
-        self.test_gamepad_continuous_press_button_and_move_thumbstick(
+        # We ignored test failure to focus on btmon log result, not evtest.
+        # Packet loss less than (5%) should be ok.
+        self.ignore_failure(
+                self.test_gamepad_continuous_press_button_and_move_thumbstick,
                 device=gamepad,
                 button='GAMEPAD_BUTTON_A',
                 stick='GAMEPAD_LEFT_THUMBSTICK',

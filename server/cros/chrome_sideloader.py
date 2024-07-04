@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import contextlib
 import json
 import logging
 import os
@@ -649,6 +650,37 @@ def is_lacros_version_skew_valid(lacros_version_str, ash_version_str):
     return True
 
 
+@contextlib.contextmanager
+def _ensure_cipd(*packages):
+    """
+    Ensure packages are installed in given context.
+
+    @param packages: list of cipd packages to ensure.
+
+    @yield a string that the packages is installed to.
+    """
+    # Download artifacts onto drone server and unzip to a temp directory.
+    with tempfile.TemporaryDirectory() as tmp_pkg_dir:
+        # create ensure-file for squashfs
+        ensure_file_path = os.path.join(tmp_pkg_dir, 'ensure_file.txt')
+        with open(ensure_file_path, 'w') as f:
+            for pkg in packages:
+                f.write(pkg)
+                f.write(' latest\n')
+
+        # download packages from cipd
+        cmd = [
+                'cipd', 'ensure', '-ensure-file', ensure_file_path, '-root',
+                tmp_pkg_dir
+        ]
+        try:
+            common_utils.run(cmd, **_gen_run_env_dict())
+        except error.CmdError as e:
+            raise Exception('Error downloading packages %s from CIPD' %
+                            (packages, ))
+        yield tmp_pkg_dir
+
+
 def unarchive(file_path, dest_dir, **kwargs):
     """
     Unarchive any lacros_gcs_path archives into destination directory.
@@ -660,11 +692,23 @@ def unarchive(file_path, dest_dir, **kwargs):
         with zipfile.ZipFile(file_path, 'r') as zip_ref:
             zip_ref.extractall(dest_dir)
     elif os.path.basename(file_path).endswith('.tar.zst'):
-        try:
-            cmd = ['tar', '-I', 'zstd', '-xf', file_path, '-C', dest_dir]
-            common_utils.run(cmd, **_gen_run_env_dict())
-        except error.CmdError as e:
-            raise Exception(f'Error running tar on {file_path}', e)
+        if kwargs.get('is_cft'):
+            try:
+                cmd = ['tar', '-I', 'zstd', '-xf', file_path, '-C', dest_dir]
+                common_utils.run(cmd, **_gen_run_env_dict())
+            except error.CmdError as e:
+                raise Exception(f'Error running tar on {file_path}', e)
+        else:
+            with _ensure_cipd('chromiumos/infra/tools/zstd') as zstd:
+                try:
+                    cmd = [
+                            'tar', '-I',
+                            os.path.join(zstd, 'bin/zstd'), '-xf', file_path,
+                            '-C', dest_dir
+                    ]
+                    common_utils.run(cmd, **_gen_run_env_dict())
+                except error.CmdError as e:
+                    raise Exception(f'Error running tar on {file_path}', e)
     elif os.path.basename(file_path).endswith(".squash"):
         unsquashfs(file_path, dest_dir, **kwargs)
     else:
@@ -939,27 +983,16 @@ def unsquashfs(file_path, dest_dir, **kwargs):
         try:
             return common_utils.run(cmd, **_gen_run_env_dict(**kwargs))
         except error.CmdError as e:
-            raise Exception(err_msg, ex)
+            raise Exception(err_msg, e)
 
     if kwargs.get('is_cft'):
         return _run(['unsquashfs', '-f', '-d', dest_dir, file_path],
                     f'Error running unsquashfs on {file_path}')
 
-    # Download artifacts onto drone server and unzip to a temp directory.
-    with tempfile.TemporaryDirectory() as tmp_squashfs_dir:
-        # create ensure-file for squashfs
-        ensure_file_path = os.path.join(tmp_squashfs_dir, 'ensure_file.txt')
-        with open(ensure_file_path, 'w') as f:
-            f.write('infra/3pp/tools/squashfs/linux-amd64 latest\n')
-            f.write('infra/3pp/static_libs/libzstd/linux-amd64 latest')
-
-        # download squashfs from cipd
-        cmd = [
-                'cipd', 'ensure', '-ensure-file', ensure_file_path, '-root',
-                tmp_squashfs_dir
-        ]
-        _run(cmd, 'Error downloading squashfs from CIPD')
-
+    # Download squashfs tools from cipd.
+    with _ensure_cipd(
+            'infra/3pp/tools/squashfs/linux-amd64',
+            'infra/3pp/static_libs/libzstd/linux-amd64') as tmp_squashfs_dir:
         # unsquashfs archive into destination directory
         return _run([
                 os.path.join(tmp_squashfs_dir, 'squashfs-tools', 'unsquashfs'),

@@ -736,10 +736,12 @@ CONFIG['EXTRA_COMMANDLINE'] = {
                 'android.app.cts.SystemFeaturesTest'
         ],
         'CtsDeqpTestCases.isolated-flaky-tests': [
-                '--module',
-                'CtsDeqpTestCases',
-                '--test',
-                'dEQP-VK.pipeline.render_to_image.core.2d_array.huge.height_layers#r8g8b8a8_unorm_d24_unorm_s8_uint',
+                '--include-filter',
+                'CtsDeqpTestCases dEQP-VK.pipeline.render_to_image.core.2d_array.huge.height_layers#r8g8b8a8_unorm_d24_unorm_s8_uint',
+                '--include-filter',
+                'CtsDeqpTestCases dEQP-GLES3.functional.shaders.builtin_functions.precision.refract.lowp_vertex#vec4',
+                '--include-filter',
+                'CtsDeqpTestCases dEQP-GLES3.functional.texture.units.all_units.only_cube#0',
         ],
         'CtsSensorTestCases.faft': [
                 '--include-filter',

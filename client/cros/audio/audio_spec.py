@@ -10,6 +10,21 @@ _BOARD_TYPE_CHROMEBIT = 'CHROMEBIT'
 _BOARD_WITHOUT_SOUND_CARD = ['gale', 'veyron_rialto']
 
 
+def strip_variant_suffix(board_name):
+    """
+    Removes all characters after the first dash ("-") in a string. This is
+    according to the naming convention ${board}-${variant}.
+
+    @param board_name: the input string.
+
+    @returns: The part of the string before the first dash,
+             or the original string if no dash is found.
+
+    """
+    parts = board_name.split("-")
+    return parts[0]
+
+
 def has_internal_speaker(board_type, board_name):
     """Checks if a board has internal speaker.
 
@@ -19,7 +34,7 @@ def has_internal_speaker(board_type, board_name):
     @returns: True if the board has internal speaker. False otherwise.
 
     """
-    board_name = strip_kernelnext_suffix(board_name)
+    board_name = strip_variant_suffix(board_name)
     if (board_type == _BOARD_TYPE_CHROMEBOX
                 or board_type == _BOARD_TYPE_CHROMEBIT
                 or board_name in _BOARD_WITHOUT_SOUND_CARD):
@@ -50,23 +65,10 @@ def has_audio_jack(board_name, board_type):
     @returns: True if the board has headphone. False otherwise.
 
     """
-    board_name = strip_kernelnext_suffix(board_name)
+    board_name = strip_variant_suffix(board_name)
     if (board_name in ['nocturne'] or board_type == _BOARD_TYPE_CHROMEBIT):
         return False
     return True
-
-def strip_kernelnext_suffix(board_name):
-    """Removes the '-kernelnext' suffix from board_name if present.
-
-    @param board_name: board name of the DUT.
-
-    @returns: board_name without '-kernelnext' suffix.
-
-    """
-    if board_name.endswith("-kernelnext"):
-        return board_name[:-len("-kernelnext")]
-
-    return board_name
 
 BOARDS_WITH_HOTWORDING = ['kevin']
 MODELS_WITH_HOTWORDING = ['brya', 'skolas', 'aviko']
@@ -81,7 +83,7 @@ def has_hotwording(board_name, model_name):
     @returns: True if the board has hotwording.
 
     """
-    board_name = strip_kernelnext_suffix(board_name)
+    board_name = strip_variant_suffix(board_name)
     return (board_name in BOARDS_WITH_HOTWORDING
             or model_name in MODELS_WITH_HOTWORDING)
 
@@ -100,7 +102,7 @@ def has_echo_reference(board_name, model_name):
     @returns: True if the board has echo reference.
 
     """
-    board_name = strip_kernelnext_suffix(board_name)
+    board_name = strip_variant_suffix(board_name)
     return (board_name in ['nocturne', 'atlas', 'volteer', 'rammus']
             or model_name in MODELS_WITH_ECHO_REFERENCE)
 
@@ -185,7 +187,7 @@ def get_num_internal_microphone(board_type, board, model, sku):
     if not has_internal_microphone(board_type):
         return 0
 
-    board = strip_kernelnext_suffix(board)
+    board = strip_variant_suffix(board)
     for b in BOARDS_WITH_TWO_INTERNAL_MICS:
         if b.board == board and b.model == model:
             if b.sku == '' or b.sku == sku:
@@ -215,7 +217,7 @@ def get_internal_mic_node(board_type, board, model, sku):
 
     @returns: The name of the expected internal microphone nodes.
     """
-    board = strip_kernelnext_suffix(board)
+    board = strip_variant_suffix(board)
     if get_num_internal_microphone(board_type, board, model, sku) == 2:
         return 'FRONT_MIC'
 
@@ -238,7 +240,7 @@ def get_plugged_internal_mics(board_type, board, model, sku):
 
     @returns: A list of all the plugged internal microphone nodes.
     """
-    board = strip_kernelnext_suffix(board)
+    board = strip_variant_suffix(board)
     if get_num_internal_microphone(board_type, board, model, sku) == 2:
         return ['FRONT_MIC', 'REAR_MIC']
 
@@ -258,5 +260,5 @@ def get_headphone_node(board):
 
     @returns: The name of the expected headphone node.
     """
-    board = strip_kernelnext_suffix(board)
+    board = strip_variant_suffix(board)
     return HEADPHONE_NODE.get((board), 'HEADPHONE')

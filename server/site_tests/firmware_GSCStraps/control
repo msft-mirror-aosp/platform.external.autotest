@@ -7,7 +7,7 @@ from autotest_lib.server import utils
 AUTHOR = "mruthven"
 NAME = "firmware_GSCStraps"
 METADATA = {
-        "contacts": ["gsc-sheriff@google.com", "mruthven@chromium.org"],
+        "contacts": ["cros-hwsec@google.com", "mruthven@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Verify gsc can read straps after reset"
 }

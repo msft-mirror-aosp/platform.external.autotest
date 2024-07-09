@@ -100,12 +100,12 @@ class power_SuspendStress(test.test):
                         desc='Find default network interface')
             logging.info('Found default network interface: %s', iface.name)
 
-        has_substate_requirements = os.path.exists(
-                '/sys/kernel/debug/pmc_core/substate_requirements')
-        pmc_core_dir = os.path.join(self.resultsdir, 'pmc_core')
-        if has_substate_requirements:
-            if not os.path.exists(pmc_core_dir):
-                os.mkdir(pmc_core_dir)
+        pmc_core_src_dir = '/sys/kernel/debug/pmc_core'
+        pmc_core_results_dir = os.path.join(self.resultsdir, 'pmc_core')
+        has_pmc_core_dir = os.path.exists(pmc_core_src_dir)
+        if has_pmc_core_dir:
+            if not os.path.exists(pmc_core_results_dir):
+                os.mkdir(pmc_core_results_dir)
 
         has_stb_read = os.path.exists(power_utils.STB_READ_PATH)
         amd_pmc_dir = os.path.join(self.resultsdir, 'amd_pmc')
@@ -141,10 +141,13 @@ class power_SuspendStress(test.test):
 
             logging.info("Suspend %d", suspend_iter)
             self._suspender.suspend(random.randint(0, 3) + self._min_suspend)
-            if has_substate_requirements:
-                outfilename = f'substate_requirements.{suspend_iter}'
-                shutil.copy('/sys/kernel/debug/pmc_core/substate_requirements',
-                            os.path.join(pmc_core_dir, outfilename))
+
+            if has_pmc_core_dir:
+                for pmc_file in os.listdir(pmc_core_src_dir):
+                    outfilename = f'{pmc_file}.{suspend_iter}'
+                    shutil.copy(
+                            os.path.join(pmc_core_src_dir, pmc_file),
+                            os.path.join(pmc_core_results_dir, outfilename))
             if has_stb_read:
                 outfilename = power_utils.AMD_STB_OUTFILE_STB_REPORT
                 power_utils.decode_raw_stb_data(stb_read_tempdir,

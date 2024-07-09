@@ -14,7 +14,8 @@ DEPENDENCIES = 'audio_box, audio_latency_toolkit_state:WORKING'
 METADATA = {
     "contacts": ["crosep-intertech@google.com"],
     "bug_component": "b:1280385",
-    "doc" : "Include experimental latency audio end-to-end tests in Tast"
+    "doc" : "Include experimental latency audio end-to-end tests in Tast",
+    'variant_category': '{"name": "Audio_SoC_Codec_Amp"}',
 }
 
 # tast.py uses binaries installed from autotest_server_package.tar.bz2.

@@ -734,6 +734,13 @@ class Servo(object):
                     and self.has_control("cold_reset_select")):
             logging.info('Setup cold_reset_select on grunt')
             self.set_nocheck("cold_reset_select", "gsc_ecrst_pulse")
+        # TODO(b/304882737): stop setting cold_reset_select on puff when
+        # servo_micro is able to successfully run power_state:reset
+        if (self.main_device_is_flex() and 'puff' == self.get_board()
+                    and self.has_control("gsc_ecrst_pulse")
+                    and self.has_control("cold_reset_select")):
+            logging.info('Setup cold_reset_select on puff')
+            self.set_nocheck("cold_reset_select", "gsc_ecrst_pulse")
         # Run testlab open if servo relies on ccd to control the dut.
         if self.main_device_uses_gsc_drv():
             self.set_nocheck('cr50_testlab', 'open')

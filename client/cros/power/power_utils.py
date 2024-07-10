@@ -27,7 +27,7 @@ DISPLAY_POWER_INTERNAL_ON_EXTERNAL_OFF = 3
 # for bounds checking
 DISPLAY_POWER_MAX = 4
 
-# Default location of the stb_read file used with amd-stb
+# Default location of the stb_read file used with amd-stb. Useful with decode_raw_stb_data().
 STB_READ_PATH = '/sys/kernel/debug/amd_pmc/stb_read'
 # Output files from the amd-stb command. Useful with decode_raw_stb_data().
 AMD_STB_OUTFILE_STB_REPORT = 'stb_read_stb_report.txt'

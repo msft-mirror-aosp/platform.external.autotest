@@ -150,12 +150,17 @@ class power_SuspendStress(test.test):
                             os.path.join(pmc_core_results_dir, outfilename))
             if has_stb_read:
                 outfilename = power_utils.AMD_STB_OUTFILE_STB_REPORT
-                power_utils.decode_raw_stb_data(stb_read_tempdir,
-                                                power_utils.STB_READ_PATH)
-                shutil.copy(
-                        os.path.join(stb_read_tempdir, outfilename),
-                        os.path.join(amd_pmc_dir,
-                                     f'{outfilename}.{suspend_iter}'))
+                result = power_utils.decode_raw_stb_data(
+                        stb_read_tempdir, power_utils.STB_READ_PATH)
+                if result is not None and result.exit_status == 0:
+                    shutil.copy(
+                            os.path.join(stb_read_tempdir, outfilename),
+                            os.path.join(amd_pmc_dir,
+                                         f'{outfilename}.{suspend_iter}'))
+                else:
+                    logging.warning(
+                            "decode_raw_stb_data completed with result %s",
+                            str(result))
             suspend_iter += 1
 
     def postprocess_iteration(self):

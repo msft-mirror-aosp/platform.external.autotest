@@ -23,6 +23,13 @@ METADATA = {
 ATTRIBUTES = ("")
 TEST_TYPE = "client"
 
+from autotest_lib.client.common_lib.bounds import Bound
+
+BOUNDS = [
+    Bound('seconds_system_resume', max=0.5),
+    Bound('seconds_system_suspend', max=0.5),
+]
+
 job.add_sysinfo_command('cbmem -c', logfile='bios_log', on_every_test=True)
 job.add_sysinfo_command('cbmem -t', logfile='bios_times', on_every_test=True)
-job.run_test('power_UiResume', tag=NAME.split('.')[1], suspend_state='freeze', suspend_iterations=3)
+job.run_test('power_UiResume', tag=NAME.split('.')[1], suspend_state='freeze', suspend_iterations=3, metric_bounds=BOUNDS)

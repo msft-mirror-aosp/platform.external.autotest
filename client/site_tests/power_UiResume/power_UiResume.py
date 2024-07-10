@@ -5,13 +5,13 @@
 
 import logging
 import os
+import re
 import shutil
 
 from autotest_lib.client.bin import utils
-from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import error, bounds
 from autotest_lib.client.common_lib.cros import arc, chrome
 from autotest_lib.client.cros import upstart
-
 
 class power_UiResume(arc.ArcTest):
     """
@@ -53,7 +53,8 @@ class power_UiResume(arc.ArcTest):
                  seconds=0,
                  ignore_kernel_warns=False,
                  suspend_state='',
-                 suspend_iterations=None):
+                 suspend_iterations=None,
+                 metric_bounds=None):
         """
         Run client side autotest power_Resume, to reduce duplicate code.
 
@@ -101,6 +102,28 @@ class power_UiResume(arc.ArcTest):
         if err:
             raise error.TestFail('Test failed.  See errors for details.')
 
+        perf_dict = self._process_keyvals()
+        bounds.evaluate_test_bounds(perf_dict, metric_bounds)
+
+    def _process_keyvals(self):
+        perf_dict = {}
+        results_keyval_path = os.path.join(self.resultsdir, 'keyval')
+        logging.info('processing keyvals from %s', results_keyval_path)
+        if os.path.exists(results_keyval_path):
+            with open(results_keyval_path) as results_keyval_file:
+                keyval_result = results_keyval_file.readline()
+                while keyval_result:
+                    regmatch = re.search(r'(.*){(.*)}=(.*)', keyval_result)
+                    if regmatch is None:
+                        break
+                    key = regmatch.group(1)
+                    which_dict = regmatch.group(2)
+                    value = regmatch.group(3)
+                    if which_dict != 'perf':
+                        continue
+                    perf_dict[key] = value
+                    keyval_result = results_keyval_file.readline()
+        return perf_dict
 
     def cleanup(self):
         """

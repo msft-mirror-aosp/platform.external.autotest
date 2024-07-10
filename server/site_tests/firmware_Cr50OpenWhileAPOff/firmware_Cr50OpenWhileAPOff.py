@@ -33,6 +33,10 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
         # This test needs ec reset to survive deep sleep to keep the AP off.
         if 'c2d2' in host.servo.get_servo_type():
             raise error.TestNAError('Cannot rely on ecrst with c2d2')
+        # TODO(b/304882737): enable the test on puff when servo_micro is able
+        # to successfully run power_state:reset
+        if 'puff' == host.servo.get_board():
+            raise error.TestNAError('Cannot run on puff')
 
         super(firmware_Cr50OpenWhileAPOff, self).initialize(host, cmdline_args,
                 full_args)

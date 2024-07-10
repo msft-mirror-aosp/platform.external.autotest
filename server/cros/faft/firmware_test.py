@@ -2565,8 +2565,16 @@ class FirmwareTest(test.test):
             )
         logging.info("Bringing DUT up")
 
-        self.servo.set_nocheck("cold_reset", "off")
-        self.servo.set_nocheck("warm_reset", "off")
+        # b/304882737 setting cold_reset and warm_reset raises an error on puff
+        # ignore all errors. This tries its best to bring the dut up.
+        try:
+            self.servo.set_nocheck("cold_reset", "off")
+        except Exception as e:
+            logging.warning('Ignoring: %s', e)
+        try:
+            self.servo.set_nocheck("warm_reset", "off")
+        except Exception as e:
+            logging.warning('Ignoring: %s', e)
 
         time.sleep(self.gsc.SHORT_WAIT)
         if not self.gsc.ap_is_on():

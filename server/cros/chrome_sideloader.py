@@ -731,6 +731,9 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
                 '--noremove-rootfs-verification',
         ]
 
+    strip_or_not = ['--nostrip']
+    if kwargs.get('chrome_deploy_strip'):
+        strip_or_not = []
     if archive_type == 'chrome':
         board = _remove_prefix(host.get_board(), 'board:')
         _deploy_with_retry(
@@ -745,8 +748,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
                         '--board',
                         board,
                         '--mount',
-                        '--nostrip',
-                ], deploy_chrome_timeout,
+                ] + strip_or_not, deploy_chrome_timeout,
                 'Error occurred executing chromite.deploy_chrome for Chrome')
 
         # During the transition phase, since not all the builders have Lacros packaged,
@@ -764,9 +766,8 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
                             '--device',
                             host.host_port,
                             '--lacros',
-                            '--nostrip',
                             '--skip-modifying-config-file',
-                    ], deploy_chrome_timeout,
+                    ] + strip_or_not, deploy_chrome_timeout,
                     'Error occurred executing chromite.deploy_chrome for Lacros'
             )
     elif archive_type == 'lacros':
@@ -779,10 +780,9 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
                         '--device',
                         host.host_port,
                         '--lacros',
-                        '--nostrip',
                         '--force',
                         '--skip-modifying-config-file',
-                ], deploy_chrome_timeout,
+                ] + strip_or_not, deploy_chrome_timeout,
                 'Error occurred executing chromite.deploy_chrome for Lacros')
     else:
         raise Exception('Unknown archive_type:%s' % archive_type)

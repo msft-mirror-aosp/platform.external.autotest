@@ -9,7 +9,7 @@ from autotest_lib.server.site_tests.tast import tast
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.typec_mcci'
 METADATA = {
-    'contacts': ['chromeos-usb@google.com'],
+    'contacts': ['chromeos-usb-champs@google.com'],
     'bug_component': 'b:958036', # ChromeOS > Platform > Connectivity > USB
     'criteria': 'Tauto wrapper for specified tast tests',
 }

@@ -11,7 +11,8 @@ METADATA = {
   'criteria': 'Verify crash reporter initialization and metadata production',
 }
 PURPOSE = "Verify user space crashes are handled appropriately."
-ATTRIBUTES = "suite:bvt-cq, suite:smoke, suite:satlab-qual-bvt-cq, suite:distributed_lab_qual_bvt_shard1"
+# TODO(b/344652818): removing from all cq suites.
+ATTRIBUTES = ""
 TIME = "SHORT"
 TEST_CATEGORY = "Functional"
 TEST_CLASS = "logging"

@@ -9,7 +9,7 @@ import shutil
 
 from autotest_lib.server import autotest, test
 from autotest_lib.client.common_lib import error
-from autotest_lib.server.cros.pvs import bounds
+from autotest_lib.client.common_lib import bounds
 
 class test_sequence(test.test):
     """

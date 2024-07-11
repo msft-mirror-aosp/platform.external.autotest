@@ -18,7 +18,7 @@ METADATA = {
 # (2) Fill the SEQUENCE data structure below as the fields are indicated
 
 from autotest_lib.server import utils
-from autotest_lib.server.cros.pvs.bounds import Bound
+from autotest_lib.client.common_lib.bounds import Bound
 
 args_dict = utils.args_to_dict(args)
 servo_args = hosts.CrosHost.get_servo_arguments(args_dict)

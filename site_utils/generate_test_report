@@ -62,6 +62,7 @@ def load_json(raw_stat, raw_json, testdir):
     missingResult = False
     lastStartTime = None
     firstFound = False
+    contentLine = None
     for line in raw_stat.splitlines():
         fields = get_fields(line)
         # A non-formatted line won't have fields, thus don't parse it.
@@ -131,7 +132,7 @@ def _translate_to_dict(res, fields, verdict, contentLine,
 
 
 def errFromContent(contentLine):
-    return contentLine.split('\t')[-1]
+    return contentLine.split('\t')[-1] if contentLine else ""
 
 
 def parseResult(status_raw):

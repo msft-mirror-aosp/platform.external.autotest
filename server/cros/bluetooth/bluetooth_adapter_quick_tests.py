@@ -217,7 +217,7 @@ class BluetoothAdapterQuickTests(
 
         # Check whether this device supports floss
         # LL privacy tests run on models support floss
-        if self.floss or self.llprivacy:
+        if self.floss:
             self.check_floss_support()
 
         if self.use_btpeer:

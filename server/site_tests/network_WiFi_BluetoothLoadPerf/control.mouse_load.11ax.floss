@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-NAME = 'network_WiFi_BluetoothLoadPerf.ble_keyboard_load.11ax'
+NAME = 'network_WiFi_BluetoothLoadPerf.mouse_load.11ax.floss'
 METADATA = {
         'contacts': ['chromeos-wifi-champs@google.com'],
         # ChromeOS > Platform > Connectivity > WiFi
@@ -10,15 +10,16 @@ METADATA = {
         # Network: open HE80 802.11ax
         'criteria': ('Ensure compliance with criteria for receiving and '
                      'transmitting specified throughput, latency, and drop '
-                     'rate on a DUT during operation with a BLE keyboard '
+                     'rate on a DUT during operation with a Bluetooth mouse '
                      'load.'),
         'hw_agnostic': False,
 }
-ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
 DEPENDENCIES = ('wificell, working_bluetooth_btpeer:1, '
                 'peripheral_wifi_state:WORKING, '
-                'wifi_router_models:OPENWRT[Ubiquiti_Unifi_6_Lite]')
+                'wifi_router_models:OPENWRT[Ubiquiti_Unifi_6_Lite, '
+                'Ubiquiti_UniFi_6_Plus]')
 
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config

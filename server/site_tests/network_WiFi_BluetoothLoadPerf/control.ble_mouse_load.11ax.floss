@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-NAME = 'network_WiFi_BluetoothLoadPerf.ble_mouse_load.11ax'
+NAME = 'network_WiFi_BluetoothLoadPerf.ble_mouse_load.11ax.floss'
 METADATA = {
         'contacts': ['chromeos-wifi-champs@google.com'],
         # ChromeOS > Platform > Connectivity > WiFi
@@ -13,7 +13,7 @@ METADATA = {
                      'rate on a DUT during operation with a BLE mouse load.'),
         'hw_agnostic': False,
 }
-ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
 DEPENDENCIES = ('wificell, working_bluetooth_btpeer:1, '
                 'peripheral_wifi_state:WORKING, '

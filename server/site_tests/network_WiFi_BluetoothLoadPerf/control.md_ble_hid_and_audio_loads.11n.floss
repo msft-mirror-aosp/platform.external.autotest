@@ -2,21 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-NAME = 'network_WiFi_BluetoothLoadPerf.gamepad_load.11g'
+NAME = 'network_WiFi_BluetoothLoadPerf.md_ble_hid_and_audio_loads.11n.floss'
 METADATA = {
         'contacts': ['chromeos-wifi-champs@google.com'],
         # ChromeOS > Platform > Connectivity > WiFi
         'bug_component': 'b:893827',
-        # Network: Open 802.11g, Channel 6 and 9.
+        # Network: Open 802.11n, Channel 6 and 11.
         'criteria': ('Ensure compliance with criteria for receiving and '
                      'transmitting specified throughput, latency, and drop '
-                     'rate on a DUT during operation with a Bluetooth gamepad '
-                     'load.'),
+                     'rate on a DUT during operation with concurrent BLE mouse'
+                     ', BLE keyboard and Audio loads.'),
         'hw_agnostic': False,
 }
-ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
-DEPENDENCIES = ('wificell, working_bluetooth_btpeer:1, '
+DEPENDENCIES = ('wificell, working_bluetooth_btpeer:3, '
                 'peripheral_wifi_state:WORKING')
 
 from autotest_lib.server import utils
@@ -28,11 +28,11 @@ args_dict = utils.args_to_dict(args)
 def run(machine):
     host = hosts.create_host(machine)
 
-    mode = hostap_config.HostapConfig.MODE_11G
-    configs = [
-            hostap_config.HostapConfig(channel=channel, mode=mode)
-            for channel in (6, 9)
-    ]
+    caps = [hostap_config.HostapConfig.N_CAPABILITY_HT20]
+    mode = hostap_config.HostapConfig.MODE_11N_PURE
+    configs = [hostap_config.HostapConfig(n_capabilities=caps,
+                                          channel=channel, mode=mode)
+               for channel in (6, 11)]
     use_iperf = True
     job.run_test('network_WiFi_BluetoothLoadPerf',
                  tag=NAME.split('.')[2],

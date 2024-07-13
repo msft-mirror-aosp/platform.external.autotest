@@ -288,9 +288,8 @@ class HostapConfig(object):
         provided Wi-Fi mode, frequency band, and channel width.
 
         The current implementation supports fetching '11AX_MIXED' channel width
-        names for the 5GHz frequency band, '11N_PURE' channel width names for
-        the 2.4GHz frequency band and '11G' channel width names for the 2.4GHz
-        frequency band. Also, it offers the flexibility to seamlessly
+        names for the 5GHz frequency band and '11G' channel width names for the
+        2.4GHz frequency band. Also, it offers the flexibility to seamlessly
         incorporate additional channel configurations in the future.
 
         @param mode: The Wi-Fi mode, such as '11AX_MIXED' or '11G'.
@@ -307,10 +306,6 @@ class HostapConfig(object):
                 freq_band == HostapConfig.FREQ_BAND_2_4G):
             return HostapConfig.LEGACY_CHANNEL_WIDTH_NAMES_2_4G.get(
                     channel_width)
-
-        if (mode == HostapConfig.MODE_11N_PURE and
-                freq_band == HostapConfig.FREQ_BAND_2_4G):
-            return HostapConfig.HT_NAMES.get(channel_width)
         return None
 
     @property

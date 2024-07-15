@@ -6,7 +6,7 @@ AUTHOR = "ChromeOS Core Performance Team"
 NAME = "crospts_arm64"
 METADATA = {
         "contacts": ["cros-core-systems-perf@google.com"],
-        "bug_component": "b:331566754", # ChromeOS > Platform > System > Performance
+        "bug_component": "b:167279", # ChromeOS > Platform > System > Performance
         "criteria": "Microbenchmarks for kernel and hardward performance for arm64 platforms"
 }
 

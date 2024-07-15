@@ -50,7 +50,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
 
     # The FAFT GBB flags are innocuous. Check that the DUT is using those or
     # doesn't have any flags set.
-    SUPPORTED_FLAGS = [0, 0x140]
+    SUPPORTED_FLAGS = [0, 0x40, 0x140]
     TEST_RO_VPD_KEY = 'faft_apro_test_key'
 
     # 0x42b9 is the last value in the cr50 factory flag list. Use it to verify

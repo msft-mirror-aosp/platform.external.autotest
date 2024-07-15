@@ -1468,10 +1468,8 @@ class FirmwareTest(test.test):
             return
 
         logging.info("Setting proper GBB flags for test.")
-        # Ensure that GBB flags are set to 0x140.
-        flags_to_set = (
-            vboot.GBB_FLAG_RUNNING_FAFT | vboot.GBB_FLAG_ENTER_TRIGGERS_TONORM
-        )
+        # Ensure that GBB flags are set.
+        flags_to_set = (vboot.GBB_FLAG_ENTER_TRIGGERS_TONORM)
         # And if the "no_ec_sync" argument is set, then disable EC software
         # sync.
         if self._no_ec_sync:

@@ -2,21 +2,22 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-NAME = 'bluetooth_WiFiCoexPerformance.ble_keyboard_with_ble_mouse_load.11ax'
+NAME = 'bluetooth_WiFiCoexPerformance.ble_keyboard_load.11ax.floss'
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     # Network: open HE80 802.11ax
-    'criteria': ('Measure and verify the Bluetooth low energy keyboard and '
-                 'mouse delay while operating a Wi-Fi load 11ax standard.'),
+    'criteria': ('Measure and verify the Bluetooth low energy keyboard delay '
+                 'while operating a Wi-Fi load 11ax standard.'),
     'hw_agnostic': False,
 }
-ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
-DEPENDENCIES = ('wificell, working_bluetooth_btpeer:2, '
+DEPENDENCIES = ('wificell, working_bluetooth_btpeer:1, '
                 'peripheral_wifi_state:WORKING, '
                 'wifi_router_models:OPENWRT[Ubiquiti_Unifi_6_Lite]')
+
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config
 

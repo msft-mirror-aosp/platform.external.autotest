@@ -2,17 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-NAME = 'bluetooth_WiFiCoexPerformance.ble_keyboard_load.11n'
+NAME = 'bluetooth_WiFiCoexPerformance.mouse_load.11n.floss'
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     # Network: Open 802.11n, Channel 6.
-    'criteria': ('Measure and verify the Bluetooth low energy keyboard delay '
-                 'while operating a Wi-Fi load 11n standard.'),
+    'criteria': ('Measure and verify the Bluetooth BR/EDR mouse delay while '
+                 'operating a Wi-Fi load 11n standard.'),
     'hw_agnostic': False,
 }
-ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
 DEPENDENCIES = ('wificell, working_bluetooth_btpeer:1, '
                 'peripheral_wifi_state:WORKING, '

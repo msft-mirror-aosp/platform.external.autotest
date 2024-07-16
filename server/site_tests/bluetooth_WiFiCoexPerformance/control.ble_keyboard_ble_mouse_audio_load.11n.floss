@@ -2,22 +2,22 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-NAME = 'bluetooth_WiFiCoexPerformance.ble_mouse_load.11n'
+NAME = 'bluetooth_WiFiCoexPerformance.ble_keyboard_ble_mouse_audio_load.11n.floss'
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     # Network: Open 802.11n, Channel 6.
-    'criteria': ('Measure and verify the Bluetooth low energy mouse delay '
-                 'while operating a Wi-Fi load 11n standard.'),
+    'criteria': ('Measure and verify the Bluetooth low energy keyboard, low '
+                 'energy mouse and audio delay while operating a Wi-Fi load '
+                 '11n standard.'),
     'hw_agnostic': False,
 }
-ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
-DEPENDENCIES = ('wificell, working_bluetooth_btpeer:1, '
+DEPENDENCIES = ('wificell, working_bluetooth_btpeer:3, '
                 'peripheral_wifi_state:WORKING, '
                 'wifi_router_models:OPENWRT[Ubiquiti_Unifi_6_Lite]')
-
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config
 
@@ -27,9 +27,8 @@ def run(machine):
     host = hosts.create_host(machine)
     caps = [hostap_config.HostapConfig.N_CAPABILITY_HT20]
     mode = hostap_config.HostapConfig.MODE_11N_PURE
-    configs = [hostap_config.HostapConfig(n_capabilities=caps,
-                                          channel=channel, mode=mode)
-               for channel in (6,)]
+    configs = [hostap_config.HostapConfig(n_capabilities=caps, channel=channel,
+                                          mode=mode) for channel in (6,)]
     use_iperf=True
     job.run_test('bluetooth_WiFiCoexPerformance',
                  tag=NAME.split('.')[2],

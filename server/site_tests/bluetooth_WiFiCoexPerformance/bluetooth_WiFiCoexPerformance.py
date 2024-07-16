@@ -652,6 +652,7 @@ class bluetooth_WiFiCoexPerformance(
                              flag=flag,
                              start_browser=False,
                              args_dict=args_dict,
-                             floss=floss)
+                             floss=floss,
+                             enable_debug_log=False)
         self.coex_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

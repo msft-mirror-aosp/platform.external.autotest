@@ -1709,7 +1709,7 @@ class BluetoothAdapterTests(test.test):
 
         # Re-enable debugging verbose since Chrome will set it to
         # default(disable).
-        self.enable_disable_debug_log(enable=True)
+        self.enable_disable_debug_log(enable=self.enable_debug_log)
 
         # Re-disable cellular
         self.enable_disable_cellular(enable=False)

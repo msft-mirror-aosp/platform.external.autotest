@@ -145,7 +145,8 @@ class BluetoothAdapterQuickTests(
                         floss_lm_quirk=False,
                         enable_cellular=False,
                         enable_ui=False,
-                        hfp_force_offload=False):
+                        hfp_force_offload=False,
+                        enable_debug_log=True):
         """Inits the test batch
 
         @param floss_lm_quirk True to enable the quirk for b/260539322 to
@@ -166,6 +167,7 @@ class BluetoothAdapterQuickTests(
         self._dr_utils = None
         self._ec = None
         self.hfp_force_offload = hfp_force_offload
+        self.enable_debug_log = enable_debug_log
 
         logging.debug('args_dict %s', args_dict)
         self.rssi_check = self._get_bool_arg('rssi_check', args_dict, True)
@@ -260,7 +262,7 @@ class BluetoothAdapterQuickTests(
         # Clear the active devices for this test
         self.active_test_devices = {}
 
-        self.enable_disable_debug_log(enable=True)
+        self.enable_disable_debug_log(enable=self.enable_debug_log)
 
         # Disable cellular services, as they can sometimes interfere with
         # suspend/resume, i.e. b/161920740

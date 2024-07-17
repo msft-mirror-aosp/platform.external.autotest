@@ -1347,18 +1347,18 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         key = ''.join((dut_role, '_passing_score'))
         logging.info('{} scored {}, min passing score: {}'.format(
                 filename, score, test_file[key]))
-        passed = score >= test_file[key]
-        self.results = {filename: passed}
+        self.results = {
+                'file name': filename,
+                'actual visqol score': score,
+                'minimum passing score': test_file[key]
+        }
 
         # Track visqol performance
         test_desc = '{}_{}_{}'.format(test_profile, dut_role,
                                       test_file['reporting_type'])
         self.write_perf_keyval({test_desc: score})
 
-        if not passed:
-            logging.warning('Failed: {}'.format(filename))
-
-        return all(self.results.values())
+        return score >= test_file[key]
 
     @test_retry_and_log(False)
     def test_check_call_state_on_peer(self, device, expected_call_state):

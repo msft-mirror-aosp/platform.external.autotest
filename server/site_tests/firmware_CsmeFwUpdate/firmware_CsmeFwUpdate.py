@@ -472,6 +472,11 @@ class firmware_CsmeFwUpdate(FirmwareTest):
             raise error.TestError("Test setup issue : FMAP format is " \
                             "different in current and downgrade bios.")
 
+        # Check if the me_rw is in separate CBFS in ME_RW_* FMAP section
+        if spi_bios_fmap_ver != "CSE_RW_SEPARATE_CBFS":
+            raise error.TestNAError("The me_rw blob is not in separate CBFS." \
+                                    "Skipping test.")
+
         # Get the version of me_rw in the downgrade bios
         downgrade_me_version = self.get_image_fwmain_me_rw_version( \
                                     self.downgrade_bios)

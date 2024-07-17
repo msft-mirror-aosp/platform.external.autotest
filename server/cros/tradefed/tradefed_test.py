@@ -1579,7 +1579,7 @@ class TradefedTest(test.test):
         """Get the bundle information.
         """
         if uri and (uri.startswith('http') or uri.startswith('gs')):
-            return BundleSpecification(uri, password='')
+            return BundleSpecification(uri, password='', suite_name="")
         else:
             # Get the module file path of a derived class via inheritance.
             cheets_path = sys.modules[self.__class__.__module__].__file__

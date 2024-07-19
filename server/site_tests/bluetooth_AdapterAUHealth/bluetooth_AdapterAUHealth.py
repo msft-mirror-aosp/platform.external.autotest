@@ -5,7 +5,6 @@
 
 """A Batch of Bluetooth AUdio Health tests"""
 
-import functools
 import time
 import logging
 
@@ -26,208 +25,14 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                                 BluetoothAdapterAudioTests):
     """A Batch of Bluetooth audio health tests."""
 
-    test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    def au_run_method(self,
-                      device,
-                      test_method,
-                      test_profile,
-                      collect_audio_files=False,
-                      audio_config={}):
-        """audio procedure of running a specified test method.
+    def hfp_test_pretest(self, device, test_profile, audio_config={}):
+        """Common procedure before running a HFP test.
 
         @param device: the bt peer device
-        @param test_method: the audio test method to run
-        @param test_profile: which test profile is used,
-                             A2DP, HFP_SWB, HFP_WBS or HFP_NBS
-        @param collect_audio_files: set to True to collect the recorded audio
-                                    files.
-        @param audio_config: the test specific audio config
-        """
-        self.test_reset_on_adapter()
-        self.test_bluetoothd_running()
-        # This is necessary for OFONO to find the correct modem when querying
-        # the bt peer call's state.
-        device.SetRemoteAddress(self.bluetooth_facade.address)
-        # TODO: b/277702522 remove this after bluetooth telephony launch.
-        if self.floss:
-            self.test_set_bluetooth_telephony(True)
-        self.initialize_bluetooth_audio(device,
-                                        test_profile,
-                                        audio_config=audio_config)
-        self.test_device_set_discoverable(device, True)
-        self.test_discover_device(device.address)
-
-        # Capture the btmon log to determine the codec used.
-        # This is performed for the A2DP profile for now.
-        # The HFP profile will be covered later.
-        if self.is_a2dp_profile(test_profile):
-            self.bluetooth_facade.btmon_start()
-
-        self.test_pairing(device.address, device.pin, trusted=True)
-        self.test_connection_by_adapter(device.address)
-        test_method()
-
-        # Stop the btmon log and verify the codec.
-        if self.is_a2dp_profile(test_profile):
-            self.bluetooth_facade.btmon_stop()
-            self.test_audio_codec()
-
-        self.collect_audio_diagnostics()
-        if collect_audio_files:
-            self.collect_audio_files()
-        self.test_disconnection_by_adapter(device.address)
-        self.cleanup_bluetooth_audio(device, test_profile)
-
-
-    def au_run_test_sequence(self,
-                             device,
-                             test_sequence,
-                             test_profile,
-                             collect_audio_files=False,
-                             audio_config={}):
-        """Audio procedure of running a specified test sequence.
-
-        @param device: The Bluetooth peer device.
-        @param test_sequence: The audio test sequence to run.
-        @param test_profile: Which test profile is used,
-                             A2DP, A2DP_MEDIUM, HFP_WBS or HFP_NBS.
-        @param collect_audio_files: set to True to collect the recorded audio
-                            files.
-        @param audio_config: the test specific audio config
-        """
-        # Setup the Bluetooth device.
-        self.test_reset_on_adapter()
-        self.test_bluetoothd_running()
-        self.initialize_bluetooth_audio(device,
-                                        test_profile,
-                                        audio_config=audio_config)
-        test_sequence()
-        self.collect_audio_diagnostics()
-        if collect_audio_files:
-            self.collect_audio_files()
-        self.cleanup_bluetooth_audio(device, test_profile)
-
-
-    def _au_a2dp_test(self, test_profile, duration=0, audio_config={}):
-        """A2DP test with sinewaves on the two channels.
-
-        @param test_profile: which test profile is used, A2DP or A2DP_LONG.
-        @param duration: the duration to test a2dp. The unit is in seconds.
-                if duration is 0, use the default duration in test_profile.
-        @param audio_config: the test specific audio config
-        """
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(device,
-                           lambda: self.test_a2dp_sinewaves(
-                                   device, test_profile, duration),
-                           test_profile,
-                           audio_config=audio_config)
-
-
-    @test_wrapper('A2DP sinewave test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_a2dp_test(self):
-        """A2DP test with sinewaves on the two channels."""
-        self._au_a2dp_test(A2DP)
-
-
-    @test_wrapper('A2DP sinewave test with the AAC codec',
-                  devices={'BLUETOOTH_AUDIO': ((CAP_PIPEWIRE), )},
-                  supports_floss=True)
-    def au_a2dp_aac_test(self):
-        """A2DP test with sinewaves with the AAC codec."""
-        # TODO(b/308882924): remove this once it is enabled by default
-        self.test_set_force_a2dp_advanced_codecs_enabled(True)
-        self._au_a2dp_test(A2DP, audio_config={A2DP_CODEC: AAC})
-        self.test_set_force_a2dp_advanced_codecs_enabled(False)
-
-    # The A2DP long test is a stress test. Exclude it from the AVL.
-    @test_wrapper('A2DP sinewave long test',
-                  devices={'BLUETOOTH_AUDIO':1},
-                  flags=['Quick Health'],
-                  supports_floss=True)
-    def au_a2dp_long_test(self, duration=600):
-        """A2DP long test with sinewaves on the two channels.
-
-        @param duration: the duration to test a2dp. The unit is in seconds.
-        """
-        self._au_a2dp_test(A2DP_LONG, duration=duration)
-
-
-    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
-    @test_wrapper('A2DP rate 44100 sinewave test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True,
-                  flags=['Quick Health'])
-    def au_a2dp_rate_44100_test(self):
-        """A2DP test with sampling rate 44100 to emulate Intel THD+N tests."""
-        self._au_a2dp_test(A2DP_RATE_44100)
-
-    @test_wrapper('A2DP playback and connect test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_a2dp_playback_and_connect_test(self):
-        """Connect then disconnect an A2DP device while playing stream."""
-        if not has_internal_speaker(self.host):
-            logging.info('SKIPPING TEST A2DP playback and connect test')
-            raise error.TestNAError(
-                    'The DUT does not have an internal speaker')
-
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        test_profile = A2DP_MEDIUM
-        test_sequence = lambda: self.playback_and_connect(device, test_profile)
-        self.au_run_test_sequence(device, test_sequence, test_profile)
-
-
-    @test_wrapper('A2DP playback and disconnect test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_a2dp_playback_and_disconnect_test(self):
-        """Check the playback stream is still alive after BT disconnected."""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        test_profile = A2DP_MEDIUM
-        test_sequence = lambda: self.playback_and_disconnect(
-                device, test_profile)
-        self.au_run_test_sequence(device, test_sequence, test_profile)
-
-
-    @test_wrapper('A2DP playback back2back test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_a2dp_playback_back2back_test(self):
-        """A2DP playback stream back to back test."""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        test_profile = A2DP_MEDIUM
-        test_sequence = lambda: self.playback_back2back(device, test_profile)
-        self.au_run_test_sequence(device,
-                                  test_sequence,
-                                  test_profile,
-                                  collect_audio_files=True)
-
-
-    @test_wrapper('A2DP pinned playback test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
-    def au_a2dp_pinned_playback_test(self):
-        """Pinned playback stream test."""
-        device = self.devices['BLUETOOTH_AUDIO'][0]
-        test_profile = A2DP
-        test_sequence = lambda: self.pinned_playback(device, test_profile)
-        self.au_run_test_sequence(device, test_sequence, test_profile)
-
-    def au_hfp_run_method(self,
-                          device,
-                          test_method,
-                          test_profile,
-                          audio_config={}):
-        """Run an HFP test with the specified test method.
-
-        @param device: the bt peer device
-        @param test_method: the specific HFP WBS test method
-        @param test_profile: which test profile is used, HFP_SWB, HFP_WBS, or HFP_NBS
+        @param test_profile: which test profile is used, HFP_SWB, HFP_WBS, or
+                             HFP_NBS
         @param audio_config: the test specific audio config
         """
         apply_offload = self.will_apply_hfp_offload_path(
@@ -281,288 +86,567 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         if self.hfp_force_offload:
             self.set_force_hfp_offload_on_support(True)
 
-        try:
-            self.au_run_method(device,
-                               lambda: test_method(device, test_profile),
-                               test_profile,
-                               audio_config=audio_config)
-        finally:
-            # unset flags for testing purposes by finally clause to ensure they
-            # will be executed under all circumstances.
-            if self.hfp_force_offload:
-                self.set_force_hfp_offload_on_support(False)
+    def hfp_test_posttest(self):
+        """Common procedure after running a HFP test."""
+        # unset flags for testing purposes by finally clause to ensure they
+        # will be executed under all circumstances.
+        if self.hfp_force_offload:
+            self.set_force_hfp_offload_on_support(False)
 
-            # remove this flag toggle once it is enabled by default (b/308859926)
-            # the DUT should always choose the best codec reported by the peer
-            self.test_set_force_hfp_swb_enabled(False)
+        # remove this flag toggle once it is enabled by default (b/308859926)
+        # the DUT should always choose the best codec reported by the peer
+        self.test_set_force_hfp_swb_enabled(False)
 
-    @test_wrapper('HFP SWB sinewave test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': ((CAP_PIPEWIRE), )},
-                  supports_floss=True)
+    def avrcp_test_pretest(self, device):
+        """Common procedure before running an AVRCP test.
+
+        @param device: the bt peer device.
+        """
+        self.initialize_bluetooth_player(device)
+        self.enable_audio_stream_for_avrcp(device)
+
+    def avrcp_test_posttest(self, device):
+        """Common procedure before running an AVRCP test.
+
+        @param device: the bt peer device.
+        """
+        self.stop_audio_stream_for_avrcp()
+        self.cleanup_bluetooth_player(device)
+
+    def audio_test_pretest(self,
+                           test_profile,
+                           test_name=None,
+                           device_configs={},
+                           use_all_peers=False,
+                           supports_floss=False,
+                           pair_device=False,
+                           audio_config=None):
+        """Common procedure before running a Bluetooth audio test.
+
+        @param test_profile: which test profile is used,
+                             A2DP, HFP_SWB, HFP_WBS or HFP_NBS
+        @param test_name: the name of the test to log.
+        @param device_configs: map of the device types and values
+                               There are two possibilities of the values:
+                               (1) the quantities needed for the test. For
+                                   example, {'BLE_KEYBOARD':1,'BLE_MOUSE':1}.
+                               (2) a tuple of tuples of required capabilities,
+                                   e.g., devices={'BLUETOOTH_AUDIO':
+                                                    (('PIPEWIRE', 'LE_AUDIO'),)}
+                                   which requires a BLUETOOTH_AUDIO device with
+                                   the capabilities of support PIPEWIRE and
+                                   LE_AUDIO adapter.
+        @param use_all_peers: Set number of devices to be used to the
+                              maximum available. This is used for tests
+                              like bluetooth_PeerVerify which uses all
+                              available peers. Specify only one device type
+                              if this is set to true.
+        @param supports_floss: Does this test support running on Floss?
+        @param pair_device: True to pair with and connect to the peer device,
+                            False otherwise.
+        @param audio_config: the test specific audio config.
+        """
+        self.quick_test_test_pretest(test_name, device_configs, use_all_peers,
+                                     supports_floss)
+
+        logging.debug(f'Running audio_test_pretest...')
+
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+
+        if self.is_hfp_profile(test_profile):
+            self.hfp_test_pretest(device, test_profile, audio_config)
+
+        self.test_reset_on_adapter()
+        self.test_bluetoothd_running()
+        # This is necessary for OFONO to find the correct modem when querying
+        # the bt peer call's state.
+        device.SetRemoteAddress(self.bluetooth_facade.address)
+        # TODO: b/277702522 remove this after bluetooth telephony launch.
+        if self.floss:
+            self.test_set_bluetooth_telephony(True)
+        self.initialize_bluetooth_audio(device,
+                                        test_profile,
+                                        audio_config=audio_config)
+
+        # Capture the btmon log to determine the codec used.
+        # This is performed for the A2DP profile for now.
+        # The HFP profile will be covered later.
+        if self.is_a2dp_profile(test_profile):
+            self.bluetooth_facade.btmon_start()
+
+        if pair_device:
+            self.test_device_set_discoverable(device, True)
+            self.test_discover_device(device.address)
+
+            self.test_pairing(device.address, device.pin, trusted=True)
+            self.test_connection_by_adapter(device.address)
+
+        if self.is_avrcp_profile(test_profile):
+            self.avrcp_test_pretest(device)
+
+    def audio_test_posttest(self, test_profile, disconnect_device=False):
+        """Common procedure after running a Bluetooth audio test.
+
+        @param test_profile: which test profile is used,
+                             A2DP, HFP_SWB, HFP_WBS or HFP_NBS
+        @param disconnect_device: True to disconnect device, False otherwise.
+        """
+        logging.debug(f'Running audio_test_posttest...')
+
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+
+        if self.is_avrcp_profile(test_profile):
+            self.avrcp_test_posttest(device)
+
+        if disconnect_device:
+            self.test_disconnection_by_adapter(device.address)
+
+        # Stop the btmon log and verify the codec.
+        if self.is_a2dp_profile(test_profile):
+            self.bluetooth_facade.btmon_stop()
+            self.test_audio_codec()
+
+        self.collect_audio_diagnostics()
+        self.collect_audio_files()
+        self.cleanup_bluetooth_audio(device, test_profile)
+
+        if self.is_hfp_profile(test_profile):
+            self.hfp_test_posttest()
+
+        self.quick_test_test_posttest()
+
+    def audio_test(
+            test_name,
+            test_profile,
+            device_configs={},
+            flags=['All'],
+            allowed_boards=None,
+            model_testNA=[],
+            model_testWarn=[],
+            skip_models=[],
+            skip_chipsets=[],
+            skip_common_errors=False,
+            supports_floss=False,
+            use_all_peers=False,
+            minimum_kernel_version='',
+            audio_config=None,
+            pair_device=False,
+    ):
+        """A decorator providing a wrapper to an audio test.
+           Using the decorator a test method can implement only the core
+           test and let the decorator handle the audio test wrapper methods
+           (reset/cleanup/logging).
+
+        @param test_name: the name of the test to log.
+        @param test_profile: Which test profile is used,
+                             A2DP, A2DP_MEDIUM, HFP_WBS or HFP_NBS.
+        @param device_configs: map of the device types and the quantities
+                               needed for the test. For example,
+                               {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
+        @param flags: list of string to describe who should run the
+                      test. The string could be one of the following:
+                      ['AVL', 'Quick Health', 'All'].
+        @param allowed_boards: If not None, raises TestNA on boards that are
+                               not in this set.
+        @param model_testNA: If the current platform is in this list,
+                             failures are emitted as TestNAError.
+        @param model_testWarn: If the current platform is in this list,
+                               failures are emitted as TestWarn.
+        @param skip_models: Raises TestNA on these models and doesn't attempt
+                            to run the tests.
+        @param skip_chipsets: Raises TestNA on these chipset and doesn't
+                              attempt to run the tests.
+        @param skip_common_errors: If the test encounters a common error
+                                   (such as USB disconnect or daemon crash),
+                                   mark the test as TESTNA instead.
+                                   USE THIS SPARINGLY, it may mask bugs. This
+                                   is available for tests that require state
+                                   to be properly retained throughout the
+                                   whole test (i.e. advertising) and any
+                                   outside failure will cause the test to
+                                   fail.
+        @param supports_floss: Does this test support running on Floss?
+        @param use_all_peers: Set number of devices to be used to the
+                              maximum available. This is used for tests
+                              like bluetooth_PeerVerify which uses all
+                              available peers. Specify only one device type
+                              if this is set to true
+        @param minimum_kernel_version: Raises TestNA on less than this
+                                       kernel's version and doesn't attempt
+                                       to run the tests.
+
+        @param audio_config: the test specific audio config
+        @param pair_device: True to pair with and connect to the peer device in
+                            pretest, False otherwise.
+        """
+        return BluetoothAdapterQuickTests.quick_test_test_decorator(
+                test_name,
+                devices=device_configs,
+                flags=flags,
+                pretest_func=lambda self: self.audio_test_pretest(
+                        test_profile=test_profile,
+                        test_name=test_name,
+                        device_configs=device_configs,
+                        use_all_peers=use_all_peers,
+                        supports_floss=supports_floss,
+                        pair_device=pair_device,
+                        audio_config=audio_config,
+                ),
+                posttest_func=lambda self: self.audio_test_posttest(
+                        test_profile=test_profile,
+                        disconnect_device=pair_device),
+                allowed_boards=allowed_boards,
+                model_testNA=model_testNA,
+                model_testWarn=model_testWarn,
+                skip_models=skip_models,
+                skip_chipsets=skip_chipsets,
+                skip_common_errors=skip_common_errors,
+                supports_floss=supports_floss,
+                use_all_peers=use_all_peers,
+                minimum_kernel_version=minimum_kernel_version)
+
+    @audio_test(test_name='A2DP sinewave test',
+                test_profile=A2DP,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
+    def au_a2dp_test(self):
+        """A2DP test with sinewaves on the two channels."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.test_a2dp_sinewaves(device, A2DP)
+
+    @audio_test(test_name='A2DP sinewave test with the AAC codec',
+                test_profile=A2DP,
+                device_configs={'BLUETOOTH_AUDIO': ((CAP_PIPEWIRE), )},
+                supports_floss=True,
+                audio_config={A2DP_CODEC: AAC},
+                pair_device=True)
+    def au_a2dp_aac_test(self):
+        """A2DP test with sinewaves with the AAC codec."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+
+        # TODO(b/308882924): remove this once it is enabled by default
+        self.test_set_force_a2dp_advanced_codecs_enabled(True)
+        self.test_a2dp_sinewaves(device, A2DP)
+        self.test_set_force_a2dp_advanced_codecs_enabled(False)
+
+    # The A2DP long test is a stress test. Exclude it from the AVL.
+    @audio_test(test_name='A2DP sinewave long test',
+                test_profile=A2DP_LONG,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                flags=['Quick Health'],
+                supports_floss=True,
+                pair_device=True)
+    def au_a2dp_long_test(self, duration=600):
+        """A2DP long test with sinewaves on the two channels.
+
+        @param duration: the duration to test a2dp. The unit is in seconds.
+        """
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.test_a2dp_sinewaves(device, A2DP_LONG, duration)
+
+
+    # Remove flags=['Quick Health'] when this test is migrated to stable suite.
+    @audio_test(test_name='A2DP rate 44100 sinewave test',
+                test_profile=A2DP_RATE_44100,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                flags=['Quick Health'],
+                supports_floss=True,
+                pair_device=True)
+    def au_a2dp_rate_44100_test(self):
+        """A2DP test with sampling rate 44100 to emulate Intel THD+N tests."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.test_a2dp_sinewaves(device, A2DP_RATE_44100)
+
+    @audio_test(test_name='A2DP playback and connect test',
+                test_profile=A2DP_MEDIUM,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True)
+    def au_a2dp_playback_and_connect_test(self):
+        """Connect then disconnect an A2DP device while playing stream."""
+        if not has_internal_speaker(self.host):
+            logging.info('SKIPPING TEST A2DP playback and connect test')
+            raise error.TestNAError(
+                    'The DUT does not have an internal speaker')
+
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.playback_and_connect(device, A2DP_MEDIUM)
+
+    @audio_test(test_name='A2DP playback and disconnect test',
+                test_profile=A2DP_MEDIUM,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True)
+    def au_a2dp_playback_and_disconnect_test(self):
+        """Check the playback stream is still alive after BT disconnected."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.playback_and_disconnect(device, A2DP_MEDIUM)
+
+    @audio_test(test_name='A2DP playback back2back test',
+                test_profile=A2DP_MEDIUM,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True)
+    def au_a2dp_playback_back2back_test(self):
+        """A2DP playback stream back to back test."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.playback_back2back(device, A2DP_MEDIUM)
+
+    @audio_test(test_name='A2DP pinned playback test',
+                test_profile=A2DP,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True)
+    def au_a2dp_pinned_playback_test(self):
+        """Pinned playback stream test."""
+        device = self.devices['BLUETOOTH_AUDIO'][0]
+        self.pinned_playback(device, A2DP)
+
+    @audio_test(test_name='HFP SWB sinewave test with dut as source',
+                test_profile=HFP_SWB,
+                device_configs={'BLUETOOTH_AUDIO': ((CAP_PIPEWIRE), )},
+                supports_floss=True,
+                audio_config={HFP_CODEC: LC3},
+                pair_device=True)
     def au_hfp_swb_dut_as_source_test(self):
         """HFP SWB test with sinewave streaming from dut to peer."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device,
-                               self.hfp_dut_as_source,
-                               HFP_SWB,
-                               audio_config={HFP_CODEC: LC3})
+        self.hfp_dut_as_source(device, HFP_SWB)
 
-    @test_wrapper('HFP SWB sinewave test with dut as sink',
-                  devices={'BLUETOOTH_AUDIO': ((CAP_PIPEWIRE), )},
-                  supports_floss=True)
+    @audio_test(test_name='HFP SWB sinewave test with dut as sink',
+                test_profile=HFP_SWB,
+                device_configs={'BLUETOOTH_AUDIO': ((CAP_PIPEWIRE), )},
+                supports_floss=True,
+                audio_config={HFP_CODEC: LC3},
+                pair_device=True)
     def au_hfp_swb_dut_as_sink_test(self):
         """HFP SWB test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device,
-                               functools.partial(
-                                       self.hfp_dut_as_sink,
-                                       check_input_device_sample_rate=32000),
-                               HFP_SWB,
-                               audio_config={HFP_CODEC: LC3})
+        self.hfp_dut_as_sink(device,
+                             HFP_SWB,
+                             check_input_device_sample_rate=32000),
 
-    @test_wrapper('HFP WBS sinewave test with dut as source',
-                  devices={'BLUETOOTH_AUDIO':1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP WBS sinewave test with dut as source',
+                test_profile=HFP_WBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_wbs_dut_as_source_test(self):
         """HFP WBS test with sinewave streaming from dut to peer."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_source, HFP_WBS)
+        self.hfp_dut_as_source(device, HFP_WBS)
 
-
-    @test_wrapper('HFP WBS sinewave test with dut as sink',
-                  devices={'BLUETOOTH_AUDIO':1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP WBS sinewave test with dut as sink',
+                test_profile=HFP_WBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_wbs_dut_as_sink_test(self):
         """HFP WBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(
-                device,
-                functools.partial(self.hfp_dut_as_sink,
-                    check_input_device_sample_rate=16000),
-                HFP_WBS)
+        self.hfp_dut_as_sink(device,
+                             HFP_WBS,
+                             check_input_device_sample_rate=16000)
 
-
-    @test_wrapper('HFP NBS sinewave test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP NBS sinewave test with dut as source',
+                test_profile=HFP_NBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_nbs_dut_as_source_test(self):
         """HFP NBS test with sinewave streaming from dut to peer."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_source, HFP_NBS)
+        self.hfp_dut_as_source(device, HFP_NBS)
 
-
-    @test_wrapper('HFP NBS sinewave test with dut as sink',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP NBS sinewave test with dut as sink',
+                test_profile=HFP_NBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_nbs_dut_as_sink_test(self):
         """HFP NBS test with sinewave streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(
-                device,
-                functools.partial(self.hfp_dut_as_sink,
-                    check_input_device_sample_rate=8000),
-                HFP_NBS)
+        self.hfp_dut_as_sink(device,
+                             HFP_NBS,
+                             check_input_device_sample_rate=8000)
 
-
-    @test_wrapper(
-            'HFP NBS sinewave test with dut as sink with super resolution',
-            devices={'BLUETOOTH_AUDIO': 1},
-            allowed_boards={
-                    'eve',
-                    'soraka',
-                    'nautilus',
-                    'nami',
-                    'nocturne',
-                    'rammus',
-                    'fizz',
-            },
-            supports_floss=True)
+    @audio_test(test_name=
+                'HFP NBS sinewave test with dut as sink with super resolution',
+                test_profile=HFP_NBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                allowed_boards={
+                        'eve',
+                        'soraka',
+                        'nautilus',
+                        'nami',
+                        'nocturne',
+                        'rammus',
+                        'fizz',
+                },
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_nbs_dut_as_sink_with_super_resolution_test(self):
         """HFP NBS test with sinewave and super_resolution streaming from peer to dut."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
         # Enabling ui is needed, or the downloading in dlc service won't work.
-        self.au_hfp_run_method(device,
-                               self.hfp_dut_as_sink_with_super_resolution,
-                               HFP_NBS)
+        self.hfp_dut_as_sink_with_super_resolution(device, HFP_NBS)
 
-
-    @test_wrapper('HFP WBS VISQOL test with dut as sink',
-                  devices={'BLUETOOTH_AUDIO':1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP WBS VISQOL test with dut as sink',
+                test_profile=HFP_WBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_wbs_dut_as_sink_visqol_test(self):
         """HFP WBS VISQOL test with audio streaming from peer to dut"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_sink_visqol_score,
-                               HFP_WBS)
+        self.hfp_dut_as_sink_visqol_score(device, HFP_WBS)
 
-
-    @test_wrapper('HFP WBS VISQOL test with dut as source',
-                  devices={'BLUETOOTH_AUDIO':1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP WBS VISQOL test with dut as source',
+                test_profile=HFP_WBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_wbs_dut_as_source_visqol_test(self):
         """HFP WBS VISQOL test with audio streaming from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_source_visqol_score,
-                               HFP_WBS)
+        self.hfp_dut_as_source_visqol_score(device, HFP_WBS)
 
-    @test_wrapper('HFP NBS VISQOL test with dut as sink',
-                  devices={'BLUETOOTH_AUDIO':1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP NBS VISQOL test with dut as sink',
+                test_profile=HFP_NBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_nbs_dut_as_sink_visqol_test(self):
         """HFP NBS VISQOL test with audio streaming from peer to dut"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_sink_visqol_score,
-                               HFP_NBS)
+        self.hfp_dut_as_sink_visqol_score(device, HFP_NBS)
 
-
-    @test_wrapper('HFP NBS VISQOL test with dut as source',
-                  devices={'BLUETOOTH_AUDIO':1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP NBS VISQOL test with dut as source',
+                test_profile=HFP_NBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_nbs_dut_as_source_visqol_test(self):
         """HFP NBS VISQOL test with audio streaming from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_source_visqol_score,
-                               HFP_NBS)
+        self.hfp_dut_as_source_visqol_score(device, HFP_NBS)
 
-
-    @test_wrapper('HFP NBS back2back test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP NBS back2back test with dut as source',
+                test_profile=HFP_NBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_nbs_dut_as_source_back2back_test(self):
         """HFP NBS back2back test from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_source_back2back,
-                               HFP_NBS)
+        self.hfp_dut_as_source_back2back(device, HFP_NBS)
 
-
-    @test_wrapper('HFP WBS back2back test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='HFP WBS back2back test with dut as source',
+                test_profile=HFP_WBS,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_wbs_dut_as_source_back2back_test(self):
         """HFP WBS back2back test from dut to peer"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_dut_as_source_back2back,
-                               HFP_WBS)
+        self.hfp_dut_as_source_back2back(device, HFP_WBS)
 
-
-    @test_wrapper('Switch A2DP to HFP NBS test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='Switch A2DP to HFP NBS test with dut as source',
+                test_profile=HFP_NBS_MEDIUM,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_a2dp_to_hfp_nbs_dut_as_source_test(self):
         """Switch A2DP to HFP NBS test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.a2dp_to_hfp_dut_as_source,
-                               HFP_NBS_MEDIUM)
+        self.a2dp_to_hfp_dut_as_source(device, HFP_NBS_MEDIUM)
 
-
-    @test_wrapper('Switch A2DP to HFP WBS test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='Switch A2DP to HFP WBS test with dut as source',
+                test_profile=HFP_WBS_MEDIUM,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_a2dp_to_hfp_wbs_dut_as_source_test(self):
         """Switch A2DP to HFP WBS test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.a2dp_to_hfp_dut_as_source,
-                               HFP_WBS_MEDIUM)
+        self.a2dp_to_hfp_dut_as_source(device, HFP_WBS_MEDIUM)
 
-
-    @test_wrapper('Switch HFP NBS to A2DP test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='Switch HFP NBS to A2DP test with dut as source',
+                test_profile=HFP_NBS_MEDIUM,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_nbs_to_a2dp_dut_as_source_test(self):
         """Switch HFP NBS to A2DP test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_to_a2dp_dut_as_source,
-                               HFP_NBS_MEDIUM)
+        self.hfp_to_a2dp_dut_as_source(device, HFP_NBS_MEDIUM)
 
-
-    @test_wrapper('Switch HFP WBS to A2DP test with dut as source',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='Switch HFP WBS to A2DP test with dut as source',
+                test_profile=HFP_WBS_MEDIUM,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_wbs_to_a2dp_dut_as_source_test(self):
         """Switch HFP WBS to A2DP test with dut as source."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_hfp_run_method(device, self.hfp_to_a2dp_dut_as_source,
-                               HFP_WBS_MEDIUM)
+        self.hfp_to_a2dp_dut_as_source(device, HFP_WBS_MEDIUM)
 
-    @test_wrapper('Trigger incoming call on dut and answer call',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='Trigger incoming call on dut and answer call',
+                test_profile=HFP_TELEPHONY,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_telephony_incoming_call_answer_call_test(self):
         """Trigger incoming call on dut and answer call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(
-                device,
-                lambda: self.hfp_telephony_incoming_call_answer_call(device),
-                HFP_TELEPHONY)
+        self.hfp_telephony_incoming_call_answer_call(device, HFP_TELEPHONY)
 
-    @test_wrapper('Trigger incoming call on dut and reject call',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='Trigger incoming call on dut and reject call',
+                test_profile=HFP_TELEPHONY,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_telephony_incoming_call_reject_call_test(self):
         """Trigger incoming call on dut and reject call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(
-                device,
-                lambda: self.hfp_telephony_incoming_call_reject_call(device),
-                HFP_TELEPHONY)
+        self.hfp_telephony_incoming_call_reject_call(device, HFP_TELEPHONY)
 
-    @test_wrapper('Place an active call on dut and hangup call',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='Place an active call on dut and hangup call',
+                test_profile=HFP_TELEPHONY,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_telephony_active_call_hangup_call_test(self):
         """Place an active call on dut and hangup call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(
-                device,
-                lambda: self.hfp_telephony_active_call_hangup_call(device),
-                HFP_TELEPHONY)
+        self.hfp_telephony_active_call_hangup_call(device, HFP_TELEPHONY)
 
-    @test_wrapper('Trigger microphone mute and unmute',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='Trigger microphone mute and unmute',
+                test_profile=HFP_TELEPHONY,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_hfp_telephony_micmute_test(self):
         """Trigger microphone mute and unmute"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_method(device, lambda: self.hfp_telephony_micmute(device),
-                           HFP_TELEPHONY)
+        self.hfp_telephony_micmute(device, HFP_TELEPHONY)
 
-    def au_run_avrcp_method(self, device, test_method):
-        """avrcp procedure of running a specified test method.
-
-        @param device: the bt peer device
-        @param test_method: the avrcp test method to run
-        """
-        def wrapped_test_method(device):
-            """A wrapper method to initialize and cleanup avrcp tests.
-
-            @param device: the bt peer device
-            """
-            self.initialize_bluetooth_player(device)
-            self.enable_audio_stream_for_avrcp(device)
-            test_method(device)
-            self.stop_audio_stream_for_avrcp()
-            self.cleanup_bluetooth_player(device)
-
-        self.au_run_method(
-                device, lambda: wrapped_test_method(device), AVRCP)
-
-
-    @test_wrapper('avrcp command test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='avrcp command test',
+                test_profile=AVRCP,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_avrcp_command_test(self):
         """AVRCP test to examine commands reception."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_avrcp_method(device, self.test_avrcp_commands)
+        self.test_avrcp_commands(device)
 
-
-    @test_wrapper('avrcp media info test',
-                  devices={'BLUETOOTH_AUDIO': 1},
-                  supports_floss=True)
+    @audio_test(test_name='avrcp media info test',
+                test_profile=AVRCP,
+                device_configs={'BLUETOOTH_AUDIO': 1},
+                supports_floss=True,
+                pair_device=True)
     def au_avrcp_media_info_test(self):
         """AVRCP test to examine metadata propgation."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.au_run_avrcp_method(device, self.test_avrcp_media_info)
+        self.test_avrcp_media_info(device)
 
 
     @batch_wrapper('Bluetooth Audio Batch Health Tests')

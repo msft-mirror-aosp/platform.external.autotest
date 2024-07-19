@@ -24,7 +24,8 @@ from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         AUDIO_DATA_TARBALL_PATH, VISQOL_BUFFER_LENGTH, DATA_DIR, VISQOL_PATH,
         VISQOL_SIMILARITY_MODEL, VISQOL_TEST_DIR, AUDIO_RECORD_DIR,
         AUDIO_SERVER, PULSEAUDIO, PIPEWIRE, A2DP_CODEC, SBC, AAC, HFP_CODEC,
-        LC3, audio_test_data, get_audio_test_data, get_visqol_binary)
+        LC3, audio_test_data, get_audio_test_data, get_visqol_binary, AVRCP,
+        HFP)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         FLOSS_NO_WBS_CHIPSETS, BluetoothAdapterTests, test_retry_and_log)
 from six.moves import range
@@ -370,6 +371,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param test_specific_audio_config: the test specific audio config
                 that will be used to update the default one.
         """
+        if test_specific_audio_config is None:
+            test_specific_audio_config = {}
+
         for profile in [A2DP_CODEC, HFP_CODEC]:
             if profile in test_specific_audio_config:
                 codec = test_specific_audio_config[profile]
@@ -409,10 +413,24 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         return test_profile.startswith(A2DP)
 
+    def is_hfp_profile(self, test_profile):
+        """Is the test_profile a HFP profile?
+
+        @returns: True if the test_profile is a HFP profile.
+        """
+        return test_profile.startswith(HFP)
+
+    def is_avrcp_profile(self, test_profile):
+        """Is the test_profile a AVRCP profile?
+
+        @returns: True if the test_profile is a AVRCP profile.
+        """
+        return test_profile.startswith(AVRCP)
+
     def initialize_bluetooth_audio(self,
                                    device,
                                    test_profile,
-                                   audio_config={}):
+                                   audio_config=None):
         """Initialize the Bluetooth audio task.
 
         Note: pulseaudio is not stable. Need to restart it in the beginning.

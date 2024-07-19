@@ -316,6 +316,8 @@ class BluetoothAdapterQuickTests(
     def quick_test_test_decorator(test_name,
                                   devices={},
                                   flags=['All'],
+                                  pretest_func=None,
+                                  posttest_func=None,
                                   allowed_boards=None,
                                   model_testNA=[],
                                   model_testWarn=[],
@@ -326,54 +328,64 @@ class BluetoothAdapterQuickTests(
                                   use_all_peers=False,
                                   minimum_kernel_version=''):
         """A decorator providing a wrapper to a quick test.
-           Using the decorator a test method can implement only the core
-           test and let the decorator handle the quick test wrapper methods
-           (reset/cleanup/logging).
+        Using the decorator a test method can implement only the core
+        test and let the decorator handle the quick test wrapper methods
+        (reset/cleanup/logging).
 
-           @param test_name: the name of the test to log.
-           @param devices: map of the device types and the quantities needed for
-                           the test.
-                           For example, {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
-           @param flags: list of string to describe who should run the
-                         test. The string could be one of the following:
-                         ['AVL', 'Quick Health', 'All'].
-           @param allowed_boards: If not None, raises TestNA on boards that are
-                                  not in this set.
-           @param model_testNA: If the current platform is in this list,
-                                failures are emitted as TestNAError.
-           @param model_testWarn: If the current platform is in this list,
-                                  failures are emitted as TestWarn.
-           @param skip_models: Raises TestNA on these models and doesn't attempt
-                               to run the tests.
-           @param skip_chipsets: Raises TestNA on these chipset and doesn't
-                                 attempt to run the tests.
-           @param skip_common_errors: If the test encounters a common error
-                                      (such as USB disconnect or daemon crash),
-                                      mark the test as TESTNA instead.
-                                      USE THIS SPARINGLY, it may mask bugs. This
-                                      is available for tests that require state
-                                      to be properly retained throughout the
-                                      whole test (i.e. advertising) and any
-                                      outside failure will cause the test to
-                                      fail.
-           @param supports_floss: Does this test support running on Floss?
-           @param use_all_peers: Set number of devices to be used to the
-                                 maximum available. This is used for tests
-                                 like bluetooth_PeerVerify which uses all
-                                 available peers. Specify only one device type
-                                 if this is set to true
-           @param minimum_kernel_version: Raises TestNA on less than this
-                                          kernel's version and doesn't attempt
-                                          to run the tests.
+        @param test_name: the name of the test to log.
+        @param devices: map of the device types and the quantities needed for
+                        the test.
+                        For example, {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
+        @param flags: list of string to describe who should run the
+                      test. The string could be one of the following:
+                      ['AVL', 'Quick Health', 'All'].
+        @pretest_func: A function that accepts a bluetooth quick test instance
+                       as argument. If not None, the function is run right
+                       before the test method.
+        @posttest_func: A function that accepts a bluetooth quick test instance
+                        as argument. If not None, the function is run after the
+                        test is completed or aborted.
+                        Note that the exception raised from this function is NOT
+                        caught by the decorator.
+        @param allowed_boards: If not None, raises TestNA on boards that are
+                               not in this set.
+        @param model_testNA: If the current platform is in this list,
+                             failures are emitted as TestNAError.
+        @param model_testWarn: If the current platform is in this list,
+                               failures are emitted as TestWarn.
+        @param skip_models: Raises TestNA on these models and doesn't attempt
+                            to run the tests.
+        @param skip_chipsets: Raises TestNA on these chipset and doesn't
+                              attempt to run the tests.
+        @param skip_common_errors: If the test encounters a common error
+                                   (such as USB disconnect or daemon crash),
+                                   mark the test as TESTNA instead.
+                                   USE THIS SPARINGLY, it may mask bugs. This
+                                   is available for tests that require state
+                                   to be properly retained throughout the
+                                   whole test (i.e. advertising) and any
+                                   outside failure will cause the test to
+                                   fail.
+        @param supports_floss: Does this test support running on Floss?
+        @param use_all_peers: Set number of devices to be used to the
+                              maximum available. This is used for tests
+                              like bluetooth_PeerVerify which uses all
+                              available peers. Specify only one device type
+                              if this is set to true
+        @param minimum_kernel_version: Raises TestNA on less than this
+                                       kernel's version and doesn't attempt
+                                       to run the tests.
         """
 
         base_class = bluetooth_quick_tests_base.BluetoothQuickTestsBase
         return base_class.quick_test_test_decorator(
                 test_name,
                 flags=flags,
-                pretest_func=lambda self: self.quick_test_test_pretest(
+                pretest_func=pretest_func if pretest_func is not None else
+                lambda self: self.quick_test_test_pretest(
                         test_name, devices, use_all_peers, supports_floss),
-                posttest_func=lambda self: self.quick_test_test_posttest(),
+                posttest_func=posttest_func if posttest_func is not None else
+                lambda self: self.quick_test_test_posttest(),
                 allowed_boards=allowed_boards,
                 model_testNA=model_testNA,
                 model_testWarn=model_testWarn,
@@ -389,23 +401,23 @@ class BluetoothAdapterQuickTests(
                                 supports_floss=False):
         """Runs pretest checks and resets DUT's adapter and peer devices.
 
-           @param test_name: the name of the test to log.
-           @param device_configs: map of the device types and values
-                           There are two possibilities of the values
-                           (1) the quantities needed for the test.
-                               For example, {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
-                           (2) a tuple of tuples of required capabilities, e.g.,
-                               devices={'BLUETOOTH_AUDIO':
-                                            (('PIPEWIRE', 'LE_AUDIO'),)}
-                               which requires a BLUETOOTH_AUDIO device with
-                               the capabilities of support PIPEWIRE and LE_AUDIO
-                               adapter.
-           @param use_all_peers: Set number of devices to be used to the
-                                 maximum available. This is used for tests
-                                 like bluetooth_PeerVerify which uses all
-                                 available peers. Specify only one device type
-                                 if this is set to true
-           @param supports_floss: Does this test support running on Floss?
+        @param test_name: the name of the test to log.
+        @param device_configs: map of the device types and values
+                        There are two possibilities of the values
+                        (1) the quantities needed for the test.
+                            For example, {'BLE_KEYBOARD':1, 'BLE_MOUSE':1}.
+                        (2) a tuple of tuples of required capabilities, e.g.,
+                            devices={'BLUETOOTH_AUDIO':
+                                        (('PIPEWIRE', 'LE_AUDIO'),)}
+                            which requires a BLUETOOTH_AUDIO device with
+                            the capabilities of support PIPEWIRE and LE_AUDIO
+                            adapter.
+        @param use_all_peers: Set number of devices to be used to the
+                              maximum available. This is used for tests
+                              like bluetooth_PeerVerify which uses all
+                              available peers. Specify only one device type
+                              if this is set to true
+        @param supports_floss: Does this test support running on Floss?
         """
 
         def _is_enough_peers_present(self):
@@ -490,9 +502,7 @@ class BluetoothAdapterQuickTests(
 
 
     def quick_test_test_posttest(self):
-        """Runs posttest cleanups.
-
-        """
+        """Runs posttest cleanups."""
 
         logging.info('Cleanning up and restarting towards next test...')
         self.log_message(self.bat_tests_results[-1])

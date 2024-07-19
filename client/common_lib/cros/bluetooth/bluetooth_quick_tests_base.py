@@ -132,7 +132,7 @@ class BluetoothQuickTestsBase(object):
                        before the test method.
         @posttest_func: A function that accepts a bluetooth quick test instance
                         as argument. If not None, the function is run after the
-                        test summary is logged.
+                        test is completed or aborted.
                         Note that the exception raised from this function is NOT
                         caught by the decorator.
         @param allowed_boards: If not None, raises TestNA on boards that are not

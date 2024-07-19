@@ -27,8 +27,8 @@ TABLET_MODE = autotest_enum.AutotestEnum('ON', 'OFF', 'RESET')
 
 # List of wake sources expected to cause a full resume.
 FULL_WAKE_SOURCES = [
-        'PWR_BTN', 'USB_KB', 'LID_OPEN', 'BASE_ATTACH', 'BASE_DETACH',
-        'INTERNAL_KB', 'TABLET_MODE_ON', 'TABLET_MODE_OFF'
+        'INTERNAL_KB', 'PWR_BTN', 'USB_KB', 'LID_OPEN', 'BASE_ATTACH',
+        'BASE_DETACH', 'TABLET_MODE_ON', 'TABLET_MODE_OFF'
 ]
 
 # List of wake sources expected to cause a dark resume.

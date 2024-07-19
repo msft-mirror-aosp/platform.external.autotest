@@ -44,7 +44,8 @@ class bluetooth_PeerVerify(BluetoothAdapterQuickTests):
             rssi_list = []
             self.result = {}
             for n, device in enumerate(self.devices['MOUSE']):
-                rssi = self.get_device_sample_rssi(device)
+                rssi = self.get_device_sample_rssi(device,
+                                                   use_cached_value=False)
                 rssi_list.append(rssi)
                 logging.info('RSSI for peer %s is %s', n, rssi)
             logging.info('RSSI values are %s', rssi_list)

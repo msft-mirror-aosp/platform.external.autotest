@@ -50,8 +50,13 @@ foomatic-20200219-Epson-ActionPrinter_3250-ap3250.ppd.gz
 foomatic-20200219-Epson-PM_760C-PM760pX.upp.ppd.gz
 foomatic-20200219-Epson-PM_820C-PM820pX.upp.ppd.gz
 foomatic-20200219-Epson-SQ_1170-stcolor.ppd.gz
+foomatic-20200219-Epson-Stylus_Color_460-stcX.upp.ppd.gz
+foomatic-20200219-Epson-Stylus_Color_660-stc600X.upp.ppd.gz
 foomatic-20200219-Epson-Stylus_Color_680-Stc680pX.upp.ppd.gz
 foomatic-20200219-Epson-Stylus_Color_760-stc740X.upp.ppd.gz
+foomatic-20200219-Epson-Stylus_Color_777-stcanyX.upp.ppd.gz
+foomatic-20200219-Epson-Stylus_Color_850-stc800X.upp.ppd.gz
+foomatic-20200219-Epson-Stylus_Color_II-stc2X.upp.ppd.gz
 foomatic-20200219-Epson-Stylus_Photo_720-Stp720pX.upp.ppd.gz
 foomatic-20200219-Epson-Stylus_Photo_870-Stp870pX.upp.ppd.gz
 foomatic-20200219-Gestetner-Pro_1107EX-PDF-Gestetner.ppd.gz
@@ -62,6 +67,7 @@ foomatic-20200219-HP-DesignJet_2500CP-Postscript-HP.ppd.gz
 foomatic-20200219-HP-DesignJet_3500CP-Postscript-HP.ppd.gz
 foomatic-20200219-HP-DesignJet_5000PS-Postscript-HP.ppd.gz
 foomatic-20200219-HP-DesignJet_5500ps-Postscript-HP.ppd.gz
+foomatic-20200219-HP-DesignJet_750-dnj750X.upp.ppd.gz
 foomatic-20200219-HP-DesignJet_800PS-Postscript-HP.ppd.gz
 foomatic-20200219-HP-DeskJet_1000C-pnm2ppa.ppd.gz
 foomatic-20200219-HP-DeskJet_200-pcl3.ppd.gz
@@ -97,6 +103,7 @@ foomatic-20200219-Kyocera-KM-3050-Postscript-Kyocera.ppd.gz
 foomatic-20200219-Lanier-SP_C360DNw-Postscript-Lanier.ppd.gz
 foomatic-20200219-Lexmark-X125-drv_x125.ppd.gz
 foomatic-20200219-Lexmark-Z11-cZ11somsom.ppd.gz
+foomatic-20200219-NEC-P2X-necp2xX.upp.ppd.gz
 foomatic-20200219-Oki-B4300-Postscript-Oki.ppd.gz
 foomatic-20200219-Oki-C5300-Postscript-Oki.ppd.gz
 foomatic-20200219-Oki-C7100-Postscript-Oki.ppd.gz

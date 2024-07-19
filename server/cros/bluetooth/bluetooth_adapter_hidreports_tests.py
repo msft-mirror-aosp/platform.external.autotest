@@ -218,7 +218,12 @@ class BluetoothAdapterHIDReportTests(
                 run_hid_test()
 
             if reboot:
+                # On boot, OOBE could attempt to pair any nearby HID device and
+                # affects the test result.
+                # Set peer undiscoverable during reboot.
+                self.test_device_set_discoverable(device, False)
                 self.reboot()
+                self.test_device_set_discoverable(device, True)
 
                 time.sleep(self.HID_TEST_SLEEP_SECS)
                 # TODO(b/173146480) - Power on the adapter for now until this bug

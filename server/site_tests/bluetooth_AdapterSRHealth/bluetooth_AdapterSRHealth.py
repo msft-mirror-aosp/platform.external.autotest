@@ -184,11 +184,14 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         """ Reboot and reconnects a classic HID device after suspend/resume. """
         device_type = 'MOUSE'
         device = self.devices[device_type][0]
+        # On boot, OOBE could attempt to pair any nearby HID device and
+        # affects the test result. Set peer undiscoverable during reboot.
+        self.test_device_set_discoverable(device, False)
         # Reboot the DUT so that it starts with a clean state.
         logging.info('Rebooting the DUT')
         self.reboot()
-        self.run_reconnect_device([(device_type, device,
-                                    self._test_mouse)])
+        self.test_device_set_discoverable(device, True)
+        self.run_reconnect_device([(device_type, device, self._test_mouse)])
 
     @test_wrapper('Reconnect LE HID',
                   devices={'BLE_MOUSE': 1},

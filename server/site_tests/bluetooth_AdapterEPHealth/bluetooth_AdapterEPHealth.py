@@ -544,8 +544,12 @@ class bluetooth_AdapterEPHealth(
     def ep_combo_hid_persists_reboot(self):
         """The Allowlist with HID UUID should persist reboot."""
         device = self.devices['KEYBOARD'][0]
+        # On boot, OOBE could attempt to pair any nearby HID device and
+        # affects the test result. Set peer undiscoverable during reboot.
+        self.test_device_set_discoverable(device, False)
         self.test_check_set_allowlist(BluetoothPolicy.UUID_HID, True)
         self.reboot()
+        self.test_device_set_discoverable(device, True)
         # Make sure adapter power is on before proceeding.
         self.test_adapter_work_state()
         self.run_test_method(self.ep_outgoing_connection, device,
@@ -558,8 +562,12 @@ class bluetooth_AdapterEPHealth(
     def ep_combo_non_hid_persists_reboot(self):
         """The Allowlist with non-HID UUID should persist reboot."""
         device = self.devices['KEYBOARD'][0]
+        # On boot, OOBE could attempt to pair any nearby HID device and
+        # affects the test result. Set peer undiscoverable during reboot.
+        self.test_device_set_discoverable(device, False)
         self.test_check_set_allowlist('aaaa', True)
         self.reboot()
+        self.test_device_set_discoverable(device, True)
         # Make sure adapter power is on before proceeding.
         self.test_adapter_work_state()
         self.run_test_method(self.ep_outgoing_connection, device,

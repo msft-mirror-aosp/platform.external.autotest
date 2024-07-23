@@ -66,8 +66,6 @@ CONFIG['COLLECT_EXCLUDE_MODULES'] = [
         'CtsVideoTestCases',
 ]
 
-CONFIG['LAB_DEPENDENCY'] = {'x86': ['cts_abi_x86']}
-
 CONFIG['CTS_JOB_RETRIES_IN_PUBLIC'] = 1
 CONFIG['CTS_QUAL_RETRIES'] = 9
 CONFIG['CTS_MAX_RETRIES'] = {
@@ -629,6 +627,16 @@ for m in CONFIG['WIFI_MODULES']:
     CONFIG['PUBLIC_PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
     CONFIG['PRECONDITION'][m] = _WIFI_CONNECT_COMMANDS_V2
 
+# Internal lab dependencies. Key can be either abi or module name.
+CONFIG['LAB_DEPENDENCY'] = {
+        'x86': ['cts_abi_x86'],
+}
+
+# b/343614317: Wifi-dependent modules need device with label-wifi_on_site
+for m in CONFIG['WIFI_MODULES']:
+    CONFIG['LAB_DEPENDENCY'][m] = ['wifi_on_site']
+
+# Public lab dependencies.
 CONFIG['PUBLIC_DEPENDENCIES'] = {
         'CtsCameraTestCases': ['lighting'],
         'CtsMediaTestCases': ['noloopback'],

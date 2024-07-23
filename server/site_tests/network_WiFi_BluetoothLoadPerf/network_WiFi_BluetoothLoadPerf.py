@@ -483,18 +483,45 @@ class network_WiFi_BluetoothLoadPerf(
             self.write_perf_keyval(
                     {'_'.join([config.test_type, test_str, 'drop']): drop})
 
-            # Tests latency with ping.
-            result_ping = self.context.client.ping(get_ping_config(10))
-            self.write_perf_keyval(
-                    {'_'.join(['ping', test_str]): result_ping.avg_latency})
-            logging.info('Ping statistics with %s: %r', bt_tag, result_ping)
-            expected_latency = (expected_perf_data.get_expected_wifi_latency(
-                    test_type, test_name, ap_config, bt_tag))
+            result_ping = None
 
-            self.verify_wifi_latency_result(result_ping.avg_latency,
-                                            expected_latency, test_type,
-                                            failed_test_types, ap_config_tag,
-                                            bt_tag)
+            # TODO(b/343139215): Remove the try-except block once packet loss
+            #  data collection is complete.
+            try:
+                # Tests latency with ping.
+                result_ping = self.context.client.ping(get_ping_config(10))
+            except error.TestFail as e:
+                # Handle specific exception for packet loss.
+                if 'Lost ping packets' not in str(e):
+                    raise e
+                logging.info('Ping failed with exception: %s', str(e))
+
+            try:
+                if result_ping:
+                    self.write_perf_keyval({
+                            '_'.join(['ping', test_str]):
+                            result_ping.avg_latency,
+                            '_'.join(['ping', test_str, 'max']):
+                            result_ping.max_latency,
+                            '_'.join(['ping', test_str, 'min']):
+                            result_ping.min_latency,
+                            '_'.join(['ping', test_str, 'dev']):
+                            result_ping.dev_latency
+                    })
+                    logging.info('Ping statistics with %s: %r', bt_tag,
+                                 result_ping)
+                    expected_latency = (
+                            expected_perf_data.get_expected_wifi_latency(
+                                    test_type, test_name, ap_config, bt_tag))
+
+                    self.verify_wifi_latency_result(result_ping.avg_latency,
+                                                    expected_latency,
+                                                    test_type,
+                                                    failed_test_types,
+                                                    ap_config_tag, bt_tag)
+            except AttributeError as e:
+                logging.warning('result_ping missed some attribute: %s',
+                                str(e))
 
     def test_bt_device_connection(self):
         """Tests the connection of BT devices."""

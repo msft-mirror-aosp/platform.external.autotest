@@ -1793,7 +1793,8 @@ class TradefedTest(test.test):
                 # On drawcia, CPU is too busy during CTS and cause RecordingTest easy to fail.
                 # Wait until CPU cool down before running CtsCameraTestCases.See b/270081260.
                 test_model = self._get_model_name()
-                if test_model == 'drawcia' and 'CtsCameraTestCases' in test_name:
+                if (test_model == 'drawcia' or test_model
+                            == 'soraka') and 'CtsCameraTestCases' in test_name:
                     try:
                         self._wait_cpu_cooldown(1800)
                     except:

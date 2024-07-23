@@ -119,6 +119,7 @@ BOARDS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('coral', 'rabbid', ''),
         BoardInfo('coral', 'robo360', ''),
         BoardInfo('dedede', 'boten', ''),
+        BoardInfo('dedede', 'peezer', ''),
         BoardInfo('grunt', 'treeya360', '175'),
         BoardInfo('hatch', 'kohaku', ''),
         BoardInfo('octopus', 'ampton', ''),
@@ -201,6 +202,7 @@ INTERNAL_MIC_NODE = {
         ('nami', 'sona'): 'FRONT_MIC',
         ('nami', 'syndra'): 'FRONT_MIC',
         ('nami', 'vayne'): 'FRONT_MIC',
+        ('dedede', 'peezer'): 'FRONT_MIC',
         ('dedede', 'boten'): 'FRONT_MIC',
         ('nissa', 'craask'): 'FRONT_MIC',
 }

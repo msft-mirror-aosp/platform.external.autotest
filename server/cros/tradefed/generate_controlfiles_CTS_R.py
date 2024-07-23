@@ -572,6 +572,8 @@ for m in CONFIG['WIFI_MODULES']:
 # Internal lab dependencies. Key can be either abi or module name.
 CONFIG['LAB_DEPENDENCY'] = {
         'x86': ['cts_abi_x86'],
+        # b/346839603: Deqp require "large" cloudbot or legacy drone
+        'CtsDeqpTestCases': ['label-bot_size:BOT_SIZE_LARGE'],
 }
 
 # b/343614317: Wifi-dependent modules need device with label-wifi_on_site

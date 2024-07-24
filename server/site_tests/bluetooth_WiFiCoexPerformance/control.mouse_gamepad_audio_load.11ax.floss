@@ -16,7 +16,7 @@ ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
 DEPENDENCIES = ('wificell, working_bluetooth_btpeer:3, '
                 'peripheral_wifi_state:WORKING, '
-                'wifi_router_models:OPENWRT[Ubiquiti_Unifi_6_Lite]')
+                'wifi_router_models:OPENWRT[Ubiquiti_UniFi_6_Lite]')
 from autotest_lib.server import utils
 from autotest_lib.server.cros.network import hostap_config
 

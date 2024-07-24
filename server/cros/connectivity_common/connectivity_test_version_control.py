@@ -16,10 +16,14 @@ CONNECTIVITY_DIR = os.path.dirname(__file__)
 REMOTE_NAME = 'cros'
 BRANCH_NAME = 'main'
 BRANCH_NAME_FULL = os.path.join(REMOTE_NAME, BRANCH_NAME)
+
 HTTP_MIRROR_URL =\
         'http://commondatastorage.googleapis.com/chromeos-localmirror'
-BT_BUNDLE_PATH = 'distfiles/bluetooth_peer_bundle'
 WIFI_BUNDLE_PATH = 'distfiles/wifi_bundle'
+
+BT_URL = 'https://storage.googleapis.com'
+BT_BUNDLE_PATH = 'chromeos-connectivity-test-artifacts/bluetooth_tauto_AVL_hash/'
+
 LATEST_STABLE_AUTOTEST_COMMIT = 'LATEST_STABLE_AUTOTEST_COMMIT'
 
 
@@ -55,13 +59,13 @@ def get_latest_stable_autotest_commit_url(phy):
 
     @returns: URL string to fetch commit hash
     """
-    generate_commit_url = lambda bundle_url: os.path.join(
-            HTTP_MIRROR_URL, bundle_url, LATEST_STABLE_AUTOTEST_COMMIT)
 
     if phy == 'bluetooth':
-        url = generate_commit_url(BT_BUNDLE_PATH)
+        url = os.path.join(BT_URL, BT_BUNDLE_PATH,
+                           LATEST_STABLE_AUTOTEST_COMMIT)
     elif phy == 'wifi':
-        url = generate_commit_url(WIFI_BUNDLE_PATH)
+        url = os.path.join(HTTP_MIRROR_URL, WIFI_BUNDLE_PATH,
+                           LATEST_STABLE_AUTOTEST_COMMIT)
     else:
         raise error.TestError('Invalid phy provided. Got {0}. Supported phys: ' \
                     'WiFi, Bluetooth'.format(phy))

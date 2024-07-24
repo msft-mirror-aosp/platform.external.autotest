@@ -11,9 +11,10 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import ping_runner
 from autotest_lib.server.cros.network import perf_test_manager as perf_manager
 from autotest_lib.server.cros.network import wifi_cell_perf_test_base
-from autotest_lib.server.cros.bluetooth import bluetooth_device
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import \
         BluetoothAdapterAudioTests
+from autotest_lib.server.cros.multimedia import remote_facade_factory
+
 
 class network_WiFi_BluetoothScanPerf(
         wifi_cell_perf_test_base.WiFiCellPerfTestBase):
@@ -95,15 +96,18 @@ class network_WiFi_BluetoothScanPerf(
             { '_'.join(['ping', test_str]): result_ping.avg_latency })
         logging.info('Ping statistics with %s: %r', bt_tag, result_ping)
 
-
-
     def run_once(self, host):
         """Test body."""
         start_time = time.time()
 
         # Prepare Bluetooth to scan, but do not start yet.
-        bt_device = bluetooth_device.BluetoothDevice(host)
-        if not bt_device.reset_on():
+        factory = remote_facade_factory.RemoteFacadeFactory(host)
+        bluetooth_facade = factory.create_bluetooth_facade(floss=True)
+        if not bluetooth_facade.is_bluetoothd_valid():
+            if not (bluetooth_facade.start_bluetoothd()
+                    and bluetooth_facade.is_bluetoothd_valid()):
+                raise error.TestFail('DUT BT failed to start')
+        if not bluetooth_facade.reset_on():
             raise error.TestFail('DUT could not be reset to initial state')
 
         for ap_config in self._ap_configs:
@@ -123,14 +127,14 @@ class network_WiFi_BluetoothScanPerf(
                 self.test_one(
                         manager, session, config, ap_config_tag,
                         BluetoothAdapterAudioTests.CONNECTION_STATE_QUIET)
-                if not bt_device.start_discovery()[0]:
+                if not bluetooth_facade.start_discovery()[0]:
                     raise error.TestFail('Could not start discovery on DUT')
                 try:
                     self.test_one(
                             manager, session, config, ap_config_tag,
                             BluetoothAdapterAudioTests.CONNECTION_STATE_SCANNING)
                 finally:
-                    if not bt_device.stop_discovery()[0]:
+                    if not bluetooth_facade.stop_discovery()[0]:
                         logging.warning('Failed to stop discovery on DUT')
                 self.test_one(
                         manager, session, config, ap_config_tag,

@@ -1554,7 +1554,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     def test_a2dp_sinewaves(self,
                             device,
                             test_profile,
-                            duration,
+                            duration=None,
                             expected_pass=True):
         """Test Case: A2DP sinewaves.
 
@@ -1566,18 +1566,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         @param device: The bluetooth peer device.
         @param test_profile: The a2dp test profile;
                              choices are A2DP and A2DP_LONG.
-        @param duration: The duration of the audio file to test
-                         0 means to use the default value in the test profile.
+        @param duration: Duration of the audio file to be tested. If not
+                         specified, the test will use the duration provided in
+                         the test data.
         @param expected_pass: True if the test is expected to pass, False
                               otherwise.
         """
         # Make a copy since the test_data may be formatted with distinct
         # arguments in the follow-up tests.
         test_data = audio_test_data[test_profile].copy()
-        if bool(duration):
-            test_data['duration'] = duration
-        else:
+        if duration is None:
             duration = test_data['duration']
+        else:
+            test_data['duration'] = duration
 
         test_data['file'] %= duration
         logging.info('%s test for %d seconds.', test_profile, duration)

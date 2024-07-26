@@ -32,7 +32,11 @@ class audio_CrasCheck(test.test):
             'crashes_at_end': False
     }
 
-    def run_once(self):
+    def run_once(self, skipped_model_with_bugs={}):
+        model = utils.get_platform()
+        if model in skipped_model_with_bugs:
+            raise error.TestNAError("pending fix for %s!" %
+                                    skipped_model_with_bugs[model])
         # Check for existing cras crashes which might occur during UI bring up.
         # TODO: (rohitbm) check if we need to reboot the DUT before the test
         #       start to verify cras crashes during boot.

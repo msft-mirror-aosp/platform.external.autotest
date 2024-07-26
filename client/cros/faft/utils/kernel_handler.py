@@ -34,7 +34,7 @@ class KernelHandler(object):
     DELTA = 1
 
     # The maximum kernel size in MB.
-    KERNEL_SIZE_MB = 16
+    KERNEL_SIZE_MB = 32
 
     def __init__(self, os_if, is_minios=False):
         self.os_if = os_if

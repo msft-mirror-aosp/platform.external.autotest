@@ -52,7 +52,10 @@ class platform_CryptohomeFio(test.test):
                     graph_descr += '-'.join([os.path.basename(key), str(val)])
                 # Mount a test cryptohome vault.
                 if config == self.USE_CRYPTO:
-                    cryptohome.mount_vault(TEST_USER, TEST_PASSWORD,
+                    cryptohome.unmount_vault(TEST_USER)
+                    cryptohome.remove_vault(TEST_USER)
+                    cryptohome.mount_vault(TEST_USER,
+                                           TEST_PASSWORD,
                                            create=True)
                     tmpdir = cryptohome.user_path(TEST_USER)
                 elif config == self.USE_TMPFS:

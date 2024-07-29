@@ -127,10 +127,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
 
-        # With raspberry pi peer, it takes a moment before the device is
-        # registered as an input device. Without delay, the input recorder
-        # doesn't find the device
-        time.sleep(1)
+        self.test_hid_device_created(device.address)
         self.run_mouse_tests(device=device)
 
     @test_wrapper('Keyboard Reports',
@@ -145,10 +142,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
 
-        # With raspberry pi peer, it takes a moment before the device is
-        # registered as an input device. Without delay, the input recorder
-        # doesn't find the device
-        time.sleep(1)
+        self.test_hid_device_created(device.address)
         self.run_keyboard_tests(device=device)
 
     @test_wrapper('Battery Reporting',

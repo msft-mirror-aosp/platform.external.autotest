@@ -19,6 +19,7 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
     _NOTIFICATION_INTERVAL = 1
     _NOTIFICATION_TIMEOUT = 10
     _NOTIFICATION_TITLE = "Update available"
+    _NOTIFICATION_TITLE2 = "Update device"
 
 
     def initialize(self):
@@ -42,7 +43,8 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
             if notifications is None:
                 return False
             return any(n for n in notifications
-                       if self._NOTIFICATION_TITLE in n['title'])
+                       if self._NOTIFICATION_TITLE in n['title']
+                       or self._NOTIFICATION_TITLE2 in n['title'])
 
         utils.poll_for_condition(
                 condition=find_notification,

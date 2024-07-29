@@ -20,6 +20,7 @@ import six.moves.urllib.parse
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import upstart
 
 
 # JSON attributes used in payload properties. Look at nebraska.py for more
@@ -36,6 +37,9 @@ NEBRASKA_METADATA_DIR = os.path.join(NEBRASKA_DIR, 'metadata')
 # Nebraska log file name.
 NEBRASKA_LOG = 'nebraska.log'
 
+# Nebraska upstart job name.
+NEBRASKA_JOB = 'nebraska'
+
 
 class NebraskaWrapper(object):
     """
@@ -51,6 +55,7 @@ class NebraskaWrapper(object):
                  log_dir=None,
                  payload_url=None,
                  persist_metadata=False,
+                 clear_existing=True,
                  **props_to_override):
         """
         Initializes the NebraskaWrapper module.
@@ -73,6 +78,8 @@ class NebraskaWrapper(object):
                                  not persist after rebooting the device.
         @param props_to_override: Dictionary of key/values to use in responses
                 instead of the default values in payload_url's properties file.
+        @param clear_existing: True to stop existing Nebraska started by upstart
+                               and clear the config file.
 
         """
         self._port = None
@@ -95,6 +102,9 @@ class NebraskaWrapper(object):
         self._update_payloads_address = None
         self._install_metadata_dir = None
         self._install_payloads_address = None
+
+        if clear_existing:
+            self._clear_existing()
 
         # Download the metadata files and save them in a tempdir for general
         # use, or in a directory that will survive reboot if we want nebraska
@@ -391,3 +401,16 @@ class NebraskaWrapper(object):
             self._host.get_file(source, target)
         else:
             shutil.copyfile(source, target)
+
+    def _clear_existing(self):
+        """
+        Stop existing Nebraska started by upstart and clear the config.
+        """
+        if self._host:
+            self._host.run(['rm', NEBRASKA_CONFIG], ignore_status=True)
+            self._host.upstart_stop(NEBRASKA_JOB)
+        else:
+            if os.path.exists(NEBRASKA_CONFIG):
+                os.remove(NEBRASKA_CONFIG)
+            if upstart.is_running(NEBRASKA_JOB):
+                upstart.stop_job(NEBRASKA_JOB)

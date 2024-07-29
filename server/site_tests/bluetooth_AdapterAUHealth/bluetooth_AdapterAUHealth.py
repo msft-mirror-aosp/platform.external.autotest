@@ -193,6 +193,11 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         """
         logging.debug(f'Running audio_test_posttest...')
 
+        if not self.devices['BLUETOOTH_AUDIO']:
+            logging.debug('No audio device was initialized, '
+                          'skipping audio_test_posttest.')
+            return
+
         device = self.devices['BLUETOOTH_AUDIO'][0]
 
         if self.is_avrcp_profile(test_profile):

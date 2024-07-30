@@ -6,6 +6,7 @@
 import logging
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.utils import poll_for_condition_ex
 from autotest_lib.client.cros.cellular import test_environment
 from autotest_lib.client.cros.power import sys_power
 from autotest_lib.client.cros.update_engine import nebraska_wrapper
@@ -79,8 +80,14 @@ class autoupdate_CannedOmahaUpdate(update_engine_test.UpdateEngineTest):
                         raise error.TestError('No cellular service found.')
 
                     CONNECT_TIMEOUT = 120
-                    test_env.shill.connect_service_synchronous(
-                            service, CONNECT_TIMEOUT)
+                    # DBus exceptions may be thrown if modem hasn't registered
+                    # to the network yet. Polling with exception handled.
+                    poll_for_condition_ex(
+                            lambda: test_env.shill.connect_service_synchronous(
+                                    service, CONNECT_TIMEOUT),
+                            timeout=CONNECT_TIMEOUT*2,
+                            sleep_interval=1,
+                            desc='connecting to cellular service')
                     self.run_canned_update(allow_failure,
                                            nebraska.get_update_url(),
                                            interactive)

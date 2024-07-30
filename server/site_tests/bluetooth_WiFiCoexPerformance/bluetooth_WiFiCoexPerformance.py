@@ -8,6 +8,7 @@ import logging
 import threading
 import time
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
@@ -113,6 +114,8 @@ class bluetooth_WiFiCoexPerformance(
             perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX,
             perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX
     ]
+    BTMON_WAIT_TIMEOUT = 30
+    DELAY_BETWEEN_BTMON_RETRY = 5
 
     def parse_additional_arguments(self, commandline_args, additional_params):
         """Hooks into super class to take control files parameters.
@@ -220,9 +223,32 @@ class bluetooth_WiFiCoexPerformance(
         for device, event_count in zip(devices, events_count):
             if self.is_audio_device(device):
                 # btmon needs additional time to write audio data.
-                time.sleep(5)
-                receiver_results = self.get_peer_a2dp_notif_timestamps(device)
-                transmitter_result = self.get_dut_a2dp_notif_timestamps(device)
+                prev_received_count = None
+                prev_transmitted_count = None
+
+                def is_btmon_log_ready():
+                    """Check if all btmon log is ready."""
+                    nonlocal prev_received_count
+                    nonlocal prev_transmitted_count
+                    nonlocal receiver_results
+                    nonlocal transmitter_result
+                    receiver_results = self.get_peer_a2dp_notif_timestamps(
+                            device)
+                    transmitter_result = self.get_dut_a2dp_notif_timestamps(
+                            device)
+                    res = ((len(receiver_results) == prev_received_count) and
+                           (len(transmitter_result) == prev_transmitted_count))
+
+                    prev_received_count = len(receiver_results)
+                    prev_transmitted_count = len(transmitter_result)
+                    return res
+
+                utils.poll_for_condition(
+                        is_btmon_log_ready,
+                        timeout=self.BTMON_WAIT_TIMEOUT,
+                        sleep_interval=self.DELAY_BETWEEN_BTMON_RETRY,
+                        desc="Did not receive all btmon results!")
+
 
                 # Calculate the number of new events transmitted during the
                 # current audio run.

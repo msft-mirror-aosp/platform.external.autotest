@@ -374,10 +374,9 @@ class bluetooth_WiFiCoexPerformance(
             logging.info(avg_delay)
             for device in avg_delay:
                 if avg_delay[device] > self.BT_DELAY_ACCEPTED_TIME:
-                    raise error.TestFail('%s device %s delay is %s, Expected '
-                                         'lest than %s second' %
-                                         (device, key, avg_delay[device],
-                                          self.BT_DELAY_ACCEPTED_TIME))
+                    raise error.TestFail(
+                            '%s device %s delay is longer than expected' %
+                            (device, key))
 
     def _bluetooth_wifi_coex_load_test(self, devices, load_tests,
                                        events_count):

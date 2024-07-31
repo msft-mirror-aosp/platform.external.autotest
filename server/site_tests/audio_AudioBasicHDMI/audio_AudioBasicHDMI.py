@@ -110,10 +110,13 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
             audio_test_utils.dump_cros_audio_logs(
                     self.host, self.facade, self.resultsdir, 'after_binding')
 
-            # HDMI node needs to be selected, when audio jack is plugged
-            if audio_jack_plugged:
-                self.facade.set_chrome_active_node_type('HDMI', None)
-            audio_test_utils.check_audio_nodes(self.facade, (['HDMI'], None))
+            node_type = audio_test_utils.cros_port_id_to_cras_node_type(
+                    source.port_id)
+            audio_test_utils.check_and_set_chrome_active_node_types(
+                    self.facade, node_type, None)
+            audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                                  self.resultsdir,
+                                                  'after_select')
 
             # Suspend after playing audio (if directed) and resume
             # before the HDMI audio test.

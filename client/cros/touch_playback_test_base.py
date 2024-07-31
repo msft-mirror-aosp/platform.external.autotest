@@ -23,6 +23,7 @@ from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
 from autotest_lib.client.cros.input_playback import input_playback
+from autotest_lib.client.cros.power import power_utils
 
 
 class touch_playback_test_base(test.test):
@@ -62,6 +63,8 @@ class touch_playback_test_base(test.test):
                             Created using 'evemu-describe /dev/input/X'.
 
         """
+        if power_utils.get_sleep_state() != 'mem':
+            power_utils.set_display_power(power_utils.DISPLAY_POWER_ALL_ON)
         self.player = input_playback.InputPlayback()
         if mouse_props:
             self.player.emulate(input_type='mouse', property_file=mouse_props)

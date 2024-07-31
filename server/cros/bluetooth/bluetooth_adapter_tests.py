@@ -873,7 +873,7 @@ class BluetoothAdapterTests(test.test):
     USBMON_DIR_LOG_PATH = '/var/log/usbmon'
 
     # Parameters for usbmon log rotation
-    USBMON_SINGLE_FILE_MAX_SIZE = '10M'  # 10M bytes
+    USBMON_SINGLE_FILE_MAX_SIZE = '10000000'  # 10M bytes
     USBMON_NUM_OF_ROTATE_FILE = 2
 
     # The agent capability of various device types.

@@ -167,8 +167,8 @@ class FirmwareUpdateError(_AttributedUpdateError):
     _CLASSIFIERS = []
 
     def __init__(self, msg):
-        super(FirmwareUpdateError, self).__init__(
-                'Firmware update failed')
+        super(FirmwareUpdateError, self).__init__('Firmware update failed',
+                                                  msg)
 
 
 def _url_to_version(update_url):
@@ -647,7 +647,7 @@ class ChromiumOSProvisioner(object):
                 raise
             except Exception as e:
                 logging.exception('Failure during firmware update.')
-                raise FirmwareUpdateError(self.host.hostname, str(e))
+                raise FirmwareUpdateError(str(e))
 
         image_name = url_to_image_name(self.update_url)
 

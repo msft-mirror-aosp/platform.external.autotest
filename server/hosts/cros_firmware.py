@@ -112,7 +112,7 @@ def _get_available_firmware(host):
         return None
 
     # The manifest is a JSON in .model.host.versions.rw
-    data = json.loads(result.stdout) or {}
+    data = json.loads(result.stdout, strict=False) or {}
     key = model if len(data) > 1 else next(six.iterkeys(data), '')
     key += '.host.versions.rw'
     for k in key.split('.'):

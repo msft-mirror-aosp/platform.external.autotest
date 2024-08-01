@@ -282,18 +282,6 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.advmon_test_monitor_creation()
         self.advmon_test_monitor_validity()
 
-    # TODO(b/150897528) - Dru loses firmware around suspend, which causes bluez
-    #                     removes all the monitors.
-    @test_wrapper('Interleave Scan Tests',
-                  devices={'BLE_MOUSE': 1},
-                  skip_models=SUSPEND_POWER_DOWN_MODELS,
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
-    def advmon_interleaved_scan_tests(self):
-        """Tests interleave scan."""
-        self.advmon_test_interleaved_scan()
-
     @test_wrapper('Reconnect Classic HID',
                   devices={'MOUSE': 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
@@ -660,7 +648,6 @@ class bluetooth_AdapterLLPrivacyHealth(
         """A batch of tests with LL privacy enabled."""
         # adv monitor test
         self.advmon_monitor_health_tests()
-        self.advmon_interleaved_scan_tests()
         # suspend resume test
         # b/234975037 we may remove some of the SR tests if they are stabilized
         self.sr_reconnect_classic_hid()

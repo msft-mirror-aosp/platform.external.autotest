@@ -32,8 +32,6 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import (
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
         import BluetoothAdapterHIDReportTests
 
-# TODO: Remove the list after b/330556485 is resolved.
-LL_PRIVACY_RESUME_FAIL_CHIPSETS = ['Intel-AC9260', 'Intel-AC9560']
 
 class bluetooth_AdapterLLPrivacyHealth(
         BluetoothAdapterLLPrivacyTests, BluetoothAdapterQuickTests,
@@ -318,8 +316,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Reconnect LE HID',
                   devices={'BLE_MOUSE': 1},
-                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS +
-                  LL_PRIVACY_RESUME_FAIL_CHIPSETS,
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_reconnect_le_hid_with_rpa(self):
         """ Reconnects a LE HID device in privacy mode after suspend/resume. """
@@ -646,8 +643,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={"BLE_MOUSE": 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
-                  LL_PRIVACY_NOT_SUPPORTED_CHIPSETS +
-                  LL_PRIVACY_RESUME_FAIL_CHIPSETS,
+                  LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_le_hid_with_rpa(self):
         """Use LE HID to wake from suspend."""

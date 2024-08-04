@@ -30,12 +30,12 @@ def run_TS(machine):
         iterations=1,
         tag='internal.arm.CtsAccessibility',
         test_name='cheets_CTS_T.internal.arm.CtsAccessibility',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsAccessibilityServiceSdk29TestCases', '--include-filter', 'CtsAccessibilityServiceSdk29TestCases[instant]', '--include-filter', 'CtsAccessibilityServiceSdk29TestCases[secondary_user]', '--include-filter', 'CtsAccessibilityServiceTestCases', '--include-filter', 'CtsAccessibilityServiceTestCases[instant]', '--include-filter', 'CtsAccessibilityServiceTestCases[secondary_user]', '--include-filter', 'CtsAccessibilityTestCases', '--include-filter', 'CtsAccessibilityTestCases[instant]', '--include-filter', 'CtsAccessibilityTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsAccessibilityServiceSdk29TestCases', '--include-filter', 'CtsAccessibilityServiceSdk29TestCases[secondary_user]', '--include-filter', 'CtsAccessibilityServiceTestCases', '--include-filter', 'CtsAccessibilityServiceTestCases[instant]', '--include-filter', 'CtsAccessibilityServiceTestCases[secondary_user]', '--include-filter', 'CtsAccessibilityTestCases', '--include-filter', 'CtsAccessibilityTestCases[instant]', '--include-filter', 'CtsAccessibilityTestCases[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsAccessibility',
         target_plan=None,
         bundle='arm',
         uri='DEV',
-        timeout=18000)
+        timeout=16200)
 
 parallel_simple(run_TS, machines)

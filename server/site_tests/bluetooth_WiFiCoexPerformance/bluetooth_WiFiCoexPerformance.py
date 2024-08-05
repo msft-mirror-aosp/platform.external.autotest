@@ -3,7 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """A Batch of Bluetooth and Wi-Fi coex performance tests."""
-
+import datetime
 import logging
 import threading
 import time
@@ -219,6 +219,12 @@ class bluetooth_WiFiCoexPerformance(
         @return: A dictionary contains device name and list of events time
                  difference.
         """
+
+        def convert_timestamp_to_date(timestamp):
+            """Converts timestamp to date format H-M-S.ms."""
+            return datetime.datetime.utcfromtimestamp(timestamp).strftime(
+                    '%H-%M-%S.%f')[:-2]
+
         devices_events_time_diff = {}
         for device, event_count in zip(devices, events_count):
             if self.is_audio_device(device):
@@ -291,17 +297,35 @@ class bluetooth_WiFiCoexPerformance(
 
             # Calculate time deference for current round.
             lost_timestamp_count = event_count - len(receiver_results)
+            transmitter_result = transmitter_result[
+                    -event_count:
+                    -lost_timestamp_count if lost_timestamp_count else None]
+
             tot = [
-                    round((a - b), 4) for a, b in zip(
-                            receiver_results, transmitter_result[
-                                    -event_count:-lost_timestamp_count
-                                    if lost_timestamp_count else None])
+                    round((a - b), 4)
+                    for a, b in zip(receiver_results, transmitter_result)
             ]
             if tot:
                 devices_events_time_diff[device._name] = tot
             else:
                 logging.error('No returned results from device %s',
                               device._name)
+            # Debug top 10 highest latency packets timestamp for transmitter
+            # and receiver.
+            top_10_indices = sorted(
+                    range(len(devices_events_time_diff[device._name])),
+                    key=lambda i: devices_events_time_diff[device._name][i],
+                    reverse=True)[:10]
+            for index in top_10_indices:
+                logging.debug(
+                        'sent at : {} received at : {}. latency without os '
+                        'offset: {:.2f}'.format(
+                                convert_timestamp_to_date(
+                                        transmitter_result[index]),
+                                convert_timestamp_to_date(
+                                        receiver_results[index]),
+                                devices_events_time_diff[device._name][index]))
+
         return devices_events_time_diff
 
     def get_devices_os_time_diff(self, devices):
@@ -393,6 +417,10 @@ class bluetooth_WiFiCoexPerformance(
 
         """
         os_time_diff = self.get_devices_os_time_diff(devices)
+        for device in devices:
+            logging.debug('%s -%s- OS time difference in seconds: %s',
+                          device._name, device.address,
+                          os_time_diff[device._name])
         for key in time_diff:
             logging.info(key)
             avg_delay = calculate_events_average_delay(time_diff[key],
@@ -401,8 +429,8 @@ class bluetooth_WiFiCoexPerformance(
             for device in avg_delay:
                 if avg_delay[device] > self.BT_DELAY_ACCEPTED_TIME:
                     raise error.TestFail(
-                            '%s device %s delay is longer than expected' %
-                            (device, key))
+                            '%s device %s average delay is longer than expected'
+                            % (device, key))
 
     def _bluetooth_wifi_coex_load_test(self, devices, load_tests,
                                        events_count):

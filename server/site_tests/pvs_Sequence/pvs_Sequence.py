@@ -19,4 +19,4 @@ class pvs_Sequence(sequence.test_sequence):
         execution of the test.
         """
         super(pvs_Sequence, self).initialize(sequence=args_dict['sequence'],
-                                             bounds=args_dict['bounds'])
+                                             bounds=args_dict.get('bounds'))

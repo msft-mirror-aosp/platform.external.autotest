@@ -601,7 +601,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_telephony_incoming_call_answer_call_test(self):
         """Trigger incoming call on dut and answer call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.hfp_telephony_incoming_call_answer_call(device, HFP_TELEPHONY)
+        self.hfp_telephony_incoming_call_answer_call(device)
 
     @audio_test(test_name='Trigger incoming call on dut and reject call',
                 test_profile=HFP_TELEPHONY,
@@ -611,7 +611,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_telephony_incoming_call_reject_call_test(self):
         """Trigger incoming call on dut and reject call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.hfp_telephony_incoming_call_reject_call(device, HFP_TELEPHONY)
+        self.hfp_telephony_incoming_call_reject_call(device)
 
     @audio_test(test_name='Place an active call on dut and hangup call',
                 test_profile=HFP_TELEPHONY,
@@ -621,7 +621,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_telephony_active_call_hangup_call_test(self):
         """Place an active call on dut and hangup call."""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.hfp_telephony_active_call_hangup_call(device, HFP_TELEPHONY)
+        self.hfp_telephony_active_call_hangup_call(device)
 
     @audio_test(test_name='Trigger microphone mute and unmute',
                 test_profile=HFP_TELEPHONY,
@@ -631,7 +631,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     def au_hfp_telephony_micmute_test(self):
         """Trigger microphone mute and unmute"""
         device = self.devices['BLUETOOTH_AUDIO'][0]
-        self.hfp_telephony_micmute(device, HFP_TELEPHONY)
+        self.hfp_telephony_micmute(device)
 
     @audio_test(test_name='avrcp command test',
                 test_profile=AVRCP,

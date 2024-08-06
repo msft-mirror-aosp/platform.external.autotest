@@ -67,6 +67,16 @@ class bluetooth_AdapterEPHealth(
             raise error.TestError('Failed to find verifier for device type %s' %
                                   device.device_type)
 
+    def wait_until_device_ready(self, device, expected_pass):
+        """Helper function to ensure the peer is connected and ready to use
+
+        @param device: the peer device
+        @param expected_pass: True if the test is expected to pass
+        """
+        if expected_pass and device.device_type in ['KEYBOARD', 'MOUSE']:
+            self.test_hid_device_created(device.address)
+        else:
+            time.sleep(self.CONNECT_SLEEP_SECS)
 
     def ep_outgoing_connection(self, device, expected_pass):
         """Run outoging connection tests
@@ -78,7 +88,7 @@ class bluetooth_AdapterEPHealth(
         time.sleep(self.TEST_SLEEP_SECS)
 
         self.test_pairing(device.address, device.pin, trusted=True)
-        time.sleep(self.CONNECT_SLEEP_SECS)
+        self.wait_until_device_ready(device, expected_pass)
 
 
     def ep_incoming_connection(self, device, expected_pass):
@@ -91,7 +101,7 @@ class bluetooth_AdapterEPHealth(
         time.sleep(self.TEST_SLEEP_SECS)
 
         self.test_pairing(device.address, device.pin, trusted=True)
-        time.sleep(self.CONNECT_SLEEP_SECS)
+        self.wait_until_device_ready(device, expected_pass)
 
         self.test_disconnection_by_device(device)
         time.sleep(self.DISCONNECT_SLEEP_SECS)
@@ -104,7 +114,7 @@ class bluetooth_AdapterEPHealth(
             # available
             adapter_address = self.bluetooth_facade.address
             device.ConnectToRemoteAddress(adapter_address)
-        time.sleep(self.CONNECT_SLEEP_SECS)
+        self.wait_until_device_ready(device, expected_pass)
 
 
     def ep_auto_reconnection(self, device, expected_pass):
@@ -117,7 +127,7 @@ class bluetooth_AdapterEPHealth(
         time.sleep(self.TEST_SLEEP_SECS)
 
         self.test_pairing(device.address, device.pin, trusted=True)
-        time.sleep(self.CONNECT_SLEEP_SECS)
+        self.wait_until_device_ready(device, expected_pass)
 
         device.AdapterPowerOff()
         time.sleep(self.TEST_SLEEP_SECS)

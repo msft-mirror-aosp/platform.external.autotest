@@ -114,7 +114,7 @@ class bluetooth_WiFiCoexPerformance(
             perf_manager.PerfTestTypes.TEST_TYPE_UDP_TX,
             perf_manager.PerfTestTypes.TEST_TYPE_UDP_RX
     ]
-    BTMON_WAIT_TIMEOUT = 30
+    BTMON_WAIT_TIMEOUT = 60
     DELAY_BETWEEN_BTMON_RETRY = 5
 
     def parse_additional_arguments(self, commandline_args, additional_params):
@@ -280,6 +280,14 @@ class bluetooth_WiFiCoexPerformance(
 
                     prev_received_count = len(receiver_results)
                     prev_transmitted_count = len(transmitter_result)
+                    data = {
+                            "prev_received_count": prev_received_count,
+                            "prev_transmitted_count": prev_transmitted_count,
+                            "receiver_results length": len(receiver_results),
+                            "transmitter_result length":
+                            len(transmitter_result)
+                    }
+                    logging.debug('Received packets count {}'.format(data))
                     return res
 
                 utils.poll_for_condition(

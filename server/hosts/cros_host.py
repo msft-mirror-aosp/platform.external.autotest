@@ -2806,6 +2806,31 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         crossystem.init()
         return crossystem.arch()
 
+    def camera_enumerated(self):
+        """Get camera count.
+
+        @returns expected camera count, actual mipi camera count and actual usb camera count.
+        """
+
+        expect_camera_count = int(
+                cros_config.call_cros_config_get_output('/camera count',
+                                                        self.run,
+                                                        ignore_status=True))
+        logging.info("Expect camera count: %s", expect_camera_count)
+
+        out = self.run(command='cros-camera-tool modules list',
+                       ignore_status=True).stdout
+        mipi_camera_data = json.loads(out)
+        mipi_camera_count = len(mipi_camera_data)
+        logging.info("Mipi camera count: %s", mipi_camera_count)
+
+        out = self.run(command='media_v4l2_test --list_builtin_usbcam',
+                       ignore_status=True).stdout
+        usb_camera_count = 0
+        if out:
+            usb_camera_count = len(out.strip().split('\n'))
+        logging.info("USB camera count: %s", usb_camera_count)
+        return expect_camera_count, mipi_camera_count, usb_camera_count
 
     def get_chrome_version(self):
         """Gets the Chrome version number and milestone as strings.

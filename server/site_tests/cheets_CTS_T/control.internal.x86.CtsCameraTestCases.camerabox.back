@@ -38,6 +38,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='x86',
         uri='DEV',
+        prerequisites=['camera_enumerate'],
         retry_manual_tests=True,
         timeout=5400)
 

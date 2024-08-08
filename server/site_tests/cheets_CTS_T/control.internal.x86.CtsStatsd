@@ -40,6 +40,7 @@ def run_TS(machine):
         bundle='x86',
         uri='DEV',
         precondition_commands=['adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass)), 'adb shell cmd wifi connect-network %s' % pipes.quote(ssid), 'adb shell dumpsys wifi transports -eth'],
+        prerequisites=['camera_enumerate'],
         timeout=18000)
 
 parallel_simple(run_TS, machines)

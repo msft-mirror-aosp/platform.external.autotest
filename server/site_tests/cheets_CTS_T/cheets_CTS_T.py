@@ -116,6 +116,7 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
                  bundle=None,
                  precondition_commands=[],
                  login_precondition_commands=[],
+                 prerequisites=[],
                  timeout=_CTS_TIMEOUT_SECONDS):
         """Runs the specified CTS once, but with several retries.
 
@@ -139,6 +140,7 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
         dut before the test is run, the scripts must already be installed.
         @param login_precondition_commands: a list of scripts to be run on the
         dut before the log-in for the test is performed.
+        @param prerequisites: prerequisites to check before running the test.
         @param timeout: time after which tradefed can be interrupted.
         """
         self._run_tradefed_with_retries(
@@ -156,7 +158,8 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
                 executable_test_count=executable_test_count,
                 bundle=bundle,
                 login_precondition_commands=login_precondition_commands,
-                precondition_commands=precondition_commands)
+                precondition_commands=precondition_commands,
+                prerequisites=prerequisites)
 
     def cleanup_camerabox(self):
         """Cleanup configuration on DUT and chart tablet for running in

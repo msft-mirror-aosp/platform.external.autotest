@@ -410,7 +410,6 @@ suite:bvt-tast-cq-inputs
 suite:bvt-tast-cq-kerberos
 suite:bvt-tast-cq-kernel
 suite:bvt-tast-cq-kiosk
-suite:bvt-tast-cq-lacros
 suite:bvt-tast-cq-launcher
 suite:bvt-tast-cq-lockscreen
 suite:bvt-tast-cq-login
@@ -516,7 +515,6 @@ suite:bvt-tast-cq-cft-inputs
 suite:bvt-tast-cq-cft-kerberos
 suite:bvt-tast-cq-cft-kernel
 suite:bvt-tast-cq-cft-kiosk
-suite:bvt-tast-cq-cft-lacros
 suite:bvt-tast-cq-cft-launcher
 suite:bvt-tast-cq-cft-lockscreen
 suite:bvt-tast-cq-cft-login

@@ -786,6 +786,14 @@ def get_force_a2dp_advanced_codecs_enabled():
             get_cras_control_interface().GetForceA2DPAdvancedCodecsEnabled())
 
 
+def get_sr_bt_supported():
+    """Gets the sr bt support state.
+
+    @returns: The bool state of sr_bt_supported.
+    """
+    return bool(get_cras_control_interface().IsHfpMicSrSupported())
+
+
 def set_force_sr_bt_enabled(enabled):
     """Sets the force sr bt enabled state.
 

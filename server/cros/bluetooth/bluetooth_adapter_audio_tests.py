@@ -2003,7 +2003,11 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         # Sleeping is needed, or the step test_hfp_connected inside the method
         # hfp_dut_as_sink will fail.
         time.sleep(10)
-        # Force enabling the sr bt and expect the sample rate to be 24000.
+
+        if not self.audio_facade.get_sr_bt_supported():
+            raise error.TestNAError(
+                    'The DUT does not support super resolution')
+
         self.test_set_force_sr_bt_enabled(True)
         self.hfp_dut_as_sink(
                 device,

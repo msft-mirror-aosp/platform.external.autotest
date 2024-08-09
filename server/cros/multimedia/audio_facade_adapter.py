@@ -389,6 +389,13 @@ class AudioFacadeRemoteAdapter(object):
         return self._audio_proxy.get_force_hfp_swb_enabled()
 
 
+    def get_sr_bt_supported(self):
+        """Gets the sr bt support state.
+
+        @returns: The bool state of sr_bt_supported.
+        """
+        return self._audio_proxy.get_sr_bt_supported()
+
     def set_force_sr_bt_enabled(self, enabled):
         """Sets the state to enable or disable bluetooth mic super_resolution.
 

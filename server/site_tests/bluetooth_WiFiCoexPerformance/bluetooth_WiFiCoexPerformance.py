@@ -220,10 +220,43 @@ class bluetooth_WiFiCoexPerformance(
                  difference.
         """
 
-        def convert_timestamp_to_date(timestamp):
-            """Converts timestamp to date format H-M-S.ms."""
+        def log_failed_message(received_packets_percentage):
+            """Logs threshold failed message.
+
+            @param received_packets_percentage: Received packet percentage.
+            """
+            error_percentage = 1 - received_packets_percentage
+            threshold_failed_size = None
+            threshold_failed_range = None
+            if 0.03 <= error_percentage < 0.05:
+                threshold_failed_size = 'XXS'
+                threshold_failed_range = '3-5%'
+            elif 0.05 <= error_percentage < 0.1:
+                threshold_failed_size = 'XS'
+                threshold_failed_range = '5-10%'
+            elif 0.1 <= error_percentage < 0.15:
+                threshold_failed_size = 'S'
+                threshold_failed_range = '10-15%'
+            elif 0.15 <= error_percentage < 0.2:
+                threshold_failed_size = 'M'
+                threshold_failed_range = '15-20%'
+            elif 0.2 <= error_percentage < 0.25:
+                threshold_failed_size = 'L'
+                threshold_failed_range = '20-25%'
+            elif 0.25 <= error_percentage < 0.3:
+                threshold_failed_size = 'XL'
+                threshold_failed_range = '25-30%'
+            elif 0.3 <= error_percentage:
+                threshold_failed_size = 'XXL'
+                threshold_failed_range = '>30%'
+            raise error.TestFail(
+                    'Missed expectation [%s]: BT packet loss rate: %s' %
+                    (threshold_failed_size, threshold_failed_range))
+
+        def timestamp_to_time_str(timestamp):
+            """Converts timestamp to time string H:M:S.ms."""
             return datetime.datetime.utcfromtimestamp(timestamp).strftime(
-                    '%H-%M-%S.%f')[:-2]
+                    '%H:%M:%S.%f')[:-2]
 
         devices_events_time_diff = {}
         for device, event_count in zip(devices, events_count):
@@ -289,11 +322,9 @@ class bluetooth_WiFiCoexPerformance(
             receiver_results = receiver_results[first_receiver_index:]
 
             # Checks percentage error.
-            error_percentage = len(receiver_results) / event_count
-            if error_percentage < self.PASS_RATE:
-                raise error.TestFail(
-                        'Expected error percentage of |%s|, got |%s|' %
-                        (self.PASS_RATE, error_percentage))
+            received_packets_percentage = len(receiver_results) / event_count
+            if received_packets_percentage < self.PASS_RATE:
+                log_failed_message(received_packets_percentage)
 
             # Calculate time deference for current round.
             lost_timestamp_count = event_count - len(receiver_results)
@@ -310,21 +341,20 @@ class bluetooth_WiFiCoexPerformance(
             else:
                 logging.error('No returned results from device %s',
                               device._name)
+                continue
             # Debug top 10 highest latency packets timestamp for transmitter
             # and receiver.
-            top_10_indices = sorted(
-                    range(len(devices_events_time_diff[device._name])),
-                    key=lambda i: devices_events_time_diff[device._name][i],
-                    reverse=True)[:10]
+            top_10_indices = sorted(range(len(tot)),
+                                    key=lambda i: tot[i],
+                                    reverse=True)[:10]
             for index in top_10_indices:
                 logging.debug(
-                        'sent at : {} received at : {}. latency without os '
+                        'sent at :{} received at :{}. latency without OS '
                         'offset: {:.2f}'.format(
-                                convert_timestamp_to_date(
+                                timestamp_to_time_str(
                                         transmitter_result[index]),
-                                convert_timestamp_to_date(
-                                        receiver_results[index]),
-                                devices_events_time_diff[device._name][index]))
+                                timestamp_to_time_str(receiver_results[index]),
+                                tot[index]))
 
         return devices_events_time_diff
 

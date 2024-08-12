@@ -45,6 +45,7 @@ class IperfResult(object):
         test_durations = []
         percent_losses = []
         jitter_values = []
+        server_side_counts = 0
         for line in lines:
             fields = line.split(',')
             # Negative Log ID values are used for sum total output which we
@@ -70,12 +71,15 @@ class IperfResult(object):
                 percent_losses.append(
                         float(fields[IperfIndex.PERCENT_LOSS_INDEX]))
                 jitter_values.append(float(fields[IperfIndex.JITTER_INDEX]))
+            server_side_counts += 1
 
         # OpenWrt iperf clients and the ones connected to OpenWrt iperf server
         # don't show server side results for UDP. The fallback approach to
         # calculate the throughput is to use client side results, although
         # they are missing packet loss columns.
-        if config.udp and config.is_openwrt:
+        # For OpenWrt version >= 23.0.5, server side results can also be shown.
+        # We want to check results containing client side only here.
+        if config.udp and config.is_openwrt and server_side_counts == 0:
             for line in lines:
                 fields = line.split(',')
                 # Negative Log ID values are used for sum total output which we

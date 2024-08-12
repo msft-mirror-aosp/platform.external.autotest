@@ -97,7 +97,7 @@ class audio_AudioAfterReboot(audio_test.AudioTest):
         """Checks the node selected by Cras is correct."""
         # Selects and checks the node selected by cras is correct.
         audio_test_utils.check_and_set_chrome_active_node_types(
-                self.facade, self.audio_nodes[0][0], None)
+                self.facade, self.audio_nodes[0][0], self.audio_nodes[1][0])
         audio_test_utils.check_audio_nodes(self.facade, self.audio_nodes)
 
     def play_reboot_play_and_record(self, source_widget, recorder_widget):
@@ -245,7 +245,7 @@ class audio_AudioAfterReboot(audio_test.AudioTest):
 
         # Selects and checks the node selected by cras is correct.
         audio_test_utils.check_and_set_chrome_active_node_types(
-                self.facade, audio_nodes[0][0], None)
+                self.facade, audio_nodes[0][0], audio_nodes[1][0])
 
         # Play only, reboot, then play and record.
         if binder_widget != None:

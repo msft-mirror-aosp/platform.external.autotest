@@ -26,6 +26,7 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
     version = 2
     RECORDING_DURATION = 6
     WEB_PLAYBACK_SEC = 15
+    DELAY_AFTER_BINDING = 0.5
 
     def cleanup(self):
         """Restore the CPU scaling governor mode."""
@@ -107,8 +108,12 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
         binder = self.widget_factory.create_binder(source, recorder)
 
         with chameleon_audio_helper.bind_widgets(binder):
-            audio_test_utils.dump_cros_audio_logs(
-                    self.host, self.facade, self.resultsdir, 'after_binding')
+            # Checks the node selected by cras is correct.
+            time.sleep(self.DELAY_AFTER_BINDING)
+
+            audio_test_utils.dump_cros_audio_logs(self.host, self.facade,
+                                                  self.resultsdir,
+                                                  'after_binding')
 
             node_type = audio_test_utils.cros_port_id_to_cras_node_type(
                     source.port_id)
@@ -133,6 +138,9 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
             logging.info('Start playing %s on Cros device', golden_file.path)
             source.start_playback()
 
+            # Wait for some time, and then start recording.
+            # This is to avoid artifact caused by codec initialization.
+            time.sleep(self.DELAY_BEFORE_RECORD_SECONDS)
             logging.info('Start recording from Chameleon.')
             recorder.start_recording()
 

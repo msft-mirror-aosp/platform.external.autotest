@@ -117,7 +117,7 @@ class FirmwareTest(test.test):
     LID_DELAY = 1
 
     # Delay for establishing state after changing PD settings
-    PD_RESYNC_DELAY = 2
+    PD_RESYNC_DELAY = 3
 
     # Delay to wait for servo USB to work after power role swap:
     # tPSSourceOff (920ms) + tPSSourceOn (480ms) + buffer

@@ -116,8 +116,6 @@ class ChromeLogin(object):
         cmd += ' --no-popup-notification'
         # Always disable external storage for ARC
         cmd += ' --disable-feature=ArcExternalStorageAccess'
-        # TODO(b/355073720): Revert before M129 branch cut
-        cmd += ' --feature=RenderArcNotificationsByChrome'
         # Toggle the translation from houdini to ndk
         if self._toggle_ndk:
             cmd += ' --toggle_ndk'

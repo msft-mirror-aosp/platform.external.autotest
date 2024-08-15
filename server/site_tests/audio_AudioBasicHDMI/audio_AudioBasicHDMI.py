@@ -27,6 +27,7 @@ class audio_AudioBasicHDMI(audio_test.AudioTest):
     RECORDING_DURATION = 6
     WEB_PLAYBACK_SEC = 15
     DELAY_AFTER_BINDING = 0.5
+    DELAY_BEFORE_RECORD_SECONDS = 0.5
 
     def cleanup(self):
         """Restore the CPU scaling governor mode."""

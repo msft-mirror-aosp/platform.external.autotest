@@ -543,6 +543,10 @@ class SysStat(object):
             # We're only on AC if the charger is online and Charging. Dual role
             # ports may be online but not charging.
             on_ac |= (linepower.online and linepower.status == "Charging")
+            # Wilco devices does not have status or online,
+            # check battery discharge state instead.
+            if linepower.path.split("/")[-1] == "wilco-charger":
+                on_ac |= (not self.battery_discharging())
 
         # Butterfly can incorrectly report AC online for some time after
         # unplug. Check battery discharge state to confirm.

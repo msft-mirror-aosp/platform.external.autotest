@@ -24,6 +24,14 @@ class chromium(test.test):
         self.host = host
         args_dict = utils.args_to_dict(args)
         self.exe_rel_path = args_dict.get('exe_rel_path', '')
+        self.build_dir = f'{self.server_pkg}/out/Release'
+        if self.exe_rel_path:
+            # FIXME: This assumes the build-dir is nested two dirs within the
+            # checkout. This is not strictly a safe assumption. The build-dir
+            # should be properly propagated to Skylab from Chrome builders.
+            parts = self.exe_rel_path.split(os.sep)
+            if len(parts) > 2:
+                self.build_dir = os.path.join(*parts[:2])
         self.server_pkg = tempfile.mkdtemp()
         self.executable = os.path.join(self.server_pkg, self.exe_rel_path)
         self.test_args = chrome_sideloader.get_test_args(
@@ -62,7 +70,7 @@ class chromium(test.test):
                 '--board',
                 self.host.host_info_store.get().board,
                 '--path-to-outdir',
-                f'{self.server_pkg}/out/Release',
+                self.build_dir,
         ]
         if self.host.port:
             cmd.extend(['--device', f'{self.host.hostname}:{self.host.port}'])

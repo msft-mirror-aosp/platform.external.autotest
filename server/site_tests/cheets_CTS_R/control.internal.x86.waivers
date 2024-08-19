@@ -3,40 +3,40 @@
 # found in the LICENSE file.
 
 # This file is not auto-generated. Don't delete it.
+from autotest_lib.server.cros.tradefed import wifi_utils
+import pipes
 
-AUTHOR = 'n/a'
-NAME = 'cheets_CTS_R.x86.waivers'
+NAME = 'cheets_CTS_R.internal.x86.waivers'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:cts'
+# TODO(b/287160788): Move away from long suite
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-long'
 DEPENDENCIES = 'arc, cts_abi_x86'
 HW_DEPS = ['android-container-rvc','android-vm-rvc']
 JOB_RETRIES = 1
 TEST_TYPE = 'server'
-TIME = 'MEDIUM'
 MAX_RESULT_SIZE_KB = 512000
-DOC = 'n/a'
 
 def run_TS(machine):
     host_list = [hosts.create_host(machine)]
+    ssid, wifipass = wifi_utils.get_wifi_ssid_pass(machine['hostname'])
     job.run_test(
         'cheets_CTS_R',
         hosts=host_list,
         iterations=1,
         max_retry=10,
-        tag='x86.waivers',
-        test_name='cheets_CTS_R.x86.waivers',
-        run_template=['run', 'commandAndExit', 'cts', '--subplan', 'waivers'],
+        tag='internal.x86.waivers',
+        test_name='cheets_CTS_R.internal.x86.waivers',
+        # b/359402657: Waived tests don't require media assets, so skip downloading.
+        run_template=['run', 'commandAndExit', 'cts', '--subplan', 'waivers', '--module-arg', 'CtsMediaTestCases:skip-media-download:true'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='cts-dev',
         target_plan='waivers',
         bundle='x86',
-        retry_manual_tests=True,
-        warn_on_test_retry=False,
-        uri='DEV_MOBLAB',
-        timeout=7200)
+        uri='DEV_WAIVER',
+        timeout=14400)
 
 parallel_simple(run_TS, machines)

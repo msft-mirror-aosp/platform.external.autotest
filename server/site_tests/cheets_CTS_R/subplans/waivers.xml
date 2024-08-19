@@ -6,4 +6,7 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <!-- b/359402657 -->
+  <Entry include="CtsMediaTestCases android.media.cts.StreamingMediaPlayerTest#testHTTP_H263_AMR_Video1" />
+  <Entry include="CtsMediaTestCases android.media.cts.StreamingMediaPlayerTest#testHTTP_MPEG4SP_AAC_Video1" />
 </SubPlan>

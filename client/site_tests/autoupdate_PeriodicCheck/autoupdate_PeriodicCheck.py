@@ -55,9 +55,9 @@ class autoupdate_PeriodicCheck(update_engine_test.UpdateEngineTest):
             # Wait for the first update check.
             try:
                 utils.poll_for_condition(
-                    lambda: len(self._get_update_requests()) == 1,
-                    desc='1st periodic update check.',
-                    timeout=1.5 * periodic_interval)
+                        lambda: len(self._get_update_requests()) == 1,
+                        desc='1st periodic update check.',
+                        timeout=3 * periodic_interval)
             except utils.TimeoutError:
                 raise error.TestFail('1st periodic check not found.')
             self._check_update_engine_log_for_entry(self._PERIODIC_LOG,

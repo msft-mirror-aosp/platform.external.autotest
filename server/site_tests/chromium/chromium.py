@@ -23,6 +23,7 @@ class chromium(test.test):
     def initialize(self, host=None, args=None):
         self.host = host
         args_dict = utils.args_to_dict(args)
+        self.server_pkg = tempfile.mkdtemp()
         self.exe_rel_path = args_dict.get('exe_rel_path', '')
         self.build_dir = f'{self.server_pkg}/out/Release'
         if self.exe_rel_path:
@@ -32,7 +33,6 @@ class chromium(test.test):
             parts = self.exe_rel_path.split(os.sep)
             if len(parts) > 2:
                 self.build_dir = os.path.join(*parts[:2])
-        self.server_pkg = tempfile.mkdtemp()
         self.executable = os.path.join(self.server_pkg, self.exe_rel_path)
         self.test_args = chrome_sideloader.get_test_args(
                 args_dict, 'test_args')

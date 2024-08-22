@@ -4,9 +4,8 @@
 # found in the LICENSE file.
 
 import logging
-import time
 
-from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import error, utils
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.server.cros.update_engine import update_engine_test
 
@@ -106,10 +105,13 @@ class autoupdate_DeferredUpdate(update_engine_test.UpdateEngineTest):
         self._apply_deferred_update()
 
         # Wait for DUT to restart + apply the deferred update.
-        # Instead of waiting for shutdown, simply add delay in case the reboot
-        # is quickly sync'ed.
-        time.sleep(5)
-        self._host.test_wait_for_boot(old_boot_id)
+        # Instead of waiting for shutdown, polling for boot_id change in case
+        # the reboot is quickly sync'ed.
+        utils.poll_for_condition_ex(
+                condition=lambda: self._host.get_boot_id() != old_boot_id,
+                timeout=self._REBOOT_TIMEOUT,
+                sleep_interval=5,
+                desc='apply update and reboot')
         self._wait_for_update_to_idle()
 
         # Verity the slot switch.

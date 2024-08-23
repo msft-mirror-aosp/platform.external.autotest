@@ -23,7 +23,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:wificell_dut_validation'
+ATTRIBUTES = 'suite:bluetooth_wifi_testbed_update, suite:wificell_dut_validation'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

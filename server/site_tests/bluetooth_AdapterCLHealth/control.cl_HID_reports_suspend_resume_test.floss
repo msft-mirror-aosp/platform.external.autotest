@@ -20,6 +20,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Adapter should receive HID events correctly after a suspend resume.',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-drv-0013-v01']
 }
 

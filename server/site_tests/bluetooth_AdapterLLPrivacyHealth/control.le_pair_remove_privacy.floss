@@ -19,6 +19,7 @@ METADATA = {
     "bug_component": "b:167317",
     "criteria": "Test pairing in floss with LL privacy turned on.",
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-gen-0001-v01', 'bt-spec-0019-v01'],
 }
 

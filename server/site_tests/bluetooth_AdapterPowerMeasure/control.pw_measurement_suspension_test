@@ -23,6 +23,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Bluetooth chip should consume power less than specified.',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
 }
 
 

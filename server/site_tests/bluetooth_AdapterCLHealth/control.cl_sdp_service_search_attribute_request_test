@@ -53,6 +53,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': '',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-gen-0001-v01'],
 }

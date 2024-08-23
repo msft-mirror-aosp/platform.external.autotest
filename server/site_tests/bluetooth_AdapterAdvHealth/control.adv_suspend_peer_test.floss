@@ -16,6 +16,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Tests advertising during suspend/resume',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-drv-0011-v01', 'bt-drv-0013-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss'

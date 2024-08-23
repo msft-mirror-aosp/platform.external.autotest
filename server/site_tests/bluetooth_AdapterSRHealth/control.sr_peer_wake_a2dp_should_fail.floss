@@ -25,6 +25,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'A paired A2DP device is unable to wake the DUT up',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-drv-0014-v01', 'bt-drv-0015-v01', 'bt-phy-0010-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss'

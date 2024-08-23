@@ -18,6 +18,7 @@ METADATA = {
     'criteria': ('Tests controller can initiate HID connection while connected '
                  'to device in Sender role'),
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-spec-0014-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss'

@@ -64,6 +64,7 @@ METADATA = {
         'Measure RSSI for a btpeer while varying attenuation in a test bed '
         'with variable attenuator'),
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'life_cycle_stage': 'owner_monitored',
 }
 

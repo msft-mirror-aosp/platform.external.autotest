@@ -17,6 +17,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Successfully receives GATT structure',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
 }
 
 

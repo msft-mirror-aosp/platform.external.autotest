@@ -19,6 +19,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass the health test',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-gen-0001-v01'],
 }
 

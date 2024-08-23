@@ -31,6 +31,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass test',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-phy-0010-v01', 'bt-drv-0013-v01', 'bt-drv-0014-v01']
 }
 

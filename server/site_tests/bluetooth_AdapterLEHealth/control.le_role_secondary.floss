@@ -13,6 +13,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Tests controller can handle secondary role in connection',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-spec-0014-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss'

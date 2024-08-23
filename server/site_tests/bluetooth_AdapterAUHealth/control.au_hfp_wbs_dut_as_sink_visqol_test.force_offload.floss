@@ -28,6 +28,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'All test files pass minimum score required for HFP WBS VISQOL test',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-audPath-0001-v01', 'bt-audPath-0003-v01',
                      'bt-phy-0002-v01']
 

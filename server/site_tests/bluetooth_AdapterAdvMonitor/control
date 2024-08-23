@@ -27,6 +27,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'All tests should pass',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'life_cycle_stage': 'owner_monitored',
 }
 

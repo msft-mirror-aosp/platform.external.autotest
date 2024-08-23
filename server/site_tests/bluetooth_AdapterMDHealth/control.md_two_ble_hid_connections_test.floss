@@ -20,6 +20,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'DUT can connect to both devices',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-gen-0001-v01'],
 }
 

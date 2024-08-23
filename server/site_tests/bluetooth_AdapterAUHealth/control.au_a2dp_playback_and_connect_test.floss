@@ -24,6 +24,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass audio chunk testing before and after the BT device connects',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-audPath-0006-v01']
 }
 

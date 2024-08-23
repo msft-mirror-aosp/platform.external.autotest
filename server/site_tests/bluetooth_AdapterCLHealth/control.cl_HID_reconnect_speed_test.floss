@@ -19,6 +19,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'HID device should reconnect fast.',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
 }
 
 

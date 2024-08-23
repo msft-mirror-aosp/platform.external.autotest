@@ -20,6 +20,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Verify AVRCP commands issued by peer can be received at DUT',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-gen-0001-v01'],
 }
 ATTRIBUTES = 'suite:bluetooth_floss'

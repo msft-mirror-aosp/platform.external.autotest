@@ -13,6 +13,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass the tests for the minimum supported condition and device count',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-hciExt-0006-v01', 'bt-hciExt-0007-v01',
                      'bt-hciExt-0008-v01', 'bt-hciExt-0009-v01',
                      'bt-hciExt-0010-v01']

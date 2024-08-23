@@ -112,6 +112,7 @@ def _raw_time(timestamp):
 def _translate_to_dict(res, fields, verdict, contentLine,
                        lastStartTime, testdir, firstFound):
     """Return the full_status, testname, and err to a json dict."""
+    resultdir = testdir
     if not firstFound:
         # Sigh, the first test found will actually be the full test name.
         # because of inconsistencies in autotest tests, tast tests, and tagged
@@ -121,11 +122,20 @@ def _translate_to_dict(res, fields, verdict, contentLine,
         name = _test_name_from_dir(testdir)
     else:
         name = fields[1]
+        if name.startswith("tast."):
+            # Since it is a tast test, fix the result path.
+            tast_test_name = name[len("tast."):]
+            path = os.path.join(testdir,
+                                "tast/results/tests",
+                                tast_test_name)
+            if os.path.exists(path):
+                resultdir = path
+
     res['tests'].append(
         {'verdict': verdict,
          'testname': name,
          'errmsg': errFromContent(contentLine),
-         'resultspath': testdir,
+         'resultspath': resultdir,
          'starttime': _raw_time(lastStartTime),
          'endtime': _raw_time(fields[2])
          })

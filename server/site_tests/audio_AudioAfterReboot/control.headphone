@@ -36,7 +36,7 @@ def run(machine):
                  bind_from=chameleon_audio_ids.CrosIds.HEADPHONE,
                  bind_to=bind_to_arg,
                  audio_nodes=([audio_test_utils.get_headphone_node(host)],
-                              None),
+                              ['MIC']),
                  tag = "headphone")
 
 parallel_simple(run, machines)

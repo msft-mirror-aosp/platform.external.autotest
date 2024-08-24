@@ -12,7 +12,7 @@ METADATA = {
     "doc" : "Tests HDMI audio",
     'variant_category': '{"name": "Audio_Board"}',
 }
-ATTRIBUTES = "suite:audio_basic"
+ATTRIBUTES = "suite:audio_basic, group:release-health, release-health_audio"
 TEST_TYPE = "server"
 DEPENDENCIES = 'chameleon_connection_types:CHAMELEON_CONNECTION_TYPE_HDMI, test_hdmiaudio, chameleon_state:WORKING'
 JOB_RETRIES = 1

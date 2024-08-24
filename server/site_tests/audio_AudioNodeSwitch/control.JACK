@@ -14,7 +14,7 @@ METADATA = {
     "doc" : "Tests selection of audiojack audio node",
     'variant_category': '{"name": "Audio_SoC_Codec_Amp"}',
 }
-ATTRIBUTES = "suite:audio_essential"
+ATTRIBUTES = "suite:audio_essential, group:release-health, release-health_audio"
 TEST_TYPE = "server"
 DEPENDENCIES = "audio_box, test_audiojack, chameleon_state:WORKING"
 

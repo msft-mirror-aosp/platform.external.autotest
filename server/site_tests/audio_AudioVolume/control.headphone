@@ -15,7 +15,7 @@ METADATA = {
     'variant_category': '{"name": "Audio_SoC_Codec_Amp"}',
 }
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:audio_basic"
+ATTRIBUTES = "suite:audio_basic, group:release-health, release-health_audio"
 DEPENDENCIES = "audio_cable, chameleon_state:WORKING"
 JOB_RETRIES = 1
 

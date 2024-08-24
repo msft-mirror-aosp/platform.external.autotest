@@ -1,3 +1,6 @@
+group:
+group:release-health
+release-health_audio
 suite:
 suite:AFDO_page_replay
 suite:AFDO_record

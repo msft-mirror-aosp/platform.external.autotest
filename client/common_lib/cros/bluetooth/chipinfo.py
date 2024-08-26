@@ -45,6 +45,7 @@ _chip_info = {
         'Mediatek-MTK7921-USB': ChipInfo(True, True, 0x0130),
         'Mediatek-MTK7921-SDIO': ChipInfo(True, True, 0x0130),
         'Mediatek-MTK7922-USB': ChipInfo(True, True, 0x0130),
+        'Mediatek-MTK7925-USB': ChipInfo(True, True, 0x0130),
 
         # Marvell chipsets
         'MVL-8897': ChipInfo(False, False, 0),

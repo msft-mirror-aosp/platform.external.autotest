@@ -11,7 +11,7 @@ METADATA = {
     "bug_component": "b:792402",  # ChromeOS > Platform > Enablement > Firmware > FAFT
     "criteria": "Uart Stress Test in ccd mode",
 }
-ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_ccd, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
+ATTRIBUTES = "suite:faft_ccd"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"

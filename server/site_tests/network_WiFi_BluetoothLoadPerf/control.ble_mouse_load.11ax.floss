@@ -12,6 +12,7 @@ METADATA = {
                      'transmitting specified throughput, latency, and drop '
                      'rate on a DUT during operation with a BLE mouse load.'),
         'hw_agnostic': False,
+    'variant_category': '{"name": "WifiBtChipset_Soc_Kernel"}',
 }
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'

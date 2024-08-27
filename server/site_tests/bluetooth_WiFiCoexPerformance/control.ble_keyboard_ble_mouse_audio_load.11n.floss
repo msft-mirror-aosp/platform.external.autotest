@@ -12,6 +12,7 @@ METADATA = {
                  'energy mouse and audio delay while operating a Wi-Fi load '
                  '11n standard.'),
     'hw_agnostic': False,
+    'variant_category': '{"name": "WifiBtChipset_Soc_Kernel"}',
 }
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'

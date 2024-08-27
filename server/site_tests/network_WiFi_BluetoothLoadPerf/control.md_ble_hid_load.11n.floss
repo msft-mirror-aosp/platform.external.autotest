@@ -13,6 +13,7 @@ METADATA = {
                      'rate on a DUT during operation with concurrent BLE mouse'
                      'and BLE keyboard loads.'),
         'hw_agnostic': False,
+    'variant_category': '{"name": "WifiBtChipset_Soc_Kernel"}',
 }
 ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'

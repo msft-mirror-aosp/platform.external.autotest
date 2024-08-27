@@ -14,6 +14,7 @@ METADATA = {
      # Network: Open 802.11b, Channel 6.
     'criteria': 'Measure the maximal receiving and transmitting throughput on a DUT while scanning bluetooth',
     'hw_agnostic': False,
+    'variant_category': '{"name": "WifiBtChipset_Soc_Kernel"}',
 }
 ATTRIBUTES = ''
 TEST_TYPE = 'Server'

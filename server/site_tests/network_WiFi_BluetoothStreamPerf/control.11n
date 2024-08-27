@@ -12,6 +12,7 @@ METADATA = {
     # Network: Open 802.11n, Channels 1 and 157.
     'criteria': 'Measure the maximal receiving and transmitting throughput on a DUT while operating bluetooth',
     'hw_agnostic': False,
+    'variant_category': '{"name": "WifiBtChipset_Soc_Kernel"}',
 }
 ATTRIBUTES = 'suite:bluetooth_wifi_coex'
 # This test is flaky but adding to  'suite:bluetooth_flaky' will use up

@@ -1629,21 +1629,21 @@ class BluetoothBaseFacadeLocal(object):
                                           test_data['rate'])
         return abs(measured_length - new_duration) <= tolerance
 
-    def zip_audio_files(self, audio_record_dir, result_path):
-        """Compress recorded audio files.
+    def compress_file(self, path_to_compress, result_path):
+        """Compresses the file.
 
-        @param audio_record_dir: the audio recording directory
-        @param result_path: Path of the compressed tar ball.
+        @param path_to_compress: the dir or the file path to compress.
+        @param result_path: path of the compressed tar ball.
 
         @returns: True on success, False otherwise.
         """
         try:
-            logging.debug('Store the audio files in %s', result_path)
             with tarfile.open(result_path, "w:gz") as tar:
-                tar.add(audio_record_dir,
-                        arcname=os.path.basename(audio_record_dir))
+                tar.add(path_to_compress,
+                        arcname=os.path.basename(path_to_compress))
         except Exception as e:
-            logging.error('Failed to compress the audio files.')
+            logging.error('Failed to compress the files under %s',
+                          path_to_compress)
             return False
         return True
 

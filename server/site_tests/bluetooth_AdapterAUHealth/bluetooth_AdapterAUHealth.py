@@ -5,14 +5,14 @@
 
 """A Batch of Bluetooth AUdio Health tests"""
 
-import time
 import logging
+import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import (
         A2DP, A2DP_MEDIUM, A2DP_LONG, A2DP_RATE_44100, AVRCP, HFP_WBS, HFP_NBS,
         HFP_WBS_MEDIUM, HFP_NBS_MEDIUM, A2DP_CODEC, AAC, CAP_PIPEWIRE,
-        HFP_CODEC, HFP_SWB, HFP_TELEPHONY, LC3)
+        HFP_CODEC, HFP_SWB, HFP_TELEPHONY, LC3, AUDIO_RECORD_DIR)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_audio_tests import (
         BluetoothAdapterAudioTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -26,6 +26,10 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
     """A Batch of Bluetooth audio health tests."""
 
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
+
+    def __init__(self, job, bindir, outputdir):
+        super().__init__(job, bindir, outputdir)
+        self.dut_atlog_path = None
 
     def hfp_test_pretest(self, device, test_profile, audio_config={}):
         """Common procedure before running a HFP test.
@@ -149,7 +153,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         self.quick_test_test_pretest(test_name, device_configs, use_all_peers,
                                      supports_floss)
 
-        logging.debug(f'Running audio_test_pretest...')
+        logging.debug('Running audio_test_pretest...')
 
         device = self.devices['BLUETOOTH_AUDIO'][0]
 
@@ -174,6 +178,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         if self.is_a2dp_profile(test_profile):
             self.bluetooth_facade.btmon_start()
 
+        self.dut_atlog_path = self.start_recording_atlog()
+
         if pair_device:
             self.test_device_set_discoverable(device, True)
             self.test_discover_device(device.address)
@@ -191,7 +197,7 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                              A2DP, HFP_SWB, HFP_WBS or HFP_NBS
         @param disconnect_device: True to disconnect device, False otherwise.
         """
-        logging.debug(f'Running audio_test_posttest...')
+        logging.debug('Running audio_test_posttest...')
 
         if not self.devices['BLUETOOTH_AUDIO']:
             logging.debug('No audio device was initialized, '
@@ -212,7 +218,12 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
             self.test_audio_codec()
 
         self.collect_audio_diagnostics()
-        self.collect_audio_files()
+        self.compress_and_collect_file(AUDIO_RECORD_DIR)
+
+        if self.dut_atlog_path is not None:
+            self.compress_and_collect_file(self.dut_atlog_path)
+
+        self.host.run(f'pkill -f {self.CRAS_TEST_CLIENT}', ignore_status=True)
         self.cleanup_bluetooth_audio(device, test_profile)
 
         if self.is_hfp_profile(test_profile):

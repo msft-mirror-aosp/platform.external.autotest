@@ -90,6 +90,9 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
     # Pulseaudio config directory on the peer device.
     PULSEAUDIO_CONFIG_DIR = '/home/pi/.config'
 
+    # CRAS test client tool on the DUT.
+    CRAS_TEST_CLIENT = '/usr/bin/cras_test_client'
+
     def _get_pulseaudio_bluez_source(self, get_source_method, device,
                                      test_profile):
         """Get the specified bluez device number in the pulseaudio source list.
@@ -326,6 +329,19 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         """
         return self.bluetooth_facade.is_swb_supported()
 
+    def start_recording_atlog(self):
+        """Starts to record the audio thread event log on the DUT.
+
+        @returns the audio thread event log path.
+        """
+        self.host.run(f'pkill -f "{self.CRAS_TEST_CLIENT} --follow_atlog"',
+                      ignore_status=True)
+        now = time.strftime('%Y_%m_%d_%H_%M_%S')
+        path = f'/tmp/atlog_{now}'
+        self.host.run_background(f'{self.CRAS_TEST_CLIENT} --follow_atlog | '
+                                 f'head -c 100M > {path}')
+        return path
+
     def collect_audio_diagnostics(self, filename='audio_diagnostics.txt'):
         """Collect the audio_diagnostics file for debugging.
 
@@ -344,23 +360,26 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         except:
             logging.warn('failed to call dump_diagnostics()')
 
-    def collect_audio_files(self):
-        """Collect the recoded audio files for debugging. """
-        compressed_file_name = 'audio_files.tar.gz'
-        remote_result_path = os.path.join(AUDIO_RECORD_DIR,
-                                          compressed_file_name)
+    def compress_and_collect_file(self, remote_path, local_path=None):
+        """Compresses and collects file from the DUT to the test server.
 
-        if not self.bluetooth_facade.zip_audio_files(AUDIO_RECORD_DIR,
-                                                     remote_result_path):
-            logging.error('Failed to compress the audio files.')
+        @param remote_path: the path to compress and collect.
+        @param local_path: the path to store the compressed file. Set to
+                           None to collect the file to self.resultsdir.
+        """
+        remote_result_path = remote_path + '.tar.gz'
+        if not self.bluetooth_facade.compress_file(remote_path,
+                                                   remote_result_path):
             return
-
         try:
-            result_path = os.path.join(self.resultsdir, compressed_file_name)
-            self.host.get_file(remote_result_path, result_path)
-            logging.debug('Collected audio files in %s', result_path)
+            if local_path is None:
+                local_path = os.path.join(self.resultsdir,
+                                          os.path.basename(remote_result_path))
+            self.host.get_file(remote_result_path, local_path)
+            logging.debug('Collected the files from remote: %s to local: %s',
+                          remote_result_path, local_path)
         except Exception as e:
-            logging.error('Failed to collect audio files: %s', e)
+            logging.error('Failed to collect the file: %s. %s', remote_path, e)
 
     def generate_audio_config(self, test_specific_audio_config):
         """Generate the audio config.

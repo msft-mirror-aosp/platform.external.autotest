@@ -18,7 +18,6 @@ METADATA = {
                     - no more than 1 frequency is supported
                     - if a supported frequency cannot be set """,
     "hw_agnostic": False,
-    "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
 ATTRIBUTES = "suite:power_build, suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv1"
 TEST_TYPE = "client"

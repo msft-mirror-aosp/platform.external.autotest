@@ -10,7 +10,6 @@ METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Verify that AP firmware handles a corrupt Wilco diagnostics binary and applies updates to it",
-        "requirements": ["sys-fw-0021-v01", "sys-fw-0024-v01", "sys-fw-0025-v01"],
 }
 ATTRIBUTES = "suite:faft_wilco, suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual"
 TIME = "MEDIUM"

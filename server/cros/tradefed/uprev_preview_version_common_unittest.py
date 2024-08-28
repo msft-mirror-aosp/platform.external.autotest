@@ -142,9 +142,50 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
         self.assertEqual(version_name, '11-R4-R-Preview4-11561875')
 
     def test_get_gts_version_name_invalid_format(self):
-        """Tests if get_gts_version_name raises ValueError when name is invalid."""
+        """Tests if get_gts_version_name normalizes when name is invalid."""
         path = pathlib.Path(
-                '/path/to/android-gts-11-R4(11-14)-Preview4-11561875.zip')
+                '/path/to/android-gts-12-R2(12-15)-Preview8-12281132.zip')
 
-        with self.assertRaises(ValueError):
-            uprev_preview_version_common.get_gts_version_name(path)
+        version_name = uprev_preview_version_common.get_gts_version_name(path)
+        self.assertEqual(version_name, '12-R2-S-Preview8-12281132')
+
+    @mock.patch('shutil.copy')
+    def test_copy_local_file_to_cache_dir(self, mock_copy):
+        local_file = pathlib.Path('/path/to/local_file')
+        cache_dir = pathlib.Path('/path/to/cache_dir')
+        url_config = {
+                'preview_url_pattern': 'android-gts-%s.zip',
+                'preview_version_name': 'foo',
+        }
+
+        uprev_preview_version_common.copy_local_file_to_cache_dir(
+                local_file, cache_dir, url_config)
+
+        mock_copy.assert_called_once_with(
+                pathlib.Path('/path/to/local_file'),
+                pathlib.Path('/path/to/cache_dir/android-gts-foo.zip'),
+        )
+
+    @mock.patch('shutil.copy')
+    def test_copy_local_file_to_cache_dir_same_file(self, mock_copy):
+
+        class FakePath(pathlib.PosixPath):
+            """Helper class to fake / simplify path checks for testing."""
+
+            def exists(self):
+                return True
+
+            def samefile(self, other):
+                return str(self) == str(other)
+
+        local_file = FakePath('/path/to/cache_dir/android-gts-foo.zip')
+        cache_dir = FakePath('/path/to/cache_dir')
+        url_config = {
+                'preview_url_pattern': 'android-gts-%s.zip',
+                'preview_version_name': 'foo',
+        }
+
+        uprev_preview_version_common.copy_local_file_to_cache_dir(
+                local_file, cache_dir, url_config)
+
+        mock_copy.assert_not_called()

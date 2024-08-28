@@ -5,6 +5,7 @@ import os
 import pathlib
 import re
 import shlex
+import shutil
 import subprocess
 from typing import Dict
 
@@ -142,12 +143,34 @@ def get_gts_version_name(path: pathlib.Path) -> str:
     Raises:
         ValueError if the file name is invalid.
     """
-    m = re.fullmatch(_GTS_FILENAME_PATTERN, path.name)
+    # For now only handle the GTS 12 case. Below will check if the resulting
+    # filename is still invalid.
+    normalized = path.name.replace('(12-15)', '-S')
+    m = re.fullmatch(_GTS_FILENAME_PATTERN, normalized)
     if m is None:
         raise ValueError(
                 f'GTS file name should match the following pattern: {_GTS_FILENAME_PATTERN}'
         )
     return m.group(1)
+
+
+def copy_local_file_to_cache_dir(local_file: pathlib.Path,
+                                 cache_dir: pathlib.Path,
+                                 url_config: Dict[str, str]) -> pathlib.Path:
+    """Copies local bundle file to cache dir, to speed up generate_controlfiles.
+
+    Args:
+        local_file: Path to the local bundle.
+        cache_dir: The cache dir.
+        url_config: The bundle URL config.
+    """
+    dst = cache_dir / (url_config['preview_url_pattern'] %
+                       url_config['preview_version_name'])
+    if dst.exists() and dst.samefile(local_file):
+        # It's already under cache_dir, don't copy
+        return local_file
+    logging.info('Copying bundle to cache dir %s', dst)
+    shutil.copy(local_file, dst)
 
 
 def main(config_path: str, xts_name: str, branch_name: str,
@@ -206,6 +229,7 @@ def main(config_path: str, xts_name: str, branch_name: str,
     )
     parser.add_argument(
             '--cache_dir',
+            type=pathlib.Path,
             help='Cache directory to be passed on to generate_controlfiles.py',
     )
     args = parser.parse_args()
@@ -253,11 +277,14 @@ def main(config_path: str, xts_name: str, branch_name: str,
             f'The value of {bundle_utils._PREVIEW_VERSION_NAME} was correctly updated to {version_name}.'
     )
 
+    if local_file is not None and args.cache_dir is not None:
+        copy_local_file_to_cache_dir(local_file, args.cache_dir, url_config)
+
     # Call generate_controlfiles.py
     logging.info("Now running generate_controlfiles.py")
     gen_args = []
     if args.cache_dir is not None:
-        gen_args.extend(['--cache_dir', args.cache_dir])
+        gen_args.extend(['--cache_dir', str(args.cache_dir)])
     subprocess.check_call(
             [uprev_base_path + '/generate_controlfiles.py', *gen_args])
 

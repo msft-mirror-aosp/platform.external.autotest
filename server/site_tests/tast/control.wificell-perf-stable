@@ -36,7 +36,7 @@ def run(machine):
                  host=hosts.create_host(machine),
                  test_exprs=['("group:wificell" && wificell_perf && '
                              '!wificell_unstable)'],
-                 ignore_test_failures=False, max_run_sec=10800,
+                 ignore_test_failures=False, max_run_sec=36000,
                  command_args=args)
 
 parallel_simple(run, machines)

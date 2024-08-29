@@ -25,6 +25,7 @@ import os
 import pipes
 import pwd
 import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -1322,30 +1323,19 @@ class TradefedTest(test.test):
 
     def _run_commands(self, commands, **kwargs):
         """Run commands on all the hosts."""
-        # We need to copy the ADB key to the device to run adb on it.
-        pre_commands = []
-        if any(command.startswith('adb ') for command in commands):
-            key_path = '/tmp/arc.adb_key'
-            for host in self._hosts:
-                host.env['ADB_VENDOR_KEYS'] = key_path
-            pre_commands = [
-                    'adb kill-server',
-                    'echo %s > %s' %
-                    (pipes.quote(constants.PRIVATE_KEY), key_path),
-                    # Workaround b/285802634: no-op command to ensure connection
-                    'adb shell cd'
-            ]
-
         for host in self._hosts:
-            if pre_commands:
-                logging.info('Running DUT adb setup')
-                for command in pre_commands:
-                    host.run(command, ignore_status=True, verbose=False)
             for command in commands:
-                logging.info('RUN: %s\n', command)
-                output = host.run(command, **kwargs)
-                logging.info('END: %s\n', command)
-                logging.debug(output)
+                if command.startswith('adb '):
+                    # Route the command though |self._adb| to apply connection
+                    # options. Ignoring first arg which is always 'adb'.
+                    self._adb.run(host,
+                                  args=shlex.split(command)[1:],
+                                  **kwargs)
+                else:
+                    logging.info('RUN: %s\n', command)
+                    output = host.run(command, **kwargs)
+                    logging.info('END: %s\n', command)
+                    logging.debug(output)
 
     def _override_powerd_prefs(self):
         """Overrides powerd prefs to prevent screen from turning off, complying

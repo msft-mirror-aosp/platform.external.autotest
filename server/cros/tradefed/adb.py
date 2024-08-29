@@ -133,7 +133,7 @@ class Adb:
         @param kwargs: Extra arguments passed to utils.run().
         """
         additional_option = self._get_options(host)
-        kwargs['args'] = additional_option + kwargs.get('args', ())
+        kwargs['args'] = additional_option + tuple(kwargs.get('args', ()))
 
         # _install_paths should include the directory with adb.
         # utils.run() will append these to paths.

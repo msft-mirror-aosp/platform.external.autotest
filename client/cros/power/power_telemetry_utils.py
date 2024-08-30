@@ -94,8 +94,8 @@ def interpolate_missing_data(data, max_nan_ratio=None, max_sample_gap=None,
                 # Reset the flag for the next gap.
                 consecutive_nan_start = None
     # At this point the data passed all validations required.
-    sample_idx = numpy.arange(len(data))[[~nan_data]]
-    sample_vals = data[[~nan_data]]
+    sample_idx = numpy.arange(len(data))[~nan_data]
+    sample_vals = data[~nan_data]
     if not len(sample_idx):
         raise TelemetryUtilsError('Data has no valid readings. Cannot '
                                   'interpolate.')

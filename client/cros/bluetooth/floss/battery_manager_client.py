@@ -45,10 +45,11 @@ class FlossBatteryManagerClient(BluetoothBatteryManagerCallbacks):
 
         @param battery_info: Battery information obtained from D-Bus.
 
-        @return: Battery info tuple on success; None otherwise.
+        @return: Battery info tuple on success, it could be an empty tuple if
+                 the info is not found in Floss; None if failed to parse.
         """
         if not battery_info:
-            return None
+            return ()
 
         optional_info = battery_info['optional_value']
         keys = ['address', 'source_uuid', 'source_info', 'batteries']
@@ -158,10 +159,10 @@ class FlossBatteryManagerClient(BluetoothBatteryManagerCallbacks):
     def get_battery_information(self, remote_address):
         """Gets battery information.
 
-        @param remote_address: The bluetooth address of the target remote device.
+        @param remote_address: The bluetooth address of the target remote device
 
-        @return: BatterySet tuple as (String, String, String, List[Battery])
-                 on success, None otherwise.
+        @return: BatterySet tuple as (String, String, String, List[Battery]) or
+                 () on success, None otherwise.
         """
         battery_info_dbus = self.proxy().GetBatteryInformation(remote_address)
         battery_info = FlossBatteryManagerClient.parse_dbus_battery_info(
@@ -179,12 +180,14 @@ class FlossBatteryManagerClient(BluetoothBatteryManagerCallbacks):
     def get_battery_property(self, remote_address, prop_name):
         """Gets the battery property.
 
-        @param remote_address: The bluetooth address of the target remote device.
+        @param remote_address: The bluetooth address of the target remote device
         @param prop_name: Property to be required.
 
         @return: Battery property on success, None otherwise.
         """
         battery_info = self.get_battery_information(remote_address)
+        if battery_info == () or battery_info is None:
+            return None
         batteries = battery_info[3]
 
         # Currently we don't have any sources that provide more than one Battery.

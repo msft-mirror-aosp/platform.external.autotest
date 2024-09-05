@@ -114,6 +114,12 @@ RECONNECT_PLATFORM_TYPES = ['CHROMEBOX', 'CHROMEBIT', 'CHROMEBASE']
 #                            to check for suspend stability.
 SUSPEND_POWER_DOWN_CHIPSETS = ['Realtek-RTL8822C-USB', 'MVL-8897']
 
+# Some chipsets have IOP issue with the incoming LE connection from RasPi.
+# See b/364766107 and b/332475530
+LE_RECEIVER_FLOSS_IOP_ISSUE_CHIPSETS = [
+        'MVL-8897', 'Intel-AX200', 'Intel-AX201'
+]
+
 # b/323192775 Intel: Some chipsets do not have the MIC failure fix.
 #                    LL privacy cannot be launched on these chipsets.
 #                    Affected chipsets: StP2

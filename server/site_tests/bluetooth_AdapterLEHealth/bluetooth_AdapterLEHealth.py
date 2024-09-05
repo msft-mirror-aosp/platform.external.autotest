@@ -7,14 +7,17 @@
 
 import time
 
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests \
-    import bluetooth_AdapterControllerRoleTests
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
-        BluetoothAdapterQuickTests)
+from autotest_lib.client.common_lib import error
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests import (
+        bluetooth_AdapterControllerRoleTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests import (
+        BluetoothAdapterHIDReportTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import (
         BluetoothAdapterPairingTests)
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests \
-    import BluetoothAdapterHIDReportTests
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
+        BluetoothAdapterQuickTests)
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
+        LE_RECEIVER_FLOSS_IOP_ISSUE_CHIPSETS)
 
 
 class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
@@ -32,6 +35,13 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
+
+    def check_le_receiver_floss_iop_issue_chipsets(self):
+        """Checks if we should skip the chipset due to IOP issue"""
+        if self.floss and self.bluetooth_facade.get_chipset_name(
+        ) in LE_RECEIVER_FLOSS_IOP_ISSUE_CHIPSETS:
+            raise error.TestNAError(
+                    "Test not supported in Floss due to IOP issue")
 
     @test_wrapper('Discovery Test',
                   devices={"BLE_MOUSE": 1},
@@ -201,13 +211,13 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         self.test_service_resolved(device.address)
         self.test_gatt_browse(device.address)
 
-
     @test_wrapper('LE secondary Test',
                   devices={'BLE_KEYBOARD': 1},
                   supports_floss=True)
     def le_role_secondary(self):
         """Tests connection as secondary"""
 
+        self.check_le_receiver_floss_iop_issue_chipsets()
         self.verify_controller_capability(required_roles=['peripheral'],
                                           test_type=self.flag)
 
@@ -225,6 +235,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     def le_role_primary_before_secondary(self):
         """Tests connection as primary and then as secondary"""
 
+        self.check_le_receiver_floss_iop_issue_chipsets()
         self.verify_controller_capability(
                 required_roles=['central-peripheral'], test_type=self.flag)
 
@@ -249,6 +260,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     def le_role_secondary_before_primary(self):
         """Tests connection as secondary and then as primary"""
 
+        self.check_le_receiver_floss_iop_issue_chipsets()
         self.verify_controller_capability(
                 required_roles=['central-peripheral'], test_type=self.flag)
 
@@ -327,13 +339,13 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
                                      kbd_test_func,
                                      secondary_info=hid_test_device)
 
-
     @test_wrapper('LE Receiver Role Test',
                   devices={'BLE_KEYBOARD': 1},
                   supports_floss=True)
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 
+        self.check_le_receiver_floss_iop_issue_chipsets()
         self.verify_controller_capability(required_roles=['peripheral'],
                                           test_type=self.flag)
 
@@ -352,6 +364,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     def le_role_receiver_during_hid(self):
         """Tests Nearby Receiver role while already connected to HID device"""
 
+        self.check_le_receiver_floss_iop_issue_chipsets()
         self.verify_controller_capability(
                 required_roles=['central-peripheral'], test_type=self.flag)
 
@@ -376,6 +389,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     def le_role_hid_during_receiver_adv(self):
         """Tests HID device while already in Nearby Receiver role adv state"""
 
+        self.check_le_receiver_floss_iop_issue_chipsets()
         self.verify_controller_capability(
                 required_roles=['central-peripheral'], test_type=self.flag)
 
@@ -400,6 +414,7 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
     def le_role_hid_during_receiver_connection(self):
         """Tests HID device while already in Nearby Receiver role connection"""
 
+        self.check_le_receiver_floss_iop_issue_chipsets()
         self.verify_controller_capability(
                 required_roles=['central-peripheral'], test_type=self.flag)
 

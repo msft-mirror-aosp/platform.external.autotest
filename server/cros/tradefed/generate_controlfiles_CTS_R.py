@@ -747,7 +747,17 @@ CONFIG['EXTRA_COMMANDLINE'] = {
 CONFIG['EXTRA_ATTRIBUTES'] = {}
 
 CONFIG['EXTRA_ARTIFACTS'] = {}
-CONFIG['PREREQUISITES'] = {}
+CONFIG['PREREQUISITES'] = {
+        'CtsCameraTestCases': [
+                'camera_enumerate',
+        ],
+        'CtsMediaStressTestCases': [
+                'camera_enumerate',
+        ],
+        'CtsStatsdHostTestCases': [
+                'camera_enumerate',
+        ],
+}
 
 from generate_controlfiles_new import main
 

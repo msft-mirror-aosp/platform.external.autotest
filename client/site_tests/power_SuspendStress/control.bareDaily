@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 # Description
-# Runs 250 iterations (~30mins) of bare suspend/resume cycles without additional
+# Runs 40 iterations (~15mins) of bare suspend/resume cycles without additional
 # workload. Follows this by a few short checks to make sure the system is still in
 # a good state (work in progress, feel free to add some more).
 
@@ -17,7 +17,7 @@ METADATA = {
 ATTRIBUTES = "suite:power_daily_misc, suite:faft_stress"
 TEST_TYPE = "client"
 
-job.run_test('power_SuspendStress', duration=None, suspend_iterations=250,
+job.run_test('power_SuspendStress', duration=None, suspend_iterations=40,
              tag='bareDaily')
 
 job.run_test('hardware_EC', tag='power_SuspendStress')

@@ -49,9 +49,17 @@ class firmware_Cr50InvalidateRW(test.test):
         header or the cryptohome message if the attempt failed or succeeded.
         """
         # Get the relevant messages from /var/log/messages
-        message_str = self.host.run(self.GET_CRYPTOHOME_MESSAGE,
-                                    verbose=False).stdout.strip()
-
+        result = self.host.run(self.GET_CRYPTOHOME_MESSAGE,
+                               verbose=False,
+                               ignore_status=True)
+        # Return NO_ATTEMPT if no cryptohomed messages are found
+        if result.exit_status == 1:
+            self.last_message = ""
+            return self.NO_ATTEMPT
+        elif result.exit_status:
+            raise error.TestError('Failed to get crypthome messages: %r' %
+                                  result)
+        message_str = result.stdout.strip()
         # Remove the messages we have seen in the past
         if self.last_message:
             message_str = message_str.rsplit(self.last_message, 1)[-1]

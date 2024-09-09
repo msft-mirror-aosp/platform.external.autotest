@@ -11,7 +11,7 @@ from autotest_lib.server.cros import vboot_constants as vboot
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
 from autotest_lib.server.cros.faft.firmware_test import ConnectionError
 
-
+# TODO(b/322051944): Remove this test once it's not being used in firmware quals.
 class firmware_ConsecutiveBoot(FirmwareTest):
     """
     Servo based consecutive boot test via power button to turn on DUT and

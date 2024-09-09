@@ -42,6 +42,8 @@ class firmware_Cr50CCDUartStress(FirmwareTest):
         self.console = console
         super(firmware_Cr50CCDUartStress,
               self).initialize(host, cmdline_args)
+        if not self.gsc:
+            raise error.TestNAError('Test can only run on devices with GSC')
 
         # Don't bother if there is no Chrome EC or if EC hibernate doesn't work.
         check_cap = getattr(self, 'check_%s_capability' % self.console, None)

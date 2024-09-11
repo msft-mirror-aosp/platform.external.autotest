@@ -7,20 +7,18 @@
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2
 
 
-def make_current_screen_fullscreen(tconn_service, call_on_lacros=False):
+def make_current_screen_fullscreen(tconn_service):
     """Makes the current Chrome screen fullscreen.
 
     @param tconn_service: tconn_service instance connected to Chrome.
     """
-    tconn_service.Eval(tconn_service_pb2.EvalRequest(
-        expr='''(async () => {
+    tconn_service.Eval(
+            tconn_service_pb2.EvalRequest(expr='''(async () => {
             let window_id = await new Promise(
                 (resolve) => chrome.windows.getCurrent({},
-                (window) => resolve(window.id))
-            )
+                (window) => resolve(window.id)));
             await new Promise(
                 (resolve) => chrome.windows.update(
                     window_id, { state: 'fullscreen' },
                     resolve));
-        })()''',
-        call_on_lacros=call_on_lacros))
+        })()'''))

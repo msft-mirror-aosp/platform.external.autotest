@@ -82,7 +82,7 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                 Concat([
                     If(
                         has_modules([module]),
-                        [SplitByTFShards(shard_count, keep_unsharded=True)],
+                        [SplitByTFShards(shard_count)],
                     )
                     for module, shard_count in shard_config.items()
                 ]),

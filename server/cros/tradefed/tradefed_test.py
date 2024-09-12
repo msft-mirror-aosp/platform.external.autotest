@@ -1874,18 +1874,25 @@ class TradefedTest(test.test):
                 # provided by list_results to decide if there are outstanding
                 # modules to iterate over (similar to missing tests just on a
                 # per-module basis).
-                notest = (last_passed + last_failed == 0 and last_all_done)
+                notest = (last_passed + last_failed == 0)
+                notest_nocrash = (notest and last_all_done)
                 if target_module in self._notest_modules:
-                    if notest:
+                    if notest_nocrash:
                         logging.info('Package has no tests as expected.')
                         return
+                    elif notest:
+                        logging.error('Crashed in a notest module. Hoping '
+                                      'this is transient. Retry after reboot.')
+                        for current_login in current_logins:
+                            current_login.need_reboot()
+                        continue
                     else:
                         # We expected no tests, but the new bundle drop must
                         # have added some for us. Alert us to the situation.
                         raise error.TestFail(
                             'Failed: Remove module %s from '
                             'notest_modules directory!' % target_module)
-                elif notest:
+                elif notest_nocrash:
                     logging.error('Did not find any tests in module. Hoping '
                                   'this is transient. Retry after reboot.')
                     for current_login in current_logins:

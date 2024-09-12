@@ -34,6 +34,8 @@ from __future__ import print_function
 import logging
 import time
 
+from autotest_lib.client.common_lib import error
+
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         TABLET_MODELS, SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS)
@@ -131,12 +133,19 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
 
                 # Trigger suspend, wait for regular resume, verify we can reconnect
                 # and run device specific test
-                self.test_suspend_and_wait_for_sleep(suspend,
-                                                     sleep_timeout=SUSPEND_SEC)
-                self.test_wait_for_resume(boot_id,
-                                          suspend,
-                                          resume_timeout=SUSPEND_SEC,
-                                          test_start_time=start_time)
+                self._get_btmon_log(
+                        lambda: self.test_suspend_and_wait_for_sleep(
+                                suspend, sleep_timeout=SUSPEND_SEC))
+                invalid_hci_suspend = self._check_btmon_pattern(
+                        "Status: Invalid HCI Command Parameters")
+
+                self._get_btmon_log(lambda: self.test_wait_for_resume(
+                        boot_id,
+                        suspend,
+                        resume_timeout=SUSPEND_SEC,
+                        test_start_time=start_time))
+                invalid_hci_resume = self._check_btmon_pattern(
+                        "Status: Invalid HCI Command Parameters")
 
                 # Only reconnect if we don't expect automatic reconnect.
                 # Let the devices initiate connections before the DUT initiates
@@ -162,6 +171,11 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                 for _, device, device_test in devtuples:
                     if device_test is not None:
                         device_test(device)
+
+                if invalid_hci_suspend or invalid_hci_resume:
+                    raise error.TestError(
+                            'Invalid HCI command at suspend: {}, resume: {}'.
+                            format(invalid_hci_suspend, invalid_hci_resume))
 
         finally:
             for _, device, __ in devtuples:

@@ -3753,6 +3753,14 @@ class BluetoothAdapterTests(test.test):
         time.sleep(logging_timespan)
         self.bluetooth_facade.btmon_stop()
 
+    def _check_btmon_pattern(self, pattern):
+        """Check the pattern in btmon log. Must call _get_btmon_log first.
+
+        @param pattern: pattern to find in btmon log.
+
+        @returns: True if the pattern is found.
+        """
+        return self.bluetooth_facade.btmon_find(pattern)
 
     def get_default_advertisement_interval_range(self):
         """Returns default advertisement interval range (min, max) in

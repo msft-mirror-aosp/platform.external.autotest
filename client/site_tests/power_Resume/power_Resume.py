@@ -3,10 +3,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import time
 
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.cros import upstart
 from autotest_lib.client.cros.power import power_suspend
 from autotest_lib.client.cros.power import power_utils
 
@@ -46,6 +48,14 @@ class power_Resume(test.test):
 
     def run_once(self, max_devs_returned=10, seconds=0,
                  ignore_kernel_warns=False, measure_arc=False):
+        # TODO(b/324513129): remove this once we have a better solution in place.
+        # **DO NOT COPY-PASTE THIS CODE IF YOU ARE NOT AFFECTED BY b/324513129**
+        # If you are affected by b/324513129, please add a comment on that bug
+        # and retain this comment block in the new location.
+        if not upstart.is_running('powerd'):
+            logging.info('starting powerd because it is not running')
+            upstart.restart_job('powerd')
+
         system_suspends = []
         system_resumes = []
         while not self._done():

@@ -135,9 +135,7 @@ SUSPEND_POWER_DOWN_MODELS = []
 # In floss, we turn off WBS capabilities for all the chipset listed here.
 # BlueZ directly looks for quirks from the kernel which might be wrong.
 # See b/335597904 and b/322088207 for additional context.
-FLOSS_NO_WBS_CHIPSETS = [
-        'MVL-8897', 'Intel-AC7265', 'QCA-6174A-3-UART', 'QCA-6174A-5-USB'
-]
+FLOSS_NO_WBS_CHIPSETS = ['MVL-8897', 'Intel-AC7265', 'QCA-6174A-5-USB']
 
 CHAR_TO_KEY_MAP = {
         "'": "KEY_APOSTROPHE",

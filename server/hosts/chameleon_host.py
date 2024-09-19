@@ -322,5 +322,7 @@ def create_btpeer_host(dut, btpeer_args_list):
 def _host_is_in_lab_zone(host):
     if utils.is_in_cft_container():
         return True
-    pattern = r'chromeos\d+.*chameleon.*'
-    return re.match(pattern, host) is not None
+    return any([
+            re.match(r'chromeos\d+.*%s.*' % peer, host)
+            for peer in ['chameleon', 'btpeer']
+    ])

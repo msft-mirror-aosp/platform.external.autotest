@@ -19,7 +19,6 @@ from autotest_lib.client.cros.tast.ui import tconn_service_pb2
 from autotest_lib.client.cros.tast.ui import tconn_service_pb2_grpc
 from autotest_lib.client.cros.tast.ui import conn_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_tab
-from autotest_lib.client.cros.tast.ui import lacros_service_pb2
 
 
 class power_VideoCall(power_test.power_Test):
@@ -113,20 +112,16 @@ class power_VideoCall(power_test.power_Test):
         with keyboard.Keyboard() as keys,\
             tast.GRPC(tast_bundle_path) as tast_grpc,\
             tast.ChromeService(tast_grpc.channel) as chrome_service,\
-            tast.LacrosService(tast_grpc.channel) as lacros_service,\
             tast.ConnService(tast_grpc.channel) as conn_service:
             tconn_service = tconn_service_pb2_grpc.TconnServiceStub(tast_grpc.channel)
 
-            new_request = chrome_service_pb2.NewRequest(
-                # b/228256145 to avoid powerd restart
-                disable_features = ['FirmwareUpdaterApp'],
-                extra_args = self.get_extra_browser_args_for_camera_test(),
-                lacros = chrome_service_pb2.Lacros() if use_lacros else None
-            )
-            if use_lacros:
-                new_request.lacros_extra_args.extend(self.get_extra_browser_args_for_camera_test())
-            # Connect to Ash Chrome and login.
-            chrome_service.New(new_request)
+            chrome_service.New(
+                    chrome_service_pb2.NewRequest(
+                            # b/228256145 to avoid powerd restart
+                            disable_features=['FirmwareUpdaterApp'],
+                            extra_args=self.
+                            get_extra_browser_args_for_camera_test(),
+                    ))
 
             # Stop services and disable multicast again as Chrome might have
             # restarted them.
@@ -134,18 +129,8 @@ class power_VideoCall(power_test.power_Test):
             self.notify_ash_discharge_status()
             self._multicast_disabler.disable_network_multicast()
 
-            if use_lacros:
-                lacros_service.LaunchWithURL(lacros_service_pb2.LaunchWithURLRequest(
-                    url = 'about:blank'
-                ))
-                response = conn_service.NewConnForTarget(conn_service_pb2.NewConnForTargetRequest(
-                    url = 'about:blank',
-                    call_on_lacros = True
-                ))
-            else:
-                response = conn_service.NewConn(conn_service_pb2.NewConnRequest(
-                    url = 'about:blank'
-                ))
+            response = conn_service.NewConn(
+                    conn_service_pb2.NewConnRequest(url='about:blank'))
 
             tab_left = conn_tab.ConnTab(conn_service, response.id)
 
@@ -156,8 +141,8 @@ class power_VideoCall(power_test.power_Test):
                 keys.press_key('alt+[')
             else:
                 # Run in fullscreen when not multitask.
-                tconn_service.Eval(tconn_service_pb2.EvalRequest(
-                    expr='''(async () => {
+                tconn_service.Eval(
+                        tconn_service_pb2.EvalRequest(expr='''(async () => {
                         let window_id = await new Promise(
                             (resolve) => chrome.windows.getCurrent({},
                             (window) => resolve(window.id))
@@ -166,8 +151,7 @@ class power_VideoCall(power_test.power_Test):
                             (resolve) => chrome.windows.update(
                                 window_id, { state: 'fullscreen' },
                                 resolve));
-                    })()''',
-                    call_on_lacros=use_lacros))
+                    })()'''))
 
             logging.info('Navigating left window to %s', video_url)
             tab_left.Navigate(video_url)
@@ -182,20 +166,19 @@ class power_VideoCall(power_test.power_Test):
                 logging.info('Navigating right window to %s', self.doc_url)
                 arg_value = struct_pb2.Value()
                 arg_value.string_value = self.doc_url
-                tconn_service.Call(tconn_service_pb2.CallRequest(
-                    fn='''async (url) => {
+                tconn_service.Call(
+                        tconn_service_pb2.CallRequest(
+                                fn='''async (url) => {
                         await new Promise(
                             (resolve) => chrome.windows.create(
                                 { url: url, focused: true },
                                 () => resolve()));
                         }''',
-                    args=[arg_value],
-                    call_on_lacros=use_lacros
-                    ))
-                response = conn_service.NewConnForTarget(conn_service_pb2.NewConnForTargetRequest(
-                    url = self.doc_url,
-                    call_on_lacros=use_lacros
-                ))
+                                args=[arg_value],
+                        ))
+                response = conn_service.NewConnForTarget(
+                        conn_service_pb2.NewConnForTargetRequest(
+                                url=self.doc_url, ))
                 tab_right = conn_tab.ConnTab(conn_service, response.id)
                 tab_right.ActivateTarget()
                 keys.press_key('alt+]')

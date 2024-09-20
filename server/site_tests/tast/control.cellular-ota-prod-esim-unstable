@@ -5,7 +5,7 @@
 AUTHOR = 'The ChromiumOS Authors'
 NAME = 'tast.cellular-ota-prod-esim-unstable'
 METADATA = {
-    "contacts": ["cros-connectivity@google.com"],
+    "contacts": ["cros-device-enablement@google.com"],
     "bug_component": "b:1131774", # ChromeOS > Software > System Services > Connectivity > Cellular
 }
 TIME = 'MEDIUM'

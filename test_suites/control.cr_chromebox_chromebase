@@ -5,7 +5,7 @@
 AUTHOR = "ChromeOS Team"
 NAME = "cr_chromebox_chromebase"
 PURPOSE = "Automated tests that needs to run on Chromeboxes and chromebases"
-METADATA = { 'contacts': [ "cros-connectivity@google.com" ] }
+METADATA = { 'contacts': [ "cros-device-enablement@google.com" ] }
 
 TIME = "LONG"
 TEST_CATEGORY = "General"
@@ -13,12 +13,12 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-This suite for tests owned by ChromeOS system services team ( cros-connectivity@google.com )
-that needs to run on chromeboxes or chromebases. Creating a separate
-suite since running in group:informational does not yield enough
-number of results. Context:b/288948506
+This suite for tests owned by ChromeOS Device Enablement team
+(cros-device-enablement@google.com) that needs to run on chromeboxes or
+chromebases. Creating a separate suite since running in group:informational
+does not yield enough number of results. Context:b/288948506
 
-Contact: cros-connectivity@google.com  or
+Contact: cros-device-enablement@google.com  or
          cros-conn-test-team@google.com
 
 """

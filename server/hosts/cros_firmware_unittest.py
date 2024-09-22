@@ -17,8 +17,7 @@ VERSION_OUTPUT = """
       "keys": { "root": "b11d74edd286c144e1135b49e7f0bc20cf041f10", "recovery": "c14bd720b70d97394257e3e826bd8f43de48d4ed" },
       "image": "images/bios-kukui.ro-12573-13-0.rw-12573-13-0.bin" },
     "ec": { "versions": { "ro": "kukui_v2.0.2352-5c2c3c7a0", "rw": "kukui_v2.0.2352-5c2c3c7a0" },
-      "image": "images/ec-kukui.ro-2-0-2352.rw-2-0-2352.bin" },
-    "signature_id": "kukui"
+      "image": "images/ec-kukui.ro-2-0-2352.rw-2-0-2352.bin" }
   }
 }
 """

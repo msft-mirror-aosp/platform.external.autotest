@@ -41,7 +41,6 @@ from autotest_lib.client.cros.power import power_utils
 from autotest_lib.client.cros.tast.ui import chrome_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_service_pb2
 from autotest_lib.client.cros.tast.ui import conn_tab
-from google.protobuf import empty_pb2
 
 params_dict = {
     'test_time_ms': '_mseconds',
@@ -316,7 +315,7 @@ class power_LoadTest(arc.ArcTest):
                                       **power_utils.encoding_kwargs())
 
 
-    def run_once(self, tast_bundle_path=None, use_lacros=False):
+    def run_once(self, tast_bundle_path=None):
         """Test main loop."""
         t0 = time.time()
 
@@ -349,36 +348,27 @@ class power_LoadTest(arc.ArcTest):
 
         with tast.GRPC(tast_bundle_path) as tast_grpc,\
             tast.ChromeService(tast_grpc.channel) as chrome_service,\
-            tast.LacrosService(tast_grpc.channel) as lacros_service,\
             tast.ConnService(tast_grpc.channel) as conn_service:
 
             chrome_new_request = chrome_service_pb2.NewRequest(
                     # b/228256145 to avoid powerd restart
-                    disable_features = ['FirmwareUpdaterApp'],
+                    disable_features=['FirmwareUpdaterApp'],
                     # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
                     # so that each test run does not remember info from last test run.
-                    extra_args = ['--disable-sync'],
-                    login_mode = (chrome_service_pb2.LOGIN_MODE_GAIA_LOGIN
+                    extra_args=['--disable-sync'],
+                    login_mode=(chrome_service_pb2.LOGIN_MODE_GAIA_LOGIN
                                 if self._gaia_login else
                                 chrome_service_pb2.LOGIN_MODE_UNSPECIFIED),
-                    credentials = chrome_service_pb2.NewRequest.Credentials(
-                        username=self._username,
-                        password=self._password,
+                    credentials=chrome_service_pb2.NewRequest.Credentials(
+                            username=self._username,
+                            password=self._password,
                     ),
-                    arc_mode = (chrome_service_pb2.ARC_MODE_ENABLED
-                                if self._run_arc and utils.is_arc_available()
-                                else chrome_service_pb2.ARC_MODE_DISABLED),
-                    lacros = chrome_service_pb2.Lacros() if use_lacros else None,
-                )
+                    arc_mode=(chrome_service_pb2.ARC_MODE_ENABLED
+                              if self._run_arc and utils.is_arc_available()
+                              else chrome_service_pb2.ARC_MODE_DISABLED),
+            )
 
-            if use_lacros:
-                chrome_new_request.lacros_unpacked_extensions.append(ext_path)
-                # We set this in order to keep Lacros alive when all windows
-                # are closed at the end of one loop. This removes the need to
-                # re-launch Lacros for each loop.
-                chrome_new_request.lacros_keep_alive = True
-            else:
-                chrome_new_request.unpacked_extensions.append(ext_path)
+            chrome_new_request.unpacked_extensions.append(ext_path)
 
             try:
                 chrome_service.New(chrome_new_request)
@@ -395,15 +385,9 @@ class power_LoadTest(arc.ArcTest):
                 self._tmp_keyvals['username'] = 'GUEST'
             self._tmp_keyvals['gaia_login'] = int(self._gaia_login)
 
-            if use_lacros:
-                # Launch Lacros. The window opened will be closed when startTest
-                # is run.
-                lacros_service.Launch(empty_pb2.Empty())
-
-            response = conn_service.NewConnForTarget(conn_service_pb2.NewConnRequest(
-                url = _get_extension_bg_url(ext_path),
-                call_on_lacros = use_lacros,
-            ))
+            response = conn_service.NewConnForTarget(
+                    conn_service_pb2.NewConnRequest(
+                            url=_get_extension_bg_url(ext_path), ))
             extension = conn_tab.ConnTab(conn_service, response.id)
             set_var_script = ''
             if self._web_caching:

@@ -15,7 +15,7 @@ TEST_TYPE = 'Server'
 ATTRIBUTES = 'suite:cellular-cq'
 MAX_RESULT_SIZE_KB = 1024 * 1024
 PY_VERSION = 3
-DEPENDENCIES = "carrier:tmobile, cellular_modem_state:NORMAL"
+DEPENDENCIES = "supported_carriers:CARRIER_TMOBILE, cellular_modem_state:NORMAL"
 
 DOC = '''
 
@@ -45,7 +45,8 @@ def run(machine):
                     test_exprs=['("group:cellular" && "cellular_sim_active" && "cellular_cq" && (!"cellular_carrier_dependent" || "cellular_carrier_tmobile"))'],
                     ignore_test_failures=True, max_run_sec=10800,
                     command_args=args,
-                    varsfiles=[temp_file.name]
+                    varsfiles=[temp_file.name],
+                    varslist=['starfish.carrier=TMOBILE']
                     )
 
 parallel_simple(run, machines)

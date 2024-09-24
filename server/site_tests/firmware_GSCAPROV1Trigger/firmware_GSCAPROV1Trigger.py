@@ -4,7 +4,6 @@
 
 import logging
 import pprint
-import re
 import time
 
 from autotest_lib.client.bin import utils
@@ -23,63 +22,25 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
     # DBG image has to be able to set the AP RO hash with the board id set.
     MIN_DBG_VER = '1.6.100'
     MIN_RELEASE_MAJOR = 5
-    MIN_RELEASE_MINOR = 141
+    MIN_RELEASE_MINOR = 260
 
-    APRO_PASS = 6
+    APRO_NOT_RUN = 0
     APRO_FAIL = 2
+    APRO_UNSUPPORTED_TRIGGERED = 5
     APRO_IN_PROGRESS = 7
-    # Regex to search for the end of the AP RO output. Every run should end with
-    # "AP RO PASS!" or "AP RO FAIL! evt - status". Collect all output up until
-    # that point.
-    APRO_OUTPUT_RE = r'.*(AP RO ([\S]*)![^\n]|do_ap_ro_check: unsupported)'
 
-    # Cr50 tries to recalculate the hash with 8 of the common factory flags.
-    FACTORY_FLAG_COUNT = 8
-    TIMEOUT_SINGLE_RUN = 60
-    TIMEOUT_ALL_FLAGS = FACTORY_FLAG_COUNT * TIMEOUT_SINGLE_RUN
-    # If the flags are wrong, verification should fail quickly.
-    TIMEOUT_FLAG_FAILURE = 10
+    # The AP RO result can be cleared after 10s.
+    APRO_RESET_DELAY = 10
+    # Regex to search for the end of the AP RO output. Every run should end with
+    # a flog message.
+    APRO_OUTPUT_RE = r'.*flog.*\]'
+
     # Delay the gsctool command that starts verification, so the test can start
     # looking for the AP RO verify command output before the gsctool command
     # runs.
     START_DELAY = 5
+    TIMEOUT_UNSUPPORTED = 3
 
-    DIGEST_RE = r' digest ([0-9a-f]{64})'
-    CALCULATED_DIGEST_RE = 'Calculated' + DIGEST_RE
-    STORED_DIGEST_RE = 'Stored' + DIGEST_RE
-
-    # The FAFT GBB flags are innocuous. Check that the DUT is using those or
-    # doesn't have any flags set.
-    SUPPORTED_FLAGS = [0, 0x40, 0x140]
-    TEST_RO_VPD_KEY = 'faft_apro_test_key'
-
-    # 0x42b9 is the last value in the cr50 factory flag list. Use it to verify
-    # cr50 can regenerate the hash with all factory flags in a reasonable time.
-    LAST_FACTORY_FLAG_VAL = 0x42b9
-    FLAG_0 = 0
-
-    FLAGS_NONE = None
-    FLAG_42B9 = '0x%x' % LAST_FACTORY_FLAG_VAL
-    FLAG_0 = '0x%x' % FLAG_0
-    FLAG_NA = 'na'
-
-    # GBB status bits
-    GBBS_INJECT_FLAGS = 1
-    GBBS_FLAGS_IN_HASH = 2
-    GBBD_INVALID = 'na (10)'
-    GBBD_SAVED = 'ok (%d)'
-    # If the flags are 0, then cr50 won't try to inject them.
-    STATUS_0 = GBBS_FLAGS_IN_HASH
-    # If the gbb flags are in the hash and they were non-zero when the hash
-    # was generated, then cr50 should try to inject them when calculating
-    # the hash.
-    STATUS_LAST_FLAG = (GBBS_FLAGS_IN_HASH | GBBS_INJECT_FLAGS)
-    # The flags aren't in the hash, so they're not injected. Cr50 should save
-    # the status as 0.
-    STATUS_OUTSIDE_HASH = 0
-    GBBD_SAVED_0 = GBBD_SAVED % STATUS_0
-    GBBD_SAVED_LAST_FLAG = GBBD_SAVED % STATUS_LAST_FLAG
-    GBBD_SAVED_FLAGS_NOT_IN_HASH = GBBD_SAVED % STATUS_OUTSIDE_HASH
     # These messages should never happen. Fail if they show up in any AP RO
     # verificaton output.
     ERR_MESSAGES = ['Could not find GBB area', 'WATCHDOG']
@@ -113,48 +74,12 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
                                        self.MIN_DBG_VER) == self.MIN_DBG_VER:
             raise error.TestNAError('Update DBG image to 6.100 or newer.')
 
-        self._start_gbb_flags = self.faft_client.bios.get_gbb_flags()
-        logging.info('GBB flags: %x', self._start_gbb_flags)
-        # Refuse to run with unsupported gbb flags, because this test sets the
-        # flags to 0 and it could prevent the device from booting if it's
-        # currently relying on the FORCE_DEV_MODE flag.
-        if self._start_gbb_flags not in self.SUPPORTED_FLAGS:
-            raise error.TestNaError('Unsupported DUT GBB flags 0x%x. Set the '
-                                    'flags to one of %r to run the test.' %
-                                    (self._start_gbb_flags,
-                                     self.SUPPORTED_FLAGS))
-
-    def run_ro_vpd_cmd(self, cmd):
-        """Run RO_VPD command
-
-        @param cmd: the RO vpd command to run
-        """
-        return self.host.run('vpd -i RO_VPD ' + cmd)
-
-    def delete_test_ro_vpd_key(self):
-        """Remove the test key from the RO_VPD"""
-        self.run_ro_vpd_cmd('-d ' + self.TEST_RO_VPD_KEY)
-
-    def set_test_ro_vpd_key(self, val):
-        """Remove the test key from the RO_VPD"""
-        self.run_ro_vpd_cmd('-s %s=%s' % (self.TEST_RO_VPD_KEY, val))
-
-    def restore_ro(self):
-        """Restore the original test RO_VPD test key value."""
-        self.set_test_ro_vpd_key('original_val')
-        self._ro_desc = 'ok'
-
-    def modify_ro(self):
-        """Change a RO_VPD value to modify RO."""
-        self.set_test_ro_vpd_key('modified_val')
-        self._ro_desc = 'modified'
-
     def update_to_dbg_and_clear_hash(self):
         """Clear the Hash."""
         # Make sure the AP is up before trying to update.
         self.recover_dut()
-        self.clear_gbb_flags()
         self._retry_gsc_update_with_ccd_and_ap(self._dbg_image_path, 3, False)
+        self._hash_desc = 'cleared hash'
         self.gsc.send_command('ap_ro_info erase')
         time.sleep(3)
         if self.gsc.get_ap_ro_info()['hash']:
@@ -179,7 +104,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         logging.info(result)
         time.sleep(3)
         ap_ro_info = self.gsc.get_ap_ro_info()
-        self._hash_desc = '%s flags' % self._flag_desc
+        self._hash_desc = 'hash (%s)' % regions
         ap_ro_info = self.gsc.get_ap_ro_info()
         if ap_ro_info['supported'] and not ap_ro_info['hash']:
             raise error.TestError('Could not set hash %r' % result)
@@ -190,25 +115,6 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
                 self.get_saved_cr50_original_path(), 3, rollback=True)
         self._try_to_bring_dut_up()
 
-    def set_gbb_flags(self, flags):
-        """Set the GBB flags.
-
-        @params flags: integer value to set the gbb flags to.
-        """
-        self.host.run('/usr/bin/futility gbb --set --flash --flags=0x%x' %
-                      flags)
-        logging.info('Set GBB: %x', self.faft_client.bios.get_gbb_flags())
-
-    def set_factory_gbb_flags(self):
-        """Set the GBB flags to one of the cr50 factory flags."""
-        self.set_gbb_flags(self.LAST_FACTORY_FLAG_VAL)
-        self._flag_desc = '%x' % self.LAST_FACTORY_FLAG_VAL
-
-    def clear_gbb_flags(self):
-        """Set the GBB flags to 0."""
-        self.set_gbb_flags(0)
-        self._flag_desc = 'cleared'
-
     def cleanup(self):
         """Clear the hash, remove the test ro vpd key, and restore the flags."""
         try:
@@ -216,11 +122,8 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
                 return
             logging.info('Cleanup')
             self.recover_dut()
-            self.clear_gbb_flags()
             self.update_to_dbg_and_clear_hash()
             self.rollback_to_release_image()
-            self.delete_test_ro_vpd_key()
-            self.faft_client.bios.set_gbb_flags(self._start_gbb_flags)
         finally:
             super(firmware_GSCAPROV1Trigger, self).cleanup()
 
@@ -253,15 +156,17 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         """
         self.servo.set_nocheck('cr50_uart_timeout', timeout + self.START_DELAY)
         start_time = time.time()
+        rv = ''
         try:
             # AP RO verification will start in the background. Wait for cr50 to
             # finish verification collect all of the AP RO output.
             cmd = 'noop_wait_apro ' + self._desc
             rv = self.gsc.send_command_get_output(cmd, [self.APRO_OUTPUT_RE])
+            logging.info('AP RO result: %s', rv)
+            return rv[0]
         finally:
             self.servo.set_nocheck('cr50_uart_timeout', self._original_timeout)
         logging.info('AP RO verification ran in %ds', time.time() - start_time)
-        return rv[0][0]
 
     def _start_apro_verify(self):
         """Start AP RO verification with a delay.
@@ -289,13 +194,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         if exit_status:
             logging.info('exit status: %d', exit_status)
 
-    def trigger_verification(self,
-                             exp_result,
-                             exp_calculations,
-                             timeout,
-                             exp_gbb,
-                             exp_flags,
-                             end_if_unsupported=True):
+    def trigger_verification(self, exp_result, timeout):
         """Trigger verification.
 
         Trigger verification. Verify the AP RO behavior by checking the result
@@ -306,19 +205,11 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
 
         @param exp_result: expected value for the ap_ro_info result field after
                            verification runs.
-        @param exp_calculations: expected number of hashes cr50 will generate
-                                 during verification.
         @param timeout: maximum time in seconds that the AP RO verification run
                         can take.
-        @param exp_gbb: string that should be found in the ap_ro_info gbb field.
-        @param exp_flags: None or the flag string if the gbbd is saved
-        @param end_if_unsupported: raise testNA if the device doesn't support
-                                   verification.
         """
-        self._desc = ('%s: current flags(%s) ro(%s) saved hash(%s) - '
-                      'expected result(%d)' %
-                      (self._prefix, self._flag_desc, self._ro_desc,
-                       self._hash_desc, exp_result))
+        self._desc = ('%s: saved hash(%s) - expected result(%d)' %
+                      (self._prefix, self._hash_desc, exp_result))
         # CCD has to be open to trigger verification.
         self.fast_ccd_open(True)
         logging.info('Run: %s', self._desc)
@@ -331,268 +222,44 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
             self._close_apro_start()
         logging.info('finished %r:%s', self._desc, contents)
 
-        try:
-            if self.verification_in_progress():
-                raise error.TestFail('%s: Verification did not finish in %ds' %
-                                     (self._desc, timeout))
-
-            for msg in self.ERR_MESSAGES:
-                if msg in contents:
-                    raise error.TestFail('%s: %r showed up in contents %s' %
-                                         (self._desc, msg, contents))
-        finally:
-            ap_ro_info = self.gsc.get_ap_ro_info()
-            # Make sure to recover the dut.
-            self.recover_dut()
-
-        # cr50 only prints calculated and stored hashes after AP RO verificaiton
-        # fails. These sets will be empty if verification passed every time.
-        calculated = set(re.findall(self.CALCULATED_DIGEST_RE, contents))
-        stored = set(re.findall(self.STORED_DIGEST_RE, contents))
-        logging.info('Stored: %r', stored)
-        logging.info('Calculated (%d): %s', len(calculated),
-                     pprint.pformat(calculated))
-        logging.info('Results: %s', pprint.pformat(ap_ro_info))
-
-        if not ap_ro_info['supported']:
-            reason = ap_ro_info['reason']
-            if 'not programmed' not in reason:
-                if end_if_unsupported:
-                    raise error.TestNAError(reason)
-                raise error.TestFail('%s: verification unsupported: %s' %
-                                     (self._desc, reason))
-
-        if len(calculated) != exp_calculations:
-            raise error.TestFail('%s: Calculated %d digests instead of %d' %
-                                 (self._desc, len(calculated),
-                                  exp_calculations))
-        if exp_flags != ap_ro_info['flags']:
-            raise error.TestFail(
-                    '%s: %r not found in flags %r -- stored: %r calc: %r' %
-                    (self._desc, exp_flags, ap_ro_info['flags'], stored,
-                     calculated))
-        if exp_gbb not in ap_ro_info['gbbd']:
-            raise error.TestFail(
-                    '%s: %r not found in gbb %r -- stored: %r calc: %r' %
-                    (self._desc, exp_gbb, ap_ro_info['gbbd'], stored,
-                     calculated))
+        ap_ro_info = self.gsc.get_ap_ro_info()
+        if ap_ro_info['supported']:
+            raise error.TestFail('Verification should not be supported')
+        logging.info('AP RO verification is unsupported')
         if exp_result != ap_ro_info['result']:
             raise error.TestFail(
-                    '%s: %r not found in status %r -- stored: %r calc: %r' %
-                    (self._desc, exp_result, ap_ro_info['result'], stored,
-                     calculated))
+                    '%s: %r not found in status %r -- stored' %
+                    (self._desc, exp_result, ap_ro_info['result']))
+
+        for msg in self.ERR_MESSAGES:
+            if msg in contents:
+                raise error.TestFail('%s: %r showed up in contents %s' %
+                                     (self._desc, msg, contents))
+        logging.info('Results: %s', pprint.pformat(ap_ro_info))
+        time.sleep(self.APRO_RESET_DELAY)
+        self.servo.get_power_state_controller().reset()
+        ap_ro_info = self.gsc.get_ap_ro_info()
+        if self.APRO_NOT_RUN != ap_ro_info['result']:
+            raise error.TestFail('%s: AP RO result not cleared after %ds' %
+                                 (self._desc, self.APRO_RESET_DELAY))
+
 
     def run_once(self):
         """Save hash and trigger verification"""
         self.ran_test = True
-        # The DBG image can set the hash when the board id is saved. The release
-        # image can't. Set the hash with the DBG image, so the test doesn't need
-        # to erase the board id. This test verifies triggering AP RO
-        # verification. It's not about saving the hash. Whenever the test
-        # updates the hash, it'll update to the dbg image, set the hash, and
-        # then rollback to the released image.
-        self.update_to_dbg_and_clear_hash()
-
-        # Generate a hash with the GBB flags set to 0.
-        # Set the GBB flags to 0.
-        self.clear_gbb_flags()
-        # The test creates a RO_VPD key and modifies it to modify RO. It's a
-        # bogus key. It doesn't change any device behavior. It's just a way
-        # to easily modify RO.
-        self.restore_ro()
-        self.set_hash('WP_RO')
-        self.rollback_to_release_image()
-        self.fast_ccd_open(True)
-
-        logging.info('Verifying standard behavior')
-        logging.info('the hash was generated with 0 gbb flags')
-        self._prefix = 'standard'
-        # Set the flags to a non-zero value. Make sure it fails almost
-        # immediately because the flags are wrong.
-        self.set_factory_gbb_flags()
+        if self.gsc.get_ap_ro_info()['hash']:
+            self.update_to_dbg_and_clear_hash()
+            self.rollback_to_release_image()
+        self._prefix = 'no hash'
+        self._hash_desc = 'cleared hash'
         # This is a pretty basic test. If the board says verification is
         # unsupported, fail with TestNA.
-        self.trigger_verification(self.APRO_FAIL,
-                                  0,
-                                  self.TIMEOUT_FLAG_FAILURE,
-                                  self.GBBD_INVALID,
-                                  self.FLAGS_NONE,
-                                  end_if_unsupported=True)
-        # Modify RO. Cr50 should still fail immediately because the flags are
-        # wrong.
-        self.modify_ro()
-        self.trigger_verification(self.APRO_FAIL, 0,
-                                  self.TIMEOUT_FLAG_FAILURE,
-                                  self.GBBD_INVALID,
-                                  self.FLAGS_NONE)
-        self.clear_gbb_flags()
-        # Cr50 should try all factory flags and fail with a hash mismatch.
-        self.trigger_verification(self.APRO_FAIL, self.FACTORY_FLAG_COUNT,
-                                  self.TIMEOUT_ALL_FLAGS,
-                                  self.GBBD_INVALID,
-                                  self.FLAGS_NONE)
-        # Restore RO. Check AP RO verification starts passing.
-        self.restore_ro()
-        # Verification should pass during the first flag check since the hash
-        # was generated with gbb flags set to 0.
-        self.trigger_verification(self.APRO_PASS, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_0,
-                                  self.FLAG_0)
-        # Trigger verification multiple times. Make sure it doesn't fail or
-        # change.
-        self.trigger_verification(self.APRO_PASS, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_0,
-                                  self.FLAG_0)
-        self.trigger_verification(self.APRO_PASS, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_0,
-                                  self.FLAG_0)
-        # With the saved flags AP RO verification should only try one flag. It
-        # should fail more quickly.
-        self.modify_ro()
-        self.trigger_verification(self.APRO_FAIL, 1,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_0,
-                                  self.FLAG_0)
-
-        # TODO(b/327795084): reenable after flakiness is investigated.
-        return
-        # Generate a hash with non-zero flags.
+        self.trigger_verification(self.APRO_UNSUPPORTED_TRIGGERED,
+                                  self.TIMEOUT_UNSUPPORTED)
         self.update_to_dbg_and_clear_hash()
-        self.restore_ro()
-        self.set_factory_gbb_flags()
-        self.set_hash('WP_RO')
-        # Clear the gbb flags, so the test can open ccd.
-        self.clear_gbb_flags()
+        self.set_hash('RO_VPD')
         self.rollback_to_release_image()
         self.fast_ccd_open(True)
-        self.set_factory_gbb_flags()
-
-        logging.info('Verifying the gbb workaround')
-        logging.info('cr50 can handle hashes generated with non-zero flags')
-        self._prefix = 'non-zero factory flags'
-        # The gbb flags are non-zero. Cr50 should fail immediately since they're
-        # non-zero.
-        self.trigger_verification(self.APRO_FAIL, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_INVALID,
-                                  self.FLAGS_NONE)
-
-        # The flags are wrong and RO is wrong. Cr50 verifies the flags first, so
-        # it should still fail immediately and not generate any hashes.
-        self.modify_ro()
-        self.trigger_verification(self.APRO_FAIL, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_INVALID,
-                                  self.FLAGS_NONE)
-        # The flags are ok. RO is wrong. Cr50 should try all factory flags and
-        # fail with a hash mismatch.
-        self.clear_gbb_flags()
-        self.trigger_verification(self.APRO_FAIL, self.FACTORY_FLAG_COUNT,
-                                  self.TIMEOUT_ALL_FLAGS,
-                                  self.GBBD_INVALID,
-                                  self.FLAGS_NONE)
-        # The test saved the hash with the last factory flag. Cr50 should
-        # calculate hashes with all of the factory flags and pass on the last
-        # one.
-        self.restore_ro()
-        # Cr50 should match the gbb flag and then save it.
-        self.trigger_verification(self.APRO_PASS, self.FACTORY_FLAG_COUNT - 1,
-                                  self.TIMEOUT_ALL_FLAGS,
-                                  self.GBBD_SAVED_LAST_FLAG,
-                                  self.FLAG_42B9)
-        # The next verification cr50 should load the matched flag and only try
-        # that.
-        self.trigger_verification(self.APRO_PASS, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_LAST_FLAG,
-                                  self.FLAG_42B9)
-        # RO verificaiton will fail since the RO is changed, but cr50 should
-        # only try the flag it matched originally.
-        self.modify_ro()
-        self.trigger_verification(self.APRO_FAIL, 1,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_LAST_FLAG,
-                                  self.FLAG_42B9)
-        # RO and the flags are wrong, but cr50 shouldn't try to generate a hash.
-        # It should fail before that since the flags are wrong.
-        self.set_factory_gbb_flags()
-        # Cr50 checks the current flags, before it tries to use the saved gbbd.
-        # Cr50 will fail with non-zero flags before it loads the gbbd, so
-        # LOAD_42B9 shouldn't show up in the result. It should only have the
-        # invalid gbb flags messages.
-        self.trigger_verification(self.APRO_FAIL, 0,
-                                  self.TIMEOUT_FLAG_FAILURE,
-                                  self.GBBD_SAVED_LAST_FLAG,
-                                  self.FLAG_42B9)
-
-        # After the state is restored to a good state, cr50 should pass again.
-        self.clear_gbb_flags()
-        self.restore_ro()
-        self.trigger_verification(self.APRO_PASS, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_LAST_FLAG,
-                                  self.FLAG_42B9)
-        self.gsc.reboot()
-        self._try_to_bring_dut_up()
-        # Make sure it works the same after cr50 reboots.
-        self.trigger_verification(self.APRO_PASS, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_LAST_FLAG,
-                                  self.FLAG_42B9)
-
-        # Set a hash with FMAP in the hash and the GBB outside of the hash.
-        # Cr50 should not care about the GBB flags in this case.
-        self.update_to_dbg_and_clear_hash()
-        self.restore_ro()
-        self.set_factory_gbb_flags()
-        self.set_hash('FMAP RO_VPD')
-
-        self.clear_gbb_flags()
-        self.rollback_to_release_image()
-        self.fast_ccd_open(True)
-        self.set_factory_gbb_flags()
-
-        logging.info('Verifying setup with GBB outside of hash')
-        self._prefix = 'gbb outside of hash'
-
-        # GBB flags are non-zero, but they're outside of the hash, so it
-        # shouldn't matter.
-        self.trigger_verification(self.APRO_PASS, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_FLAGS_NOT_IN_HASH,
-                                  self.FLAG_NA)
-        # GBB flags are now zero, but they're outside of the hash, so it
-        # shouldn't matter.
-        self.clear_gbb_flags()
-        self.trigger_verification(self.APRO_PASS, 0,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_FLAGS_NOT_IN_HASH,
-                                  self.FLAG_NA)
-        # Modify the RO_VPD. It's in the hash, so verification should fail.
-        self.modify_ro()
-        self.trigger_verification(self.APRO_FAIL, 1,
-                                  self.TIMEOUT_SINGLE_RUN,
-                                  self.GBBD_SAVED_FLAGS_NOT_IN_HASH,
-                                  self.FLAG_NA)
-
-        # Cr50 will fail verification if the FMAP is outside of the hash since
-        # it can't trust the GBB location.
-        self.update_to_dbg_and_clear_hash()
-        self.restore_ro()
-        self.clear_gbb_flags()
-        self.set_hash('GBB')
-        self.rollback_to_release_image()
-        self.fast_ccd_open(True)
-
-        logging.info('Verifying setup with FMAP outside of hash')
-        self._prefix = 'fmap not in hash'
-
-        # There's no way to pass since FMAP isn't in the hash. The factory
-        # process is standard. FMAP should be in the hash.
-        self.trigger_verification(self.APRO_FAIL, 0,
-                                  self.TIMEOUT_FLAG_FAILURE,
-                                  self.GBBD_INVALID,
-                                  self.FLAGS_NONE)
+        self._prefix = 'set hash'
+        self.trigger_verification(self.APRO_UNSUPPORTED_TRIGGERED,
+                                  self.TIMEOUT_UNSUPPORTED)

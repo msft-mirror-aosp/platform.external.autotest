@@ -181,7 +181,9 @@ class telemetry_AFDOGenerate(test.test):
             perf_data = 'perf.data'
 
         perf_cmd = (f'nohup perf {profile_args} '
-                    f'-o {DUT_CHROME_RESULTS_DIR}/{perf_data}')
+                    f'-o {DUT_CHROME_RESULTS_DIR}/{perf_data} '
+                    '>/tmp/perf-out 2>&1; '
+                    'echo "Perf exited with $?" >> /tmp/perf-out')
         perf_pid = self._host.run_background(perf_cmd)
 
         if self._is_arm():
@@ -195,8 +197,13 @@ class telemetry_AFDOGenerate(test.test):
             # Use `kill -0` to check whether the perf process is alive
             verify_cmd = f'kill -0 {perf_pid}'
             if self._host.run(verify_cmd, ignore_status=True).exit_status != 0:
-                logging.error('Perf process not started correctly on DUT')
-                raise RuntimeError
+                perf_out = self._host.run('cat /tmp/perf-out')
+                logging.error(
+                        'Perf process not started correctly on DUT; stdstreams:'
+                        '\n%s',
+                        perf_out.stdout,
+                )
+                raise RuntimeError("Perf failed to start on DUT")
             logging.info('Perf PID: %s\nPerf command: %s', perf_pid, perf_cmd)
             yield
         finally:

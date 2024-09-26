@@ -193,18 +193,19 @@ class telemetry_AFDOGenerate(test.test):
             ping_cmd = f'while kill -USR2 {perf_pid} ; do sleep 4 ; done'
             self._host.run_background(ping_cmd)
 
+        # Use `kill -0` to check whether the perf process is alive
+        verify_cmd = f'kill -0 {perf_pid}'
+        if self._host.run(verify_cmd, ignore_status=True).exit_status != 0:
+            perf_out = self._host.run('cat /tmp/perf-out')
+            logging.error(
+                    'Perf process not started correctly on DUT; stdstreams:'
+                    '\n%s',
+                    perf_out.stdout,
+            )
+            raise RuntimeError("Perf failed to start on DUT")
+        logging.info('Perf PID: %s\nPerf command: %s', perf_pid, perf_cmd)
+
         try:
-            # Use `kill -0` to check whether the perf process is alive
-            verify_cmd = f'kill -0 {perf_pid}'
-            if self._host.run(verify_cmd, ignore_status=True).exit_status != 0:
-                perf_out = self._host.run('cat /tmp/perf-out')
-                logging.error(
-                        'Perf process not started correctly on DUT; stdstreams:'
-                        '\n%s',
-                        perf_out.stdout,
-                )
-                raise RuntimeError("Perf failed to start on DUT")
-            logging.info('Perf PID: %s\nPerf command: %s', perf_pid, perf_cmd)
             yield
         finally:
             # Check if process is still alive after benchmark run, if yes,

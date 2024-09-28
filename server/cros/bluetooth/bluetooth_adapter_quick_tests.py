@@ -628,6 +628,13 @@ class BluetoothAdapterQuickTests(
         # Close the connection between peers
         self.cleanup_bt_test(test_state='NEW')
 
+        # check hci index and reboot if not hci0
+        # TODO(b/363211829, b/369924054) Remove after the USB disconnect and
+        # udev index issues are fixed.
+        hci = self.bluetooth_facade.get_hci()
+        if hci != "hci0":
+            logging.info("Reboot to reset {} to hci0.".format(hci))
+            self.reboot()
 
     def quick_test_cleanup(self):
         """ Cleanup any state test server and all device"""

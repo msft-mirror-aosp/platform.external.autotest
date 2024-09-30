@@ -173,38 +173,74 @@ class telemetry_AFDOGenerate(test.test):
     def _perf_on_dut(self):
         """Start and kill perf process on DUT."""
         logging.info('Starting perf process in background.')
+        # Note that the below makes use of a supported, but rarely-seen, perf
+        # feature. e.g., `perf record -a sleep 5` will record _the entire
+        # system_ for 5 seconds.
+        #
+        # This functionality is used for two reasons:
+        # 1. The command can write a file noting that perf has successfully
+        #    started and is capable of taking samples. This is required for us
+        #    to `yield` from this context manager.
+        # 2. On ARM, we need to send -USR2 signals at a regular interval for
+        #    profiling to work. These are done inside of this subprocess, since
+        #    it leads to simpler code, and creates a two-way liveness link
+        #    between perf and the loop:
+        #      - if perf is killed, the `sleep; kill -USR2` loop will be
+        #        killed.
+        #      - if the `sleep; kill -USR2` loop is somehow faulty, perf will
+        #        shut down, which is a useful smoke signal.
         if self._is_arm():
             profile_args = ARM_PROFILER_ARGS
             perf_data = 'perf-etm.data'
+            sleep_loop = 'while kill -USR2 $PPID; do sleep 4; done'
         else:
+            # Any reasonable invocation of this script should take no more than
+            # a few hours. Run perf for way longer than that.
+            sleep_loop = 'sleep 99h'
             profile_args = INTEL_PROFILER_ARGS
             perf_data = 'perf.data'
 
+        perf_out_file = '/tmp/__telemetry_AFDOGenerate_perf_output'
+        perf_started_file = '/tmp/__telemetry_AFDOGenerate_perf_started'
+        # Clean this file up in case it exists, for whatever reason
+        self._host.run(f'rm -f {perf_started_file}', verbose=True)
+
+        profile_command = f'touch {perf_started_file}; {sleep_loop}'
         perf_cmd = (f'nohup perf {profile_args} '
                     f'-o {DUT_CHROME_RESULTS_DIR}/{perf_data} '
-                    '>/tmp/perf-out 2>&1; '
-                    'echo "Perf exited with $?" >> /tmp/perf-out')
-        perf_pid = self._host.run_background(perf_cmd)
+                    f'>{perf_out_file} 2>&1 '
+                    f"bash -ec '{profile_command}'; "
+                    f'echo "Perf exited with $?" >> {perf_out_file}')
+        perf_pid = self._host.run_background(perf_cmd, verbose=True)
 
-        if self._is_arm():
-            # Send signals to perf_pid to trigger ETM data collection.
-            # Period 100ms.
-            # It will automatically terminate with perf.
-            ping_cmd = f'while kill -USR2 {perf_pid} ; do sleep 4 ; done'
-            self._host.run_background(ping_cmd)
+        # N.B., Number of retries & the sleep multiplier are arbitrarily
+        # selected, but should result in waiting about 2mins for perf to start.
+        # Existing code didn't wait at all and it _generally_ worked, so 2mins
+        # should be plenty.
+        try_pings = 10
+        for i in range(1, try_pings + 1):
+            logging.info('Checking if perf has started (try %d/%d)...', i,
+                         try_pings)
+            test_exit = self._host.run(f'test -e {perf_started_file}',
+                                       ignore_status=True).exit_status
+            # If `perf_started_file` exists, perf has fully started up.
+            if not test_exit:
+                break
 
-        # Use `kill -0` to check whether the perf process is alive
-        verify_cmd = f'kill -0 {perf_pid}'
-        if self._host.run(verify_cmd, ignore_status=True).exit_status != 0:
-            perf_out = self._host.run('cat /tmp/perf-out')
+            logging.info('Perf not yet started. Sleeping a bit...')
+            time.sleep(i * 2)
+        else:
+            # Don't ignore the status; this command failing is useful signal,
+            # and we're going to `raise` in a few lines anyway.
+            perf_out = self._host.run(f'cat {perf_out_file}')
             logging.error(
                     'Perf process not started correctly on DUT; stdstreams:'
                     '\n%s',
                     perf_out.stdout,
             )
-            raise RuntimeError("Perf failed to start on DUT")
-        logging.info('Perf PID: %s\nPerf command: %s', perf_pid, perf_cmd)
+            raise RuntimeError('Perf failed to start on DUT')
 
+        logging.info('Perf successfully started; PID: %s', perf_pid)
         try:
             yield
         finally:

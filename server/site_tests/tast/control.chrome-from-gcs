@@ -62,10 +62,20 @@ def run(machine):
     command_args, varslist = tast.split_arguments(args)
     args_dict = utils.args_to_dict(command_args)
 
+    build_dir = f'out/Release/'
+    if 'exe_rel_path' in args_dict:
+        # FIXME: This assumes the build-dir is nested two dirs within the
+        # checkout. This is not strictly a safe assumption. The build-dir
+        # should be properly propagated to Skylab from Chrome builders.
+        parts = args_dict['exe_rel_path'].split(os.sep)
+        if len(parts) > 2:
+            build_dir = os.path.join(*parts[:2])
+
     # Setup DUT to use the chrome binary from gcs archive.
     chrome_dir = chrome_sideloader.chromite_deploy_chrome(host,
                                                           args_dict.get('lacros_gcs_path'),
-                                                          'chrome',**args_dict)
+                                                          'chrome',
+                                                          build_dir, **args_dict)
 
     tast_expr = chrome_sideloader.get_tast_expr_from_local_file(args_dict, chrome_dir)
     if not tast_expr:

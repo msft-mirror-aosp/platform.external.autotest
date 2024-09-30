@@ -715,7 +715,11 @@ def unarchive(file_path, dest_dir, **kwargs):
         raise Exception('Unsupported file extension: %s' % file_path)
 
 
-def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
+def chromite_deploy_chrome(host,
+                           gs_path,
+                           archive_type,
+                           build_dir=None,
+                           **kwargs):
     """
     Deploy chrome onto DUT using chromite.
     Chromite is expected to be packaged in the chrome archive.
@@ -728,6 +732,9 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
     """
     if not gs_path:
         raise Exception('gs_path is required')
+
+    if not build_dir:
+        build_dir = 'out/Release/'
 
     chrome_dir = tempfile.mkdtemp()
     # Download artifacts onto drone server and unarchive to a temp directory.
@@ -784,7 +791,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
                 cmd + [
                         '--force',
                         '--build-dir',
-                        os.path.join(chrome_dir, 'out/Release/'),
+                        os.path.join(chrome_dir, build_dir),
                         '--process-timeout',
                         str(kill_proc_timeout),
                         '--device',
@@ -798,7 +805,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
         # During the transition phase, since not all the builders have Lacros packaged,
         # if the archive also contains lacros_clang, lacros will be deployed. If not,
         # a warning will be given.
-        lacros_dir = os.path.join(chrome_dir, 'out/Release/lacros_clang/')
+        lacros_dir = os.path.join(chrome_dir, build_dir, 'lacros_clang/')
         if os.path.exists(lacros_dir):
             _deploy_with_retry(
                     cmd + [
@@ -818,7 +825,7 @@ def chromite_deploy_chrome(host, gs_path, archive_type, **kwargs):
         _deploy_with_retry(
                 cmd + [
                         '--build-dir',
-                        os.path.join(chrome_dir, 'out/Release/'),
+                        os.path.join(chrome_dir, build_dir),
                         '--process-timeout',
                         str(kill_proc_timeout),
                         '--device',

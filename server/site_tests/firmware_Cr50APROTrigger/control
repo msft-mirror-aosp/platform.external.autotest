@@ -3,11 +3,11 @@
 # found in the LICENSE file.
 
 AUTHOR = "mruthven"
-NAME = "firmware_GSCAPROV1Trigger"
+NAME = "firmware_Cr50APROTrigger"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Test triggering AP RO verification"
+        "criteria": "Test triggering AP RO verification on Cr50"
 }
 ATTRIBUTES = "suite:faft_cr50_experimental,suite:faft_gsc_nightly"
 TIME = "SHORT"
@@ -15,7 +15,9 @@ TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 
 DOC = """
-Verify triggering AP RO verification on GSC.
+Check AP RO verification behavior on Cr50. Verify it gets set to
+UNSUPPORTED_TRIGGERED, when AP RO verification is triggered. Verify it can be
+cleared if the device resets 10s after it's triggered.
 """
 
 from autotest_lib.client.common_lib import error
@@ -30,7 +32,7 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
-    job.run_test("firmware_GSCAPROV1Trigger", host=host, cmdline_args=args,
+    job.run_test("firmware_Cr50APROTrigger", host=host, cmdline_args=args,
                  full_args=args_dict)
 
 parallel_simple(run, machines)

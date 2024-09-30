@@ -12,8 +12,8 @@ from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
 
-class firmware_GSCAPROV1Trigger(Cr50Test):
-    """Verify GSC response after triggering AP RO V1 verification."""
+class firmware_Cr50APROTrigger(Cr50Test):
+    """Verify AP RO verification status gets set and cleared correctly."""
     version = 1
 
     # This only verifies V1 output right now.
@@ -48,7 +48,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
     def initialize(self, host, cmdline_args, full_args={}):
         """Initialize servo"""
         self.ran_test = False
-        super(firmware_GSCAPROV1Trigger,
+        super(firmware_Cr50APROTrigger,
               self).initialize(host,
                                cmdline_args,
                                full_args,
@@ -60,12 +60,12 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         self._original_timeout = float(self.servo.get('cr50_uart_timeout'))
         rw_ver = self.get_saved_cr50_original_version()[1]
         _, major, minor = rw_ver.split('.')
-        if (int(major) < self.MIN_RELEASE_MAJOR or
-            int(minor) < self.MIN_RELEASE_MINOR):
-            raise error.TestNAError('Test does not support cr50 (%r). Update '
-                                    'to 0.%s.%s' % (rw_ver,
-                                                    self.MIN_RELEASE_MAJOR,
-                                                    self.MIN_RELEASE_MINOR))
+        if (int(major) < self.MIN_RELEASE_MAJOR
+                    or int(minor) < self.MIN_RELEASE_MINOR):
+            raise error.TestNAError(
+                    'Test does not support cr50 (%r). Update '
+                    'to 0.%s.%s' %
+                    (rw_ver, self.MIN_RELEASE_MAJOR, self.MIN_RELEASE_MINOR))
 
         dbg_ver = cr50_utils.InstallImage(self.host,
                                           self.get_saved_dbg_image_path(),
@@ -91,7 +91,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         try:
             self.recover_dut()
         finally:
-            super(firmware_GSCAPROV1Trigger, self).after_run_once()
+            super(firmware_Cr50APROTrigger, self).after_run_once()
 
     def set_hash(self, regions):
         """Set the Hash.
@@ -125,7 +125,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
             self.update_to_dbg_and_clear_hash()
             self.rollback_to_release_image()
         finally:
-            super(firmware_GSCAPROV1Trigger, self).cleanup()
+            super(firmware_Cr50APROTrigger, self).cleanup()
 
     def recover_dut(self):
         """Reboot gsc to recover the dut."""
@@ -146,7 +146,7 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
 
     def verification_in_progress(self):
         """Returns True if AP RO verification is running."""
-        return self.gsc.get_ap_ro_info()['result']  == self.APRO_IN_PROGRESS
+        return self.gsc.get_ap_ro_info()['result'] == self.APRO_IN_PROGRESS
 
     def get_apro_output(self, timeout):
         """Get the AP RO console output.
@@ -183,9 +183,9 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
                                     apro_start_cmd)
         # Start running the Cr50 Open process in the background.
         self._apro_start = utils.BgJob(full_ssh_cmd,
-                                         nickname='apro_start',
-                                         stdout_tee=utils.TEE_TO_LOGS,
-                                         stderr_tee=utils.TEE_TO_LOGS)
+                                       nickname='apro_start',
+                                       stdout_tee=utils.TEE_TO_LOGS,
+                                       stderr_tee=utils.TEE_TO_LOGS)
 
     def _close_apro_start(self):
         """Terminate the process and check the results."""
@@ -242,7 +242,6 @@ class firmware_GSCAPROV1Trigger(Cr50Test):
         if self.APRO_NOT_RUN != ap_ro_info['result']:
             raise error.TestFail('%s: AP RO result not cleared after %ds' %
                                  (self._desc, self.APRO_RESET_DELAY))
-
 
     def run_once(self):
         """Save hash and trigger verification"""

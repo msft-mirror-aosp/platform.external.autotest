@@ -883,8 +883,8 @@ def _get_gs_credential():
     """
     selected_credential = None
     available_credentials = [
+            # Physical drone credentials
             '/creds/service_accounts/skylab-drone.json',
-            '/creds/service_accounts/service-account-chromeos.json',
     ]
 
     for cred in available_credentials:
@@ -893,9 +893,16 @@ def _get_gs_credential():
             break
 
     if selected_credential:
-        return 'Credentials:gs_service_key_file=%s' % (selected_credential)
+        logging.info('Using %s to download_gs.', selected_credential)
+        return [
+                '-o',
+                'Credentials:gs_service_key_file=%s' % (selected_credential)
+        ]
     else:
-        raise Exception("No credential file is found.")
+        logging.info(
+                'Using bot default or from environment variables to download_gs.'
+        )
+        return []
 
 
 def download_gs(gs_path, dest_dir):
@@ -911,8 +918,12 @@ def download_gs(gs_path, dest_dir):
     try:
         # Download gs file from Cache Server.
         cmd = [
-                'BOTO_CONFIG=', 'gsutil', '-o',
-                _get_gs_credential(), 'cp', gs_path, dest_dir
+                'BOTO_CONFIG=',
+                'gsutil',
+        ] + _get_gs_credential() + [
+                'cp',
+                gs_path,
+                dest_dir,
         ]
         file_path = os.path.join(dest_dir, file_name)
         common_utils.run(cmd, timeout=1200, **_gen_run_env_dict())

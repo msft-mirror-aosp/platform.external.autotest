@@ -107,6 +107,15 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
 
     # Ti50 has to have AlowUnverifiedRo enabled to boot the dev ap firmware.
     UNIVERSAL_SERVO_REQ_CAPS = ['AllowUnverifiedRo']
+    # List of errors to search for. The first element is the string to look
+    # for. The second is a bool that tells whether the error should be fatal.
+    ERROR_DESC_LIST = [
+            # b/254309086 AP RO verification messages about WP state. This
+            # shouldn't happen. Print the number of messages that get triggered
+            # during the test. These aren't fatal.
+            ['externally driven!', False],
+            ['Rebooting GSC for AP RO due to state', False],
+    ]
 
     def strip_timestamp(self, result):
         """Remove the timestamp from the result output.

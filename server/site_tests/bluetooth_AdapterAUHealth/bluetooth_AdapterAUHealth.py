@@ -150,9 +150,11 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                             False otherwise.
         @param audio_config: the test specific audio config.
         """
+        self.audio_test_started = False
         self.quick_test_test_pretest(test_name, device_configs, use_all_peers,
                                      supports_floss)
 
+        self.audio_test_started = True
         logging.debug('Running audio_test_pretest...')
 
         device = self.devices['BLUETOOTH_AUDIO'][0]
@@ -197,37 +199,39 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                              A2DP, HFP_SWB, HFP_WBS or HFP_NBS
         @param disconnect_device: True to disconnect device, False otherwise.
         """
-        logging.debug('Running audio_test_posttest...')
+        if self.audio_test_started:
+            logging.debug('Running audio_test_posttest...')
 
-        if not self.devices['BLUETOOTH_AUDIO']:
-            logging.debug('No audio device was initialized, '
-                          'skipping audio_test_posttest.')
-            return
+            if not self.devices['BLUETOOTH_AUDIO']:
+                logging.debug('No audio device was initialized, '
+                              'skipping audio_test_posttest.')
+                return
 
-        device = self.devices['BLUETOOTH_AUDIO'][0]
+            device = self.devices['BLUETOOTH_AUDIO'][0]
 
-        if self.is_avrcp_profile(test_profile):
-            self.avrcp_test_posttest(device)
+            if self.is_avrcp_profile(test_profile):
+                self.avrcp_test_posttest(device)
 
-        if disconnect_device:
-            self.test_disconnection_by_adapter(device.address)
+            if disconnect_device:
+                self.test_disconnection_by_adapter(device.address)
 
-        # Stop the btmon log and verify the codec.
-        if self.is_a2dp_profile(test_profile):
-            self.bluetooth_facade.btmon_stop()
-            self.test_audio_codec()
+            # Stop the btmon log and verify the codec.
+            if self.is_a2dp_profile(test_profile):
+                self.bluetooth_facade.btmon_stop()
+                self.test_audio_codec()
 
-        self.collect_audio_diagnostics()
-        self.compress_and_collect_file(AUDIO_RECORD_DIR)
+            self.collect_audio_diagnostics()
+            self.compress_and_collect_file(AUDIO_RECORD_DIR)
 
-        if self.dut_atlog_path is not None:
-            self.compress_and_collect_file(self.dut_atlog_path)
+            if self.dut_atlog_path is not None:
+                self.compress_and_collect_file(self.dut_atlog_path)
 
-        self.host.run(f'pkill -f {self.CRAS_TEST_CLIENT}', ignore_status=True)
-        self.cleanup_bluetooth_audio(device, test_profile)
+            self.host.run(f'pkill -f {self.CRAS_TEST_CLIENT}',
+                          ignore_status=True)
+            self.cleanup_bluetooth_audio(device, test_profile)
 
-        if self.is_hfp_profile(test_profile):
-            self.hfp_test_posttest()
+            if self.is_hfp_profile(test_profile):
+                self.hfp_test_posttest()
 
         self.quick_test_test_posttest()
 

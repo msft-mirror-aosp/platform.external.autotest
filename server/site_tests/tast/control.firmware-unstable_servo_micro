@@ -11,6 +11,7 @@ METADATA = {
         "contacts": ["chromeos-faft@google.com", "cienet-firmware@cienet.corp-partner.google.com"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Run Tast tests for firmware that require servo_micro",
+        'life_cycle_stage': 'owner_monitored',
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
@@ -27,7 +28,7 @@ Run Tast tests for EC firmware that require a servo with servo_micro.
 
 The tests are part of 'group:firmware'. The 'firmware_unstable'
 sub-attribute limits it to unstable tests. Once the test is stable change
-the attribute to one of the others. The 'firmware_servo_micro' further 
+the attribute to one of the others. The 'firmware_servo_micro' further
 limits it to tests which require servo_micro.
 '''
 

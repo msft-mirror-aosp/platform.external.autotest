@@ -11,6 +11,7 @@ METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Run Tast tests for firmware",
+        'life_cycle_stage': 'owner_monitored',
 }
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'

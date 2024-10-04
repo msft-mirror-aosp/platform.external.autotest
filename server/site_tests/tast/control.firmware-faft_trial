@@ -10,7 +10,8 @@ NAME = 'tast.firmware-faft_trial'
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Run Tast tests for firmware"
+        "criteria": "Run Tast tests for firmware",
+        'life_cycle_stage': 'owner_monitored',
 }
 TIME = 'LENGTHY'
 TEST_TYPE = 'Server'
@@ -23,11 +24,11 @@ JOB_RETRIES = 0
 REQUIRE_SSP = True
 
 DOC = '''
-Run highly risky Tast tests. 
+Run highly risky Tast tests.
 
 The tests are part of 'group:firmware'. The 'firmware_trial'
 sub-attribute limits it to highly risky tests or tests that don't need
-to be run frequently. 
+to be run frequently.
 '''
 
 command_args, varslist = tast.split_arguments(args)

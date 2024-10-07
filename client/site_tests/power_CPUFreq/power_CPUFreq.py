@@ -1,7 +1,7 @@
 # Lint as: python2, python3
 # Copyright 2010 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
+# found in the LICENSE file..
 
 import glob
 import logging
@@ -9,11 +9,14 @@ import os
 import time
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error, utils
+from autotest_lib.client.cros import tast
+from autotest_lib.client.cros.tast.ui import chrome_service_pb2
 
 SYSFS_CPUQUIET_ENABLE = '/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/enable'
 
 
 class power_CPUFreq(test.test):
+
     version = 1
 
     def initialize(self):
@@ -41,25 +44,38 @@ class power_CPUFreq(test.test):
             if 'pstate' in cpu.get_driver():
                 raise error.TestNAError('Test does NOT support P-state driver')
 
-        keyvals = {}
-        try:
-            # First attempt to set all frequencies on each core before going
-            # on to the next core.
-            self.test_cores_in_series()
-            # Record that it was the first test that passed.
-            keyvals['test_cores_in_series'] = 1
-        except error.TestFail as exception:
-            if str(exception) == 'Unable to set frequency':
-                # If test_cores_in_series fails, try to set each frequency for
-                # all cores before moving on to the next frequency.
-                logging.debug('trying to set freq in parallel')
-                self.test_cores_in_parallel()
-                # Record that it was the second test that passed.
-                keyvals['test_cores_in_parallel'] = 1
-            else:
-                raise exception
+        # Log in and wait a little while so as to make sure we're not in OOBE.
+        # OOBE uses a lot of CPU and can cause thermal throttling, which
+        # can affect the test.
+        with tast.GRPC(None) as tast_grpc,\
+            tast.ChromeService(tast_grpc.channel) as chrome_service:
+            chrome_service.New(
+                    chrome_service_pb2.NewRequest(
+                            arc_mode=chrome_service_pb2.ARC_MODE_DISABLED, ))
 
-        self.write_perf_keyval(keyvals)
+            # Sleep a little bit to let the CPU cool so it's not thermal
+            # throttling anymore
+            time.sleep(30)
+
+            keyvals = {}
+            try:
+                # First attempt to set all frequencies on each core before going
+                # on to the next core.
+                self.test_cores_in_series()
+                # Record that it was the first test that passed.
+                keyvals['test_cores_in_series'] = 1
+            except error.TestFail as exception:
+                if str(exception) == 'Unable to set frequency':
+                    # If test_cores_in_series fails, try to set each frequency for
+                    # all cores before moving on to the next frequency.
+                    logging.debug('trying to set freq in parallel')
+                    self.test_cores_in_parallel()
+                    # Record that it was the second test that passed.
+                    keyvals['test_cores_in_parallel'] = 1
+                else:
+                    raise exception
+
+            self.write_perf_keyval(keyvals)
 
     def test_cores_in_series(self):
         for cpu in self._cpus:

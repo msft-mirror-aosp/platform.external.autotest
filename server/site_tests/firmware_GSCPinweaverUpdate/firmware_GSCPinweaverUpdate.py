@@ -180,10 +180,8 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
 
         # Verify pinweaver lockout still works after the update.
         # Use the wrong pin three more times to lockout the node. It gets
-        # locked after 5 attempts.
+        # locked after 4 attempts.
         logging.info('Verify pin lockout')
-        self.authenticate_pin(session_id, self.WRONG_PIN,
-                              self.CRYPTOHOME_ERROR_AUTHORIZATION_KEY_FAILED)
         self.authenticate_pin(session_id, self.WRONG_PIN,
                               self.CRYPTOHOME_ERROR_AUTHORIZATION_KEY_FAILED)
         logging.info('Last wrong pin attempt before lockout')

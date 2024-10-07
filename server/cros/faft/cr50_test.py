@@ -625,11 +625,24 @@ class Cr50Test(FirmwareTest):
         logging.info('Removing gsc firmware images')
         if not filesystem_util.is_rootfs_writable(self.host):
             self.make_rootfs_writable()
-        self.host.run('rm /opt/google/*50/firmware/*', ignore_status=True)
+        self.host.run(self.gsc.DUT_REMOVE_GSC_IMAGES, ignore_status=True)
         self.host.run('sync')
 
         if self.gsc_firmware_images_exist():
             raise error.TestError('Unable to remove gsc firmware images')
+
+    def install_gsc_firmware_images(self, image_path, image_type):
+        """Remove gsc .prod and .prepvt images from the dut."""
+        logging.info('Installing %s images', image_type)
+        if not filesystem_util.is_rootfs_writable(self.host):
+            self.make_rootfs_writable()
+        dut_paths = (self.gsc.DUT_PROD_PATHS if image_type == self.gsc.DUT_PROD
+                     else self.gsc.DUT_PREPVT_PATHS)
+        logging.info('DUT paths %r', dut_paths)
+        logging.info('image paths %r', image_path)
+        for dut_path in dut_paths:
+            logging.info('Installing %s', dut_path)
+            cr50_utils.InstallImage(self.host, image_path, dut_path)
 
     def _discharging_factory_mode_cleanup(self):
         """Try to get the dut back into charging mode.
@@ -864,13 +877,10 @@ class Cr50Test(FirmwareTest):
         new_mismatch = self._check_running_image_and_board_id(state)
         # Copy the .prod file onto the DUT.
         if prod_path and 'prod_version' in new_mismatch:
-            self.make_rootfs_writable()
-            cr50_utils.InstallImage(self.host, prod_path, self.gsc.DUT_PROD)
+            self.install_gsc_firmware_images(prod_path, self.gsc.DUT_PROD)
         # Copy the .prepvt file onto the DUT.
         if prepvt_path and 'prepvt_version' in new_mismatch:
-            self.make_rootfs_writable()
-            cr50_utils.InstallImage(self.host, prepvt_path,
-                                    self.gsc.DUT_PREPVT)
+            self.install_gsc_firmware_images(prepvt_path, self.gsc.DUT_PREPVT)
 
         final_mismatch = self._check_running_image_and_board_id(state)
         if final_mismatch:

@@ -40,16 +40,27 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     # old - ti50.ro.0.0.*.rw.RW_VER.BID.tar.xz
     # new - ti50.r0.0.*.w0.RW_VER.BID.tar.xz
     PROD_TAR = 'ti50.r*0.0.*%s%s.tar.xz'
-    # Prod image from the tarball
-    PROD_FILE = 'ti50.bin.prod'
     # ti50.dbg.0xDEVID0_0xDEVID1.bin.GIT_SHA.BID (SHA and BID are optional)
     DEBUG_FILE = '*/ti50.dbg.%s.bin.*%s'
     # ti50_Unknown_NodeLocked-DEVID0-DEVID1_cr50-accessory-mp.bin
     ERASEFLASHINFO_FILE = '*/ti50_Unknown_NodeLocked-%s_ti50-accessory-mp.bin'
     QUAL_VERSION_FILE = 'chromeos-ti50-QUAL_VERSION'
+
+    # Image prefix used by Chrome OS.
+    GSC_IMG_PREFIX = 'ti50-dt'
+    # ChromeOS Ti50 firmware directory
     DUT_FW = '/opt/google/ti50/firmware/'
-    DUT_PROD = DUT_FW + PROD_FILE
-    DUT_PREPVT = DUT_FW + 'ti50.bin.prepvt'
+
+    # Ti50 image in tarballs
+    PROD_FILE = 'ti50.bin.prod'
+    # Ti50 CrOS image information
+    DUT_PROD = DUT_FW + GSC_IMG_PREFIX + '.bin.prod'
+    DUT_PREPVT = DUT_FW + GSC_IMG_PREFIX + '.bin.prepvt'
+    DUT_REMOVE_GSC_IMAGES = 'rm ' + DUT_FW + GSC_IMG_PREFIX + '*'
+
+    # Ti50 FW is installed in 2 locations
+    DUT_PROD_PATHS = [DUT_PROD, DUT_FW + 'ti50.bin.prod']
+    DUT_PREPVT_PATHS = [DUT_PREPVT, DUT_FW + 'ti50.bin.prepvt']
     # ===============================================================
 
     # Ti50 command to erase board id and rollback space.

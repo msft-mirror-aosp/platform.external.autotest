@@ -289,17 +289,26 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     GS_PRIVATE_DBG = GS_PRIVATE + 'chromeos-cr50-debug-0.0.11/'
     # cr50.r0.0.1*.wRW_VER.BID.tbz2
     PROD_TAR = 'cr50.r0.0.1*.w%s%s.tbz2'
-    # Prod image from the tarball
-    PROD_FILE = 'cr50.bin.prod'
     # cr50.dbg.0xDEVID0_0xDEVID1.bin.GIT_SHA
     DEBUG_FILE = '*/cr50.dbg.%s.bin.*%s'
     # cr50_Unknown_NodeLocked-DEVID0-DEVID1_cr50-accessory-mp.bin
     ERASEFLASHINFO_FILE = (
             '*/cr50_Unknown_NodeLocked-%s_cr50-accessory-mp.bin')
     QUAL_VERSION_FILE = 'chromeos-cr50-QUAL_VERSION'
+
+    # Cr50 OS FW information.
+    # Image prefix used by Chrome OS.
+    GSC_IMG_PREFIX = 'cr50'
+    # ChromeOS Cr50 firmware directory
     DUT_FW = '/opt/google/cr50/firmware/'
+
+    PROD_FILE = GSC_IMG_PREFIX + '.bin.prod'
     DUT_PROD = DUT_FW + PROD_FILE
-    DUT_PREPVT = DUT_FW + 'cr50.bin.prepvt'
+    DUT_PREPVT = DUT_FW + GSC_IMG_PREFIX + '.bin.prepvt'
+    DUT_REMOVE_GSC_IMAGES = 'rm ' + DUT_FW + GSC_IMG_PREFIX + '*'
+
+    DUT_PROD_PATHS = [DUT_PROD]
+    DUT_PREPVT_PATHS = [DUT_PREPVT]
     # ===============================================================
     # Cr50 interrupt numbers reported in taskinfo
     IRQ_DICT = {

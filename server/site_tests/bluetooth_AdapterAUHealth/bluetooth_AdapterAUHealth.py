@@ -199,7 +199,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                              A2DP, HFP_SWB, HFP_WBS or HFP_NBS
         @param disconnect_device: True to disconnect device, False otherwise.
         """
-        if self.audio_test_started:
+        if hasattr(self, 'audio_test_started') and self.audio_test_started:
+            self.audio_test_started = False
             logging.debug('Running audio_test_posttest...')
 
             if not self.devices['BLUETOOTH_AUDIO']:

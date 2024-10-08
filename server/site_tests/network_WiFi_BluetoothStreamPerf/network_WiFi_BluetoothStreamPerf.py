@@ -296,7 +296,9 @@ class network_WiFi_BluetoothStreamPerf(
 
         return failed_test_types
 
-    @test_wrapper('Coex tests', devices={'BLUETOOTH_AUDIO': 1})
+    @test_wrapper('Coex tests',
+                  devices={'BLUETOOTH_AUDIO': 1},
+                  supports_floss=True)
     def coex_test(self):
         """Test body."""
         start_time = time.time()
@@ -328,6 +330,9 @@ class network_WiFi_BluetoothStreamPerf(
     def run_once(self, host, test_name=None, args_dict=None):
         self.host = host
 
-        self.quick_test_init(host, use_btpeer=True, args_dict=args_dict)
+        self.quick_test_init(host,
+                             use_btpeer=True,
+                             args_dict=args_dict,
+                             floss=True)
         self.coex_health_batch_run(test_name=test_name)
         self.quick_test_cleanup()

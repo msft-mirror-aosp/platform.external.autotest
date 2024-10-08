@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'The ChromiumOS Authors'
-NAME = 'tast.graphics-video-weekly'
+NAME = 'tast.graphics-video-weekly-shard-3'
 METADATA = {
     'contacts': ['tauto-core@google.com'],
     'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
@@ -35,6 +35,8 @@ def run(machine):
     job.run_test('tast',
                  host=host,
                  test_exprs=['("group:graphics" && graphics_weekly && graphics_video && !graphics_video_chromestackdecoding && !graphics_video_decodeaccel && !graphics_av_analysis && !graphics_video_platformdecoding)'],
+                 totalshards=4,
+                 shardindex=3,
                  ignore_test_failures=True, max_run_sec=10500,
                  command_args=args)
 

@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 AUTHOR = 'The ChromiumOS Authors'
-NAME = 'tast.graphics-video-nightly'
+NAME = 'tast.graphics-nightly-shard-1'
 METADATA = {
     'contacts': ['tauto-core@google.com'],
     'bug_component': 'b:1034523', # ChromeOS > Test > Harness > Tauto
@@ -19,13 +19,13 @@ PY_VERSION = 3
 REQUIRE_SSP = True
 
 DOC = '''
-Run the Tast graphics-video test suite.
+Run the Tast graphics test suite.
 
 Tast is an integration-testing framework analagous to the test-running portion
 of Autotest. See https://chromium.googlesource.com/chromiumos/platform/tast/ for
 more information.
 
-This test runs Tast-based graphics-video tests against a remote DUT.
+This test runs Tast-based graphics tests against a remote DUT.
 
 See http://go/tast-failures for information about investigating failures.
 '''
@@ -34,7 +34,9 @@ def run(machine):
     host=hosts.create_host(machine)
     job.run_test('tast',
                  host=host,
-                 test_exprs=['("group:graphics" && graphics_nightly && graphics_video && !graphics_video_chromestackdecoding && !graphics_video_decodeaccel && !graphics_av_analysis && !graphics_video_platformdecoding)'],
+                 test_exprs=['("group:graphics" && graphics_nightly && !graphics_igt && !graphics_chameleon_igt && !graphics_opencl && !graphics_drm && !graphics_trace && !graphics_video && !graphics_stress && !graphics_cft)'],
+                 totalshards=4,
+                 shardindex=1,
                  ignore_test_failures=True, max_run_sec=10500,
                  command_args=args)
 

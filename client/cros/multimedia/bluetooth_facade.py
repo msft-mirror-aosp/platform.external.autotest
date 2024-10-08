@@ -79,6 +79,7 @@ from autotest_lib.client.cros.bluetooth.floss.socket_manager import FlossSocketM
 from autotest_lib.client.cros.bluetooth.floss.telephony_client import FlossTelephonyClient
 from autotest_lib.client.cros.bluetooth.floss.floss_telephony_hid_device import FlossTelephonyHIDDevice
 from autotest_lib.client.cros.bluetooth.floss.battery_manager_client import FlossBatteryManagerClient
+from autotest_lib.client.cros.bluetooth.floss.floss_evtest import FlossEvtest
 from autotest_lib.client.cros.bluetooth.floss.utils import (
         GLIB_THREAD_NAME, make_kv_optional_value, GLIB_THREAD_NAME)
 from autotest_lib.client.cros.bluetooth.hcitool import Hcitool
@@ -4752,6 +4753,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.gatt_client = None
 
         self.telephony_hid_device = FlossTelephonyHIDDevice()
+        self.evtest = FlossEvtest()
 
         self.is_clean = False
         self.enable_floss_debug = False
@@ -4774,14 +4776,15 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         self.crash_detector = logger_helper.LogManager()
 
     def __del__(self):
-        if not self.is_clean:
-            self.cleanup()
+        self.cleanup()
 
     def cleanup(self):
         """Clean up the mainloop thread."""
-        self.mainloop_quit.set()
-        self.mainloop.quit()
-        self.is_clean = True
+        if not self.is_clean:
+            self.mainloop_quit.set()
+            self.mainloop.quit()
+            self.evtest.cleanup()
+            self.is_clean = True
 
     @staticmethod
     def mainloop_thread(self):

@@ -110,10 +110,15 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     # List of errors to search for. The first element is the string to look
     # for. The second is a bool that tells whether the error should be fatal.
     ERROR_DESC_LIST = [
-            # b/254309086 AP RO verification messages about WP state. This
-            # shouldn't happen. Print the number of messages that get triggered
-            # during the test. These aren't fatal.
+            # b/254309086 AP RO verification messages about WP state.
+            # This message means WP is externally driven. It shouldn't happen.
             ['externally driven!', False],
+            # This message shows up when the AP would have been rebooted due to
+            # an external event such as WP being driven high (e.g. via
+            # servo_micro), if WP we re-enabled, or if the AP RO verification
+            # settings changed.
+            # It's expected on FAFT devices since they change WP settings and
+            # AP RO verification settings.
             ['Rebooting GSC for AP RO due to state', False],
     ]
 

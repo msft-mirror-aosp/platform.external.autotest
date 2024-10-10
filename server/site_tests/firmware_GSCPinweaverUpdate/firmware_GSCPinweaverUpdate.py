@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import logging
 import re
+import time
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import tpm_utils
@@ -45,10 +46,16 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
     CRYPTOHOME_ERROR_TPM_DEFEND_LOCK = 8
     # One more pin attempt will lockout the credential
     CRYPTOHOME_ERROR_CREDENTIAL_LOCKED = 59
+    RECOVERY_METHODS = ["pw_auth", "wait_for_timeout"]
 
-    def initialize(self, host, cmdline_args, full_args):
+    def initialize(self, host, cmdline_args, full_args, recovery_method):
         """Setup the test to restore the release image."""
         self.ran_test = False
+        self.recovery_method = recovery_method
+        if self.recovery_method not in self.RECOVERY_METHODS:
+            raise error.TestNAError(
+                    'Recovery method unsupported. %s not found in %s',
+                    self.recovery_method, self.RECOVERY_METHODS)
         if not host.servo:
             raise error.TestNAError('No valid servo found')
         if host.servo.main_device_is_ccd():
@@ -195,9 +202,18 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
         self.authenticate_pin(session_id, self.PIN,
                               self.CRYPTOHOME_ERROR_TPM_DEFEND_LOCK)
 
-        # Use the password to clear the pin lockout
-        self.authenticate_password(session_id, self.PWD)
+        if self.recovery_method == 'pw_auth':
+            logging.info('Authenticate with password')
+            # Use the password to clear the pin lockout
+            self.authenticate_password(session_id, self.PWD)
+            logging.info(
+                    'Verify pin works again after the password has been used')
+        elif self.recovery_method == 'wait_for_timeout':
+            logging.info('Waiting for the pin timeout')
+            # Sleep for 30 seconds to let the TPM defend lock expire.
+            time.sleep(30)
+            # Sleep for 30 seconds to let the TPM defend lock expire.
+            logging.info('Verify pin works again after the time has expired')
         self.authenticate_pin(session_id, self.WRONG_PIN,
                               self.CRYPTOHOME_ERROR_AUTHORIZATION_KEY_FAILED)
-        logging.info('Verify pin works again after the password has been used')
         self.authenticate_pin(session_id, self.PIN, self.SUCCESS)

@@ -1,15 +1,15 @@
-# Copyright 2023 The ChromiumOS Authors
+# Copyright 2024 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 from autotest_lib.server import utils
 
 AUTHOR = "mruthven"
-NAME = "firmware_GSCPinweaverUpdate"
+NAME = "firmware_GSCPinweaverUpdate.wait_for_timeout"
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "mruthven@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Verify pinweaver data survives gsc update"
+        "criteria": "Verify pinweaver data survives gsc update and pin lockout can be cleared by waiting for the pin timeout"
 }
 ATTRIBUTES = "suite:faft_gsc_nightly,suite:faft_cr50_pvt,suite:faft_cr50_prepvt,suite:faft_cr50_experimental"
 TIME = "LONG"
@@ -29,7 +29,13 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     host = hosts.create_host(machine, servo_args=servo_args)
 
-    job.run_test("firmware_GSCPinweaverUpdate", host=host, cmdline_args=args,
-                 full_args=args_dict)
+    job.run_test(
+        "firmware_GSCPinweaverUpdate",
+        host=host,
+        cmdline_args=args,
+        full_args=args_dict,
+        recovery_method="wait_for_timeout",
+        tag="wait_for_timeout"
+    )
 
 parallel_simple(run, machines)

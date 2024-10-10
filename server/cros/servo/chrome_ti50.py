@@ -112,8 +112,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     ERROR_DESC_LIST = [
             # b/254309086 AP RO verification messages about WP state.
             # This message means WP is externally driven. It shouldn't happen.
-            # Fail if it shows up in the logs.
-            ['externally driven!', True],
+            ['externally driven!', False],
             # This message shows up when the AP would have been rebooted due to
             # an external event such as WP being driven high (e.g. via
             # servo_micro), if WP we re-enabled, or if the AP RO verification

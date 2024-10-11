@@ -636,7 +636,7 @@ CONFIG['LAB_DEPENDENCY'] = {
 
 # b/343614317: Wifi-dependent modules need device with label-wifi_on_site
 for m in CONFIG['WIFI_MODULES']:
-    CONFIG['LAB_DEPENDENCY'][m] = ['wifi_on_site']
+    CONFIG['LAB_DEPENDENCY'][m] = ['wifi_on_site', 'label-bot_size:BOT_SIZE_LARGE']
 
 # Public lab dependencies.
 CONFIG['PUBLIC_DEPENDENCIES'] = {

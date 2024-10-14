@@ -40,55 +40,55 @@ as PDTester.
 
 ## Test details {#test-details}
 
-The PD FAFT tests are located in the Autotest tree as directories, usually with
-the prefix firmware\_PD.
+The PD FAFT tests are located in the src/platform/tast-tests/src/go.chromium.org/tast-tests/cros/remote/bundles/cros/firmware
+directory, usually with the prefix pd_.
 
-firmware\_PDConnect, checks:
+firmware.PDConnect, checks:
 
 *   Ability to disconnect, then reconnect establishing a successful PD contract
 *   If PD Dual role mode is operational in the DUT
 
-firmware\_PDPowerSwap, checks:
+firmware.PDPowerSwap, checks:
 
 *   If the DUT advertises support for dualrole operation
 *   If the DUT can receive power swap requests
 *   If the DUT can initiate power swap requests
 
-firmware\_PDDataSwap, checks:
+firmware.PDDataSwap, checks:
 
 *   If the DUT advertises support for data role swaps
 *   If the DUT can receive data swap requests
 *   If the DUT can initiate data swap requests
 
-firmware\_PDResetHard, checks:
+firmware.PDResetHard, checks:
 
 *   Ability of DUT to initiate hard resets
 *   Ability of DUT to receive hard resets
 *   If DUT is dualrole capable, hard resets are done with the DUT in each power
     role
 
-firmware\_PDResetSoft, checks:
+firmware.PDResetSoft, checks:
 
 *   Ability of DUT to initiate soft resets
 *   Ability of DUT to receive soft reset requests from servo
 *   If DUT is dualrole capable, soft resets are done with the DUT in each power
     role
 
-firmware\_PDTrySrc, checks:
+firmware.PDTrySrc, checks:
 
 *   If the DUT advertises support for dualrole and Try.SRC operation
 *   A series of disconnects/connects with Try.SRC on
 *   A series of disconnects/connects with Try.SRC off
 *   Try.SRC on the DUT connects in SRC mode
 
-firmware\_PDVbusRequest, checks:
+firmware.PDVbusRequest, checks:
 
 *   Ability to initiate a new PD contract with different VBUS value, according
     to the attached charger capability, like 5V, 9V, 12V, 15V, 20V, etc.
 *   Receiving Source Capability messages from PDTester
 *   If PD Dual role mode is operational in the DUT
 
-firmware\_ECWakefromULP, checks:
+firmware.ECWakefromULP, checks:
 
 *   Ability to wake AP and EC from ULP mode by PB, LID.
 *   Ability to wake EC from ULP mode by AC.

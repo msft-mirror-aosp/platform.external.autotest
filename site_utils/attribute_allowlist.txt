@@ -1,6 +1,7 @@
 group:
 group:release-health
 release-health_audio
+release-health_wifi
 suite:
 suite:AFDO_page_replay
 suite:AFDO_record

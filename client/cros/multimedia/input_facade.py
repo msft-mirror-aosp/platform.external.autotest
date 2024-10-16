@@ -5,6 +5,7 @@
 """An interface to access the local input facade."""
 
 
+from contextlib import contextmanager
 import json
 import logging
 import threading
@@ -23,12 +24,33 @@ class InputFacadeLocalError(Exception):
 class InputFacadeLocal(object):
     """Facade to access the record input events."""
 
+    @contextmanager
+    def recorders_lock_with_log(self, caller_name):
+        """Locks recorders_lock and prints logs on acquired/released.
+
+        Sample usage:
+            ```
+            with self.recorders_lock_with_log('my_function_name'):
+                pass
+            ```
+
+        @param caller_name: the name of the caller, used for logging.
+        """
+        with self.recorders_lock:
+            try:
+                logging.debug('%s acquired recorders_lock', caller_name)
+                yield
+            finally:
+                logging.debug('%s released recorders_lock', caller_name)
+
     def __init__(self):
         """Initializes the input facade."""
         self.recorders_lock = threading.Lock()
         self.recorders = dict()
 
-    def initialize_input_playback(self, input_type='keyboard', property_file=None):
+    def initialize_input_playback(self,
+                                  input_type='keyboard',
+                                  property_file=None):
         """Initialize for input events simulation.
 
         @param input_type: the name of the input device.
@@ -45,7 +67,7 @@ class InputFacadeLocal(object):
         @param uniq: Unique address of input device (None if not used)
 
         """
-        with self.recorders_lock:
+        with self.recorders_lock_with_log('initialize_input_recorder'):
             self.recorders[device_name] = \
                 input_event_recorder.InputEventRecorder(device_name, uniq)
             logging.info('input event device: %s [uniq=%s] (%s)',
@@ -53,19 +75,17 @@ class InputFacadeLocal(object):
                          self.recorders[device_name].uniq,
                          self.recorders[device_name].device_node)
 
-
     def clear_input_events(self, device_name):
         """Clear the event list.
 
         @param device_name: the name of the input device to record.
 
         """
-        with self.recorders_lock:
+        with self.recorders_lock_with_log('clear_input_events'):
             if self.recorders[device_name] is None:
                 raise error.TestError(
                     'input facade: input device name not given')
             self.recorders[device_name].clear_events()
-
 
     def start_input_recorder(self, device_name):
         """Start the recording thread.
@@ -73,12 +93,11 @@ class InputFacadeLocal(object):
         @param device_name: the name of the input device to record.
 
         """
-        with self.recorders_lock:
+        with self.recorders_lock_with_log('start_input_recorder'):
             if self.recorders[device_name] is None:
                 raise error.TestError(
                     'input facade: input device name not given')
             self.recorders[device_name].start()
-
 
     def stop_input_recorder(self, device_name):
         """Stop the recording thread.
@@ -86,12 +105,11 @@ class InputFacadeLocal(object):
         @param device_name: the name of the input device to record.
 
         """
-        with self.recorders_lock:
+        with self.recorders_lock_with_log('stop_input_recorder'):
             if self.recorders[device_name] is None:
                 raise error.TestError(
                     'input facade: input device name not given')
             self.recorders[device_name].stop()
-
 
     def get_input_events(self, device_name):
         """Get the bluetooth device input events.
@@ -101,13 +119,12 @@ class InputFacadeLocal(object):
         @returns: the recorded input events.
 
         """
-        with self.recorders_lock:
+        with self.recorders_lock_with_log('get_input_events'):
             if self.recorders[device_name] is None:
                 raise error.TestError(
                     'input facade: input device name not given')
             events = self.recorders[device_name].get_events()
         return json.dumps(events)
-
 
     def press_keys(self, key_list):
         """ Simulating key press
@@ -115,7 +132,6 @@ class InputFacadeLocal(object):
         @param key_list: A list of key strings, e.g. ['LEFTCTRL', 'F4']
         """
         graphics_utils.press_keys(key_list)
-
 
     def blocking_playback_of_default_file(self, input_type, filename):
         """Simulate events

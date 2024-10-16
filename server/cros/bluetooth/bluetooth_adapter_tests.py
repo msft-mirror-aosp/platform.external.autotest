@@ -1126,6 +1126,9 @@ class BluetoothAdapterTests(test.test):
             if 'ble' not in device._name:
                 peer_device.request_bt_clock()
             else:
+                # unpair the device to remove it from the accept list.
+                self.test_remove_pairing(device.address)
+                # self.test_disconnection_by_adapter()
                 classic_device = self.reset_btpeer(peer_device,
                                                    device.device_type, 1, True)
 

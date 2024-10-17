@@ -305,6 +305,17 @@ class ChameleonBoard(object):
             matches.append(patterns_match)
         return matches
 
+    def is_ready(self):
+        """Gets current chameleond ready status.
+
+        @return: True if the server is ready, False otherwise.
+        """
+        return self._chameleond_proxy.is_ready()
+
+    def restart_chameleond(self):
+        """Restarts the chameleond on the remote device."""
+        self._chameleond_proxy.restart_chameleond()
+
     def reset(self):
         """Resets Chameleon board."""
         self._chameleond_proxy.Reset()

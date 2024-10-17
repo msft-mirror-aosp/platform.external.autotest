@@ -987,7 +987,7 @@ class BluetoothAdapterTests(test.test):
             r"Success \(0x00\)\n.*\n.*Clock: (0x[0-9A-Fa-f]+)")
 
 
-    def __get_chameleon_board(self, device):
+    def _get_chameleon_board(self, device):
         """Gets device chameleon board object.
 
         @param device: The Bluetooth device.
@@ -1123,7 +1123,7 @@ class BluetoothAdapterTests(test.test):
             """
             self.bluetooth_facade.request_bt_clock()
 
-            peer_device = self.__get_chameleon_board(device)
+            peer_device = self._get_chameleon_board(device)
             if 'ble' not in device._name:
                 peer_device.request_bt_clock()
             else:
@@ -1143,7 +1143,7 @@ class BluetoothAdapterTests(test.test):
                 self.test_connection_by_adapter(classic_device.address)
                 peer_device.request_bt_clock()
 
-        peer = self.__get_chameleon_board(device)
+        peer = self._get_chameleon_board(device)
         request_bluetooth_clocks(device)
         connect_regex = self.CL_ACL_CONNECTED_REGEX
         clock_offset = self.bluetooth_facade.find_btmon_patterns(
@@ -1209,7 +1209,7 @@ class BluetoothAdapterTests(test.test):
 
         @return: List of peer notifications timestamp.
         """
-        peer = self.__get_chameleon_board(device)
+        peer = self._get_chameleon_board(device)
         connection_handle = peer.find_btmon_patterns([
                 self.__get_acl_connection_handle_regex(device).format(
                         self.bluetooth_facade.address)
@@ -1384,13 +1384,13 @@ class BluetoothAdapterTests(test.test):
         logging.debug("self.bt_group is %s",self.btpeer_group)
 
 
-    def wait_for_device(self, device, timeout=10):
+    def wait_for_chameleond_ready(self, peer, timeout=10):
         """Waits for device to become available again
 
         We reset raspberry pi peer between tests. This method helps us wait to
         prevent us from trying to use the device before it comes back up again.
 
-        @param device: proxy object of peripheral device
+        @param peer: The remote Bluetooth peer.
         """
 
         def is_device_ready():
@@ -1401,35 +1401,30 @@ class BluetoothAdapterTests(test.test):
             """
 
             try:
-                # Call a simple (fast) function to determine if device is online
-                # and reachable. If we can query this property, we know the
-                # device is available for us to use
-                getattr(device, 'GetCapabilities')()
-
+                peer.is_ready()
             except Exception as e:
                 return False
-
             return True
-
 
         try:
             utils.poll_for_condition(condition=is_device_ready,
                                      desc='wait_for_device',
                                      timeout=timeout)
-
         except utils.TimeoutError as e:
             raise error.TestError('Peer is not available after waiting')
 
 
-    def clear_raspi_device(self, device, next_device_type=None):
+    def clear_raspi_device(self, peer, device, next_device_type=None):
         """Clears a device on a raspi peer by resetting bluetooth stack
 
+        @param peer: The remote Bluetooth peer.
         @param device: proxy object of peripheral device
         """
 
-        try:
-            device.ResetStack(next_device_type)
+        device.ResetStack(next_device_type, False)
 
+        try:
+            peer.restart_chameleond()
         except socket.error as e:
             # Ignore conn reset, expected during stack reset
             if e.errno != errno.ECONNRESET:
@@ -1437,10 +1432,11 @@ class BluetoothAdapterTests(test.test):
 
         except chameleon.ChameleonConnectionError as e:
             # Ignore chameleon conn reset, expected during stack reset
-            if (str(errno.ECONNRESET) not in str(e) and
-                    'ResetStack' not in str(e)):
+            if (str(errno.ECONNRESET) not in str(e)
+                        and 'restart_chameleond' not in str(e)):
                 raise
-            logging.info('Ignored exception due to ResetStack: %s', str(e))
+            logging.info('Ignored exception due to restart_chameleond: %s',
+                         str(e))
 
         except six.moves.http_client.BadStatusLine as e:
             # BadStatusLine occurs occasionally when chameleon
@@ -1457,7 +1453,7 @@ class BluetoothAdapterTests(test.test):
                 raise
 
         # Ensure device is back online before continuing
-        self.wait_for_device(device, timeout=30)
+        self.wait_for_chameleond_ready(peer, timeout=30)
 
     def device_set_powered(self, device, powered):
         """Set raspi BT powered state.
@@ -1520,6 +1516,9 @@ class BluetoothAdapterTests(test.test):
 
                 self.devices[device_type].append(device)
 
+                # Keep tracking the devices and the peers
+                self.device_id_to_peer[id(device)] = btpeer
+
                 # Remove this btpeer from btpeer_group for other device types
                 # since it is already configured as a specific device
                 for temp_device in SUPPORTED_DEVICE_TYPES:
@@ -1580,13 +1579,22 @@ class BluetoothAdapterTests(test.test):
 
         device = self.reset_btpeer(self.host.btpeer, device_type, cap_reqs,
                                    on_start)
+
+        # Keep tracking the devices and the peers
+        self.device_id_to_peer[id(device)] = self.host.btpeer
+
         self.devices[device_type].append(device)
         return self.devices[device_type][-1]
 
 
-    def reset_emulated_device(self, device, device_type, clear_device=True):
+    def reset_emulated_device(self,
+                              peer,
+                              device,
+                              device_type,
+                              clear_device=True):
         """Reset the emulated device in order to be used as a different type.
 
+        @param peer: The remote Bluetooth peer.
         @param device: the emulated peer device to reset with new device type
         @param device_type : the new bluetooth device type, e.g., 'MOUSE'
         @param clear_device: whether to clear the device state
@@ -1596,7 +1604,7 @@ class BluetoothAdapterTests(test.test):
         """
         # Re-fresh device to clean state if test is starting
         if clear_device:
-            self.clear_raspi_device(device, next_device_type=device_type)
+            self.clear_raspi_device(peer, device, next_device_type=device_type)
 
         try:
             # Tell generic chameleon to bind to this device type
@@ -1629,7 +1637,8 @@ class BluetoothAdapterTests(test.test):
         if device is None:
             return None
 
-        return self.reset_emulated_device(device, device_type, clear_device)
+        return self.reset_emulated_device(peer, device, device_type,
+                                          clear_device)
 
     def is_device_available(self, btpeer, device_type):
         """Determines if the named device is available on the linked peer
@@ -6776,6 +6785,8 @@ class BluetoothAdapterTests(test.test):
 
         # The count of registered advertisements.
         self.count_advertisements = 0
+
+        self.device_id_to_peer = {}
 
 
     def get_device_sample_rssi(self, device, use_cached_value=True):

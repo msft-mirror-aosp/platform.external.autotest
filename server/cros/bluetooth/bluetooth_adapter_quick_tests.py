@@ -673,7 +673,8 @@ class BluetoothAdapterQuickTests(
         for device_list in self.active_test_devices.values():
             for device in device_list:
                 if device is not None:
-                    self.clear_raspi_device(device)
+                    peer = self.device_id_to_peer[id(device)]
+                    self.clear_raspi_device(peer, device)
                     self.device_set_powered(device, False)
 
         # Set the link mode as ACCEPT on all btpeers.

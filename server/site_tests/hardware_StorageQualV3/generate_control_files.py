@@ -42,14 +42,13 @@ v3_tests = [
                 ],
                 attributes=['pdp-enabled', 'pdp-kpi', 'pdp-stress', 'avl-v3'],
                 duration=1200),
-        TestEntry(
-                name='storage_testing_v3_erase_behaviour',
-                test_expr=[
-                        'storage.Trim', 'storage.WriteZeroCorrectness',
-                        'storage.WriteZeroPerf'
-                ],
-                attributes=['pdp-enabled', 'pdp-kpi', 'pdp-stress', 'avl-v3'],
-                duration=12000),
+        TestEntry(name='storage_testing_v3_erase_behaviour',
+                  test_expr=[
+                          'storage.Trim', 'storage.WriteZeroCorrectness',
+                          'storage.WriteZeroPerf'
+                  ],
+                  attributes=['avl-v3'],
+                  duration=12000),
         TestEntry(name='storage_testing_v3_soc_perf',
                   test_expr=['storage.SocPerformance.*'],
                   attributes=['pdp-kpi', 'pdp-stress'],

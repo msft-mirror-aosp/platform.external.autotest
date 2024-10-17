@@ -9,7 +9,7 @@ METADATA = {
     'criteria': 'Part of Storage Testing v3',
     'hw_agnostic': False
 }
-ATTRIBUTES = 'suite:storage-qual-pdp-enabled, suite:storage-qual-pdp-kpi, suite:storage-qual-pdp-stress, suite:storage-qual-avl-v3'
+ATTRIBUTES = 'suite:storage-qual-avl-v3'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
 PRIORITY = 198

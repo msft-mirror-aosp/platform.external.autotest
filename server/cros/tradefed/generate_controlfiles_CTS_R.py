@@ -574,6 +574,8 @@ CONFIG['LAB_DEPENDENCY'] = {
         'x86': ['cts_abi_x86'],
         # b/346839603: Deqp require "large" cloudbot or legacy drone
         'CtsDeqpTestCases': ['label-bot_size:BOT_SIZE_LARGE'],
+        # b/369256917: MediaStress requires "large" cloudbot or legacy drone
+        'CtsMediaStressTestCases': ['label-bot_size:BOT_SIZE_LARGE'],
 }
 
 # b/343614317: Wifi-dependent modules need device with label-wifi_on_site

@@ -85,7 +85,7 @@ METADATA = {
     'requirements': ['bt-gen-0001-v01'],
 }
 
-ATTRIBUTES = 'suite:bluetooth_sa2'
+ATTRIBUTES = 'suite:bluetooth_sa2, group:release-health, release-health_bt'
 MAX_RESULT_SIZE_KB = 512000
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL'

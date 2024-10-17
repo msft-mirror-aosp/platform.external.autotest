@@ -4927,24 +4927,24 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
         """Checks whether the proxy objects for Floss are ok and registers
         client callbacks.
         """
-        proxy_ready = all([
-                self.manager_client.has_proxy(),
-                (self.adapter_client and self.adapter_client.has_proxy()),
-                (self.advertising_client
-                 and self.advertising_client.has_proxy()),
-                (self.gatt_client and self.gatt_client.has_proxy()),
-                (self.media_client and self.media_client.has_proxy()),
-                (self.socket_client and self.socket_client.has_proxy()),
-                (self.admin_client and self.admin_client.has_proxy()),
-                (self.scanner_client and self.scanner_client.has_proxy()),
-                (self.battery_client and self.battery_client.has_proxy()),
-                (self.telephony_client and self.telephony_client.has_proxy()),
-                (self.floss_logger and self.floss_logger.has_proxy())
-        ])
+        clients = [
+                self.manager_client,
+                self.adapter_client,
+                self.advertising_client,
+                self.gatt_client,
+                self.media_client,
+                self.socket_client,
+                self.admin_client,
+                self.scanner_client,
+                self.battery_client,
+                self.telephony_client,
+                self.floss_logger,
+        ]
 
-        if not proxy_ready:
-            logging.info('some proxy has not yet ready')
-            return False
+        for client in clients:
+            if not client or not client.has_proxy():
+                logging.info('some proxy has not yet ready')
+                return False
 
         return self.register_clients_callback()
 

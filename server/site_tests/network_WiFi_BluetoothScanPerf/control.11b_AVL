@@ -7,9 +7,9 @@ from autotest_lib.server.cros.connectivity_common.connectivity_test_version_cont
 
 NAME = 'network_WiFi_BluetoothScanPerf.11b_AVL'
 METADATA = {
-    'contacts': ['chromeos-wifi-champs@google.com'],
-    # ChromeOS > Platform > Connectivity > WiFi
-    'bug_component': 'b:893827',
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
      # netperf is used for measuring the throughput.
      # Network: Open 802.11b, Channel 6.
     'criteria': 'Measure the maximal receiving and transmitting throughput on a DUT while scanning bluetooth',

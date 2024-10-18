@@ -4,9 +4,9 @@
 
 NAME = 'network_WiFi_BluetoothLoadPerf.gamepad_load.11n.floss'
 METADATA = {
-        'contacts': ['chromeos-wifi-champs@google.com'],
-        # ChromeOS > Platform > Connectivity > WiFi
-        'bug_component': 'b:893827',
+        'contacts': ['chromeos-bt-team@google.com'],
+        # ChromeOS > Platform > Connectivity > Bluetooth
+        'bug_component': 'b:167317',
         # Network: Open 802.11n, Channel 6 and 11.
         'criteria': ('Ensure compliance with criteria for receiving and '
                      'transmitting specified throughput, latency, and drop '

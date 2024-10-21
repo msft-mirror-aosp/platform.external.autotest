@@ -10,11 +10,11 @@ from __future__ import print_function
 
 import logging
 import re
-import select
 import subprocess
 import threading
 import time
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input.linux_input import\
     EV_MSC, EV_SYN, MSC_SCAN, SYN_REPORT
 
@@ -60,8 +60,7 @@ class Event(object):
         """
         self.type = type
         self.code = code
-        self.value= value
-
+        self.value = value
 
     @staticmethod
     def from_string(ev_string):
@@ -106,7 +105,6 @@ class Event(object):
             else:
                 return None
 
-
     def is_syn(self):
         """Determine if the event is a SYN report event.
 
@@ -115,7 +113,6 @@ class Event(object):
         """
         return self.type == EV_SYN and self.code == SYN_REPORT
 
-
     def value_tuple(self):
         """A tuple of the event type, code, and value.
 
@@ -123,7 +120,6 @@ class Event(object):
 
         """
         return (self.type, self.code, self.value)
-
 
     def __eq__(self, other):
         """determine if two events are equal.
@@ -136,7 +132,6 @@ class Event(object):
         return (self.type == other.type and
                 self.code == other.code and
                 self.value == other.value)
-
 
     def __str__(self):
         """A string representation of the event.
@@ -171,10 +166,9 @@ class InputEventRecorder(object):
             err_msg = 'Failed to find the device node of %s' % device_name
             raise InputEventRecorderError(err_msg)
         self._recording_thread = None
-        self._stop_recording_thread_event = threading.Event()
+        self._recorder_process = None
         self.tmp_file = '/tmp/evtest.dat'
         self.events = []
-
 
     def get_device_node_by_name(self, device_name, uniq):
         """Get the input device node by name.
@@ -241,50 +235,49 @@ class InputEventRecorder(object):
 
         return device_node
 
-
     def record(self):
         """Record input events."""
         logging.info('Recording input events of %s.', self.device_node)
         cmd = 'evtest %s' % self.device_node
-        recorder = subprocess.Popen(cmd,
-                                    bufsize=0,
-                                    stdout=subprocess.PIPE,
-                                    shell=True)
+        self._recorder_process = subprocess.Popen(cmd,
+                                                  bufsize=0,
+                                                  stdout=subprocess.PIPE,
+                                                  shell=True)
         with open(self.tmp_file, 'w') as output_f:
             while True:
-                read_list, _, _ = select.select(
-                        [recorder.stdout], [], [], 1)
-                if read_list:
-                    line = recorder.stdout.readline().decode()
-                    output_f.write(line)
-                    ev = Event.from_string(line)
-                    if ev:
-                        self.events.append(ev.value_tuple())
-                elif self._stop_recording_thread_event.is_set():
-                    self._stop_recording_thread_event.clear()
+                line = self._recorder_process.stdout.readline().decode()
+                # readline() returns '\n' for a blank line, and '' on EOF.
+                # If it's EOF, then our task is done.
+                if not line:
                     break
 
-        recorder.terminate()
-
+                output_f.write(line)
+                ev = Event.from_string(line)
+                if ev:
+                    self.events.append(ev.value_tuple())
 
     def start(self):
         """Start the recording thread."""
+        if self._recording_thread:
+            raise InputEventRecorderError('Recording thread already started')
         logging.info('Start recording thread.')
         self._recording_thread = threading.Thread(target=self.record)
         self._recording_thread.start()
-
+        utils.poll_for_condition(
+                condition=lambda: self._recorder_process is not None,
+                desc='InputEventRecorder: Failed to start recorder process')
 
     def stop(self):
         """Stop the recording thread."""
         logging.info('Stop recording thread.')
-        self._stop_recording_thread_event.set()
+        self._recorder_process.terminate()
         self._recording_thread.join()
-
+        self._recording_thread = None
+        self._recorder_process = None
 
     def clear_events(self):
         """Clear the event list."""
         self.events = []
-
 
     def get_events(self):
         """Get the event list.

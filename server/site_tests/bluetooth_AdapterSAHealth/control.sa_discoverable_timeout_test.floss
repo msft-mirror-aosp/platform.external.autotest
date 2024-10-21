@@ -31,7 +31,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bluetooth_floss_sa'
+ATTRIBUTES = 'suite:bluetooth_floss_sa, group:release-health, release-health_bt'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL'
 

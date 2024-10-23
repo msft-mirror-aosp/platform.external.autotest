@@ -73,6 +73,7 @@ class ChromeLogin(object):
                  enable_default_apps=False,
                  toggle_ndk=False,
                  vm_force_max_resolution=False,
+                 set_verified_boot_state=None,
                  log_dir=None,
                  feature=None):
         """Initializes the ChromeLogin object.
@@ -82,6 +83,8 @@ class ChromeLogin(object):
         @param dont_override_profile: reuses the existing test profile if any
         @param enable_default_apps: enables default apps (like Files app)
         @param toggle_ndk: toggles native bridge engine switch.
+        @param set_verified_boot_state: If ARCVM, override verified boot state
+                    with the given value.
         @param log_dir: Any log files for this Chrome session is written to this
                directory.
         """
@@ -94,6 +97,7 @@ class ChromeLogin(object):
         self._hard_reboot_on_failure = False
         self._toggle_ndk = toggle_ndk
         self._vm_force_max_resolution = vm_force_max_resolution
+        self._set_verified_boot_state = set_verified_boot_state
         self._log_dir = log_dir
         self._feature = feature
         self._multicast_disabler = MulticastDisabler(self._host)
@@ -173,6 +177,10 @@ class ChromeLogin(object):
 
     def enter(self):
         """Logs into Chrome with retry."""
+        # ARCVM flags must be set before login, where ARCVM is being booted.
+        if self._is_arcvm() and self._set_verified_boot_state:
+            self._override_arcvm_verified_boot_state()
+
         timeout = self._timeout
         try:
             logging.info('Ensure Android is running (timeout=%d)...', timeout)
@@ -218,6 +226,9 @@ class ChromeLogin(object):
 
         # Recover the disabled multicast
         self._multicast_disabler.reenable()
+
+        if self._is_arcvm() and self._set_verified_boot_state:
+            self._restore_arcvm_config()
 
         if not self._need_reboot:
             try:
@@ -268,6 +279,39 @@ class ChromeLogin(object):
         else:
             logging.info('Rebooting...')
             self._host.reboot()
+
+    def _is_arcvm(self):
+        """Returns if the current host is running ARCVM."""
+        result = self._host.run('test -d /opt/google/vms/android',
+                                ignore_status=True)
+        if result.exit_status != 0:
+            logging.info('Host %s is not ARCVM', self._host.host_port)
+            return False
+        logging.info('Host %s is ARCVM', self._host.host_port)
+        return True
+
+    def _override_arcvm_verified_boot_state(self):
+        """Override ARCVM verified boot state.
+
+        By default vm_concierge sets verified boot state according to ChromeOS
+        host state, according to factors e.g. if developer mode is enabled.
+        Under a test lab setting this can break test assumptions, whether it
+        expects verified boot or not.
+        """
+        state = self._set_verified_boot_state
+        try:
+            self._host.run('cp /usr/local/vms/etc/arcvm_dev.conf{,.orig}')
+            self._host.run(
+                    f'echo "^--params=androidboot.verifiedbootstate={state}"'
+                    ' >> /usr/local/vms/etc/arcvm_dev.conf')
+        except (error.AutoservRunError, error.AutoservSSHTimeout):
+            logging.warning('Failed to override ARCVM verified boot state, '
+                            'tests that depend on it may fail.')
+
+    def _restore_arcvm_config(self):
+        """Restore ARCVM configs if previously modified."""
+        self._host.run('mv /usr/local/vms/etc/arcvm_dev.conf{.orig,}',
+                       ignore_status=True)
 
 
 @contextlib.contextmanager

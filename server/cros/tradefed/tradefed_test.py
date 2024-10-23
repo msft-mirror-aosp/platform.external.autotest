@@ -175,7 +175,8 @@ class TradefedTest(test.test):
                    max_retry=None,
                    retry_manual_tests=False,
                    warn_on_test_retry=True,
-                   hard_reboot_on_failure=False):
+                   hard_reboot_on_failure=False,
+                   set_verified_boot_state='green'):
         """Sets up the tools and binary bundles for the test."""
         if utils.is_in_container() and not client_utils.is_moblab():
             self._job_deadline = time.time() + self._MAX_LAB_JOB_LENGTH_IN_SEC
@@ -260,6 +261,7 @@ class TradefedTest(test.test):
         self._waivers = None
 
         self._hard_reboot_on_failure = hard_reboot_on_failure
+        self._set_verified_boot_state = set_verified_boot_state
 
     def _load_local_waivers(self, directory, is_dev=False):
         return self._get_expected_failures(os.path.join(self.bindir, directory), is_dev)
@@ -340,11 +342,6 @@ class TradefedTest(test.test):
         # steps. postprocess() method only runs for PASSing jobs.
         self._prepare_synchronous_offloads()
         self._output_perf()
-
-        # Tests that modify arcvm_dev.conf should make a copy at
-        # arcvm_dev.conf.orig. Restore original if exists.
-        self._run_commands(['mv /usr/local/vms/etc/arcvm_dev.conf{.orig,}'],
-                           ignore_status=True)
 
         try:
             # Clean up test data that may not be deletable on previous
@@ -1724,6 +1721,7 @@ class TradefedTest(test.test):
                     dont_override_profile=keep_media,
                     enable_default_apps=enable_default_apps,
                     vm_force_max_resolution=vm_force_max_resolution,
+                    set_verified_boot_state=self._set_verified_boot_state,
                     log_dir=session_log_dir,
                     feature=chrome_feature) as current_logins, \
                             self._adb.create_tunnel():

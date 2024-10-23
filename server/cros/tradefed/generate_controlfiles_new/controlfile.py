@@ -269,6 +269,13 @@ def _format_modules_cmd(config,
                 for module in sorted(whole_module_set - set(modules)):
                     cmd += ['--exclude-filter', module]
 
+        if not special_cmd and config.should_set_simple_cache_semantics():
+            # b/369256917#comment10: Disable rigorous cache checks to make sure
+            # MediaPreparer always skips downloading.
+            for m in config.get_media_modules(modules):
+                cmd.extend(['--module-arg',
+                            f'{m}:simple-caching-semantics:true'])
+
         if shard != (0, 1):
             cmd += [
                     '--shard-index',
@@ -440,7 +447,7 @@ def get_controlfile_content(group: ModuleGroup, config: Config,
             revision=revision,
             build=build,
             abi=abi,
-            needs_push_media=config.needs_push_media(modules),
+            needs_push_media=bool(config.get_media_modules(modules)),
             needs_cts_helpers=config.needs_cts_helpers(modules),
             enable_default_apps=config.enable_default_apps(modules),
             vm_force_max_resolution=vm_force_max_resolution,

@@ -385,11 +385,29 @@ class Config(collections.UserDict):
                 delta = default_timeout // 2
         return timeout
 
-    def needs_push_media(self, modules):
-        """Oracle to determine if to push several GB of media files to DUT."""
-        if modules.intersection(set(self['NEEDS_PUSH_MEDIA'])):
-            return True
-        return False
+    def get_media_modules(self, modules: set) -> set:
+        """Returns the subset of modules that requires media file push.
+
+        Args:
+            modules: input set of modules.
+
+        Returns:
+            A set of media modules.
+        """
+        return modules.intersection(set(self['MEDIA_MODULES']))
+
+    def should_set_simple_cache_semantics(self) -> bool:
+        """Returns if the `simple-cache-semantics` flag should be set.
+
+        The flag is set against MediaPreparer in latest xTS release, for tests
+        that require pushing media files. Without the flag, a more rigorous
+        cache check is performed and isn't compatible with how tradefed_test
+        performs caching for media files.
+
+        Returns:
+            If the flag should be set.
+        """
+        return self['TEST_NAME'] not in ('cheets_CTS_R', 'cheets_GTS_R')
 
     def needs_cts_helpers(self, modules):
         """Oracle to determine if CTS helpers should be downloaded from DUT."""

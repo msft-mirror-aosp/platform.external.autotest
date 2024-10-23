@@ -489,11 +489,6 @@ CONFIG['MEDIA_MODULES'] = [
         'CtsMediaBitstreamsTestCases',
 ]
 
-CONFIG['NEEDS_PUSH_MEDIA'] = CONFIG['MEDIA_MODULES'] + [
-        'CtsMediaStressTestCases.camera',
-        'CtsMediaTestCases.arc_perf',
-]
-
 # Modules to add to suite:arc-cts-media
 CONFIG['MEDIA_SUITE_MODULES'] = [
         'CtsMedia.*',

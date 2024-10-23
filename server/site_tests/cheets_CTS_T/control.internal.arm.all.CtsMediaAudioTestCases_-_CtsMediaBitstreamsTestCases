@@ -32,7 +32,7 @@ def run_TS(machine):
         needs_push_media=True,
         tag='internal.arm.all.CtsMediaAudioTestCases_-_CtsMediaBitstreamsTestCases',
         test_name='cheets_CTS_T.internal.arm.all.CtsMediaAudioTestCases_-_CtsMediaBitstreamsTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaAudioTestCases', '--include-filter', 'CtsMediaAudioTestCases[instant]', '--include-filter', 'CtsMediaAudioTestCases[secondary_user]', '--include-filter', 'CtsMediaBitstreamsTestCases', '--include-filter', 'CtsMediaBitstreamsTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaAudioTestCases', '--include-filter', 'CtsMediaAudioTestCases[instant]', '--include-filter', 'CtsMediaAudioTestCases[secondary_user]', '--include-filter', 'CtsMediaBitstreamsTestCases', '--include-filter', 'CtsMediaBitstreamsTestCases[secondary_user]', '--module-arg', 'CtsMediaBitstreamsTestCases:simple-caching-semantics:true', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='all.CtsMediaAudioTestCases_-_CtsMediaBitstreamsTestCases',
         target_plan=None,

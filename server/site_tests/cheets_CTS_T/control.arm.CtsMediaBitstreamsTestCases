@@ -31,7 +31,7 @@ def run_TS(machine):
         needs_push_media=True,
         tag='arm.CtsMediaBitstreamsTestCases',
         test_name='cheets_CTS_T.arm.CtsMediaBitstreamsTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMediaBitstreamsTestCases'],
+        run_template=['run', 'commandAndExit', 'cts', '--module', 'CtsMediaBitstreamsTestCases', '--module-arg', 'CtsMediaBitstreamsTestCases:simple-caching-semantics:true'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsMediaBitstreamsTestCases',
         target_plan=None,

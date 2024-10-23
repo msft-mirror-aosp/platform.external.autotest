@@ -32,7 +32,7 @@ def run_TS(machine):
         needs_push_media=True,
         tag='internal.arm.all.CtsMediaStressTestCases',
         test_name='cheets_CTS_T.internal.arm.all.CtsMediaStressTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaStressTestCases', '--include-filter', 'CtsMediaStressTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaStressTestCases', '--include-filter', 'CtsMediaStressTestCases[secondary_user]', '--module-arg', 'CtsMediaStressTestCases:simple-caching-semantics:true', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='all.CtsMediaStressTestCases',
         target_plan=None,

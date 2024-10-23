@@ -27,7 +27,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_standalone_cq'
+ATTRIBUTES = 'suite:bluetooth_sa, suite:bluetooth_standalone_cq, group:release-health, release-health_bt'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL'
 

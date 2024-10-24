@@ -70,184 +70,184 @@ HOST_FIXED_ATTENUATIONS = {
                 2: {2437: 53, 5220: 59, 5765: 58},
                 3: {2437: 57, 5220: 57, 5765: 59}},
         # Row 3 rack 7 is conductive grover setups
-        'chromeos15-row3-rack7-host1-attenuator': {
+        'chromeos15-row8-rack7-host1-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 56, 5220: 56, 5765: 58},
                 2: {2437: 53, 5220: 58, 5765: 60},
                 3: {2437: 56, 5220: 56, 5765: 57}},
-        'chromeos15-row3-rack7-host2-attenuator': {
+        'chromeos15-row8-rack7-host2-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 56, 5220: 57, 5765: 58},
                 2: {2437: 53, 5220: 58, 5765: 60},
                 3: {2437: 56, 5220: 57, 5765: 56}},
-        'chromeos15-row3-rack7-host3-attenuator': {
+        'chromeos15-row8-rack7-host3-attenuator': {
                 0: {2437: 53, 5220: 58, 5765: 60},
                 1: {2437: 56, 5220: 56, 5765: 56},
                 2: {2437: 53, 5220: 58, 5765: 60},
                 3: {2437: 56, 5220: 56, 5765: 56}},
-        'chromeos15-row3-rack7-host4-attenuator': {
+        'chromeos15-row8-rack7-host4-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 60},
                 1: {2437: 57, 5220: 56, 5765: 58},
                 2: {2437: 53, 5220: 59, 5765: 60},
                 3: {2437: 57, 5220: 56, 5765: 58}},
-        'chromeos15-row3-rack7-host5-attenuator': {
+        'chromeos15-row8-rack7-host5-attenuator': {
                 0: {2437: 53, 5220: 58, 5765: 60},
                 1: {2437: 55, 5220: 55, 5765: 54},
                 2: {2437: 52, 5220: 57, 5765: 60},
                 3: {2437: 55, 5220: 56, 5765: 54}},
-        'chromeos15-row3-rack7-host6-attenuator': {
+        'chromeos15-row8-rack7-host6-attenuator': {
                 0: {2437: 53, 5220: 58, 5765: 59},
                 1: {2437: 56, 5220: 57, 5765: 57},
                 2: {2437: 52, 5220: 58, 5765: 58},
                 3: {2437: 56, 5220: 56, 5765: 56}},
         # Row 3 rack 8 is conductive grover setups
-        'chromeos15-row3-rack8-host1-attenuator': {
+        'chromeos15-row8-rack8-host1-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 58},
                 1: {2437: 56, 5220: 57, 5765: 59},
                 2: {2437: 52, 5220: 59, 5765: 58},
                 3: {2437: 56, 5220: 57, 5765: 59}},
-        'chromeos15-row3-rack8-host2-attenuator': {
+        'chromeos15-row8-rack8-host2-attenuator': {
                 0: {2437: 52, 5220: 59, 5765: 59},
                 1: {2437: 56, 5220: 56, 5765: 60},
                 2: {2437: 52, 5220: 58, 5765: 60},
                 3: {2437: 56, 5220: 56, 5765: 59}},
-        'chromeos15-row3-rack8-host3-attenuator': {
+        'chromeos15-row8-rack8-host3-attenuator': {
                 0: {2437: 52, 5220: 58, 5765: 59},
                 1: {2437: 56, 5220: 56, 5765: 60},
                 2: {2437: 52, 5220: 58, 5765: 59},
                 3: {2437: 56, 5220: 56, 5765: 57}},
-        'chromeos15-row3-rack8-host4-attenuator': {
+        'chromeos15-row8-rack8-host4-attenuator': {
                 0: {2437: 52, 5220: 58, 5765: 60},
                 1: {2437: 56, 5220: 56, 5765: 58},
                 2: {2437: 52, 5220: 58, 5765: 58},
                 3: {2437: 56, 5220: 56, 5765: 56}},
-        'chromeos15-row3-rack8-host5-attenuator': {
+        'chromeos15-row8-rack8-host5-attenuator': {
                 0: {2437: 53, 5220: 58, 5765: 58},
                 1: {2437: 56, 5220: 56, 5765: 57},
                 2: {2437: 53, 5220: 59, 5765: 58},
                 3: {2437: 56, 5220: 56, 5765: 60}},
-        'chromeos15-row3-rack8-host6-attenuator': {
+        'chromeos15-row8-rack8-host6-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 56, 5220: 56, 5765: 57},
                 2: {2437: 53, 5220: 60, 5765: 59},
                 3: {2437: 56, 5220: 58, 5765: 58}},
         # Row 3 racks 9 to 14 are conductive grover setups
-        'chromeos15-row3-rack9-host1-attenuator': {
+        'chromeos15-row8-rack9-host1-attenuator': {
                 0: {2437: 53, 5220: 60, 5765: 59},
                 1: {2437: 57, 5220: 57, 5765: 58},
                 2: {2437: 53, 5220: 59, 5765: 60},
                 3: {2437: 57, 5220: 57, 5765: 60}},
-        'chromeos15-row3-rack9-host2-attenuator': {
+        'chromeos15-row8-rack9-host2-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 57, 5220: 58, 5765: 60},
                 2: {2437: 53, 5220: 58, 5765: 58},
                 3: {2437: 57, 5220: 58, 5765: 61}},
-        'chromeos15-row3-rack9-host3-attenuator': {
+        'chromeos15-row8-rack9-host3-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 57, 5220: 58, 5765: 59},
                 2: {2437: 53, 5220: 58, 5765: 59},
                 3: {2437: 57, 5220: 58, 5765: 60}},
-        'chromeos15-row3-rack9-host4-attenuator': {
+        'chromeos15-row8-rack9-host4-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 57, 5220: 58, 5765: 60},
                 2: {2437: 53, 5220: 58, 5765: 59},
                 3: {2437: 57, 5220: 57, 5765: 60}},
-        'chromeos15-row3-rack9-host5-attenuator': {
+        'chromeos15-row8-rack9-host5-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 57, 5220: 58, 5765: 59},
                 2: {2437: 53, 5220: 58, 5765: 60},
                 3: {2437: 57, 5220: 58, 5765: 60}},
-        'chromeos15-row3-rack9-host6-attenuator': {
+        'chromeos15-row8-rack9-host6-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 59},
                 1: {2437: 57, 5220: 57, 5765: 60},
                 2: {2437: 53, 5220: 59, 5765: 60},
                 3: {2437: 57, 5220: 58, 5765: 58}},
-        'chromeos15-row3-rack10-host1-attenuator': {
+        'chromeos15-row8-rack10-host1-attenuator': {
                 0: {2437: 52, 5220: 55, 5765: 56},
                 1: {2437: 55, 5220: 53, 5765: 57},
                 2: {2437: 52, 5220: 55, 5765: 57},
                 3: {2437: 55, 5220: 53, 5765: 57}},
-        'chromeos15-row3-rack10-host2-attenuator': {
+        'chromeos15-row8-rack10-host2-attenuator': {
                 0: {2437: 52, 5220: 56, 5765: 58},
                 1: {2437: 55, 5220: 54, 5765: 58},
                 2: {2437: 52, 5220: 56, 5765: 58},
                 3: {2437: 55, 5220: 54, 5765: 57}},
-        'chromeos15-row3-rack10-host3-attenuator': {
+        'chromeos15-row8-rack10-host3-attenuator': {
                 0: {2437: 53, 5220: 57, 5765: 57},
                 1: {2437: 56, 5220: 56, 5765: 57},
                 2: {2437: 53, 5220: 57, 5765: 59},
                 3: {2437: 56, 5220: 57, 5765: 58}},
-        'chromeos15-row3-rack10-host4-attenuator': {
+        'chromeos15-row8-rack10-host4-attenuator': {
                 0: {2437: 51, 5220: 55, 5765: 59},
                 1: {2437: 55, 5220: 53, 5765: 58},
                 2: {2437: 51, 5220: 54, 5765: 59},
                 3: {2437: 55, 5220: 53, 5765: 58}},
-        'chromeos15-row3-rack10-host5-attenuator': {
+        'chromeos15-row8-rack10-host5-attenuator': {
                 0: {2437: 51, 5220: 55, 5765: 60},
                 1: {2437: 55, 5220: 53, 5765: 58},
                 2: {2437: 51, 5220: 55, 5765: 60},
                 3: {2437: 55, 5220: 53, 5765: 58}},
-        'chromeos15-row3-rack10-host6-attenuator': {
+        'chromeos15-row8-rack10-host6-attenuator': {
                 0: {2437: 52, 5220: 55, 5765: 57},
                 1: {2437: 55, 5220: 54, 5765: 59},
                 2: {2437: 52, 5220: 55, 5765: 57},
                 3: {2437: 55, 5220: 54, 5765: 57}},
-        'chromeos15-row3-rack11-host1-attenuator': {
+        'chromeos15-row8-rack11-host1-attenuator': {
                 0: {2437: 53, 5220: 58, 5765: 57},
                 1: {2437: 56, 5220: 56, 5765: 58},
                 2: {2437: 53, 5220: 58, 5765: 57},
                 3: {2437: 56, 5220: 56, 5765: 57}},
-        'chromeos15-row3-rack11-host2-attenuator': {
+        'chromeos15-row8-rack11-host2-attenuator': {
                 0: {2437: 53, 5220: 58, 5765: 56},
                 1: {2437: 56, 5220: 56, 5765: 58},
                 2: {2437: 53, 5220: 59, 5765: 56},
                 3: {2437: 56, 5220: 56, 5765: 56}},
-        'chromeos15-row3-rack11-host3-attenuator': {
+        'chromeos15-row8-rack11-host3-attenuator': {
                 0: {2437: 52, 5220: 57, 5765: 59},
                 1: {2437: 55, 5220: 55, 5765: 54},
                 2: {2437: 52, 5220: 57, 5765: 59},
                 3: {2437: 55, 5220: 55, 5765: 54}},
-        'chromeos15-row3-rack11-host4-attenuator': {
+        'chromeos15-row8-rack11-host4-attenuator': {
                 0: {2437: 52, 5220: 58, 5765: 59},
                 1: {2437: 56, 5220: 56, 5765: 55},
                 2: {2437: 52, 5220: 57, 5765: 59},
                 3: {2437: 56, 5220: 56, 5765: 55}},
-        'chromeos15-row3-rack11-host5-attenuator': {
+        'chromeos15-row8-rack11-host5-attenuator': {
                 0: {2437: 53, 5220: 58, 5765: 58},
                 1: {2437: 55, 5220: 56, 5765: 55},
                 2: {2437: 53, 5220: 58, 5765: 59},
                 3: {2437: 56, 5220: 55, 5765: 55}},
-        'chromeos15-row3-rack11-host6-attenuator': {
+        'chromeos15-row8-rack11-host6-attenuator': {
                 0: {2437: 52, 5220: 58, 5765: 59},
                 1: {2437: 55, 5220: 55, 5765: 54},
                 2: {2437: 52, 5220: 57, 5765: 59},
                 3: {2437: 55, 5220: 55, 5765: 54}},
-        'chromeos15-row3-rack12-host1-attenuator': {
+        'chromeos15-row8-rack12-host1-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 58},
                 1: {2437: 55, 5220: 57, 5765: 55},
                 2: {2437: 57, 5220: 59, 5765: 58},
                 3: {2437: 55, 5220: 56, 5765: 55}},
-        'chromeos15-row3-rack12-host2-attenuator': {
+        'chromeos15-row8-rack12-host2-attenuator': {
                 0: {2437: 52, 5220: 59, 5765: 56},
                 1: {2437: 55, 5220: 56, 5765: 55},
                 2: {2437: 52, 5220: 59, 5765: 57},
                 3: {2437: 55, 5220: 56, 5765: 55}},
-        'chromeos15-row3-rack12-host3-attenuator': {
+        'chromeos15-row8-rack12-host3-attenuator': {
                 0: {2437: 52, 5220: 58, 5765: 57},
                 1: {2437: 55, 5220: 57, 5765: 55},
                 2: {2437: 52, 5220: 59, 5765: 59},
                 3: {2437: 55, 5220: 59, 5765: 55}},
-        'chromeos15-row3-rack12-host4-attenuator': {
+        'chromeos15-row8-rack12-host4-attenuator': {
                 0: {2437: 52, 5220: 58, 5765: 56},
                 1: {2437: 55, 5220: 56, 5765: 55},
                 2: {2437: 52, 5220: 58, 5765: 56},
                 3: {2437: 55, 5220: 56, 5765: 56}},
-        'chromeos15-row3-rack12-host5-attenuator': {
+        'chromeos15-row8-rack12-host5-attenuator': {
                 0: {2437: 53, 5220: 59, 5765: 58},
                 1: {2437: 55, 5220: 56, 5765: 55},
                 2: {2437: 52, 5220: 59, 5765: 59},
                 3: {2437: 55, 5220: 56, 5765: 55}},
-        'chromeos15-row3-rack12-host6-attenuator': {
+        'chromeos15-row8-rack12-host6-attenuator': {
                 0: {2437: 52, 5220: 59, 5765: 57},
                 1: {2437: 55, 5220: 56, 5765: 55},
                 2: {2437: 52, 5220: 58, 5765: 56},
@@ -312,7 +312,7 @@ HOST_FIXED_ATTENUATIONS = {
                 1: {2437: 52, 5220: 55, 5765: 55},
                 2: {2437: 57, 5220: 57, 5765: 57},
                 3: {2437: 52, 5220: 55, 5765: 55}},
-        'chromeos15-row10-rack1-host1-attenuator': {
+        'chromeos15-row7-rack1-host1-attenuator': {
                 0: {2437: 55, 5220: 60, 5765: 58},
                 1: {2437: 59, 5220: 58, 5765: 61},
                 2: {2437: 56, 5220: 60, 5765: 57},
@@ -321,7 +321,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 37},
                 6: {2450: 37},
                 7: {2450: 37}},
-        'chromeos15-row10-rack1-host2-attenuator': {
+        'chromeos15-row7-rack1-host2-attenuator': {
                 0: {2437: 57, 5220: 61, 5765: 59},
                 1: {2437: 60, 5220: 59, 5765: 57},
                 2: {2437: 57, 5220: 61, 5765: 59},
@@ -330,7 +330,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 38},
                 6: {2450: 39},
                 7: {2450: 39}},
-        'chromeos15-row10-rack1-host3-attenuator': {
+        'chromeos15-row7-rack1-host3-attenuator': {
                 0: {2437: 56, 5220: 59, 5765: 58},
                 1: {2437: 59, 5220: 59, 5765: 59},
                 2: {2437: 56, 5220: 59, 5765: 58},
@@ -339,7 +339,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 38},
                 6: {2450: 38},
                 7: {2450: 39}},
-        'chromeos15-row10-rack1-host4-attenuator': {
+        'chromeos15-row7-rack1-host4-attenuator': {
                 0: {2437: 56, 5220: 60, 5765: 58},
                 1: {2437: 59, 5220: 58, 5765: 60},
                 2: {2437: 56, 5220: 59, 5765: 58},
@@ -348,7 +348,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 38},
                 6: {2450: 38},
                 7: {2450: 38}},
-        'chromeos15-row10-rack1-host5-attenuator': {
+        'chromeos15-row7-rack1-host5-attenuator': {
                 0: {2437: 56, 5220: 60, 5765: 59},
                 1: {2437: 59, 5220: 60, 5765: 59},
                 2: {2437: 56, 5220: 60, 5765: 59},
@@ -357,7 +357,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 36}},
-        'chromeos15-row10-rack2-host1-attenuator': {
+        'chromeos15-row7-rack2-host1-attenuator': {
                 0: {2437: 57, 5220: 61, 5765: 59},
                 1: {2437: 60, 5220: 58, 5765: 57},
                 2: {2437: 57, 5220: 61, 5765: 59},
@@ -366,7 +366,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 37},
                 7: {2450: 37}},
-        'chromeos15-row10-rack2-host2-attenuator': {
+        'chromeos15-row7-rack2-host2-attenuator': {
                 0: {2437: 57, 5220: 60, 5765: 59},
                 1: {2437: 60, 5220: 59, 5765: 57},
                 2: {2437: 57, 5220: 60, 5765: 59},
@@ -375,7 +375,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 37},
                 7: {2450: 37}},
-        'chromeos15-row10-rack2-host3-attenuator': {
+        'chromeos15-row7-rack2-host3-attenuator': {
                 0: {2437: 59, 5220: 60, 5765: 59},
                 1: {2437: 59, 5220: 58, 5765: 60},
                 2: {2437: 56, 5220: 60, 5765: 60},
@@ -384,7 +384,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 37},
                 7: {2450: 37}},
-        'chromeos15-row10-rack2-host4-attenuator': {
+        'chromeos15-row7-rack2-host4-attenuator': {
                 0: {2437: 55, 5220: 60, 5765: 60},
                 1: {2437: 58, 5220: 58, 5765: 59},
                 2: {2437: 55, 5220: 60, 5765: 60},
@@ -393,7 +393,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 36}},
-        'chromeos15-row10-rack2-host5-attenuator': {
+        'chromeos15-row7-rack2-host5-attenuator': {
                 0: {2437: 55, 5220: 60, 5765: 60},
                 1: {2437: 58, 5220: 58, 5765: 60},
                 2: {2437: 55, 5220: 60, 5765: 60},
@@ -402,7 +402,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 36}},
-        'chromeos15-row10-rack3-host1-attenuator': {
+        'chromeos15-row7-rack3-host1-attenuator': {
                 0: {2437: 56, 5220: 61, 5765: 58},
                 1: {2437: 59, 5220: 58, 5765: 57},
                 2: {2437: 56, 5220: 61, 5765: 60},
@@ -411,7 +411,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 37},
                 6: {2450: 37},
                 7: {2450: 37}},
-        'chromeos15-row10-rack3-host2-attenuator': {
+        'chromeos15-row7-rack3-host2-attenuator': {
                 0: {2437: 55, 5220: 60, 5765: 61},
                 1: {2437: 59, 5220: 58, 5765: 59},
                 2: {2437: 56, 5220: 56, 5765: 60},
@@ -420,7 +420,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 37},
                 7: {2450: 36}},
-        'chromeos15-row10-rack3-host3-attenuator': {
+        'chromeos15-row7-rack3-host3-attenuator': {
                 0: {2437: 55, 5220: 60, 5765: 61},
                 1: {2437: 58, 5220: 59, 5765: 58},
                 2: {2437: 57, 5220: 61, 5765: 61},
@@ -429,7 +429,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 36}},
-        'chromeos15-row10-rack3-host4-attenuator': {
+        'chromeos15-row7-rack3-host4-attenuator': {
                 0: {2437: 56, 5220: 60, 5765: 61},
                 1: {2437: 60, 5220: 60, 5765: 57},
                 2: {2437: 55, 5220: 60, 5765: 61},
@@ -438,7 +438,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 37}},
-        'chromeos15-row10-rack3-host5-attenuator': {
+        'chromeos15-row7-rack3-host5-attenuator': {
                 0: {2437: 57, 5220: 61, 5765: 60},
                 1: {2437: 59, 5220: 59, 5765: 57},
                 2: {2437: 56, 5220: 61, 5765: 59},
@@ -447,7 +447,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 36}},
-         'chromeos15-row10-rack4-host1-attenuator': {
+         'chromeos15-row7-rack4-host1-attenuator': {
                 0: {2437: 56, 5220: 59, 5765: 59},
                 1: {2437: 60, 5220: 58, 5765: 59},
                 2: {2437: 60, 5220: 60, 5765: 59},
@@ -456,7 +456,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 37},
                 6: {2450: 38},
                 7: {2450: 38}},
-         'chromeos15-row10-rack4-host2-attenuator': {
+         'chromeos15-row7-rack4-host2-attenuator': {
                 0: {2437: 56, 5220: 60, 5765: 58},
                 1: {2437: 59, 5220: 57, 5765: 60},
                 2: {2437: 56, 5220: 60, 5765: 59},
@@ -465,7 +465,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 37},
                 6: {2450: 37},
                 7: {2450: 37}},
-         'chromeos15-row10-rack4-host3-attenuator': {
+         'chromeos15-row7-rack4-host3-attenuator': {
                 0: {2437: 55, 5220: 60, 5765: 57},
                 1: {2437: 58, 5220: 57, 5765: 61},
                 2: {2437: 55, 5220: 60, 5765: 57},
@@ -474,7 +474,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 39}},
-         'chromeos15-row10-rack4-host4-attenuator': {
+         'chromeos15-row7-rack4-host4-attenuator': {
                 0: {2437: 55, 5220: 59, 5765: 57},
                 1: {2437: 58, 5220: 57, 5765: 60},
                 2: {2437: 56, 5220: 60, 5765: 58},
@@ -483,7 +483,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 37},
                 6: {2450: 37},
                 7: {2450: 37}},
-         'chromeos15-row10-rack4-host5-attenuator': {
+         'chromeos15-row7-rack4-host5-attenuator': {
                 0: {2437: 55, 5220: 59, 5765: 58},
                 1: {2437: 59, 5220: 58, 5765: 60},
                 2: {2437: 55, 5220: 60, 5765: 61},
@@ -492,7 +492,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 37},
                 6: {2450: 36},
                 7: {2450: 37}},
-        'chromeos15-row10-rack5-host1-attenuator': {
+        'chromeos15-row7-rack5-host1-attenuator': {
                 0: {2437: 55, 5220: 60, 5765: 58},
                 1: {2437: 60, 5220: 58, 5765: 57},
                 2: {2437: 55, 5220: 60, 5765: 59},
@@ -501,7 +501,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 36}},
-        'chromeos15-row10-rack5-host2-attenuator': {
+        'chromeos15-row7-rack5-host2-attenuator': {
                 0: {2437: 56, 5220: 60, 5765: 58},
                 1: {2437: 59, 5220: 58, 5765: 57},
                 2: {2437: 55, 5220: 59, 5765: 61},
@@ -510,7 +510,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 36},
                 6: {2450: 36},
                 7: {2450: 36}},
-        'chromeos15-row10-rack5-host3-attenuator': {
+        'chromeos15-row7-rack5-host3-attenuator': {
                 0: {2437: 55, 5220: 59, 5765: 61},
                 1: {2437: 58, 5220: 57, 5765: 57},
                 2: {2437: 56, 5220: 60, 5765: 61},
@@ -519,7 +519,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 35},
                 6: {2450: 36},
                 7: {2450: 36}},
-        'chromeos15-row10-rack5-host4-attenuator': {
+        'chromeos15-row7-rack5-host4-attenuator': {
                 0: {2437: 60, 5220: 59, 5765: 59},
                 1: {2437: 55, 5220: 60, 5765: 60},
                 2: {2437: 60, 5220: 59, 5765: 58},
@@ -528,7 +528,7 @@ HOST_FIXED_ATTENUATIONS = {
                 5: {2450: 38},
                 6: {2450: 38},
                 7: {2450: 37}},
-        'chromeos15-row10-rack5-host5-attenuator': {
+        'chromeos15-row7-rack5-host5-attenuator': {
                 0: {2437: 55, 5220: 59, 5765: 59},
                 1: {2437: 58, 5220: 57, 5765: 58},
                 2: {2437: 55, 5220: 60, 5765: 61},

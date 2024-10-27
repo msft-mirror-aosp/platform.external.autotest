@@ -33,8 +33,11 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
     #                     advertisements.
     @test_wrapper('Multiple LE advertising test',
                   skip_chipsets=[
-                          'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART',
-                          'Realtek-RTL8852A-USB', 'Realtek-RTL8852C-USB'
+                          'Realtek-RTL8822C-USB',
+                          'Realtek-RTL8822C-UART',
+                          'Realtek-RTL8852A-USB',
+                          'Realtek-RTL8852C-USB',
+                          'Realtek-RTL8852B-USB',
                   ],
                   skip_common_errors=True,
                   supports_floss=True)

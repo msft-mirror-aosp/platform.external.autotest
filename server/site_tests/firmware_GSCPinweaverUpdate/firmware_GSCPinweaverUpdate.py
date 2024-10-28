@@ -208,12 +208,13 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
             self.authenticate_password(session_id, self.PWD)
             logging.info(
                     'Verify pin works again after the password has been used')
+            self.authenticate_pin(
+                    session_id, self.WRONG_PIN,
+                    self.CRYPTOHOME_ERROR_AUTHORIZATION_KEY_FAILED)
         elif self.recovery_method == 'wait_for_timeout':
             logging.info('Waiting for the pin timeout')
             # Sleep for 30 seconds to let the TPM defend lock expire.
             time.sleep(30)
             # Sleep for 30 seconds to let the TPM defend lock expire.
             logging.info('Verify pin works again after the time has expired')
-        self.authenticate_pin(session_id, self.WRONG_PIN,
-                              self.CRYPTOHOME_ERROR_AUTHORIZATION_KEY_FAILED)
         self.authenticate_pin(session_id, self.PIN, self.SUCCESS)

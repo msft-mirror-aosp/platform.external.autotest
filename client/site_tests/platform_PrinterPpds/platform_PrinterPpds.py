@@ -424,6 +424,8 @@ class platform_PrinterPpds(test.test):
                                     message += ', old size: ' + \
                                             str(self._sizes[doc_name][ppd_name])
                                 message += ', new size: ' + str(len(doc))
+                                message += '; old digest: ' + \
+                                    digest_expected + ', new digest: ' + digest
                                 raise Exception(message)
                         else:
                             # Simple validation

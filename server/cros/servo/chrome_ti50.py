@@ -20,6 +20,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     This class is to abstract these interfaces.
     """
 
+    PROD_RW_KEYIDS = ['0xfba25ca9']
+    PROD_RO_KEYIDS = ['0xc7d40497']
     START_STR = ['ti50_common']
     NAME = CHIP_NAME
     BID_RE = r'Board ID: (\S{8}):?(|\S{8}), flags: (\S{8})\s'

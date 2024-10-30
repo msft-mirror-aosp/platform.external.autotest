@@ -30,9 +30,10 @@ class firmware_GSCStraps(FirmwareTest):
             return error.TestNAError('Only supported on devices with GSC')
         self.host = host
         try:
-            self.fast_ccd_open(reset_ccd=False, enable_testlab=True)
             logging.info('Checking straps after GSC reboot')
-            self.gsc.reboot()
+            # Schedule a GSC reboot in 1000 ms
+            self.host.run('gsctool -a --reboot 1000', ignore_timeout=True)
+            self.gsc.wait_for_reboot(timeout=self.WAIT_FOR_RESET)
             self.gsc.check_for_console_errors('invalid straps after reboot',
                                               self.INVALID_STRAP_ERRORS)
             if not self.servo.has_control('gsc_reset'):

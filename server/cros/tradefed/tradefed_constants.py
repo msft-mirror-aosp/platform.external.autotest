@@ -83,6 +83,18 @@ TRADEFED_CACHE_CFT_DEV = CacheConfig(
         cache_root='/usr/local/autotest/results/shared/cache_cft_dev',
         max_size_gib=50,
 )
+# Cloudbots are configured with smaller disks. But since each cloudbot instance
+# maps to exactly one DUT, the working set size becomes smaller as we only need
+# one CTS version at any given time (until the next ARC uprev).
+# Working set size == sum(official + preview [CG]TS builds of a particular
+#                         Android release)
+TRADEFED_CACHE_CLOUDBOT = CacheConfig(
+        # Reuse the CFT directory, to purge the existing cache if it's already
+        # too big. Note we need to explicitly purge the qual cache separately,
+        # once this change reaches release branches.
+        cache_root='/usr/local/autotest/results/shared/cache_cft_dev',
+        max_size_gib=35,
+)
 # The path that cts-tradefed uses to place media assets. By downloading and
 # expanding the archive here beforehand, tradefed can reuse the content.
 TRADEFED_MEDIA_PATH = '/tmp/android-cts-media'

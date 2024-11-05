@@ -1052,7 +1052,10 @@ class TradefedTest(test.test):
         current_user = pwd.getpwuid(current_uid)
         logging.info('Current user is: %d, %s',
                      current_uid, current_user.pw_name)
-        if utils.is_in_container() and current_uid == 0:
+        if client_utils.is_cloudbot():
+            # Cloudbot environment (implies CFT)
+            cache_config = constants.TRADEFED_CACHE_CLOUDBOT
+        elif utils.is_in_container() and current_uid == 0:
             # SSP container
             cache_config = constants.TRADEFED_CACHE_CONTAINER
         elif utils.is_in_container():

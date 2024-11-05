@@ -6,7 +6,7 @@ from autotest_lib.client.common_lib import utils
 from autotest_lib.server.site_tests.tast import tast
 
 AUTHOR = 'ChromiumOS Firmware EngProd team'
-NAME = 'tast.firmware-bios-shard-1'
+NAME = 'tast.firmware-bios-shard-2'
 METADATA = {
         "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
@@ -43,7 +43,7 @@ def run(machine):
                  command_args=command_args,
                  varslist=varslist,
                  totalshards=4,
-                 shardindex=1,
+                 shardindex=2,
                 )
 
 parallel_simple(run, machines)

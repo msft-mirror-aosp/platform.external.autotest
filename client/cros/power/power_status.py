@@ -10,6 +10,7 @@ from __future__ import print_function
 import collections
 import contextlib
 import ctypes
+import errno
 import fcntl
 import glob
 import itertools
@@ -1165,15 +1166,25 @@ class DevFreqStats(AbstractStats):
         fname = os.path.join(self._path, 'trans_stat')
 
         with open(fname) as fd:
-            # The lines that contain the time in each frequency start on the 3rd
-            # line, so skip the first 2 lines. The last line contains the number
-            # of transitions, so skip that line too.
-            # The time in each frequency is at the end of the line.
-            freq_pattern = re.compile(r'\d+(?=:)')
-            for line in fd.readlines()[2:-1]:
-                freq = freq_pattern.search(line)
-                if freq and freq.group() in self._available_freqs:
-                    stats[freq.group()] = int(line.strip().split()[-1])
+            try:
+                # The lines that contain the time in each frequency start on the 3rd
+                # line, so skip the first 2 lines. The last line contains the number
+                # of transitions, so skip that line too.
+                # The time in each frequency is at the end of the line.
+                freq_pattern = re.compile(r'\d+(?=:)')
+                for line in fd.readlines()[2:-1]:
+                    freq = freq_pattern.search(line)
+                    if freq and freq.group() in self._available_freqs:
+                        stats[freq.group()] = int(line.strip().split()[-1])
+            except OSError as e:
+                # the output of `trans_stat` might be larger than `PAGE_SIZE` can handle
+                # if the devfreq device has many frequency states.
+                # https://elixir.bootlin.com/linux/v6.6.58/source/drivers/devfreq/devfreq.c#L1771
+                # Ignore the error of this case, while re-raise the error otherwise.
+                if e.errno != errno.EFBIG:
+                    raise error.TestError(
+                            f'DevFreqStats: failed to read transition table: {e}'
+                    )
 
         return stats
 

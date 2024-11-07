@@ -7,7 +7,7 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_T.13_r9.arm.tradefed-run-collect-tests-only-internal'
+NAME = 'cheets_CTS_T.13_r10.arm.tradefed-run-collect-tests-only-internal'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
@@ -29,8 +29,8 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=0,
-        tag='13_r9.arm.tradefed-run-collect-tests-only-internal',
-        test_name='cheets_CTS_T.13_r9.arm.tradefed-run-collect-tests-only-internal',
+        tag='13_r10.arm.tradefed-run-collect-tests-only-internal',
+        test_name='cheets_CTS_T.13_r10.arm.tradefed-run-collect-tests-only-internal',
         run_template=['run', 'commandAndExit', 'collect-tests-only', '--disable-reboot', '--exclude-filter', 'CtsIcu4cTestCases', '--exclude-filter', 'CtsMediaDecoderTestCases', '--exclude-filter', 'CtsSkQPTestCases', '--exclude-filter', 'CtsVideoTestCases', '--module-arg', 'CtsMediaStressTestCases:skip-media-download:true', '--module-arg', 'CtsMediaBitstreamsTestCases:skip-media-download:true'],
         retry_template=None,
         target_module=None,

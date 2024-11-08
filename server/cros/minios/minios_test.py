@@ -13,6 +13,7 @@ import os
 import re
 import time
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.client.cros import cryptohome
@@ -215,8 +216,8 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         self._servo.switch_usbkey('off')
         psc = self._servo.get_power_state_controller()
         psc.power_off()
-        psc.power_on(psc.REC_ON)
         self._host.test_wait_for_shutdown(self._MINIOS_SHUTDOWN_TIMEOUT)
+        psc.power_on(psc.REC_ON)
         logging.info('Waiting for firmware screen')
         time.sleep(self._FIRMWARE_SCREEN_TIMEOUT)
 
@@ -355,9 +356,12 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
                                reboot.
 
         """
-        self._host.test_wait_for_shutdown(self._MINIOS_SHUTDOWN_TIMEOUT)
-        self._host.test_wait_for_boot(old_boot_id)
-        self._should_restore_stateful = True
+
+        utils.poll_for_condition_ex(
+                condition=lambda: self._host.get_boot_id() != old_boot_id,
+                timeout=self._MINIOS_WAIT_UP_TIME_SECONDS,
+                sleep_interval=1,
+        )
 
     def _drop_download_traffic(self):
         """

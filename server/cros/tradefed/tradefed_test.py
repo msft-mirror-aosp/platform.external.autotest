@@ -715,6 +715,17 @@ class TradefedTest(test.test):
                 self._safe_makedirs(self._tradefed_cache)
                 shutil.rmtree(self._tradefed_cache_dirty, ignore_errors=True)
 
+        # b/377397758: For cloudbots, clean up the old cache if exists. M130+
+        # and LTS-126 builds should no longer use the old directory. No need
+        # to lock because cloudbot always runs one test job at a time.
+        if client_utils.is_cloudbot():
+            old_cache_root = constants.TRADEFED_CACHE_CFT.cache_root
+            if os.path.exists(old_cache_root):
+                size = self._dir_size(old_cache_root)
+                logging.info('b/377397758: purging old cache %s, size=%d',
+                             old_cache_root, size)
+                shutil.rmtree(old_cache_root, ignore_errors=True)
+
     def _download_to_cache(self, uri):
         """Downloads the uri from the storage server.
 

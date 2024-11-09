@@ -354,6 +354,7 @@ class HciToolParser:
     OCF_MSFT_INTEL_CHIPSET = 0X001e
     OCF_MSFT_MEDIATEK_CHIPSET = 0x0130
     OCF_MSFT_QCA_CHIPSET = 0x0170
+    OCF_MSFT_REALTEK_CHIPSET = 0x00f0
     OCF_LE_GET_VENDOR_CAPABILITIES_COMMAND = 0x0153
 
     FORMATS = {
@@ -413,7 +414,10 @@ class HciToolParser:
             None,
             # HCI_VS_MSFT_Mediatek_Read_Supported_Features
             (btsocket.OGF_VENDOR_CMD, OCF_MSFT_MEDIATEK_CHIPSET):
-            None
+            None,
+            # HCI_VS_MSFT_Realtek_Read_Supported_Features
+            (btsocket.OGF_VENDOR_CMD, OCF_MSFT_REALTEK_CHIPSET):
+            None,
     }
 
     @staticmethod

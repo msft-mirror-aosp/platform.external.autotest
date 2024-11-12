@@ -70,8 +70,10 @@ class firmware_Cr50Update(Cr50Test):
         if self.test_ccd:
             self.device_update_path = '/tmp/cr50.bin'
         else:
-            self.device_update_path = cr50_utils.GetActiveCr50ImagePath(
-                self.host)
+            flags = cr50_utils.GetChipBoardId(self.host)[2]
+            self.device_update_path = (self.gsc.DUT_PREPVT
+                                       if flags == 0x10 else self.gsc.DUT_PROD)
+        logging.info('Running %s test with %s', test, self.device_update_path)
 
     def run_update(self, image_info):
         """Copy the image to the DUT and update to it.

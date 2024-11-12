@@ -111,7 +111,11 @@ class Config(collections.UserDict):
                               test camera facing. Set to None if it's not camerabox
                               related test.
         """
-        dependencies = ['arc']
+        if is_public:
+            dependencies = ['arc']
+        else:
+            dependencies = self.get('LAB_DEPENDENCY_GLOBAL', ['arc']).copy()
+
         if abi in self['LAB_DEPENDENCY']:
             dependencies += self['LAB_DEPENDENCY'][abi]
 

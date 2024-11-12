@@ -14,7 +14,7 @@ METADATA = {
     "criteria": "A part of Android CTS",
 }
 ATTRIBUTES = 'suite:arc-cts, suite:arc-cts-media, suite:arc-cts-x86-11'
-DEPENDENCIES = 'arc, cts_abi_x86'
+DEPENDENCIES = 'arc, label-bot_size:BOT_SIZE_LARGE, cts_abi_x86'
 HW_DEPS = ['android-vm-tm']
 JOB_RETRIES = 1
 TEST_TYPE = 'server'

@@ -106,7 +106,7 @@ job.run_test('graphics_parallel_dEQP',\n\
                  'api=$api',\n\
                  'caselist=$caselist',\n\
                  'perf_failure_description=$perf_failure_description',\n\
-                 'shard_number=$shard',\n\
+                 'total_shards=$shard',\n\
                  'shard_count=$shards'\n\
              ])")
 

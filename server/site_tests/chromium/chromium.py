@@ -48,7 +48,12 @@ class chromium(test.test):
             except error.CmdError as e:
                 raise Exception('Error changing file permissions', e)
 
-        self.shard_number = args_dict.get('shard_number', 1)
+        self._total_shards = args_dict.get('total_shards', 1)
+        # Leaves the check to ensure no code uses "shard_number".
+        # TODO: Remove this after we see no failure for a while.
+        if 'shard_number' in args_dict:
+            raise Exception('Should use "total_shards" instead of "shard_number".', e)
+
         self.shard_index = args_dict.get('shard_index', 0)
         self.max_run_sec = int(args_dict.get('max_run_sec', 3600))
 
@@ -66,7 +71,7 @@ class chromium(test.test):
                 '--test-launcher-shard-index',
                 f'{self.shard_index}',
                 '--test-launcher-total-shards',
-                f'{self.shard_number}',
+                f'{self._total_shards}',
                 '--board',
                 self.host.host_info_store.get().board,
                 '--path-to-outdir',

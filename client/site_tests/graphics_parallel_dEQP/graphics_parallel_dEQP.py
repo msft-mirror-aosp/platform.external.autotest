@@ -17,7 +17,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
     """Run the drawElements Quality Program test suite."""
     version = 1
     _services = None
-    _shard_number = 0
+    _total_shards = 0
     _shard_count = 1
     _board = None
     _cpu_type = None
@@ -155,7 +155,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
             caselist=None,
             filter='',
             subset_to_run='Pass',  # Pass, Fail, Timeout, NotPass...
-            shard_number='0',
+            total_shards='0',
             shard_count='1',
             debug='False',
             perf_failure_description=None)
@@ -165,7 +165,7 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         logging.info('Test Options: %s', options)
 
         self._caselist = options['caselist']
-        self._shard_number = int(options['shard_number'])
+        self._total_shards = int(options['total_shards'])
         self._shard_count = int(options['shard_count'])
         self._debug = (options['debug'] == 'True')
 
@@ -206,8 +206,8 @@ class graphics_parallel_dEQP(graphics_utils.GraphicsTest):
         command.append('--testlog-to-xml=%s' % os.path.join(
             self._api_helper.get_deqp_dir(), 'executor', 'testlog-to-xml'))
         command.append(f'--caselist={self._caselist}')
-        if self._shard_number != 0:
-            command.append(f'--fraction-start={self._shard_number + 1}')
+        if self._total_shards != 0:
+            command.append(f'--fraction-start={self._total_shards + 1}')
         if self._shard_count != 1:
             command.append(f'--fraction={self._shard_count}')
 

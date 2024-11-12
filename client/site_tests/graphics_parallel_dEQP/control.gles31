@@ -31,6 +31,6 @@ job.run_test('graphics_parallel_dEQP',
                  'api=gles31',
                  'caselist=/usr/local/deqp/caselists/gles31.txt.zst',
                  'perf_failure_description=Failures_GLES31',
-                 'shard_number=0',
+                 'total_shards=0',
                  'shard_count=1'
              ])

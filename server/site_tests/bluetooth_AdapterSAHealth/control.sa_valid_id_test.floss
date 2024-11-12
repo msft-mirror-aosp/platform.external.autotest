@@ -16,7 +16,7 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Pass if the Bluetooth ID matches the expected format',
-    'hw_agnostic': True,
+    'hw_agnostic': False,
 }
 
 

@@ -119,6 +119,7 @@ def run(machine):
                  totalshards=total_shards,
                  shardindex=shard_index,
                  shardmethod=shard_method,
+                 report_skipped=True,
                  clear_tpm=False,
                  run_private_tests=run_private_tests)
 

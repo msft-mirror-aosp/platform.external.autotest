@@ -1061,14 +1061,13 @@ class TradefedTest(test.test):
 
         @param destination: Autotest result directory (destination of logs).
         """
-        dest = os.path.join(destination, 'logs', 'tmp')
-        self._safe_makedirs(dest)
         log_dirs = ['/tmp/ats_console_log', '/tmp/olc_server_log']
         for log_dir in log_dirs:
             if os.path.isdir(log_dir):
                 logging.info('%s exists, copying to results dir', log_dir)
-                shutil.copytree(log_dir,
-                                os.path.join(dest, os.path.basename(log_dir)))
+                shutil.copytree(
+                        log_dir,
+                        os.path.join(destination, os.path.basename(log_dir)))
             else:
                 logging.info('%s does not exist', log_dir)
 
@@ -1454,7 +1453,6 @@ class TradefedTest(test.test):
         # Gather the global log first. Datetime parsing below can abort the test
         # if tradefed startup had failed. Even then the global log is useful.
         self._collect_tradefed_global_log(output, result_destination)
-        self._collect_ats_console_log(result_destination)
         # Result parsing must come after all other essential operations as test
         # warnings, errors and failures can be raised here.
         base = self._default_tradefed_base_dir()
@@ -1945,6 +1943,10 @@ class TradefedTest(test.test):
                 if not all_done and ('*' in ''.join(run_template)
                                      or '--shard-count' in run_template):
                     break
+
+        # TODO(shaochuan): Ensure logs are collected when
+        # _run_and_parse_tradefed() raises an exception.
+        self._collect_ats_console_log(self.resultsdir)
 
         if session_id == None:
             raise error.TestFail('Error: Could not find any tests in module.')

@@ -7,7 +7,6 @@
 
 import time
 
-from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_controller_role_tests import (
         bluetooth_AdapterControllerRoleTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_hidreports_tests import (
@@ -16,8 +15,6 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_pairing_tests import (
         BluetoothAdapterPairingTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
         BluetoothAdapterQuickTests)
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        LE_RECEIVER_FLOSS_IOP_ISSUE_CHIPSETS)
 
 
 class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
@@ -35,13 +32,6 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
 
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
-
-    def check_le_receiver_floss_iop_issue_chipsets(self):
-        """Checks if we should skip the chipset due to IOP issue"""
-        if self.floss and self.bluetooth_facade.get_chipset_name(
-        ) in LE_RECEIVER_FLOSS_IOP_ISSUE_CHIPSETS:
-            raise error.TestNAError(
-                    "Test not supported in Floss due to IOP issue")
 
     @test_wrapper('Discovery Test',
                   devices={"BLE_MOUSE": 1},

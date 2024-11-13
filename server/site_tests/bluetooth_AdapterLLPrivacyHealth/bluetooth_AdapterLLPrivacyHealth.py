@@ -443,6 +443,7 @@ class bluetooth_AdapterLLPrivacyHealth(
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 
+        self.check_le_receiver_floss_iop_issue_chipsets()
         self.verify_controller_capability(required_roles=['peripheral'],
                                           test_type=self.flag)
 

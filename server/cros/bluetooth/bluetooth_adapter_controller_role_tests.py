@@ -16,12 +16,18 @@ import threading
 import time
 
 import common
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.bluetooth import advertisements_data
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 
 DEFAULT_MIN_ADV_INTERVAL = 200
 DEFAULT_MAX_ADV_INTERVAL = 500
 
+# Some chipsets have IOP issue with the incoming LE connection from RasPi.
+# See b/364766107 b/332475530 b/375322353
+LE_RECEIVER_FLOSS_IOP_ISSUE_CHIPSETS = [
+        'MVL-8897', 'Intel-AX200', 'Intel-AX201', 'Intel-AX211', 'Intel-BE200'
+]
 
 class bluetooth_AdapterControllerRoleTests(
         bluetooth_adapter_tests.BluetoothAdapterTests):
@@ -30,6 +36,13 @@ class bluetooth_AdapterControllerRoleTests(
     This class comprises a number of test cases to verify our controllers
     support the minimum requirements for LE connection states.
     """
+
+    def check_le_receiver_floss_iop_issue_chipsets(self):
+        """Checks if we should skip the chipset due to IOP issue on le_role"""
+        if self.floss and self.bluetooth_facade.get_chipset_name(
+        ) in LE_RECEIVER_FLOSS_IOP_ISSUE_CHIPSETS:
+            raise error.TestNAError(
+                    "Test not supported in Floss due to IOP issue")
 
     def pair_adapter_to_device(self, device):
         """Pairs to device, then disconnects

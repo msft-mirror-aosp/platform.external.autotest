@@ -9,7 +9,6 @@ import re
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
-from autotest_lib.server.cros.dynamic_suite import tools
 from autotest_lib.server.cros.update_engine import update_engine_test
 from autotest_lib.utils.frozen_chromite.lib import retry_util
 
@@ -216,21 +215,6 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
                                      'the results directory.' % line)
 
 
-    def _get_build_from_job_repo_url(self, host):
-        """
-        Gets the build string from a hosts job_repo_url.
-
-        @param host: Object representing host.
-
-        """
-        info = host.host_info_store.get()
-        repo_url = info.attributes.get(host.job_repo_url_attribute, '')
-        if not repo_url:
-            raise error.TestFail('There was no job_repo_url for %s so we '
-                                 'cant get a payload to use.' % host.hostname)
-        return tools.get_devserver_build_from_package_url(repo_url)
-
-
     def _verify_hosts(self, running_at_desk):
         """
         Ensure that the hosts scheduled for the test are valid.
@@ -253,12 +237,12 @@ class autoupdate_P2P(update_engine_test.UpdateEngineTest):
         # Get the current build. e.g samus-release/R65-10200.0.0
         if not running_at_desk:
             logging.info('Making sure hosts have the same build.')
-            _, build1 = self._get_build_from_job_repo_url(self._hosts[0])
-            _, build2 = self._get_build_from_job_repo_url(self._hosts[1])
-            if build1 != build2:
-                raise error.TestFail('The builds on the hosts did not match. '
-                                     'Host one: %s, Host two: %s' % (build1,
-                                                                     build2))
+            build1 = self._hosts[0].get_release_builder_path()
+            build2 = self._hosts[1].get_release_builder_path()
+            if not build1 or build1 != build2:
+                raise error.TestFail(
+                        'The builds on the hosts are invalid or not matching. '
+                        'Host one: %s, Host two: %s' % (build1, build2))
 
 
     def run_once(self,

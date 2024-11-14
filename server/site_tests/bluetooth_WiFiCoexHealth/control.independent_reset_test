@@ -31,7 +31,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bluetooth_wifi_coex'
+ATTRIBUTES = 'suite:bluetooth'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'wificell, bluetooth_state:NORMAL'
 

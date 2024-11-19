@@ -38,14 +38,12 @@ from autotest_lib.server.cros.dynamic_suite import constants as ds_constants
 from autotest_lib.server.cros.dynamic_suite import tools, frontend_wrappers
 from autotest_lib.server.cros.device_health_profile import device_health_profile
 from autotest_lib.server.cros.device_health_profile import profile_constants
-from autotest_lib.server.cros.servo import pdtester
 from autotest_lib.server.hosts import abstract_ssh
 from autotest_lib.server.hosts import base_label
 from autotest_lib.server.hosts import chameleon_host
 from autotest_lib.server.hosts import cros_constants
 from autotest_lib.server.hosts import cros_label
 from autotest_lib.server.hosts import cros_repair
-from autotest_lib.server.hosts import pdtester_host
 from autotest_lib.server.hosts import servo_host
 from autotest_lib.server.hosts import servo_constants
 from autotest_lib.site_utils.rpm_control_system import rpm_client
@@ -343,25 +341,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         }
 
     @staticmethod
-    def get_pdtester_arguments(args_dict):
-        """Extract chameleon options from `args_dict` and return the result.
-
-        Recommended usage:
-        ~~~~~~~~
-            args_dict = utils.args_to_dict(args)
-            pdtester_args = hosts.CrosHost.get_pdtester_arguments(args_dict)
-            host = hosts.create_host(machine, pdtester_args=pdtester_args)
-        ~~~~~~~~
-
-        @param args_dict Dictionary from which to extract the pdtester
-          arguments.
-        """
-        return {key: args_dict[key]
-                for key in ('pdtester_host', 'pdtester_port')
-                if key in args_dict}
-
-
-    @staticmethod
     def get_servo_arguments(args_dict):
         """Extract servo options from `args_dict` and return the result.
 
@@ -398,7 +377,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     hostname,
                     chameleon_args=None,
                     servo_args=None,
-                    pdtester_args=None,
                     try_lab_servo=False,
                     try_servo_repair=False,
                     ssh_verbosity_flag='',
@@ -482,19 +460,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         self._btpeer_host_list = []
         self.btpeer_list = []
         self.btpeer = None
-
-        # Add pdtester host if pdtester args were added on command line
-        self._pdtester_host = pdtester_host.create_pdtester_host(
-                pdtester_args, self._servo_host)
-
-        if self._pdtester_host:
-            self.pdtester_servo = self._pdtester_host.get_servo()
-            logging.info('pdtester_servo: %r', self.pdtester_servo)
-            # Create the pdtester object used to access the ec uart
-            self.pdtester = pdtester.PDTester(self.pdtester_servo,
-                    self._pdtester_host.get_servod_server_proxy())
-        else:
-            self.pdtester = None
 
         try:
             logging.debug('Pre test lsb-release {}'.format(

@@ -260,9 +260,6 @@ class FirmwareTest(test.test):
         elif self.faft_config.chrome_ec:
             # If no separate USBPD console, then PD exists on EC console
             self.usbpd = self.ec
-        # Get pdtester console
-        self.pdtester = host.pdtester
-        self.pdtester_host = host._pdtester_host
         gsc = None
         try:
             gsc_version = self.servo.get("gsc_version")
@@ -766,93 +763,6 @@ class FirmwareTest(test.test):
                 self.servo.system(cmd)
 
         self.mark_setup_done("usb_check")
-
-    def setup_pdtester(
-        self, flip_cc=False, dts_mode=False, pd_faft=True, min_batt_level=None
-    ):
-        """Setup the PDTester to a given state.
-
-        @param flip_cc: True to flip CC polarity; False to not flip it.
-        @param dts_mode: True to config PDTester to DTS mode; False to not.
-        @param pd_faft: True to config PD FAFT setup.
-        @param min_batt_level: An int for minimum battery level, or None for
-                               skip.
-        @raise TestError: If Servo v4 not setup properly.
-        """
-
-        # PD FAFT is only tested with a combination of servo_v4 or servo_v4p1
-        # with servo micro or C2D2.
-        pd_setup = []
-        for first in self.pdtester.FIRST_PD_SETUP_ELEMENT:
-            for second in self.pdtester.SECOND_PD_SETUP_ELEMENT:
-                pd_setup.append(first + "_with_" + second)
-
-        # Servod running with --device-discovery=full can result in a servo type
-        # that ends with something like _and_ccd_ti50. These types should be
-        # supported so match based on what comes before the first _and
-        and_index = self.pdtester.servo_type.find("_and")
-        servo_base_type = self.pdtester.servo_type
-        if and_index != -1:
-            servo_base_type = self.pdtester.servo_type[0:and_index]
-
-        if pd_faft and servo_base_type not in pd_setup:
-            raise error.TestError(
-                ", ".join(pd_setup) + " is a mandatory setup "
-                "for PD FAFT. Got %s." % self.pdtester.servo_type
-            )
-
-        # Ensure the battery is enough for testing, this should be done before
-        # all the following setup.
-        if (min_batt_level is not None) and self._client.has_battery():
-            logging.info("Start charging if batt level < %d", min_batt_level)
-            PowerUtils.put_host_battery_in_range(
-                self._client, min_batt_level, 100, 600
-            )
-
-        # Servo v4 by default has dts_mode enabled. Enabling dts_mode affects
-        # the behaviors of what PD FAFT tests. So we want it disabled.
-        self._dts_mode = dts_mode
-        pd_tester_device = self.pdtester.servo_type.split("_with_")[0]
-        if pd_tester_device in self.pdtester.FIRST_PD_SETUP_ELEMENT:
-            self.servo.set_dts_mode("on" if dts_mode else "off")
-        else:
-            logging.warning(
-                "Configuring DTS mode only supported on %s", pd_tester_device
-            )
-
-        self.pdtester.set("usbc_polarity", "cc2" if flip_cc else "cc1")
-        # Make it sourcing max voltage.
-        self.charge(self.pdtester.USBC_MAX_VOLTAGE)
-
-        time.sleep(self.PD_RESYNC_DELAY)
-
-        # Servo v4 requires an external charger to source power. Make sure
-        # this setup is correct.
-        if pd_tester_device in self.pdtester.FIRST_PD_SETUP_ELEMENT:
-            role = self.pdtester.get("servo_pd_role")
-            if role != "src":
-                raise error.TestError(
-                    "%s is not sourcing power! Make sure the servo "
-                    '"DUT POWER" port is connected to a working charger. '
-                    "servo_pd_role:%s" % (pd_tester_device, role)
-                )
-        self.servo.disable_ccd_watchdog_for_test()
-
-    def charge(self, voltage):
-        """Sets PDTester to provide power at specific voltage.
-
-        This is a wrapper around PDTester.charge() which also re-enables DTS
-        mode if needed.
-
-        @param voltage: Specified charging voltage in volts.
-        """
-        self.pdtester.charge(voltage)
-
-        # Workaround for b/284216847. Currently the servo usbc_action command
-        # unconditionally disables DTS mode, so re-enable it if needed.
-        # TODO(b/284216847): Remove this once the servo FW fix is ready and has
-        # been rolled out.
-        self.servo.set_dts_mode("on" if self._dts_mode else "off")
 
     def setup_usbkey(self, usbkey, host=None, used_for_recovery=None):
         """Setup the USB disk for the test.

@@ -1322,6 +1322,21 @@ class ServoHost(base_servohost.BaseServoHost):
             os.mkdir(log_dir)
         client_utils.write_keyval(os.path.join(log_dir, 'servo'),
                                   self._servo._servo_info)
+        # Also write to servo_info.json to match Tast (crrev.com/c/6019592).
+        # The conversion to json matches how the test_runner recipe consumed
+        # the sysinfo/servo log file (crrev.com/c/4676118).
+        info_json = {}
+        servo_versions = []
+        for k in self._servo._servo_info:
+            v = str(self._servo._servo_info[k])
+            if k == 'servod_version' or k == 'servo_type':
+                info_json[k] = v
+            elif '_version' in k and v != 'None':
+                servo_versions.append(v)
+        if servo_versions:
+            info_json['servo_versions'] = ','.join(servo_versions)
+        with open(os.path.join(log_dir, 'servo_info.json'), 'w') as f:
+            json.dump(info_json, f)
 
     def get_instance_logs(self, instance_ts, outdir, old=False):
         """Collect all logs with |instance_ts| and dump into a dir in |outdir|

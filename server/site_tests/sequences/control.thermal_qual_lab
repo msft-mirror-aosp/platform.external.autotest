@@ -50,11 +50,12 @@ CLIENT_TESTS = [
         'duration': 30 * MINUTES}),
     ('power_VideoCall', {
         'tag' : 'thermal_qual_lab_discharge', 'force_discharge' : True,
-        'duration': 30 * MINUTES}),
+        'duration': 30 * MINUTES, 'preset': 'high', 'webrtc': True}),
     ('power_ThermalLoad', {
         'tag' : 'thermal_qual_lab_charge', 'duration': 30 * MINUTES}),
     ('power_VideoCall', {
-        'tag' : 'thermal_qual_lab_charge', 'duration': 30 * MINUTES}),
+        'tag' : 'thermal_qual_lab_charge', 'duration': 30 * MINUTES,
+        'preset': 'high', 'webrtc': True}),
 
     ('power_Speedometer2', {'tag' : 'thermal_qual_lab_after'})
 ]

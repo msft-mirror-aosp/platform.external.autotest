@@ -41,7 +41,8 @@ CLIENT_TESTS = [
     }),
     ('power_WaitForCoolDown', {}),
     ('power_VideoCall', {
-        'tag' : 'fast', 'duration': 180, 'second_period' : 5
+        'tag' : 'fast', 'duration': 180, 'second_period' : 5,
+        'preset': 'high', 'webrtc': True
     }),
     ('power_Speedometer2', {
         'tag' : 'thermal_qual_fast_after'

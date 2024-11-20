@@ -47,7 +47,8 @@ CLIENT_TESTS = [
         'percent_target_charge' : 70, 'max_run_time': 5 * HOURS}),
     ('power_WaitForCoolDown', {}),
     ('power_VideoCall', {
-        'tag' : 'thermal_qual_full_discharge', 'force_discharge' : True}),
+        'tag' : 'thermal_qual_full_discharge', 'force_discharge' : True,
+        'preset': 'high', 'webrtc': True}),
     ('power_Speedometer2', {'tag' : 'thermal_qual_full_VideoCall_discharge'}),
 
     ('power_BatteryDrain', {
@@ -61,7 +62,8 @@ CLIENT_TESTS = [
         'force_discharge' : True, 'drain_to_percent' : 30,
         'drain_timeout': 7 * HOURS}),
     ('power_WaitForCoolDown', {}),
-    ('power_VideoCall', {'tag' : 'thermal_qual_full_charge'}),
+    ('power_VideoCall', {'tag' : 'thermal_qual_full_charge',
+                         'preset': 'high', 'webrtc': True}),
     ('power_Speedometer2', {'tag' : 'thermal_qual_full_VideoCall_charge'})
 ]
 

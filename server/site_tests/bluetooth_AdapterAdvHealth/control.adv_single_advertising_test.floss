@@ -50,7 +50,7 @@ METADATA = {
     'hw_agnostic': True,
     'requirements': ['bt-gen-0001-v01'],
 }
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL'
 

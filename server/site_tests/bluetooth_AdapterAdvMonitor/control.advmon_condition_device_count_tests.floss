@@ -18,7 +18,7 @@ METADATA = {
                      'bt-hciExt-0008-v01', 'bt-hciExt-0009-v01',
                      'bt-hciExt-0010-v01']
 }
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

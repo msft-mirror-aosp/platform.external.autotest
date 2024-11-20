@@ -24,7 +24,7 @@ METADATA = {
 
 
 # TODO: Remove ['Quick Health'] flag from AdapterCLHealth when moving to stable.
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

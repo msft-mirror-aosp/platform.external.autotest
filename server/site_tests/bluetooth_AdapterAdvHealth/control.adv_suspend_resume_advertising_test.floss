@@ -33,7 +33,7 @@ METADATA = {
     'hw_agnostic': True,
     'requirements': ['bt-drv-0013-v01']
 }
-ATTRIBUTES = 'suite:bluetooth_floss'
+ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL'
 

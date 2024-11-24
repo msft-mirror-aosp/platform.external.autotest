@@ -30,12 +30,12 @@ def run_TS(machine):
         iterations=1,
         tag='internal.arm.CtsDevice',
         test_name='cheets_CTS_T.internal.arm.CtsDevice',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeviceConfigTestCases', '--include-filter', 'CtsDeviceConfigTestCases[secondary_user]', '--include-filter', 'CtsDeviceIdleHostTestCases', '--include-filter', 'CtsDeviceIdleHostTestCases[secondary_user]', '--include-filter', 'CtsDevicePolicyManagerTestCases', '--include-filter', 'CtsDevicePolicyTestCases', '--include-filter', 'CtsDevicePolicyTestCases[run-on-clone-profile]', '--include-filter', 'CtsDevicePolicyTestCases[run-on-private-profile]', '--include-filter', 'CtsDevicePolicyTestCases[run-on-secondary-user]', '--include-filter', 'CtsDevicePolicyTestCases[run-on-work-profile]', '--include-filter', 'CtsDevicePolicyTestCases[secondary_user]', '--include-filter', 'CtsDeviceStateManagerTestCases', '--include-filter', 'CtsDeviceStateManagerTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeviceConfigTestCases', '--include-filter', 'CtsDeviceConfigTestCases[secondary_user]', '--include-filter', 'CtsDeviceIdleHostTestCases', '--include-filter', 'CtsDeviceIdleHostTestCases[secondary_user]', '--include-filter', 'CtsDevicePolicyManagerTestCases', '--include-filter', 'CtsDevicePolicyTestCases', '--include-filter', 'CtsDevicePolicyTestCases[run-on-clone-profile]', '--include-filter', 'CtsDevicePolicyTestCases[run-on-secondary-user]', '--include-filter', 'CtsDevicePolicyTestCases[run-on-work-profile]', '--include-filter', 'CtsDevicePolicyTestCases[secondary_user]', '--include-filter', 'CtsDeviceStateManagerTestCases', '--include-filter', 'CtsDeviceStateManagerTestCases[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsDevice',
         target_plan=None,
         bundle='arm',
         uri='DEV',
-        timeout=25200)
+        timeout=23400)
 
 parallel_simple(run_TS, machines)

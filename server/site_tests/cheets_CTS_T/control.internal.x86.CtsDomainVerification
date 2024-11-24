@@ -30,12 +30,12 @@ def run_TS(machine):
         iterations=1,
         tag='internal.x86.CtsDomainVerification',
         test_name='cheets_CTS_T.internal.x86.CtsDomainVerification',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases[run-on-clone-profile]', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases[run-on-private-profile]', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases[run-on-secondary-user]', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases[run-on-work-profile]', '--include-filter', 'CtsDomainVerificationDeviceStandaloneTestCases', '--include-filter', 'CtsDomainVerificationDeviceStandaloneTestCases[secondary_user]', '--include-filter', 'CtsDomainVerificationHostTestCases', '--include-filter', 'CtsDomainVerificationHostTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases[run-on-clone-profile]', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases[run-on-secondary-user]', '--include-filter', 'CtsDomainVerificationDeviceMultiUserTestCases[run-on-work-profile]', '--include-filter', 'CtsDomainVerificationDeviceStandaloneTestCases', '--include-filter', 'CtsDomainVerificationDeviceStandaloneTestCases[secondary_user]', '--include-filter', 'CtsDomainVerificationHostTestCases', '--include-filter', 'CtsDomainVerificationHostTestCases[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsDomainVerification',
         target_plan=None,
         bundle='x86',
         uri='DEV',
-        timeout=18000)
+        timeout=16200)
 
 parallel_simple(run_TS, machines)

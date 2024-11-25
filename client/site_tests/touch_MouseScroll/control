@@ -9,7 +9,7 @@ METADATA = {
     "criteria": "External USB mouse scroll event occurs in expected direction.",
     "hw_agnostic": False
 }
-ATTRIBUTES = "suite:touch"
+ATTRIBUTES = "suite:touch, group:release-health, release-health_touch"
 TEST_TYPE = "client"
 
 job.run_test('touch_MouseScroll')

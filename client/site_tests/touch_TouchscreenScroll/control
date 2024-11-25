@@ -10,7 +10,7 @@ METADATA = {
     "hw_agnostic": False,
     'variant_category': '{"name": "Touchscreen_SoC_Controller_ProductId_Variant-def-plus-kernelnext"}',
 }
-ATTRIBUTES = "suite:touch_replay_touchscreen"
+ATTRIBUTES = "suite:touch_replay_touchscreen, group:release-health, release-health_touch"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchscreen"
 

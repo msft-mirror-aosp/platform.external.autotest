@@ -15,6 +15,7 @@
 
 import os
 
+from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import hosts
 from autotest_lib.server.cros import camerabox_utils
@@ -50,6 +51,13 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
 
     def _tradefed_cmd_path(self):
         return os.path.join(self._repository, 'tools', 'cts-tradefed')
+
+    def _tradefed_env(self):
+        env = super()._tradefed_env()
+        # TODO(b/339791684): Switch legacy drones to use ATS once we support it.
+        if not client_utils.is_cloudbot():
+            env['USE_ATS'] = 'false'
+        return env
 
     def initialize_camerabox(self, camera_facing, cmdline_args):
         """Configure DUT and chart running in camerabox environment.

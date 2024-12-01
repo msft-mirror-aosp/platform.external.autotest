@@ -30,12 +30,12 @@ def run_TS(machine):
         iterations=1,
         tag='internal.x86.CtsPhotoPickerTest',
         test_name='cheets_CTS_T.internal.x86.CtsPhotoPickerTest',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsPhotoPickerTest', '--include-filter', 'CtsPhotoPickerTest[run-on-clone-profile]', '--include-filter', 'CtsPhotoPickerTest[run-on-secondary-user]', '--include-filter', 'CtsPhotoPickerTest[run-on-work-profile]', '--include-filter', 'CtsPhotoPickerTest[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsPhotoPickerTest', '--include-filter', 'CtsPhotoPickerTest[run-on-clone-profile]', '--include-filter', 'CtsPhotoPickerTest[run-on-private-profile]', '--include-filter', 'CtsPhotoPickerTest[run-on-secondary-user]', '--include-filter', 'CtsPhotoPickerTest[run-on-work-profile]', '--include-filter', 'CtsPhotoPickerTest[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsPhotoPickerTest',
         target_plan=None,
         bundle='x86',
         uri='DEV',
-        timeout=10800)
+        timeout=12600)
 
 parallel_simple(run_TS, machines)

@@ -30,12 +30,12 @@ def run_TS(machine):
         iterations=1,
         tag='internal.x86.CtsOs',
         test_name='cheets_CTS_T.internal.x86.CtsOs',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsOsHostTestCases', '--include-filter', 'CtsOsHostTestCases[instant]', '--include-filter', 'CtsOsHostTestCases[secondary_user]', '--include-filter', 'CtsOsTestCases', '--include-filter', 'CtsOsTestCases[instant]', '--include-filter', 'CtsOsTestCases[run-on-clone-profile]', '--include-filter', 'CtsOsTestCases[run-on-secondary-user]', '--include-filter', 'CtsOsTestCases[run-on-work-profile]', '--include-filter', 'CtsOsTestCases[secondary_user]', '--logcat-on-failure'],
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsOsHostTestCases', '--include-filter', 'CtsOsHostTestCases[instant]', '--include-filter', 'CtsOsHostTestCases[secondary_user]', '--include-filter', 'CtsOsTestCases', '--include-filter', 'CtsOsTestCases[instant]', '--include-filter', 'CtsOsTestCases[run-on-clone-profile]', '--include-filter', 'CtsOsTestCases[run-on-private-profile]', '--include-filter', 'CtsOsTestCases[run-on-secondary-user]', '--include-filter', 'CtsOsTestCases[run-on-work-profile]', '--include-filter', 'CtsOsTestCases[secondary_user]', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='CtsOs',
         target_plan=None,
         bundle='x86',
         uri='DEV',
-        timeout=18000)
+        timeout=19800)
 
 parallel_simple(run_TS, machines)

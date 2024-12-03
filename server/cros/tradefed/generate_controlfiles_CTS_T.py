@@ -136,8 +136,7 @@ CONFIG['SPLIT_SUITES'] = {
                 'CtsCppTools': 517,
                 'CtsCurrentApiSignature': 620,
                 'CtsDatabase': 667,
-                'CtsDeqp.32': 52993,
-                'CtsDeqp.64': 51907,
+                'CtsDeqp': 52993,
                 'CtsDevice': 2318,
                 'CtsDexMetadataHost': 655,
                 'CtsDisplay': 1315,
@@ -433,11 +432,6 @@ CONFIG['MEDIA_SUITE_MODULES'] = [
 
 CONFIG['NEEDS_CTS_HELPERS'] = [
         'CtsPrintTestCases',
-]
-
-CONFIG['SPLIT_BY_BITS_MODULES'] = [
-        'CtsDeqpTestCases',
-        'CtsDeqpTestCases.dEQP-VK',
 ]
 
 CONFIG['SHARD_COUNT'] = {'CtsDeqpTestCases': 10}

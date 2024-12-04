@@ -573,7 +573,6 @@ suite:bvt-tast-cq-cft-video
 suite:bvt-tast-cq-cft-vm
 suite:bvt-tast-cq-cft-wallpaper
 suite:bvt-tast-cq-cft-webrtc
-suite:bvt-tast-cq-cft-wifi
 suite:bvt-tast-cq-cft-wilco
 suite:bvt-tast-cq-cft-wmp
 suite:bvt-tast-cq-wilco

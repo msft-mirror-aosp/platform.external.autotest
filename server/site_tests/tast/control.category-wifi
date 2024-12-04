@@ -14,7 +14,7 @@ METADATA = {
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 DEPENDENCIES = 'servo_state:WORKING'
-ATTRIBUTES = 'suite:bvt-tast-cq-wifi, suite:bvt-tast-cq-cft-wifi'
+ATTRIBUTES = 'suite:bvt-tast-cq-wifi'
 MAX_RESULT_SIZE_KB = 256 * 1024
 PY_VERSION = 3
 

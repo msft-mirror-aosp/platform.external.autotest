@@ -510,6 +510,7 @@ class BluetoothAdapterQuickTests(
         if self.floss:
             if self.bluetooth_facade.crash_detect_stop():
                 chipset = self.quick_test_get_chipset_name()
+                model = self.quick_test_get_model_name()
                 # On SUSPEND_POWER_DOWN_CHIPSETS, only detect the unexpected
                 # stop when the test is already failed because these chipsets
                 # remove the hci index on suspend and cause crashes.
@@ -518,8 +519,16 @@ class BluetoothAdapterQuickTests(
                         in bluetooth_adapter_tests.SUSPEND_POWER_DOWN_CHIPSETS
                         and not self.fails):
                     logging.info(
-                            "Skipped crash detection because the test has "
-                            "passed")
+                            "Skipped crash detection on chipset %s because the "
+                            "test has passed", chipset)
+                # On SUSPEND_FLAKY_USB_CONNECTION_MODELS, only detect the
+                # unexpected stop when the test is already failed because the
+                # USB could disconnect randomly.
+                elif (model in bluetooth_adapter_tests.
+                      SUSPEND_FLAKY_USB_CONNECTION_MODELS and not self.fails):
+                    logging.info(
+                            "Skipped crash detection on model %s because the "
+                            "test has passed", model)
                 else:
                     self.test_crash_detected()
             else:

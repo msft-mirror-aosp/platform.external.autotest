@@ -30,7 +30,7 @@ METADATA = {
     "hw_agnostic": False
 }
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:bvt-perbuild, suite:partners, suite:distributed_lab_qual_bvt_shard1"
+ATTRIBUTES = "suite:bvt-perbuild, suite:partners, suite:distributed_lab_qual_bvt_shard1, group:release-health, release-health_power"
 REQUIRE_SSP = False
 
 from autotest_lib.server import utils

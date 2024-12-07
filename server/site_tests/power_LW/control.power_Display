@@ -11,7 +11,7 @@ METADATA = {
     "doc" : "Control file for running power_Display in power lab.",
 }
 TEST_TYPE = "server"
-ATTRIBUTES = "suite:power_dashboard_weekly"
+ATTRIBUTES = "suite:power_dashboard_weekly, group:release-health, release-health_power"
 DEPENDENCIES = "servo_state:WORKING"
 
 from autotest_lib.client.common_lib import utils

@@ -14,7 +14,7 @@ METADATA = {
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
 EXTENDED_TIMEOUT = 43200
-ATTRIBUTES = "suite:power_segment"
+ATTRIBUTES = "suite:power_segment, group:release-health, release-health_power"
 
 from autotest_lib.client.common_lib import utils
 

@@ -19,7 +19,7 @@ METADATA = {
 }
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"
-ATTRIBUTES = "suite:power_build"
+ATTRIBUTES = "suite:power_build, group:release-health, release-health_power"
 
 from autotest_lib.server import utils
 

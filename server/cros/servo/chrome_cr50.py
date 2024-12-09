@@ -155,6 +155,14 @@ class ChromeCr50(chrome_ec.ChromeConsole):
             ],
             # servo_* servos don't need any ccd capabilities.
             'servo': [],
+            # Setup opening CCD without physical presence, so CCD open can be
+            # used to wipe the TPM.
+            'wipe_tpm': [
+                    'UnlockNoShortPP',
+                    'OpenNoLongPP',
+                    'OpenNoDevMode',
+                    'OpenFromUSB',
+            ],
     }
 
     BOARD_PROP_ALWAYS_TRUE = []
@@ -1744,9 +1752,11 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         if not self.testlab_is_on():
             return
         self.send_command('ccd testlab open')
-        self.send_command('ccd reset factory')
-        time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
-        self.send_command('ccd set OpenNoTPMWipe IfOpened')
+        self.ccd_reset()
+        # Manually set the capabilities to open ccd without physical presence
+        # and wipe the TPM.
+        for cap in self.SERVO_SPECIFIC_REQ_CAPS['wipe_tpm']:
+            self.send_command('ccd set %s Always' % cap)
         time.sleep(self.CCD_PASSWORD_RATE_LIMIT)
         self.set_ccd_level('lock')
         time.sleep(self.CCD_PASSWORD_RATE_LIMIT)

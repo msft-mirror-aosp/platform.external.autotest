@@ -666,7 +666,8 @@ class Cr50Test(FirmwareTest):
 
         # Disconnect the charger and reset the dut to recover charging.
         logging.info('Recovering charging')
-        self.faft_client.system.run_shell_command('poweroff')
+        self.faft_client.system.run_shell_command('poweroff', block=True)
+        logging.info('Powered off dut')
         time.sleep(self.gsc.SHORT_WAIT)
         self.host.power_cycle()
         time.sleep(self.gsc.SHORT_WAIT)

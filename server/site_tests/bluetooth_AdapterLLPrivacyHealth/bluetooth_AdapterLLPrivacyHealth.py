@@ -19,7 +19,7 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
      import (BluetoothAdapterAdvMonitorTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
         LL_PRIVACY_NOT_SUPPORTED_CHIPSETS, SUSPEND_POWER_DOWN_CHIPSETS,
-        SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS)
+        SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS, DUAL_LAPTOP_TABLET_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
      import (BluetoothAdapterLLPrivacyTests, DEFAULT_RPA_TIMEOUT_SEC,
              MIN_RPA_TIMEOUT_SEC)
@@ -648,6 +648,11 @@ class bluetooth_AdapterLLPrivacyHealth(
         if not self.floss:
             raise error.TestNAError(
                     "Test not supported in BlueZ for known reason.")
+
+        if self.host.get_model_from_cros_config() in DUAL_LAPTOP_TABLET_MODELS:
+            if self.bluetooth_facade.is_tablet_mode():
+                raise error.TestNAError("Test not supported in tablet mode.")
+
         device = self.devices['BLE_MOUSE'][0]
         self.run_hid_wakeup_with_rpa(device, device_test=self._test_mouse)
 

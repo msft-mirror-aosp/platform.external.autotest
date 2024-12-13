@@ -99,6 +99,10 @@ COMMON_FAILURES = {
 # the ones that were not launched
 TABLET_MODELS = ['kakadu', 'kodama', 'krane']
 
+# TODO(b/383906217) Laptops can be configured to be in tablet mode or laptop
+# mode, depending on screen angle or attached keyboard.
+DUAL_LAPTOP_TABLET_MODELS = ['ciri']
+
 # Some platforms do not have built-in I/O hardware, and so they are configured
 # to automatically reconnect to paired HID devices on boot. We note these
 # platform types here as there will be different behavior expectations around

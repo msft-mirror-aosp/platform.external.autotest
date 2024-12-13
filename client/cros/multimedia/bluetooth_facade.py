@@ -313,6 +313,8 @@ class BluetoothBaseFacadeLocal(object):
     # How long we wait for the manager daemon to come up after we start it
     DAEMON_TIMEOUT_SEC = 5
 
+    POWERD_LOG = '/var/log/power_manager/powerd.LATEST'
+
     # Upstart job name for ChromeOS Audio daemon
     CRAS_JOB = "cras"
 
@@ -1058,8 +1060,6 @@ class BluetoothBaseFacadeLocal(object):
 
         @return Most recent lines containing suspend resume details or ''.
         """
-        event_file = '/var/log/power_manager/powerd.LATEST'
-
         # Each powerd_suspend wakeup has a log "powerd_suspend returned 0",
         # with the return code of the suspend. We search for the last
         # occurrence in the log, and then find the collocated event_count log,
@@ -1068,7 +1068,7 @@ class BluetoothBaseFacadeLocal(object):
         # with tac command
         resume_indicator = 'powerd_suspend returned'
         cmd = 'tac {} | grep -A {} -B {} -m1 "{}"'.format(
-                event_file, after, before, resume_indicator)
+                self.POWERD_LOG, after, before, resume_indicator)
 
         try:
             return utils.run(cmd).stdout
@@ -1076,6 +1076,26 @@ class BluetoothBaseFacadeLocal(object):
             logging.error('Could not locate recent suspend')
 
         return ''
+
+    def is_tablet_mode(self):
+        """Check if the device was configured in tablet mode. Assume the
+        device in the lab does not change form factor.
+
+        Search for 'Configuring devices for mode \"tablet\"' from the powerd
+        log.
+
+        @return: 0 if in laptop mode, 1 if in tablet mode
+        """
+        tablet_mode_indicator = 'Configuring devices for mode \"tablet\"'
+        cmd = 'cat {} | grep -c \'{}\''.format(self.POWERD_LOG,
+                                               tablet_mode_indicator)
+
+        try:
+            return int(utils.run(cmd).stdout)
+        except error.CmdError:
+            logging.error('Fails to search for tablet mode indicator.')
+
+        return 0
 
     def bt_caused_last_resume(self):
         """Checks if last resume from suspend was caused by bluetooth

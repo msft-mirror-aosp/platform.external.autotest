@@ -24,9 +24,10 @@ DEVICE_CONNECTED_TIMEOUT = 45
 
 LOG_PEER_RANDOM = 'Peer address type: Random (0x01)'
 LOG_PEER_RESOLVED_PUBLIC = 'Peer address type: Resolved Public (0x02)'
-# b/325354194, b/328687227 Some chipsets may report a wrong address type for resolved RPA.
+# b/325354194, b/383905194
+# Some chipsets may report a wrong address type for resolved RPA.
 CONTROLLER_RPA_ADDRESS_AS_PUBLIC_CHIPSETS = [
-        'Realtek-RTL8852A-USB', 'Realtek-RTL8822C-USB', 'Realtek-RTL8822C-UART'
+        'Realtek-RTL8852A-USB', 'MVL-8897'
 ]
 
 class BluetoothAdapterLLPrivacyTests(

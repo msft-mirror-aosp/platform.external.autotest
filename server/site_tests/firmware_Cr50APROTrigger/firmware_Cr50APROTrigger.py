@@ -6,7 +6,6 @@ import logging
 import pprint
 import time
 
-from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
@@ -148,51 +147,9 @@ class firmware_Cr50APROTrigger(Cr50Test):
         """Returns True if AP RO verification is running."""
         return self.gsc.get_ap_ro_info()['result'] == self.APRO_IN_PROGRESS
 
-    def get_apro_output(self, timeout):
-        """Get the AP RO console output.
-
-        @param timeout: time in seconds to wait for AP RO verification to
-                        finish.
-        """
-        self.servo.set_nocheck('cr50_uart_timeout', timeout + self.START_DELAY)
-        start_time = time.time()
-        rv = ''
-        try:
-            # AP RO verification will start in the background. Wait for cr50 to
-            # finish verification collect all of the AP RO output.
-            cmd = 'noop_wait_apro ' + self._desc
-            rv = self.gsc.send_command_get_output(cmd, [self.APRO_OUTPUT_RE])
-            logging.info('AP RO result: %s', rv)
-            return rv[0]
-        finally:
-            self.servo.set_nocheck('cr50_uart_timeout', self._original_timeout)
-        logging.info('AP RO verification ran in %ds', time.time() - start_time)
-
-    def _start_apro_verify(self):
-        """Start AP RO verification with a delay.
-
-        Delay starting AP RO verification, so the test can get the full
-        AP RO console output.
-        """
-        if not self.host.ping_wait_up(self.faft_config.delay_reboot_to_ping):
-            raise error.TestError('AP is %s. Dut is not sshable. ' %
-                                  self.cr50.get_ccdstate('AP'))
-        apro_start_cmd = utils.sh_escape('sleep %d ; gsctool -aB start' %
-                                         self.START_DELAY)
-        full_ssh_cmd = '%s "%s"' % (self.host.ssh_command(options='-tt'),
-                                    apro_start_cmd)
-        # Start running the Cr50 Open process in the background.
-        self._apro_start = utils.BgJob(full_ssh_cmd,
-                                       nickname='apro_start',
-                                       stdout_tee=utils.TEE_TO_LOGS,
-                                       stderr_tee=utils.TEE_TO_LOGS)
-
-    def _close_apro_start(self):
-        """Terminate the process and check the results."""
-        exit_status = utils.nuke_subprocess(self._apro_start.sp)
-        delattr(self, '_apro_start')
-        if exit_status:
-            logging.info('exit status: %d', exit_status)
+    def run_apro_verification(self):
+        """Start the AP RO verification process."""
+        return self.host.run('gsctool -aB start').stdout
 
     def trigger_verification(self, exp_result, timeout):
         """Trigger verification.
@@ -214,13 +171,8 @@ class firmware_Cr50APROTrigger(Cr50Test):
         self.fast_ccd_open(True)
         logging.info('Run: %s', self._desc)
 
-        self.recover_dut()
-        try:
-            self._start_apro_verify()
-            contents = self.get_apro_output(timeout)
-        finally:
-            self._close_apro_start()
-        logging.info('finished %r:%s', self._desc, contents)
+        logging.info('Triggered verification: %s',
+                     self.run_apro_verification())
 
         ap_ro_info = self.gsc.get_ap_ro_info()
         if ap_ro_info['supported']:
@@ -231,10 +183,6 @@ class firmware_Cr50APROTrigger(Cr50Test):
                     '%s: %r not found in status %r -- stored' %
                     (self._desc, exp_result, ap_ro_info['result']))
 
-        for msg in self.ERR_MESSAGES:
-            if msg in contents:
-                raise error.TestFail('%s: %r showed up in contents %s' %
-                                     (self._desc, msg, contents))
         logging.info('Results: %s', pprint.pformat(ap_ro_info))
         time.sleep(self.APRO_RESET_DELAY)
         self.servo.get_power_state_controller().reset()

@@ -507,9 +507,11 @@ class Cr50Test(FirmwareTest):
         except error.TestError as e:
             logging.info('Failed to update with ccd with cold_reset on.')
         try:
-            logging.info('Sending AP shutdown')
-            self.ec.send_command('apshutdown')
-            return self._retry_gsc_update_with_ccd(image, retries, rollback)
+            if self.faft_config.chrome_ec:
+                logging.info('Sending AP shutdown')
+                self.ec.send_command('apshutdown')
+                return self._retry_gsc_update_with_ccd(image, retries,
+                                                       rollback)
         except error.TestError as e:
             logging.info('Failed to update with ccd after apshutdown.')
         try:

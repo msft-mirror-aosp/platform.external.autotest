@@ -27,6 +27,7 @@ from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
      import DEFAULT_RPA_TIMEOUT_SEC
 from autotest_lib.server.cros.bluetooth import bluetooth_attenuator
+from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import DUAL_LAPTOP_TABLET_MODELS
 from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 from autotest_lib.server.cros.servo import chrome_ec
@@ -816,6 +817,11 @@ class BluetoothAdapterQuickTests(
         @param keep_paired: Keep the paried devices after test.
         @param dark_resume: Enable dark resume.
         """
+
+        # check if the device is in laptop mode
+        if self.host.get_model_from_cros_config() in DUAL_LAPTOP_TABLET_MODELS:
+            if self.bluetooth_facade.is_tablet_mode():
+                raise error.TestNAError("Test not supported in tablet mode.")
 
         if dark_resume:
             try:

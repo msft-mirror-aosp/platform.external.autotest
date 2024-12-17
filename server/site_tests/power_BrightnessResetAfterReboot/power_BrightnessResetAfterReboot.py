@@ -126,7 +126,24 @@ def get_backlight(host, lux=-1):
     """
     cmd = 'backlight_tool --get_brightness_percent'
     if lux >= 0:
-        cmd = '%s --lux=%d' % (cmd, lux)
+        cmd = 'backlight_tool --get_initial_brightness --lux=%d' % lux
+    try:
+        result = host.run_output(cmd)
+    except error.CmdError:
+        raise error.TestFail(cmd)
+
+    result = float(result)
+    if lux >= 0:
+        result = level_to_linear(host, result)
+    return result
+
+
+def level_to_linear(host, level):
+    """Executes backlight_tool to convert the provided brightness level to linear.
+       @param host: host object representing the DUT.
+       @param level: brightness level to convert to.
+    """
+    cmd = 'backlight_tool --level_to_linear=%d' % level
     try:
         result = host.run_output(cmd)
     except error.CmdError:

@@ -455,7 +455,7 @@ class telemetry_AFDOGenerate(test.test):
                 'buildartifactsurl',
                 'cache_endpoint',
                 'dut_servers',
-                'is_al_run'
+                'is_al_run',
                 'is_partner_run',
                 'libs_server',
                 'servo_host',

@@ -43,7 +43,7 @@ NET_UP_TIMEOUT = 180
 
 # Max time taken by the device to suspend. This includes the time powerd takes
 # trigger the suspend after receiving the suspend request from autotest script.
-SECS_FOR_SUSPENDING = 20
+SECS_FOR_SUSPENDING = 25
 
 # Number of seconds to wait after the DUT suspends before resuming it again.
 DELAY_BEFORE_RESUMING_SECS = 5

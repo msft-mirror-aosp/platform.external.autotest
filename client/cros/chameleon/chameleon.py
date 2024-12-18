@@ -419,7 +419,7 @@ class ChameleonBoard(object):
 
     def reboot(self):
         """Reboots Chameleon board."""
-        self._chameleond_proxy.Reboot()
+        self.host.reboot()
 
     def get_network_address(self):
         """Get the network address, could be either hostname or IP given locally."""

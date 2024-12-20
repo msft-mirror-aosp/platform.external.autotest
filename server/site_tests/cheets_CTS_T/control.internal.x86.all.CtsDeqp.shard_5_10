@@ -7,7 +7,7 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_T.internal.x86.all.CtsDeqp.64.shard_5_10'
+NAME = 'cheets_CTS_T.internal.x86.all.CtsDeqp.shard_5_10'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
@@ -29,9 +29,9 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=0,
-        tag='internal.x86.all.CtsDeqp.64.shard_5_10',
-        test_name='cheets_CTS_T.internal.x86.all.CtsDeqp.64.shard_5_10',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases', '--include-filter', 'CtsDeqpTestCases[secondary_user]', '--shard-index', '5', '--shard-count', '10', '--abi', 'x86_64'],
+        tag='internal.x86.all.CtsDeqp.shard_5_10',
+        test_name='cheets_CTS_T.internal.x86.all.CtsDeqp.shard_5_10',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsDeqpTestCases', '--include-filter', 'CtsDeqpTestCases[secondary_user]', '--shard-index', '5', '--shard-count', '10'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
         target_module='all.CtsDeqp',
         target_plan=None,

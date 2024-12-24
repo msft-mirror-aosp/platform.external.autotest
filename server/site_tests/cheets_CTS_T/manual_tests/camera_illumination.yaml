@@ -7,4 +7,4 @@ android.hardware.camera2.cts.MultiViewTest#testTextureImageWriterReaderOperation
 android.hardware.camera2.cts.RecordingTest#testVideoSnapshot[1]: [ampton]
 android.hardware.camera2.cts.StillCaptureTest#testAeCompensation[1]: [craask, strongbad]
 android.hardware.cts.CameraGLTest#testCameraToSurfaceTextureMetadata: [nautilus, anraggar, anraggar360, pujjoga, teliks, chinchou360]
-android.hardware.cts.CameraTest#testPreviewFpsRange: [teliks]
+android.hardware.cts.CameraTest#testPreviewFpsRange: [chinchou360, teliks]

@@ -134,7 +134,7 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
 
         time.sleep(self.RECORD_SECONDS)
         audio_test_utils.dump_cros_audio_logs(
-        self.host, self.audio_facade, self.resultsdir,
+        self.host, self.facade, self.resultsdir,
         'during_recording')
 
         recorder_widget.stop_recording()

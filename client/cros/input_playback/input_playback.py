@@ -465,8 +465,9 @@ class InputPlayback(object):
                 if new_device.emulated:
                     self._emulated_device = new_device
 
-                self.devices[input_type] = new_device
-                logging.debug(self.devices[input_type])
+                if self.devices.get(input_type) == None:
+                    self.devices[input_type] = new_device
+                    logging.debug(self.devices[input_type])
 
 
     def playback(self, filepath, input_type='touchpad'):

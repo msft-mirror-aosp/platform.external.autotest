@@ -117,8 +117,15 @@ class InputPlayback(object):
 
 
     def _get_input_events(self):
-        """Return a list of all input event nodes."""
-        return glob.glob('/dev/input/event*')
+        """Return a sorted list of all input event nodes."""
+        events_string = glob.glob('/dev/input/event*')
+        logging.info(events_string)
+
+        def sort_key(string):
+            import re
+            return [int(c) if c.isdigit() else c.lower() for c in re.split('(\d+)', string)]
+
+        return sorted(events_string, key=sort_key)
 
 
     def emulate(self, input_type='mouse', property_file=None):

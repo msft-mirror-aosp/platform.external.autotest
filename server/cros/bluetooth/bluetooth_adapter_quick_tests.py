@@ -801,7 +801,8 @@ class BluetoothAdapterQuickTests(
                                should_wake=True,
                                should_pair=True,
                                keep_paired=False,
-                               dark_resume=False):
+                               dark_resume=False,
+                               should_retry_connect=False):
         """ Uses paired peer device to wake the device from suspend.
 
         @param device_type: the device type (used to determine if it's LE)
@@ -816,6 +817,12 @@ class BluetoothAdapterQuickTests(
                             the wakeup test.
         @param keep_paired: Keep the paried devices after test.
         @param dark_resume: Enable dark resume.
+        @param should_retry_connect: Whether to retry connection by device on
+                                     failure. This only takes effect if
+                                     device_type is not BLE and should_wake.
+                                     This is used for some devices that could
+                                     crash on the first connection and need
+                                     time to recover.
         """
 
         # check if the device is in laptop mode
@@ -910,11 +917,13 @@ class BluetoothAdapterQuickTests(
                                                      sleep_timeout=SUSPEND_SEC)
 
                 # Trigger peer wakeup
-                peer_wake = self.device_connect_async(device_type,
-                                                      device,
-                                                      adapter_address,
-                                                      delay_wake=5,
-                                                      should_wake=should_wake)
+                peer_wake = self.device_connect_async(
+                        device_type,
+                        device,
+                        adapter_address,
+                        delay_wake=5,
+                        should_wake=should_wake,
+                        should_retry_connect=should_retry_connect)
                 peer_wake.start()
 
                 # Expect a quick resume. If a timeout occurs, test fails. Since

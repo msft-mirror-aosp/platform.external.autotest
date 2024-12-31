@@ -18,8 +18,9 @@ from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests \
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_adv_monitor_tests \
      import (BluetoothAdapterAdvMonitorTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        LL_PRIVACY_NOT_SUPPORTED_CHIPSETS, SUSPEND_POWER_DOWN_CHIPSETS,
-        SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS, DUAL_LAPTOP_TABLET_MODELS)
+        LL_PRIVACY_NOT_SUPPORTED_CHIPSETS, SUSPEND_FLAKY_USB_CONNECTION_MODELS,
+        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS, TABLET_MODELS,
+        DUAL_LAPTOP_TABLET_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
      import (BluetoothAdapterLLPrivacyTests, DEFAULT_RPA_TIMEOUT_SEC,
              MIN_RPA_TIMEOUT_SEC)
@@ -329,9 +330,12 @@ class bluetooth_AdapterLLPrivacyHealth(
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
-        self.run_peer_wakeup_device('MOUSE',
-                                    device,
-                                    device_test=self._test_mouse)
+        self.run_peer_wakeup_device(
+                'MOUSE',
+                device,
+                device_test=self._test_mouse,
+                should_retry_connect=(self.quick_test_get_model_name()
+                                      in SUSPEND_FLAKY_USB_CONNECTION_MODELS))
 
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},

@@ -38,7 +38,8 @@ from autotest_lib.client.common_lib import error
 
 from autotest_lib.client.cros.bluetooth.bluetooth_audio_test_data import A2DP
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import (
-        TABLET_MODELS, SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS)
+        TABLET_MODELS, SUSPEND_FLAKY_USB_CONNECTION_MODELS,
+        SUSPEND_POWER_DOWN_CHIPSETS, SUSPEND_POWER_DOWN_MODELS)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_qr_tests import (
         QR_UNSUPPORTED_CHIPSETS, QR_EVENT_PERIOD, BluetoothAdapterQRTests)
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_quick_tests import (
@@ -303,9 +304,12 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
-        self.run_peer_wakeup_device('MOUSE',
-                                    device,
-                                    device_test=self._test_mouse)
+        self.run_peer_wakeup_device(
+                'MOUSE',
+                device,
+                device_test=self._test_mouse,
+                should_retry_connect=(self.quick_test_get_model_name()
+                                      in SUSPEND_FLAKY_USB_CONNECTION_MODELS))
 
     @test_wrapper('Peer wakeup dark resume Classic HID',
                   devices={'MOUSE': 1},
@@ -315,10 +319,13 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     def sr_peer_wake_dark_resume_classic_hid(self):
         """ Use classic HID device to wake from suspend with dark resume enabled. """
         device = self.devices['MOUSE'][0]
-        self.run_peer_wakeup_device('MOUSE',
-                                    device,
-                                    device_test=self._test_mouse,
-                                    dark_resume=True)
+        self.run_peer_wakeup_device(
+                'MOUSE',
+                device,
+                device_test=self._test_mouse,
+                dark_resume=True,
+                should_retry_connect=(self.quick_test_get_model_name()
+                                      in SUSPEND_FLAKY_USB_CONNECTION_MODELS))
 
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},
@@ -382,10 +389,13 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     def sr_peer_wake_classic_hid_stress(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
-        self.run_peer_wakeup_device('MOUSE',
-                                    device,
-                                    device_test=self._test_mouse,
-                                    iterations=STRESS_ITERATIONS)
+        self.run_peer_wakeup_device(
+                'MOUSE',
+                device,
+                device_test=self._test_mouse,
+                iterations=STRESS_ITERATIONS,
+                should_retry_connect=(self.quick_test_get_model_name()
+                                      in SUSPEND_FLAKY_USB_CONNECTION_MODELS))
 
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},

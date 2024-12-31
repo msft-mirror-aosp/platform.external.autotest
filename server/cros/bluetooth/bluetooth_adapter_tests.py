@@ -6544,7 +6544,8 @@ class BluetoothAdapterTests(test.test):
                              device,
                              adapter_address,
                              delay_wake=1,
-                             should_wake=True):
+                             should_wake=True,
+                             should_retry_connect=False):
         """ Connects peer device asynchronously with DUT.
 
         This function uses a thread instead of a subprocess so that the test
@@ -6556,6 +6557,12 @@ class BluetoothAdapterTests(test.test):
         @param adapter_address: the address of the adapter
         @param delay_wake: delay wakeup by this many seconds
         @param should_wake: Should this cause a wakeup?
+        @param should_retry_connect: Whether to retry connection by device on
+                                     failure. This only takes effect if
+                                     device_type is not BLE and should_wake.
+                                     This is used for some devices that could
+                                     crash on the first connection and need
+                                     time to recover.
 
         @returns threading.Thread object with device connect task
         """
@@ -6570,7 +6577,16 @@ class BluetoothAdapterTests(test.test):
                 # Classic requires peer to initiate a connection to wake up the
                 # dut
                 connect_func = self.test_connection_by_device_only
-                if should_wake:
+                if should_wake and should_retry_connect:
+                    if not self.ignore_failure(connect_func, device,
+                                               adapter_address):
+                        # If the first connection failed, the stack could have
+                        # crashed. Given some time for Floss to recover and
+                        # then retry.
+                        time.sleep(10)
+                        logging.info('Retrying connect by device after 10s')
+                        connect_func(device, adapter_address)
+                elif should_wake:
                     connect_func(device, adapter_address)
                 else:
                     # If we're not expecting wake, this connect attempt will

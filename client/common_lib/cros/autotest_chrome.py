@@ -60,14 +60,24 @@ class Chrome(object):
     BROWSER_TYPE_GUEST = 'system-guest'
     AUTOTEST_EXT_ID = 'behllobkkfkfnphdnhnkndlbkcpglgmj'
 
-    def __init__(self, logged_in=True, extension_paths=None, autotest_ext=False,
-                 num_tries=3, extra_browser_args=None,
-                 clear_enterprise_policy=True, expect_policy_fetch=False,
-                 dont_override_profile=False, disable_gaia_services=True,
-                 disable_default_apps=True, auto_login=True, gaia_login=False,
-                 username=None, password=None, gaia_id=None,
-                 arc_mode=None, arc_timeout=None,
-                 enable_web_app_auto_install=False,
+    def __init__(self,
+                 logged_in=True,
+                 extension_paths=None,
+                 autotest_ext=False,
+                 num_tries=3,
+                 extra_browser_args=None,
+                 clear_enterprise_policy=True,
+                 expect_policy_fetch=False,
+                 dont_override_profile=False,
+                 disable_gaia_services=True,
+                 disable_default_apps=True,
+                 auto_login=True,
+                 gaia_login=False,
+                 username=None,
+                 password=None,
+                 gaia_id=None,
+                 arc_mode=None,
+                 arc_timeout=None,
                  disable_arc_opt_in=True,
                  disable_arc_opt_in_verification=True,
                  disable_arc_cpu_restriction=True,
@@ -110,7 +120,6 @@ class Chrome(object):
         @param arc_mode: How ARC instance should be started.  Default is to not
                          start.
         @param arc_timeout: Timeout to wait for ARC to boot.
-        @param enable_web_app_auto_install: For tests that require to auto download and install default web applications. By default it is disabled.
         @param disable_arc_opt_in: For opt in flow autotest. This option is used
                                    to disable the arc opt in flow.
         @param disable_arc_opt_in_verification:
@@ -198,10 +207,6 @@ class Chrome(object):
         self._browser_type = (self.BROWSER_TYPE_LOGIN
                               if logged_in else self.BROWSER_TYPE_GUEST)
         finder_options.browser_type = self.browser_type
-
-        if not enable_web_app_auto_install:
-            finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--disable-features=DefaultWebAppInstallation'])
 
         if not auto_login:
             finder_options.browser_options.AppendExtraBrowserArgs(

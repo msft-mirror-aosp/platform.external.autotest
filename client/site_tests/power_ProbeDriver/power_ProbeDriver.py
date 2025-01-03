@@ -80,3 +80,8 @@ class power_ProbeDriver(test.test):
 
         if status.on_ac():
             raise error.TestFail('One of ACs is online')
+
+    def cleanup(self):
+        """Cleanup the test"""
+        if hasattr(self, 'power_pref_changer'):
+            self.power_pref_changer.finalize()

@@ -7,6 +7,7 @@ import logging
 from autotest_lib.client.common_lib.cros import kernel_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.minios import minios_test
+from autotest_lib.client.common_lib.cros.network import ping_runner
 
 
 class nbr_EndToEndTest(minios_test.MiniOsTest):
@@ -15,6 +16,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
     _TEST_USERNAME = 'test@chromium.org'
     _UI_UPSTART_JOB_NAME = 'ui'
     _KERNEL_B_PARTITION = 4
+    _RESOLVE_HOST_NAME = "google.com"
 
     def _verify_installed_build(self, build):
         """
@@ -109,6 +111,14 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
         # Install testing dependencies into MiniOS.
         logging.info("Successfully booted into MiniOS.")
         self._install_test_dependencies(public_bucket=self._use_public_bucket)
+
+        ping_helper = ping_runner.PingRunner(host=self._host)
+        ping_config = ping_runner.PingConfig(self._RESOLVE_HOST_NAME,
+                                             count=5,
+                                             interval=1,
+                                             ignore_status=False,
+                                             ignore_result=False)
+        ping_helper.ping(ping_config)
 
         old_boot_id = self._host.get_boot_id()
         self._start_nebraska(payload_url=payload_url)

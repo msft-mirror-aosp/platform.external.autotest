@@ -646,7 +646,7 @@ class Cr50Test(FirmwareTest):
             logging.info('Installing %s', dut_path)
             cr50_utils.InstallImage(self.host, image_path, dut_path)
 
-    def _discharging_factory_mode_cleanup(self):
+    def discharging_factory_mode_cleanup(self):
         """Try to get the dut back into charging mode.
 
         Shutdown the DUT, fake disconnect AC, and then turn on the DUT to
@@ -655,29 +655,45 @@ class Cr50Test(FirmwareTest):
         When Cr50 enters factory mode on Wilco, the EC disables charging.
         Try to run the sequence to get the Wilco EC out of the factory mode
         state, so it reenables charging.
+
+        Returns True if the dut is charging or it's not a wilco device
         """
         logging.info('Cleaning up factory mode')
         if self.faft_config.chrome_ec:
-            return
+            return True
+        self.gsc.send_command('ccd testlab open')
+        self.gsc.ccd_reset()
         self._try_to_bring_dut_up()
         charge_state = self.host.get_power_supply_info()['Battery']['state']
         logging.info('Charge state: %r', charge_state)
-        if 'Discharging' not in charge_state:
+        charging = 'Discharging' not in charge_state
+        if charging:
             logging.info('Charge state is ok')
-            return
+            return True
+        if not self.servo.is_servo_v4_type_c():
+            logging.info('Not using type-c v4. Unable to recover charging')
+            return charging
+        servo_type = self.servo.get_servo_type()
+        v4_uart_cmd = servo_type.partition('_with_')[0] + '_uart_cmd'
 
         # Disconnect the charger and reset the dut to recover charging.
         logging.info('Recovering charging')
-        self.faft_client.system.run_shell_command('poweroff', block=True)
+        if self.gsc.ap_is_on():
+            self.faft_client.system.run_shell_command('poweroff')
         logging.info('Powered off dut')
         time.sleep(self.gsc.SHORT_WAIT)
-        self.host.power_cycle()
+        # Use servo v4 to "disconnect" the charger for 20s.
+        self.servo.set_nocheck(v4_uart_cmd, 'fakedisconnect 100 20000')
+        time.sleep(self.gsc.SHORT_WAIT)
+        self.gsc.reboot()
         time.sleep(self.gsc.SHORT_WAIT)
         self._try_to_bring_dut_up()
         charge_state = self.host.get_power_supply_info()['Battery']['state']
         logging.info('Charge state: %r', charge_state)
-        if 'Discharging' in charge_state:
+        discharging = 'Discharging' in charge_state
+        if discharging:
             logging.warning('DUT still discharging')
+        return not discharging
 
     def _cleanup_required(self, state_mismatch, image_type):
         """Return True if the update can fix something in the mismatched state.
@@ -825,7 +841,7 @@ class Cr50Test(FirmwareTest):
 
             # Try to restore charging on sarien. This is a noop on most devices.
             try:
-                self._discharging_factory_mode_cleanup()
+                self.discharging_factory_mode_cleanup()
             except Exception as e:
                 logging.info('Unable to restore charging state %s', e)
                 logging.info('Continuing with cleanup')
@@ -841,7 +857,7 @@ class Cr50Test(FirmwareTest):
                 self._restore_cr50_state()
 
             # Make sure the sarien EC isn't stuck in factory mode.
-            self._discharging_factory_mode_cleanup()
+            self.discharging_factory_mode_cleanup()
             self._try_to_bring_dut_up()
             logging.info('Finished Cr50Test cleaning up')
         finally:

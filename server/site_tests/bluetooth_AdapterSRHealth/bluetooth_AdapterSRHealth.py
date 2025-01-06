@@ -534,6 +534,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         # Pair device so we have something to do in suspend
         self.assert_discover_and_pair(device)
 
+        # Delay briefly to allow for SDP completion.
+        time.sleep(0.5)
+
         # Trigger power down and quickly suspend
         self.test_power_off_adapter()
         self.test_suspend_and_wait_for_sleep(suspend,

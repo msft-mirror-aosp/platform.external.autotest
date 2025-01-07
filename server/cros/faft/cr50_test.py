@@ -239,6 +239,7 @@ class Cr50Test(FirmwareTest):
                                            None)
         mismatch = self._check_running_image_and_board_id(qual_state)
         if not mismatch:
+            self._original_cr50_image = qual_path
             logging.info('Running qual image. No update needed.')
             return
         logging.info('%s qual update required.', self.gsc.NAME)
@@ -446,10 +447,14 @@ class Cr50Test(FirmwareTest):
             except Exception as e:
                 logging.warning('Failed to update to %s attempt %d: %s',
                                 os.path.basename(image), i, str(e))
-                logging.info('Sleeping 60 seconds')
-                time.sleep(60)
-        raise error.TestError(
-                'Failed to update to %s' % os.path.basename(image))
+                if self.gsc.get_active_version_info()[2]:
+                    logging.info('Running DBG image wait 10s for usb timeout')
+                    time.sleep(10)
+                else:
+                    logging.info('Wait 60s for update too soon timeout')
+                    time.sleep(60)
+        raise error.TestError('Failed to update to %s' %
+                              os.path.basename(image))
 
     def _retry_gsc_update_from_ap(self, image, retries, rollback):
         """Try to update to the given image retries amount of times with ccd.

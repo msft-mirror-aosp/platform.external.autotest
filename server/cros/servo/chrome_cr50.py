@@ -1323,6 +1323,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         """
         if self.get_active_version_info()[2]:
             logging.info("Running DBG image. Don't need to wait for update.")
+            logging.info("Sleeping 10s to recover from usb timeouts.")
+            time.sleep(10)
             return
         cr50_time = self.gettime()
         if cr50_time < 60:

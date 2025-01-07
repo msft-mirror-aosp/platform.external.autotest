@@ -57,6 +57,9 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
         # TODO(b/339791684): Switch legacy drones to use ATS once we support it.
         if not client_utils.is_cloudbot():
             env['USE_ATS'] = 'false'
+        # b/359715026#comment12: Spawn OLC server on random port to avoid port
+        # collision on drone servers.
+        env['USE_NEW_OLC_SERVER'] = 'true'
         return env
 
     def initialize_camerabox(self, camera_facing, cmdline_args):

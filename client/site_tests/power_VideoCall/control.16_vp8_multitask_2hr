@@ -1,15 +1,15 @@
 # Description
 # This test simulates video call multitasking and record power related statistic.
-# 
+#
 # Workload
 # - Camera preview in 270p using VP8 codec.
 # - 16 270p 24fps VP8 video playback.
-# 
+#
 # The run time is 2 hours.
 
 NAME = "power_VideoCall.16_vp8_multitask_2hr"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "puthik",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",

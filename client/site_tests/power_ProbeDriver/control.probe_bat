@@ -6,18 +6,18 @@
 # This is a sample test that probes sysfs and makes sure that AC driver
 # is loaded and functioning.
 # Unplug AC before run this test.
-# 
+#
 # This test will pass only if all of the following conditions occur:
 # - Find one or more batteries.
 # - One of batteries is discharging.
-# 
+#
 # This test will fail if all of the following conditions occur:
 # - Find one or more ACs.
 # - One of ACs is online.
 
 NAME = "power_ProbeDriver.probe_bat"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a functional test",

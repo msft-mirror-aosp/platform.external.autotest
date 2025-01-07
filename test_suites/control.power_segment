@@ -4,7 +4,7 @@
 
 AUTHOR = "jingmuli"
 NAME = "power_segment"
-METADATA = { 'contacts': [ "chromeos-platform-power@google.com" ] }
+METADATA = { 'contacts': [ "cros-power-notifications@google.com" ] }
 TIME = "LONG"
 TEST_CATEGORY = "General"
 TEST_CLASS = "suite"

@@ -6,7 +6,7 @@
 # This test runs a load test consisting of cycling though web pages, playing
 # videos, etc. and measures battery power draw. The duration of this test is
 # determined by loop_time * loop_cnt.
-# 
+#
 # This version of test allows:
 #   - AC is connected.
 #   - Ethernet is connected.
@@ -16,7 +16,7 @@
 
 NAME = "power_LoadTest.FDO_eth_1hr"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,

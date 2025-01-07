@@ -7,7 +7,7 @@
 
 NAME = "power_SuspendStress.audio"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "jwerner, chromeos-power, truty",
     "bug_component": "b:1361410",
     "criteria": "This test is a functional test",

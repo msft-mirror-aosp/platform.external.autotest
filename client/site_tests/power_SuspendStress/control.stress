@@ -9,7 +9,7 @@
 
 NAME = "power_SuspendStress.stress"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "mohsinally",
     "bug_component": "b:1361410",
     "criteria": "This test is a stress test",

@@ -1,12 +1,12 @@
 # Description
 # This test is power_ThermalLoad that can use custom args.
-# 
+#
 # - duration: time in seconds to display url and measure power, default 2.5 hours.
 # - numfish: number of fish to pass to WebGL Aquarium, default 3000 fishes.
 
 NAME = "power_ThermalLoad.option"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "puthik",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",

@@ -4,7 +4,7 @@
 
 NAME = "power_VideoEncode.vp9_1hr"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "mqg",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",

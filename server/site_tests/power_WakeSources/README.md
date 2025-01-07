@@ -69,4 +69,4 @@ The steps below describe how to test wake sources manually.
 \[Dark Resume\]: https://chromium.googlesource.com/chromiumos/platform2/+/main/power_manager/docs/dark_resume.md <br>
 \[dark resume is disabled\]: https://chromium.googlesource.com/chromiumos/platform2/+/main/power_manager/docs/dark_resume.md#Disabling-Dark-Resume <br>
 \[keyboard.hex\]: https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/refs/heads/main/servo/firmware/usbkm/KeyboardSerial/Keyboard.hex <br>
-\[chromeos-platform-power\]: chromeos-platform-power@google.com <br>
+\[chromeos-platform-power\]:  cros-power-notifications@google.com <br>

@@ -1,20 +1,20 @@
 # Description
 # This test simulates video call multitasking and record power related statistics
 # while optionally force discharge.
-# 
+#
 # Workload
 # - Camera preview in 720p using VP9 codec.
 # - Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
 # - Google Doc with emulated typing.
-# 
+#
 # The version runs for 25 minutes as it is common duration of the video call.
-# 
+#
 # "FDO" is short for "force discharge optional." Test will use EC command to
 # force DUT to discharge. If it fails, then use AC as the power source.
 
 NAME = "power_VideoCall.FDO_25min"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,

@@ -16,7 +16,7 @@
 
 NAME = "power_Idle"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark",
     "requirements": ["pwr-batLife-0009-v01", "pwr-batLife-0009-v02"],

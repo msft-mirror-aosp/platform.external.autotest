@@ -4,7 +4,7 @@
 
 NAME = "power_LW.tast_powerqual_segment"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com", "jingmuli@google.com"],
+    "contacts": ["cros-power-notifications@google.com", "jingmuli@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a power benchmark test.",
     "hw_agnostic": False,

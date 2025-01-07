@@ -4,7 +4,7 @@
 
 # Description
 # This test measures the power draw during suspend.
-# 
+#
 # Test uses RTC wake to transition from suspend to S0 every sample_hours for a
 # total standby time of test_hours.  The suspend to S0 transitions are added to
 #  1. Validate battery use
@@ -14,7 +14,7 @@
 
 NAME = "power_Standby.fast_suspend_to_idle"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",

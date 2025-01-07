@@ -16,7 +16,7 @@
 
 NAME = "power_Idle.1sec"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark",

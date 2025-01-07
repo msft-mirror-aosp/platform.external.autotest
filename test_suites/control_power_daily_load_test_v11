@@ -4,7 +4,7 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "power_daily_load_test_v11"
-METADATA = { 'contacts': [ "chromeos-platform-power@google.com" ] }
+METADATA = { 'contacts': [ "cros-power-notifications@google.com" ] }
 
 TIME = "LENGTHY"
 TEST_CATEGORY = "General"

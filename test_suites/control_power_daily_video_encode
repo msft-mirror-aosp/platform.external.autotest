@@ -4,7 +4,7 @@
 
 AUTHOR = "ChromeOS Team"
 NAME = "power_daily_video_encode"
-METADATA = { 'contacts': [ "chromeos-platform-power@google.com" ] }
+METADATA = { 'contacts': [ "cros-power-notifications@google.com" ] }
 
 TIME = "LENGTHY"
 TEST_CATEGORY = "General"

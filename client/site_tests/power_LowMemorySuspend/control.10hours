@@ -9,7 +9,7 @@
 
 NAME = "power_LowMemorySuspend.10hours"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "Vovo Yang",
     "bug_component": "b:1361410",
     "criteria": "Fails if system hang or reboot during this test",

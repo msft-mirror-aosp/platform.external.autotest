@@ -8,7 +8,7 @@
 
 NAME = 'power_SuspendType.freeze'
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "bbrotherton,chromeos-pvs-dev",
     "bug_component": "b:1361410",
     "criteria": "This test is a functional test",

@@ -1,16 +1,16 @@
 # Description
 # This test simulates video call multitasking and record power related statistic.
-# 
+#
 # Workload
 # - Camera preview in 720p using VP9 codec.
 # - Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
 # - Google Doc with emulated typing.
-# 
+#
 # The version runs for 25 minutes as it is common duration of the video call.
 
 NAME = "power_VideoCall.25min"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "puthik",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",

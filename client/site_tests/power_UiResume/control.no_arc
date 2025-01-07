@@ -12,7 +12,7 @@
 
 NAME = "power_UiResume.no_arc"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchnark test",
     "hw_agnostic": False,

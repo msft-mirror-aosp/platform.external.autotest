@@ -1,17 +1,17 @@
 # Description
 # This test simulates video call multitasking and record power related statistic.
-# 
+#
 # Workload
 # - Camera preview in 720p using VP9 codec.
 # - Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
 # - Google Doc with emulated typing.
-# 
+#
 # The fast version only runs for 3 minutes to make sure the test works as expected.
 # Crosbolt version adds force_discharge to collect total system power from battery.
 
 NAME = "power_VideoCall.fast_crosbolt"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,

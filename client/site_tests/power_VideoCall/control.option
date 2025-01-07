@@ -1,19 +1,19 @@
 # Description
 # This test simulates video call multitasking and record power related statistic.
-# 
+#
 # This test accepts command line arguments to override default arguments to
 # run_once.
-# 
+#
 # Default Workload
 # - Camera preview in 720p using VP9 codec.
 # - Four 720p 30fps video playback with two VP8 videos and two VP9 videos.
 # - Google Doc with emulated typing.
-# 
+#
 # The default run time is 2 hours to allow the DUT to heat up to steady state.
 
 NAME = "power_VideoCall.option"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "jpmurphy",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",

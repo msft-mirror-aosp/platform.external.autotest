@@ -24,7 +24,7 @@
 
 NAME = "power_BrightnessResetAfterReboot"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test will fail if unable to set the default brightness after reboot.",
     "hw_agnostic": False

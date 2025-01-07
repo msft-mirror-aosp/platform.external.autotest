@@ -8,13 +8,13 @@
 # ram. It will then calculate how many seconds the system was suspended, and
 # how many seconds it took to resume. As a precaution it will ensure your
 # network interface is UP after it has resumed.
-# 
+#
 # In order to match existing requirements, this test will execute three suspend
 # iterations, and provide keyvalues for all three.
 
 NAME = "power_UiResume.freeze"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,

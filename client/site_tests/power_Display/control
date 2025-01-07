@@ -4,7 +4,7 @@
 
 NAME = "power_Display"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark.",
     "hw_agnostic": False

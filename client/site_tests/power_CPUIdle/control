@@ -8,7 +8,7 @@
 
 NAME = "power_CPUIdle"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "Fails if the cpu did not have any idle cycles during this test.",
     "hw_agnostic": False,

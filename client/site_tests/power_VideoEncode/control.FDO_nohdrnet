@@ -1,13 +1,13 @@
 # Description
 # This test records power related statistics while encode video file in various
 # formats while optionally force discharge.
-# 
+#
 # "FDO" is short for "force discharge optional." Test will use EC command to
 # force DUT to discharge. If it fails, then use AC as the power source.
 
 NAME = "power_VideoEncode.FDO_nohdrnet"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,

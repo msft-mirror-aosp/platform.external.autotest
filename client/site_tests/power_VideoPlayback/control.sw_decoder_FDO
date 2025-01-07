@@ -1,15 +1,15 @@
 # Description
 # This test records power related statistics while play back video file in
 # various format.
-# 
+#
 # This version of the test forces Chrome to use software decoder.
-# 
+#
 # "FDO" is short for "force discharge optional." Test will use EC command to
 # force DUT to discharge. If it fails, then use AC as the power source.
 
 NAME = "power_VideoPlayback.sw_decoder_FDO"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,

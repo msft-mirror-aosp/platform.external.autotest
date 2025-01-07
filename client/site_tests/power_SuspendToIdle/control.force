@@ -4,9 +4,9 @@
 
 # Description
 # Test functionality of Suspend to Idle.
-# 
+#
 # Force system to use suspend to idle even if it not the default config.
-# 
+#
 # This test uses the following confidence check to verify that S0ix is working.
 # 1. DMC Firmware is loaded successfully.
 # 2. PCH IP blocks are powergating correctly.
@@ -17,7 +17,7 @@
 
 NAME = "power_SuspendToIdle.force"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a functional test",

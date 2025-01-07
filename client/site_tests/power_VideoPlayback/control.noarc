@@ -3,14 +3,14 @@
 # - h264 1080p 30fps
 # - vp9 1080 30fps
 # for 10min each with ARC disabled.
-# 
+#
 # This test is called just noarc to use it to distinguish between ARC vs no ARC
 # on the DUT. The details of video encoding and length aren't relevant other
 # than `arc` and `noarc` should be identical.
 
 NAME = "power_VideoPlayback.noarc"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",

@@ -1,15 +1,15 @@
 # Description
 # This test simulates video call and record power related statistic.
-# 
+#
 # Workload
 # - Camera preview in 135p using VP8 codec.
 # - 49 135p 15fps H264 video playback.
-# 
+#
 # The run time is 3 minutes.
 
 NAME = "power_VideoCall.49_h264"
 METADATA = {
-    "contacts": ["chromeos-platform-power@google.com"],
+    "contacts": ["cros-power-notifications@google.com"],
     "author": "puthik",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",

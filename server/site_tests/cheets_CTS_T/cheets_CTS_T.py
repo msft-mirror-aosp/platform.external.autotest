@@ -15,7 +15,6 @@
 
 import os
 
-from autotest_lib.client.bin import utils as client_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server import hosts
 from autotest_lib.server.cros import camerabox_utils
@@ -54,9 +53,6 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
 
     def _tradefed_env(self):
         env = super()._tradefed_env()
-        # TODO(b/339791684): Switch legacy drones to use ATS once we support it.
-        if not client_utils.is_cloudbot():
-            env['USE_ATS'] = 'false'
         # b/359715026#comment12: Spawn OLC server on random port to avoid port
         # collision on drone servers.
         env['USE_NEW_OLC_SERVER'] = 'true'

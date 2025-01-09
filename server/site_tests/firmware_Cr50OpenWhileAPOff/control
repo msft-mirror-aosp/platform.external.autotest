@@ -11,7 +11,8 @@ METADATA = {
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Verify console open when the AP is off"
 }
-ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_pvt, suite:faft_cr50_prepvt"
+# TODO(b/383166864): delete test after we've used devboard testing to verify behavior for a while.
+# ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_pvt, suite:faft_cr50_prepvt"
 TIME = "SHORT"
 TEST_TYPE = "server"
 DEPENDENCIES = "servo_state:WORKING"

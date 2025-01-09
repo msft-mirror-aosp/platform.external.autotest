@@ -56,6 +56,10 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
         # b/359715026#comment12: Spawn OLC server on random port to avoid port
         # collision on drone servers.
         env['USE_NEW_OLC_SERVER'] = 'true'
+        if self._is_dev():
+            # Disable runtime MCTS downloads as we use android*-tests-dev build.
+            # https://docs.partner.android.com/gms/testing/overview/test-improvement-request-guide#verify-tot-builds
+            env['ENABLE_XTS_DYNAMIC_DOWNLOADER'] = 'false'
         return env
 
     def initialize_camerabox(self, camera_facing, cmdline_args):

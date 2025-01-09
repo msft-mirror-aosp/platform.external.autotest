@@ -263,6 +263,10 @@ class TradefedTest(test.test):
         self._hard_reboot_on_failure = hard_reboot_on_failure
         self._set_verified_boot_state = set_verified_boot_state
 
+    def _is_dev(self):
+        """Returns true if the current test job is a DEV (preview) job."""
+        return self._bundle_uri and self._bundle_uri.startswith('DEV')
+
     def _load_local_waivers(self, directory, is_dev=False):
         return self._get_expected_failures(os.path.join(self.bindir, directory), is_dev)
 
@@ -271,7 +275,7 @@ class TradefedTest(test.test):
         self._waivers = set()
         self._notest_modules = set()
 
-        is_dev = self._bundle_uri and self._bundle_uri.startswith('DEV')
+        is_dev = self._is_dev()
         is_public = not self._bundle_uri
         self._waivers.update(
                 self._load_local_waivers('expectations', is_dev))

@@ -4640,7 +4640,7 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
     # 'central-peripheral'.
     NON_CENTRAL_PERIPHERAL_MODELS = [
             "akali", "babymega", "barla", "basking", "burnet", "careena",
-            "cerise", "cozmo", "delbin", "electro", "elm", "esche", "eve",
+            "cerise", "cozmo", "electro", "elm", "esche", "eve",
             "fennel", "hana", "juniper", "kakadu", "kappa", "karma", "katsu",
             "kench", "kenzo", "krane", "nocturne", "pantheon", "pyro", "sand",
             "snappy", "sona", "soraka", "stern", "teemo", "treeya360", "willow"

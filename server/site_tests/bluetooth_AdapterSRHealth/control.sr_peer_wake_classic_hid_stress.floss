@@ -1,12 +1,12 @@
-# Copyright 2020 The ChromiumOS Authors
+# Copyright 2025 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Stress run sr_reconnect_le_hid for 50 iterations.
+# Stress run sr_peer_wake_classic_hid for 50 iterations.
 #
 # Make sure that a classic HID device can wake up the system every time.
 #
-# Purpose: 50 iteration of sr_reconnect_le_hid test
+# Purpose: 50 iteration of sr_peer_wake_classic_hid test
 
 # Deprecated variables:
 #     TIME = 'LONG' # 40 Minutes
@@ -14,7 +14,7 @@
 
 from autotest_lib.server import utils
 
-NAME = 'bluetooth_AdapterSRHealth.sr_reconnect_le_hid_stress'
+NAME = 'bluetooth_AdapterSRHealth.sr_peer_wake_classic_hid_stress.floss'
 METADATA = {
     'contacts': ['chromeos-bt-team@google.com'],
     # ChromeOS > Platform > Connectivity > Bluetooth
@@ -37,6 +37,6 @@ args_dict = utils.args_to_dict(args)
 def run(machine):
     host = hosts.create_host(machine)
     job.run_test('bluetooth_AdapterSRHealth', host=host, num_iterations=1,
-                 args_dict=args_dict, test_name=NAME.split('.')[1], tag='.'.join(NAME.split('.')[1:]))
+                 args_dict=args_dict, test_name=NAME.split('.')[1], tag='.'.join(NAME.split('.')[1:]), floss=True)
 
 parallel_simple(run, machines)

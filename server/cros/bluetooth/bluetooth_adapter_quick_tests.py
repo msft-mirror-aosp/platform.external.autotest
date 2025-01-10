@@ -942,6 +942,9 @@ class BluetoothAdapterQuickTests(
                 # Finish peer wake process
                 peer_wake.join()
 
+                if 'BLE' in device_type:
+                    self.test_device_set_discoverable(device, False)
+
                 if dark_resume:
                     dark_resume_after = self._dr_utils.count_dark_resumes()
                     # Apply key press to guarantee full resume

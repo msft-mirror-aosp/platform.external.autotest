@@ -264,7 +264,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
 
-    @test_wrapper('Reconnect Classic HID Stress Test', devices={'MOUSE': 1})
+    @test_wrapper('Reconnect Classic HID Stress Test',
+                  devices={'MOUSE': 1},
+                  supports_floss=True)
     def sr_reconnect_classic_hid_stress(self):
         """ Reconnects a classic HID device after suspend/resume. """
         device_type = 'MOUSE'
@@ -273,7 +275,9 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                 [(device_type, device, self._test_mouse)],
                 iterations=STRESS_ITERATIONS)
 
-    @test_wrapper('Reconnect LE HID Stress Test', devices={'BLE_MOUSE': 1})
+    @test_wrapper('Reconnect LE HID Stress Test',
+                  devices={'BLE_MOUSE': 1},
+                  supports_floss=True)
     def sr_reconnect_le_hid_stress(self):
         """ Reconnects a LE HID device after suspend/resume. """
         device_type = 'BLE_MOUSE'
@@ -385,7 +389,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Peer wakeup Classic HID',
                   devices={'MOUSE': 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
     def sr_peer_wake_classic_hid_stress(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
@@ -400,7 +405,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
     @test_wrapper('Peer wakeup LE HID',
                   devices={'BLE_MOUSE': 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
-                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS)
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
     def sr_peer_wake_le_hid_stress(self):
         """ Use LE HID device to wake from suspend. """
         device = self.devices['BLE_MOUSE'][0]

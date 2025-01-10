@@ -6,4 +6,7 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <!-- b/388928768; fixed in 13_r11 -->
+  <Entry include="CtsOsTestCases android.os.cts.ParcelTest#testFixedArray" />
+  <Entry include="CtsOsTestCases[instant] android.os.cts.ParcelTest#testFixedArray" />
 </SubPlan>

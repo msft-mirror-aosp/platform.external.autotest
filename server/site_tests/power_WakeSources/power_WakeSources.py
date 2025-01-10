@@ -8,15 +8,15 @@ import re
 import time
 
 from autotest_lib.client.common_lib import autotest_enum, error, utils
+from autotest_lib.client.cros.power import power_utils
 from autotest_lib.server import test
 from autotest_lib.server.cros import servo_keyboard_utils
 from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
 from autotest_lib.server.cros.faft.rpc_proxy import RPCProxy
 from autotest_lib.server.cros.faft.utils.config import Config as FAFTConfig
 from autotest_lib.server.cros.power import servo_charger
-from autotest_lib.server.cros.power import utils as power_utils
+from autotest_lib.server.cros.power import utils as power_server_utils
 from autotest_lib.server.cros.servo import chrome_ec
-
 
 # Possible states base can be forced into.
 BASE_STATE = autotest_enum.AutotestEnum('ATTACH', 'DETACH', 'RESET')
@@ -323,7 +323,7 @@ class power_WakeSources(test.test):
             rtc_wake = RTC_WAKE_SECS
         self._dr_utils.suspend(SECS_FOR_SUSPENDING + rtc_wake)
         if self._ec.has_command('powerinfo'):
-            suspended = power_utils.wait_power_state(
+            suspended = power_server_utils.wait_power_state(
                     self._ec,
                     'S0ix|S3',
                     retries=SECS_FOR_SUSPENDING,
@@ -452,6 +452,8 @@ class power_WakeSources(test.test):
         # Ensure all USB devices have been connected before start
         self._wait_until_usb_count_match(usb_count)
 
+        # Skip the test if dark resume is disabled
+        power_utils.check_dark_resume_enabled()
         self._dr_utils = DarkResumeUtils(host)
         self._dr_utils.stop_resuspend_on_dark_resume()
         self._dr_utils.pause_ethernet_check_on_host()

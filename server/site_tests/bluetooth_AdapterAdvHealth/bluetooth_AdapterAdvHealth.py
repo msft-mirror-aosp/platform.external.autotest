@@ -38,6 +38,7 @@ class bluetooth_AdapterAdvHealth(BluetoothAdapterQuickTests,
                           'Realtek-RTL8852A-USB',
                           'Realtek-RTL8852C-USB',
                           'Realtek-RTL8852B-USB',
+                          'Realtek-RTL8852BE-VT-USB',
                   ],
                   skip_common_errors=True,
                   supports_floss=True)

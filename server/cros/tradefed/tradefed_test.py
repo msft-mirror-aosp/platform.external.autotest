@@ -1748,6 +1748,9 @@ class TradefedTest(test.test):
             session_log_dir = os.path.join(self.resultsdir,
                                            'login_session_log',
                                            'step%02d' % steps)
+
+            camera_lighting_workaround = 'CtsCameraTestCases' in test_name
+
             with login.login_chrome(
                     hosts=self._hosts,
                     board=board,
@@ -1756,7 +1759,8 @@ class TradefedTest(test.test):
                     vm_force_max_resolution=vm_force_max_resolution,
                     set_verified_boot_state=self._set_verified_boot_state,
                     log_dir=session_log_dir,
-                    feature=chrome_feature) as current_logins, \
+                    feature=chrome_feature,
+                    camera_lighting_workaround=camera_lighting_workaround,) as current_logins, \
                             self._adb.create_tunnel():
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with

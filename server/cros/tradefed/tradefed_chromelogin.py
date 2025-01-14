@@ -75,7 +75,8 @@ class ChromeLogin(object):
                  vm_force_max_resolution=False,
                  set_verified_boot_state=None,
                  log_dir=None,
-                 feature=None):
+                 feature=None,
+                 camera_lighting_workaround=False):
         """Initializes the ChromeLogin object.
 
         @param board: optional parameter to extend timeout for login for slow
@@ -101,6 +102,7 @@ class ChromeLogin(object):
         self._log_dir = log_dir
         self._feature = feature
         self._multicast_disabler = MulticastDisabler(self._host)
+        self._camera_lighting_workaround = camera_lighting_workaround
 
     def _cmd_builder(self, verbose=False):
         """Gets remote command to start browser with ARC enabled."""
@@ -109,9 +111,15 @@ class ChromeLogin(object):
         cmd = autotest.Autotest.get_installed_autodir(self._host)
         cmd += '/bin/autologin.py --arc'
 
-        # We want to suppress the Google doodle as it is not part of the image
-        # and can be different content every day interacting with testing.
-        cmd += ' --no-startup-window'
+        if not self._camera_lighting_workaround:
+            # We want to suppress the Google doodle as it is not part of the image
+            # and can be different content every day interacting with testing.
+            cmd += ' --no-startup-window'
+        else:
+            # For CtsCameraTestCases, we need to ensure the reflecting light to
+            # camera is enough, so use a blank page which provides a large white
+            # area.
+            cmd += ' --url="about:blank"'
         # Disable CPU restriction to de-flake perf sensitive tests.
         cmd += ' --disable-arc-cpu-restriction'
         # Disable several forms of auto-installation to stablize the tests.

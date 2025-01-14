@@ -414,7 +414,9 @@ class bluetooth_AdapterLLPrivacyHealth(
         """
 
         device = self.devices['BLE_MOUSE'][0]
-        self.connect_disconnect_loop(device=device, loops=3)
+        self.connect_disconnect_loop(device=device,
+                                     loops=3,
+                                     device_type='BLE_MOUSE')
 
     @test_wrapper('HID Reconnect Speed',
                   devices={'BLE_MOUSE': 1},

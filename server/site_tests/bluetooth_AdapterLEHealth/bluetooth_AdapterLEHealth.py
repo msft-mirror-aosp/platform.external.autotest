@@ -70,12 +70,12 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         """Run connect/disconnect loop initiated by DUT.
            The test also checks that there are no undesired
            reconnections.
-           TODO(ysahvit) - add connection creation attempts
-                           initiated by HID device
         """
 
         device = self.devices['BLE_MOUSE'][0]
-        self.connect_disconnect_loop(device=device, loops=3)
+        self.connect_disconnect_loop(device=device,
+                                     loops=3,
+                                     device_type='BLE_MOUSE')
 
     @test_wrapper('HID Reconnect Speed',
                   devices={'BLE_MOUSE': 1},

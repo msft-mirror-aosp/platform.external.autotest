@@ -222,7 +222,9 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
     def cl_connect_disconnect_loop_test(self):
         """Performs connect/disconnect test with mouse peripheral"""
         device = self.devices['MOUSE'][0]
-        self.connect_disconnect_loop(device=device, loops=3)
+        self.connect_disconnect_loop(device=device,
+                                     loops=3,
+                                     device_type='MOUSE')
 
 
     @test_wrapper('Page scan during Inquiry',

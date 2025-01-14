@@ -213,7 +213,7 @@ class BluetoothAdapterPairingTests(
             self.test_remove_pairing(device.address)
 
 
-    def connect_disconnect_loop(self, device, loops):
+    def connect_disconnect_loop(self, device, loops, device_type):
         """Perform a connect disconnect loop test"""
 
         # First pair and disconnect, to emulate real life scenario
@@ -228,6 +228,17 @@ class BluetoothAdapterPairingTests(
         self.test_device_is_connected(device.address)
         self.test_hid_device_created(device.address)
 
+        # On Floss, BLE device is reconnected by inserting the address to the
+        # accept list and listening for the advertisement. Therefore, we need
+        # to turn off the peer's advertisement when disconnecting, otherwise it
+        # would reconnect immediately.
+        # Similarly when reconnecting, turning on advertisement on the peer is
+        # enough to initiate reconnection. So, in this case we don't need to
+        # explicitly instruct the DUT to reconnect.
+        floss_ble = self.floss and 'BLE' in device_type
+        if floss_ble:
+            self.test_device_set_discoverable(device, False)
+
         # Disconnect the device
         self.test_disconnection_by_adapter(device.address)
         total_duration_by_adapter = 0
@@ -239,7 +250,13 @@ class BluetoothAdapterPairingTests(
             self.test_device_is_not_connected(device.address)
 
             start_time = time.time()
-            self.test_connection_by_adapter(device.address)
+            if floss_ble:
+                self.test_device_set_discoverable(device, True)
+                self.test_device_is_connected(device.address,
+                                              sleep_interval=0.1)
+                self.test_device_set_discoverable(device, False)
+            else:
+                self.test_connection_by_adapter(device.address)
             end_time = time.time()
             time_diff = end_time - start_time
 

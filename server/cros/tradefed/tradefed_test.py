@@ -176,6 +176,7 @@ class TradefedTest(test.test):
                    retry_manual_tests=False,
                    warn_on_test_retry=True,
                    hard_reboot_on_failure=False,
+                   allow_adb_root=False,
                    set_verified_boot_state='green'):
         """Sets up the tools and binary bundles for the test."""
         if utils.is_in_container() and not client_utils.is_moblab():
@@ -261,6 +262,7 @@ class TradefedTest(test.test):
         self._waivers = None
 
         self._hard_reboot_on_failure = hard_reboot_on_failure
+        self._allow_adb_root = allow_adb_root
         self._set_verified_boot_state = set_verified_boot_state
 
     def _is_dev(self):
@@ -1757,6 +1759,7 @@ class TradefedTest(test.test):
                     dont_override_profile=keep_media,
                     enable_default_apps=enable_default_apps,
                     vm_force_max_resolution=vm_force_max_resolution,
+                    allow_adb_root=self._allow_adb_root,
                     set_verified_boot_state=self._set_verified_boot_state,
                     log_dir=session_log_dir,
                     feature=chrome_feature,

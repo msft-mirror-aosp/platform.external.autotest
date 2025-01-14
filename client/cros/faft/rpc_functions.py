@@ -9,28 +9,25 @@ These will be exposed via an xmlrpc server running on the DUT.
 """
 
 from __future__ import print_function
-import re
 
-from six.moves import http_client as httplib
 import logging
 import os
+import re
 import signal
 import tempfile
-from six.moves import xmlrpc_client as xmlrpclib
 
 from autotest_lib.client.common_lib import lsbrelease_utils
 from autotest_lib.client.common_lib.cros import cros_config
 from autotest_lib.client.cros import xmlrpc_server
-from autotest_lib.client.cros.faft.utils import (
-        cgpt_handler,
-        os_interface,
-        firmware_check_keys,
-        firmware_updater,
-        flashrom_handler,
-        kernel_handler,
-        rootfs_handler,
-        tpm_handler,
-)
+from autotest_lib.client.cros.faft.utils import cgpt_handler
+from autotest_lib.client.cros.faft.utils import firmware_updater
+from autotest_lib.client.cros.faft.utils import flashrom_handler
+from autotest_lib.client.cros.faft.utils import kernel_handler
+from autotest_lib.client.cros.faft.utils import os_interface
+from autotest_lib.client.cros.faft.utils import rootfs_handler
+from autotest_lib.client.cros.faft.utils import tpm_handler
+from six.moves import http_client as httplib
+from six.moves import xmlrpc_client as xmlrpclib
 
 
 class FaftXmlRpcDelegate(xmlrpc_server.XmlRpcDelegate):
@@ -753,7 +750,6 @@ class SystemServicer(object):
         @type os_if: os_interface.OSInterface
         """
         self._os_if = os_if
-        self._key_checker = firmware_check_keys.firmwareCheckKeys()
 
     def is_available(self):
         """Function for polling the RPC server availability.
@@ -970,17 +966,6 @@ class SystemServicer(object):
     def remove_dir(self, dir_path):
         """Remove the directory."""
         return self._os_if.remove_dir(dir_path)
-
-    def check_power_key(self):
-        """Check for power key press"""
-        return self._key_checker.check_power_key()
-
-    def check_keys(self, expected_sequence):
-        """Check the keys sequence was as expected.
-
-        @param expected_sequence: A list of expected key sequences.
-        """
-        return self._key_checker.check_keys(expected_sequence)
 
 
 class TpmServicer(object):

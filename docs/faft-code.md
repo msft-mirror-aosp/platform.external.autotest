@@ -24,7 +24,6 @@ The framework itself is split up into a [server side](/server/cros/faft) and a [
 - [rpc_functions](/client/cros/faft/rpc_functions.py): Delegates requested actions to servicers in utils.
 - Servicers in [utils](/client/cros/faft/utils)
     - [cgpt_handler](/client/cros/faft/utils/cgpt_handler.py):  GUID Partition Table manipulation.
-    - [firmware_check_keys](/client/cros/faft/utils/firmware_check_keys.py): Check firmware keys.
     - [firmware_updater](/client/cros/faft/utils/firmware_updater.py): Manipulate firmware images.
     - [flashrom_handler](/client/cros/faft/utils/flashrom_handler.py): Read/write/parse flashrom chip images.
     - [kernel_handler](/client/cros/faft/utils/kernel_handler.py): Manipulate chromeos kernel.

@@ -68,6 +68,9 @@ class bluetooth_AdapterControllerRoleTests(
         # and the failing to send traffic issue of Floss.
         # See b/280534346 for more detail.
         if self.floss:
+            # Give some time to complete service discovery. Otherwise if it's
+            # not finished when we disconnect, the peer will be unbonded.
+            time.sleep(1)
             self.test_disconnection_by_device(device)
         else:
             self.test_disconnection_by_adapter(device.address)

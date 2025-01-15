@@ -29,6 +29,8 @@ from autotest_lib.server.site_tests.bluetooth_AdapterEPHealth import (
         bluetooth_AdapterEPHealth)
 from autotest_lib.server.site_tests.bluetooth_WiFiCoexHealth import (
         bluetooth_WiFiCoexHealth)
+from autotest_lib.server.site_tests.bluetooth_AdapterLLPrivacyHealth import (
+        bluetooth_AdapterLLPrivacyHealth)
 
 from six.moves import range
 
@@ -43,7 +45,8 @@ class bluetooth_AdapterQuickHealth(
         bluetooth_AdapterSRHealth.bluetooth_AdapterSRHealth,
         bluetooth_AdapterMDHealth.bluetooth_AdapterMDHealth,
         bluetooth_AdapterEPHealth.bluetooth_AdapterEPHealth,
-        bluetooth_WiFiCoexHealth.bluetooth_WiFiCoexHealth):
+        bluetooth_WiFiCoexHealth.bluetooth_WiFiCoexHealth,
+        bluetooth_AdapterLLPrivacyHealth.bluetooth_AdapterLLPrivacyHealth):
     """This class implements a Bluetooth quick health package, using methods
     provided in BluetoothAdapterQuickTests,
     The package is running several sub batches of tests.
@@ -96,6 +99,7 @@ class bluetooth_AdapterQuickHealth(
             self.advmon_health_batch_run()
             self.ep_health_batch_run()
             self.wifi_coex_health_batch_run()
+            self.ll_privacy_batch_run()
             self.quick_test_print_summary()
 
         # End and cleanup test package

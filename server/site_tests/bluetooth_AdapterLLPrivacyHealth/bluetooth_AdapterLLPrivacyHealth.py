@@ -675,26 +675,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @batch_wrapper("LL Privacy Health")
     def ll_privacy_batch_run(self, num_iterations=1, test_name=None):
-        """A batch of tests with LL privacy enabled."""
-        # adv monitor test
-        self.advmon_monitor_health_tests()
-        # suspend resume test
-        # b/234975037 we may remove some of the SR tests if they are stabilized
-        self.sr_reconnect_classic_hid()
-        self.sr_reconnect_le_hid()
-        self.sr_peer_wake_classic_hid()
-        self.sr_peer_wake_le_hid()
-        self.sr_reconnect_multiple_classic_hid()
-        self.sr_reconnect_multiple_classic_le_hid()
-        # LE health test
-        self.le_connect_disconnect_by_device_loop()
-        self.le_connect_disconnect_loop()
-        self.le_hid_reconnect_speed()
-        self.le_auto_reconnect()
-        # LE role test
-        self.le_role_receiver()
-        self.le_role_sender()
-        self.le_role_sender_during_hid()
+        """A batch of LL privacy core function tests."""
         # LE privacy mode test
         self.le_address_resolution_power_cycle()
         self.le_pair_remove_privacy()

@@ -1,0 +1,31 @@
+# Copyright 2025 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterLLPrivacyHealth.le_auto_reconnect_reboot_with_host_privacy.floss'
+METADATA = {
+    "contacts": ['chromeos-bt-team@google.com', 'jiangzp@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    "bug_component": "b:167317",
+    "criteria": "Test auto-reconnect after DUT reboot with a non-privacy mode peer. DUT with LL privacy turned on and Floss enabled.",
+    'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'life_cycle_stage': 'owner_monitored',
+    'requirements': ['bt-gen-0001-v01', 'bt-spec-0019-v01'],
+}
+ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterLLPrivacyHealth', host=host,
+                 num_iterations=1, args_dict=args_dict,
+                 test_name=NAME.split('.')[1], floss=True)
+
+parallel_simple(run, machines)

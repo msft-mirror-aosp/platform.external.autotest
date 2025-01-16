@@ -367,6 +367,42 @@ class BluetoothAdapterLLPrivacyTests(
                 logging.info('Restore RPA timeout to %d',
                              DEFAULT_RPA_TIMEOUT_SEC)
 
+    def auto_reconnect_reboot_with_host_privacy(self,
+                                                device,
+                                                check_connected_method=lambda
+                                                device: True):
+        """Reboot to verify the paired device can auto reconnect after reboot,
+        if the mouse is not in the privacy mode.
+
+        Test steps:
+        1. Test enables LL privacy with DBus, the host address policy is RPA.
+        2. Pair a LE mouse which is not in the privacy mode (not using RPA).
+        3. Reboot. LL privacy is disabled after reboot, but host address policy
+           should be kept RPA to make sure the LE mouse can reconnect.
+        4. LE mouse is discoverable, auto-reconnect.
+
+        @param device: emulated peer device
+        @param check_connected_method: method to check the device is connected
+        """
+        # Let the adapter pair, and connect to the target device first
+        self.test_discover_device(device.address)
+        self.test_pairing(device.address, device.pin, trusted=True)
+
+        self.test_device_is_connected(device.address)
+        self.test_hid_device_created(device.address)
+
+        check_connected_method(device)
+
+        # reboot the DUT, LL privacy is disabled after reboot.
+        self.reboot()
+
+        self.test_device_is_connected(device.address)
+        self.test_hid_device_created(device.address)
+
+        check_connected_method(device)
+
+        self.test_remove_pairing(device.address)
+
     @test_retry_and_log(False)
     def test_pairing_with_rpa(self, device):
         """Expect new IRK exchange during pairing and address is resolvable

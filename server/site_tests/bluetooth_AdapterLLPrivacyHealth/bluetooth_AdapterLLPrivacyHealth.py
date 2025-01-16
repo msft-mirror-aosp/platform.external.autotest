@@ -614,7 +614,17 @@ class bluetooth_AdapterLLPrivacyHealth(
             # restore old value
             self.test_update_rpa_timeout(device, old_timeout)
 
-    @test_wrapper('Reconnect Test',
+    @test_wrapper('Reconnect Test Reboot',
+                  devices={"BLE_MOUSE": 1},
+                  skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
+                  supports_floss=True)
+    def le_auto_reconnect_reboot_with_host_privacy(self):
+        """Test auto reconnect after DUT reboot for a non-privacy mode peer."""
+        device = self.devices['BLE_MOUSE'][0]
+        self.auto_reconnect_reboot_with_host_privacy(
+                device, check_connected_method=self.test_mouse_left_click)
+
+    @test_wrapper('Reconnect Test By Host',
                   devices={"BLE_MOUSE": 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
@@ -627,7 +637,7 @@ class bluetooth_AdapterLLPrivacyHealth(
                 check_connected_method=self.test_mouse_left_click,
                 rpa_timeout=MIN_RPA_TIMEOUT_SEC)
 
-    @test_wrapper('Reconnect Test',
+    @test_wrapper('Reconnect Test By Device',
                   devices={"BLE_MOUSE": 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
@@ -691,6 +701,7 @@ class bluetooth_AdapterLLPrivacyHealth(
         self.privacy_rpa_timeout()
         self.le_auto_reconnect_with_privacy_by_device()
         self.le_auto_reconnect_with_privacy()
+        self.le_auto_reconnect_reboot_with_host_privacy()
         self.sr_peer_wake_le_hid_with_rpa()
         self.sr_reconnect_le_hid_with_rpa()
 

@@ -118,8 +118,10 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     # Ti50 doesn't have any errors to track right now.
     ERROR_DESC_LIST = []
 
-    # Ti50 has to have AlowUnverifiedRo enabled to boot the dev ap firmware.
-    UNIVERSAL_SERVO_REQ_CAPS = ['AllowUnverifiedRo']
+    # Ti50 has to have AllowUnverifiedRo enabled to boot the dev ap firmware.
+    # OverrideWP has to always be accessible to avoid WP 'externally driven!'
+    # messages.
+    UNIVERSAL_SERVO_REQ_CAPS = ['AllowUnverifiedRo', 'OverrideWP']
     # List of errors to search for. The first element is the string to look
     # for. The second is a bool that tells whether the error should be fatal.
     ERROR_DESC_LIST = [
@@ -135,6 +137,12 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
             # AP RO verification settings.
             ['Rebooting GSC for AP RO due to state', False],
     ]
+
+    def set_wp_state(self, setting):
+        """Set the WP state."""
+        if 'servo_micro' in self._servo.get_servo_type():
+            self._servo.set_nocheck('fw_wp_state', 'reset')
+        return super(ChromeTi50, self).set_wp_state(setting)
 
     def strip_timestamp(self, result):
         """Remove the timestamp from the result output.

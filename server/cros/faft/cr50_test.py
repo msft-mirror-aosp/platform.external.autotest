@@ -950,7 +950,7 @@ class Cr50Test(FirmwareTest):
 
         self.gsc.send_command('rddkeepalive disable')
         self.gsc.ccd_reset()
-        self.gsc.send_command('wp follow_batt_pres atboot')
+        self.gsc.set_wp_state('follow_batt_pres atboot')
 
     def _restore_ccd_settings(self):
         """Restore the original ccd state."""

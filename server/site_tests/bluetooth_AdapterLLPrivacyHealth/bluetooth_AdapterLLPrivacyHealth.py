@@ -616,6 +616,7 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Reconnect Test Reboot',
                   devices={"BLE_MOUSE": 1},
+                  minimum_cros_milestone=134,
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
                   supports_floss=True)
     def le_auto_reconnect_reboot_with_host_privacy(self):

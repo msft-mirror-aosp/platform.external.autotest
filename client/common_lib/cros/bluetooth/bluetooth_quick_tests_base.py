@@ -116,7 +116,8 @@ class BluetoothQuickTestsBase(object):
                                   skip_models=None,
                                   skip_chipsets=None,
                                   skip_common_errors=False,
-                                  minimum_kernel_version=''):
+                                  minimum_kernel_version='',
+                                  minimum_cros_milestone=None):
         """A decorator providing a wrapper to a quick test.
 
         Using the decorator a test method can implement only the core
@@ -156,6 +157,8 @@ class BluetoothQuickTestsBase(object):
        @param minimum_kernel_version: Raises TestNA on less than this kernel's
                                       version and doesn't attempt to run the
                                       tests.
+       @param minimum_cros_milestone: Raises TestNA on less than this milestone
+                                      and doesn't attempt to run the tests.
         """
 
         if flags is None:
@@ -233,6 +236,17 @@ class BluetoothQuickTestsBase(object):
                             raise error.TestNAError(
                                     'Test not supported on this kernel version'
                             )
+
+                    if minimum_cros_milestone is not None:
+                        milestone = int(
+                                self.host.get_chromeos_release_milestone())
+
+                        logging.debug('The milestone is %d', milestone)
+                        if milestone < minimum_cros_milestone:
+                            logging.info('SKIPPING TEST %s on milestone %d',
+                                         test_name, milestone)
+                            raise error.TestNAError(
+                                    'Test not supported on this milestone')
 
                     if pretest_func:
                         pretest_func(self)

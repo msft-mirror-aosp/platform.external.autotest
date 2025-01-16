@@ -327,7 +327,8 @@ class BluetoothAdapterQuickTests(
                                   skip_common_errors=False,
                                   supports_floss=False,
                                   use_all_peers=False,
-                                  minimum_kernel_version=''):
+                                  minimum_kernel_version='',
+                                  minimum_cros_milestone=None):
         """A decorator providing a wrapper to a quick test.
         Using the decorator a test method can implement only the core
         test and let the decorator handle the quick test wrapper methods
@@ -376,6 +377,9 @@ class BluetoothAdapterQuickTests(
         @param minimum_kernel_version: Raises TestNA on less than this
                                        kernel's version and doesn't attempt
                                        to run the tests.
+        @param minimum_cros_milestone: Raises TestNA on less than this
+                                       milestone and doesn't attempt to run
+                                       the tests.
         """
 
         base_class = bluetooth_quick_tests_base.BluetoothQuickTestsBase
@@ -393,7 +397,8 @@ class BluetoothAdapterQuickTests(
                 skip_models=skip_models,
                 skip_chipsets=skip_chipsets,
                 skip_common_errors=skip_common_errors,
-                minimum_kernel_version=minimum_kernel_version)
+                minimum_kernel_version=minimum_kernel_version,
+                minimum_cros_milestone=minimum_cros_milestone)
 
     def quick_test_test_pretest(self,
                                 test_name=None,

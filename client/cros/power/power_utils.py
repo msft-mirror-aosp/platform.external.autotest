@@ -295,19 +295,6 @@ def get_sleep_state():
     return 'freeze' if result.exit_status == 0 else 'mem'
 
 
-def check_dark_resume_enabled():
-    """
-    Check the current powerd configuration of dark resume.
-    Raises:
-        TestNAError: if 'cmd' returns non-zero exit status.
-    """
-    try:
-        cmd = 'check_powerd_config --dark_resume_enabled'
-        utils.run(cmd)
-    except error.CmdError:
-        raise error.TestNAError("Device does not have dark resume enabled")
-
-
 def has_battery():
     """Determine if DUT has a battery.
 

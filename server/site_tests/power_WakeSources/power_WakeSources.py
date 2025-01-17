@@ -8,7 +8,6 @@ import re
 import time
 
 from autotest_lib.client.common_lib import autotest_enum, error, utils
-from autotest_lib.client.cros.power import power_utils
 from autotest_lib.server import test
 from autotest_lib.server.cros import servo_keyboard_utils
 from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
@@ -453,7 +452,11 @@ class power_WakeSources(test.test):
         self._wait_until_usb_count_match(usb_count)
 
         # Skip the test if dark resume is disabled
-        power_utils.check_dark_resume_enabled()
+        try:
+            self._host.run('check_powerd_config --dark_resume_enabled')
+        except error.AutoservRunError:
+            raise error.TestNAError("Device does not have dark resume enabled")
+
         self._dr_utils = DarkResumeUtils(host)
         self._dr_utils.stop_resuspend_on_dark_resume()
         self._dr_utils.pause_ethernet_check_on_host()

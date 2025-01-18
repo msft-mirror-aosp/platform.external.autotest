@@ -220,6 +220,8 @@ class InputPlayback(object):
                 props.find('ABS_MT_POSITION_Y') >= 0):
                 return 'multitouch_mouse'
             else:
+                # Mouse should have REL_X, REL_Y but not
+                # INPUT_PROP_POINTING_STICK.
                 return 'mouse'
         if props.find('ABS_X') >= 0 and props.find('ABS_Y') >= 0:
             if (props.find('BTN_STYLUS') >= 0 or
@@ -228,15 +230,22 @@ class InputPlayback(object):
                 return 'stylus'
             if (props.find('ABS_PRESSURE') >= 0 or
                 props.find('BTN_TOUCH') >= 0):
-                if (props.find('BTN_LEFT') >= 0 or
-                    props.find('BTN_MIDDLE') >= 0 or
-                    props.find('BTN_RIGHT') >= 0 or
-                    props.find('BTN_TOOL_FINGER') >= 0):
+                # Touchpad should have ABS_X, ABS_Y and INPUT_PROP_POINTER.
+                # Should not have stylus props and thus should be after
+                # checking for stylus.
+                if (props.find('INPUT_PROP_POINTER') >= 0
+                            or props.find('BTN_LEFT') >= 0
+                            or props.find('BTN_MIDDLE') >= 0
+                            or props.find('BTN_RIGHT') >= 0
+                            or props.find('BTN_TOOL_FINGER') >= 0):
                     return 'touchpad'
-                else:
+                # Touchscreen should have ABS_X, ABS_Y and
+                # INPUT_PROP_DIRECT.
+                elif (props.find('INPUT_PROP_DIRECT') >= 0 and
+                      # Exclude what appears to be a drawing tablet device on
+                      # Eve by ensuring there is no 'BTN_0'.
+                      props.find('BTN_0') == -1):
                     return 'touchscreen'
-            if props.find('BTN_LEFT') >= 0:
-                return 'touchscreen'
         if props.find('KEY_') >= 0:
             for key in self._MINIMAL_KEYBOARD_KEYS:
                 if props.find('KEY_%s' % key) >= 0:
@@ -436,16 +445,17 @@ class InputPlayback(object):
 
         input_events = self._get_input_events()
         for event in input_events:
+            class_folder = event.replace('dev', 'sys/class')
+            name_file = os.path.join(class_folder, 'device', 'name')
+            if os.path.isfile(name_file):
+                name = self._get_contents_of_file(name_file)
+
             properties = self._find_device_properties(event)
             input_type = self._determine_input_type(properties)
             if input_type:
                 new_device = Device(input_type)
                 new_device.node = event
 
-                class_folder = event.replace('dev', 'sys/class')
-                name_file = os.path.join(class_folder, 'device', 'name')
-                if os.path.isfile(name_file):
-                    name = self._get_contents_of_file(name_file)
                 logging.info('Found %s: %s at %s.', input_type, name, event)
 
                 # If a particular device is expected, make sure name matches.
@@ -472,10 +482,11 @@ class InputPlayback(object):
                 if new_device.emulated:
                     self._emulated_device = new_device
 
-                if self.devices.get(input_type) == None:
-                    self.devices[input_type] = new_device
-                    logging.debug(self.devices[input_type])
-
+                self.devices[input_type] = new_device
+                logging.debug(self.devices[input_type])
+            else:
+                logging.debug('Unknown input_type %s found at %s.', name,
+                              event)
 
     def playback(self, filepath, input_type='touchpad'):
         """Playback a given input file.

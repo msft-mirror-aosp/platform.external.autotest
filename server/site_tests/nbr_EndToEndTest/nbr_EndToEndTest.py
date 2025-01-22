@@ -112,7 +112,8 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
         logging.info("Successfully booted into MiniOS.")
         self._install_test_dependencies(public_bucket=self._use_public_bucket)
 
-        ping_helper = ping_runner.PingRunner(host=self._host)
+        ping_helper = ping_runner.PingRunner(host=self._host,
+                                             use_provided_ping=True)
         ping_config = ping_runner.PingConfig(self._RESOLVE_HOST_NAME,
                                              count=5,
                                              interval=1,

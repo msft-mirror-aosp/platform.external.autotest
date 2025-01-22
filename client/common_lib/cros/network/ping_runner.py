@@ -322,19 +322,23 @@ class PingRunner(object):
     PING_LOSS_THRESHOLD = 20  # A percentage.
 
 
-    def __init__(self, command_ping=DEFAULT_PING_COMMAND, host=None,
-                 platform=PLATFORM_LINUX):
+    def __init__(self,
+                 command_ping=DEFAULT_PING_COMMAND,
+                 host=None,
+                 platform=PLATFORM_LINUX,
+                 use_provided_ping=False):
         """Construct a PingRunner.
 
         @param command_ping optional path or alias of the ping command.
         @param host optional host object when a remote host is desired.
+        @param use_provided_ping optional if true use the provided ping command even on cloudbots.
 
         """
         super(PingRunner, self).__init__()
         self._run = utils.run
         if host is not None:
             self._run = host.run
-        if utils.is_cloudbot():
+        if utils.is_cloudbot() and not use_provided_ping:
             self.command_ping = self.CLOUDBOTS_PING_COMMAND
         else:
             self.command_ping = command_ping

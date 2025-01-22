@@ -241,7 +241,7 @@ class InputDevice:
         name_len = 255
         name = array.array('B', [0] * name_len)
         name_len = fcntl.ioctl(self.f, EVIOCGNAME(name_len), name, 1)
-        self.name = name[0:name_len-1].tostring()
+        self.name = name[0:name_len-1].tobytes()
 
     def _ioctl_get_switch(self, sw):
         """

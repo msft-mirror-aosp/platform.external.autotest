@@ -37,6 +37,7 @@ def run_TS(machine):
         target_plan=None,
         bundle='x86',
         uri='LATEST',
+        precondition_commands=['adb shell device_config put device_idle idle_to 90000'],
         timeout=172800)
 
 parallel_simple(run_TS, machines)

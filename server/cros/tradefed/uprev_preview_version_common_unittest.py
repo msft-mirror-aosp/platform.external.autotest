@@ -141,13 +141,21 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
         version_name = uprev_preview_version_common.get_gts_version_name(path)
         self.assertEqual(version_name, '11-R4-R-Preview4-11561875')
 
-    def test_get_gts_version_name_invalid_format(self):
+    def test_get_gts_version_name_invalid_format_GTS_12(self):
         """Tests if get_gts_version_name normalizes when name is invalid."""
         path = pathlib.Path(
                 '/path/to/android-gts-12-R2(12-15)-Preview8-12281132.zip')
 
         version_name = uprev_preview_version_common.get_gts_version_name(path)
         self.assertEqual(version_name, '12-R2-S-Preview8-12281132')
+
+    def test_get_gts_version_name_invalid_format_GTS_13(self):
+        """Tests if get_gts_version_name normalizes when name is invalid."""
+        path = pathlib.Path(
+                '/path/to/android-gts-13-R2(13-16)-Preview8-12281132.zip')
+
+        version_name = uprev_preview_version_common.get_gts_version_name(path)
+        self.assertEqual(version_name, '13-R2-T-Preview8-12281132')
 
     @mock.patch('shutil.copy')
     def test_copy_local_file_to_cache_dir(self, mock_copy):

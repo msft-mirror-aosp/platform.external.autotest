@@ -143,9 +143,15 @@ def get_gts_version_name(path: pathlib.Path) -> str:
     Raises:
         ValueError if the file name is invalid.
     """
-    # For now only handle the GTS 12 case. Below will check if the resulting
+    # For now only handle the GTS 12 and 13 case. Below will check if the resulting
     # filename is still invalid.
-    normalized = path.name.replace('(12-15)', '-S')
+    replace_pairs = [
+            ('(12-15)', '-S'),  # GTS_12
+            ('(13-16)', '-T'),  # GTS_13
+    ]
+    normalized = path.name
+    for before, after in replace_pairs:
+        normalized = normalized.replace(before, after)
     m = re.fullmatch(_GTS_FILENAME_PATTERN, normalized)
     if m is None:
         raise ValueError(

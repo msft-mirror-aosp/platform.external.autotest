@@ -51,6 +51,16 @@ class chromium_Graphics(test.test):
         self.server_pkg = chrome_sideloader.chromite_deploy_chrome(
                 self.host, self.args_dict.get('lacros_gcs_path'), archive_type,
                 **self.args_dict)
+        self.exe_rel_path = self.args_dict.get('exe_rel_path', '')
+        self.build_dir = os.path.join(self.server_pkg, 'out', 'Release')
+        if self.exe_rel_path:
+            # FIXME(b/392709484): This assumes the build-dir is nested two dirs
+            # within the checkout. This is not strictly a safe assumption. The
+            # build-dir should be properly propagated to Skylab from Chrome
+            # builders.
+            parts = self.exe_rel_path.split(os.sep)
+            if len(parts) > 2:
+                self.build_dir = os.path.join(*parts[:2])
 
         os.environ['GTEST_TOTAL_SHARDS'] = self.args_dict.get(
                 'total_shards', '1')
@@ -110,9 +120,7 @@ class chromium_Graphics(test.test):
 
         logging.debug('Running: %s', cmd)
         exit_code = 0
-        # We must kick off the test from src/out/Release, because
-        # the flags configured by browser side are assumed so.
-        os.chdir(os.path.join(self.server_pkg, 'out', 'Release'))
+        os.chdir(self.build_dir)
         logging.debug('CWD: %s', os.getcwd())
         try:
             result = utils.run(

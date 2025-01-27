@@ -189,11 +189,10 @@ class bluetooth_AdapterControllerRoleTests(
         # Connect to DUT from peer, putting DUT in secondary role
         if self.floss:
             # Floss doesn't connect to HOG profile if it's not the initiator.
-            # Explicitly connect to HOG with |test_connection_by_adapter| right
-            # after the peer is connected.
+            # TODO(b/390706929) Define a data test when the host is on
+            # peripheral role.
             self.test_connection_by_device(primary_device,
                                            post_connection_delay=0)
-            self.test_connection_by_adapter(primary_device.address)
         else:
             self.test_connection_by_device(primary_device)
 
@@ -202,8 +201,8 @@ class bluetooth_AdapterControllerRoleTests(
             self.connect_and_test_secondary_device(
                 secondary_device_handle, secondary_test_func)
 
-        # Try transferring data over connection
-        primary_test_func(primary_device)
+        # TODO(b/390706929) Define a data test when the host is on peripheral
+        # role as HOGP Host should be in the central role
 
         # Handle cleanup of connected devices
         if secondary_info is not None:
@@ -395,11 +394,10 @@ class bluetooth_AdapterControllerRoleTests(
         # Connect to DUT from peer
         if self.floss:
             # Floss doesn't connect to HOG profile if it's not the initiator.
-            # Explicitly connect to HOG with |test_connection_by_adapter| right
-            # after the peer is connected.
+            # TODO(b/390706929) Define a data test when the host is on
+            # peripheral role.
             self.test_connection_by_device(nearby_device,
                                            post_connection_delay=0)
-            self.test_connection_by_adapter(nearby_device.address)
         else:
             self.test_connection_by_device(nearby_device)
 
@@ -414,8 +412,8 @@ class bluetooth_AdapterControllerRoleTests(
 
         time.sleep(self.TEST_SLEEP_SECS)
 
-        # Try data test with nearby device
-        nearby_device_test_func(nearby_device)
+        # TODO(b/390706929) Define a data test when the host is on peripheral
+        # role as HOGP Host should be in the central role
 
         self.test_disconnection_by_device(nearby_device)
         self.test_reset_advertising()

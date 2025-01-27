@@ -5,6 +5,7 @@
 import unittest
 from unittest.mock import Mock, ANY, call
 
+from autotest_lib.server import utils
 from autotest_lib.server.cros.tradefed import push_arc_image
 
 # Use this version for tests if there isn't a special version that has to be
@@ -98,6 +99,8 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
+                        stdout_tee=utils.TEE_TO_LOGS,
+                        stderr_tee=utils.TEE_TO_LOGS,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -144,6 +147,8 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
+                        stdout_tee=utils.TEE_TO_LOGS,
+                        stderr_tee=utils.TEE_TO_LOGS,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -190,6 +195,8 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
+                        stdout_tee=utils.TEE_TO_LOGS,
+                        stderr_tee=utils.TEE_TO_LOGS,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -236,6 +243,8 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
+                        stdout_tee=utils.TEE_TO_LOGS,
+                        stderr_tee=utils.TEE_TO_LOGS,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -282,6 +291,8 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
+                        stdout_tee=utils.TEE_TO_LOGS,
+                        stderr_tee=utils.TEE_TO_LOGS,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)
@@ -328,6 +339,8 @@ class PushArcImageTest(unittest.TestCase):
                         ignore_status=ANY,
                         verbose=ANY,
                         nickname=ANY,
+                        stdout_tee=utils.TEE_TO_LOGS,
+                        stderr_tee=utils.TEE_TO_LOGS,
                 ),
         ]
         self.assertEqual(in_sequence.mock_calls, expected_calls)

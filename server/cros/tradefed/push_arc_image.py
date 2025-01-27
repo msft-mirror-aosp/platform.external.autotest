@@ -5,6 +5,8 @@
 import logging
 import os
 
+from autotest_lib.server import utils
+
 _BUILDS_BUCKET = 'gs://chromeos-arc-images/builds'
 
 _ABI_MAP = {
@@ -105,5 +107,7 @@ def push_userdebug_image(host, branch_prefix, download_func,
             ignore_status=False,
             verbose=True,
             nickname='Push userdebug image.',
+            stdout_tee=utils.TEE_TO_LOGS,
+            stderr_tee=utils.TEE_TO_LOGS,
     )
     return True

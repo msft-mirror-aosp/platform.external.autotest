@@ -6,6 +6,7 @@ NAME = 'audio_CrasStress'
 METADATA = {
     "contacts": ["chromeos-audio-bugs@google.com"],
     "bug_component": "b:875558",
+    'variant_category': '{"name": "Audio_SoC_Codec_Amp"}',
     "criteria": "Fail if device buffer drifts too high."
 }
 ATTRIBUTES = "suite:audio, suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"

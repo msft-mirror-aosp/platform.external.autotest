@@ -48,11 +48,8 @@ class chromium_Graphics(test.test):
         # 'chromite_deploy_chrome' installs Ash/Lacros via chromite and leave
         # chrome checkout on Drone, which contains the GPU test's server package.
         archive_type = 'chrome' if self.is_cros_chrome else 'lacros'
-        self.server_pkg = chrome_sideloader.chromite_deploy_chrome(
-                self.host, self.args_dict.get('lacros_gcs_path'), archive_type,
-                **self.args_dict)
         self.exe_rel_path = self.args_dict.get('exe_rel_path', '')
-        self.build_dir = os.path.join(self.server_pkg, 'out', 'Release')
+        relative_build_dir = 'out/Release'
         if self.exe_rel_path:
             # FIXME(b/392709484): This assumes the build-dir is nested two dirs
             # within the checkout. This is not strictly a safe assumption. The
@@ -60,7 +57,15 @@ class chromium_Graphics(test.test):
             # builders.
             parts = self.exe_rel_path.split(os.sep)
             if len(parts) > 2:
-                self.build_dir = os.path.join(*parts[:2])
+                relative_build_dir = os.path.join(*parts[:2])
+
+        self.server_pkg = chrome_sideloader.chromite_deploy_chrome(
+                self.host,
+                self.args_dict.get('lacros_gcs_path'),
+                archive_type,
+                build_dir=relative_build_dir,
+                **self.args_dict)
+        self.build_dir = os.path.join(self.server_pkg, relative_build_dir)
 
         os.environ['GTEST_TOTAL_SHARDS'] = self.args_dict.get(
                 'total_shards', '1')

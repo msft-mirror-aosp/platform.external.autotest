@@ -157,6 +157,19 @@ def parse_arguments(argv):
             "e.g. 'power' for platform power team. If not specific, the "
             "default value is 'default_suite'.")
     upload_parser.add_argument(
+            "--build",
+            type=str,
+            default=None,
+            help=
+            "Write CrOS build to the test results. Each test entry can only "
+            "have at most 1 build. Optional.")
+    upload_parser.add_argument(
+            "--parent_job_id",
+            type=str,
+            default=None,
+            help="Write parent Swarming task id to the test results. Each test "
+            "entry can only have at most 1 parent job id. Optional.")
+    upload_parser.add_argument(
             "--bucket",
             type=str,
             default=None,
@@ -331,7 +344,9 @@ class ResultsManager:
         self.results_parser = results_parser
         self.results_sender = results_sender
         self.bug_id = None
-        self.suite_name = ""
+        self.suite_name = None
+        self.build = None
+        self.parent_job_id = None
 
         if "PUBLISH_HOSTNAME" in os.environ:
             self.moblab_id = os.environ["PUBLISH_HOSTNAME"]
@@ -420,6 +435,12 @@ class ResultsManager:
     def annotate_results_with_bugid(self, bug_id):
         self.bug_id = bug_id
 
+    def annotate_results_with_build(self, build):
+        self.build = build
+
+    def annotate_results_with_parent_job_id(self, parent_job_id):
+        self.parent_job_id = parent_job_id
+
     def parse_all_results(self, upload_only: bool = False):
         self.results = []
         self.enumerate_all_directories()
@@ -427,6 +448,16 @@ class ResultsManager:
         for result_dir in self.result_directories:
             if self.bug_id is not None:
                 self.results_parser.write_bug_id(result_dir, self.bug_id)
+            if self.suite_name is not None:
+                self.results_parser.write_to_keyval(result_dir, "suite",
+                                                    self.suite_name)
+            if self.build is not None:
+                self.results_parser.write_to_keyval(result_dir, "build",
+                                                    self.build)
+            if self.parent_job_id is not None:
+                self.results_parser.write_to_keyval(result_dir,
+                                                    "parent_job_id",
+                                                    self.parent_job_id)
             self.results.append(
                     (result_dir,
                      self.results_parser.parse(result_dir,
@@ -656,6 +687,56 @@ class ResultsParserClass:
                     'the bug id %s: %s', test_dir, bug_id, e)
             return False
 
+    def write_to_keyval(self, test_dir, key, value):
+        """
+            Write the key/value pair to the test results. If the key already
+            exists, the old value will be overwritten with the new value.
+
+        Args:
+            test_dir: The test directory for non-moblab test results.
+            key: The key to write to the test results.
+            value: The value to write to the test results.
+        Returns:
+            A boolean. True if the key/value pair is written successfully or is
+            already in test results; False if failed to write the key/value
+            pair.
+        """
+        logging.debug("Writing the %s=%s pair to the keyval file", key, value)
+        new_keyvals = list()
+
+        keyval_file = os.path.join(test_dir, KEYVAL_FILE)
+        try:
+            with open(keyval_file, 'r') as keyval_raw:
+                for line in keyval_raw.readlines():
+                    match = re.match(r'%s=(.*$)' % key, line)
+                    if match:
+                        if match.group(1) == value:
+                            return True
+                    else:
+                        new_keyvals.append(line)
+        except IOError as e:
+            logging.error(
+                    'Cannot read keyval file from %s, skip writing the keyval'
+                    'pair %s=%s: %s', test_dir, key, value, e)
+            return False
+
+        new_keyvals.append("%s=%s" % (key, value))
+        new_keyval_file = os.path.join(test_dir, NEW_KEYVAL_FILE)
+        try:
+            with open(new_keyval_file, 'w') as new_keyval_raw:
+                for line in new_keyvals:
+                    # line already contains '\n' char as it was in the old file
+                    new_keyval_raw.write(line)
+                # new line char is only needed for a new key/value pair
+                new_keyval_raw.write('\n')
+            shutil.move(new_keyval_file, keyval_file)
+            return True
+        except Exception as e:
+            logging.error(
+                    'Cannot write new pair to keyval file in %s, skip writing '
+                    'the pair %s=%s: %s', test_dir, key, value, e)
+            return False
+
 
 ResultsParser = ResultsParserClass()
 _valid_bug_id = functools.partial(ResultsParserClass.valid_bug_id,
@@ -849,6 +930,11 @@ def main(args):
         results_manager.annotate_results_with_bugid(parsed_args.bug)
     if parsed_args.suite:
         results_manager.overwrite_suite_name(parsed_args.suite)
+    if parsed_args.build:
+        results_manager.annotate_results_with_build(parsed_args.build)
+    if parsed_args.parent_job_id:
+        results_manager.annotate_results_with_parent_job_id(
+                parsed_args.parent_job_id)
     if parsed_args.parse_only:
         results_manager.parse_all_results()
     elif parsed_args.upload_only:

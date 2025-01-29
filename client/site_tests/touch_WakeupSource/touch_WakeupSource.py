@@ -36,10 +36,10 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
     _INVALID_TOUCHSCREENS = ['cyan', 'nocturne', 'sumo', 'ultima']
 
     def _touchpad_should_be_wake_source(self):
-        base_platform = self._platform.replace('-kernelnext', '')
-        if base_platform in self._NO_TOUCHPAD_WAKE:
+        base_board = self._board.replace('-kernelnext', '')
+        if base_board in self._NO_TOUCHPAD_WAKE:
             return False
-        if (base_platform in self._TOUCHPAD_WAKE_SET_BY_CROS_CONFIG
+        if (base_board in self._TOUCHPAD_WAKE_SET_BY_CROS_CONFIG
                     and cros_config.call_cros_config_get_output(
                             '/power touchpad-wakeup', utils.run) == '0'):
             return False

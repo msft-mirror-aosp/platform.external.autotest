@@ -28,15 +28,14 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'All test files pass minimum score required for HFP WBS VISQOL test',
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'variant_category': '{"name": "BT:Models_with_HFP_offload"}',
     'requirements': ['bt-audPath-0001-v01', 'bt-audPath-0003-v01',
                      'bt-phy-0002-v01']
 
 }
 
 
-# TODO(b/336088266): schedule this test within the supporting boards via project 3d.
-ATTRIBUTES = ''
+ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

@@ -92,6 +92,11 @@ class Cr50Test(FirmwareTest):
         # Disable rddkeepalive, so the test can disable ccd.
         self.gsc.send_command('ccd testlab open')
         self.gsc.send_command('rddkeepalive disable')
+        # Reset the servo WP on brox to avoid prevent externally driven
+        # WP messages.
+        if self.faft_config.platform == 'brox':
+            logging.info('Reset WP on brox')
+            self.gsc.set_wp_state('follow_batt_pres atboot')
         # faft-cr50 locks and reopens ccd. This will restrict some capabilities
         # c2d2 uses to control the duts. Set the capabilities to Always, so
         # individiual tests don't need to care that much.

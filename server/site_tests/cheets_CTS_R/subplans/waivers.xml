@@ -9,4 +9,6 @@
   <!-- b/359402657 -->
   <Entry include="CtsMediaTestCases android.media.cts.StreamingMediaPlayerTest#testHTTP_H263_AMR_Video1" />
   <Entry include="CtsMediaTestCases android.media.cts.StreamingMediaPlayerTest#testHTTP_MPEG4SP_AAC_Video1" />
+  <!-- b/336047586 -->
+  <Entry include="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsShown" />
 </SubPlan>

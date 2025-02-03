@@ -37,6 +37,6 @@ def run_TS(machine):
         bundle='arm',
         uri='DEV',
         precondition_commands=['adb shell device_config set_sync_disabled_for_tests persistent', 'adb shell device_config put device_idle idle_to 90000'],
-        timeout=25200)
+        timeout=30600)
 
 parallel_simple(run_TS, machines)

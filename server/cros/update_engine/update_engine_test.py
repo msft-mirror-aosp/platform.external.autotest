@@ -1216,6 +1216,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 first_row = next(reader)
                 target_build_idx = first_row.index('cros_stable')
                 target_cr_idx = first_row.index('cr_stable')
+                # Initialize target_build and target_cr in case they are not
+                # present in the CSV
+                target_build = None
+                target_cr = None
+
                 for row in reader:
                     if row[0].startswith(board):
                         target_build = row[target_build_idx]

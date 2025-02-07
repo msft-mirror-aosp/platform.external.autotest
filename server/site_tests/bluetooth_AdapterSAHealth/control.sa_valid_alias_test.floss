@@ -15,6 +15,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass if the Bluetooth ID matches the expected format',
     'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
 }
 
 

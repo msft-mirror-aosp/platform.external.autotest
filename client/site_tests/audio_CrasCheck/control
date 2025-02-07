@@ -23,4 +23,7 @@ active streams.
 
 job.run_test('audio_CrasCheck', skipped_model_with_bugs={
     'nocturne':'b/346511575',
+    'soraka':'b/393876310',
+    'strongbad':'b/393876310',
+    'kukui':'b/393876310',
 })

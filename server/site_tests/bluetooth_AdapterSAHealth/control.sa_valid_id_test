@@ -22,7 +22,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass if the Bluetooth ID matches the expected format',
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'variant_category': '{"name": "BT_Chipset_Kernel_and_formfactor"}',
     'life_cycle_stage': 'owner_monitored',
 }
 

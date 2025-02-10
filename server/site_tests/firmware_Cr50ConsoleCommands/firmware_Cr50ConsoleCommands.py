@@ -75,8 +75,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         'ti50' : [],
     }
     CR50_GUC_BRANCH_STR = 'cr50_v1.9308_26_0.'
-    CR50_MP_BRANCH_STR = 'cr50_v4.11_mp'
-    CR50_PREPVT_BRANCH_STR = 'cr50_v4.08_pp'
+    CR50_MP_BRANCH_STR = 'cr50.*_mp'
+    CR50_PREPVT_BRANCH_STR = 'cr50.*_pp'
     CR50_TOT_STR = 'cr50_v2.0.'
     TI50_COMMON = 'ti50_common'
     VERSION_MAP = [
@@ -228,7 +228,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
                 self.update_expectations('', include)
         version = self.gsc.get_full_version()
         for version_key, include, exclude in self.VERSION_MAP:
-            if version_key in version:
+            if re.search(version_key, version):
                 self.update_expectations(include, exclude)
                 break
         else:

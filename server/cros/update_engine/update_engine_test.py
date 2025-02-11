@@ -1145,13 +1145,15 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 self._host.run('cat %s' % os.path.join(tmpdir, paygen_file),
                                verbose=False).stdout)
 
-    def _paygen_json_lookup(self, board, channel, delta_type):
+    def _paygen_json_lookup(self, board, channel, delta_types=None):
         """
         Filters the paygen.json file by board, channel, and payload type.
 
         @param board: The board name.
         @param channel: The ChromeOS channel.
-        @param delta_type: OMAHA, FSI, MILESTONE. STEPPING_STONE.
+        @param delta_types: list of delta types: OMAHA, FSI, MILESTONE,
+                            STEPPING_STONE. If None, it will return all builds
+                            for the board and channel, regardless of delta type.
 
         @returns json results filtered by the input params.
 
@@ -1163,7 +1165,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         for delta in paygen_data['delta']:
             if ((delta['board']['public_codename'] == board)
                         and (delta.get('channel', None) == channel)
-                        and (delta.get('delta_type', None) == delta_type)):
+                        and (delta_types is None
+                             or delta.get('delta_type', None) in delta_types)):
                 result.append(delta)
         return result
 
@@ -1202,56 +1205,68 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             board = board.replace('_', '-')
         channel = 'stable-channel'
 
+        logging.info('Searching the serving builds CSV.')
+        with autotemp.tempfile('get_serving_stable_build') as t:
+            six.moves.urllib.request.urlretrieve(
+                    "https://chromiumdash.appspot.com"
+                    "/cros/download_serving_builds_csv?"
+                    "deviceCategory=ChromeOS", t.name)
+            stable_build_idx = None
+            reader = csv.reader(t.fo, delimiter=',')
+            # Parse first row to find index of `cros_stable` for the cros
+            # build number and `cr_stable` for the milestone number.
+            first_row = next(reader)
+            target_build_idx = first_row.index('cros_stable')
+            target_cr_idx = first_row.index('cr_stable')
+            # Initialize target_build and target_cr in case they are not
+            # present in the CSV
+            target_build = None
+            target_cr = None
+
+            for row in reader:
+                if row[0].startswith(board):
+                    target_build = row[target_build_idx]
+                    target_cr = row[target_cr_idx]
+                    break
+
+        serving_builds_data = {}
+        if target_build is not None and target_cr is not None:
+            logging.info(
+                    'Found stable build %s, Chrome %s in serving builds CSV',
+                    target_build, target_cr)
+            serving_builds_data['chrome_os_version'] = target_build
+            serving_builds_data['milestone'] = target_cr.split('.')[0]
+
         if lsbrelease_utils.is_moblab():
-            logging.info('Searching the serving builds CSV for Moblab.')
-            with autotemp.tempfile('get_serving_stable_build') as t:
-                six.moves.urllib.request.urlretrieve(
-                        "https://chromiumdash.appspot.com"
-                        "/cros/download_serving_builds_csv?"
-                        "deviceCategory=ChromeOS", t.name)
-                stable_build_idx = None
-                reader = csv.reader(t.fo, delimiter=',')
-                # Parse first row to find index of `cros_stable` for the cros
-                # build number and `cr_stable` for the milestone number.
-                first_row = next(reader)
-                target_build_idx = first_row.index('cros_stable')
-                target_cr_idx = first_row.index('cr_stable')
-                # Initialize target_build and target_cr in case they are not
-                # present in the CSV
-                target_build = None
-                target_cr = None
-
-                for row in reader:
-                    if row[0].startswith(board):
-                        target_build = row[target_build_idx]
-                        target_cr = row[target_cr_idx]
-                        break
-
-            if target_build is not None and target_cr is not None:
-                logging.info('Found stable build %s, Chrome %s', target_build,
-                             target_cr)
+            if serving_builds_data:
                 # Moblab partner buckets use the image archive style paths.
-                milestone = target_cr.split('.')[0]
-                version = 'R' + '-'.join([milestone, target_build])
+                version = 'R' + '-'.join([
+                        serving_builds_data['milestone'],
+                        serving_builds_data['chrome_os_version']
+                ])
                 builder = board + '-release'
                 return os.path.join(builder, version)
 
             raise error.TestNAError(
                     "Moblab could not find stable build to run M2N.")
 
-        stable_paygen_data = self._paygen_json_lookup(board, channel, 'OMAHA')
+        # Some unibuild boards can have ALL of their stable serving builds
+        # also be an FSI. When this happens we will not find an OMAHA
+        # payload to use because GE only publishes one for a channel+build
+        # pair. So try to get both OMAHA and FSI builds on stable channel.
+        logging.info('Getting OMAHA and FSI payloads from paygen.json file')
+        stable_paygen_data = self._paygen_json_lookup(board, channel,
+                                                      ['OMAHA', 'FSI'])
+
+        # Add build data from serving builds CSV
+        if serving_builds_data:
+            stable_paygen_data.append(serving_builds_data)
 
         if not stable_paygen_data:
-            # Some unibuild boards can have ALL of their stable serving builds
-            # also be an FSI. When this happens we will not find an OMAHA
-            # payload to use because GE only publishes one for a channel+build
-            # pair. So try to get the latest FSI on stable channel.
-            logging.info('No OMAHA payloads found. Falling back to FSI')
-            stable_paygen_data = self._paygen_json_lookup(
-                    board, channel, 'FSI')
-        if not stable_paygen_data:
             raise error.TestNAError(
-                    'No stable build found in paygen.json for %s' % board)
+                    'No stable build found in paygen.json or serving builds CSV for %s'
+                    % board)
+
         find = min if oldest_stable else max
         target_stable_paygen_data = find(
                 stable_paygen_data, key=(lambda key: key['chrome_os_version']))

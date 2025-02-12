@@ -304,7 +304,7 @@ class firmware_FWupdate(FirmwareTest):
         self.prepare_shellball('new', 'rw')
         errors += self.run_shellball('new', wp=1)
 
-        self.reboot_and_reset_tpm()
+        self.reset_tpm_if_needed()
         self.sync_and_ec_reboot()
         self.switcher.wait_for_client()
 
@@ -326,7 +326,7 @@ class firmware_FWupdate(FirmwareTest):
         self.prepare_shellball('old', 'ro')
         errors += self.run_shellball('old', wp=0)
 
-        self.reboot_and_reset_tpm()
+        self.reset_tpm_if_needed()
         self.sync_and_ec_reboot()
         self.switcher.wait_for_client()
 
@@ -340,7 +340,7 @@ class firmware_FWupdate(FirmwareTest):
         self.prepare_shellball('old', 'rw')
         errors += self.run_shellball('old', wp=1, host_only=True)
 
-        self.reboot_and_reset_tpm()
+        self.reset_tpm_if_needed()
         self.sync_and_ec_reboot()
         self.switcher.wait_for_client()
 
@@ -351,6 +351,13 @@ class firmware_FWupdate(FirmwareTest):
                 raise error.TestFail('\n'.join(errors))
             return ['\n'.join(errors)]
         return []
+
+    def reset_tpm_if_needed(self):
+        """Check the tpm_fwver, and reset it if it is wrong."""
+        crossystem_output = self.faft_client.system.run_shell_command_get_output(
+                'crossystem tpm_fwver')
+        if crossystem_output != "0x00010001" and crossystem_output != "0x00010000":
+            self.reboot_and_reset_tpm()
 
     def test_new(self, raise_error=True):
         """Test case: RO=new, RW=new"""
@@ -363,7 +370,7 @@ class firmware_FWupdate(FirmwareTest):
         self.prepare_shellball('new', 'ro')
         errors += self.run_shellball('new', wp=0)
 
-        self.reboot_and_reset_tpm()
+        self.reset_tpm_if_needed()
         self.sync_and_ec_reboot()
         self.switcher.wait_for_client()
 
@@ -386,7 +393,7 @@ class firmware_FWupdate(FirmwareTest):
         self.prepare_shellball('old', 'ro')
         errors += self.run_shellball('old', wp=0)
 
-        self.reboot_and_reset_tpm()
+        self.reset_tpm_if_needed()
         self.sync_and_ec_reboot()
         self.switcher.wait_for_client()
 

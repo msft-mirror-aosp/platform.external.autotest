@@ -134,6 +134,10 @@ def _charge_control_by_ectool(is_charge, ignore_status, host=None):
                     # it's already enabled will disable the battery sustainer
                     # due to an implementation bug.
                     run_func(ec_cmd_sustain_disable)
+                    # Executing 'disable battery sustainer' and setting a new value
+                    # successively may cause network disconnection on some devices.
+                    # Wait for one second before executing the next command.
+                    time.sleep(1)
                     run_func(ec_cmd_sustain)
                 except error.CmdError as e:
                     logging.info('Battery sustainer maybe not supported: %s',

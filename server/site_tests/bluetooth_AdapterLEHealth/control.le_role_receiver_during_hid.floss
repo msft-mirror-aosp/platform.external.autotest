@@ -16,7 +16,7 @@ METADATA = {
     'criteria': ('Tests controller can handle Receiver role while already '
                  'connected to a HID device'),
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'variant_category': '{"name": "BT_Chipset_Kernel_exclude_LE_Floss_IOP"}',
     'requirements': ['bt-spec-0014-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'

@@ -12,7 +12,8 @@ METADATA = {
     # ChromeOS > Platform > Connectivity > Bluetooth
     'bug_component': 'b:167317',
     'criteria': 'Successfully receives battery reports via GATT',
-    'hw_agnostic': False
+    'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
 }
 ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'
 TEST_TYPE = 'server'

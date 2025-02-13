@@ -48,6 +48,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Test bluetooth adapter single advertising capability',
     'hw_agnostic': True,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
     'requirements': ['bt-gen-0001-v01'],
 }
 ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'

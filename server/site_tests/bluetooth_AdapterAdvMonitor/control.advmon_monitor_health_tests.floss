@@ -13,6 +13,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Batch of Bluetooth Advertisement Monitor tests',
     'hw_agnostic': True,
+    'variant_category': '{"name": "BT_Chipset_Kernel_exclude_ADVMON_not_supported"}',
     'requirements': ['bt-hciExt-0006-v01', 'bt-hciExt-0007-v01',
                     'bt-hciExt-0008-v01', 'bt-hciExt-0009-v01']
 }

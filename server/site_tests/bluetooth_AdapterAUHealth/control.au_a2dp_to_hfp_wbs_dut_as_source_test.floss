@@ -24,7 +24,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass all audio file checking',
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'variant_category': '{"name": "BT_Chipset_Kernel_exclude_WBS_not_supported"}',
     'requirements': ['bt-gen-0001-v01'],
 }
 

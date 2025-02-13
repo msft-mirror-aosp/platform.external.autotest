@@ -36,7 +36,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass test',
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'variant_category': '{"name": "BT_Chipset_Kernel_exclude_Suspend_Power_Down"}',
     'requirements': ['bt-phy-0010-v01']
 }
 

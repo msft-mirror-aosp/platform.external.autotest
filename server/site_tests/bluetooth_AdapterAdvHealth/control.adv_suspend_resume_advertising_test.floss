@@ -31,6 +31,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Test bluetooth adapter advertising across suspend/resume',
     'hw_agnostic': True,
+    'variant_category': '{"name": "BT_Chipset_Kernel_exclude_Suspend_Power_Down"}',
     'requirements': ['bt-drv-0013-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'

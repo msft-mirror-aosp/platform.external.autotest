@@ -1067,7 +1067,7 @@ class TradefedTest(test.test):
 
         @param destination: Autotest result directory (destination of logs).
         """
-        log_dirs = ['/tmp/ats_console_log', '/tmp/olc_server_log']
+        log_dirs = ['/tmp/xts_console']
         for log_dir in log_dirs:
             if os.path.isdir(log_dir):
                 logging.info('%s exists, copying to results dir', log_dir)
@@ -1855,6 +1855,10 @@ class TradefedTest(test.test):
                     self._override_powerd_prefs()
                 try:
                     waived_tests = self._run_and_parse_tradefed(command)
+                except:
+                    # Capture the log before aborting
+                    self._collect_ats_console_log(self.resultsdir)
+                    raise
                 finally:
                     if keep_screen_on:
                         self._restore_powerd_prefs()
@@ -1955,8 +1959,6 @@ class TradefedTest(test.test):
                                      or '--shard-count' in run_template):
                     break
 
-        # TODO(shaochuan): Ensure logs are collected when
-        # _run_and_parse_tradefed() raises an exception.
         self._collect_ats_console_log(self.resultsdir)
 
         if session_id == None:

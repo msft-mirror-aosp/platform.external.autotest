@@ -26,9 +26,18 @@ TABLET_MODE = autotest_enum.AutotestEnum('ON', 'OFF', 'RESET')
 
 # List of wake sources expected to cause a full resume.
 FULL_WAKE_SOURCES = [
+        'USB_KB', 'INTERNAL_KB', 'PWR_BTN', 'LID_OPEN', 'BASE_ATTACH',
+        'BASE_DETACH', 'TABLET_MODE_ON', 'TABLET_MODE_OFF'
+]
+
+# Alternate List of wake sources expected to cause a full resume.
+FULL_WAKE_SOURCES_ALTERNATE = [
         'INTERNAL_KB', 'PWR_BTN', 'USB_KB', 'LID_OPEN', 'BASE_ATTACH',
         'BASE_DETACH', 'TABLET_MODE_ON', 'TABLET_MODE_OFF'
 ]
+
+# Set of model need to run internal KB before USB KB.
+ALTERNATE_MODELS = ("wugtrio", )
 
 # List of wake sources expected to cause a dark resume.
 DARK_RESUME_SOURCES = ['RTC', 'AC_CONNECTED', 'AC_DISCONNECTED']
@@ -469,7 +478,11 @@ class power_WakeSources(test.test):
         skipped_ws = []
         fail_msgs = []
 
-        for ws in FULL_WAKE_SOURCES:
+        full_wake_sources = FULL_WAKE_SOURCES
+        if self._host.get_model_from_cros_config() in ALTERNATE_MODELS:
+            full_wake_sources = FULL_WAKE_SOURCES_ALTERNATE
+
+        for ws in full_wake_sources:
             if not self._is_valid_wake_source(ws):
                 skipped_ws.append(ws)
                 continue

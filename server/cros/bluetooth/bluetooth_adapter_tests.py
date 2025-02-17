@@ -128,7 +128,22 @@ LL_PRIVACY_NOT_SUPPORTED_CHIPSETS = ['Intel-AC7265']
 SUSPEND_POWER_DOWN_MODELS = []
 
 # Models that have known issue on resume and USB disconnects sometimes.
-SUSPEND_FLAKY_USB_CONNECTION_MODELS = ['spherion', 'dewatt', 'nipperkin']
+SUSPEND_FLAKY_USB_CONNECTION_MODELS = [
+        'spherion',
+        'dewatt',
+        'nipperkin',
+
+        # Zork + AX200 models
+        'berknip',
+        'ezkinil',
+        'gumboz',
+        'morphius',
+        'mumboz',
+        'vilboz',
+        'vilboz14',
+        'vilboz360',
+        'woomax',
+]
 
 # Some chipsets don't support hardware offloaded WBS, some don't support the
 # software WBS (don't support the erroneous data reporting or whatnot), and

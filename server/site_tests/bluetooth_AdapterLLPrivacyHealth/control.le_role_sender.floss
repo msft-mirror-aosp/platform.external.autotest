@@ -20,7 +20,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass the test',
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'variant_category': '{"name": "BT_Chipset_Kernel_exclude_LLPrivacy_not_supported"}',
     'life_cycle_stage': 'owner_monitored',
 }
 

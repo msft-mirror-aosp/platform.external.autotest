@@ -341,7 +341,8 @@ class BluetoothBaseFacadeLocal(object):
             'Intel-AX201': [(('0x8086', '0x02f0'), 'USB'),
                             (('0x8086', '0x4df0'), 'USB'),
                             (('0x8086', '0xa0f0'), 'USB')],  # HrP2
-            'Intel-AX203': [(('0x8086', '0x54f0', '0x0274'), 'USB')],  # JnP
+            'Intel-AX203': [(('0x8086', '0x54f0', '0x0274'), 'USB'),
+                            (('0x8086', '0x54f0', '0x4274'), 'USB')],  # JnP
             'Intel-AX211': [(('0x8086', '0x51f0'), 'USB'),
                             (('0x8086', '0x51f1'), 'USB'),
                             (('0x8086', '0x54f0'), 'USB'),

@@ -389,7 +389,7 @@ class tast(test.test):
             raise error.TestFail('Failed to get list of tests to run: %s' %
                                  str(list_test_exception))
         if not has_tests_to_run:
-            return
+            raise error.TestFail('No tests matched')
 
         # TODO(b/221333999): There are no devservers in CFT (F20), so this
         # would likely error. Once full CFT is done tast.py will be deprecated

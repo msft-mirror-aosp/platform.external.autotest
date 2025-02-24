@@ -35,7 +35,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bluetooth_floss_flaky, suite:bluetooth_audo_swb'
+ATTRIBUTES = 'suite:bluetooth_audio_swb'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

@@ -131,6 +131,8 @@ class ChromeLogin(object):
         cmd += ' --no-popup-notification'
         # Always disable external storage for ARC
         cmd += ' --disable-feature=ArcExternalStorageAccess'
+        # TODO(b/398872739): Upgrade tauto extentsions to manifest v3.
+        cmd += ' --disable-feature=ExtensionManifestV2Disabled'
         # Toggle the translation from houdini to ndk
         if self._toggle_ndk:
             cmd += ' --toggle_ndk'

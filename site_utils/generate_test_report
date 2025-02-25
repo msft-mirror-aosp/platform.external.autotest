@@ -68,7 +68,8 @@ def load_json(raw_stat, raw_json, testdir):
         # A non-formatted line won't have fields, thus don't parse it.
         if not fields:
             continue
-        if fields[0] == 'INFO' or fields[1] == '----':
+        # don't count a reboot, info, or blank as a tracked status
+        if fields[0] == 'INFO' or fields[1] == '----' or fields[1] == 'reboot':
             continue
         if fields[0] == 'START':
             if missingResult:

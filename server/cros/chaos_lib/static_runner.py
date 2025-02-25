@@ -217,20 +217,19 @@ class StaticRunner(object):
 
                         if not healthy_dut:
                             continue
+        except Exception as e:
+            logging.error('Failed: %s', e)
+            raise error.TestNAError('Exception in run method')
 
+        finally:
+            try:
+                if batch_locker:
+                    batch_locker.unlock_aps()
+                if capturer:
+                    capturer.close()
+                factory = ap_configurator_factory.APConfiguratorFactory(
+                        ap_constants.AP_TEST_TYPE_CHAOS)
+                factory.turn_off_all_routers([])
             except Exception as e:
-                logging.error('Failed: %s', e)
-                raise error.TestNAError('Exception in run method')
-
-            finally:
-                try:
-                    if batch_locker:
-                        batch_locker.unlock_aps()
-                    if capturer:
-                        capturer.close()
-                    factory = ap_configurator_factory.APConfiguratorFactory(
-                            ap_constants.AP_TEST_TYPE_CHAOS)
-                    factory.turn_off_all_routers([])
-                except Exception as e:
-                    logging.error('Cleanup failed: %s', e)
-                    raise error.TestNAError('Exception in cleanup method')
+                logging.error('Cleanup failed: %s', e)
+                raise error.TestNAError('Exception in cleanup method')

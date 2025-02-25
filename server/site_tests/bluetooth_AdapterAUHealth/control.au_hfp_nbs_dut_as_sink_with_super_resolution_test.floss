@@ -28,7 +28,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'Pass the HFP NBS test',
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'variant_category': '{"name": "BT_Chipset_Kernel_Super_Resolution"}',
     'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-audPath-0001-v01', 'bt-audPath-0002-v01']
 }

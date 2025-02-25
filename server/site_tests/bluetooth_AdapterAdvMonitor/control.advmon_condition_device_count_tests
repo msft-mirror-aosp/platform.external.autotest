@@ -19,7 +19,7 @@ METADATA = {
     'bug_component': 'b:167317',
     'criteria': 'All tests should pass',
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'variant_category': '{"name": "BT_Chipset_Kernel_Chipset_Support_ADV_DEVICE_COUNT"}',
     'life_cycle_stage': 'owner_monitored',
     'requirements': ['bt-hciExt-0006-v01', 'bt-hciExt-0007-v01',
                     'bt-hciExt-0008-v01', 'bt-hciExt-0009-v01',

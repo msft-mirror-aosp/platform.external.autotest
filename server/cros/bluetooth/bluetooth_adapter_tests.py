@@ -4847,9 +4847,9 @@ class BluetoothAdapterTests(test.test):
         actual_app = gatt_client_facade.browse(address)
         diff = GATT_Application.diff(actual_app, expected_app)
 
-        self.result = {
-            'actural_result': actual_app,
-            'expected_result': expected_app
+        self.results = {
+                'actural_result': actual_app,
+                'expected_result': expected_app
         }
 
         gatt_attribute_hierarchy = ['Device', 'Service', 'Characteristic',

@@ -140,8 +140,9 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
 
     def set_wp_state(self, setting):
         """Set the WP state."""
-        if 'servo_micro' in self._servo.get_servo_type():
-            self._servo.set_nocheck('fw_wp_state', 'reset')
+        # TODO(b/398839902): reenable this if it doesn't affect the gbb failures
+        #if 'servo_micro' in self._servo.get_servo_type():
+        #    self._servo.set_nocheck('fw_wp_state', 'reset')
         return super(ChromeTi50, self).set_wp_state(setting)
 
     def strip_timestamp(self, result):

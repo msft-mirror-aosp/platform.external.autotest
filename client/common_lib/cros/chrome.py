@@ -1,5 +1,5 @@
-# Lint as: python2, python3
-# Copyright 2013 The ChromiumOS Authors
+# lint as: python2, python3
+# copyright 2013 the chromiumos authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -11,17 +11,19 @@ import logging
 import os
 import re
 
+from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros import arc_common
 from autotest_lib.client.common_lib.cros import arc_util
 from autotest_lib.client.common_lib.cros import assistant_util
 from autotest_lib.client.cros import constants
-from autotest_lib.client.bin import utils
+import py_utils
 from six.moves import range
-from telemetry.core import cros_interface, exceptions
-from telemetry.internal.browser import browser_finder, browser_options
+from telemetry.core import cros_interface
+from telemetry.core import exceptions
+from telemetry.internal.browser import browser_finder
+from telemetry.internal.browser import browser_options
 from telemetry.internal.browser import extension_to_load
 
-import py_utils
 
 Error = exceptions.Error
 
@@ -33,12 +35,12 @@ def NormalizeEmail(username):
 
     @param username: username/email to be scrubbed.
     """
-    parts = re.split('@', username)
-    parts[0] = re.sub('\.', '', parts[0])
+    parts = re.split("@", username)
+    parts[0] = re.sub("\.", "", parts[0])
 
     if len(parts) == 1:
-        parts.append('gmail.com')
-    return '@'.join(parts)
+        parts.append("gmail.com")
+    return "@".join(parts)
 
 
 class Chrome(object):
@@ -56,43 +58,45 @@ class Chrome(object):
     close() method once you're done with the Chrome instance.
     """
 
-    BROWSER_TYPE_LOGIN = 'system'
-    BROWSER_TYPE_GUEST = 'system-guest'
-    AUTOTEST_EXT_ID = 'behllobkkfkfnphdnhnkndlbkcpglgmj'
+    BROWSER_TYPE_LOGIN = "system"
+    BROWSER_TYPE_GUEST = "system-guest"
+    AUTOTEST_EXT_ID = "behllobkkfkfnphdnhnkndlbkcpglgmj"
 
-    def __init__(self,
-                 logged_in=True,
-                 extension_paths=None,
-                 autotest_ext=False,
-                 num_tries=3,
-                 extra_browser_args=None,
-                 clear_enterprise_policy=True,
-                 expect_policy_fetch=False,
-                 dont_override_profile=False,
-                 disable_gaia_services=True,
-                 disable_default_apps=True,
-                 auto_login=True,
-                 gaia_login=False,
-                 username=None,
-                 password=None,
-                 gaia_id=None,
-                 arc_mode=None,
-                 arc_timeout=None,
-                 enable_web_app_auto_install=False,
-                 disable_arc_opt_in=True,
-                 disable_arc_opt_in_verification=True,
-                 disable_arc_cpu_restriction=False,
-                 disable_app_sync=False,
-                 disable_play_auto_install=False,
-                 disable_locale_sync=True,
-                 disable_play_store_auto_update=True,
-                 enable_assistant=False,
-                 enterprise_arc_test=False,
-                 init_network_controller=False,
-                 mute_audio=False,
-                 proxy_server=None,
-                 login_delay=0,
-                 enable_features=None):
+    def __init__(
+            self,
+            logged_in=True,
+            extension_paths=None,
+            autotest_ext=False,
+            num_tries=3,
+            extra_browser_args=None,
+            clear_enterprise_policy=True,
+            expect_policy_fetch=False,
+            dont_override_profile=False,
+            disable_gaia_services=True,
+            disable_default_apps=True,
+            auto_login=True,
+            gaia_login=False,
+            username=None,
+            password=None,
+            gaia_id=None,
+            arc_mode=None,
+            arc_timeout=None,
+            enable_web_app_auto_install=False,
+            disable_arc_opt_in=True,
+            disable_arc_opt_in_verification=True,
+            disable_arc_cpu_restriction=False,
+            disable_app_sync=False,
+            disable_play_auto_install=False,
+            disable_locale_sync=True,
+            disable_play_store_auto_update=True,
+            enable_assistant=False,
+            enterprise_arc_test=False,
+            init_network_controller=False,
+            mute_audio=False,
+            proxy_server=None,
+            login_delay=0,
+            enable_features=None,
+    ):
         """
         Constructor of telemetry wrapper.
 
@@ -168,8 +172,8 @@ class Chrome(object):
         self._autotest_ext_path = None
 
         # Force autotest extension if we need enable Play Store.
-        if (utils.is_arc_available() and (arc_util.should_start_arc(arc_mode)
-                                          or not disable_arc_opt_in)):
+        if utils.is_arc_available() and (arc_util.should_start_arc(arc_mode)
+                                         or not disable_arc_opt_in):
             autotest_ext = True
 
         if extension_paths is None:
@@ -178,54 +182,58 @@ class Chrome(object):
         finder_options = browser_options.BrowserFinderOptions()
         if proxy_server:
             finder_options.browser_options.AppendExtraBrowserArgs(
-                ['--proxy-server="%s"' % proxy_server])
+                    ['--proxy-server="%s"' % proxy_server])
         if utils.is_arc_available() and arc_util.should_start_arc(arc_mode):
             if disable_arc_opt_in and disable_arc_opt_in_verification:
                 finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--disable-arc-opt-in-verification'])
+                        ["--disable-arc-opt-in-verification"])
             if disable_arc_cpu_restriction:
                 finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--disable-arc-cpu-restriction'])
+                        ["--disable-arc-cpu-restriction"])
             if disable_app_sync:
                 finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--arc-disable-app-sync'])
+                        ["--arc-disable-app-sync"])
             if disable_play_auto_install:
                 finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--arc-disable-play-auto-install'])
+                        ["--arc-disable-play-auto-install"])
             if disable_locale_sync:
                 finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--arc-disable-locale-sync'])
+                        ["--arc-disable-locale-sync"])
             if disable_play_store_auto_update:
                 finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--arc-play-store-auto-update=off'])
+                        ["--arc-play-store-auto-update=off"])
             logged_in = True
 
         if autotest_ext:
             self._autotest_ext_path = os.path.join(os.path.dirname(__file__),
-                                                   'autotest_private_ext')
+                                                   "autotest_private_ext")
             extension_paths.append(self._autotest_ext_path)
             finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--allowlisted-extension-id=%s' % self.AUTOTEST_EXT_ID])
+                    ["--allowlisted-extension-id=%s" % self.AUTOTEST_EXT_ID])
 
         self._browser_type = (self.BROWSER_TYPE_LOGIN
                               if logged_in else self.BROWSER_TYPE_GUEST)
         finder_options.browser_type = self.browser_type
 
+        disable_features = ["ExtensionManifestV2Disabled"]
+
         if not enable_web_app_auto_install:
-            finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--disable-features=DefaultWebAppInstallation'])
+            disable_features.append("DefaultWebAppInstallation")
 
         if not auto_login:
             finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--enable-oobe-test-api'])
+                    ["--enable-oobe-test-api"])
 
         if extra_browser_args:
             finder_options.browser_options.AppendExtraBrowserArgs(
-                extra_browser_args)
+                    extra_browser_args)
 
         if enable_features:
             finder_options.browser_options.AppendExtraBrowserArgs(
-                    ['--enable-features=%s' % enable_features])
+                    ["--enable-features=%s" % enable_features])
+
+        finder_options.browser_options.AppendExtraBrowserArgs(
+                ["--disable-features=%s" % ",".join(disable_features)])
 
         # finder options must be set before parse_args(), browser options must
         # be set before Create().
@@ -240,7 +248,8 @@ class Chrome(object):
         b_options.dont_override_profile = dont_override_profile
         b_options.disable_gaia_services = disable_gaia_services
         b_options.disable_default_apps = disable_default_apps
-        b_options.disable_component_extensions_with_background_pages = disable_default_apps
+        b_options.disable_component_extensions_with_background_pages = (
+                disable_default_apps)
         b_options.disable_background_networking = False
         b_options.expect_policy_fetch = expect_policy_fetch
         b_options.auto_login = auto_login
@@ -265,42 +274,43 @@ class Chrome(object):
             extensions_to_load = b_options.extensions_to_load
             for path in extension_paths:
                 extension = extension_to_load.ExtensionToLoad(
-                    path, self.browser_type)
+                        path, self.browser_type)
                 extensions_to_load.append(extension)
             self._extensions_to_load = extensions_to_load
 
         # Turn on collection of Chrome coredumps via creation of a magic file.
         # (Without this, Chrome coredumps are trashed.)
-        open(constants.CHROME_CORE_MAGIC_FILE, 'w').close()
+        open(constants.CHROME_CORE_MAGIC_FILE, "w").close()
 
-        self._browser_to_create = browser_finder.FindBrowser(
-            finder_options)
+        self._browser_to_create = browser_finder.FindBrowser(finder_options)
         self._browser_to_create.SetUpEnvironment(b_options)
         for i in range(num_tries):
             try:
                 self._browser = self._browser_to_create.Create()
-                self._browser_pid = \
-                    cros_interface.CrOSInterface().GetChromePid()
+                self._browser_pid = (
+                        cros_interface.CrOSInterface().GetChromePid())
                 if utils.is_arc_available():
                     if disable_arc_opt_in:
                         if arc_util.should_start_arc(arc_mode):
                             arc_util.enable_play_store(self.autotest_ext, True)
                     else:
                         if not enterprise_arc_test:
-                            wait_for_provisioning = \
-                                arc_mode != arc_common.ARC_MODE_ENABLED_ASYNC
+                            wait_for_provisioning = (
+                                    arc_mode
+                                    != arc_common.ARC_MODE_ENABLED_ASYNC)
                             arc_util.opt_in(
-                                browser=self.browser,
-                                autotest_ext=self.autotest_ext,
-                                wait_for_provisioning=wait_for_provisioning)
+                                    browser=self.browser,
+                                    autotest_ext=self.autotest_ext,
+                                    wait_for_provisioning=wait_for_provisioning,
+                            )
                     arc_util.post_processing_after_browser(self, arc_timeout)
                 if enable_assistant:
                     assistant_util.enable_assistant(self.autotest_ext)
                 break
             except exceptions.LoginException as e:
-                logging.error('Timed out logging in, tries=%d, error=%s',
-                              i, repr(e))
-                if i == num_tries-1:
+                logging.error("Timed out logging in, tries=%d, error=%s", i,
+                              repr(e))
+                if i == num_tries - 1:
                     raise
         if init_network_controller:
             self._browser.platform.network_controller.Open()
@@ -321,6 +331,7 @@ class Chrome(object):
 
     def get_extension(self, extension_path, retry=5):
         """Fetches a telemetry extension instance given the extension path."""
+
         def _has_ext(ext):
             """
             Return True if the extension is fully loaded.
@@ -340,8 +351,7 @@ class Chrome(object):
 
         for ext in self._extensions_to_load:
             if extension_path == ext.path:
-                utils.poll_for_condition(lambda: _has_ext(ext),
-                                         timeout=retry)
+                utils.poll_for_condition(lambda: _has_ext(ext), timeout=retry)
                 return self.browser.extensions[ext]
         return None
 
@@ -357,15 +367,15 @@ class Chrome(object):
         if not ext:
             return None
 
-        ext.ExecuteJavaScript('''
+        ext.ExecuteJavaScript("""
             window.__login_status = null;
             chrome.autotestPrivate.loginStatus(function(s) {
               window.__login_status = s;
             });
-        ''')
+        """)
         return utils.poll_for_condition(
-            lambda: ext.EvaluateJavaScript('window.__login_status'),
-            timeout=10)
+                lambda: ext.EvaluateJavaScript("window.__login_status"),
+                timeout=10)
 
     def disable_dim_display(self):
         """Avoid dim display.
@@ -377,7 +387,7 @@ class Chrome(object):
             return False
         try:
             ext.ExecuteJavaScript(
-                    '''chrome.power.requestKeepAwake("display")''')
+                    """chrome.power.requestKeepAwake("display")""")
         except:
             logging.error("failed to disable dim display")
             return False
@@ -393,15 +403,15 @@ class Chrome(object):
         if not ext:
             return None
 
-        ext.ExecuteJavaScript('''
+        ext.ExecuteJavaScript("""
             window.__items = null;
             chrome.autotestPrivate.getVisibleNotifications(function(items) {
               window.__items  = items;
             });
-        ''')
-        if ext.EvaluateJavaScript('window.__items') is None:
+        """)
+        if ext.EvaluateJavaScript("window.__items") is None:
             return None
-        return ext.EvaluateJavaScript('window.__items')
+        return ext.EvaluateJavaScript("window.__items")
 
     @property
     def browser_type(self):
@@ -431,14 +441,15 @@ class Chrome(object):
         _cri = cros_interface.CrOSInterface()
         pid = _cri.GetChromePid()
         Chrome.did_browser_crash(func)
-        utils.poll_for_condition(
-            lambda: pid != _cri.GetChromePid(), timeout=60)
+        utils.poll_for_condition(lambda: pid != _cri.GetChromePid(),
+                                 timeout=60)
         browser.WaitForBrowserToComeUp()
 
     def wait_for_browser_to_come_up(self):
         """Waits for the browser to come up. This should only be called after a
         browser crash.
         """
+
         def _BrowserReady(cr):
             tabs = []  # Wrapper for pass by reference.
             if self.did_browser_crash(
@@ -448,13 +459,13 @@ class Chrome(object):
                 tabs[0].Close()
             except:
                 # crbug.com/350941
-                logging.error('Timed out closing tab')
+                logging.error("Timed out closing tab")
             return True
+
         py_utils.WaitFor(lambda: _BrowserReady(self), timeout=10)
 
     def close(self):
-        """Closes the browser.
-        """
+        """Closes the browser."""
         try:
             if utils.is_arc_available():
                 arc_util.pre_processing_before_close(self)

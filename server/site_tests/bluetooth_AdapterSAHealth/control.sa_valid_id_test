@@ -27,7 +27,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = 'suite:bvt-perbuild, suite:bluetooth_sa, suite:distributed_lab_qual_bvt_shard1, group:release-health, release-health_bt'
+ATTRIBUTES = 'suite:bluetooth_sa'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL'
 

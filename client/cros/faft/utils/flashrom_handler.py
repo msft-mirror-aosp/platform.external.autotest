@@ -10,6 +10,7 @@ flashrom chip and to parse the flash rom image.
 See docstring for FlashromHandler class below.
 """
 
+import ctypes
 import hashlib
 import logging
 import os
@@ -566,7 +567,9 @@ class FlashromHandler(object):
             _, gbb_flags = struct.unpack_from(gbb_header_format, gbb_section)
         except struct.error as e:
             raise FlashromHandlerError(e)
-        return gbb_flags
+        # xmlrpc only supports 32bit signed ingegers. Convert it to a supported
+        # value.
+        return ctypes.c_int32(gbb_flags).value
 
     def set_gbb_flags(self, flags, write_through=False):
         """Retrieve the GBB flags"""

@@ -916,7 +916,9 @@ class FirmwareTest(test.test):
         @param reboot: If true, then this method will reboot the DUT if certain
                        flags are modified.
         """
-        gbb_flags = self.faft_client.bios.get_gbb_flags()
+        # xmlrpc sends 32bit ints. Convert it to uint32.
+        gbb_flags = ctypes.c_uint32(
+                self.faft_client.bios.get_gbb_flags()).value
         new_flags = gbb_flags & ctypes.c_uint32(~clear_mask).value | set_mask
         if new_flags == gbb_flags:
             logging.info(

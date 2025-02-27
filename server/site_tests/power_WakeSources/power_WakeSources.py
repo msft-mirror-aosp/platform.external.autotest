@@ -26,18 +26,29 @@ TABLET_MODE = autotest_enum.AutotestEnum('ON', 'OFF', 'RESET')
 
 # List of wake sources expected to cause a full resume.
 FULL_WAKE_SOURCES = [
-        'USB_KB', 'INTERNAL_KB', 'PWR_BTN', 'LID_OPEN', 'BASE_ATTACH',
+        'INTERNAL_KB', 'PWR_BTN', 'USB_KB', 'LID_OPEN', 'BASE_ATTACH',
         'BASE_DETACH', 'TABLET_MODE_ON', 'TABLET_MODE_OFF'
 ]
 
 # Alternate List of wake sources expected to cause a full resume.
 FULL_WAKE_SOURCES_ALTERNATE = [
-        'INTERNAL_KB', 'PWR_BTN', 'USB_KB', 'LID_OPEN', 'BASE_ATTACH',
+        'USB_KB', 'INTERNAL_KB', 'PWR_BTN', 'LID_OPEN', 'BASE_ATTACH',
         'BASE_DETACH', 'TABLET_MODE_ON', 'TABLET_MODE_OFF'
 ]
 
-# Set of model need to run internal KB before USB KB.
-ALTERNATE_MODELS = ("wugtrio", )
+# Set of model need to run USB KB before internal KB.
+ALTERNATE_MODELS = (
+        "arcada",
+        "boten",
+        "damu",
+        "drallion",
+        "drallion360",
+        "esche",
+        "fennel",
+        "kappa",
+        "katsu",
+        "tomato",
+)
 
 # List of wake sources expected to cause a dark resume.
 DARK_RESUME_SOURCES = ['RTC', 'AC_CONNECTED', 'AC_DISCONNECTED']

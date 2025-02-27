@@ -60,6 +60,10 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
             # Disable runtime MCTS downloads as we use android*-tests-dev build.
             # https://docs.partner.android.com/gms/testing/overview/test-improvement-request-guide#verify-tot-builds
             env['ENABLE_XTS_DYNAMIC_DOWNLOADER'] = 'false'
+        else:
+            # TODO(b/339791684): Enable ATS console on qual/public jobs after
+            # blockers are fixed and DEV jobs are stabilized.
+            env['USE_ATS'] = 'false'
         return env
 
     def initialize_camerabox(self, camera_facing, cmdline_args):

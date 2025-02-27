@@ -102,6 +102,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
     _CACHE_SERVER_URL_PATTERN = 'http://%s:8082'
     _CACHE_SERVER_HEALTH_CHECK_PATTERN = f'{_CACHE_SERVER_URL_PATTERN}/check_health'
 
+    _NO_UPDATE = 'no update'
+
     def initialize(self, host=None, **kwargs):
         """
         Sets default variables for the test.
@@ -1225,8 +1227,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
             for row in reader:
                 if row[0].startswith(board):
-                    target_build = row[target_build_idx]
-                    target_cr = row[target_cr_idx]
+                    if (row[target_build_idx].strip() != self._NO_UPDATE
+                            and row[target_cr_idx].strip() != self._NO_UPDATE):
+                        target_build = row[target_build_idx]
+                        target_cr = row[target_cr_idx]
                     break
 
         serving_builds_data = {}

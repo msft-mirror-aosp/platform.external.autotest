@@ -5,10 +5,10 @@
 AUTHOR = 'n/a'
 NAME = 'googlemeetcuj_plus_class'
 METADATA = {
-    "contacts": ["chromeos-perf-reliability-eng@google.com", "asadrieh@google.com"],
+    "contacts": ["chromeos-perf-reliability-eng@google.com"],
     "bug_component": "b:1025042",
     "criteria": "Tauto wrapper for SPRITE` v1 Tast test.",
-    "hw_agnostic": True
+    "hw_agnostic": True,
 }
 ATTRIBUTES = 'suite:performance_cuj_sprite'
 TIME = 'long'

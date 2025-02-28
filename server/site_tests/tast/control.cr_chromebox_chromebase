@@ -19,8 +19,8 @@ REQUIRE_SSP = True
 
 METADATA = {
     'contacts': ['cros-device-enablement@google.com'],
-    # ChromeOS>Software>System Services>Connectivity
-    'bug_component': 'b:1318544',
+    # ChromeOS > Software > Fundamentals > Device Enablement > Connectivity
+    'bug_component': 'b:1131775',
     'criteria': 'All connectivity OOBE tests that needs to run on chromebox/base ',
     'hw_agnostic': False,
 }

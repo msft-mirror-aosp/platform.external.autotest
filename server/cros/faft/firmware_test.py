@@ -36,6 +36,7 @@ from autotest_lib.server.cros.servo import chrome_base_ec
 from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.server.cros.servo import chrome_ec
 from autotest_lib.server.cros.servo import chrome_ti50
+from autotest_lib.server.cros.servo import chrome_ti50_nt
 from autotest_lib.server.cros.servo import servo
 from autotest_lib.site_utils import test_runner_utils
 import six
@@ -268,8 +269,13 @@ class FirmwareTest(test.test):
                 gsc_chip = self.servo.get("gsc_chip")
                 if chrome_cr50.CHIP_NAME in gsc_chip:
                     gsc = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
+                    logging.info('Setup Cr50 GSC')
                 elif chrome_ti50.CHIP_NAME in gsc_chip:
                     gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
+                    logging.info('Setup Ti50 DT GSC')
+                elif chrome_ti50_nt.CHIP_NAME in gsc_chip:
+                    gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
+                    logging.info('Setup Ti50 NT GSC')
                 else:
                     logging.warning("Unsupported gsc %r", gsc_version)
             else:

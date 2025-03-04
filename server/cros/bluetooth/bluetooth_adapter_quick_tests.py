@@ -142,7 +142,6 @@ class BluetoothAdapterQuickTests(
                         args_dict=None,
                         start_browser=False,
                         floss=False,
-                        llprivacy=False,
                         floss_lm_quirk=False,
                         enable_cellular=False,
                         enable_ui=False,
@@ -162,7 +161,6 @@ class BluetoothAdapterQuickTests(
         self.use_btpeer = use_btpeer
         self.floss = floss
         self.local_host_ip = None
-        self.llprivacy = llprivacy
         self.floss_lm_quirk = floss_lm_quirk
         self.args_dict = args_dict if args_dict else {}
         self._dr_utils = None
@@ -328,7 +326,8 @@ class BluetoothAdapterQuickTests(
                                   supports_floss=False,
                                   use_all_peers=False,
                                   minimum_kernel_version='',
-                                  minimum_cros_milestone=None):
+                                  minimum_cros_milestone=None,
+                                  llprivacy=False):
         """A decorator providing a wrapper to a quick test.
         Using the decorator a test method can implement only the core
         test and let the decorator handle the quick test wrapper methods
@@ -380,8 +379,8 @@ class BluetoothAdapterQuickTests(
         @param minimum_cros_milestone: Raises TestNA on less than this
                                        milestone and doesn't attempt to run
                                        the tests.
+        @param llprivacy: Enable LL privacy for the test.
         """
-
         base_class = bluetooth_quick_tests_base.BluetoothQuickTestsBase
         return base_class.quick_test_test_decorator(
                 test_name,
@@ -398,7 +397,8 @@ class BluetoothAdapterQuickTests(
                 skip_chipsets=skip_chipsets,
                 skip_common_errors=skip_common_errors,
                 minimum_kernel_version=minimum_kernel_version,
-                minimum_cros_milestone=minimum_cros_milestone)
+                minimum_cros_milestone=minimum_cros_milestone,
+                llprivacy=llprivacy)
 
     def quick_test_test_pretest(self,
                                 test_name=None,

@@ -52,7 +52,7 @@ class bluetooth_AdapterLLPrivacyHealth(
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator
 
-    def _test_mouse(self, device):
+    def _test_mouse_with_llp(self, device):
         """Function to test the mouse is working.
 
         When the peer is using a RPA, the peer device will have two addresses.
@@ -277,7 +277,8 @@ class bluetooth_AdapterLLPrivacyHealth(
 
     @test_wrapper('Monitor Object Health Tests',
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def advmon_monitor_health_tests(self):
         """Tests advertisement monitor object health."""
         self.advmon_test_monitor_creation()
@@ -286,27 +287,32 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Reconnect Classic HID',
                   devices={'MOUSE': 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def sr_reconnect_classic_hid(self):
         """ Reconnects a classic HID device after suspend/resume. """
         device_type = 'MOUSE'
         device = self.devices[device_type][0]
-        self.run_reconnect_device([(device_type, device, self._test_mouse)])
+        self.run_reconnect_device([(device_type, device,
+                                    self._test_mouse_with_llp)])
 
     @test_wrapper('Reconnect LE HID',
                   devices={'BLE_MOUSE': 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def sr_reconnect_le_hid(self):
         """ Reconnects a LE HID device after suspend/resume. """
         device_type = 'BLE_MOUSE'
         device = self.devices[device_type][0]
-        self.run_reconnect_device([(device_type, device, self._test_mouse)])
+        self.run_reconnect_device([(device_type, device,
+                                    self._test_mouse_with_llp)])
 
     @test_wrapper('Reconnect LE HID',
                   devices={'BLE_MOUSE': 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def sr_reconnect_le_hid_with_rpa(self):
         """ Reconnects a LE HID device in privacy mode after suspend/resume. """
         # b/330637283: The LL privacy status is not restored after resume for
@@ -319,21 +325,23 @@ class bluetooth_AdapterLLPrivacyHealth(
         device_type = 'BLE_MOUSE'
         device = self.devices[device_type][0]
         self.run_reconnect_device_with_rpa(
-                [(device_type, device, self._test_mouse)], rpa_timeout=30)
+                [(device_type, device, self._test_mouse_with_llp)],
+                rpa_timeout=30)
 
     @test_wrapper('Peer wakeup Classic HID',
                   devices={'MOUSE': 1},
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def sr_peer_wake_classic_hid(self):
         """ Use classic HID device to wake from suspend. """
         device = self.devices['MOUSE'][0]
         self.run_peer_wakeup_device(
                 'MOUSE',
                 device,
-                device_test=self._test_mouse,
+                device_test=self._test_mouse_with_llp,
                 should_retry_connect=(self.quick_test_get_model_name()
                                       in SUSPEND_FLAKY_USB_CONNECTION_MODELS))
 
@@ -342,13 +350,14 @@ class bluetooth_AdapterLLPrivacyHealth(
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def sr_peer_wake_le_hid(self):
         """ Use LE HID device to wake from suspend. """
         device = self.devices['BLE_MOUSE'][0]
         self.run_peer_wakeup_device('BLE_MOUSE',
                                     device,
-                                    device_test=self._test_mouse)
+                                    device_test=self._test_mouse_with_llp)
 
     # TODO(b/163143005) - Hana can't handle two concurrent HID connections
     @test_wrapper('Reconnect Multiple Classic HID',
@@ -358,10 +367,12 @@ class bluetooth_AdapterLLPrivacyHealth(
                   },
                   skip_models=['hana'],
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def sr_reconnect_multiple_classic_hid(self):
         """ Reconnects multiple classic HID devices after suspend/resume. """
-        devices = [('MOUSE', self.devices['MOUSE'][0], self._test_mouse),
+        devices = [('MOUSE', self.devices['MOUSE'][0],
+                    self._test_mouse_with_llp),
                    ('KEYBOARD', self.devices['KEYBOARD'][0],
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
@@ -372,13 +383,14 @@ class bluetooth_AdapterLLPrivacyHealth(
                           'KEYBOARD': 1
                   },
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def sr_reconnect_multiple_classic_le_hid(self):
         """ Reconnects one of each classic and LE HID devices after
             suspend/resume.
         """
         devices = [('BLE_MOUSE', self.devices['BLE_MOUSE'][0],
-                    self._test_mouse),
+                    self._test_mouse_with_llp),
                    ('KEYBOARD', self.devices['KEYBOARD'][0],
                     self._test_keyboard_with_string)]
         self.run_reconnect_device(devices)
@@ -387,7 +399,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={'BLE_MOUSE': 1},
                   flags=['Quick Health'],
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_connect_disconnect_by_device_loop(self):
         """Run connect/disconnect loop initiated by device.
            The test also checks that there are no undesired
@@ -404,7 +417,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Connect Disconnect Loop',
                   devices={'BLE_MOUSE': 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_connect_disconnect_loop(self):
         """Run connect/disconnect loop initiated by DUT.
            The test also checks that there are no undesired
@@ -422,7 +436,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={'BLE_MOUSE': 1},
                   flags=['Quick Health'],
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_hid_reconnect_speed(self):
         """Test the speed of a LE HID device reconnect to DUT"""
 
@@ -432,7 +447,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Auto Reconnect',
                   devices={'BLE_MOUSE': 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_auto_reconnect(self):
         """LE reconnection loop by resetting HID and check reconnection"""
 
@@ -445,7 +461,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('LE Receiver Role Test',
                   devices={'BLE_KEYBOARD': 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_role_receiver(self):
         """Tests basic Nearby Receiver role"""
 
@@ -464,7 +481,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('LE Sender Role Test',
                   devices={'BLE_KEYBOARD': 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_role_sender(self):
         """Tests basic Nearby Sender role"""
 
@@ -483,7 +501,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                           'BLE_MOUSE': 1
                   },
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_role_sender_during_hid(self):
         """Tests Nearby Sender role while already connected to HID device"""
 
@@ -506,7 +525,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={"BLE_MOUSE": 1},
                   minimum_kernel_version='4.19',
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_address_resolution_power_cycle(self):
         """Test RPA is used when pairing and address resolution is enabled with
         LL privacy enabled.
@@ -530,7 +550,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Pair Remove Use RPA with Privacy Mode Test',
                   devices={"BLE_MOUSE": 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_pair_remove_privacy(self):
         """Performs discovery test with mouse peripheral and pairing with
         RPA.
@@ -554,7 +575,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Pair Remove Use IRK with Privacy Mode Test',
                   devices={"BLE_MOUSE": 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_pair_remove_with_irk(self):
         """Performs discovery test with mouse peripheral which is in privacy
         mode, but not using LE advertising.
@@ -582,7 +604,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('RPA Timeout Test',
                   devices={"BLE_MOUSE": 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def privacy_rpa_timeout(self):
         """Change RPA timeout"""
         device = self.devices['BLE_MOUSE'][0]
@@ -618,7 +641,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                   devices={"BLE_MOUSE": 1},
                   minimum_cros_milestone=134,
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_auto_reconnect_reboot_with_host_privacy(self):
         """Test auto reconnect after DUT reboot for a non-privacy mode peer."""
         device = self.devices['BLE_MOUSE'][0]
@@ -628,7 +652,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Reconnect Test By Host',
                   devices={"BLE_MOUSE": 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_auto_reconnect_with_privacy(self):
         """Test auto reconnect after adapter reboot with device RPA rotation."""
         device = self.devices['BLE_MOUSE'][0]
@@ -641,7 +666,8 @@ class bluetooth_AdapterLLPrivacyHealth(
     @test_wrapper('Reconnect Test By Device',
                   devices={"BLE_MOUSE": 1},
                   skip_chipsets=LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def le_auto_reconnect_with_privacy_by_device(self):
         """Test auto reconnect after device disconnect with device RPA rotation."""
         device = self.devices['BLE_MOUSE'][0]
@@ -657,7 +683,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                   skip_models=TABLET_MODELS + SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS +
                   LL_PRIVACY_NOT_SUPPORTED_CHIPSETS,
-                  supports_floss=True)
+                  supports_floss=True,
+                  llprivacy=True)
     def sr_peer_wake_le_hid_with_rpa(self):
         """Use LE HID to wake from suspend."""
         # b/324975178 LL privacy is not planned to launch in BlueZ. Skip
@@ -671,7 +698,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                 raise error.TestNAError("Test not supported in tablet mode.")
 
         device = self.devices['BLE_MOUSE'][0]
-        self.run_hid_wakeup_with_rpa(device, device_test=self._test_mouse)
+        self.run_hid_wakeup_with_rpa(device,
+                                     device_test=self._test_mouse_with_llp)
 
     @batch_wrapper("LL Privacy Health")
     def ll_privacy_batch_run(self, num_iterations=1, test_name=None):
@@ -694,7 +722,6 @@ class bluetooth_AdapterLLPrivacyHealth(
                  peer_required=True,
                  test_name=None,
                  flag='Quick Health',
-                 llprivacy=True,
                  floss=False):
         """Run the package of Bluetooth LL privacy health tests. Currently,
         the tests are directly copied from other test packages, but with
@@ -717,7 +744,6 @@ class bluetooth_AdapterLLPrivacyHealth(
                              use_btpeer=peer_required,
                              flag=flag,
                              args_dict=args_dict,
-                             llprivacy=llprivacy,
                              floss=floss)
         self.ll_privacy_batch_run(num_iterations, test_name)
         # End and cleanup test package

@@ -117,7 +117,8 @@ class BluetoothQuickTestsBase(object):
                                   skip_chipsets=None,
                                   skip_common_errors=False,
                                   minimum_kernel_version='',
-                                  minimum_cros_milestone=None):
+                                  minimum_cros_milestone=None,
+                                  llprivacy=False):
         """A decorator providing a wrapper to a quick test.
 
         Using the decorator a test method can implement only the core
@@ -187,6 +188,7 @@ class BluetoothQuickTestsBase(object):
                 # Set test name before exiting so batches correctly identify
                 # failing tests
                 self.test_name = test_name
+                self.llprivacy = llprivacy
 
                 # Reset failure info before running any check, so
                 # quick_test_test_log_results() can judge the result correctly.

@@ -20,7 +20,7 @@ from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server.cros.servo import chrome_ec
 from autotest_lib.server.cros.servo import servo
 
-CHIP_NAME = 'cr50'
+FW_NAME = 'cr50'
 
 def dts_control_command(func):
     """For methods that should only run when dts mode control is supported."""
@@ -96,7 +96,7 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     MAX_RETRY_COUNT = 10
     CCDSTATE_MAX_RETRY_COUNT = 20
     START_STR = ['((Havn|UART).*Console is enabled;)']
-    NAME = CHIP_NAME
+    NAME = FW_NAME
     REBOOT_DELAY_WITH_CCD = 60
     REBOOT_DELAY_WITH_FLEX = 3
     ON_STRINGS = ['enable', 'enabled', 'on']

@@ -263,9 +263,9 @@ class FirmwareTest(test.test):
         gsc = None
         try:
             gsc_version = self.servo.get("gsc_version")
-            if chrome_cr50.CHIP_NAME in gsc_version:
+            if chrome_cr50.FW_NAME in gsc_version:
                 gsc = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
-            elif chrome_ti50.CHIP_NAME in gsc_version:
+            elif chrome_ti50.FW_NAME in gsc_version:
                 gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
             else:
                 logging.warning("Unsupported gsc %r", gsc_version)

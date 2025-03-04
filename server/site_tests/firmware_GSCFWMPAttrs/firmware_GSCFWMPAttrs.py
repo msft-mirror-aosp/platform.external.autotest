@@ -114,7 +114,7 @@ class firmware_GSCFWMPAttrs(FirmwareTest):
 
         # Cr50 devices are the only ones where coreboot may not reinitialize the
         # FWMP.
-        if self.gsc.NAME != chrome_cr50.CHIP_NAME:
+        if self.gsc.NAME != chrome_cr50.FW_NAME:
             raise error.TestFail('FWMP not initialized on non-cr50 device')
 
         # Set the FWMP

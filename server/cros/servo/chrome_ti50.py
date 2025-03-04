@@ -10,7 +10,7 @@ import re
 from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.client.common_lib import error
 
-CHIP_NAME = 'ti50'
+FW_NAME = 'ti50'
 
 class ChromeTi50(chrome_cr50.ChromeCr50):
     """Manages control of a Chrome Ti50.
@@ -23,7 +23,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     PROD_RW_KEYIDS = ['0xfba25ca9']
     PROD_RO_KEYIDS = ['0xc7d40497']
     START_STR = ['ti50_common']
-    NAME = CHIP_NAME
+    NAME = FW_NAME
     BID_RE = r'Board ID: (\S{8}):?(|\S{8}), flags: (\S{8})\s'
     CCD_PW_DENIED = 'failed: ParamCount'
 

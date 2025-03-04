@@ -133,6 +133,8 @@ class ChromeLogin(object):
         cmd += ' --disable-feature=ArcExternalStorageAccess'
         # TODO(b/398872739): Upgrade tauto extentsions to manifest v3.
         cmd += ' --disable-feature=ExtensionManifestV2Disabled'
+        # TODO(b/355073720): Revert before M136 branch cut
+        cmd += ' --feature=RenderArcNotificationsByChrome'
         # Toggle the translation from houdini to ndk
         if self._toggle_ndk:
             cmd += ' --toggle_ndk'

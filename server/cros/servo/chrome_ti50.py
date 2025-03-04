@@ -11,6 +11,7 @@ from autotest_lib.server.cros.servo import chrome_cr50
 from autotest_lib.client.common_lib import error
 
 FW_NAME = 'ti50'
+CHIP_NAME = 'g ti50 d'
 
 class ChromeTi50(chrome_cr50.ChromeCr50):
     """Manages control of a Chrome Ti50.

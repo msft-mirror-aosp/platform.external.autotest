@@ -21,6 +21,7 @@ from autotest_lib.server.cros.servo import chrome_ec
 from autotest_lib.server.cros.servo import servo
 
 FW_NAME = 'cr50'
+CHIP_NAME = 'g cr50'
 
 def dts_control_command(func):
     """For methods that should only run when dts mode control is supported."""

@@ -262,13 +262,24 @@ class FirmwareTest(test.test):
             self.usbpd = self.ec
         gsc = None
         try:
-            gsc_version = self.servo.get("gsc_version")
-            if chrome_cr50.FW_NAME in gsc_version:
-                gsc = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
-            elif chrome_ti50.FW_NAME in gsc_version:
-                gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
+            # TODO(b/400720649): stop using gsc_version after the labstation
+            # supports gsc_chip.
+            if self.servo.has_control("gsc_chip"):
+                gsc_chip = self.servo.get("gsc_chip")
+                if chrome_cr50.CHIP_NAME in gsc_chip:
+                    gsc = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
+                elif chrome_ti50.CHIP_NAME in gsc_chip:
+                    gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
+                else:
+                    logging.warning("Unsupported gsc %r", gsc_version)
             else:
-                logging.warning("Unsupported gsc %r", gsc_version)
+                gsc_version = self.servo.get("gsc_version")
+                if chrome_cr50.FW_NAME in gsc_version:
+                    gsc = chrome_cr50.ChromeCr50(self.servo, self.faft_config)
+                elif chrome_ti50.FW_NAME in gsc_version:
+                    gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
+                else:
+                    logging.warning("Unsupported gsc %r", gsc_version)
             if gsc:
                 self.gsc = gsc
         except servo.ControlUnavailableError:

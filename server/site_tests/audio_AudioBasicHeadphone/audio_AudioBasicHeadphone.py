@@ -69,6 +69,9 @@ class audio_AudioBasicHeadphone(audio_test.AudioTest):
                     self.facade,
                     audio_test_utils.get_headphone_node(self.host), None)
 
+            # Set the volume to 100 after selecting the node.
+            self.facade.set_chrome_active_volume(100)
+
             logging.info('Setting playback data on Cros device')
             source.set_playback_data(golden_file)
 

@@ -279,7 +279,10 @@ class firmware_Cr50DeviceState(Cr50Test):
                 if self.gsc.SLEEP_RATE == 0:
                     min_count = 1
                 else:
-                    min_count = cr50_time - self.gsc.DEEP_SLEEP_DELAY
+                    # GSC might wake up due to tpm activity. Make the min count
+                    # more lenient.
+                    min_count = max(1,
+                                    cr50_time - self.gsc.DEEP_SLEEP_DELAY - 10)
             else:
                 min_count = 0
             # Check that cr50 isn't continuously entering and exiting sleep.

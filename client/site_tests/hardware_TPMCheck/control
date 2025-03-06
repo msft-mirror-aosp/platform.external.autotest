@@ -4,7 +4,7 @@
 
 AUTHOR = "n/a"
 NAME = "hardware_TPMCheck"
-ATTRIBUTES = "suite:kernel_per-build_regression, suite:pvs-kernel, suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv1"
+ATTRIBUTES = "suite:kernel_per-build_regression, suite:pvs-kernel, suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_lv1, suite:faft_bios_autotests"
 PURPOSE = "Basic check of the TPM state"
 CRITERIA = "Check that the TPM is in the expected state for use in ChromeOS."
 METADATA = {

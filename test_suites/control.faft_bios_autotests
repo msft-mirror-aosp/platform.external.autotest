@@ -1,0 +1,31 @@
+# Copyright 2020 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "jbettis"
+NAME = "faft_bios_autotests"
+PURPOSE = "The remaining faft_bios tests that are not in TAST"
+METADATA = {
+        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
+        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
+        "criteria": "The remaining faft_bios tests that are not in TAST."
+}
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+DOC = """
+This test suite verifies if the AP firmware is ready for RO+RW production
+release. Most tests are in TAST, this suite is the remainder that are not.
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = 'faft_bios_autotests'
+args_dict['job'] = job
+args_dict['add_experimental'] = True
+
+dynamic_suite.reimage_and_run(**args_dict)

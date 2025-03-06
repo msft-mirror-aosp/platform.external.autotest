@@ -737,6 +737,7 @@ suite:enterprise-reporting_per-build
 suite:experimental
 suite:factory
 suite:faft_bios
+suite:faft_bios_autotests
 suite:faft_bios_ro_qual
 suite:faft_bios_rw_qual
 suite:faft_ccd

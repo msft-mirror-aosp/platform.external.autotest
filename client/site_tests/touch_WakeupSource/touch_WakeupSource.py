@@ -62,33 +62,35 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
             raise error.TestError('No device directory for %s!' % input_type)
 
         filename = os.path.join(device_dir, 'power', 'wakeup')
-        if not os.path.isfile(filename):
-            logging.info('%s not found for %s', filename, input_type)
+        if os.path.isfile(filename):
+            return filename
 
-            # Look for wakeup file on parent bus instead.
-            event = self.player.devices[input_type].node.split('/')[-1]
+        logging.info('%s not found for %s', filename, input_type)
 
-            parent = None
-            i2c_devices_dir = os.path.join('/', 'sys', 'bus', 'i2c', 'devices')
-            for device_dir in os.listdir(i2c_devices_dir):
-                event_search = os.path.join(i2c_devices_dir, device_dir, '*',
-                                            'input', 'input*', event)
-                match_count = utils.run('ls %s 2>/dev/null | wc -l' % (
-                        event_search)).stdout.strip()
+        # Look for wakeup file on parent bus instead.
+        event = self.player.devices[input_type].node.split('/')[-1]
+
+        bus_types = ["i2c", "usb"]
+        for bus in bus_types:
+            devices_dir = os.path.join('/', 'sys', 'bus', bus, 'devices')
+            # USB devices have an additional interface directory layer.
+            subdir_depth = '*/*' if bus == 'usb' else '*'
+            for device_dir in os.listdir(devices_dir):
+                event_search = os.path.join(devices_dir, device_dir,
+                                            subdir_depth, 'input', 'input*',
+                                            event)
+                match_count = utils.run('ls %s 2>/dev/null | wc -l' %
+                                        (event_search)).stdout.strip()
+
                 if int(match_count) > 0:
-                    parent = os.path.join(i2c_devices_dir, device_dir)
-                    break
-            if parent is None:
-                logging.info('Could not find parent bus for %s.', input_type)
-                return None
+                    parent = os.path.join(devices_dir, device_dir)
+                    parent_wakeup = os.path.join(parent, 'power', 'wakeup')
+                    # Check if the wakeup file exists in the loop, as there might be multiple parent directories for USB.
+                    if os.path.isfile(parent_wakeup):
+                        return parent_wakeup
 
-            logging.info('Parent bus of %s is %s.', input_type, parent)
-            filename = os.path.join(parent, 'power', 'wakeup')
-            if not os.path.isfile(filename):
-                logging.info('%s not found either.', filename)
-                return None
-
-        return filename
+        logging.info('Could not find parent bus for %s.', input_type)
+        return None
 
     def _is_wake_source(self, input_type):
         """Return True if the given device is a wake source, else False.

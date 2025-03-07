@@ -12,8 +12,9 @@ TEST_CLASS = "suite"
 TEST_TYPE = "Server"
 
 DOC = """
-All tests in this suite should also be in faft_unstable. The purpose of this
-suite is to allow a small set of tests to be scheduled into the DUT_QUOTA_POOL.
+All tests in this suite should also be in another faft suite. The purpose of
+this suite is to allow a small set of tests to be scheduled into the
+DUT_QUOTA_POOL.
 
 @param build: The name of the image to test.
               Ex: x86-mario-release/R17-1412.33.0-a1-b29

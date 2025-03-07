@@ -753,14 +753,7 @@ CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {
         },
 }
 
-_firmware_sensor_tests = {
-        'CtsSensorTestCases.faft': ['suite:faft_experimental']
-}
-
 CONFIG['PUBLIC_EXTRA_MODULES'] = {
-        'arm': {
-                'CtsSensorTestCases': _firmware_sensor_tests,
-        },
 }
 
 CONFIG['EXTRA_SUBMODULE_OVERRIDE'] = {

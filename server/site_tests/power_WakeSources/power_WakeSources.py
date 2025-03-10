@@ -53,6 +53,9 @@ ALTERNATE_MODELS = (
 # List of wake sources expected to cause a dark resume.
 DARK_RESUME_SOURCES = ['RTC', 'AC_CONNECTED', 'AC_DISCONNECTED']
 
+# List of wake sources required to be tested.
+REQUIRED_SOURCES = ('USB_KB', )
+
 # Time in future after which RTC goes off when testing wake due to RTC alarm.
 RTC_WAKE_SECS = 20
 
@@ -278,10 +281,12 @@ class power_WakeSources(test.test):
             if not servo_keyboard_utils.is_servo_usb_keyboard_present(
                     self._host):
                 logging.error('DUT cannot see a Atmel USB keyboard.')
+                return False
             elif not servo_keyboard_utils.is_servo_usb_wake_capable(
                     self._host):
                 logging.error('Atmel USB keyboard does not have required wake '
                               'capability.')
+                return False
             return True
         if wake_source in ['AC_CONNECTED', 'AC_DISCONNECTED']:
             if not self._host.has_battery():
@@ -495,7 +500,13 @@ class power_WakeSources(test.test):
 
         for ws in full_wake_sources:
             if not self._is_valid_wake_source(ws):
-                skipped_ws.append(ws)
+                if ws in REQUIRED_SOURCES:
+                    failed_ws.append(ws)
+                    fail_msgs.append(
+                            '{wake_source} is required but not valid'.format(
+                                    wake_source=ws))
+                else:
+                    skipped_ws.append(ws)
                 continue
             try:
                 self._test_wake(ws, True)

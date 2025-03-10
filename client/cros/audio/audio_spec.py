@@ -147,6 +147,8 @@ BOARDS_WITH_TWO_INTERNAL_MICS = [
         BoardInfo('zork', 'vilboz360', '1518534662'),
         BoardInfo('keeby', 'lalala', ''),
         BoardInfo('dedede', 'drawcia', ''),
+        BoardInfo('nissa', 'anraggar', ''),
+        BoardInfo('nissa', 'anraggar360', ''),
         BoardInfo('nissa', 'craask', ''),
         BoardInfo('nissa', 'craaskbowl', ''),
         BoardInfo('nissa', 'xivu', ''),
@@ -202,9 +204,6 @@ INTERNAL_MIC_NODE = {
         ('nami', 'sona'): 'FRONT_MIC',
         ('nami', 'syndra'): 'FRONT_MIC',
         ('nami', 'vayne'): 'FRONT_MIC',
-        ('dedede', 'peezer'): 'FRONT_MIC',
-        ('dedede', 'boten'): 'FRONT_MIC',
-        ('nissa', 'craask'): 'FRONT_MIC',
 }
 
 

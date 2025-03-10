@@ -756,8 +756,6 @@ suite:faft_lv3
 suite:faft_lv4
 suite:faft_lv5
 suite:faft_pd
-suite:faft_smoke
-suite:faft_stress
 suite:faft_trial
 suite:faft_ti50_qual
 suite:faft_wilco

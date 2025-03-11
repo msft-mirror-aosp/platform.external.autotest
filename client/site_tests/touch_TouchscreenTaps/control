@@ -8,7 +8,7 @@ METADATA = {
     "bug_component": "b:167277",
     "criteria": "Touchscreen tap works and click count is up.",
     "hw_agnostic": False,
-    'variant_category': '{"name": "Touchscreen_SoC_Controller_ProductId_Variant-def-plus-kernelnext"}',
+    'variant_category': '{"name": "Touchscreen_SoC_Controller_Variant-def-plus-kernelnext"}',
 }
 ATTRIBUTES = "suite:touch_replay_touchscreen, group:release-health, release-health_touch"
 TEST_TYPE = "client"

@@ -8,7 +8,7 @@ METADATA = {
     "bug_component": "b:167253",
     "criteria": "Two finger swipe can navigate back and forth.",
     "hw_agnostic": False,
-    'variant_category': '{"name": "Touchpad_SoC_Controller_ProductId_Variant-def-plus-kernelnext"}',
+    'variant_category': '{"name": "Touchpad_SoC_Controller_Variant-def-plus-kernelnext"}',
 }
 ATTRIBUTES = "suite:touch_replay_touchpad, group:release-health, release-health_touch"
 TEST_TYPE = "client"

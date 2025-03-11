@@ -7,7 +7,8 @@ METADATA = {
     "contacts": ["chromeos-tango@google.com"],
     "bug_component": "b:189315",
     "criteria": "Taps/Clicks from stylus are present, and click count is up.",
-    "hw_agnostic": False
+    "hw_agnostic": False,
+    'variant_category': '{"name": "Stylus_SoC_Controller_Variant-def-plus-kernelnext"}',
 }
 ATTRIBUTES = "suite:touch_replay_stylus, group:release-health, release-health_touch"
 TEST_TYPE = "client"

@@ -473,7 +473,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
     def enter_state(self, state, from_state=''):
         """Get the command to enter the power state"""
-        target_state = state
+        target_ec_state = state
         if state == 'S0':
             if self.lid_closed:
                 logging.info('Open lid')
@@ -493,14 +493,19 @@ class firmware_Cr50DeviceState(Cr50Test):
                 logging.info('Open lid')
                 self.servo.set_nocheck('lid_open', 'no')
                 # It's difficult to tell the target state. Just log what it is.
-                target_state = None
+                target_ec_state = None
             elif state == 'default_suspend':
                 self.faft_client.system.run_shell_command(
                         'powerd_dbus_suspend', False)
                 # It's difficult to tell the target state. Just log what it is.
-                target_state = None
+                target_ec_state = None
             elif state == 'S0ix':
                 self.enter_suspend(state)
+                # On ARM, EC power state S0ix is never supported. Even if
+                # suspend-to-idle is supported in kernel, EC will report S3.
+                if self.is_arm:
+                    logging.info('Setting target_ec_state = S3 on ARM')
+                    target_ec_state = 'S3'
             elif state == 'S3':
                 self.enter_suspend(state)
             elif state == 'G3':
@@ -508,17 +513,17 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         time.sleep(self.ENTER_STATE_WAIT)
         # check state transition
-        if target_state and not self.wait_power_state(
-                state, self.POWER_STATE_CHECK_TRIES):
+        if target_ec_state and not self.wait_power_state(
+                target_ec_state, self.POWER_STATE_CHECK_TRIES):
             self._record_uart_capture()
             from_state = 'from ' + from_state if from_state else ''
             raise error.TestFail(
                     'Platform failed to reach %s state %s. %s' %
                     (state, from_state, self.try_to_get_ap_state()))
         power_state = self.get_power_state()
-        logging.info('%s: Entered %s', state, power_state)
+        logging.info('%s: EC entered %s', state, power_state)
         # If the target state is unknown, track it for logging.
-        self._found_state = '' if target_state else power_state
+        self._found_state = '' if target_ec_state else power_state
 
     def enter_suspend(self, state):
         """Enter S0ix or S3"""

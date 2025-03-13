@@ -33,6 +33,7 @@ _chip_info = {
         'Intel-AX203': ChipInfo(False, True, 0x001e),
         'Intel-AX211': ChipInfo(False, True, 0x001e),
         'Intel-BE200': ChipInfo(False, True, 0x001e),
+        'Intel-BE211': ChipInfo(False, True, 0x001e),
 
         # Realtek chipsets
         'Realtek-RTL8822C-USB': ChipInfo(True, False, 0),

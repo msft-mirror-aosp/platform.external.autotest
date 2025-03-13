@@ -348,6 +348,7 @@ class BluetoothBaseFacadeLocal(object):
                             (('0x8086', '0x54f0'), 'USB'),
                             (('0x8086', '0x7e40'), 'USB')],  # GfP2
             'Intel-BE200': [(('0x8086', '0x272b'), 'USB')],  # GaP2
+            'Intel-BE211': [(('0x8086', '0xe440'), 'PCIE')],  # WhP2
 
             # Realtek chipsets
             'Realtek-RTL8822C-USB': [(('0x10ec', '0xc822'), 'USB')],
@@ -1288,7 +1289,7 @@ class BluetoothBaseFacadeLocal(object):
     def get_bt_transport(self):
         """ Return transport (UART/USB/SDIO) used by BT module
 
-        @returns: USB/UART/SDIO on success; None on failure
+        @returns: USB/UART/SDIO/PCIE on success; None on failure
         """
         index = self._raw_socket.get_hci()
         if index is None:
@@ -1307,6 +1308,8 @@ class BluetoothBaseFacadeLocal(object):
                 return 'UART'
             elif transport in ['btmrvl_sdio', 'btmtksdio']:
                 return 'SDIO'
+            elif transport == 'btintel_pcie':
+                return 'PCIE'
             else:
                 return None
         except Exception as e:

@@ -13,6 +13,7 @@ METADATA = {
     "criteria": "Collect AFDO profiles from Chrome telemetry benchmarks",
 }
 ATTRIBUTES = "suite:AFDO_record"
+DEPENDENCIES = 'label-bot_size:BOT_SIZE_LARGE'
 TEST_TYPE = "server"
 
 DOC = """

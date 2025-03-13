@@ -12,6 +12,10 @@
 #     TIME = 'SHORT'  # Approximately 2 mins
 #     TEST_CATEGORY = 'Functional'
 
+#
+# Note: BQR feature is not yet supported on floss
+#
+
 from autotest_lib.server import utils
 
 NAME = 'bluetooth_AdapterQRHealth.qr_hfp_nbs_dut_as_sink_cl_keyboard_test'

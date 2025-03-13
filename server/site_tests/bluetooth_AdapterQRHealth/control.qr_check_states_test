@@ -11,6 +11,10 @@
 #     TIME = 'SHORT'  # Approximately 4 mins on trogdor/lazor
 #     TEST_CATEGORY = 'Functional'
 
+#
+# Note: BQR feature is not yet supported on floss
+#
+
 from autotest_lib.server import utils
 
 NAME = 'bluetooth_AdapterQRHealth.qr_check_states_test'

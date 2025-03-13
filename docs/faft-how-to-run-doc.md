@@ -272,9 +272,12 @@ To update the firmware using the shellball in the image, specify the argument fi
 
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "image=$IMAGE_FILE firmware_update=1" f:.*RecoveryButton/control.normal`
 
-Run the entire faft_bios suite
+Run the entire faft_bios suite. It is split across autotest and TAST.
 
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_bios`
+```
+$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_bios_autotest
+$ tast run $DUT_IP '("group:firmware" && firmware_bios)'
+```
 
 Run the entire faft_ec suite
 
@@ -292,6 +295,7 @@ To run multiple servo boards on the same servo host (labstation), use serial and
 
 - `$ sudo servod --board=$BOARD --port $port_number --serial $servo_serial_number`
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=localhost servo_port=$port_number faft_iterations=5000" f:.*firmware_ConsecutiveBoot/control`
+- `$ tast run -var=servo=localhost:$port_number $DUT_IP firmware.ECConsole`
 
 ### Running Against DUTs With Tunnelled SSH
 

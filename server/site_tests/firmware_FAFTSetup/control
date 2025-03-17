@@ -7,9 +7,9 @@ from autotest_lib.server import utils
 AUTHOR = "ChromeOS Team"
 NAME = "firmware_FAFTSetup"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org", "peep-fleet-infra-sw@google.com"],
+        "contacts": ["peep-fleet-infra-sw@google.com"],
         "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
-        "criteria": "Servo based diagnose of FAFT hardware setup",
+        "criteria": "Don't use this test, it is obsolete.",
 }
 # This test cannot be added to suite:infra_qual due to unreliability of
 # interaction with USB sticks in the ChromeOS CQ device environment.

@@ -3,7 +3,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""firmware_FAFTSetup test"""
+"""firmware_FAFTSetup test
+
+Do not use this test, it is obsolete.
+"""
 
 import io
 import logging

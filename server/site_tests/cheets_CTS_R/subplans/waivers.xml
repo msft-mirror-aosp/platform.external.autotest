@@ -11,4 +11,5 @@
   <Entry include="CtsMediaTestCases android.media.cts.StreamingMediaPlayerTest#testHTTP_MPEG4SP_AAC_Video1" />
   <!-- b/336047586 -->
   <Entry include="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsShown" />
+  <Entry include="CtsPermissionTestCases android.permission.cts.LocationAccessCheckTest#notificationIsShownAgainAfterUninstallAndReinstall" />
 </SubPlan>

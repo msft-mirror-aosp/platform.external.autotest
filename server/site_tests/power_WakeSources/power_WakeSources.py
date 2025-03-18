@@ -345,7 +345,10 @@ class power_WakeSources(test.test):
         rtc_wake = NET_UP_TIMEOUT
         if wake_source == 'RTC':
             rtc_wake = RTC_WAKE_SECS
-        self._dr_utils.suspend(SECS_FOR_SUSPENDING + rtc_wake)
+        if wake_source == 'LID_OPEN':
+            self._host.servo.lid_close()
+        else:
+            self._dr_utils.suspend(SECS_FOR_SUSPENDING + rtc_wake)
         if self._ec.has_command('powerinfo'):
             suspended = power_server_utils.wait_power_state(
                     self._ec,
@@ -421,8 +424,6 @@ class power_WakeSources(test.test):
         if wake_source == 'PWR_BTN':
             self._host.servo.power_short_press()
         elif wake_source == 'LID_OPEN':
-            self._host.servo.lid_close()
-            time.sleep(WAIT_TIME_LID_TRANSITION_SECS)
             self._host.servo.lid_open()
         elif wake_source == 'BASE_ATTACH':
             self._force_base_state(BASE_STATE.ATTACH)

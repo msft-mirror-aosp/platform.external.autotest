@@ -393,7 +393,7 @@ def runtest(job, url, tag, args, dargs, hw_deps=None):
         except Exception as e:
             if logger:
                 logger.cleanup()
-            raise error.TestWarn('USE flags not found on DUT')
+            raise error.TestWarn('USE flags not found on DUT: %s' % str(e))
 
         if not _should_run and hw_deps:
             if logger:

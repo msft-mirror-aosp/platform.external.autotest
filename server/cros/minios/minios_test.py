@@ -216,7 +216,7 @@ class MiniOsTest(update_engine_test.UpdateEngineTest):
         self._servo.switch_usbkey('off')
         psc = self._servo.get_power_state_controller()
         psc.power_off()
-        self._host.test_wait_for_shutdown(self._MINIOS_SHUTDOWN_TIMEOUT)
+        self._host.wait_down(timeout=self._MINIOS_SHUTDOWN_TIMEOUT)
         psc.power_on(psc.REC_ON)
         logging.info('Waiting for firmware screen')
         time.sleep(self._FIRMWARE_SCREEN_TIMEOUT)

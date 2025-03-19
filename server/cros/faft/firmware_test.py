@@ -341,6 +341,9 @@ class FirmwareTest(test.test):
                     # In this case, try doing a cold_reset instead
                     self.switcher.mode_aware_reboot(reboot_type="cold")
                 else:
+                    # The test is failing. Try to bring the dut up, so it
+                    # doesn't have to wait for a bunch of ssh timeouts.
+                    self._try_to_bring_dut_up()
                     raise
 
         # Check flashrom before first use, to avoid xmlrpclib.Fault.

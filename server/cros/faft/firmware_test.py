@@ -328,23 +328,27 @@ class FirmwareTest(test.test):
         self._record_system_info()
         self.faft_client.system.set_dev_default_boot()
         assert self.faft_client.system.get_fw_vboot2()
-        self.faft_client.system.set_fw_try_next("A")
-        if self.faft_client.system.get_crossystem_value("mainfw_act") == "B":
-            logging.info("mainfw_act is B. rebooting to set it A")
-            # TODO(crbug.com/1018322): remove try/catch once that bug is
-            # marked as fixed and verified. In that case the overlay for
-            # the board itself will map warm_reset to cold_reset.
-            try:
-                self.switcher.mode_aware_reboot()
-            except ConnectionError as e:
-                if "DUT is still up unexpectedly" in str(e):
-                    # In this case, try doing a cold_reset instead
-                    self.switcher.mode_aware_reboot(reboot_type="cold")
-                else:
-                    # The test is failing. Try to bring the dut up, so it
-                    # doesn't have to wait for a bunch of ssh timeouts.
-                    self._try_to_bring_dut_up()
-                    raise
+        # TODO(b/401281346): re-enable setting the FW slot on zork after the bug
+        # has been resolved.
+        if self.faft_config.platform != "zork":
+            self.faft_client.system.set_fw_try_next("A")
+            if self.faft_client.system.get_crossystem_value(
+                    "mainfw_act") == "B":
+                logging.info("mainfw_act is B. rebooting to set it A")
+                # TODO(crbug.com/1018322): remove try/catch once that bug is
+                # marked as fixed and verified. In that case the overlay for
+                # the board itself will map warm_reset to cold_reset.
+                try:
+                    self.switcher.mode_aware_reboot()
+                except ConnectionError as e:
+                    if "DUT is still up unexpectedly" in str(e):
+                        # In this case, try doing a cold_reset instead
+                        self.switcher.mode_aware_reboot(reboot_type="cold")
+                    else:
+                        # The test is failing. Try to bring the dut up, so it
+                        # doesn't have to wait for a bunch of ssh timeouts.
+                        self._try_to_bring_dut_up()
+                        raise
 
         # Check flashrom before first use, to avoid xmlrpclib.Fault.
         if not self.faft_client.bios.is_available():

@@ -245,56 +245,42 @@ Before running any tests, go into the chroot:
     works. If it doesn't, figure that out first. Googlers look at [SshHelp].
 1.  (chroot) There are very few tests left in autotest, and soon will be none,
     but autotest can still run both TAST and Autotests.
-1.  If test_that is in `/usr/bin`, the syntax is `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_ec`
+1.  Run tests with tast
 
-You can omit the --autotest_dir if you have built packages for the board and want to use the build version of the tests, i.e.:
-
-(chroot) `$ ./build_packages --board=$BOARD` where `$BOARD` is the code name of the board under test
-(chroot) `$ /usr/bin/test_that --board=$BOARD $DUT_IP suite:faft_ec`
+    (chroot) `$ tast run $DUT_IP '("group:firmware" && firmware_ec)'`
 
 ### Sample Commands {#sample-commands}
 
 A few sample invocations of launching Autotest tests against a DUT:
 
-Running FAFT test with test case name
+Running autotest test with test case name
 
 - `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP f:.*DevMode/control`
-
-Some tests can be run in either normal mode or dev mode, specify the control file
-
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP f:.*TryFwB/control.dev`
-
-FAFT can install ChromeOS image from the USB when image filename is specified
-
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "image=$IMAGE_FILE" f:.*RecoveryButton/control.normal`
-
-To update the firmware using the shellball in the image, specify the argument firmware_update=1
-
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "image=$IMAGE_FILE firmware_update=1" f:.*RecoveryButton/control.normal`
 
 Run the entire faft_bios suite. It is split across autotest and TAST.
 
 ```
-$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_bios_autotest
+$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_bios_autotests
 $ tast run $DUT_IP '("group:firmware" && firmware_bios)'
 ```
 
 Run the entire faft_ec suite
 
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_ec`
+- `$ tast run $DUT_IP '("group:firmware" && firmware_ec)'`
 
 Run the entire faft_pd suite
 
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP suite:faft_pd`
+- `$ tast run $DUT_IP '("group:firmware" && firmware_pd)'`
 
 To run servod in a different host, specify the servo_host and servo_port arguments.
 
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=$SERVO_HOST servo_port=$SERVO_PORT" suite:faft_ec`
+- `$ tast run -var=servo=$SERVO_HOST:$SERVO_PORT $DUT_IP '("group:firmware" && firmware_ec)'`
 
-To run multiple servo boards on the same servo host (labstation), use serial and port number.
+To run multiple servo boards on the same servo host (labstation), use serial and
+port number when starting servod.
 
-- `$ sudo servod --board=$BOARD --port $port_number --serial $servo_serial_number`
-- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=localhost servo_port=$port_number faft_iterations=5000" f:.*firmware_ConsecutiveBoot/control`
+- `$ start-servod --board=$BOARD --model=$MODEL --port $port_number --serial $servo_serial_number`
+- `$ /usr/bin/test_that --autotest_dir ~/trunk/src/third_party/autotest/files/ --board=$BOARD $DUT_IP --args "servo_host=localhost servo_port=$port_number" suite:faft_bios_autotests`
 - `$ tast run -var=servo=localhost:$port_number $DUT_IP firmware.ECConsole`
 
 ### Running Against DUTs With Tunnelled SSH
@@ -325,7 +311,7 @@ Local execution via go/faft-running may be required to debug layers of
 accumulated problems in boards where end-to-end integration tests lack an
 effective continuous execution. Install a kernelnext image onto the test USB
 stick and ensure that a kernelnext image is also installed in the DUT prior
-to running FAFT. The test_that commands to execute tests on a DUT with a
+to running FAFT. The test_that and tast run commands to execute tests on a DUT with a
 kernelnext OS are the same.
 
 The key point is to ensure that the USB and DUT contain a kernelnext image.

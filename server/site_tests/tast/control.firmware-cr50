@@ -44,7 +44,7 @@ servo_args = hosts.CrosHost.get_servo_arguments(args_dict)
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine, servo_args=servo_args),
-                 test_exprs=['("group:firmware" && firmware_cr50 && !firmware_ccd)'],
+                 test_exprs=['("group:firmware" && firmware_cr50)'],
                  ignore_test_failures=True, max_run_sec=10800,
                  command_args=command_args,
                  varslist=varslist)

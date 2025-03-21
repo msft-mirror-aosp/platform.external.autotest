@@ -749,11 +749,6 @@ suite:faft_cr50_pvt
 suite:faft_cr50_tot
 suite:faft_ec
 suite:faft_ec_fw_qual
-suite:faft_lv1
-suite:faft_lv2
-suite:faft_lv3
-suite:faft_lv4
-suite:faft_lv5
 suite:faft_pd
 suite:faft_ti50_qual
 suite:faft_wilco

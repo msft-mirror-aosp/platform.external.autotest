@@ -1438,6 +1438,12 @@ class FirmwareTest(test.test):
         logging.info("***")
         self.unmark_setup_done("gbb_flags")
 
+    def _preserve_dev_image(self):
+        """Preserves metadata for developer tools on default-key-stateful layouts."""
+        logging.info("Preserving developer tools for default-key-layout")
+        self.faft_client.system.run_shell_command(
+                "/usr/local/bin/preserve_dev_image")
+
     def power_on(self):
         """Switch DUT AC power on."""
         self._client.power_on(self.power_control)
@@ -1560,6 +1566,9 @@ class FirmwareTest(test.test):
         # first to finish.
         self.faft_client.system.run_shell_command("sync")
         self.faft_client.system.run_shell_command("sync")
+
+        # Preserve developer tools metadata for default-key-stateful layouts.
+        self._preserve_dev_image()
 
         # sync only sends SYNCHRONIZE_CACHE but doesn't check the status.
         # This function will perform a device-specific sync command.

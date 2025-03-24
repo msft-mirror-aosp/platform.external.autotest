@@ -5,8 +5,6 @@
 NAME = "detachablebase_TriggerHammerd"
 AUTHOR = "ChromeOS Team"
 METADATA = {
-        "contacts": ["chromeos-faft@google.com", "jbettis@chromium.org"],
-        "bug_component": "b:792402", # ChromeOS > Platform > Enablement > Firmware > FAFT
         "criteria": "Check hammerd starts correctly on boot."
 }
 TIME = "SHORT"

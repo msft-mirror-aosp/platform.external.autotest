@@ -141,8 +141,8 @@ class power_WakeSources(test.test):
         elif wake_source == 'LID_OPEN':
             # Set the power policy for lid closed action to suspend.
             return self._host.run(
-                'set_power_policy --lid_closed_action suspend',
-                ignore_status=True).exit_status == 0
+                    'set_power_policy --lid_closed_action=suspend',
+                    ignore_status=True).exit_status == 0
         elif wake_source == 'USB_KB':
             # Initialize USB keyboard.
             self._host.servo.set_nocheck('init_usb_keyboard', 'on')

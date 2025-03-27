@@ -110,6 +110,9 @@ class power_WakeSources(test.test):
         if wake_source in ['BASE_ATTACH', 'BASE_DETACH']:
             self._force_base_state(BASE_STATE.RESET)
             time.sleep(BASE_STATE_TRANSITION_SECS)
+        elif wake_source == 'LID_OPEN':
+            # Always open the lid even if the test fails.
+            self._host.servo.lid_open()
         elif wake_source == 'USB_KB':
             self._host.servo.set_nocheck('init_usb_keyboard', 'off')
             usb_count -= 1

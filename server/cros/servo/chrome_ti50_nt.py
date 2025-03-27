@@ -19,12 +19,12 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
 
     RESET_FLAGS = {
             'RESET_FLAG_POWER_ON': 1 << 0,  # POR
-            'RESET_FLAG_HIBERNATE': 1 << 1,  # EXIT
-            'RESET_FLAG_SOFT': 1 << 4,  # SYSRESET
-            'RESET_FLAG_HARD': 1 << 5,  # SOFTWARE
-            'RESET_FLAG_BROWNOUT': 1 << 6,  # FST_BRNOUT
-            'RESET_FLAG_SECURITY': 1 << 7,  # SEC_THREAT
-            'RESET_FLAG_RBOX': 1 << 8,  # RBOX_COMB_RST
+            'RESET_FLAG_HIBERNATE': 1 << 1,  # LOW_POWER_EXIT
+            'RESET_FLAG_HARD': 1 << 2,  # SOFTWARE request hard reset
+            'RESET_FLAG_RBOX': 1 << 3,  # SYS_RST_AON
+            'RESET_FLAG_WATCHDOG': 1 << 4,  # AON_TIMER_AON
+            'RESET_FLAG_BROWNOUT': 1 << 5,  # PWRMGR_AON
+            'RESET_FLAG_SECURITY': 1 << 6,  # ALERT_HANDLER
     }
 
     # Ti50 interrupt numbers reported in taskinfo

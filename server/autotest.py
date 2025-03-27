@@ -1205,6 +1205,7 @@ class _Run(object):
         returns FALSE.
         """
         _should_run = False
+        hw_deps = None
         try:
             dut_use_flags = self.host.run(
                     'cat /usr/local/etc/tast_use_flags.txt').stdout

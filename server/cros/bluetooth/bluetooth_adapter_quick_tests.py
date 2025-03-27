@@ -27,7 +27,6 @@ from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
      import DEFAULT_RPA_TIMEOUT_SEC
 from autotest_lib.server.cros.bluetooth import bluetooth_attenuator
-from autotest_lib.server.cros.bluetooth.bluetooth_adapter_tests import DUAL_LAPTOP_TABLET_MODELS
 from autotest_lib.server.cros.dark_resume_utils import DarkResumeUtils
 from autotest_lib.server.cros.multimedia import remote_facade_factory
 from autotest_lib.server.cros.servo import chrome_ec
@@ -165,6 +164,7 @@ class BluetoothAdapterQuickTests(
         self.args_dict = args_dict if args_dict else {}
         self._dr_utils = None
         self._ec = None
+        self._reset_convertible_mode = False
         self.hfp_force_offload = hfp_force_offload
         self.enable_debug_log = enable_debug_log
 
@@ -629,6 +629,11 @@ class BluetoothAdapterQuickTests(
             else:
                 logging.info("Reset ll privacy to False.")
 
+        # Reset the convertible mode if we had changed it during the test
+        if self._reset_convertible_mode:
+            if not self.set_convertible_mode('reset'):
+                logging.error('Unable to reset convertible mode')
+
         # Repopulate btpeer_group for next tests
         # Clear previous tets's leftover entries. Don't delete the
         # btpeer_group dictionary though, it'll be used as it is.
@@ -673,6 +678,11 @@ class BluetoothAdapterQuickTests(
             logging.error(
                     "Unknown error while restart resuspend on dark resume: ",
                     str(e))
+
+        # Reset the convertible mode if we had changed it during the test
+        if self._reset_convertible_mode:
+            if not self.set_convertible_mode('reset'):
+                logging.error('Unable to reset convertible mode')
 
         # Clear any raspi devices at very end of test
         for device_list in self.active_test_devices.values():
@@ -808,7 +818,8 @@ class BluetoothAdapterQuickTests(
                                should_pair=True,
                                keep_paired=False,
                                dark_resume=False,
-                               should_retry_connect=False):
+                               should_retry_connect=False,
+                               skip_on_tablet_mode=True):
         """ Uses paired peer device to wake the device from suspend.
 
         @param device_type: the device type (used to determine if it's LE)
@@ -818,7 +829,7 @@ class BluetoothAdapterQuickTests(
         @param iterations: Number of suspend + peer wake loops to run
         @param should_wake: Whether wakeup should occur on this test. With HID
                             peers, this should be True. With non-HID peers, this
-                            should be false.
+                            should be false. In tablet mode, this should be false.
         @param should_pair: Pair and connect the device first before running
                             the wakeup test.
         @param keep_paired: Keep the paried devices after test.
@@ -829,12 +840,11 @@ class BluetoothAdapterQuickTests(
                                      This is used for some devices that could
                                      crash on the first connection and need
                                      time to recover.
+        @param skip_on_tablet: Whether to skip on device in tablet mode.
         """
 
-        # check if the device is in laptop mode
-        if self.host.get_model_from_cros_config() in DUAL_LAPTOP_TABLET_MODELS:
-            if self.bluetooth_facade.is_tablet_mode():
-                raise error.TestNAError("Test not supported in tablet mode.")
+        if skip_on_tablet_mode and self.bluetooth_facade.is_tablet_mode():
+            raise error.TestNAError("Test not supported in tablet mode.")
 
         if dark_resume:
             try:

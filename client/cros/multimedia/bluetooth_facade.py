@@ -1077,28 +1077,50 @@ class BluetoothBaseFacadeLocal(object):
             return utils.run(cmd).stdout
         except error.CmdError:
             logging.error('Could not locate recent suspend')
+            return ''
 
-        return ''
+    def _check_mode(self, mode):
+        """Check the last configured mode on the DUT.
+
+        Search for 'Configuring devices for mode' from the powerd
+        log and check whether the last line contains mode (tablet/laptop).
+
+        This works on detachible/convertible form factor which can switch
+        between laptop mode and tablet mode.
+
+        @return: return True the last line contains the mode
+        """
+        #'Configuring devices for mode \"tablet\"'
+        mode_indicator = 'Configuring devices for mode'
+        cmd = 'cat {} | grep \'{}\''.format(self.POWERD_LOG, mode_indicator)
+        try:
+            out = [i for i in utils.run(cmd).stdout.split('\n') if i != '']
+            if out == []:
+                return False
+            else:
+                return mode in out[-1]
+        except error.CmdError:
+            logging.error('Failed to search for mode indicator {}.'.format(
+                    mode_indicator))
+            return False
+
+    #find the last entry
 
     def is_tablet_mode(self):
-        """Check if the device was configured in tablet mode. Assume the
-        device in the lab does not change form factor.
+        """ Check if device is in  tablet mode.
 
-        Search for 'Configuring devices for mode \"tablet\"' from the powerd
-        log.
-
-        @return: 0 if in laptop mode, 1 if in tablet mode
+        This is only applicable to convertible and detachable formfactors.
         """
-        tablet_mode_indicator = 'Configuring devices for mode \"tablet\"'
-        cmd = 'cat {} | grep -c \'{}\''.format(self.POWERD_LOG,
-                                               tablet_mode_indicator)
+        return self._check_mode('tablet')
 
-        try:
-            return int(utils.run(cmd).stdout)
-        except error.CmdError:
-            logging.error('Fails to search for tablet mode indicator.')
+    def is_laptop_mode(self):
+        """Check if device is in laptop mode.
 
-        return 0
+        This is only applicable to convertible and detachable formfactors.
+        """
+        return self._check_mode('laptop')
+
+
 
     def bt_caused_last_resume(self):
         """Checks if last resume from suspend was caused by bluetooth

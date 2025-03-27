@@ -306,7 +306,7 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
                   supports_floss=True)
     def sr_peer_wake_classic_hid(self):
-        """ Use classic HID device to wake from suspend. """
+        """ Use classic HID device to wake from suspend on non-convertible devices. """
         device = self.devices['MOUSE'][0]
         self.run_peer_wakeup_device(
                 'MOUSE',
@@ -314,6 +314,50 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                 device_test=self._test_mouse,
                 should_retry_connect=(self.quick_test_get_model_name()
                                       in SUSPEND_FLAKY_USB_CONNECTION_MODELS))
+
+    @test_wrapper('Peer wakeup Classic HID on tablet in laptop mode',
+                  devices={'MOUSE': 1},
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
+    def sr_peer_wake_classic_hid_laptop_mode_on_tablet(self):
+        """ Use classic HID device to wake from suspend on tablet device in laptop mode. """
+        device = self.devices['MOUSE'][0]
+        # Devices maybe already in the required mode. Check before changing mode and confirm after changing
+        if not self.bluetooth_facade.is_laptop_mode():
+            logging.debug('Device not in laptop mode')
+            if not self.set_convertible_mode(
+                    'laptop') or not self.bluetooth_facade.is_laptop_mode():
+                raise error.TestNAError('Unable to set laptop mode')
+        self.run_peer_wakeup_device(
+                'MOUSE',
+                device,
+                device_test=self._test_mouse,
+                should_retry_connect=(self.quick_test_get_model_name()
+                                      in SUSPEND_FLAKY_USB_CONNECTION_MODELS))
+
+    @test_wrapper('Peer wakeup Classic HID should fail on tablets',
+                  devices={'MOUSE': 1},
+                  skip_models=SUSPEND_POWER_DOWN_MODELS,
+                  skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
+                  supports_floss=True)
+    def sr_peer_wake_classic_hid_tablet_should_fail(self):
+        """ Use classic HID device to wake from suspend on a tablet device and fail. """
+        device = self.devices['MOUSE'][0]
+        # Devices maybe already in the required mode. Check before changing mode and confirm after changing
+        if not self.bluetooth_facade.is_tablet_mode():
+            logging.debug('Device not in tablet mode')
+            if not self.set_convertible_mode(
+                    'tablet') or not self.bluetooth_facade.is_tablet_mode():
+                raise error.TestNAError('Unable to set tablet mode')
+        self.run_peer_wakeup_device(
+                'MOUSE',
+                device,
+                device_test=self._test_mouse,
+                should_retry_connect=(self.quick_test_get_model_name()
+                                      in SUSPEND_FLAKY_USB_CONNECTION_MODELS),
+                should_wake=False,
+                skip_on_tablet_mode=False)
 
     @test_wrapper('Peer wakeup dark resume Classic HID',
                   devices={'MOUSE': 1},

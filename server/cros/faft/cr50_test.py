@@ -876,6 +876,8 @@ class Cr50Test(FirmwareTest):
         # Check the logs captured during firmware_test cleanup for cr50 errors.
         self.gsc.check_for_console_errors('Check logs for GSC errors')
         self.servo.allow_ccd_watchdog_for_test()
+        # Turn on DTS mode, so servod will startup with ccd during the next test
+        self.gsc.ccd_enable()
 
     def _update_device_images_and_running_cr50_firmware(
             self, state, release_path, prod_path, prepvt_path):
@@ -956,6 +958,7 @@ class Cr50Test(FirmwareTest):
         self.gsc.send_command('rddkeepalive disable')
         self.gsc.ccd_reset()
         self.gsc.set_wp_state('follow_batt_pres atboot')
+        self.gsc.ccd_enable()
 
     def _restore_ccd_settings(self):
         """Restore the original ccd state."""

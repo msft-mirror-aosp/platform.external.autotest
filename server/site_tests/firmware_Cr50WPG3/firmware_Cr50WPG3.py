@@ -211,7 +211,7 @@ class firmware_Cr50WPG3(Cr50Test):
         if not self.checkers.crossystem_checker({'wpsw_cur': '1'}):
             raise error.TestError("HW WP isn't enabled in S0")
 
-        self.faft_client.system.run_shell_command('poweroff')
+        self.run_shutdown_cmd()
         time.sleep(self.WAIT_FOR_STATE)
         self.check_state_from_consoles()
 

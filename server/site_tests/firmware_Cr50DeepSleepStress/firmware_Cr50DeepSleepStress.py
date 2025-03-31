@@ -142,7 +142,7 @@ class firmware_Cr50DeepSleepStress(FirmwareTest):
                         (i, self.gsc.get_debug_ap_state()))
             self.host.run('ls /dev/tpm0')
             # Power off the device
-            self.faft_client.system.run_shell_command('poweroff', True)
+            self.run_shutdown_cmd()
 
             time.sleep(self.min_suspend)
 

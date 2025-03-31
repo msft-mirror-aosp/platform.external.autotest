@@ -509,7 +509,7 @@ class firmware_Cr50DeviceState(Cr50Test):
             elif state == 'S3':
                 self.enter_suspend(state)
             elif state == 'G3':
-                self.faft_client.system.run_shell_command('poweroff', True)
+                self.run_shutdown_cmd()
 
         time.sleep(self.ENTER_STATE_WAIT)
         # check state transition

@@ -57,7 +57,7 @@ class firmware_GSCDSUpdate(Cr50Test):
         start_ds_count = self.gsc.get_deep_sleep_count()
 
         # Shutdown the dut, so GSC will enter deep sleep.
-        self.faft_client.system.run_shell_command('poweroff', True)
+        self.run_shutdown_cmd()
         logging.info('Waiting for gsc to enter deep sleep')
         time.sleep(self.gsc.DEEP_SLEEP_DELAY * 2)
 

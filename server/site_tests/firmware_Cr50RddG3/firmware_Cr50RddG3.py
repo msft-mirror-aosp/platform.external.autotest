@@ -97,7 +97,7 @@ class firmware_Cr50RddG3(Cr50Test):
         self.check_rdd_status('off', 'Cr50 did not detect Rdd disconnect in S0')
 
         logging.info('Checking Rdd is disconnected with the EC in G3')
-        self.faft_client.system.run_shell_command('poweroff')
+        self.run_shutdown_cmd()
         time.sleep(self.WAIT_FOR_STATE)
         self.check_rdd_status('off', 'Rdd connected after poweroff',
                               ['rdd_leakage', 'ec_hibernate_breaks_rdd'])
@@ -123,7 +123,7 @@ class firmware_Cr50RddG3(Cr50Test):
         self.check_rdd_status('on', 'Rdd disconnected entering S0')
 
         logging.info('Checking Rdd is connected with the EC in G3')
-        self.faft_client.system.run_shell_command('poweroff')
+        self.run_shutdown_cmd()
         time.sleep(self.WAIT_FOR_STATE)
         self.check_rdd_status('on', 'Rdd disconnected after poweroff',
                               ['rdd_off_in_g3', 'ec_hibernate_breaks_rdd'])

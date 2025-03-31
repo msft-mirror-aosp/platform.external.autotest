@@ -19,7 +19,7 @@ class firmware_Cr50FIPSDS(Cr50Test):
         """Shutdown the AP and give cr50 enough time to enter deep sleep."""
         self._try_to_bring_dut_up()
         self.gsc.ccd_disable()
-        self.faft_client.system.run_shell_command('poweroff', True)
+        self.run_shutdown_cmd()
         self.gsc.clear_deep_sleep_count()
         time.sleep(30)
 

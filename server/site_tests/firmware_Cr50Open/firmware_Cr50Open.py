@@ -131,7 +131,7 @@ class firmware_Cr50Open(Cr50Test):
         # Verify ccd open survives deep sleep.
         logging.info('check deep sleep')
         start_ds_count = self.gsc.get_deep_sleep_count()
-        self.faft_client.system.run_shell_command('poweroff', True)
+        self.run_shutdown_cmd()
         utils.wait_for_value(self.gsc.ap_is_on, False)
         time.sleep(self.DEEP_SLEEP_DELAY)
         if start_ds_count == self.gsc.get_deep_sleep_count():

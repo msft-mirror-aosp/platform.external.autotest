@@ -1377,6 +1377,7 @@ class FirmwareTest(test.test):
 
     def run_shutdown_cmd(self, wait_for_offline=True):
         """Shut down the DUT by running '/sbin/shutdown -P now'."""
+        logging.info("Sending shutdown command")
         self.faft_client.disconnect()
         # Shut down in the background after sleeping so the call gets a reply.
         try:
@@ -1390,6 +1391,7 @@ class FirmwareTest(test.test):
         if wait_for_offline:
             self.switcher.wait_for_client_offline()
         self._client.close_main_ssh()
+        logging.info("Ran shutdown")
 
     def suspend(self):
         """Suspends the DUT."""

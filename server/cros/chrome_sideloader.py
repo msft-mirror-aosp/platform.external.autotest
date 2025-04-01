@@ -688,27 +688,16 @@ def unarchive(file_path, dest_dir, **kwargs):
     @param file_path: The path for archive.
     @param dest_dir: The directory where the file is copied to.
     """
+    assert kwargs.get('is_cft'), 'Must be run within CFT'
     if os.path.basename(file_path).endswith(".zip"):
         with zipfile.ZipFile(file_path, 'r') as zip_ref:
             zip_ref.extractall(dest_dir)
     elif os.path.basename(file_path).endswith('.tar.zst'):
-        if kwargs.get('is_cft'):
-            try:
-                cmd = ['tar', '-I', 'zstd', '-xf', file_path, '-C', dest_dir]
-                common_utils.run(cmd, **_gen_run_env_dict())
-            except error.CmdError as e:
-                raise Exception(f'Error running tar on {file_path}', e)
-        else:
-            with _ensure_cipd('chromiumos/infra/tools/zstd') as zstd:
-                try:
-                    cmd = [
-                            'tar', '-I',
-                            os.path.join(zstd, 'bin/zstd'), '-xf', file_path,
-                            '-C', dest_dir
-                    ]
-                    common_utils.run(cmd, **_gen_run_env_dict())
-                except error.CmdError as e:
-                    raise Exception(f'Error running tar on {file_path}', e)
+        try:
+            cmd = ['tar', '-I', 'zstd', '-xf', file_path, '-C', dest_dir]
+            common_utils.run(cmd, **_gen_run_env_dict())
+        except error.CmdError as e:
+            raise Exception(f'Error running tar on {file_path}', e)
     elif os.path.basename(file_path).endswith(".squash"):
         unsquashfs(file_path, dest_dir, **kwargs)
     else:
@@ -730,6 +719,8 @@ def chromite_deploy_chrome(host,
 
     @return: Directory on drone server that contains the unarchived chrome contents
     """
+    assert kwargs.get('is_cft'), 'Must be run within CFT'
+
     if not gs_path:
         raise Exception('gs_path is required')
 
@@ -774,13 +765,12 @@ def chromite_deploy_chrome(host,
     # Chromite may not detect the reboot and later hit timeout
     # error. As a workaround remove the rootfs verification
     # and reboot prior to the chrome deployment.
-    if kwargs.get('is_cft'):
-        filesystem_util.make_rootfs_writable(host)
-        cmd = [
-                'python3',
-                deploy_chrome_bin,
-                '--noremove-rootfs-verification',
-        ]
+    filesystem_util.make_rootfs_writable(host)
+    cmd = [
+            'python3',
+            deploy_chrome_bin,
+            '--noremove-rootfs-verification',
+    ]
 
     strip_or_not = ['--nostrip']
     if kwargs.get('chrome_deploy_strip'):
@@ -996,31 +986,12 @@ def unsquashfs(file_path, dest_dir, **kwargs):
     @return a CmdResult object or None if the command timed out and
         ignore_timeout is True. See common_lib.utils.run().
     """
-
     def _run(cmd, err_msg, **kwargs):
         try:
             return common_utils.run(cmd, **_gen_run_env_dict(**kwargs))
         except error.CmdError as e:
             raise Exception(err_msg, e)
 
-    if kwargs.get('is_cft'):
-        return _run(['unsquashfs', '-f', '-d', dest_dir, file_path],
-                    f'Error running unsquashfs on {file_path}')
-
-    # Download squashfs tools from cipd.
-    with _ensure_cipd(
-            'infra/3pp/tools/squashfs/linux-amd64',
-            'infra/3pp/static_libs/libzstd/linux-amd64') as tmp_squashfs_dir:
-        # unsquashfs archive into destination directory
-        return _run([
-                os.path.join(tmp_squashfs_dir, 'squashfs-tools', 'unsquashfs'),
-                '-f',
-                '-d',
-                dest_dir,
-                file_path,
-        ],
-                    f'Error running unsquashfs on {file_path}',
-                    env={
-                            'LD_LIBRARY_PATH':
-                            os.path.join(tmp_squashfs_dir, 'lib'),
-                    })
+    assert kwargs.get('is_cft'), 'Must be run within CFT'
+    return _run(['unsquashfs', '-f', '-d', dest_dir, file_path],
+                f'Error running unsquashfs on {file_path}')

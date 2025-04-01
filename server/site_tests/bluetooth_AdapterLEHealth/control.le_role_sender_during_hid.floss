@@ -16,7 +16,7 @@ METADATA = {
     'criteria': ('Tests controller can perform Sender role while already '
                  'connected to a HID device'),
     'hw_agnostic': False,
-    'variant_category': '{"name": "BT_Chipset_Kernel_exclude_Role_Requirement"}',
+    'variant_category': '{"name": "BT_Chipset_Kernel_combine_exclude_Role_Ext_Adv"}',
     'requirements': ['bt-spec-0014-v01']
 }
 ATTRIBUTES = 'suite:bluetooth_floss, group:release-health, release-health_bt'

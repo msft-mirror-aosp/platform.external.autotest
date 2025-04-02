@@ -133,6 +133,6 @@ class audio_CrasCheck(test.test):
             cras_reports = os.listdir(_CRASH_PATH)
             crash_reports = [
                     report for report in cras_reports
-                    if report.startswith('cras')
+                    if report.startswith('cras.')
             ]
         return crash_reports

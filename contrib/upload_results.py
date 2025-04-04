@@ -446,6 +446,11 @@ class ResultsManager:
         self.enumerate_all_directories()
 
         for result_dir in self.result_directories:
+            if "/tauto/" not in result_dir:
+                logging.warning(
+                        "Encountered non-tauto tests: %s, skip it",
+                        result_dir)
+                continue
             if self.bug_id is not None:
                 self.results_parser.write_bug_id(result_dir, self.bug_id)
             if self.suite_name is not None:
@@ -888,7 +893,9 @@ ResultsSender = ResultsSenderClass()
 def main(args):
     parsed_args = parse_arguments(args)
 
-    fmt = log.Formatter('%(asctime)s :: %(levelname)-8s :: %(message)s')
+    fmt = log.Formatter(
+            '%(asctime)s :: %(levelname)-8s :: %(filename)s:%(lineno)d :: %(message)s'
+    )
     logging.propagate = False
 
     log_level = log.INFO

@@ -6,4 +6,7 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <!-- b/403364427, to be fixed in CTS 13_r12  -->
+  <Entry include="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testConfigTtl" />
+  <Entry include="CtsStatsdHostTestCases[instant] android.cts.statsd.metadata.MetadataTests#testConfigTtl" />
 </SubPlan>

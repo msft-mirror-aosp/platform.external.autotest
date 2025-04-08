@@ -5,6 +5,8 @@
 import logging
 import six.moves
 import socket
+import time
+
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib.cros import retry
@@ -14,11 +16,13 @@ from autotest_lib.server import autotest
 POWER_DIR = '/var/lib/power_manager'
 TMP_POWER_DIR = '/tmp/power_manager'
 POWER_DEFAULTS = '/usr/share/power_manager/board_specific'
+BOOT_COLLECTOR_DONE_FILE = '/run/crash_reporter/boot-collector-done'
 
 RESUME_CTRL_RETRIES = 3
 RESUME_GRACE_PERIOD = 10
 XMLRPC_BRINGUP_TIMEOUT_SECONDS = 60
 DARK_SUSPEND_MAX_DELAY_TIMEOUT_MILLISECONDS = 60000
+POWERD_WAIT_TIME = 5
 
 
 class DarkResumeUtils(object):
@@ -58,6 +62,14 @@ class DarkResumeUtils(object):
 
         logging.debug('Restarting powerd with new settings')
         host.run('stop powerd; start powerd')
+
+        # Wait for powerd to start before touching the file.
+        time.sleep(POWERD_WAIT_TIME)
+        logging.debug(
+                'Ensure /run/crash_reporter/boot-collector-done file is created after powerd starts'
+        )
+        host.run("rm %s" % BOOT_COLLECTOR_DONE_FILE)
+        host.run('touch %s' % BOOT_COLLECTOR_DONE_FILE)
 
         logging.debug('Starting XMLRPC session to watch for dark resumes')
         self._client_proxy = self._get_xmlrpc_proxy()

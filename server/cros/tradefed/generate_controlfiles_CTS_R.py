@@ -299,8 +299,6 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsVideoTestCases': 1.5,
         'CtsViewTestCases': 2.5,
         'CtsWidgetTestCases': 2.0,
-        'CtsMediaTestCases.arc_perf': 1.5,
-        'CtsVideoTestCases.arc_perf': 2.0,
         _COLLECT: 2.5,
         _PUBLIC_COLLECT: 2.5,
 }
@@ -630,25 +628,6 @@ CONFIG['EXTRA_MODULES'] = {}
 # for internal and moblab.
 CONFIG['HARDWAREONLY_EXTRA_MODULES'] = {}
 
-ARC_PERF_SUITE = ['suite:arc-cts-perf']
-CONFIG['PERF_MODULES'] = {
-    'CtsCameraTestCases': {
-        'CtsCameraTestCases.arc_perf': ARC_PERF_SUITE,
-    },
-    'CtsMediaTestCases': {
-       'CtsMediaTestCases.arc_perf' : ARC_PERF_SUITE,
-    },
-    'CtsVideoTestCases': {
-        'CtsVideoTestCases.arc_perf' : ARC_PERF_SUITE,
-    },
-    'CtsFileSystemTestCases': {
-        'CtsFileSystemTestCases.arc_perf' : ARC_PERF_SUITE,
-    },
-    'CtsSimpleCpuTestCases': {
-        'CtsSimpleCpuTestCases.arc_perf' : ARC_PERF_SUITE,
-    },
-}
-
 # TODO(b/277861132): remove once the root cause is fixed.
 # This is for working around test stability when full dEQP was executed.
 _public_deqp_tests = {
@@ -695,44 +674,6 @@ CONFIG['EXTRA_COMMANDLINE'] = {
         'CtsDeqpTestCases.dEQP-VK': [
                 '--include-filter', 'CtsDeqpTestCases', '--module',
                 'CtsDeqpTestCases', '--test', 'dEQP-VK.*'
-        ],
-        'CtsSensorTestCases.faft': [
-                '--include-filter',
-                'CtsSensorTestCases',
-                '--abi',
-                'armeabi-v7a',
-        ],
-        'CtsVideoTestCases.arc_perf': [
-                '--include-filter',
-                'CtsVideoTestCases android.video.cts.VideoEncoderDecoderTest',
-        ],
-        'CtsMediaTestCases.arc_perf': [
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioRecordTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioTrackTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.AudioTrack_ListenerTest',
-                '--include-filter',
-                'CtsMediaTestCases android.media.cts.VideoDecoderPerfTest',
-        ],
-        'CtsCameraTestCases.arc_perf': [
-                '--include-filter',
-                'CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest',
-        ],
-        'CtsFileSystemTestCases.arc_perf': [
-                '--include-filter',
-                'CtsFileSystemTestCases android.filesystem.cts.AlmostFullTest',
-                '--include-filter',
-                'CtsFileSystemTestCases android.filesystem.cts.RandomRWTest',
-                '--include-filter',
-                'CtsFileSystemTestCases android.filesystem.cts.SequentialRWTest',
-        ],
-        'CtsSimpleCpuTestCases.arc_perf': [
-                '--include-filter',
-                'CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest',
         ],
 }
 

@@ -176,21 +176,6 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
 
 
 @generate_from_source_type('DEV')
-def gen_perf_qual(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
-    """Generates perf qualification controlfiles."""
-    perf_modules = config.get('PERF_MODULES', {})
-    if not perf_modules:
-        return []
-    logging.info('Generating perf qualification controlfiles')
-    return [
-            ModuleGroup(basename=submodule,
-                        modules=frozenset([submodule]),
-                        suites=frozenset(suites)) for module in perf_modules
-            for submodule, suites in perf_modules[module].items()
-    ]
-
-
-@generate_from_source_type('DEV')
 def gen_extra_camera(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
     """Generates extra camera controlfiles."""
     if not config.get('CONTROLFILE_WRITE_CAMERA'):

@@ -19,7 +19,7 @@ METADATA = {
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
-ATTRIBUTES = "suite:power_daily_load_test_v11, group:release-health, release-health_power"
+# ATTRIBUTES = "suite:power_daily_load_test_v11, group:release-health, release-health_power"
 EXTENDED_TIMEOUT = 4200
 TEST_TYPE = "client"
 

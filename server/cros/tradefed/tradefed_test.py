@@ -1392,6 +1392,13 @@ class TradefedTest(test.test):
             logging.warning('Failed to override powerd policy, tests depending '
                             'on screen being always on may fail.')
 
+        # TODO(b/396551638): 'restart powerd' causes USB/ethernet
+        # disconnection. Workaround to wait for reconnection.
+        if self._get_model_name() == 'krane':
+            time.sleep(3)
+            for host in self._hosts:
+                host.wait_up(host.DEFAULT_REBOOT_TIMEOUT)
+
     def _restore_powerd_prefs(self):
         """Restores powerd prefs overrided by _override_powerd_prefs()."""
         pref_dir = constants.POWERD_PREF_DIR
@@ -1406,6 +1413,13 @@ class TradefedTest(test.test):
         except (error.AutoservRunError, error.AutoservSSHTimeout):
             logging.warning('Failed to restore powerd policy, overrided policy '
                             'will persist until device reboot.')
+
+        # TODO(b/396551638): 'restart powerd' causes USB/ethernet
+        # disconnection. Workaround to wait for reconnection.
+        if self._get_model_name() == 'krane':
+            time.sleep(3)
+            for host in self._hosts:
+                host.wait_up(host.DEFAULT_REBOOT_TIMEOUT)
 
     def _mute_device(self):
         """Mutes the device to avoid noises while running tests"""

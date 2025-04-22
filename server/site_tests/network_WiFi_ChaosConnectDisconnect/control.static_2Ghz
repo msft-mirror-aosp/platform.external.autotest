@@ -19,22 +19,27 @@ MAX_RESULT_SIZE_KB = 512000
 from autotest_lib.server.cros.ap_configurators import ap_spec
 from autotest_lib.server.cros.chaos_lib import static_runner
 
-def run_chaos_static(machine):
-    host = hosts.create_host(machine)
-    # Test all 2Ghz static APs on channel 1, 6 and 11
-    ap_specs = [ap_spec.APSpec(band=ap_spec.BAND_2GHZ,
-                               channel = 1,
-                               configurator_type=ap_spec.CONFIGURATOR_STATIC),
-                ap_spec.APSpec(band=ap_spec.BAND_2GHZ,
-                               channel = 6,
-                               configurator_type=ap_spec.CONFIGURATOR_STATIC),
-                ap_spec.APSpec(band=ap_spec.BAND_2GHZ,
-                               channel = 11,
-                               configurator_type=ap_spec.CONFIGURATOR_STATIC)]
+try:
+    def run_chaos_static(machine):
+        host = hosts.create_host(machine)
+        # Test all 2Ghz static APs on channel 1, 6 and 11
+        ap_specs = [ap_spec.APSpec(band=ap_spec.BAND_2GHZ,
+                                   channel = 1,
+                                   configurator_type=ap_spec.CONFIGURATOR_STATIC),
+                    ap_spec.APSpec(band=ap_spec.BAND_2GHZ,
+                                   channel = 6,
+                                   configurator_type=ap_spec.CONFIGURATOR_STATIC),
+                    ap_spec.APSpec(band=ap_spec.BAND_2GHZ,
+                                   channel = 11,
+                                   configurator_type=ap_spec.CONFIGURATOR_STATIC)]
 
-    for spec in ap_specs:
-        runner = static_runner.StaticRunner(
-                'network_WiFi_ChaosConnectDisconnect', host, spec)
-        runner.run(job)
+        for spec in ap_specs:
+            runner = static_runner.StaticRunner(
+                    'network_WiFi_ChaosConnectDisconnect', host, spec)
+            runner.run(job)
 
-parallel_simple(run_chaos_static, machines)
+    parallel_simple(run_chaos_static, machines)
+
+except Exception as e:
+   logging.error('Run failed: %s', e)
+   raise error.TestNAError('Exception during run chaos static method')

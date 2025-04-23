@@ -1248,6 +1248,10 @@ class Cr50Test(FirmwareTest):
         @param use_ccd: True if the test should update with ccd.
         @raise TestFail: if the update failed
         """
+        try:
+            self._preserve_dev_image()
+        except Exception as e:
+            logging.warning('Ignoring preserve dev image error: %s', e)
         original_rw = self.gsc.get_version()
 
         # Cr50 is going to reject an update if it hasn't been up for more than

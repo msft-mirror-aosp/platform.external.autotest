@@ -155,10 +155,12 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
         # Rollback to the old gsc image
         logging.info('Update to old gsc release')
         self.eraseflashinfo_and_restore_image(self._old_release_path)
+        self._preserve_dev_image()
         # Do a powerwash to clear the state.
         logging.info('Powerwash')
         self.host.run(
                 "echo 'clobber' > /mnt/stateful_partition/.update_available")
+        self.host.reboot()
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
 
         # Initialize Pinweaver

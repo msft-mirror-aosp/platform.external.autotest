@@ -1441,8 +1441,7 @@ class FirmwareTest(test.test):
     def _preserve_dev_image(self):
         """Preserves metadata for developer tools on default-key-stateful layouts."""
         logging.info("Preserving developer tools for default-key-layout")
-        self.faft_client.system.run_shell_command(
-                "/usr/local/bin/preserve_dev_image")
+        self._client.run("/usr/local/bin/preserve_dev_image")
 
     def power_on(self):
         """Switch DUT AC power on."""

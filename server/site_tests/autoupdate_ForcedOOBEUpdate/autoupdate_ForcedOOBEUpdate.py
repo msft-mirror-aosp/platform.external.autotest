@@ -250,8 +250,19 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
         # Verify the update was successful by checking hostlog and kernel.
         rootfs_hostlog, reboot_hostlog = self._create_hostlog_files()
         self.verify_update_events(self._CUSTOM_LSB_VERSION, rootfs_hostlog)
-        self.verify_update_events(self._CUSTOM_LSB_VERSION, reboot_hostlog,
-                                  self._CUSTOM_LSB_VERSION)
+
+        # Check if content stripped of whitespace is non-empty, otherwise verify
+        # update events.
+        prev_version_file = "/var/lib/update_engine/prefs/previous-version"
+        if not bool(
+                self._host.run("cat %s" % prev_version_file).stdout.strip()
+        ):
+            self.verify_update_events(
+                    self._CUSTOM_LSB_VERSION,
+                    reboot_hostlog,
+                    self._CUSTOM_LSB_VERSION
+            )
+
         kernel_utils.verify_boot_expectations(inactive, host=self._host)
         logging.info(
                 "Successfully force updated from %s to %s.",

@@ -2612,6 +2612,9 @@ class FirmwareTest(test.test):
         if self.faft_config.ec_forwards_short_pp_press:
             self.stop_powerd()
 
+        # Run preserve dev image. Opening ccd wipes the TPM.
+        self._preserve_dev_image()
+
         # Make sure the test waits long enough to avoid ccd rate limiting.
         time.sleep(self.gsc.CCD_PASSWORD_RATE_LIMIT)
 
@@ -2701,6 +2704,13 @@ class FirmwareTest(test.test):
                 "Test can only be run on devices with "
                 "access to the GSC console"
             )
+
+        # Try to run preserve dev image in case ccd open wipes the TPM.
+        # Ignore failures. The dut may be down.
+        try:
+            self._preserve_dev_image()
+        except Exception as e:
+            logging.warning('Ignoring preserve dev image error: %s', e)
 
         if self.servo.main_device_is_ccd() and not self.gsc.testlab_is_on():
             error_txt = "because the main servo device is CCD."

@@ -111,6 +111,8 @@ class firmware_Cr50Password(Cr50Test):
         self.try_wrong_password(wrong_case)
         self.try_wrong_password(self.NEW_PASSWORD)
 
+        # Call preserve dev image to preserve /usr/local across the tpm wipe.
+        self._preserve_dev_image()
         # Verify ccd can be opened with the correct password.
         self.gsc.set_ccd_level('open', self.test_password)
 

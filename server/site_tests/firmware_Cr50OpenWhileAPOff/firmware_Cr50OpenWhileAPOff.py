@@ -221,6 +221,8 @@ class firmware_Cr50OpenWhileAPOff(Cr50Test):
     def try_ccd_open(self, deep_sleep):
         """Try 'ccd open' and make sure the console doesn't hang"""
         self.gsc.set_ccd_level('lock', self.CCD_PASSWORD)
+        # Call preserve dev image to preserve /usr/local across the tpm wipe.
+        self._preserve_dev_image()
         try:
             self.turn_device('off')
             if deep_sleep:

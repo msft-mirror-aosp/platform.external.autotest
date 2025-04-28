@@ -3198,6 +3198,7 @@ class PCHPowergatingStats(object):
             EXI|                     # Embedded Debug Interface
             GBE|                     # Gigabit Ethernet
             CUNIT|                   # Undocument
+            SDX|                     # SD card controller
         '''
         re_flags = re.IGNORECASE | re.VERBOSE
         allow_matcher = re.compile(S0IX_ALLOWLIST_REGEX, re_flags)

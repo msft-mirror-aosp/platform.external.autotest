@@ -65,6 +65,8 @@ class firmware_Cr50Open(Cr50Test):
         logging.info('ccd open from console')
         try:
             boot_id = self.host.get_boot_id()
+            # Call preserve dev image to preserve /usr/local across the tpm wipe
+            self._preserve_dev_image()
             self.gsc.set_ccd_level('open')
             self.wait_ap_reboot(boot_id)
         except error.TestFail as e:

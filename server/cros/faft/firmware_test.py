@@ -330,7 +330,9 @@ class FirmwareTest(test.test):
         assert self.faft_client.system.get_fw_vboot2()
         # TODO(b/401281346): re-enable setting the FW slot on zork after the bug
         # has been resolved.
-        if self.faft_config.platform != "zork":
+        # TODO(b/414776205): re-enable setting the FW slot on nissa after the bug
+        # has been resolved.
+        if self.faft_config.platform not in ["zork", "nissa"]:
             self.faft_client.system.set_fw_try_next("A")
             if self.faft_client.system.get_crossystem_value(
                     "mainfw_act") == "B":

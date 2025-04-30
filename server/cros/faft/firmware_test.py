@@ -274,7 +274,8 @@ class FirmwareTest(test.test):
                     gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
                     logging.info('Setup Ti50 DT GSC')
                 elif chrome_ti50_nt.CHIP_NAME in gsc_chip:
-                    gsc = chrome_ti50.ChromeTi50(self.servo, self.faft_config)
+                    gsc = chrome_ti50_nt.ChromeTi50NT(self.servo,
+                                                      self.faft_config)
                     logging.info('Setup Ti50 NT GSC')
                 else:
                     logging.warning("Unsupported gsc %r", gsc_version)

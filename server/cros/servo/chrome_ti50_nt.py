@@ -42,3 +42,32 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
             116: 'XO_CALIB',
             257: 'WAKEUP',
     }
+    # ===============================================================
+    # Ti50 NT Image Names
+    GS_PRIVATE = 'gs://chromeos-localmirror-private/distfiles/'
+    GS_PUBLIC = 'gs://chromeos-localmirror/distfiles/'
+    # Node locked test images are in this private debug directory.
+    GS_PRIVATE_DBG = GS_PRIVATE + 'chromeos-ti50-debug-nt/'
+    # Ti50 NT tarball format
+    PROD_TAR = 'ti50-nt.r*0.0.*%s%s.tar.xz'
+    # ti50.nt.dbg.0xDEVID0_0xDEVID1.bin.GIT_SHA.BID (SHA and BID are optional)
+    DEBUG_FILE = '*/ti50.nt.dbg.%s.bin.*%s'
+    # ti50_Unknown_NodeLocked-DEVID0-DEVID1_(signing key).bin
+    ERASEFLASHINFO_FILE = '*/ti50_Unknown_NodeLocked-%s_*.bin'
+    QUAL_VERSION_FILE = 'chromeos-ti50-nt-QUAL_VERSION'
+
+    # Image prefix used by Chrome OS.
+    GSC_IMG_PREFIX = 'ti50-nt'
+    # ChromeOS Ti50 firmware directory
+    DUT_FW = '/opt/google/ti50/firmware/'
+
+    # Ti50 image in tarballs
+    PROD_FILE = 'ti50.bin.prod'
+    # Ti50 CrOS image information
+    DUT_PROD = DUT_FW + GSC_IMG_PREFIX + '.bin.prod'
+    DUT_PREPVT = DUT_FW + GSC_IMG_PREFIX + '.bin.prepvt'
+    DUT_REMOVE_GSC_IMAGES = 'rm ' + DUT_FW + GSC_IMG_PREFIX + '*'
+
+    # Ti50 FW is installed in 2 locations
+    DUT_PROD_PATHS = [DUT_PROD]
+    DUT_PREPVT_PATHS = [DUT_PREPVT]

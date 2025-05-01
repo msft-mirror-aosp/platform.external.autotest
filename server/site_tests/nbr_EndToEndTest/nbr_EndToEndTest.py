@@ -79,7 +79,7 @@ class nbr_EndToEndTest(minios_test.MiniOsTest):
             # so we have a clean copy to boot to after test completion.
             if active == kernel_utils._KERNEL_A:
                 kernel_utils.copy_kernel(self._host)
-            build = self._get_serving_stable_build(release_archive_path=False)
+            build = self._get_serving_build(release_archive_path=False)
             logging.debug('stable build name is %s', build)
 
         payload_url = self.get_payload_for_nebraska(

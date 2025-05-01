@@ -21,6 +21,7 @@ import six.moves.urllib.parse
 import six.moves.urllib.request
 
 from datetime import datetime, timedelta
+from functools import cmp_to_key
 from xml.etree import ElementTree
 
 from autotest_lib.cache_server import constants as cache_server_constants
@@ -991,7 +992,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         @param release_path: path to the build artifacts in either
             gs://chromeos-releases or gs://chromeos-image-archive.
             Ex: dev-channel/asurada/14515.0.0 for gs://chromeos-releases. The
-            output of _get_serving_stable_build matches this format.
+            output of _get_serving_build matches this format.
             Ex: asurada-release/14515.0.0 for gs://chromeos-image-archive. The
             output of _get_release_builder_path matches this format.
         @param is_release_bucket: If True (default), use release bucket
@@ -1147,37 +1148,46 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                 self._host.run('cat %s' % os.path.join(tmpdir, paygen_file),
                                verbose=False).stdout)
 
-    def _paygen_json_lookup(self, board, channel, delta_types=None):
+    def _paygen_json_lookup(self, board, channels=None, delta_types=None):
         """
-        Filters the paygen.json file by board, channel, and payload type.
+        Filters the paygen.json file by board, channel(s), and payload type(s).
 
         @param board: The board name.
-        @param channel: The ChromeOS channel.
+        @param channels: A list of ChromeOS channels (e.g., ['stable', 'dev']).
+            If None or empty, it will return all builds for the board and
+            delta types, regardless of channels.
         @param delta_types: list of delta types: OMAHA, FSI, MILESTONE,
-                            STEPPING_STONE. If None, it will return all builds
-                            for the board and channel, regardless of delta type.
+            STEPPING_STONE. If None, it will return all builds for the board
+            and channel, regardless of delta types.
 
         @returns json results filtered by the input params.
 
         """
         paygen_data = self._get_paygen_json()
-        result = []
-        if channel.endswith('-channel'):
-            channel = channel[:-len('-channel')]
-        for delta in paygen_data['delta']:
-            if ((delta['board']['public_codename'] == board)
-                        and (delta.get('channel', None) == channel)
-                        and (delta_types is None
-                             or delta.get('delta_type', None) in delta_types)):
-                result.append(delta)
-        return result
 
-    def _get_serving_stable_build(self,
-                                  release_archive_path=True,
-                                  oldest_stable=False):
+        # Normalize channel names by removing the '-channel' suffix, or assign
+        # None if channels is None. Treat None or empty list as "match all
+        # channels".
+        normalized_channels = [
+                (ch[:-len('-channel')] if ch.endswith('-channel') else ch)
+                for ch in channels
+        ] if channels else None
+
+        return [
+                delta for delta in paygen_data.get('delta', [])
+                if (delta.get('board', {}).get('public_codename') == board and
+                    (normalized_channels is None
+                     or delta.get('channel') in normalized_channels) and (
+                             delta_types is None
+                             or delta.get('delta_type') in delta_types))
+        ]
+
+    def _get_serving_build(self,
+                           release_archive_path=True,
+                           oldest_build=False):
         """
-      Returns the latest or oldest serving stable build on Omaha for the
-      current board.
+      Returns the latest or oldest serving stable/lts/ltc build on Omaha for
+      the current board.
 
       It will lookup the paygen.json file and return the build label that can
       be passed to quick_provision. This is useful for M2N tests to easily find
@@ -1192,7 +1202,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                                    <channel>-channel/<board>/<build number>
                                    False to return the build name in the format
                                    RXX-XXXXX.X.X
-      @param oldest_stable: True to return the oldest serving stable build.
+      @param oldest_build: True to return the oldest serving build.
                             False to return the latest.
 
       @returns release archive path to the build or the build name, depending
@@ -1205,7 +1215,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Boards like auron_paine are auron-paine in paygen.json/csv and builders.
         if '_' in board:
             board = board.replace('_', '-')
-        channel = 'stable-channel'
+        channels = ['stable', 'lts', 'ltc']
 
         logging.info('Searching the serving builds CSV.')
         with autotemp.tempfile('get_serving_stable_build') as t:
@@ -1240,6 +1250,10 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                     target_build, target_cr)
             serving_builds_data['chrome_os_version'] = target_build
             serving_builds_data['milestone'] = target_cr.split('.')[0]
+            # Adding channel key to later be able to build the
+            # release_archive_path. The CSV only exports up to `stable` channel,
+            # so only stable versions are checked above.
+            serving_builds_data['channel'] = 'stable'
 
         if lsbrelease_utils.is_moblab():
             if serving_builds_data:
@@ -1258,30 +1272,35 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # also be an FSI. When this happens we will not find an OMAHA
         # payload to use because GE only publishes one for a channel+build
         # pair. So try to get both OMAHA and FSI builds on stable channel.
+        # Also, when boards have entered extended support there is no updated
+        # build info for stable channel, as they are moved to LTS, so getting
+        # lts/ltc builds in addition to stable.
         logging.info('Getting OMAHA and FSI payloads from paygen.json file')
-        stable_paygen_data = self._paygen_json_lookup(board, channel,
-                                                      ['OMAHA', 'FSI'])
+        paygen_data = self._paygen_json_lookup(board, channels,
+                                               ['OMAHA', 'FSI'])
 
         # Add build data from serving builds CSV
         if serving_builds_data:
-            stable_paygen_data.append(serving_builds_data)
+            paygen_data.append(serving_builds_data)
 
-        if not stable_paygen_data:
+        if not paygen_data:
             raise error.TestNAError(
                     'No stable build found in paygen.json or serving builds CSV for %s'
                     % board)
 
-        find = min if oldest_stable else max
-        target_stable_paygen_data = find(
-                stable_paygen_data, key=(lambda key: key['chrome_os_version']))
+        find = min if oldest_build else max
+        target_paygen_data = find(
+                paygen_data,
+                key=(lambda key: cmp_to_key(utils.compare_versions)
+                     (key['chrome_os_version'])))
 
         if release_archive_path:
-            return os.path.join(channel, board,
-                                target_stable_paygen_data["chrome_os_version"])
+            return os.path.join(target_paygen_data['channel'] + '-channel',
+                                board, target_paygen_data["chrome_os_version"])
 
         return 'R' + '-'.join([
-                str(target_stable_paygen_data['milestone']),
-                target_stable_paygen_data["chrome_os_version"]
+                str(target_paygen_data['milestone']),
+                target_paygen_data["chrome_os_version"]
         ])
 
     def provision_dut(self,
@@ -1328,8 +1347,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # Provision latest stable build for the current build.
 
-        build_name = (build_name or
-            self._get_serving_stable_build(oldest_stable=oldest_stable))
+        build_name = (build_name
+                      or self._get_serving_build(oldest_build=oldest_stable))
         logging.info('build name is %s', build_name)
 
         # Install the matching build with quick provision.

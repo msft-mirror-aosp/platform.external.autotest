@@ -269,7 +269,11 @@ class Chrome(object):
         b_options.gaia_id = self.gaia_id
 
         self.arc_mode = arc_mode
-
+        for path in extension_paths:
+            logging.info("Extension_path %s is:", path)
+            files = os.listdir(path)
+            for f in files:
+                logging.info("Contain file: %s", f)
         if logged_in:
             extensions_to_load = b_options.extensions_to_load
             for path in extension_paths:

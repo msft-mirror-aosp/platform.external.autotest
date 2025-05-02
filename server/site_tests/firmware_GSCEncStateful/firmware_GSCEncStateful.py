@@ -44,6 +44,7 @@ class firmware_GSCEncStateful(FirmwareTest):
         """Clear the FWMP."""
         try:
             if self.started_test:
+                self._preserve_dev_image()
                 self.gsc.ccd_reset_and_wipe_tpm()
                 self._try_to_bring_dut_up()
                 self.clear_set_gbb_flags(vboot.GBB_FLAG_FORCE_DEV_SWITCH_ON, 0)
@@ -103,6 +104,7 @@ class firmware_GSCEncStateful(FirmwareTest):
                                     'access to the GSC console')
         self.fast_ccd_open(True)
         self.clear_set_gbb_flags(self.test_clear_gbb, self.test_set_gbb)
+        self._preserve_dev_image()
         self.gsc.ccd_reset_and_wipe_tpm()
         time.sleep(self.WAIT_FOR_RESET)
         self.wait_for_dut()

@@ -15,6 +15,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros import rtc
 from autotest_lib.client.cros.audio import audio_helper
+from autotest_lib.client.cros.chameleon import audio_test_utils
 from autotest_lib.client.cros.power import power_utils
 
 class power_AudioDetector(test.test):
@@ -26,6 +27,9 @@ class power_AudioDetector(test.test):
 
 
     def run_once(self, run_time_sec=60):
+        if not audio_test_utils.has_internal_speaker(self.host):
+            raise error.TestNAError('Board not applicable to test!')
+
         if run_time_sec < 10:
             raise error.TestFail('Must run for at least 10 seconds')
 

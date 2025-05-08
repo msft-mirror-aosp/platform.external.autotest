@@ -198,6 +198,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         super(ChromeTi50, self).set_ccd_level(level, password)
 
     def unlock_is_supported(self):
+        """Returns False. CCD unlock is not supported on Ti50."""
         return False
 
     def check_boot_mode(self, mode_exp='NORMAL'):

@@ -98,6 +98,7 @@ class TestProvisioner(unittest.TestCase):
         local_script = '/usr/local/bin/%s' % script_name
 
         host = mock.MagicMock()
+        host.get_disk_size_gb.return_value = 32
         cros_provisioner = provisioner.ChromiumOSProvisioner(update_url,
                                                              host=host)
         host.path_exists.return_value = True
@@ -136,6 +137,7 @@ class TestProvisioner2(unittest.TestCase):
         provisioner.dev_server = mock.MagicMock()
         provisioner.metrics = mock.MagicMock()
         host = mock.MagicMock()
+        host.get_disk_size_gb.return_value = 32
         update_url = '%s/update/%s' % (devserver, image)
         cros_provisioner = provisioner.ChromiumOSProvisioner(update_url, host)
         cros_provisioner.check_update_status = mock.MagicMock()

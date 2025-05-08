@@ -880,6 +880,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             if wildcards:
                 cmd += ['--wildcards']
             cmd += members
+        self._host._powerwash_if_needed()
         self._run(cmd)
 
     def _get_stateful_url(self, public_bucket=False):

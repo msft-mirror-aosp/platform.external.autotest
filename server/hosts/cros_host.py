@@ -1843,6 +1843,17 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Start powerd if it isn't already running."""
         self.run('start powerd', ignore_status=True)
 
+    def _powerwash_if_needed(self):
+        """Powerwash the device if the total disk size is less than 32G."""
+        dut_disk_size = self.get_disk_size_gb()
+        if (dut_disk_size < cros_constants.MIN_DISK_SIZE):
+            logging.info('DUT disk size is %dGB. Powerwash it.', dut_disk_size)
+            self.run([
+                    'echo', '"fast safe"', '>',
+                    '/mnt/stateful_partition/factory_install_reset'
+            ])
+            self.reboot(timeout=self.POWERWASH_BOOT_TIMEOUT, wait=True)
+
     def _read_arc_prop_file(self, filename):
         for path in [
                 '/usr/share/arcvm/properties/', '/usr/share/arc/properties/'

@@ -477,6 +477,7 @@ class ChromiumOSProvisioner(object):
         else:
             image_name = url_to_image_name(self.update_url)
 
+        self.host._powerwash_if_needed()
         logging.info('Installing image using quick-provision.')
         provision_command = self._get_remote_script(_QUICK_PROVISION_SCRIPT)
         try:

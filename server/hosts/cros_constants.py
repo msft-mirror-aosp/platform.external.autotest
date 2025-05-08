@@ -21,3 +21,6 @@ LONG_REPAIR_TIMEOUT_SEC = 60 * 30
 
 # Minimum battery level for the good DUT.
 MIN_BATTERY_LEVEL = 80.0
+
+# Minimum disk size of DUT in GB to skip powerwash for m-to-m or m-to-n update.
+MIN_DISK_SIZE = 32

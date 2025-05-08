@@ -1248,10 +1248,11 @@ class Cr50Test(FirmwareTest):
         @param use_ccd: True if the test should update with ccd.
         @raise TestFail: if the update failed
         """
-        try:
-            self._preserve_dev_image()
-        except Exception as e:
-            logging.warning('Ignoring preserve dev image error: %s', e)
+        # Run preserve dev image to preserve /usr/local through tpm wipe.
+        # This only affects Ti50 devices.
+        if self.gsc.IS_TI50:
+            self._preserve_dev_image(True)
+
         original_rw = self.gsc.get_version()
 
         # Cr50 is going to reject an update if it hasn't been up for more than
@@ -1269,6 +1270,10 @@ class Cr50Test(FirmwareTest):
                 timeout=self.faft_config.gsc_update_wait_for_reboot)
 
         if rollback:
+            # Run preserve dev image to preserve /usr/local through tpm wipe.
+            # This only affects Ti50 devices.
+            if self.gsc.IS_TI50:
+                self._preserve_dev_image(True)
             self.gsc.rollback()
 
         expected_rw = original_rw if expect_rollback else image_rw

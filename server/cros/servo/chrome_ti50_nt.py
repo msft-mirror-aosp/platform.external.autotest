@@ -57,7 +57,8 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
     QUAL_VERSION_FILE = 'chromeos-ti50-nt-QUAL_VERSION'
 
     # Image prefix used by Chrome OS.
-    GSC_IMG_PREFIX = 'ti50-nt'
+    GSC_IMG_PREFIX = FW_NAME + '-nt'
+    NAME = GSC_IMG_PREFIX
     # ChromeOS Ti50 firmware directory
     DUT_FW = '/opt/google/ti50/firmware/'
 

@@ -25,7 +25,6 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     PROD_RW_KEYIDS = ['0xfba25ca9']
     PROD_RO_KEYIDS = ['0xc7d40497']
     START_STR = ['ti50_common']
-    NAME = FW_NAME
     BID_RE = r'Board ID: (\S{8}):?(|\S{8}), flags: (\S{8})\s'
     CCD_PW_DENIED = 'failed: ParamCount'
 
@@ -51,7 +50,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     QUAL_VERSION_FILE = 'chromeos-ti50-QUAL_VERSION'
 
     # Image prefix used by Chrome OS.
-    GSC_IMG_PREFIX = 'ti50-dt'
+    GSC_IMG_PREFIX = FW_NAME + '-dt'
+    NAME = GSC_IMG_PREFIX
     # ChromeOS Ti50 firmware directory
     DUT_FW = '/opt/google/ti50/firmware/'
 
@@ -198,7 +198,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         super(ChromeTi50, self).set_ccd_level(level, password)
 
     def unlock_is_supported(self):
-        """Returns False. CCD unlock is not supported on Ti50."""
+        """Returns False because CCD unlock is not supported on Ti50."""
         return False
 
     def check_boot_mode(self, mode_exp='NORMAL'):

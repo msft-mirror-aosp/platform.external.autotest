@@ -374,8 +374,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         self.faft_config = faft_config
         self.init_gsc_servo_caps()
         version = servo.get('gsc_version')
-        if self.NAME not in version:
-            raise error.TestError('%r not found in %r' % (self.NAME, version))
+        if not version:
+            raise error.TestError('Unable to read GSC version')
         logging.info('Setup %s console', self.NAME)
 
     def wake_console(self):

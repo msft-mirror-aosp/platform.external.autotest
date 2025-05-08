@@ -38,8 +38,9 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         'gpiocfg' : ['gpiocfg(.*)>', COMPARE_LINES, not SORTED],
     }
     SUPPORTED_COMMANDS = {
-        'cr50' : ['pinmux', 'help', 'gpiocfg'],
-        'ti50' : ['help']
+            'cr50': ['pinmux', 'help', 'gpiocfg'],
+            'ti50-dt': ['help'],
+            'ti50-nt': ['help']
     }
     CCD_HOOK_WAIT = 2
     # Lists connecting the board property values to the labels.
@@ -69,10 +70,11 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
             ],
     ]
     BOARD_PROPERTIES = {
-        'cr50' : CR50_BOARD_PROPERTIES,
-        # Ti50 only supports the 'help' command which doesn't change based on
-        # board properties.
-        'ti50' : [],
+            'cr50': CR50_BOARD_PROPERTIES,
+            # Ti50 only supports the 'help' command which doesn't change based on
+            # board properties.
+            'ti50-dt': [],
+            'ti50-nt': [],
     }
     CR50_GUC_BRANCH_STR = 'cr50_v1.9308_26_0.'
     CR50_MP_BRANCH_STR = 'cr50.*_mp'

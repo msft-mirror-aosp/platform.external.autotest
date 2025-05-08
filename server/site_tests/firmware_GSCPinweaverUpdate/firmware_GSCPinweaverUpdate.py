@@ -21,7 +21,7 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
             'cr50': '0.5.160',
             # Ti50 always used platform/pinweaver. This is just a ti50 image with
             # the same rollback era.
-            'ti50': '0.23.21'
+            'ti50-dt': '0.23.21',
     }
     USER = 'name1'
     PWD = 'passwd1'

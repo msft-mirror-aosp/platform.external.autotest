@@ -1186,8 +1186,7 @@ class Cr50Test(FirmwareTest):
 
         # There's no way to check ti50 rollback.
         # TODO(b/263579376): add support to check rollback on ti50
-        if (self.gsc.NAME != 'ti50'
-                    and expect_rollback != self.gsc.rolledback()):
+        if self.gsc.IS_CR50 and expect_rollback != self.gsc.rolledback():
             errors.append('%srollback detected' %
                           'no ' if expect_rollback else '')
         if len(errors):

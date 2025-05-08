@@ -121,7 +121,7 @@ class provision_Cr50TOT(Cr50Test):
         latest_builds = self.get_latest_builds()
         for latest_build in latest_builds:
             try:
-                if self.gsc.NAME == 'ti50':
+                if self.gsc.IS_TI50:
                     return self.get_ti50_build(latest_build, REMOTE_TMPDIR)
                 return self.get_cr50_build(latest_build, REMOTE_TMPDIR)
             except Exception as e:

@@ -9,7 +9,6 @@ import time
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.faft.firmware_test import FirmwareTest
-from autotest_lib.server.cros.servo import chrome_cr50
 
 
 class firmware_GSCFWMPAttrs(FirmwareTest):
@@ -114,7 +113,7 @@ class firmware_GSCFWMPAttrs(FirmwareTest):
 
         # Cr50 devices are the only ones where coreboot may not reinitialize the
         # FWMP.
-        if self.gsc.NAME != chrome_cr50.FW_NAME:
+        if not self.gsc.IS_CR50:
             raise error.TestFail('FWMP not initialized on non-cr50 device')
 
         # Set the FWMP

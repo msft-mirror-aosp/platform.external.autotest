@@ -72,7 +72,7 @@ class firmware_GSCUpdatePCR(FirmwareTest):
         """Suspend and resume."""
         if enter_ds:
             self.gsc.ccd_disable()
-        elif self.gsc.NAME == 'cr50':
+        elif self.gsc.IS_CR50:
             # Send command to disable deep sleep in S3.
             self.host.run('trunks_send --raw 80010000000c20000000003b')
         else:

@@ -93,7 +93,7 @@ class firmware_Cr50RejectUpdate(Cr50Test):
         # Verify the bid type check.
         self.try_update('-u', self.bid_type_path, err=12)
         self.try_update('', self.bid_type_path, err=12)
-        bid_flag_err = 12 if self.gsc.NAME == 'cr50' else 13
+        bid_flag_err = 12 if self.gsc.IS_CR50 else 13
         # Verify the bid flags check.
         self.try_update('-u', self.bid_flags_path, err=bid_flag_err)
         self.try_update('', self.bid_flags_path, err=bid_flag_err)

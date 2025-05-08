@@ -199,7 +199,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
         ec_uart_enabled = 'UARTEC' in flags
         ec_uart_tx_enabled = 'UARTEC+TX' in flags
 
-        if self.gsc.NAME == 'cr50':
+        if self.gsc.IS_CR50:
             ec_usb_tx_enabled = 'USBEC+TX' in flags
             ccd_ec_uart_enabled = ec_uart_tx_enabled and ec_usb_tx_enabled
             ccd_enabled = ap_uart_enabled or ec_usb_tx_enabled
@@ -224,7 +224,7 @@ class firmware_Cr50CCDServoCap(Cr50Test):
             # Ti50 does not report 'AP UART' or 'EC' in ccdstate output because
             # AP UART follows AP on/off and EC UART does not depend on EC on/off
             # state.
-            if self.gsc.NAME == 'cr50':
+            if self.gsc.IS_CR50:
                 if ap_uart_enabled != self.state_is_on(ccdstate, 'AP UART'):
                     mismatch.append('AP UART enabled without AP UART on')
                 if ec_uart_enabled != self.state_is_on(ccdstate, 'EC'):

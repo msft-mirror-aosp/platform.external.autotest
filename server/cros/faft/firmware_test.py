@@ -1441,10 +1441,15 @@ class FirmwareTest(test.test):
         logging.info("***")
         self.unmark_setup_done("gbb_flags")
 
-    def _preserve_dev_image(self):
+    def _preserve_dev_image(self, ignore_error=False):
         """Preserves metadata for developer tools on default-key-stateful layouts."""
         logging.info("Preserving developer tools for default-key-layout")
-        self._client.run("/usr/local/bin/preserve_dev_image")
+        try:
+            self._client.run("/usr/local/bin/preserve_dev_image")
+        except Exception as e:
+            if not ignore_error:
+                raise
+            logging.warning('Ignoring preserve dev image error: %s', e)
 
     def power_on(self):
         """Switch DUT AC power on."""
@@ -2710,10 +2715,7 @@ class FirmwareTest(test.test):
 
         # Try to run preserve dev image in case ccd open wipes the TPM.
         # Ignore failures. The dut may be down.
-        try:
-            self._preserve_dev_image()
-        except Exception as e:
-            logging.warning('Ignoring preserve dev image error: %s', e)
+        self._preserve_dev_image(True)
 
         if self.servo.main_device_is_ccd() and not self.gsc.testlab_is_on():
             error_txt = "because the main servo device is CCD."

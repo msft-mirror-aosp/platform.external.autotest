@@ -20,7 +20,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     provides many interfaces to set and get its behavior via console commands.
     This class is to abstract these interfaces.
     """
-
+    IS_CR50 = False
+    IS_TI50 = True
     PROD_RW_KEYIDS = ['0xfba25ca9']
     PROD_RO_KEYIDS = ['0xc7d40497']
     START_STR = ['ti50_common']

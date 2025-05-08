@@ -42,6 +42,8 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     provides many interfaces to set and get its behavior via console commands.
     This class is to abstract these interfaces.
     """
+    IS_CR50 = True
+    IS_TI50 = False
     PROD_RW_KEYIDS = ['0x87b73b67', '0xde88588d']
     PROD_RO_KEYIDS = ['0xaa66150f']
     OPEN = 'open'

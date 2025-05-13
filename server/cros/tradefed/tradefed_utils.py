@@ -14,6 +14,7 @@ from xml.etree import ElementTree
 from autotest_lib.client.common_lib import utils as common_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros import lockfile
+from autotest_lib.server.cros.tradefed import tradefed_constants as constants
 
 PERF_MODULE_NAME_PREFIX = 'CTS.'
 
@@ -110,6 +111,54 @@ def adb_keepalive(targets, extra_paths, socket=None):
         for job in jobs:
             common_utils.nuke_subprocess(job.sp)
         common_utils.join_bg_jobs(jobs)
+
+
+class powerd_override:
+    """ A context manager to override powerd prefs for preventing
+    screen from turning off, complying with CTS requirements.
+
+    This is a remote version of PowerPrefChanger which ensures overridden
+    policies won't persist across reboots by bind-mounting onto the config
+    directory."""
+
+    def __init__(self, runner):
+        """ Initializes the context manager.
+
+        @param runner: a function for running the list of commands.
+        """
+        self._runner = runner
+
+    def __enter__(self):
+        pref_dir = constants.POWERD_PREF_DIR
+        temp_dir = constants.POWERD_TEMP_DIR
+        commands = (
+                'cp -r %s %s' % (pref_dir, temp_dir),
+                'echo 1 > %s/ignore_external_policy' % temp_dir,
+                'echo 0 | tee %s/{,un}plugged_{dim,off,suspend}_ms' % temp_dir,
+                'mount --bind %s %s' % (temp_dir, pref_dir),
+                'restart powerd',
+        )
+        try:
+            self._runner(commands)
+        except (error.AutoservRunError, error.AutoservSSHTimeout):
+            logging.warning(
+                    'Failed to override powerd policy, tests depending '
+                    'on screen being always on may fail.')
+
+    def __exit__(self, ex_type, ex_value, trace):
+        pref_dir = constants.POWERD_PREF_DIR
+        temp_dir = constants.POWERD_TEMP_DIR
+        commands = (
+                'umount %s' % pref_dir,
+                'restart powerd',
+                'rm -rf %s' % temp_dir,
+        )
+        try:
+            self._runner(commands)
+        except (error.AutoservRunError, error.AutoservSSHTimeout):
+            logging.warning(
+                    'Failed to restore powerd policy, overrided policy '
+                    'will persist until device reboot.')
 
 
 def get_test_result_suite_version(test_result_xml_path):

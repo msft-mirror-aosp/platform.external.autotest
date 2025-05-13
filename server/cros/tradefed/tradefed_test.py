@@ -17,6 +17,7 @@
 # pylint: disable=no-self-use
 
 from collections import namedtuple
+import contextlib
 import errno
 import glob
 import hashlib
@@ -1767,10 +1768,24 @@ class TradefedTest(test.test):
 
             camera_lighting_workaround = 'CtsCameraTestCases' in test_name
 
-            # TODO(b/182397469): speculatively disable the "screen-on"
-            # handler for dEQP. Revert when the issue is resolved.
-            keep_screen_on = not (target_module
-                                  and "CtsDeqpTestCases" in target_module)
+            # Sets up the context for enabling and cleanig up the powerd override
+            if not (target_module and "CtsDeqpTestCases" in target_module):
+
+                def runner(commands):
+                    self._run_commands(commands)
+                    # TODO(b/396551638): 'restart powerd' causes USB/ethernet
+                    # disconnection. Workaround to wait for reconnection.
+                    if self._get_model_name() == 'krane':
+                        time.sleep(3)
+                        for host in self._hosts:
+                            host.wait_up(host.DEFAULT_REBOOT_TIMEOUT)
+
+                powerd_override_context = tradefed_utils.powerd_override(
+                        runner)
+            else:
+                # TODO(b/182397469): speculatively disable the "screen-on"
+                # handler for dEQP. Revert when the issue is resolved.
+                powerd_override_context = contextlib.nullcontext()
 
             with login.login_chrome(
                     hosts=self._hosts,
@@ -1783,7 +1798,8 @@ class TradefedTest(test.test):
                     log_dir=session_log_dir,
                     feature=chrome_feature,
                     camera_lighting_workaround=camera_lighting_workaround,) as current_logins, \
-                            self._adb.create_tunnel():
+                         powerd_override_context, \
+                         self._adb.create_tunnel():
                 if self._should_reboot(steps):
                     # TODO(rohitbm): Evaluate if power cycle really helps with
                     # Bluetooth test failures, and then make the implementation
@@ -1798,201 +1814,182 @@ class TradefedTest(test.test):
                     for current_login in current_logins:
                         current_login.need_reboot(hard_reboot=hard_reboot)
 
-                if keep_screen_on:
-                    # Do before adb connection (_ready_arc()) because some
-                    # devices disconnects network for a short while on powerd
-                    # restart and confuses the connection.
-                    self._override_powerd_prefs()
-                try:
-                    self._ready_arc()
-                    self._calculate_test_count_factor(bundle)
+                self._ready_arc()
+                self._calculate_test_count_factor(bundle)
 
-                    # Check the ABI list and skip (pass) the tests if not applicable.
-                    # This needs to be done after _ready_arc() for reading the device's
-                    # ABI list from the booted ARC instance.
-                    if '--abi' in run_template:
-                        abi = run_template[run_template.index('--abi') + 1]
-                        abilist = self._get_abilist()
-                        if abilist and abi not in abilist:
-                            logging.info(
-                                    'Specified ABI %s is not in the device ABI list %s. Skipping.',
-                                    abi, abilist)
-                            return
-
-                    # Skip back-camera collect tests on devices without back camera
-                    if (self._is_back_camera_collect_test(test_name)
-                                and not self._has_back_camera()):
+                # Check the ABI list and skip (pass) the tests if not applicable.
+                # This needs to be done after _ready_arc() for reading the device's
+                # ABI list from the booted ARC instance.
+                if '--abi' in run_template:
+                    abi = run_template[run_template.index('--abi') + 1]
+                    abilist = self._get_abilist()
+                    if abilist and abi not in abilist:
                         logging.info(
-                                'No back camera. Skipping back-camera collect-tests.'
-                        )
+                                'Specified ABI %s is not in the device ABI list %s. Skipping.',
+                                abi, abilist)
                         return
 
-                    if vm_tablet_mode:
+                # Skip back-camera collect tests on devices without back camera
+                if (self._is_back_camera_collect_test(test_name)
+                            and not self._has_back_camera()):
+                    logging.info(
+                            'No back camera. Skipping back-camera collect-tests.'
+                    )
+                    return
+
+                if vm_tablet_mode:
+                    self._run_commands([
+                            'inject_powerd_input_event --code=tablet --value=1'
+                    ],
+                                       ignore_status=True)
+
+                # TODO(kinaba): Make it a general config (per-model choice
+                # of tablet,clamshell,default) if the code below works.
+                elif utils.is_in_container() and not client_utils.is_moblab():
+                    # Force laptop mode for non TABLET_MODE_BOARDS
+                    if not self._is_tablet_mode_device():
                         self._run_commands([
-                                'inject_powerd_input_event --code=tablet --value=1'
+                                'inject_powerd_input_event --code=tablet --value=0'
                         ],
                                            ignore_status=True)
 
-                    # TODO(kinaba): Make it a general config (per-model choice
-                    # of tablet,clamshell,default) if the code below works.
-                    elif utils.is_in_container(
-                    ) and not client_utils.is_moblab():
-                        # Force laptop mode for non TABLET_MODE_BOARDS
-                        if not self._is_tablet_mode_device():
-                            self._run_commands([
-                                    'inject_powerd_input_event --code=tablet --value=0'
-                            ],
-                                               ignore_status=True)
+                self._run_commands(precondition_commands, ignore_status=True)
+                if use_helpers:
+                    self._fetch_helpers_from_dut()
 
-                    self._run_commands(precondition_commands,
-                                       ignore_status=True)
-                    if use_helpers:
-                        self._fetch_helpers_from_dut()
-
-                    # On drawcia, CPU is too busy during CTS and cause RecordingTest easy to fail.
-                    # Wait until CPU cool down before running CtsCameraTestCases.See b/270081260.
-                    test_model = self._get_model_name()
-                    if (test_model == 'drawcia' or test_model == 'soraka'
-                        ) and 'CtsCameraTestCases' in test_name:
-                        try:
-                            self._wait_cpu_cooldown(1800)
-                        except:
-                            logging.exception('Wait cpu cool down failed.')
-                    # Run tradefed.
-                    if session_id == None:
-                        if target_plan is not None:
-                            self._install_plan(target_plan)
-
-                        logging.info('Running %s:', test_name)
-                        command = self._tradefed_run_command(run_template)
-                    else:
-                        logging.info(
-                                'Retrying failures of %s with session_id %d:',
-                                test_name, session_id)
-                        command = self._tradefed_retry_command(
-                                retry_template, session_id)
-
-                    if media_asset and media_asset.uri:
-                        # Clean-up crash logs from previous sessions to ensure
-                        # enough disk space for 16GB storage devices: b/156075084.
-                        if not keep_media:
-                            self._clean_crash_logs()
-
-                    # b/196748125. Mute before running tests to avoid noises.
-                    self._mute_device()
+                # On drawcia, CPU is too busy during CTS and cause RecordingTest easy to fail.
+                # Wait until CPU cool down before running CtsCameraTestCases.See b/270081260.
+                test_model = self._get_model_name()
+                if (test_model == 'drawcia' or test_model
+                            == 'soraka') and 'CtsCameraTestCases' in test_name:
                     try:
-                        waived_tests = self._run_and_parse_tradefed(command)
+                        self._wait_cpu_cooldown(1800)
                     except:
-                        # Capture the log before aborting
-                        self._collect_ats_console_log(self.resultsdir)
-                        raise
+                        logging.exception('Wait cpu cool down failed.')
+                # Run tradefed.
+                if session_id == None:
+                    if target_plan is not None:
+                        self._install_plan(target_plan)
+
+                    logging.info('Running %s:', test_name)
+                    command = self._tradefed_run_command(run_template)
+                else:
+                    logging.info('Retrying failures of %s with session_id %d:',
+                                 test_name, session_id)
+                    command = self._tradefed_retry_command(
+                            retry_template, session_id)
+
+                if media_asset and media_asset.uri:
+                    # Clean-up crash logs from previous sessions to ensure
+                    # enough disk space for 16GB storage devices: b/156075084.
+                    if not keep_media:
+                        self._clean_crash_logs()
+
+                # b/196748125. Mute before running tests to avoid noises.
+                self._mute_device()
+                try:
+                    waived_tests = self._run_and_parse_tradefed(command)
+                except:
+                    # Capture the log before aborting
+                    self._collect_ats_console_log(self.resultsdir)
+                    raise
+                if media_asset:
+                    self._fail_on_unexpected_media_download(media_asset)
+                result = self._run_tradefed_list_results()
+                if not result:
+                    logging.error('Did not find any test results. Retry.')
+                    for current_login in current_logins:
+                        current_login.need_reboot()
+                    continue
+
+                last_waived = len(waived_tests)
+                last_session_id, last_passed, last_failed, last_all_done =\
+                    result
+
+                if last_failed > last_waived or not utils.is_in_container():
+                    for host in self._hosts:
+                        dir_name = "%s-step%02d" % (host.hostname, steps)
+                        output_dir = os.path.join(self.resultsdir,
+                                                  'extra_artifacts', dir_name)
+                        self._copy_extra_artifacts_dut(extra_artifacts, host,
+                                                       output_dir)
+                        self._copy_extra_artifacts_host(
+                                extra_artifacts_host, host, output_dir)
+
+                if last_passed + last_failed > 0:
+                    # At least one test had run, which means the media push step
+                    # of tradefed didn't fail. To free up the storage earlier,
+                    # delete the copy on the server side. See crbug.com/970881
                     if media_asset:
-                        self._fail_on_unexpected_media_download(media_asset)
-                    result = self._run_tradefed_list_results()
-                    if not result:
-                        logging.error('Did not find any test results. Retry.')
+                        self._cleanup_media(media_asset)
+
+                if last_failed < last_waived:
+                    logging.error(
+                            'Error: Internal waiver bookkeeping has become '
+                            'inconsistent (f=%d, w=%d)', last_failed,
+                            last_waived)
+
+                msg = 'run' if session_id == None else ' retry'
+                msg += '(p=%s, f=%s, w=%s)' % (last_passed, last_failed,
+                                               last_waived)
+                self.summary += msg
+                logging.info('RESULT: %s %s', msg, result)
+
+                # Overwrite last_all_done if the executed test count is equal
+                # to the known test count of the job.
+                if (not last_all_done and executable_test_count != None and
+                    (last_passed + last_failed in executable_test_count)):
+                    logging.warning('Overwriting all_done as True, since the '
+                                    'explicitly set executable_test_count '
+                                    'tests have run.')
+                    last_all_done = True
+
+                # Check for no-test modules. We use the "all_done" indicator
+                # provided by list_results to decide if there are outstanding
+                # modules to iterate over (similar to missing tests just on a
+                # per-module basis).
+                notest = (last_passed + last_failed == 0)
+                notest_nocrash = (notest and last_all_done)
+                if target_module in self._notest_modules:
+                    if notest_nocrash:
+                        logging.info('Package has no tests as expected.')
+                        return
+                    elif notest:
+                        logging.error('Crashed in a notest module. Hoping '
+                                      'this is transient. Retry after reboot.')
                         for current_login in current_logins:
                             current_login.need_reboot()
                         continue
+                    else:
+                        # We expected no tests, but the new bundle drop must
+                        # have added some for us. Alert us to the situation.
+                        raise error.TestFail('Failed: Remove module %s from '
+                                             'notest_modules directory!' %
+                                             target_module)
+                elif notest_nocrash:
+                    logging.error('Did not find any tests in module. Hoping '
+                                  'this is transient. Retry after reboot.')
+                    for current_login in current_logins:
+                        current_login.need_reboot()
+                    continue
 
-                    last_waived = len(waived_tests)
-                    last_session_id, last_passed, last_failed, last_all_done =\
-                        result
+                # After the no-test check, commit the pass/fail count.
+                waived = last_waived
+                session_id, passed, failed, all_done =\
+                    last_session_id, last_passed, last_failed, last_all_done
 
-                    if last_failed > last_waived or not utils.is_in_container(
-                    ):
-                        for host in self._hosts:
-                            dir_name = "%s-step%02d" % (host.hostname, steps)
-                            output_dir = os.path.join(self.resultsdir,
-                                                      'extra_artifacts',
-                                                      dir_name)
-                            self._copy_extra_artifacts_dut(
-                                    extra_artifacts, host, output_dir)
-                            self._copy_extra_artifacts_host(
-                                    extra_artifacts_host, host, output_dir)
+                # Check if all the tests passed.
+                if failed <= waived and all_done:
+                    break
 
-                    if last_passed + last_failed > 0:
-                        # At least one test had run, which means the media push step
-                        # of tradefed didn't fail. To free up the storage earlier,
-                        # delete the copy on the server side. See crbug.com/970881
-                        if media_asset:
-                            self._cleanup_media(media_asset)
-
-                    if last_failed < last_waived:
-                        logging.error(
-                                'Error: Internal waiver bookkeeping has become '
-                                'inconsistent (f=%d, w=%d)', last_failed,
-                                last_waived)
-
-                    msg = 'run' if session_id == None else ' retry'
-                    msg += '(p=%s, f=%s, w=%s)' % (last_passed, last_failed,
-                                                   last_waived)
-                    self.summary += msg
-                    logging.info('RESULT: %s %s', msg, result)
-
-                    # Overwrite last_all_done if the executed test count is equal
-                    # to the known test count of the job.
-                    if (not last_all_done and executable_test_count != None and
-                        (last_passed + last_failed in executable_test_count)):
-                        logging.warning(
-                                'Overwriting all_done as True, since the '
-                                'explicitly set executable_test_count '
-                                'tests have run.')
-                        last_all_done = True
-
-                    # Check for no-test modules. We use the "all_done" indicator
-                    # provided by list_results to decide if there are outstanding
-                    # modules to iterate over (similar to missing tests just on a
-                    # per-module basis).
-                    notest = (last_passed + last_failed == 0)
-                    notest_nocrash = (notest and last_all_done)
-                    if target_module in self._notest_modules:
-                        if notest_nocrash:
-                            logging.info('Package has no tests as expected.')
-                            return
-                        elif notest:
-                            logging.error(
-                                    'Crashed in a notest module. Hoping '
-                                    'this is transient. Retry after reboot.')
-                            for current_login in current_logins:
-                                current_login.need_reboot()
-                            continue
-                        else:
-                            # We expected no tests, but the new bundle drop must
-                            # have added some for us. Alert us to the situation.
-                            raise error.TestFail(
-                                    'Failed: Remove module %s from '
-                                    'notest_modules directory!' %
-                                    target_module)
-                    elif notest_nocrash:
-                        logging.error(
-                                'Did not find any tests in module. Hoping '
-                                'this is transient. Retry after reboot.')
-                        for current_login in current_logins:
-                            current_login.need_reboot()
-                        continue
-
-                    # After the no-test check, commit the pass/fail count.
-                    waived = last_waived
-                    session_id, passed, failed, all_done =\
-                        last_session_id, last_passed, last_failed, last_all_done
-
-                    # Check if all the tests passed.
-                    if failed <= waived and all_done:
-                        break
-
-                    # TODO(b/127908450) Tradefed loses track of not-executed tests
-                    # when the commandline pattern included '*', and retry run for
-                    # them wrongly declares all tests passed. This is misleading.
-                    # Rather, we give up the retry and report the result as FAIL.
-                    # TODO(b/243725038) Ditto for sharding cases.
-                    if not all_done and ('*' in ''.join(run_template)
-                                         or '--shard-count' in run_template):
-                        break
-                finally:
-                    # Revert the screen-always-on config and revert to default
-                    if keep_screen_on:
-                        self._restore_powerd_prefs()
+                # TODO(b/127908450) Tradefed loses track of not-executed tests
+                # when the commandline pattern included '*', and retry run for
+                # them wrongly declares all tests passed. This is misleading.
+                # Rather, we give up the retry and report the result as FAIL.
+                # TODO(b/243725038) Ditto for sharding cases.
+                if not all_done and ('*' in ''.join(run_template)
+                                     or '--shard-count' in run_template):
+                    break
 
         self._collect_ats_console_log(self.resultsdir)
 

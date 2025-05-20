@@ -17,8 +17,6 @@ from autotest_lib.utils.labellib import Key
 ### Constants for label prefixes
 CROS_VERSION_PREFIX = Key.CROS_VERSION
 CROS_ANDROID_VERSION_PREFIX = Key.CROS_ANDROID_VERSION
-FW_RW_VERSION_PREFIX = Key.FIRMWARE_RW_VERSION
-FW_RO_VERSION_PREFIX = Key.FIRMWARE_RO_VERSION
 FW_CR50_RW_VERSION_PREFIX = Key.FIRMWARE_CR50_RW_VERSION
 
 # So far the word cheets is only way to distinguish between ARC and Android
@@ -291,8 +289,6 @@ class Provision(_SpecialTaskAction):
     # version label is used for firmware update to stage desired ChromeOS image
     # on to the servo USB stick.
     _priorities = [CROS_VERSION_PREFIX,
-                   FW_RO_VERSION_PREFIX,
-                   FW_RW_VERSION_PREFIX,
                    FW_CR50_RW_VERSION_PREFIX]
 
     # TODO(milleral): http://crbug.com/249555
@@ -309,14 +305,6 @@ class Provision(_SpecialTaskAction):
                             'disable_after_test_sysinfo': True,
                             'disable_after_iteration_sysinfo': True
                     }),
-            FW_RO_VERSION_PREFIX:
-            actionables.TestActionable('provision_FirmwareUpdate'),
-            FW_RW_VERSION_PREFIX:
-            actionables.TestActionable('provision_FirmwareUpdate',
-                                       extra_kwargs={
-                                               'rw_only': True,
-                                               'tag': 'rw_only'
-                                       }),
             FW_CR50_RW_VERSION_PREFIX:
             actionables.TestActionable('provision_Cr50TOT')
     }

@@ -48,10 +48,6 @@ def provision_machine(machine):
     # Determine if we should initialize servo based on request type as
     # we don't need servo in OS only provision.
     need_servo = False
-    for label in labels_list:
-        if (label.startswith(provision.FW_RW_VERSION_PREFIX) or
-            label.startswith(provision.FW_RO_VERSION_PREFIX)):
-            need_servo = True
     host = hosts.create_target_machine(machine, try_lab_servo=need_servo)
     try:
         job.sysinfo.add_logdir(

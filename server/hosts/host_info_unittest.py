@@ -60,7 +60,7 @@ class HostInfoTest(unittest.TestCase):
 
     def test_build_needs_prefix(self):
         """The build prefix is of the form '<type>-version:'"""
-        self.info.labels = ['cros-version', 'fwrw-version', 'fwro-version']
+        self.info.labels = ['cros-version']
         self.assertIsNone(self.info.build)
 
 

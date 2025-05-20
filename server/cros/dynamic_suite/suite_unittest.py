@@ -65,8 +65,7 @@ class SuiteTest(unittest.TestCase):
     """
 
     _BOARD = 'board:board'
-    _BUILDS = {provision.CROS_VERSION_PREFIX:'build_1',
-               provision.FW_RW_VERSION_PREFIX:'fwrw_build_1'}
+    _BUILDS = {provision.CROS_VERSION_PREFIX: 'build_1'}
     _TAG = 'au'
     _ATTR = {'attr:attr'}
     _DEVSERVER_HOST = 'http://dontcare:8080'

@@ -940,10 +940,6 @@ def create_job_page_handler(name, priority, control_file, control_type,
         builds[provision.CROS_VERSION_PREFIX] = image
         if cheets_build:
             builds[provision.CROS_ANDROID_VERSION_PREFIX] = cheets_build
-        if firmware_rw_build:
-            builds[provision.FW_RW_VERSION_PREFIX] = firmware_rw_build
-        if firmware_ro_build:
-            builds[provision.FW_RO_VERSION_PREFIX] = firmware_ro_build
         return create_suite_job(
                 name=name, control_file=control_file, priority=priority,
                 builds=builds, test_source_build=test_source_build,

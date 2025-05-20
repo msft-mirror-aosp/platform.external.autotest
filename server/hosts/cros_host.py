@@ -771,9 +771,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                         both fwro_version and fwrw_version.
         """
         info = self.host_info_store.get()
-        info.clear_version_labels(provision.FW_RW_VERSION_PREFIX)
-        if not rw_only:
-            info.clear_version_labels(provision.FW_RO_VERSION_PREFIX)
         self.host_info_store.commit(info)
 
 
@@ -786,9 +783,6 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
 
         """
         info = self.host_info_store.get()
-        info.set_version_label(provision.FW_RW_VERSION_PREFIX, build)
-        if not rw_only:
-            info.set_version_label(provision.FW_RO_VERSION_PREFIX, build)
         self.host_info_store.commit(info)
 
 

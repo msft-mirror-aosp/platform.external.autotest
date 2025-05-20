@@ -464,11 +464,6 @@ class _SuiteChildJobCreator(object):
              len(self._builds) > 1)):
             keyvals[constants.JOB_TEST_SOURCE_BUILD_KEY] = \
                     self._test_source_build
-            for prefix, build in six.iteritems(self._builds):
-                if prefix == provision.FW_RW_VERSION_PREFIX:
-                    keyvals[constants.FWRW_BUILD]= build
-                elif prefix == provision.FW_RO_VERSION_PREFIX:
-                    keyvals[constants.FWRO_BUILD] = build
         # Add suite job id to keyvals so tko parser can read it from keyval
         # file.
         if self._suite_job_id:

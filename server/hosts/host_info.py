@@ -59,10 +59,7 @@ class HostInfo(object):
             provision.CROS_ANDROID_VERSION_PREFIX,
     )
 
-    _VERSION_LABELS = _OS_VERSION_LABELS + (
-            provision.FW_RO_VERSION_PREFIX,
-            provision.FW_RW_VERSION_PREFIX,
-    )
+    _VERSION_LABELS = _OS_VERSION_LABELS
 
     def __init__(self, labels=None, attributes=None, stable_versions=None):
         """

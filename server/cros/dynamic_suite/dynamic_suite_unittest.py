@@ -26,8 +26,7 @@ class DynamicSuiteTest(unittest.TestCase):
     """
 
     _DEVSERVER_HOST = 'http://devserver1'
-    _BUILDS = {provision.CROS_VERSION_PREFIX: 'build_1',
-               provision.FW_RW_VERSION_PREFIX:'fwrw_build_1'}
+    _BUILDS = {provision.CROS_VERSION_PREFIX: 'build_1'}
 
     def setUp(self):
 
@@ -110,9 +109,7 @@ class DynamicSuiteTest(unittest.TestCase):
         self.assertEquals(spec.pool, None)
         self.assertEquals(spec.check_hosts, True)
         self.assertEquals(spec.add_experimental, True)
-        self.assertEquals(
-                spec.suite_dependencies,
-                ['cros-version:build_1', 'fwrw-version:fwrw_build_1'])
+        self.assertEquals(spec.suite_dependencies, ['cros-version:build_1'])
 
 
     def testReimageAndSIGTERM(self):

@@ -67,12 +67,6 @@ def make_builds_from_options(options):
         if build_prefix == provision.CROS_VERSION_PREFIX:
             builds[build_prefix] += provision.CHEETS_SUFFIX
 
-    if options.firmware_rw_build:
-        builds[provision.FW_RW_VERSION_PREFIX] = options.firmware_rw_build
-
-    if options.firmware_ro_build:
-        builds[provision.FW_RO_VERSION_PREFIX] = options.firmware_ro_build
-
     return builds
 
 

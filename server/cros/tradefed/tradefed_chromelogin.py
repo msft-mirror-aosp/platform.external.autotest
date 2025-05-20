@@ -148,6 +148,10 @@ class ChromeLogin(object):
             cmd += ' --vm_force_max_resolution'
         if self._feature:
             cmd += ' --feature=' + self._feature
+        # Additional browser flags
+        cmd += ' --'
+        # Disable pre-consent metrics to suppress background activities.
+        cmd += ' --oobe-disable-pre-consent-metrics-for-testing'
         if not verbose:
             cmd += ' > /dev/null 2>&1'
         return cmd

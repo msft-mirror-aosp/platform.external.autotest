@@ -5,14 +5,14 @@
 import typing
 
 # TODO(kinaba): Update adb and aapt as well to this version.
-SDK_TOOLS_DIR = 'gs://chromeos-arc-images/builds/git_udc_release-static_sdk_tools/9594652'
+SDK_TOOLS_DIR = 'gs://chromeos-arc-images/builds/git_trunk-release/12136052/'
 SDK_TOOLS_FILES = ['aapt2']
 
-AAPT_DIR = 'gs://chromeos-arc-images/builds/git_nyc-mr1-arc-linux-static_sdk_tools/3544738'
+AAPT_DIR = 'gs://chromeos-arc-images/builds/git_trunk-release/12136052/'
 AAPT_FILES = ['aapt']
 
 # adb 31.0.0 from https://developer.android.com/studio/releases/platform-tools
-ADB_DIR = 'gs://chromeos-arc-images/builds/aosp-sdk-release/7110759/'
+ADB_DIR = 'gs://chromeos-arc-images/builds/git_trunk-release/12136052/'
 ADB_FILES = ['adb']
 
 ADB_POLLING_INTERVAL_SECONDS = 1

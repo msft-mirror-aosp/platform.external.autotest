@@ -88,6 +88,7 @@ class RemoteFacadeProxy(object):
                  no_chrome,
                  extra_browser_args=None,
                  disable_arc=False,
+                 only_audio_ext=False,
                  force_python3=False):
         """Construct a RemoteFacadeProxy.
 
@@ -96,6 +97,8 @@ class RemoteFacadeProxy(object):
         @param extra_browser_args: A list containing extra browser args passed
                                    to Chrome in addition to default ones.
         @param disable_arc: True to disable ARC++.
+        @param only_audio_ext: Only enable the audio_test_extension,
+                               not other extensions.
         @param force_python3: Force the xmlrpc server to run as python3.
 
         """
@@ -105,13 +108,15 @@ class RemoteFacadeProxy(object):
         self._no_chrome = no_chrome
         self._extra_browser_args = extra_browser_args
         self._disable_arc = disable_arc
+        self._only_audio_ext = only_audio_ext
         self._force_python3 = force_python3
 
         self.connect()
         if not no_chrome:
             self._start_chrome(reconnect=False, retry=True,
                                extra_browser_args=self._extra_browser_args,
-                               disable_arc=self._disable_arc)
+                               disable_arc=self._disable_arc,
+                               only_audio_ext=self._only_audio_ext)
 
 
     def __getattr__(self, name):
@@ -207,7 +212,8 @@ class RemoteFacadeProxy(object):
                     self._start_chrome(
                             reconnect=True, retry=False,
                             extra_browser_args=self._extra_browser_args,
-                            disable_arc=self._disable_arc)
+                            disable_arc=self._disable_arc,
+                            only_audio_ext=self._only_audio_ext)
 
                 # Try again unless we explicitly disable retry for this rpc.
                 # If we're not retrying, re-raise the exception
@@ -293,7 +299,7 @@ class RemoteFacadeProxy(object):
 
 
     def _start_chrome(self, reconnect, retry=False, extra_browser_args=None,
-                      disable_arc=False):
+                      disable_arc=False, only_audio_ext=False):
         """Starts Chrome using browser facade on Cros host.
 
         @param reconnect: True for reconnection, False for the first-time.
@@ -309,7 +315,7 @@ class RemoteFacadeProxy(object):
                 'Start Chrome with default arguments and extra browser args %s...',
                 extra_browser_args)
         success = self._xmlrpc_proxy.browser.start_default_chrome(
-                reconnect, extra_browser_args, disable_arc)
+                reconnect, extra_browser_args, disable_arc, only_audio_ext)
         if not success and retry:
             logging.warning('Can not start Chrome. Reboot host and try again')
             # Reboot host and try again.
@@ -321,7 +327,7 @@ class RemoteFacadeProxy(object):
                     'Retry starting Chrome with default arguments and '
                     'extra browser args %s...', extra_browser_args)
             success = self._xmlrpc_proxy.browser.start_default_chrome(
-                    reconnect, extra_browser_args, disable_arc)
+                    reconnect, extra_browser_args, disable_arc, only_audio_ext)
 
         if not success:
             raise error.TestError(
@@ -350,6 +356,7 @@ class RemoteFacadeFactory(object):
                  results_dir=None,
                  extra_browser_args=None,
                  disable_arc=False,
+                 only_audio_ext=False,
                  force_python3=False):
         """Construct a RemoteFacadeFactory.
 
@@ -376,6 +383,7 @@ class RemoteFacadeFactory(object):
                     no_chrome=no_chrome,
                     extra_browser_args=extra_browser_args,
                     disable_arc=disable_arc,
+                    only_audio_ext=only_audio_ext,
                     force_python3=force_python3)
         finally:
             if results_dir:

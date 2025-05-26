@@ -34,8 +34,7 @@ class audio_CrasGetNodes(test.test):
 
         try:
             with chrome.Chrome(
-                    extension_paths=[cros_constants.AUDIO_TEST_EXTENSION],
-                    autotest_ext=True) as cr:
+                    extension_paths=[cros_constants.AUDIO_TEST_EXTENSION]) as cr:
                 audio_facade_local = audio_facade.AudioFacadeLocal(cr)
                 audio_facade_local.set_chrome_active_node_type(
                         self.ALOOP_CRAS_NODE_TYPE, self.ALOOP_CRAS_NODE_TYPE)

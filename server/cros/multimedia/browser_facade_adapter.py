@@ -41,17 +41,21 @@ class BrowserFacadeRemoteAdapter(object):
         return self._browser_proxy.start_custom_chrome(kwargs)
 
 
-    def start_default_chrome(self, restart=False, extra_browser_args=None):
+    def start_default_chrome(self, restart=False, extra_browser_args=None,
+                             disable_arc=False, only_audio_ext=False):
         """Start the default Chrome.
 
         @param restart: True to start Chrome without clearing previous state.
         @param extra_browser_args: A list containing extra browser args passed
                                    to Chrome in addition to default ones.
+        @param disable_arc: True to disable ARC++.
+        @param only_audio_ext: Only enable the audio_test_extension,
+                               not other extensions.
         @return: True on success, False otherwise.
 
         """
         return self._browser_proxy.start_default_chrome(
-                restart, extra_browser_args)
+                restart, extra_browser_args, disable_arc, only_audio_ext)
 
 
     def set_http_server_directories(self, directories):

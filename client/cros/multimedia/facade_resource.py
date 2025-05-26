@@ -120,7 +120,7 @@ class FacadeResource(object):
 
 
     def start_default_chrome(self, restart=False, extra_browser_args=None,
-                             disable_arc=False):
+                             disable_arc=False, only_audio_ext=False):
         """Start the default Chrome.
 
         @param restart: True to start Chrome without clearing previous state.
@@ -128,6 +128,8 @@ class FacadeResource(object):
                                    to Chrome. This list will be appened to
                                    default EXTRA_BROWSER_ARGS.
         @param disable_arc: True to disable ARC++.
+        @param only_audio_ext: Only enable the audio_test_extension,
+                               not other extensions.
 
         @return: True on success, False otherwise.
 
@@ -140,12 +142,12 @@ class FacadeResource(object):
         else:
             arc_mode = self.ARC_DISABLED
         kwargs = {
-            'extension_paths': [constants.AUDIO_TEST_EXTENSION,
-                                constants.DISPLAY_TEST_EXTENSION],
+            'extension_paths': [constants.AUDIO_TEST_EXTENSION] if only_audio_ext
+                               else [constants.AUDIO_TEST_EXTENSION, constants.DISPLAY_TEST_EXTENSION],
             'extra_browser_args': self.EXTRA_BROWSER_ARGS,
             'clear_enterprise_policy': not restart,
             'arc_mode': arc_mode,
-            'autotest_ext': True
+            'autotest_ext': not only_audio_ext
         }
         if extra_browser_args:
             kwargs['extra_browser_args'] += extra_browser_args

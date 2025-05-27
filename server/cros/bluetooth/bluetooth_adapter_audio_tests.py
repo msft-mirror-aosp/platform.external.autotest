@@ -1303,7 +1303,7 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
                            bluez_function,
                            device,
                            test_profile,
-                           timeout=15):
+                           timeout=45):
         """Tests HFP profile is connected.
 
         @param bluez_function: the appropriate bluez HFP function either

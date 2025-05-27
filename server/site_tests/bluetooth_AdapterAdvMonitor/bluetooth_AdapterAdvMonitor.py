@@ -104,8 +104,6 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         self.advmon_test_fg_bg_combination()
 
 
-    # TODO(b/150897528) - Dru loses firmware around suspend, which causes bluez
-    #                     removes all the monitors.
     @test_wrapper('Suspend Resume Tests',
                   devices={
                           'BLE_KEYBOARD': 1,
@@ -113,14 +111,12 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                   },
                   skip_models=SUSPEND_POWER_DOWN_MODELS,
                   skip_chipsets=SUSPEND_POWER_DOWN_CHIPSETS,
-                  supports_floss=False)
+                  supports_floss=True)
     def advmon_suspend_resume_tests(self):
         """Tests working of background scanning with suspend resume."""
         self.advmon_test_suspend_resume()
 
 
-    # TODO(b/150897528) - Dru loses firmware around suspend, which causes bluez
-    #                     removes all the monitors.
     @test_wrapper('Interleave Scan Tests',
                   devices={'BLE_MOUSE': 1},
                   skip_models=SUSPEND_POWER_DOWN_MODELS,

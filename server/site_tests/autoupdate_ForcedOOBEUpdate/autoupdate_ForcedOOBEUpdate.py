@@ -5,6 +5,7 @@
 
 import logging
 import time
+from typing import cast
 
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import utils
@@ -133,10 +134,16 @@ class autoupdate_ForcedOOBEUpdate(update_engine_test.UpdateEngineTest):
 
             """
             self._get_update_engine_status(timeout=15, ignore_timeout=True)
-            return self._check_update_engine_log_for_entry(
+            return (
+                self._check_update_engine_log_for_entry(
                     # Agnostic to either update/installation checks from initial
                     # updater post reboot check.
-                    "Running periodic ")
+                    "Running periodic ") or
+                self._check_update_engine_log_for_entry(
+                    # Also check for blocked periodic update checks. Which is
+                    # the case when the device is on a test build.
+                    "blocking periodic update checks")
+            )
 
         utils.poll_for_condition(
                 found_post_reboot_event,

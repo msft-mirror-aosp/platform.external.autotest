@@ -53,28 +53,29 @@ class autoupdate_UserData(update_engine_test.UpdateEngineTest):
 
     def _modify_input_methods(self):
         """ Change default Input Method to US International."""
-        current_ime = self._cr.autotest_ext.EvaluateJavaScript(
-            self._GET_IME_JS, promise=True)
+        current_ime = self._tab.EvaluateJavaScript(self._GET_IME_JS,
+                                                   promise=True)
         logging.info('Current IME is %s', current_ime)
         add_ime_js = ('chrome.languageSettingsPrivate.addInputMethod("%s")' %
                       self._US_INTL_IME)
-        self._cr.autotest_ext.EvaluateJavaScript(add_ime_js)
-        self._cr.autotest_ext.EvaluateJavaScript(self._SET_IME_JS %
-                                                 self._US_INTL_IME)
-        new_ime = self._cr.autotest_ext.EvaluateJavaScript(self._GET_IME_JS)
+        self._tab.EvaluateJavaScript(add_ime_js)
+        self._tab.EvaluateJavaScript(self._SET_IME_JS % self._US_INTL_IME)
+        new_ime = self._tab.EvaluateJavaScript(self._GET_IME_JS)
         if current_ime == new_ime:
             raise error.TestFail('IME could not be changed before update.')
 
 
     def _modify_time_zone(self):
         """Change time zone to be user selected instead of automatic by IP."""
-        current_time_zone = self._cr.autotest_ext.EvaluateJavaScript(
-            self._GET_PREF_JS % self._TIME_ZONE_PREF, promise=True)
+        current_time_zone = self._tab.EvaluateJavaScript(self._GET_PREF_JS %
+                                                         self._TIME_ZONE_PREF,
+                                                         promise=True)
         logging.info('Calculating timezone by IP: %s', current_time_zone)
-        self._cr.autotest_ext.EvaluateJavaScript(
-            self._SET_PREF_JS % (self._TIME_ZONE_PREF, 'false'))
-        new_timezone = self._cr.autotest_ext.EvaluateJavaScript(
-            self._GET_PREF_JS % self._TIME_ZONE_PREF, promise=True)
+        self._tab.EvaluateJavaScript(self._SET_PREF_JS %
+                                     (self._TIME_ZONE_PREF, 'false'))
+        new_timezone = self._tab.EvaluateJavaScript(self._GET_PREF_JS %
+                                                    self._TIME_ZONE_PREF,
+                                                    promise=True)
         if current_time_zone == new_timezone:
             raise error.TestFail('Timezone detection could not be changed.')
 
@@ -82,24 +83,28 @@ class autoupdate_UserData(update_engine_test.UpdateEngineTest):
     def _perform_after_update_checks(self):
         """Check the user preferences and files are the same."""
         with chrome.Chrome(dont_override_profile=True,
-                           autotest_ext=True,
                            username=self._LOGIN_TEST_USERNAME,
                            password=self._LOGIN_TEST_PASSWORD) as cr:
             # Check test file is still present.
             if not os.path.exists(self._TEST_FILE):
                 raise error.TestFail('Test file was not present after update.')
 
+            tab = cr.browser.tabs[0]
+            tab.Navigate('chrome://os-settings')
+            tab.WaitForDocumentReadyStateToBeComplete()
+
             # Check IME has not changed.
-            current_ime = cr.autotest_ext.EvaluateJavaScript(
-                self._GET_IME_JS, promise=True)
+            current_ime = tab.EvaluateJavaScript(self._GET_IME_JS,
+                                                 promise=True)
             if current_ime != self._US_INTL_IME:
                 raise error.TestFail('Input method was not preserved after'
                                      'update. Expected %s, Actual: %s' %
                                      (self._US_INTL_IME, current_ime))
 
             # Check that timezone is user selected.
-            current_time_zone = cr.autotest_ext.EvaluateJavaScript(
-                self._GET_PREF_JS % self._TIME_ZONE_PREF, promise=True)
+            current_time_zone = tab.EvaluateJavaScript(self._GET_PREF_JS %
+                                                       self._TIME_ZONE_PREF,
+                                                       promise=True)
             if current_time_zone:
                 raise error.TestFail('Time zone detection was changed back to '
                                      'automatic.')
@@ -115,10 +120,13 @@ class autoupdate_UserData(update_engine_test.UpdateEngineTest):
         if payload_url:
             with nebraska_wrapper.NebraskaWrapper(
                 log_dir=self.resultsdir, payload_url=payload_url) as nebraska:
-                with chrome.Chrome(autotest_ext=True,
-                                   username=self._LOGIN_TEST_USERNAME,
+                with chrome.Chrome(username=self._LOGIN_TEST_USERNAME,
                                    password=self._LOGIN_TEST_PASSWORD) as cr:
-                    self._cr = cr
+                    tab = cr.browser.tabs[0]
+                    tab.Navigate('chrome://os-settings')
+                    tab.WaitForDocumentReadyStateToBeComplete()
+                    self._tab = tab
+
                     utils.run(['echo', 'hello', '>', self._TEST_FILE])
                     self._modify_input_methods()
                     self._modify_time_zone()

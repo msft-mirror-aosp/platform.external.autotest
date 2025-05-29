@@ -39,40 +39,6 @@ class autoupdate_EOL(update_engine_test.UpdateEngineTest):
                                  (self._EXPECTED_EOL_DATE, result))
 
 
-    def _check_eol_notification(self, eol_date):
-        """Checks that we are showing an EOL notification to the user."""
-        expected_eol_date = self._get_expected_eol_date(eol_date)
-        expected_warning_begins_date = (expected_eol_date
-                                        - datetime.timedelta(
-                                          self._DAYS_BEFORE_EOL_START_WARNING))
-
-        expected_final_title = self._EXPECTED_FINAL_TITLE
-        expected_warning_title = (self._EXPECTED_WARNING_TITLE.
-            format(expected_eol_date.strftime("%B %Y")))
-
-        def find_notification(expected_title):
-            """Helper to find notification."""
-            notifications = self._cr.get_visible_notifications()
-            return any([n['title'] == expected_title
-                        for n in (notifications or [])])
-
-        def check_eol_notifications():
-            """Checks if correct notification is shown."""
-            final_notification = find_notification(expected_final_title)
-            warning_notification = find_notification(expected_warning_title)
-
-            now = datetime.datetime.utcnow()
-            if expected_eol_date <= now:
-                return final_notification and not warning_notification
-            elif expected_warning_begins_date <= now:
-                return not final_notification and warning_notification
-            return not final_notification and not warning_notification
-
-        utils.poll_for_condition(condition=lambda: check_eol_notifications(),
-                                 desc='End of Life Notification UI passed',
-                                 timeout=5, sleep_interval=1)
-
-
     def _check_eol_settings(self, eol_date):
         """Check that the messages about EOL in Settings are correct."""
         tab = self._cr.browser.tabs[0]
@@ -120,7 +86,6 @@ class autoupdate_EOL(update_engine_test.UpdateEngineTest):
                 logging.info('Update failed as expected.')
 
             self._check_eol_info()
-            with chrome.Chrome(autotest_ext=True, logged_in=True) as cr:
+            with chrome.Chrome(logged_in=True) as cr:
                 self._cr = cr
-                self._check_eol_notification(eol_date)
                 self._check_eol_settings(eol_date)

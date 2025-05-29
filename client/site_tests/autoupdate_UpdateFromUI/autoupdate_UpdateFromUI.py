@@ -20,6 +20,7 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
     _NOTIFICATION_TIMEOUT = 10
     _NOTIFICATION_TITLE = "Update available"
     _NOTIFICATION_TITLE2 = "Update device"
+    _SETTINGS_UPDATE_MESSAGE = "Nearly up to date! Restart your device to finish updating."
 
 
     def initialize(self):
@@ -34,24 +35,47 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
         self._clear_custom_lsb_release()
         super(autoupdate_UpdateFromUI, self).cleanup()
 
-    def _wait_for_update_notification(self):
-        """Waits for the post-update notification to appear. """
+    def _wait_for_update_message_in_settings(self):
+        """Waits for the post-update message to appear in Settings. """
 
-        def find_notification():
-            """Polls for visibility of the post-update notification. """
-            notifications = self._cr.get_visible_notifications()
-            if notifications is None:
+        def find_update_message():
+            """
+            Polls for visibility of the post-update message in the settings
+            About page, prompting the user to finish the update by restarting
+            the device.
+            """
+            tab = self._cr.browser.tabs[0]
+            tab.Navigate('chrome://os-settings/help')
+            tab.WaitForDocumentReadyStateToBeComplete()
+
+            find_update_message_js = '''
+                function checkUpdateMessage() {
+                    const updateMessageElement = document.querySelector('os-settings-ui')
+                        ?.shadowRoot?.querySelector('os-settings-main')
+                        ?.shadowRoot?.querySelector('main-page-container')
+                        ?.shadowRoot?.querySelector('os-about-page')
+                        ?.shadowRoot?.querySelector('settings-card #updateStatusMessage');
+                    return updateMessageElement ? updateMessageElement.textContent.trim() : null;
+                }
+                checkUpdateMessage();
+            '''
+            try:
+                update_message = tab.EvaluateJavaScript(find_update_message_js)
+            except exceptions.EvaluateException:
+                raise error.TestFail(
+                        'Failed to find the post-update message in Settings.')
+            if update_message is None:
                 return False
-            return any(n for n in notifications
-                       if self._NOTIFICATION_TITLE in n['title']
-                       or self._NOTIFICATION_TITLE2 in n['title'])
+            logging.info('Post-update message found in Settings: %s',
+                         update_message)
+            return self._SETTINGS_UPDATE_MESSAGE in update_message
 
         utils.poll_for_condition(
-                condition=find_notification,
-                exception=error.TestFail('Post-update notification not found'),
+                condition=find_update_message,
+                exception=error.TestFail(
+                        'Post-update message not found in Settings'),
                 timeout=self._NOTIFICATION_TIMEOUT,
                 sleep_interval=self._NOTIFICATION_INTERVAL)
-
 
     def run_once(self, payload_url):
         """
@@ -71,7 +95,7 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
             # this, we stay logged in at the end of the client test by not
             # using a context manager for the Chrome session.
             try:
-                self._cr = chrome.Chrome(autotest_ext=True)
+                self._cr = chrome.Chrome()
 
                 # Need to create a custom lsb-release file to point the UI
                 # update button to Nebraska instead of the default update
@@ -96,8 +120,8 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
                 except exceptions.EvaluateException:
                     raise error.TestFail(
                         'Failed to find and click Check For Updates button.')
-                self._take_screenshot('after_check_for_updates.png')
                 self._wait_for_update_to_complete()
+                self._take_screenshot('after_check_for_updates.png')
 
             except Exception as e:
                 # The update didn't complete, so we can close the Chrome
@@ -107,4 +131,4 @@ class autoupdate_UpdateFromUI(update_engine_test.UpdateEngineTest):
                     self._cr.close()
                 raise error.TestFail("Failed to perform the update: %s" % e)
 
-            self._wait_for_update_notification()
+            self._wait_for_update_message_in_settings()

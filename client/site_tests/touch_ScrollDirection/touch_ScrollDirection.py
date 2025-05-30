@@ -87,8 +87,7 @@ class touch_ScrollDirection(touch_playback_test_base.touch_playback_test_base):
             raise error.TestNAError('Missing input data for this board name.')
 
         # Log in and start test.
-        with chrome.Chrome(autotest_ext=True,
-                           init_network_controller=True) as cr:
+        with chrome.Chrome(init_network_controller=True) as cr:
             # Setup.
             self._set_autotest_ext(cr.autotest_ext)
             self._open_events_page(cr)

@@ -77,8 +77,7 @@ class touch_TouchscreenScroll(
         """Entry point of this test."""
 
         # Log in and start test.
-        with chrome.Chrome(autotest_ext=True,
-                           init_network_controller=True,
+        with chrome.Chrome(init_network_controller=True,
                            # b/330347607: Enable PrivacySandboxSettings4
                            # to avoid the Privacy Sandbox settings page popup
                            # from being shown.

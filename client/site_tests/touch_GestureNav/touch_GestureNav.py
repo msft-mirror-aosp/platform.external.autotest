@@ -71,8 +71,7 @@ class touch_GestureNav(touch_playback_test_base.touch_playback_test_base):
             raise error.TestNAError('Missing input data for this board name.')
 
         # Log in and start test.
-        with chrome.Chrome(autotest_ext=True,
-                           init_network_controller=True,
+        with chrome.Chrome(init_network_controller=True,
                            # b/330347607: Enable PrivacySandboxSettings4
                            # to avoid the Privacy Sandbox settings page popup
                            # from being shown.

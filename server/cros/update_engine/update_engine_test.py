@@ -1244,6 +1244,11 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                         target_cr = row[target_cr_idx]
                     break
 
+            if target_build is None and target_cr is None:
+                logging.info(
+                        'Found no update for board %s in serving builds CSV.',
+                        board)
+
         serving_builds_data = {}
         if target_build is not None and target_cr is not None:
             logging.info(
@@ -1282,6 +1287,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # Add build data from serving builds CSV
         if serving_builds_data:
+            logging.info('Append serving builds data to paygen data')
             paygen_data.append(serving_builds_data)
 
         if not paygen_data:
@@ -1354,6 +1360,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # Install the matching build with quick provision.
         if public_bucket:
+            logging.info('Test is running outside the main lab.')
             self._copy_quick_provision_to_dut()
             update_url = self._get_provision_url_on_public_bucket(
                     build_name, is_release_bucket=is_release_bucket,

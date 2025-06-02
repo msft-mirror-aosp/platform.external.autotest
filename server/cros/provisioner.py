@@ -369,6 +369,7 @@ class ChromiumOSProvisioner(object):
         #     will be uncertain.
         if not self.host.is_up():
             raise HostUpdateError(self.host.hostname, HostUpdateError.DUT_DOWN)
+        logging.info('Resetting stateful partition')
         self._reset_stateful_partition()
         # Servohost reboot logic is handled by themselves.
         if not self._is_servohost:

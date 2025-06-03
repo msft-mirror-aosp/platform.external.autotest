@@ -33,7 +33,7 @@ recbtnforce
 rma_auth
 shmem
 sleepmask
-sn
+-sn
 (?P<mp>-)?spihash
 sysinfo
 sysrst

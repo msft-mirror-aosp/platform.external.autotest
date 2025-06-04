@@ -1852,7 +1852,7 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
                     'echo', '"fast safe"', '>',
                     '/mnt/stateful_partition/factory_install_reset'
             ])
-            self.reboot(timeout=self.POWERWASH_BOOT_TIMEOUT, wait=True)
+            self.reboot(timeout=3 * self.POWERWASH_BOOT_TIMEOUT, wait=True)
 
     def _read_arc_prop_file(self, filename):
         for path in [

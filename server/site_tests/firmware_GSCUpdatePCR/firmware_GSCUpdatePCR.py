@@ -33,6 +33,7 @@ class firmware_GSCUpdatePCR(FirmwareTest):
             raise error.TestNAError(
                     'Not supported on devices with ec_forwards_short_pp_press')
         self.fast_ccd_open(True)
+        self._preserve_dev_image()
         self.gsc.ccd_reset_and_wipe_tpm()
         self.gsc.send_command('rddkeepalive disable')
         self.gsc.ccd_disable()
@@ -40,7 +41,9 @@ class firmware_GSCUpdatePCR(FirmwareTest):
     def cleanup(self):
         """Open ccd to clear the tpm."""
         try:
+            self._preserve_dev_image()
             self.gsc.ccd_reset_and_wipe_tpm()
+            self.gsc.ccd_enable()
         finally:
             super(firmware_GSCUpdatePCR, self).cleanup()
 

@@ -1057,9 +1057,11 @@ suite:wifi_perf_flaky
 suite:wifi_perf_openwrt
 suite:wifi_perf_openwrt_flaky
 suite:wifi_stress
+suite:wifi_standalone
 suite:wifi_tdls_cast
 suite:wificell-cq
 suite:wificell_dut_validation
+suite:wificell_network_cellular
 suite:wifichaos
 suite:wilco_bve
 suite:wilco_bve_dock

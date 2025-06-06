@@ -1274,6 +1274,7 @@ class Cr50Test(FirmwareTest):
             if self.gsc.IS_TI50:
                 self._preserve_dev_image(True)
             self.gsc.rollback()
+            logging.info("Rolled back: %s", self.gsc.rolledback())
 
         expected_rw = original_rw if expect_rollback else image_rw
         # If we expect a rollback, the version should remain unchanged

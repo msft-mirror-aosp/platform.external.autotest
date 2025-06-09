@@ -10,7 +10,7 @@ from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.network import xmlrpc_datatypes
 from autotest_lib.server.cros.network import hostap_config
 from autotest_lib.server.cros.network import wifi_cell_test_base
-
+from autotest_lib.server.hosts.openwrt_host import OS_TYPE_OPENWRT
 
 class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
     """Test that a dual radio router can use both radios."""
@@ -142,12 +142,16 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
 
         """
 
-        # Antenna can only be configured when the wireless interface is down.
-        self.target.deconfig()
-        self.target.disable_antennas_except(bitmap)
-        # This seems to increase the probability that our association
-        # attempts pass.  It is the very definition of a dark incantation.
-        time.sleep(5)
+        # On U6Lite, U6+ and BPi-R4 disabling antennas is not supported
+        if self.target.host.get_os_type() != OS_TYPE_OPENWRT:
+            # Antenna can only be configured when the wireless interface is down.
+            self.target.deconfig()
+            self.target.disable_antennas_except(bitmap)
+
+            # This seems to increase the probability that our association
+            # attempts pass.  It is the very definition of a dark incantation.
+            time.sleep(5)
+
         # Setup two APs on |channel|. configure() will spread these across
         # radios.
         n_mode = hostap_config.HostapConfig.MODE_11N_MIXED
@@ -203,10 +207,14 @@ class network_WiFi_VerifyRouter(wifi_cell_test_base.WiFiCellTestBase):
         # now.
         # TODO: communicate this back from the driver better, so we don't have
         # to build an exception list.
-        if self.target.board == "gale":
-            bitmaps = (self.ANTENNAS_BOTH, self.ANTENNAS_1)
+
+        if self.target.host.get_os_type() != OS_TYPE_OPENWRT:
+            if self.target.board == "gale":
+                bitmaps = (self.ANTENNAS_BOTH, self.ANTENNAS_1)
+            else:
+                bitmaps = (self.ANTENNAS_BOTH, self.ANTENNAS_1, self.ANTENNAS_2)
         else:
-            bitmaps = (self.ANTENNAS_BOTH, self.ANTENNAS_1, self.ANTENNAS_2)
+            bitmaps = (self.ANTENNAS_BOTH, )
 
         # Run antenna test for 2GHz band and 5GHz band
         for channel in (6, 149):

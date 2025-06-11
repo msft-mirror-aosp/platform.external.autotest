@@ -77,6 +77,7 @@ class platform_CryptohomeFio(test.test):
                 results.update(fio_util.fio_runner(self, job_file, env_vars,
                     name_prefix=graph_descr + config))
                 self.write_perf_keyval(results)
+                utils.system("sync")
 
                 logging.info('Finished with FS stress, cleaning up.')
                 if config == self.USE_CRYPTO:

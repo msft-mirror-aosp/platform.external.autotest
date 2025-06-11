@@ -419,7 +419,6 @@ suite:bvt-tast-cq-meta
 suite:bvt-tast-cq-mgs
 suite:bvt-tast-cq-mlservice
 suite:bvt-tast-cq-multivm
-suite:bvt-tast-cq-nacl
 suite:bvt-tast-cq-nearbyshare
 suite:bvt-tast-cq-network
 suite:bvt-tast-cq-notifications
@@ -524,7 +523,6 @@ suite:bvt-tast-cq-cft-meta
 suite:bvt-tast-cq-cft-mgs
 suite:bvt-tast-cq-cft-mlservice
 suite:bvt-tast-cq-cft-multivm
-suite:bvt-tast-cq-cft-nacl
 suite:bvt-tast-cq-cft-nearbyshare
 suite:bvt-tast-cq-cft-network
 suite:bvt-tast-cq-cft-notifications

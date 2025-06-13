@@ -363,6 +363,10 @@ class ChromeCr50(chrome_ec.ChromeConsole):
     TPM_INIT_MAX = 120000
     TIME_SINCE_DS_RE = ' = (.*) s'
     TIME_SINCE_COLD_RESET_RE = 'since cold_reset: ([0-9]*) s'
+    # Cr50 always printed "Rollback detected" in the sysinfo output
+    ALWAYS_HAD_ROLLBACK_PRINT = True
+    # Cr50 will rollback after 7 resets
+    ROLLBACK_THRESHOLD = 7
 
     def __init__(self, servo, faft_config):
         """Initializes a ChromeCr50 object.

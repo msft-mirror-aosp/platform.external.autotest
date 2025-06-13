@@ -72,3 +72,4 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
     # Ti50 FW is installed in 2 locations
     DUT_PROD_PATHS = [DUT_PROD]
     DUT_PREPVT_PATHS = [DUT_PREPVT]
+    ALWAYS_HAD_ROLLBACK_PRINT = True

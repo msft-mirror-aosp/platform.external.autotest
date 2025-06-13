@@ -27,7 +27,10 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     START_STR = ['ti50_common']
     BID_RE = r'Board ID: (\S{8}):?(|\S{8}), flags: (\S{8})\s'
     CCD_PW_DENIED = 'failed: ParamCount'
-
+    # Ti50 DT images didn't always print "Rollback detected" in the sysinfo
+    # output. Fallback to checking rollback count.
+    ALWAYS_HAD_ROLLBACK_PRINT = False
+    ROLLBACK_THRESHOLD = 5
     # Ti50 only supports v2
     AP_RO_VERSIONS = [2]
     # ===============================================================
@@ -291,3 +294,10 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
     def clear_system_reset_enforcement(self):
         """Try to clear system reset enforcement"""
         self.send_command('ap_ro_verify erase')
+
+    def rolledback(self):
+        """Returns true if ti50 rolled back"""
+        rolledback = super(ChromeTi50, self).rolledback()
+        if self.ALWAYS_HAD_ROLLBACK_PRINT:
+            return rolledback
+        return self.get_reset_count() > self.ROLLBACK_THRESHOLD

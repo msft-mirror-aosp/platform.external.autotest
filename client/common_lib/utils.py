@@ -2006,6 +2006,11 @@ def get_moblab_serial_number():
     return 'NoSerialNumber'
 
 
+def is_cloudbot():
+    """Determine if current process is running on cloudbot env."""
+    return os.environ.get('CLOUDBOTS_LAB_DOMAIN', '') != ''
+
+
 def ping(host,
          deadline=None,
          tries=None,
@@ -2039,6 +2044,10 @@ def ping(host,
     """
     args = [host]
     cmd = 'ping6' if re.search(r':.*:', host) else 'ping'
+
+    if is_cloudbot():
+        cmd = 'ssh openssh-server sudo ' + cmd
+        logging.debug('Updated cloudbots ping: %r', cmd)
 
     if deadline:
         args.append('-w%d' % deadline)

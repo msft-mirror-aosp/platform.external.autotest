@@ -340,8 +340,11 @@ class PingRunner(object):
             self._run = host.run
         if utils.is_cloudbot() and not use_provided_ping:
             self.command_ping = self.CLOUDBOTS_PING_COMMAND
+            logging.debug('Setup cloudbots ping command: %r',
+                          self.command_ping)
         else:
             self.command_ping = command_ping
+            logging.debug('Setup ping command: %r', self.command_ping)
         self._platform_delegate = _get_platform_delegate(platform)
 
 

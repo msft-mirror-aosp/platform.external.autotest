@@ -17,7 +17,6 @@
 # pylint: disable=no-self-use
 
 from collections import namedtuple
-import contextlib
 import errno
 import glob
 import hashlib
@@ -1785,7 +1784,7 @@ class TradefedTest(test.test):
             else:
                 # TODO(b/182397469): speculatively disable the "screen-on"
                 # handler for dEQP. Revert when the issue is resolved.
-                powerd_override_context = contextlib.nullcontext()
+                powerd_override_context = tradefed_utils.null_context()
 
             with login.login_chrome(
                     hosts=self._hosts,

@@ -161,6 +161,12 @@ class powerd_override:
                     'will persist until device reboot.')
 
 
+@contextlib.contextmanager
+def null_context():
+    """ Equivalent of contextlib.nullcontext() for Python 3.8  """
+    yield
+
+
 def get_test_result_suite_version(test_result_xml_path):
     """Get tests suite version from test_results.xml."""
     root = ElementTree.parse(test_result_xml_path)

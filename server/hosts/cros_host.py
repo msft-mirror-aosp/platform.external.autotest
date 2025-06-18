@@ -1843,8 +1843,19 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         """Start powerd if it isn't already running."""
         self.run('start powerd', ignore_status=True)
 
+    def _is_minios_mode(self):
+        """Returns true if the device is in minios mode."""
+        kernel_cmdline_params = self.run(['cat',
+                                          '/proc/cmdline']).stdout.strip()
+        return bool(re.search(r'\bcros_minios\b', kernel_cmdline_params))
+
     def _powerwash_if_needed(self):
-        """Powerwash the device if the total disk size is less than 32G."""
+        """Powerwash the device if the total disk size is less than 32G.
+        Powerwash is not required if the dut is in minios mode.
+        """
+        if self._is_minios_mode():
+            logging.info('Device is in MiniOS mode. No need to powerwash.')
+            return
         dut_disk_size = self.get_disk_size_gb()
         if (dut_disk_size < cros_constants.MIN_DISK_SIZE):
             logging.info('DUT disk size is %dGB. Powerwash it.', dut_disk_size)

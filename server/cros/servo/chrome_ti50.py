@@ -300,4 +300,4 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         rolledback = super(ChromeTi50, self).rolledback()
         if self.ALWAYS_HAD_ROLLBACK_PRINT:
             return rolledback
-        return self.get_reset_count() > self.ROLLBACK_THRESHOLD
+        return int(self.get_reset_count()) > self.ROLLBACK_THRESHOLD

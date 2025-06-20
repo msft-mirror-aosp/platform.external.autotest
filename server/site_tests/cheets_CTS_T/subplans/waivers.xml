@@ -6,4 +6,6 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <!-- b/422031350 fixed in CTS13_r13 -->
+  <Entry include="CtsAutoFillServiceTestCases[instant] android.autofillservice.cts.DelayFillTest#testSetDelayFillFlagTwiceButIntentCanOnlyBeSentOnce" />
 </SubPlan>

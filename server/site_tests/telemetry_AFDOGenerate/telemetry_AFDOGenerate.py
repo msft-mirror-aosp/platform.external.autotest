@@ -398,8 +398,11 @@ class telemetry_AFDOGenerate(test.test):
         PERF_FILE = 'perf.data'
         COMP_PERF_FILE = 'chromeos-chrome-{arch}-{ver}.perf.data'
         perf_data = os.path.join(self.profdir, PERF_FILE)
-        comp_data = os.path.join(self.profdir, COMP_PERF_FILE.format(
-            arch=self._arch, ver=self._version))
+        version_with_suffix = f"{self._version}_p{int(time.time())}"
+        comp_data = os.path.join(
+                self.profdir,
+                COMP_PERF_FILE.format(arch=self._arch,
+                                      ver=version_with_suffix))
         compressed = self._compress_file(perf_data, comp_data)
         self._gs_upload(compressed, os.path.basename(compressed))
 

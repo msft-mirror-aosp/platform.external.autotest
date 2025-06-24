@@ -14,7 +14,8 @@ ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_ti50_qual"
 # first in the suite.
 TIME = "LENGTHY"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING"
+# TODO(b/427195218): Add servo-exists + servo_state:WORKING after bug resolved.
+# DEPENDENCIES = "servo_state:WORKING"
 
 DOC = """
 This is a test used by the provision control segment in autoserv to set the

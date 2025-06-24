@@ -14,7 +14,8 @@ METADATA = {
 ATTRIBUTES = "suite:faft_wilco, suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_rw_qual, suite:faft_bios_autotests"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING"
+# TODO(b/427195218): Add servo-exists + servo_state:WORKING after bug resolved.
+# DEPENDENCIES = "servo_state:WORKING"
 JOB_RETRIES = 0
 
 DOC = """Corrupt the Wilco diagnostics image and then reinstall it.

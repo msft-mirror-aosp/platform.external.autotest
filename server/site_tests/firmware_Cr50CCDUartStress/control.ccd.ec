@@ -14,7 +14,8 @@ METADATA = {
 ATTRIBUTES = "suite:faft_ccd"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING"
+# TODO(b/427195218): Add servo-exists + servo_state:WORKING after bug resolved.
+# DEPENDENCIES = "servo_state:WORKING"
 
 DOC = """
 This is a test for Uart-USB bridging qualification.

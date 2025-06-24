@@ -14,7 +14,8 @@ METADATA = {
 ATTRIBUTES = "suite:faft_gsc_nightly, suite:faft_cr50_prepvt, suite:faft_cr50_pvt"
 TIME = "SHORT"
 TEST_TYPE = "server"
-DEPENDENCIES = "servo_state:WORKING"
+# TODO(b/427195218): Add servo-exists + servo_state:WORKING after bug resolved.
+# DEPENDENCIES = "servo_state:WORKING"
 
 DOC = """EncStateful gets created correctly in dev mode"""
 

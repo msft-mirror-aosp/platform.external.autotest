@@ -12,7 +12,8 @@ METADATA = {
     "criteria": "Corrupt one MiniOS kernel, set the priority to that, and ensure that both priority can boot",
 }
 ATTRIBUTES = "suite:faft_bios, suite:faft_bios_ro_qual, suite:faft_bios_autotests"
-DEPENDENCIES = "servo_state:WORKING"
+# TODO(b/427195218): Add servo-exists + servo_state:WORKING after bug resolved.
+# DEPENDENCIES = "servo_state:WORKING"
 TIME = "MEDIUM"
 TEST_TYPE = "server"
 JOB_RETRIES = 0

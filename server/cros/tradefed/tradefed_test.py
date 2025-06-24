@@ -1635,9 +1635,11 @@ class TradefedTest(test.test):
         check_cnt = 2
         deadline = time.time() + timeout
         while check_cnt and time.time() < deadline:
-            crosvm_cpu_usage = float(self._hosts[0].run(crosvm_cpu_usage_cmd,
-                                                        ignore_status=True,
-                                                        verbose=False).stdout)
+            crosvm_cpu_usages = self._hosts[0].run(crosvm_cpu_usage_cmd,
+                                                   ignore_status=True,
+                                                   verbose=False).stdout
+            # Pick the first (the highest) crosvm process
+            crosvm_cpu_usage = float(crosvm_cpu_usages.split()[0])
             cpu_temperature = int(self._hosts[0].run(cpu_temperature_cmd,
                                                      ignore_status=True,
                                                      verbose=False).stdout)
@@ -1765,7 +1767,7 @@ class TradefedTest(test.test):
                                            'login_session_log',
                                            'step%02d' % steps)
 
-            camera_lighting_workaround = 'CtsCameraTestCases' in test_name
+            camera_lighting_workaround = 'CtsCameraTestCases' in test_name and 'camerabox' not in test_name
 
             # Sets up the context for enabling and cleanig up the powerd override
             if not (target_module and "CtsDeqpTestCases" in target_module):
@@ -1860,8 +1862,9 @@ class TradefedTest(test.test):
                 # On drawcia, CPU is too busy during CTS and cause RecordingTest easy to fail.
                 # Wait until CPU cool down before running CtsCameraTestCases.See b/270081260.
                 test_model = self._get_model_name()
-                if (test_model == 'drawcia' or test_model
-                            == 'soraka') and 'CtsCameraTestCases' in test_name:
+                if (test_model == 'drawcia' or test_model == 'soraka'
+                            or test_model == 'nautiluslte'
+                    ) and 'CtsCameraTestCases' in test_name:
                     try:
                         self._wait_cpu_cooldown(1800)
                     except:

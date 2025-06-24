@@ -77,7 +77,8 @@ class ChromeLogin(object):
                  set_verified_boot_state=None,
                  log_dir=None,
                  feature=None,
-                 camera_lighting_workaround=False):
+                 camera_lighting_workaround=False,
+                 clear_ownership=False):
         """Initializes the ChromeLogin object.
 
         @param board: optional parameter to extend timeout for login for slow
@@ -106,6 +107,7 @@ class ChromeLogin(object):
         self._feature = feature
         self._multicast_disabler = MulticastDisabler(self._host)
         self._camera_lighting_workaround = camera_lighting_workaround
+        self._clear_ownership = clear_ownership
 
     def _cmd_builder(self, verbose=False):
         """Gets remote command to start browser with ARC enabled."""
@@ -148,6 +150,8 @@ class ChromeLogin(object):
             cmd += ' --vm_force_max_resolution'
         if self._feature:
             cmd += ' --feature=' + self._feature
+        if self._clear_ownership:
+            cmd += ' --clear-ownership'
         # Additional browser flags
         cmd += ' --'
         # Disable pre-consent metrics to suppress background activities.

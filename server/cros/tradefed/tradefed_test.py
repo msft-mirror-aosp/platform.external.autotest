@@ -1796,7 +1796,8 @@ class TradefedTest(test.test):
                     set_verified_boot_state=self._set_verified_boot_state,
                     log_dir=session_log_dir,
                     feature=chrome_feature,
-                    camera_lighting_workaround=camera_lighting_workaround,) as current_logins, \
+                    camera_lighting_workaround=camera_lighting_workaround,
+                    clear_ownership=(steps == 0)) as current_logins, \
                          powerd_override_context, \
                          self._adb.create_tunnel():
                 if self._should_reboot(steps):

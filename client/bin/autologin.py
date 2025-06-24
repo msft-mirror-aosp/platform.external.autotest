@@ -18,7 +18,7 @@ import time
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import ui_utils
 from autotest_lib.client.common_lib.cros import chrome
-from autotest_lib.client.cros import constants
+from autotest_lib.client.cros import constants, cros_ui, ownership
 from autotest_lib.client.cros.multimedia import display_facade as display_facade_lib
 from autotest_lib.client.cros.multimedia import facade_resource
 
@@ -136,6 +136,10 @@ def main(args):
     parser.add_argument('--disable-feature',
                         action='append',
                         help='Disable the specified Chrome feature flag')
+    parser.add_argument(
+            '--clear-ownership',
+            action='store_true',
+            help='Ensure a clean beginning by clearing ownership files')
 
     parser.add_argument('--url', help='Navigate to URL.')
 
@@ -168,6 +172,11 @@ def main(args):
         else:
             raise error.TestError(
                     'Setting resolution is only supported on VM displays')
+
+    # Cleans up the ownership files to ensure clean startup.
+    if args.clear_ownership:
+        cros_ui.stop()
+        ownership.clear_ownership_files_no_restart()
 
     # Avoid calling close() on the Chrome object; this keeps the session active.
     cr = chrome.Chrome(

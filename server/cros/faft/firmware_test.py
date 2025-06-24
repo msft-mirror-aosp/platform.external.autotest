@@ -1153,7 +1153,11 @@ class FirmwareTest(test.test):
 
         @param enable: True if asserting write protect pin. Otherwise, False.
         """
-        self.servo.set("fw_wp_state", "force_on" if enable else "force_off")
+        state = "force_on" if enable else "force_off"
+        self.servo.set("fw_wp_state", state)
+        if (hasattr(self, "gsc") and self.gsc.IS_TI50
+                    and self.servo.has_control("fw_wp_atboot_state")):
+            self.servo.set("fw_wp_atboot_state", state)
 
     def set_ap_write_protect_and_reboot(self, enable):
         """Set AP write protect status and reboot to take effect.

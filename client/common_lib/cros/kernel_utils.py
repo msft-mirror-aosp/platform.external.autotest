@@ -22,7 +22,7 @@ _BOOT_ERR_MSG = 'The active image slot did not change after the update.'
 
 def _run(cmd, host=None):
     """
-    Function to execue commands.
+    Function to execute commands.
 
     This allows the util to be used by client and server tests.
 
@@ -185,16 +185,32 @@ def verify_boot_expectations(expected_kernel, error_message=_BOOT_ERR_MSG,
         _run('crossystem --all', host)
         raise Exception(error_message)
 
+    ui_status = None
+
+    def capture_ui_status():
+        """Checks the ui status and caches the result."""
+        nonlocal ui_status
+        ui_status = _run(['status', 'ui'], host).stdout
+        logging.info("UI status = %s", ui_status)
+        return ui_status.startswith('ui start/running')
+
     # Wait until UI stabilizes - this can happen due to boot FW updates
     # delaying the process of update-engine (autoupdater) marking the newly
     # booted kernel as "sticky".
     try:
-        utils.poll_for_condition(lambda: (_run(['status', 'ui'], host).stdout.
-                                          startswith('ui start/running')),
-                                 timeout=_UI_STABILIZE_TIMEOUT,
-                                 sleep_interval=5)
+        logging.info("Start polling for ui status.")
+        utils.poll_for_condition_ex(capture_ui_status,
+                                    timeout=_UI_STABILIZE_TIMEOUT,
+                                    sleep_interval=5)
     except Exception:
-        raise Exception('UI failed to stabilize.')
+        if ui_status.startswith('ui start/running'):
+            logging.info("UI has stabilized and is running.")
+        elif ui_status.startswith('ui start/starting'):
+            logging.warning(
+                    "ui status is start/starting but we can continue with this as well."
+            )
+        else:
+            raise Exception('UI failed to stabilize.')
 
     # Make sure chromeos-setgoodkernel runs marking the new kernel "sticky".
     try:

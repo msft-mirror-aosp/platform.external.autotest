@@ -1248,9 +1248,7 @@ class Cr50Test(FirmwareTest):
         @raise TestFail: if the update failed
         """
         # Run preserve dev image to preserve /usr/local through tpm wipe.
-        # This only affects Ti50 devices.
-        if self.gsc.IS_TI50:
-            self._preserve_dev_image(True)
+        self._preserve_dev_image(True)
 
         original_rw = self.gsc.get_version()
 
@@ -1270,9 +1268,7 @@ class Cr50Test(FirmwareTest):
 
         if rollback:
             # Run preserve dev image to preserve /usr/local through tpm wipe.
-            # This only affects Ti50 devices.
-            if self.gsc.IS_TI50:
-                self._preserve_dev_image(True)
+            self._preserve_dev_image(True)
             self.gsc.rollback()
             logging.info("Rolled back: %s", self.gsc.rolledback())
 

@@ -91,7 +91,7 @@ class firmware_Cr50WPG3(Cr50Test):
             try:
                 rv = self.ec.send_command_get_output(
                         'gpioget %s' % self.wp_gpio,
-                        ['gpioget.*([01]).*%s.*>' % self.wp_gpio])[0][1]
+                        [r'([01])[\*\s]+%s' % self.wp_gpio])[0][1]
                 logging.info('EC %s: %s', self.wp_gpio, rv)
                 return
             except Exception as e:

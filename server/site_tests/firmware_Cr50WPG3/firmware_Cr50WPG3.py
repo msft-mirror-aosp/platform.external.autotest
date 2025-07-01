@@ -169,8 +169,8 @@ class firmware_Cr50WPG3(Cr50Test):
         self.find_ec_wp_gpio_name()
         self.generate_futility_wp_cmd()
         self.fast_ccd_open(enable_testlab=True)
-        self.gsc.send_command('ccd set OverrideWP Always')
-        self.gsc.send_command('ccd set FlashAP Always')
+        # Enable all capabilities, so they're available when CCD is locked
+        self.gsc.ccd_reset_factory()
 
         if self.servo.has_control('cold_reset_select'):
             self.servo.set_nocheck('cold_reset_select', 'gsc_ec_reset')

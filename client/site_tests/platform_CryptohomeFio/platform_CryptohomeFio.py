@@ -74,8 +74,12 @@ class platform_CryptohomeFio(test.test):
                      'RUN_TIME=' + self.__runtime
                      ])
                 job_file = os.path.join(self.bindir, script)
-                results.update(fio_util.fio_runner(self, job_file, env_vars,
-                    name_prefix=graph_descr + config))
+                results.update(
+                        fio_util.fio_runner(self,
+                                            job_file,
+                                            env_vars,
+                                            name_prefix=graph_descr + config,
+                                            performance_test=True))
                 self.write_perf_keyval(results)
                 utils.system("sync")
 

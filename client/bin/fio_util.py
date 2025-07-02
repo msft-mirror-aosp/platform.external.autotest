@@ -373,9 +373,12 @@ def fio_generate_graph():
         utils.run('mv *.html results', ignore_status=True)
 
 
-def fio_runner(test, job, env_vars,
+def fio_runner(test,
+               job,
+               env_vars,
                name_prefix=None,
-               graph_prefix=None):
+               graph_prefix=None,
+               performance_test=False):
     """
     Runs fio.
 
@@ -395,6 +398,7 @@ def fio_runner(test, job, env_vars,
         dashboard.
     @param graph_prefix: prefix of the graph name in chrome perf dashboard
         and result keyvals.
+    @param performance_test: If true, run fio with real time ionice priority.
     @return fio results.
 
     """
@@ -405,8 +409,12 @@ def fio_runner(test, job, env_vars,
     # take out the ionice and disable hung process detection:
     # "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
     # -c 3 = Idle
+    # -c 1 = Real Time
     # Tried lowest priority for "best effort" but still failed
-    ionice = 'ionice -c 3'
+    if performance_test:
+        ionice = 'ionice -c 1'
+    else:
+        ionice = 'ionice -c 3'
     options = ['--output-format=json']
     fio_cmd_line = ' '.join([env_vars, ionice, 'fio',
                              ' '.join(options),

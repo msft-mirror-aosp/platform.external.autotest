@@ -598,9 +598,11 @@ class Cr50Test(FirmwareTest):
         # Try to do a GSC power-on reset to clear the rollback counter and
         # switch back to the DBG image.
         if self.servo.has_control('gsc_reset'):
+            self._preserve_dev_image(True)
             self.servo.set_nocheck('gsc_reset', 'on')
             self.servo.set_nocheck('gsc_reset', 'off')
             self.gsc.wait_for_reboot(timeout=10)
+            self._preserve_dev_image(True)
         else:
             # Try using the command to clear the rollback counter if servo
             # doesn't have access to the gsc reset signal.
@@ -1265,12 +1267,12 @@ class Cr50Test(FirmwareTest):
         # sending more commands. The reboot should happen quickly.
         self.gsc.wait_for_reboot(
                 timeout=self.faft_config.gsc_update_wait_for_reboot)
+        self._preserve_dev_image(True)
 
         if rollback:
-            # Run preserve dev image to preserve /usr/local through tpm wipe.
-            self._preserve_dev_image(True)
             self.gsc.rollback()
             logging.info("Rolled back: %s", self.gsc.rolledback())
+            self._preserve_dev_image(True)
 
         expected_rw = original_rw if expect_rollback else image_rw
         # If we expect a rollback, the version should remain unchanged

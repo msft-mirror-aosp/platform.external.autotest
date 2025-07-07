@@ -863,11 +863,20 @@ class ChromeCr50(chrome_ec.ChromeConsole):
                     self.EFI_CMD, [self.EFI_CMD + '(.*)>'])[0][1].strip()
             logging.info('eraseflashinfo output: %r', rv)
             bid_erased = self.get_board_id()[1]
+            rollback_mask = self.get_rollback_mask()
+            logging.info('Rollback mask: %s', rollback_mask)
             eraseflashinfo_issue = 'Busy' in rv or 'do_flash_op' in rv
             if not eraseflashinfo_issue and bid_erased:
                 break
             logging.info('Retrying eraseflashinfo')
         return bid_erased
+
+
+    def get_rollback_mask(self):
+        """Get the Rollback mask from sysinfo"""
+        return self.send_command_retry_get_output('sysinfo',
+                                                  ['Rollback: +(\S+ \S+)\s'],
+                                                  safe=True)[0][1]
 
 
     def clear_rollback(self):
@@ -886,9 +895,13 @@ class ChromeCr50(chrome_ec.ChromeConsole):
 
         self.wait_for_reboot(cmd='rollback', timeout=10)
 
-        running_partition = self.get_active_version_info()[0]
-        if inactive_partition != running_partition:
-            raise error.TestError("Failed to rollback to inactive image")
+        rollback_mask = self.get_rollback_mask()
+        logging.info('Rollback mask: %s', rollback_mask)
+        running_version = self.get_active_version_info()
+        if inactive_partition != running_version[0]:
+            raise error.TestError(
+                    "Failed to rollback to inactive image. Running %s %s" %
+                    (running_version, rollback_mask))
 
 
     def rolledback(self):

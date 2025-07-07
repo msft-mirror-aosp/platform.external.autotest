@@ -617,6 +617,10 @@ class Cr50Test(FirmwareTest):
         ver = self.gsc.get_version()
         logging.info('Running %s', ver)
         if 'DBG' not in ver:
+            # Run eraseflashinfo again in case one of the previous actions blew
+            # the rollback bits again.
+            if eraseflashinfo:
+                self.gsc.eraseflashinfo()
             self._retry_update_to_dbg_image()
 
         chip_bid = bid[0]

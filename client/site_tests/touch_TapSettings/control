@@ -10,7 +10,8 @@ METADATA = {
     "hw_agnostic": False,
     'variant_category': '{"name": "Touchpad_SoC_Controller_Variant-def-plus-kernelnext"}',
 }
-ATTRIBUTES = "suite:touch_replay_touchpad, group:release-health, release-health_touch"
+#TODO: Uncomment this after solution for Autotest chrome extension found
+#ATTRIBUTES = "suite:touch_replay_touchpad, group:release-health, release-health_touch"
 TEST_TYPE = "client"
 DEPENDENCIES = "touchpad"
 

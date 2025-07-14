@@ -215,7 +215,11 @@ class Chrome(object):
                               if logged_in else self.BROWSER_TYPE_GUEST)
         finder_options.browser_type = self.browser_type
 
-        disable_features = ["ExtensionManifestV2Disabled"]
+        # TODO(b:398872739): Remove after MV3 migration.
+        disable_features = [
+                "ExtensionManifestV2Disabled",
+                "ExtensionManifestV2Unsupported",
+        ]
 
         if not enable_web_app_auto_install:
             disable_features.append("DefaultWebAppInstallation")

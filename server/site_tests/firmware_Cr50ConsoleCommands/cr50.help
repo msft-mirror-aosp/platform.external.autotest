@@ -34,7 +34,6 @@ rma_auth
 shmem
 sleepmask
 -sn
-(?P<mp>-)?spihash
 sysinfo
 sysrst
 taskinfo

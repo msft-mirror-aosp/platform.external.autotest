@@ -8,6 +8,7 @@ from __future__ import print_function
 
 import dbus
 import logging
+import math
 import os
 import queue
 import subprocess
@@ -305,8 +306,9 @@ class platform_PrinterPpds(test.test):
             3c. Parse CUPS logs and check for any errors
             3d. If self._path_output_directory is set, save the raw document
                 and all intermediate steps in the provided directory
-            3e. If the digest is available, verify a digest of an output
-                documents
+            3e. If the size is available, verify the size of the
+                output document. *NOTE*: This test validated digests
+                in the past but it no longer does so. See b/429209202.
         4. Removes CUPS printer and stops FakePrinter
         If the test fails this method throws an exception.
 
@@ -372,17 +374,19 @@ class platform_PrinterPpds(test.test):
                         # Fail if any of CUPS filters failed
                         if not no_errors:
                             raise Exception('One of the CUPS filters failed')
-                        # Check document's digest (if known)
-                        if ppd_name in self._digests[doc_name]:
-                            digest_expected = self._digests[doc_name][ppd_name]
-                            if digest_expected != digest:
-                                message = 'Document\'s digest does not match'
-                                if ppd_name in self._sizes[doc_name]:
-                                    message += ', old size: ' + \
-                                            str(self._sizes[doc_name][ppd_name])
-                                message += ', new size: ' + str(len(doc))
-                                message += '; old digest: ' + \
-                                    digest_expected + ', new digest: ' + digest
+                        # Check document's size (if known)
+                        if ppd_name in self._sizes[doc_name]:
+                            # Get the min/max tolerated PPD output size
+                            minimum_size = \
+                                math.floor(min(self._sizes[doc_name].values())*0.9)
+                            maximum_size = \
+                                math.ceil(max(self._sizes[doc_name].values())*1.2)
+                            new_size = len(doc)
+                            if minimum_size > new_size or new_size > maximum_size:
+                                old_size = str(self._sizes[doc_name][ppd_name])
+                                message = 'Document\'s size changed too much'
+                                message += ', old size: ' + str(old_size)
+                                message += ', new size: ' + str(new_size)
                                 raise Exception(message)
                         else:
                             # Simple validation

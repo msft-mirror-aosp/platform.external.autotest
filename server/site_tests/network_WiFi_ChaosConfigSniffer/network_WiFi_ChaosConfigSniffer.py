@@ -25,7 +25,7 @@ class network_WiFi_ChaosConfigSniffer(test.test):
             logging.info('Scanning for SSID: %s', ssid)
             networks = wifi_client.iw_runner.wait_for_scan_result(
                 wifi_client._wifi_if, ssids=[ssid], timeout_seconds=60)
-            if networks == None:
+            if not networks:
                 missing_ssids.append(ssid)
             else:
                 path = os.path.join(self.outputdir, str('%s.txt' % ssid))
@@ -54,7 +54,7 @@ class network_WiFi_ChaosConfigSniffer(test.test):
                     f.write('psk = chromeos\n')
                 f.write('class_name = StaticAPConfigurator\n')
                 f.close()
-        if len(missing_ssids) > 0:
+        if missing_ssids:
             logging.error('The following SSIDs could not be found:')
             for ssid in missing_ssids:
                 logging.error('\t%s', ssid)

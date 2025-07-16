@@ -41,8 +41,9 @@ class network_WiFi_ChaosConnectDisconnect(test.test):
 
             capturer.start_capture(capturer_frequency,
                     width_type=capturer_ht_type)
+
+            success = False
             try:
-                success = False
                 logging.info('Connection attempt %d', i)
                 host.syslog('Connection attempt %d' % i)
                 start_time = host.run("date '+%FT%T.%N%:z'").stdout.strip()
@@ -72,7 +73,7 @@ class network_WiFi_ChaosConnectDisconnect(test.test):
                 client.shill.disconnect(assoc_params.ssid)
                 client.shill.clean_profiles()
 
-        if len(results) > 0:
+        if results:
             # error.TestError doesn't handle the formatting inline, doing it
             # here so it is clearer to read in the status.log file.
             msg = str('Failed on the following attempts:\n%s\n'

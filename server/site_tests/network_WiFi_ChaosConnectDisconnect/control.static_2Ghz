@@ -19,6 +19,8 @@ MAX_RESULT_SIZE_KB = 512000
 from autotest_lib.server.cros.ap_configurators import ap_spec
 from autotest_lib.server.cros.chaos_lib import static_runner
 
+from autotest_lib.client.common_lib import error
+
 try:
     def run_chaos_static(machine):
         host = hosts.create_host(machine)

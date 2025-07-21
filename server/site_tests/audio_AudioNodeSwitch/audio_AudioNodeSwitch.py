@@ -92,9 +92,9 @@ class audio_AudioNodeSwitch(audio_test.AudioTest):
 
 
     def run_once(self, jack_node=False, hdmi_node=False,
-                 usb_node=False, play_audio=False, blocked_boards=[]):
+                 usb_node=False, play_audio=False, blocked_models=[]):
         """Runs AudioNodeSwitch test."""
-        if self.host.get_board().split(':')[1] in blocked_boards:
+        if self.host.get_platform() in blocked_models:
             raise error.TestNAError('Board not applicable to test!')
 
         self.display_facade = self.factory.create_display_facade()

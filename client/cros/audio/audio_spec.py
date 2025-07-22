@@ -231,6 +231,7 @@ def get_internal_mic_node(board_type, board, model, sku):
 
 INTERNAL_MIC_NODES = {
         ('nami', 'vayne'): ['FRONT_MIC'],
+        ('nissa', 'anraggar360'): ['FRONT_MIC'],
 }
 
 

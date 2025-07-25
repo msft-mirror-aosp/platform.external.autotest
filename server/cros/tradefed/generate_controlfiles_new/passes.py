@@ -219,6 +219,7 @@ class AddSplitSuites(Pass):
                 self._config['MAX_RUNTIME_SECS'],
                 self._config['PER_TEST_OVERHEAD_SECS'],
                 self._config['RUNTIME_HINT_SECS'],
+                [],  # isolate_modules
         )
 
         for group in groups:
@@ -250,6 +251,7 @@ class MergeSplitSuites(Pass):
                  suite_fmt: str,
                  long_suite: str,
                  abi: str,
+                 isolate_modules: list[str],
                  basename_prefix: str = 'all'):
         """Constructs a MergeSplitSuites pass.
 
@@ -265,6 +267,7 @@ class MergeSplitSuites(Pass):
         self._suite_fmt = suite_fmt
         self._long_suite = long_suite
         self._abi = abi
+        self._isolate_modules = isolate_modules
         self._basename_prefix = basename_prefix
 
     def process_all_groups(self, groups):
@@ -274,6 +277,7 @@ class MergeSplitSuites(Pass):
                 self._config['MAX_RUNTIME_SECS'],
                 self._config['PER_TEST_OVERHEAD_SECS'],
                 self._config['RUNTIME_HINT_SECS'],
+                self._isolate_modules,
                 merge_tests=True,
         )
         shard_groups = collections.defaultdict(list)

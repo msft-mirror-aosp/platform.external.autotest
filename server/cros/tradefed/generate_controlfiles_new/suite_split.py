@@ -14,6 +14,7 @@ class Splitter:
                  max_runtime: int,
                  per_test_overhead: int,
                  runtime_hints: Dict[str, int],
+                 isolate_modules: list[str],
                  merge_tests: bool = False):
         """Initializes the Splitter.
 
@@ -23,6 +24,8 @@ class Splitter:
                 also merge_tests.
             runtime_hints: Mapping between test names and their expected
                 runtime, usually based on historical test results.
+            isolate_modules: Modules that should not form a group with others
+                regardless of the runtime hints.
             merge_tests: If the tests are to be merged into a single Tauto test
                 instead of run as separate tests. If true, per_test_overhead is
                 only counted once per shard (unless there are tests with
@@ -31,6 +34,7 @@ class Splitter:
         self._max_runtime = max_runtime
         self._per_test_overhead = per_test_overhead
         self._runtime_hints = runtime_hints
+        self._isolate_modules = isolate_modules
         self._merge_tests = merge_tests
         self._cur_shard = 1
         self._cur_total_runtime = 0
@@ -57,7 +61,7 @@ class Splitter:
             return LONG_SUITE
 
         runtime = self._runtime_hints[basename] + self._per_test_overhead
-        if runtime > self._max_runtime:
+        if runtime > self._max_runtime or basename in self._isolate_modules:
             # Mark the test as a "long" test
             logging.info('Marking long test: %s (%.1fh)', basename,
                          runtime / 3600)

@@ -224,6 +224,7 @@ def gen_qual(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
             split_config.get('QUAL_SUITE_FORMAT'),
             split_config.get('QUAL_SUITE_LONG'),
             bundle.abi,
+            config.get_camera_modules(),
         ),
 
         # Assign qual suite; for camera tests, replace qual suite with camera

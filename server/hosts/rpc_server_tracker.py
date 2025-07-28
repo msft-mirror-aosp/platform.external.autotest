@@ -266,8 +266,9 @@ class RpcServerTracker(object):
         This function does nothing if requested to disconnect a port
         that was not previously connected via _setup_rpc.
 
-        @param port Port number passed to a previous call to `_setup_rpc()`.
-        @param pkill: if True, ssh in to the server and pkill the process.
+        @param port: Port number passed to a previous call to `_setup_rpc()`.
+        @param pkill: if True, ssh in to the server and pkill all the xmlepc
+                      server process.
         """
         if port not in self._rpc_proxy_map:
             return
@@ -292,7 +293,9 @@ class RpcServerTracker(object):
                     running_processes = self._host.run(
                             "pgrep -f '%s'" % remote_name,
                             ignore_status=True).stdout.split()
-                    if not remote_pid in running_processes:
+
+                    logging.info("running_processes: %s", running_processes)
+                    if not running_processes:
                         logging.info('Shut down RPC server %s.', remote_pid)
                         break
                     time.sleep(self._RPC_SHUTDOWN_POLLING_PERIOD_SECONDS)

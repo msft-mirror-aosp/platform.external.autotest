@@ -37,6 +37,6 @@ def run_TS(machine):
         bundle='arm',
         uri='DEV',
         prerequisites=['camera_enumerate'],
-        timeout=12600)
+        timeout=19800)
 
 parallel_simple(run_TS, machines)

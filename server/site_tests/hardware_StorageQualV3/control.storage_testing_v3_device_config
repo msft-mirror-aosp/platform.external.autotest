@@ -46,7 +46,7 @@ utils.write_keyval(job.resultdir, keyval)
 def run(machine):
     job.run_test('tast',
                 host=hosts.create_host(machine, servo_args=servo_args),
-                test_exprs=['storage.EmmcConfiguration', 'storage.UfsConfiguration', 'storage.NvmeConfiguration'],
+                test_exprs=['storage.EmmcConfiguration', 'storage.UfsConfiguration', 'storage.NvmeConfiguration', 'storage.StorageInitTime'],
                 ignore_test_failures=False,
                 max_run_sec=1200,
                 ephemeraldevserver=False,

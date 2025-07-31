@@ -38,7 +38,8 @@ v3_tests = [
                 name='storage_testing_v3_device_config',
                 test_expr=[
                         'storage.EmmcConfiguration',
-                        'storage.UfsConfiguration', 'storage.NvmeConfiguration'
+                        'storage.UfsConfiguration', 'storage.NvmeConfiguration',
+                        'storage.StorageInitTime'
                 ],
                 attributes=['pdp-enabled', 'pdp-kpi', 'pdp-stress', 'avl-v3'],
                 duration=1200),

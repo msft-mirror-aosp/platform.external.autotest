@@ -671,12 +671,14 @@ class base_test(object):
                                                         args, dargs)
 
                 _call_test_function(self.execute, *p_args, **p_dargs)
-            except Exception:
+            except Exception as e:
                 # Save the exception while we run our cleanup() before
                 # reraising it, but log it to so actual time of error is known.
                 exc_info = sys.exc_info()
-                logging.warning('The test failed with the following exception',
-                                exc_info=True)
+                logging.warning(
+                        'The test failed with the following exception: %s',
+                        e,
+                        exc_info=True)
 
                 try:
                     try:

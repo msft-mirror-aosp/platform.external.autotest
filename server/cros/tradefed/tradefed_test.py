@@ -215,11 +215,10 @@ class TradefedTest(test.test):
             stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH
             | stat.S_IXOTH)
 
-        self._install_files(constants.ADB_DIR, constants.ADB_FILES, permission)
-        self._install_files(constants.AAPT_DIR, constants.AAPT_FILES,
+        sdk_tools_dir = (constants.SDK_TOOLS_PARTNER_DIR if self._is_public()
+                         else constants.SDK_TOOLS_INTERNAL_DIR)
+        self._install_files(sdk_tools_dir, constants.SDK_TOOLS_FILES,
                             permission)
-        self._install_files(constants.SDK_TOOLS_DIR,
-                            constants.SDK_TOOLS_FILES, permission)
 
         # Always use JDK9 in the skylab SSP runs. CFT run will use container
         # provided JDK.
@@ -269,6 +268,10 @@ class TradefedTest(test.test):
         """Returns true if the current test job is a DEV (preview) job."""
         return self._bundle_uri and self._bundle_uri.startswith('DEV')
 
+    def _is_public(self):
+        """Returns true if the current test job is for Moblab/Satlab."""
+        return self._bundle_uri in (None, 'DEV_MOBLAB')
+
     def _load_local_waivers(self, directory, is_dev=False):
         return self._get_expected_failures(os.path.join(self.bindir, directory), is_dev)
 
@@ -278,11 +281,10 @@ class TradefedTest(test.test):
         self._notest_modules = set()
 
         is_dev = self._is_dev()
-        is_public = not self._bundle_uri
         self._waivers.update(
                 self._load_local_waivers('expectations', is_dev))
 
-        if self._should_load_gcs_waivers(is_public):
+        if self._should_load_gcs_waivers():
             self._waivers.update(
                     self._load_gcs_waivers(official_suite_version, is_dev))
 
@@ -1129,7 +1131,7 @@ class TradefedTest(test.test):
                 release_version_tuple
         ]
 
-    def _should_load_gcs_waivers(self, is_public):
+    def _should_load_gcs_waivers(self):
         """Not supporting CTS_Instant and moblab now."""
         # Will not be supporting CTS_Instant since P waivers stopped updating.
         # Not support moblab for now since each moblab uses multiple service
@@ -1138,7 +1140,7 @@ class TradefedTest(test.test):
         # TODO(ruki): potentially will support moblab if needed.
         # Since moblab will run public version tests so here just check is_public.
         return self._bundle_spec.suite_name in ['CTS', 'GTS', 'STS'
-                                                ] and not is_public
+                                                ] and not self._is_public()
 
     def _load_gcs_waivers(self, official_suite_version, is_dev=False):
         """Load GCS waivers."""

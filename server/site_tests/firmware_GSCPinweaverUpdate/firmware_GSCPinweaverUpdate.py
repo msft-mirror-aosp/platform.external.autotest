@@ -155,7 +155,7 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
         # Rollback to the old gsc image
         logging.info('Update to old gsc release')
         self.eraseflashinfo_and_restore_image(self._old_release_path)
-        self._preserve_dev_image()
+        self.ti50_preserve_dev_image()
         # Do a powerwash to clear the state.
         logging.info('Powerwash')
         self.host.run(

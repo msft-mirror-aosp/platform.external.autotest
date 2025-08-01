@@ -564,9 +564,12 @@ class Cr50Test(FirmwareTest):
                                             False)
 
     def ti50_preserve_dev_image(self, ignore_error=False):
-        """Run preserve dev image on Ti50 devices"""
-        if not self.gsc or self.gsc.IS_CR50:
-            return
+        """Run preserve dev image
+
+        Try to run preserve_dev_image on all devices. It's ok if it fails on
+        cr50.
+        """
+        ignore_error = ignore_error or (not self.gsc or self.gsc.IS_CR50)
         self._preserve_dev_image(ignore_error=ignore_error)
 
     def update_cr50_image_and_board_id(self,

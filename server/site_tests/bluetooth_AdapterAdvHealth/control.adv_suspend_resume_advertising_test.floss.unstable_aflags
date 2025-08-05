@@ -1,0 +1,26 @@
+# Copyright 2025 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+NAME = 'bluetooth_AdapterAdvHealth.adv_suspend_resume_advertising_test.floss.unstable_aflags'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'Test bluetooth adapter advertising across suspend/resume',
+    'hw_agnostic': True,
+    'variant_category': '{"name": "BT_Chipset_Kernel_exclude_Suspend_Power_Down"}',
+    'requirements': ['bt-drv-0013-v01']
+}
+ATTRIBUTES = 'suite:bluetooth_floss_unstable_aflags'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth_state:NORMAL'
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterAdvHealth', host=host, num_iterations=1,
+                 test_name=NAME.split('.')[1],
+                 tag='.'.join(NAME.split('.')[1:]), peer_required=False,
+                 floss=True, floss_use_unstable_aflags=True)
+
+parallel_simple(run, machines)

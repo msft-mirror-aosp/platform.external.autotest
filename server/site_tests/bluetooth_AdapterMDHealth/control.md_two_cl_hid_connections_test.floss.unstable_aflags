@@ -1,0 +1,33 @@
+# Copyright 2025 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from autotest_lib.server import utils
+
+NAME = 'bluetooth_AdapterMDHealth.md_two_cl_hid_connections_test.floss.unstable_aflags'
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com'],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'DUT can connect to both devices',
+    'hw_agnostic': False,
+    'variant_category': '{"name": "BT_Chipset_Kernel"}',
+    'requirements': ['bt-gen-0001-v01'],
+}
+
+
+ATTRIBUTES = 'suite:bluetooth_floss_unstable_aflags'
+TEST_TYPE = 'server'
+DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:2'
+
+
+args_dict = utils.args_to_dict(args)
+
+def run(machine):
+    host = hosts.create_host(machine)
+    job.run_test('bluetooth_AdapterMDHealth', host=host,
+                 tag='.'.join(NAME.split('.')[1:]), num_iterations=1,
+                 args_dict=args_dict, test_name=NAME.split('.')[1], floss=True,
+                 floss_lm_quirk=True, floss_use_unstable_aflags=True)
+
+parallel_simple(run, machines)

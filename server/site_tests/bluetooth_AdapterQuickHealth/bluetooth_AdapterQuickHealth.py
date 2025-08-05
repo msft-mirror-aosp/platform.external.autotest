@@ -62,7 +62,8 @@ class bluetooth_AdapterQuickHealth(
                  num_iterations=1,
                  args_dict=None,
                  flag='Quick Health',
-                 floss=False):
+                 floss=False,
+                 floss_use_unstable_aflags=False):
         """Run the package of Bluetooth LE health tests
 
         @param host: the DUT, usually a chromebook
@@ -79,11 +80,13 @@ class bluetooth_AdapterQuickHealth(
                            flag=flag)
 
         # Init the quick test and start the package
-        self.quick_test_init(host,
-                             use_btpeer=True,
-                             flag=flag,
-                             args_dict=args_dict,
-                             floss=floss)
+        self.quick_test_init(
+                host,
+                use_btpeer=True,
+                flag=flag,
+                args_dict=args_dict,
+                floss=floss,
+                floss_use_unstable_aflags=floss_use_unstable_aflags)
         self.quick_test_package_start('BT Quick Health')
 
         # Run health package

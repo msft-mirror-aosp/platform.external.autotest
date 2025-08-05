@@ -2427,6 +2427,19 @@ class BluetoothAdapterTests(test.test):
                 [self.results[x] for x in ['eventually_ok', 'daemon_started']])
 
 
+    @test_retry_and_log
+    def test_set_unstable_aflags_use_mode(self, mode):
+        """Sets the unstable Aflags use mode.
+
+        @param mode: An UnstableAflagsUseMode enum. When mode is set to Auto,
+                     the unstable Aflags are only used in the Dev and Beta
+                     channels.
+
+        @returns: True on success, False on failure.
+        """
+        return self.bluetooth_facade.set_unstable_aflags_use_mode(int(mode))
+
+
     def is_intel_chipset(self):
         """Is the controller made of Intel?
 

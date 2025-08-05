@@ -353,7 +353,8 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                  test_name=None,
                  flag='Quick Health',
                  floss=False,
-                 floss_lm_quirk=False):
+                 floss_lm_quirk=False,
+                 floss_use_unstable_aflags=False):
         """Run the batch of Bluetooth Classic health tests
 
         @param host: the DUT, usually a chromebook
@@ -362,11 +363,13 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
         """
 
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host,
-                             use_btpeer=True,
-                             flag=flag,
-                             args_dict=args_dict,
-                             floss=floss,
-                             floss_lm_quirk=floss_lm_quirk)
+        self.quick_test_init(
+                host,
+                use_btpeer=True,
+                flag=flag,
+                args_dict=args_dict,
+                floss=floss,
+                floss_lm_quirk=floss_lm_quirk,
+                floss_use_unstable_aflags=floss_use_unstable_aflags)
         self.cl_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

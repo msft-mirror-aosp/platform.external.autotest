@@ -783,7 +783,8 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
                  test_name=None,
                  flag='Quick Health',
                  floss=False,
-                 floss_lm_quirk=False):
+                 floss_lm_quirk=False,
+                 floss_use_unstable_aflags=False):
         """Running Bluetooth adapter suspend resume with peer autotest.
 
         @param host: the DUT, usually a chromebook
@@ -794,11 +795,13 @@ class bluetooth_AdapterSRHealth(BluetoothAdapterQuickTests,
         """
 
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host,
-                             use_btpeer=True,
-                             flag=flag,
-                             args_dict=args_dict,
-                             floss=floss,
-                             floss_lm_quirk=floss_lm_quirk)
+        self.quick_test_init(
+                host,
+                use_btpeer=True,
+                flag=flag,
+                args_dict=args_dict,
+                floss=floss,
+                floss_lm_quirk=floss_lm_quirk,
+                floss_use_unstable_aflags=floss_use_unstable_aflags)
         self.sr_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -715,7 +715,8 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
                  floss=False,
                  enable_cellular=False,
                  enable_ui=False,
-                 hfp_force_offload=False):
+                 hfp_force_offload=False,
+                 floss_use_unstable_aflags=False):
         """Run the batch of Bluetooth stand health tests
 
         @param host: the DUT, usually a chromebook
@@ -723,13 +724,15 @@ class bluetooth_AdapterAUHealth(BluetoothAdapterQuickTests,
         @param test_name: the test to run, or None for all tests
         """
 
-        self.quick_test_init(host,
-                             use_btpeer=True,
-                             flag=flag,
-                             args_dict=args_dict,
-                             floss=floss,
-                             enable_cellular=enable_cellular,
-                             enable_ui=enable_ui,
-                             hfp_force_offload=hfp_force_offload)
+        self.quick_test_init(
+                host,
+                use_btpeer=True,
+                flag=flag,
+                args_dict=args_dict,
+                floss=floss,
+                enable_cellular=enable_cellular,
+                enable_ui=enable_ui,
+                hfp_force_offload=hfp_force_offload,
+                floss_use_unstable_aflags=floss_use_unstable_aflags)
         self.au_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

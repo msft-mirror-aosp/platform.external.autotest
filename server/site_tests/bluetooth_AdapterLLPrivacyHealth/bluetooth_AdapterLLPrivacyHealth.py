@@ -722,7 +722,8 @@ class bluetooth_AdapterLLPrivacyHealth(
                  peer_required=True,
                  test_name=None,
                  flag='Quick Health',
-                 floss=False):
+                 floss=False,
+                 floss_use_unstable_aflags=False):
         """Run the package of Bluetooth LL privacy health tests. Currently,
         the tests are directly copied from other test packages, but with
         the LL privacy enabled.
@@ -740,11 +741,13 @@ class bluetooth_AdapterLLPrivacyHealth(
         """
 
         # Init the quick test and start the package
-        self.quick_test_init(host,
-                             use_btpeer=peer_required,
-                             flag=flag,
-                             args_dict=args_dict,
-                             floss=floss)
+        self.quick_test_init(
+                host,
+                use_btpeer=peer_required,
+                flag=flag,
+                args_dict=args_dict,
+                floss=floss,
+                floss_use_unstable_aflags=floss_use_unstable_aflags)
         self.ll_privacy_batch_run(num_iterations, test_name)
         # End and cleanup test package
         self.quick_test_cleanup()

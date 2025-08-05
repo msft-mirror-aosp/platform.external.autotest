@@ -167,3 +167,10 @@ class SdpType(IntEnum):
     SAP_SERVER = 6
     DIP = 7
     MPS = 8
+
+
+class UnstableAflagsUseMode(IntEnum):
+    """Unstable Aflags use mode."""
+    AUTO = 0
+    FORCE_USE = 1
+    FORCE_NO_USE = 2

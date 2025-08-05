@@ -258,7 +258,8 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
                  args_dict=None,
                  test_name=None,
                  flag='Quick Health',
-                 floss=False):
+                 floss=False,
+                 floss_use_unstable_aflags=False):
         """Run the batch of Bluetooth stand health tests
 
         @param host: the DUT, usually a chromebook
@@ -268,11 +269,13 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         # the single test or batch test.
         need_chrome = not floss and test_name in ["sa_valid_alias_test", None]
         # Initialize and run the test batch or the requested specific test
-        self.quick_test_init(host,
-                             use_btpeer=False,
-                             flag=flag,
-                             start_browser=need_chrome,
-                             floss=floss,
-                             enable_ui=need_chrome)
+        self.quick_test_init(
+                host,
+                use_btpeer=False,
+                flag=flag,
+                start_browser=need_chrome,
+                floss=floss,
+                enable_ui=need_chrome,
+                floss_use_unstable_aflags=floss_use_unstable_aflags)
         self.sa_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

@@ -195,7 +195,8 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
                  args_dict=None,
                  test_name=None,
                  flag='Quick Health',
-                 floss=False):
+                 floss=False,
+                 floss_use_unstable_aflags=False):
         """Run the batch of Bluetooth Advertisement Monitor API tests.
 
         @param host: the DUT, usually a chromebook.
@@ -205,10 +206,12 @@ class bluetooth_AdapterAdvMonitor(BluetoothAdapterQuickTests,
         """
 
         # Initialize and run the test batch or the requested specific test.
-        self.quick_test_init(host,
-                             use_btpeer=peer_required,
-                             flag=flag,
-                             args_dict=args_dict,
-                             floss=floss)
+        self.quick_test_init(
+                host,
+                use_btpeer=peer_required,
+                flag=flag,
+                args_dict=args_dict,
+                floss=floss,
+                floss_use_unstable_aflags=floss_use_unstable_aflags)
         self.advmon_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

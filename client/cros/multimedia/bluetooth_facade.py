@@ -4910,6 +4910,21 @@ class FlossFacadeLocal(BluetoothBaseFacadeLocal):
             self.start_bluetoothd()
         return True
 
+    def set_unstable_aflags_use_mode(self, mode):
+        """Sets the unstable Aflags use mode.
+
+        @param mode: An UnstableAflagsUseMode enum. When mode is set to Auto,
+                     the unstable Aflags are only used in the Dev and Beta
+                     channels.
+
+        @return: True on success, False on failure.
+        """
+        logging.info('Set unstable Aflags use mode=%s', mode)
+        if not self.manager_client.set_unstable_aflags_use_mode(mode):
+            logging.warn('Set unstable Aflags use mode returns False.')
+            return False
+        return True
+
     def start_bluetoothd(self):
         """Starts Floss. This includes enabling the adapter.
 

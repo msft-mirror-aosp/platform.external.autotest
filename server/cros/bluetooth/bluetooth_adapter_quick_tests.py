@@ -22,6 +22,8 @@ import time
 import common
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_quick_tests_base
+from autotest_lib.client.cros.bluetooth.floss.floss_enums import (
+        UnstableAflagsUseMode)
 from autotest_lib.server import site_utils
 from autotest_lib.server.cros.bluetooth import bluetooth_adapter_tests
 from autotest_lib.server.cros.bluetooth.bluetooth_adapter_llprivacy_tests \
@@ -145,7 +147,8 @@ class BluetoothAdapterQuickTests(
                         enable_cellular=False,
                         enable_ui=False,
                         hfp_force_offload=False,
-                        enable_debug_log=True):
+                        enable_debug_log=True,
+                        floss_use_unstable_aflags=False):
         """Inits the test batch
 
         @param floss_lm_quirk True to enable the quirk for b/260539322 to
@@ -159,6 +162,7 @@ class BluetoothAdapterQuickTests(
         self.start_browser = start_browser
         self.use_btpeer = use_btpeer
         self.floss = floss
+        self.floss_use_unstable_aflags = floss_use_unstable_aflags
         self.local_host_ip = None
         self.floss_lm_quirk = floss_lm_quirk
         self.args_dict = args_dict if args_dict else {}
@@ -479,6 +483,16 @@ class BluetoothAdapterQuickTests(
             raise error.TestError('Failed to set LL privacy to {}'.format(
                     self.llprivacy))
 
+        # The config is stored in the filesystem so it remains after reboot.
+        if not self.test_set_unstable_aflags_use_mode(
+                UnstableAflagsUseMode.FORCE_USE if self.
+                floss_use_unstable_aflags else UnstableAflagsUseMode.
+                FORCE_NO_USE):
+            raise error.TestError(
+                    'Failed to set unstable Aflags use mode to {}'.format(
+                            'FORCE_USE' if self.
+                            floss_use_unstable_aflags else 'FORCE_NO_USE'))
+
         # Reset the adapter, otherwise the test_start_discovery in the below
         # start_peers could fail because of the previous test, see b/329207061.
         # It could also fail when the LL privacy is enabled, see b/317736407.
@@ -628,6 +642,13 @@ class BluetoothAdapterQuickTests(
                 logging.error("Failed to reset ll privacy.")
             else:
                 logging.info("Reset ll privacy to False.")
+
+        # Reset unstable Aflags use mode to Auto
+        if not self.test_set_unstable_aflags_use_mode(
+                UnstableAflagsUseMode.AUTO):
+            logging.error("Failed to reset unstable Aflags use mode.")
+        else:
+            logging.info("Reset unstable Aflags use mode to Auto.")
 
         # Reset the convertible mode if we had changed it during the test
         if self._reset_convertible_mode:

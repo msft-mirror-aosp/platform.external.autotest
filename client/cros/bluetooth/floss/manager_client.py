@@ -199,6 +199,10 @@ class FlossManagerClient(ManagerCallbacks):
     def set_floss_enabled(self, enabled):
         self.proxy().SetFlossEnabled(enabled)
 
+    @glib_call()
+    def set_unstable_aflags_use_mode(self, mode):
+        return bool(self.proxy().SetUnstableAflagsUseMode(mode))
+
     @glib_call(False)
     def set_ll_privacy(self, enabled):
         return bool(self.expr_proxy().SetLLPrivacy(enabled))

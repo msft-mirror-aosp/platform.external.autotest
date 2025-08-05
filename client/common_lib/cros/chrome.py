@@ -215,12 +215,7 @@ class Chrome(object):
                               if logged_in else self.BROWSER_TYPE_GUEST)
         finder_options.browser_type = self.browser_type
 
-        # TODO(b:398872739): Remove after MV3 migration.
-        disable_features = [
-                "ExtensionManifestV2Disabled",
-                "ExtensionManifestV2Unsupported",
-        ]
-
+        disable_features = []
         if not enable_web_app_auto_install:
             disable_features.append("DefaultWebAppInstallation")
 
@@ -376,13 +371,13 @@ class Chrome(object):
             return None
 
         ext.ExecuteJavaScript("""
-            window.__login_status = null;
+            self.__login_status = null;
             chrome.autotestPrivate.loginStatus(function(s) {
-              window.__login_status = s;
+              self.__login_status = s;
             });
         """)
         return utils.poll_for_condition(
-                lambda: ext.EvaluateJavaScript("window.__login_status"),
+                lambda: ext.EvaluateJavaScript("self.__login_status"),
                 timeout=10)
 
     def disable_dim_display(self):
@@ -412,14 +407,14 @@ class Chrome(object):
             return None
 
         ext.ExecuteJavaScript("""
-            window.__items = null;
+            self.__items = null;
             chrome.autotestPrivate.getVisibleNotifications(function(items) {
-              window.__items  = items;
+              self.__items  = items;
             });
         """)
-        if ext.EvaluateJavaScript("window.__items") is None:
+        if ext.EvaluateJavaScript("self.__items") is None:
             return None
-        return ext.EvaluateJavaScript("window.__items")
+        return ext.EvaluateJavaScript("self.__items")
 
     @property
     def browser_type(self):

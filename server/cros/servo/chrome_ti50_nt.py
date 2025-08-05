@@ -63,7 +63,7 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
     DUT_FW = '/opt/google/ti50/firmware/'
 
     # Ti50 image in tarballs
-    PROD_FILE = 'ti50.bin.prod'
+    PROD_FILE = 'ti50-nt.bin.prod'
     # Ti50 CrOS image information
     DUT_PROD = DUT_FW + GSC_IMG_PREFIX + '.bin.prod'
     DUT_PREPVT = DUT_FW + GSC_IMG_PREFIX + '.bin.prepvt'

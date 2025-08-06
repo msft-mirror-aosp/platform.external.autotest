@@ -819,8 +819,8 @@ class Servo(object):
 
     def power_short_press(self):
         """Simulate a short power button press."""
-        # tab is defined as 0.2s in servod
-        self.power_key('tab')
+        # short_press is defined as 0.2s in servod
+        self.power_key('short_press')
 
     def power_key(self, press_secs='tab'):
         """Simulate a power button press.
@@ -835,6 +835,8 @@ class Servo(object):
             return
         if isinstance(press_secs, str):
             if press_secs == 'tab':
+                press_secs = 0.2
+            elif press_secs == 'short_press':
                 press_secs = 0.2
             elif press_secs == 'press':
                 press_secs = 1.2

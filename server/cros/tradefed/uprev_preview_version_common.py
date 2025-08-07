@@ -128,7 +128,7 @@ def upload_preview_xts(branch_name: str,
             file_path = remote_url
 
 
-_GTS_FILENAME_PATTERN = r'android-gts-([A-Za-z0-9-_]*)\.zip'
+_GTS_FILENAME_PATTERN = r'android-gts-([A-Za-z0-9-_.]*)\.zip'
 
 
 def get_gts_version_name(path: pathlib.Path) -> str:

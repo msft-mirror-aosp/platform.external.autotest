@@ -162,7 +162,7 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
         """
         if isinstance(result, list) or isinstance(result, tuple):
             if isinstance(result, tuple):
-                logging.warning('Turning tuple into list')
+                logging.debug('Turning tuple into list')
             new_result = []
             for part in result:
                 new_result.append(self.strip_timestamp(part))

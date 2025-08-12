@@ -327,9 +327,12 @@ suite:bluetooth_dep_feature
 suite:bluetooth_e2e_cq
 suite:bluetooth_flaky
 suite:bluetooth_floss
+suite:bluetooth_floss_unstable_aflags
 suite:bluetooth_floss_cq
 suite:bluetooth_floss_flaky
+suite:bluetooth_floss_flaky_unstable_aflags
 suite:bluetooth_floss_sa
+suite:bluetooth_floss_sa_unstable_aflags
 suite:bluetooth_fw
 suite:bluetooth_longrun
 suite:bluetooth_manual

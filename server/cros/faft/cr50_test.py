@@ -563,15 +563,6 @@ class Cr50Test(FirmwareTest):
         self.update_cr50_image_and_board_id(image, cr50_utils.ERASED_CHIP_BID,
                                             False)
 
-    def ti50_preserve_dev_image(self, ignore_error=False):
-        """Run preserve dev image
-
-        Try to run preserve_dev_image on all devices. It's ok if it fails on
-        cr50.
-        """
-        ignore_error = ignore_error or (not self.gsc or self.gsc.IS_CR50)
-        self._preserve_dev_image(ignore_error=ignore_error)
-
     def update_cr50_image_and_board_id(self,
                                        image_path,
                                        bid,
@@ -607,11 +598,11 @@ class Cr50Test(FirmwareTest):
         # Try to do a GSC power-on reset to clear the rollback counter and
         # switch back to the DBG image.
         if self.servo.has_control('gsc_reset'):
-            self.ti50_preserve_dev_image()
+            self._preserve_dev_image(True)
             self.servo.set_nocheck('gsc_reset', 'on')
             self.servo.set_nocheck('gsc_reset', 'off')
             self.gsc.wait_for_reboot(timeout=10)
-            self.ti50_preserve_dev_image()
+            self._preserve_dev_image(True)
         else:
             # Try using the command to clear the rollback counter if servo
             # doesn't have access to the gsc reset signal.
@@ -1263,7 +1254,7 @@ class Cr50Test(FirmwareTest):
         @raise TestFail: if the update failed
         """
         # Run preserve dev image to preserve /usr/local through tpm wipe.
-        self.ti50_preserve_dev_image()
+        self._preserve_dev_image(True)
 
         original_rw = self.gsc.get_version()
 
@@ -1280,12 +1271,12 @@ class Cr50Test(FirmwareTest):
         # sending more commands. The reboot should happen quickly.
         self.gsc.wait_for_reboot(
                 timeout=self.faft_config.gsc_update_wait_for_reboot)
-        self.ti50_preserve_dev_image()
+        self._preserve_dev_image(True)
 
         if rollback:
             self.gsc.rollback()
             logging.info("Rolled back: %s", self.gsc.rolledback())
-            self.ti50_preserve_dev_image()
+            self._preserve_dev_image(True)
 
         expected_rw = original_rw if expect_rollback else image_rw
         # If we expect a rollback, the version should remain unchanged

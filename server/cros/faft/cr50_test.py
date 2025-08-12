@@ -912,6 +912,11 @@ class Cr50Test(FirmwareTest):
 
         self._try_to_bring_dut_up()
         new_mismatch = self._check_running_image_and_board_id(state)
+
+        if 'chip_bid' in new_mismatch:
+            rlz, _, flags = state['chip_bid']
+            cr50_utils.SetChipBoardId(self.host, rlz, flags)
+
         # Copy the .prod file onto the DUT.
         if prod_path and 'prod_version' in new_mismatch:
             self.install_gsc_firmware_images(prod_path, self.gsc.DUT_PROD)

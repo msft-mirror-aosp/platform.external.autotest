@@ -2,6 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+'use strict';
+
+// Keep alive for MV3 service worker.
+setInterval(chrome.runtime.getPlatformInfo, 20 * 1000);
+
 // chromeTesting.Networking provides wrappers around chrome.networking.onc
 // functions. The result of each asynchronous call can be accessed through
 // chromeTesting.networking.callStatus, which is a dictionary of the form:

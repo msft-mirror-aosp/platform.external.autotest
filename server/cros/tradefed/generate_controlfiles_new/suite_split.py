@@ -55,10 +55,10 @@ class Splitter:
         if abi_bits is not None:
             basename += f".{abi_bits}"
         if basename not in self._runtime_hints:
-            logging.warn(
-                    'Test %s not found in runtime hint, assuming long test',
-                    basename)
-            return LONG_SUITE
+            raise ValueError(
+                    f"Test {basename} not found in runtime hint. If it's a newly "
+                    "introduced module, add it to the RUNTIME_HINT_SECS list under "
+                    "generate_controlfiles config.")
 
         runtime = self._runtime_hints[basename] + self._per_test_overhead
         if runtime > self._max_runtime or basename in self._isolate_modules:

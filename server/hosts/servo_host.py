@@ -860,7 +860,7 @@ class ServoHost(base_servohost.BaseServoHost):
                     volumes=[
                             "/dev:/dev",
                             "%s_log:/var/log/servod_%s/" %
-                            (self.servod_container_name, self.servo_port)
+                            (self.servo_serial, self.servo_port)
                     ],
                     environment=environment,
                     command=start_cmds,

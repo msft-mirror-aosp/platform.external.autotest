@@ -265,6 +265,11 @@ class bluetooth_AdapterCLHealth(BluetoothAdapterQuickTests,
                 self.write_inquiry_mode(inquiry_mode)
 
         self.assert_discover_and_pair(device)
+
+        # Verify that the device is connected
+        self.test_device_is_connected(device.address)
+        self.test_hid_device_created(device.address)
+
         self.test_start_discovery()
 
         # Disconnection should set up page scan so a reconnect immediately

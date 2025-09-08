@@ -50,8 +50,8 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
     GS_PRIVATE_DBG = GS_PRIVATE + 'chromeos-ti50-debug-nt/'
     # Ti50 NT tarball format
     PROD_TAR = 'ti50-nt.r*0.0.*%s%s.tar.xz'
-    # ti50.nt.dbg.0xDEVID0_0xDEVID1.bin.GIT_SHA.BID (SHA and BID are optional)
-    DEBUG_FILE = '*/ti50.nt.dbg.%s.bin.*%s'
+    # ti50-nt.dbg.0xDEVID0_0xDEVID1.bin.GIT_SHA.BID (SHA and BID are optional)
+    DEBUG_FILE = '*/ti50-nt.dbg.%s.bin.*%s'
     # ti50_Unknown_NodeLocked-DEVID0-DEVID1_(signing key).bin
     ERASEFLASHINFO_FILE = '*/ti50_Unknown_NodeLocked-%s_*.bin'
     QUAL_VERSION_FILE = 'chromeos-ti50-nt-QUAL_VERSION'

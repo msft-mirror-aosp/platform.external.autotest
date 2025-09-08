@@ -9,7 +9,8 @@ METADATA = {
     'criteria': 'Verify that chrome.networkingPrivate can configure a wifi network. '
                 'The test will fail if the Chrome fails to configure the wifi network, '
                 'or if the getProperties fails to retreive the correct properties once configured.',
-    'hw_agnostic': False
+    'hw_agnostic': False,
+    'variant_category': '{"name": "WifiBtChipset_Soc_Kernel"}',
 }
 ATTRIBUTES = "suite:wifi_endtoend"
 TEST_TYPE = "client"

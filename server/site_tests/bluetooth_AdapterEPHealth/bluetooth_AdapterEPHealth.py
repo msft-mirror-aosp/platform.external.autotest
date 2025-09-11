@@ -41,7 +41,7 @@ class bluetooth_AdapterEPHealth(
     # With raspberry pi peer, it takes a moment before the device is
     # registered as an input device. Without delay, the input recorder
     # doesn't find the device
-    CONNECT_SLEEP_SECS = 1
+    CONNECT_SLEEP_SECS = 3
 
     test_wrapper = BluetoothAdapterQuickTests.quick_test_test_decorator
     batch_wrapper = BluetoothAdapterQuickTests.quick_test_batch_decorator

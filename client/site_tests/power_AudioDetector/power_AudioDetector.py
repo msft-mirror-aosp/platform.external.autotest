@@ -78,7 +78,8 @@ class power_AudioDetector(test.test):
             alarm_time = rtc.get_seconds() + run_time_sec
             rtc.set_wake_alarm(alarm_time)
 
-            time.sleep(run_time_sec)
+            while rtc.get_seconds() <= alarm_time:
+                time.sleep(1)
 
             # Stop powerd to avoid suspending when the audio stops.
             utils.system_output('stop powerd')

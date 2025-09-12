@@ -359,6 +359,7 @@ class BluetoothBaseFacadeLocal(object):
             'Realtek-RTL8852BE-VT-USB': [(('0x10ec', '0xb520'), 'USB')],
 
             # MediaTek chipsets
+            'Mediatek-MTK7920-USB': [(('0x14c3', '0x7920'), 'USB')],
             'Mediatek-MTK7921-USB': [(('0x14c3', '0x7961'), 'USB')],
             'Mediatek-MTK7921-SDIO': [(('0x037a', '0x7901'), 'SDIO')],
             'Mediatek-MTK7922-USB': [(('0x14c3', '0x0616'), 'USB')],

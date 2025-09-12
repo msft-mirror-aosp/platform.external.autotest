@@ -44,6 +44,7 @@ _chip_info = {
         'Realtek-RTL8852BE-VT-USB': ChipInfo(True, True, 0x00f0),
 
         # MediaTek chipsets
+        'Mediatek-MTK7920-USB': ChipInfo(True, True, 0x0130),
         'Mediatek-MTK7921-USB': ChipInfo(True, True, 0x0130),
         'Mediatek-MTK7921-SDIO': ChipInfo(True, True, 0x0130),
         'Mediatek-MTK7922-USB': ChipInfo(True, True, 0x0130),

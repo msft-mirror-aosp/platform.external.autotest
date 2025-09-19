@@ -199,7 +199,9 @@ def has_internal_speaker(host):
 
     """
     board_name = get_board_name(host)
-    if not audio_spec.has_internal_speaker(host.get_board_type(), board_name):
+    model_name = host.get_platform()
+    if not audio_spec.has_internal_speaker(host.get_board_type(), board_name,
+                                           model_name):
         logging.info('Board %s does not have speaker.', board_name)
         return False
     return True

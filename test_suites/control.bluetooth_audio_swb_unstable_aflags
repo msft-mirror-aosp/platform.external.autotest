@@ -1,0 +1,43 @@
+# Copyright 2020 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Bluetooth Team"
+NAME = "bluetooth_audio_swb_unstable_aflags"
+PURPOSE = "Automated testing of Bluetooth audio swb with unstable aflags"
+
+TIME = "LONG"
+TEST_CATEGORY = "General"
+TEST_CLASS = "suite"
+TEST_TYPE = "Server"
+
+METADATA = {
+    'contacts': ['chromeos-bt-team@google.com',],
+    # ChromeOS > Platform > Connectivity > Bluetooth
+    'bug_component': 'b:167317',
+    'criteria': 'All Bluetooth audio swb tests for Project Floss that enable aflags',
+    'hw_agnostic': False,
+}
+
+DOC = """
+This suite runs a series of bluetooth aac/swb tests against our Bluetooth hardware
+and software.
+
+unstable_aflags denotes that tests in this suite will enable all aflags while running on channel canary/dev/beta.
+
+More documentation available at
+https://g3doc.corp.google.com/company/teams/chrome/ops/chromeos/engprod/connectivity/bluetooth/automated_tests_and_lab.md?cl=head#test-suites
+
+Contact: chromeos-bluetooth-engprod@google.com or
+         chromeos-bt-team@google.com
+
+"""
+
+import common
+from autotest_lib.server.cros.dynamic_suite import dynamic_suite
+
+args_dict['name'] = NAME
+args_dict['add_experimental'] = True
+args_dict['job'] = job
+
+dynamic_suite.reimage_and_run(**args_dict)

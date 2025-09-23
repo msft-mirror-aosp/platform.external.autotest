@@ -319,6 +319,7 @@ suite:bluestreak-partners
 suite:bluestreak-pre-cq
 suite:bluetooth
 suite:bluetooth_audio_swb
+suite:bluetooth_audio_swb_unstable_aflags
 suite:bluetooth_core
 suite:bluetooth_core_cq
 suite:bluetooth_cross_device

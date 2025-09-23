@@ -6,4 +6,8 @@
     is incremented. Otherwise the computation for the canonical list
     of test cases is confused. See b/151779432.
   -->
+  <!-- b/444792547; fixed in CTS 13_r14 -->
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.PinnedStackTests#testAutoEnterPictureInPictureOverPip" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.PinnedStackTests#testDismissPipWhenLaunchNewOne" />
+  <Entry include="CtsWindowManagerDeviceTestCases android.server.wm.PinnedStackTests#testTranslucentActivityOnTopOfPinnedTask" />
 </SubPlan>

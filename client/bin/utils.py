@@ -1819,13 +1819,35 @@ def get_board():
     return get_board_property('BOARD')
 
 
+def get_form_factor():
+    """
+    Get the DUT's form factor from cros_config.
+
+    @return form factor.
+    """
+    try:
+        form_factor = utils.run('cros_config /hardware-properties form-factor',
+                                verbose=False).stdout
+        return form_factor
+    except Exception as e:
+        # Fall back to lsb-release if cros_config fails.
+        return get_board_property('DEVICETYPE')
+
 def get_board_type():
     """
-    Get the ChromeOS board type from /etc/lsb-release.
+    Get the ChromeOS board type.
+
+    If the form factor is [CLAMSHELL, CONVERTIBLE, DETACHABLE, CHROMESLATE],
+        the device type is CHROMEBOOK. Otherwise, the device type is the same of
+        the DUT's form factor string.
 
     @return device type.
     """
-    return get_board_property('DEVICETYPE')
+    device_type = get_form_factor()
+
+    return 'CHROMEBOOK' if device_type in [
+            'CLAMSHELL', 'CONVERTIBLE', 'DETACHABLE', 'CHROMESLATE'
+    ] else device_type
 
 
 def get_chromeos_version():

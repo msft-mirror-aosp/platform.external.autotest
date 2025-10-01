@@ -8,7 +8,7 @@ import collections
 _BOARD_TYPE_CHROMEBOX = 'CHROMEBOX'
 _BOARD_TYPE_CHROMEBIT = 'CHROMEBIT'
 _BOARD_WITHOUT_SOUND_CARD = ['gale', 'veyron_rialto']
-_MODEL_CHROMEBOX = ['boxy', 'dexi', 'dita', 'taranza']
+
 
 def strip_variant_suffix(board_name):
     """
@@ -25,7 +25,7 @@ def strip_variant_suffix(board_name):
     return parts[0]
 
 
-def has_internal_speaker(board_type, board_name, model_name):
+def has_internal_speaker(board_type, board_name):
     """Checks if a board has internal speaker.
 
     @param board_type: board type string. E.g. CHROMEBOX, CHROMEBIT, and etc.
@@ -39,8 +39,7 @@ def has_internal_speaker(board_type, board_name, model_name):
                 or board_type == _BOARD_TYPE_CHROMEBIT
                 or board_name in _BOARD_WITHOUT_SOUND_CARD):
         return False
-    # TODO(b/445960929): Remove this once these devices are reported correctly in /etc/lsb-release.
-    return (model_name not in _MODEL_CHROMEBOX)
+    return True
 
 
 def has_internal_microphone(board_type):
@@ -170,7 +169,7 @@ def get_internal_speaker_channel_count(board_type, board, model, sku):
     @returns: The channel count of internal speakers.
 
     """
-    if not has_internal_speaker(board_type, board, model):
+    if not has_internal_speaker(board_type, board):
         return 0
 
     for b in BOARDS_WITH_FOUR_INTERNAL_SPEAKERS:

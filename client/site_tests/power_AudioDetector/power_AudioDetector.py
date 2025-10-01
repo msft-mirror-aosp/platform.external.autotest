@@ -27,8 +27,7 @@ class power_AudioDetector(test.test):
 
     def run_once(self, run_time_sec=60):
         if not audio_spec.has_internal_speaker(utils.get_board_type(),
-                                               utils.get_board(),
-                                               utils.get_platform()):
+                                               utils.get_board()):
             raise error.TestNAError('Board not applicable to test!')
 
         if run_time_sec < 10:

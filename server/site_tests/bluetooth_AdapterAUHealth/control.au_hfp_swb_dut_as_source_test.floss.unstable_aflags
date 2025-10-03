@@ -18,7 +18,7 @@ METADATA = {
 }
 
 
-ATTRIBUTES = ''
+ATTRIBUTES = 'suite:bluetooth_audio_swb_unstable_aflags'
 TEST_TYPE = 'server'
 DEPENDENCIES = 'bluetooth_state:NORMAL, working_bluetooth_btpeer:1'
 

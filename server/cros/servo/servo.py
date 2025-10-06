@@ -742,7 +742,7 @@ class Servo(object):
             logging.info('Setup cold_reset_select on puff')
             self.set_nocheck("cold_reset_select", "gsc_ecrst_pulse")
         # Run testlab open if servo relies on ccd to control the dut.
-        if self.main_device_uses_gsc_drv():
+        if self.main_device_uses_gsc_drv() and self.has_control('cr50_testlab'):
             self.set_nocheck('cr50_testlab', 'open')
         if self.main_device_is_ccd():
             self.set_nocheck('ccd_keepalive_en', 'on')

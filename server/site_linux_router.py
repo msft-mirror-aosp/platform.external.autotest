@@ -439,7 +439,7 @@ class LinuxRouter(site_linux_system.LinuxSystem):
         available = self.host.run('cat %s' % self._RNG_AVAILABLE, \
                                   ignore_status=True).stdout.strip().split(' ')
         # System may not have HWRNG support. Just skip this.
-        if available == "":
+        if available == ['']:
             return
         current = self.host.run('cat %s' % self._RNG_CURRENT).stdout. \
                                 strip()

@@ -24,7 +24,6 @@ from datetime import datetime, timedelta
 from functools import cmp_to_key
 from xml.etree import ElementTree
 
-from autotest_lib.cache_server import constants as cache_server_constants
 from autotest_lib.client.common_lib import autotemp
 from autotest_lib.client.common_lib import autotest_enum
 from autotest_lib.client.common_lib import error
@@ -91,17 +90,12 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
     _PAYLOAD_TYPE = autotest_enum.AutotestEnum('CROS', 'DLC', 'MINIOS')
 
-    # Static cache servers to use when running tests from your workstation
-    # against lab DUTs. Tests running in the lab will instead use the
-    # job_repo_url from the provisioning attributes, which contains a cache
-    # server URL assigned by the lab.
-    _PINNED_CACHE_SERVER_IPS = [
-            cache_server_constants.CHROMEOS_6_CACHE,
-            cache_server_constants.CHROMEOS_8_CACHE,
-            cache_server_constants.CHROMEOS_15_CACHE,
-    ]
-    _CACHE_SERVER_URL_PATTERN = 'http://%s:8082'
-    _CACHE_SERVER_HEALTH_CHECK_PATTERN = f'{_CACHE_SERVER_URL_PATTERN}/check_health'
+    # The cache server URL to use for the test, if running on a lab DUT.
+    # Tests running in the lab will instead use the job_repo_url from the
+    # provisioning attributes, which contains a cache server URL assigned by
+    # the lab.
+    _CACHE_SERVER_URL ='http://caching-service:8082'
+    _CACHE_SERVER_HEALTH_CHECK_URL = f'{_CACHE_SERVER_URL}/check_health'
 
     _NO_UPDATE = 'no update'
 
@@ -1058,19 +1052,15 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
                     self._get_job_repo_url())
             return cache_server_url
 
-        for ip in self._PINNED_CACHE_SERVER_IPS:
-            try:
-                health_check = self._CACHE_SERVER_HEALTH_CHECK_PATTERN % ip
-                # Attempt to connect to cache server with 5 second connection
-                # timeout to find valid pinned cache server.
-                self._host.run(['curl',  '-m', '5', '--head', health_check])
-            except error.AutoservRunError as e:
-                logging.error('Failed to connect to cache server at %s', ip)
-                continue
-            return self._CACHE_SERVER_URL_PATTERN % ip
+        try:
+            # Attempt to connect to cache server with 5 second connection
+            # timeout to find valid pinned cache server.
+            self._host.run(['curl',  '-m', '5', '--head', self._CACHE_SERVER_HEALTH_CHECK_URL])
+        except error.AutoservRunError as e:
+            logging.error('Failed to connect to cache server')
+            raise error.TestFail('Failed to connect to cache server')
 
-        logging.error('No cache server found.')
-        return None
+        return self._CACHE_SERVER_URL
 
     def get_payload_for_nebraska(self,
                                  build=None,

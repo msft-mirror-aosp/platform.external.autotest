@@ -1056,11 +1056,12 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             # Attempt to connect to cache server with 5 second connection
             # timeout to find valid pinned cache server.
             self._host.run(['curl',  '-m', '5', '--head', self._CACHE_SERVER_HEALTH_CHECK_URL])
+            return self._CACHE_SERVER_URL
         except error.AutoservRunError as e:
             logging.error('Failed to connect to cache server')
-            raise error.TestFail('Failed to connect to cache server')
 
-        return self._CACHE_SERVER_URL
+        logging.error('No cache server found.')
+        return None
 
     def get_payload_for_nebraska(self,
                                  build=None,

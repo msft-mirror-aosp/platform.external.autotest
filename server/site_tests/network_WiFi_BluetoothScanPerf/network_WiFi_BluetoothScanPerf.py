@@ -101,7 +101,8 @@ class network_WiFi_BluetoothScanPerf(
         start_time = time.time()
 
         # Prepare Bluetooth to scan, but do not start yet.
-        factory = remote_facade_factory.RemoteFacadeFactory(host)
+        factory = remote_facade_factory.RemoteFacadeFactory(host,
+                                                            no_chrome=True)
         bluetooth_facade = factory.create_bluetooth_facade(floss=True)
         if not bluetooth_facade.is_bluetoothd_valid():
             if not (bluetooth_facade.start_bluetoothd()

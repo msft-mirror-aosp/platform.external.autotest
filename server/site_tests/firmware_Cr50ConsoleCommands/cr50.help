@@ -19,7 +19,6 @@ gpiocfg
 gpioget
 -gpioset
 help
-history
 -i2cscan
 i2cptpm
 -i2cxfer
@@ -37,7 +36,6 @@ sleepmask
 sysinfo
 sysrst
 taskinfo
-timerinfo
 -usb
 version
 wp

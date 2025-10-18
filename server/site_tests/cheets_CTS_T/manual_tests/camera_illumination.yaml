@@ -1,6 +1,6 @@
 android.hardware.camera2.cts.CaptureRequestTest#testAntiBandingModes[1]: [drawcia, maglia, magolor, storo360, kano, redrix, vell, anraggar360, craask, craaskbowl, domilly, riven, rudriks, teliks360, xivu360, yavilly, strongbad]
 android.hardware.camera2.cts.CaptureRequestTest#testEdgeModeControl[1]: [nautilus]
-android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControl[1]: [telith, teltic]
+android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControl[1]: [telith, teltic, telticn50]
 android.hardware.camera2.cts.ImageReaderTest#testFlexibleYuv[1]: [craask, rudriks]
 android.hardware.camera2.cts.ImageReaderTest#testFlexibleYuvWithTimestampBase[1]: [craask, rudriks]
 android.hardware.camera2.cts.ImageReaderTest#testRepeatingJpeg[1]: [craask]

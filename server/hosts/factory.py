@@ -220,7 +220,7 @@ def _verify_connectivity(connectivity_class, hostname, **args):
     with closing(ssh_host.SSHHost(hostname, **args)) as host:
         host.run('test :',
                  timeout=_CONNECTIVITY_CHECK_TIMEOUT_S,
-                 connect_timeout=60,
+                 connect_timeout=120,
                  ssh_failure_retry_ok=False,
                  ignore_timeout=False)
 

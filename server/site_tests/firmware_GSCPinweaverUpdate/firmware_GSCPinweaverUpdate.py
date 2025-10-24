@@ -19,9 +19,12 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
     OLD_VERSIONS = {
             # Cr50 image with the old version of Pinweaver
             'cr50': '0.5.160',
-            # Ti50 always used platform/pinweaver. This is just a ti50 image with
-            # the same rollback era.
+            # Ti50 always used platform/pinweaver. This is just a ti50 image
+            # with the same rollback era.
             'ti50-dt': '0.23.21',
+            # Geralt has some update issues with old images. Use a newer ti50
+            # firmware version.
+            'geralt': '0.23.230',
     }
     USER = 'name1'
     PWD = 'passwd1'
@@ -66,7 +69,12 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
                            full_args,
                            restore_cr50_image=True,
                            restore_cr50_board_id=True)
-        if self.gsc.NAME not in self.OLD_VERSIONS:
+        # Use the board specific version if it's defined. If it isn't, use the
+        # gsc name.
+        key = self.faft_config.platform
+        if key not in self.OLD_VERSIONS:
+            key = self.gsc.NAME
+        if key not in self.OLD_VERSIONS:
             raise error.TestNAError(
                     '%r is unsupported. Add image version to OLD_VERSIONS' %
                     self.gsc.NAME)
@@ -75,8 +83,9 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
         if old_path:
             self._old_release_path = old_path
         else:
+            logging.info('Look up old version with %r', key)
             self._old_release_path = self.download_cr50_release_image(
-                    self.OLD_VERSIONS[self.gsc.NAME])[0]
+                    self.OLD_VERSIONS[key])[0]
 
     def create_user(self, session):
         """Create a persistent user in the given session."""

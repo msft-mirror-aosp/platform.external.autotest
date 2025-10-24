@@ -1135,6 +1135,12 @@ class ChromeCr50(chrome_ec.ChromeConsole):
         else:
             self.set_ccd_level('open')
 
+        # Ti50 won't let you run enable testlab mode until ccd has been reset
+        # run ccd reset and then ccd reset factory to reenable all capabilities.
+        if self.IS_TI50 and request_on:
+            self.send_command('ccd reset')
+            self.ccd_reset_factory()
+
         ap_is_on = self.ap_is_on()
         # Set testlab mode
         rv = self.send_command_get_output('ccd testlab %s' % request_str,

@@ -133,6 +133,55 @@ class UprevPreviewVersionCommonTest(unittest.TestCase):
                 ]),
         ])
 
+    @mock.patch('subprocess.check_call')
+    def test_upload_preview_xts_additional_urls(self, check_call_mock):
+        """Tests if upload_preview_xts works with additional URLs."""
+
+        _TEST_CONFIG = {
+                "internal_base": "gs://chromeos-arc-images/cts/bundle/",
+                "partner_base": "gs://chromeos-partner-gts/",
+                "official_url_pattern": "android-gts-%s.zip",
+                "preview_url_pattern": "android-gts-%s.zip",
+                "preview_version_name": "11-R4-R-Preview4-11561875",
+        }
+
+        uprev_preview_version_common.upload_preview_xts(
+                branch_name='test_branch',
+                target_name='test_target',
+                url_config=_TEST_CONFIG,
+                abi=None,
+                xts_name='gts',
+                version_name="11-R4-R-Preview4-11561875",
+                local_file=pathlib.Path(
+                        '/path/to/android-gts-11-R4-R-Preview4-11561875.zip'),
+                additional_urls=[
+                        'gs://additional-url-1', 'gs://additional-url-2'
+                ],
+        )
+
+        check_call_mock.assert_has_calls([
+                mock.call([
+                        'gsutil', 'cp',
+                        '/path/to/android-gts-11-R4-R-Preview4-11561875.zip',
+                        'gs://chromeos-arc-images/cts/bundle/android-gts-11-R4-R-Preview4-11561875.zip'
+                ]),
+                mock.call([
+                        'gsutil', 'cp',
+                        'gs://chromeos-arc-images/cts/bundle/android-gts-11-R4-R-Preview4-11561875.zip',
+                        'gs://chromeos-partner-gts/android-gts-11-R4-R-Preview4-11561875.zip'
+                ]),
+                mock.call([
+                        'gsutil', 'cp',
+                        'gs://chromeos-arc-images/cts/bundle/android-gts-11-R4-R-Preview4-11561875.zip',
+                        'gs://additional-url-1'
+                ]),
+                mock.call([
+                        'gsutil', 'cp',
+                        'gs://chromeos-arc-images/cts/bundle/android-gts-11-R4-R-Preview4-11561875.zip',
+                        'gs://additional-url-2'
+                ]),
+        ])
+
     def test_get_gts_version_name(self):
         """Tests if get_gts_version_name returns the correct version name."""
         path = pathlib.Path(

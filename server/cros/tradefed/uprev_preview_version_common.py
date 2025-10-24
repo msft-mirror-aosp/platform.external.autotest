@@ -7,7 +7,7 @@ import re
 import shlex
 import shutil
 import subprocess
-from typing import Dict
+from typing import Dict, Optional
 
 import bundle_utils
 
@@ -81,7 +81,8 @@ def upload_preview_xts(branch_name: str,
                        abi: str,
                        xts_name: str,
                        version_name: str,
-                       local_file: pathlib.Path = None) -> None:
+                       local_file: pathlib.Path = None,
+                       additional_urls: Optional[list[str]] = None) -> None:
     """Function to upload the preview xTS zip file to multiple places on gs.
 
     Multiple places are URLs beginning with gs://chromeos-arc-images/ for Googler,
@@ -95,6 +96,7 @@ def upload_preview_xts(branch_name: str,
         xts_name: A string which is one of the test names: (cts, vts).
         version_name: A string which means target build version name.
         local_file: (optional) Path to local file to upload instead of copying from remote.
+        additional_urls: (optional) list of additional GS URLs the bundle should copy to.
     """
     if local_file is None:
         assert xts_name != 'gts'
@@ -114,7 +116,10 @@ def upload_preview_xts(branch_name: str,
     else:
         file_path = str(local_file)
 
-    for remote_url in bundle_utils.make_preview_urls(url_config, abi):
+    urls = bundle_utils.make_preview_urls(url_config, abi)
+    if additional_urls:
+        urls.extend(additional_urls)
+    for remote_url in urls:
         # TODO(b/256108932): Add a method to dryrun this to make it easier to
         # test without actually uploading. Alternatively inject a configuration
         # so that the upload destination can be changed.
@@ -179,8 +184,11 @@ def copy_local_file_to_cache_dir(local_file: pathlib.Path,
     shutil.copy(local_file, dst)
 
 
-def main(config_path: str, xts_name: str, branch_name: str,
-         uprev_base_path: str) -> None:
+def main(config_path: str,
+         xts_name: str,
+         branch_name: str,
+         uprev_base_path: str,
+         additional_urls: Optional[list[str]] = None) -> None:
     """Function to uprev preview version and upload to gs if necessary.
 
     Args:
@@ -188,6 +196,7 @@ def main(config_path: str, xts_name: str, branch_name: str,
         xts_name: A string which is one of the test names: (cts, vts).
         branch_name: A string which means branch name where development is taking place.
         uprev_base_path: A string which means uprev preview realpath dir.
+        additional_urls: (optional) list of additional GS URLs the bundle should copy to.
 
     Raises:
         ConfigFileNotFoundException: An error when config_path does not exist in the directory.
@@ -275,7 +284,8 @@ def main(config_path: str, xts_name: str, branch_name: str,
                            target_abi,
                            xts_name,
                            version_name,
-                           local_file=local_file)
+                           local_file=local_file,
+                           additional_urls=additional_urls)
 
     # Only write config after bundles are correctly updated.
     bundle_utils.write_url_config(url_config, config_path)

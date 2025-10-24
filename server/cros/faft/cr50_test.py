@@ -579,9 +579,13 @@ class Cr50Test(FirmwareTest):
         """
         current_bid = cr50_utils.GetChipBoardId(self.host)
         bid_mismatch = current_bid != bid
-        set_bid = bid_mismatch and bid != cr50_utils.ERASED_CHIP_BID
         bid_is_erased = current_bid == cr50_utils.ERASED_CHIP_BID
-        eraseflashinfo = bid_mismatch and not bid_is_erased
+        # Run eraseflashinfo on all ti50 devices, because that'll open ccd and
+        # save 5 minutes of power button pressing during cleanup.
+        eraseflashinfo = (self.gsc.IS_TI50
+                          or (bid_mismatch and not bid_is_erased))
+        set_bid = ((eraseflashinfo or bid_mismatch)
+                   and bid != cr50_utils.ERASED_CHIP_BID)
 
         if (eraseflashinfo
                     and not self._saved_cr50_state(self.ERASEFLASHINFO_IMAGE)):
@@ -897,6 +901,14 @@ class Cr50Test(FirmwareTest):
         @raises TestError: if setting any state failed
         """
         mismatch = self._check_running_image_and_board_id(state)
+        # Set the board id to the correct value if the current chip board id
+        # is erased.
+        if ('chip_bid' in mismatch and self.gsc.get_board_id()[1]
+                    and state['chip_bid'] != cr50_utils.ERASED_CHIP_BID):
+            rlz, _, flags = state['chip_bid']
+            cr50_utils.SetChipBoardId(self.host, rlz, flags)
+            # get the updated mismatch state
+            mismatch = self._check_running_image_and_board_id(state)
         if not mismatch:
             logging.info('Nothing to do.')
             return

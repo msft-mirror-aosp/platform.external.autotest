@@ -3,7 +3,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from autotest_lib.server.cros.servo import chrome_ti50
+from autotest_lib.server.cros.servo import chrome_cr50
 
 FW_NAME = 'ti50'
 CHIP_NAME = 'g ti50 nt'
@@ -73,3 +76,21 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
     DUT_PROD_PATHS = [DUT_PROD]
     DUT_PREPVT_PATHS = [DUT_PREPVT]
     ALWAYS_HAD_ROLLBACK_PRINT = True
+
+    @chrome_cr50.dts_control_command
+    def ccd_disable(self, raise_error=True):
+        """Try to disable CCD with dts mode then try the CCD_MODE gpio"""
+        # TODO(b/455592006): use CCD_MODE to disable rdd. Remove this once the
+        # board issue has been fixed.
+        use_workaround = (self._servo.main_device_is_flex()
+                          and "rdd_use_ccd_mode"
+                          in self.faft_config.cr50_capability)
+        super(ChromeTi50NT, self).ccd_disable(raise_error
+                                              and not use_workaround)
+        if not self.ccd_is_enabled():
+            logging.info('disabled ccd')
+            return
+        self.send_command('ccd testlab open')
+        self.send_command('gpioset CCD_MODE_L 1')
+        self.wait_for_ccd_disable(raise_error=raise_error)
+        logging.info('disabled ccd with workaround')

@@ -352,7 +352,11 @@ class power_LoadTest(arc.ArcTest):
 
             chrome_new_request = chrome_service_pb2.NewRequest(
                     # b/228256145 to avoid powerd restart
-                    disable_features=['FirmwareUpdaterApp'],
+                    disable_features=[
+                            'FirmwareUpdaterApp',
+                            'ExtensionManifestV2Disabled',
+                            'ExtensionManifestV2Unsupported'
+                    ],
                     # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
                     # so that each test run does not remember info from last test run.
                     extra_args=['--disable-sync'],

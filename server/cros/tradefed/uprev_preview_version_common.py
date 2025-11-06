@@ -301,8 +301,12 @@ def main(config_path: str,
     gen_args = []
     if args.cache_dir is not None:
         gen_args.extend(['--cache_dir', str(args.cache_dir)])
-    subprocess.check_call(
-            [uprev_base_path + '/generate_controlfiles.py', *gen_args])
+    try:
+        subprocess.check_call(
+                [uprev_base_path + '/generate_controlfiles.py', *gen_args])
+    except subprocess.CalledProcessError:
+        logging.error("generate_controlfiles.py returned an error. Check "
+                      "output for details.")
 
     # Git add and git commit, sent out uprev CL.
     if args.generate_gerrit_cl:

@@ -40,6 +40,7 @@ class Splitter:
         self._cur_total_runtime = 0
         self._long_total_runtime = 0
         self._last_abi_bits = None
+        self.tests_without_runtime_hint = []
 
     def get_shard(self, basename: str, abi_bits: Optional[int]) -> int:
         """Retrieves the shard the given test belongs to.
@@ -55,10 +56,10 @@ class Splitter:
         if abi_bits is not None:
             basename += f".{abi_bits}"
         if basename not in self._runtime_hints:
-            raise ValueError(
-                    f"Test {basename} not found in runtime hint. If it's a newly "
-                    "introduced module, add it to the RUNTIME_HINT_SECS list under "
-                    "generate_controlfiles config.")
+            # This will later raise an error with a list of all tests missing
+            # runtime hint.
+            self.tests_without_runtime_hint.append(basename)
+            return LONG_SUITE
 
         runtime = self._runtime_hints[basename] + self._per_test_overhead
         if runtime > self._max_runtime or basename in self._isolate_modules:

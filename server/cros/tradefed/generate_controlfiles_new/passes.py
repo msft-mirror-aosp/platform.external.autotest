@@ -231,6 +231,13 @@ class AddSplitSuites(Pass):
             split_suite = self._suite_fmt.format(abi=self._abi, shard=shard)
             group['suites'] |= frozenset([split_suite])
 
+        if splitter.tests_without_runtime_hint:
+            raise ValueError(
+                    f"The following tests are not found in runtime hint. If "
+                    "it's a newly introduced module, add it to the "
+                    "RUNTIME_HINT_SECS list under generate_controlfiles "
+                    "config: " + ','.join(splitter.tests_without_runtime_hint))
+
         total_shards, long_total_runtime = splitter.stats()
         logging.info('Suite to be splitted into %d shards', total_shards)
         logging.info('Long test total runtime: %.1fh',

@@ -85,6 +85,8 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
         use_workaround = (self._servo.main_device_is_flex()
                           and "rdd_use_ccd_mode"
                           in self.faft_config.cr50_capability)
+        logging.debug("CCD workaround (%s): %r", use_workaround,
+                      self.faft_config.cr50_capability)
         super(ChromeTi50NT, self).ccd_disable(raise_error
                                               and not use_workaround)
         if not self.ccd_is_enabled():

@@ -4,7 +4,9 @@
 # found in the LICENSE file.
 
 import logging
+import time
 
+from autotest_lib.client.common_lib import error
 from autotest_lib.server.cros.servo import chrome_ti50
 from autotest_lib.server.cros.servo import chrome_cr50
 
@@ -76,6 +78,7 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
     DUT_PROD_PATHS = [DUT_PROD]
     DUT_PREPVT_PATHS = [DUT_PREPVT]
     ALWAYS_HAD_ROLLBACK_PRINT = True
+    CCD_DISABLE_RETRY_COUNT = 3
 
     @chrome_cr50.dts_control_command
     def ccd_disable(self, raise_error=True):
@@ -89,10 +92,17 @@ class ChromeTi50NT(chrome_ti50.ChromeTi50):
                       self.faft_config.cr50_capability)
         super(ChromeTi50NT, self).ccd_disable(raise_error
                                               and not use_workaround)
-        if not self.ccd_is_enabled():
-            logging.info('disabled ccd')
+        if not use_workaround:
             return
-        self.send_command('ccd testlab open')
-        self.send_command('gpioset CCD_MODE_L 1')
-        self.wait_for_ccd_disable(raise_error=raise_error)
-        logging.info('disabled ccd with workaround')
+        for i in range(self.CCD_DISABLE_RETRY_COUNT):
+            logging.info('attempt %d: try ccd disable workaround', i)
+            # Give GSC some time for rdd state changes to propagate.
+            time.sleep(2)
+            self.send_command('ccd testlab open')
+            self.send_command('gpioset CCD_MODE_L 1')
+            self.wait_for_ccd_disable(raise_error=False)
+            if not self.ccd_is_enabled():
+                logging.info('attempt %d: disabled ccd with workaround', i)
+                return
+        if raise_error:
+            raise error.TestError('Failed to disable CCD')

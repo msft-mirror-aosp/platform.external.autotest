@@ -220,6 +220,12 @@ class TradefedTest(test.test):
         self._install_files(sdk_tools_dir, constants.SDK_TOOLS_FILES,
                             permission)
 
+        platform_tools_dir = (constants.PLATFORM_TOOLS_PARTNER_DIR
+                              if self._is_public() else
+                              constants.PLATFORM_TOOLS_INTERNAL_DIR)
+        self._install_files(platform_tools_dir, constants.PLATFORM_TOOLS_FILES,
+                            permission)
+
         # Always use JDK9 in the skylab SSP runs. CFT run will use container
         # provided JDK.
         if utils.is_in_container(

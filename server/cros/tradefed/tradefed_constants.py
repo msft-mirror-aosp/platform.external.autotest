@@ -4,9 +4,14 @@
 # found in the LICENSE file.
 import typing
 
+# TODO: Move to a official release build
 SDK_TOOLS_INTERNAL_DIR = 'gs://chromeos-arc-images/builds/git_trunk-release/12136052/'
 SDK_TOOLS_PARTNER_DIR = 'gs://chromeos-partner-gts/sdk-tools/12136052/'
-SDK_TOOLS_FILES = ['aapt', 'aapt2', 'adb']
+SDK_TOOLS_FILES = ['aapt', 'aapt2']
+
+PLATFORM_TOOLS_INTERNAL_DIR = 'gs://chromeos-arc-images/sdk/platform-tools/36.0.0'
+PLATFORM_TOOLS_PARTNER_DIR = 'gs://chromeos-partner-gts/sdk/platform-tools/36.0.0'
+PLATFORM_TOOLS_FILES = ['adb']
 
 ADB_POLLING_INTERVAL_SECONDS = 1
 ADB_CONNECT_TIMEOUT_SECONDS = 10

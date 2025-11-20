@@ -215,10 +215,9 @@ class TradefedTest(test.test):
             stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH
             | stat.S_IXOTH)
 
-        build_tools_dir = (constants.BUILD_TOOLS_PARTNER_DIR
-                           if self._is_public() else
-                           constants.BUILD_TOOLS_INTERNAL_DIR)
-        self._install_files(build_tools_dir, constants.BUILD_TOOLS_FILES,
+        sdk_tools_dir = (constants.SDK_TOOLS_PARTNER_DIR if self._is_public()
+                         else constants.SDK_TOOLS_INTERNAL_DIR)
+        self._install_files(sdk_tools_dir, constants.SDK_TOOLS_FILES,
                             permission)
 
         platform_tools_dir = (constants.PLATFORM_TOOLS_PARTNER_DIR

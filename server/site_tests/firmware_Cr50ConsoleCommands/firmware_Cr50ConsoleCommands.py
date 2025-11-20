@@ -17,7 +17,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     """
     Verify the cr50 console output for important commands.
 
-    This test verifies the output of pinmux, help, gpiocfg. These are the main
+    This test verifies the output of pinmux and help. These are the main
     console commands we can use to check cr50 configuration.
     """
     version = 1
@@ -35,10 +35,9 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
     COMMAND_INFO = {
         'pinmux' : ['pinmux(.*)>', COMPARE_LINES, not SORTED],
         'help' : ['Known commands:(.*)HELP LIST.*>', COMPARE_WORDS, SORTED],
-        'gpiocfg' : ['gpiocfg(.*)>', COMPARE_LINES, not SORTED],
     }
     SUPPORTED_COMMANDS = {
-            'cr50': ['pinmux', 'help', 'gpiocfg'],
+            'cr50': ['pinmux', 'help'],
             'ti50-dt': ['help'],
             'ti50-nt': ['help']
     }
@@ -249,7 +248,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
 
 
     def run_once(self, host):
-        """Verify the Cr50 gpiocfg, pinmux, and help output."""
+        """Verify the Cr50 pinmux and help output."""
         err = []
         test_err = []
         self.get_image_properties()

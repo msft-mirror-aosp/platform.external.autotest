@@ -1450,17 +1450,25 @@ class TradefedTest(test.test):
         @raise TestFail: when a test failure is detected.
         @return: tuple of (tests, pass, fail, notexecuted) counts.
         """
-        target_argument = []
+
+        def substitute(arg):
+            substitutes = {
+                    '%ADB_SERVER_PORT%': str(self._adb.get_port()),
+            }
+            for k, v in substitutes.items():
+                arg = arg.replace(k, v)
+            return arg
+
+        command = [substitute(arg) for arg in command]
+
         for host in self._hosts:
-            target_argument += ['-s', self._adb.get_adb_target(host)]
-        shard_argument = []
+            command += ['-s', self._adb.get_adb_target(host)]
         if len(self._hosts) > 1:
             if self._SHARD_CMD:
-                shard_argument = [self._SHARD_CMD, str(len(self._hosts))]
+                command += [self._SHARD_CMD, str(len(self._hosts))]
             else:
                 logging.warning('cts-tradefed shard command isn\'t defined, '
                                 'falling back to use single device.')
-        command = command + target_argument + shard_argument
 
         try:
             output = self._run_tradefed(command)

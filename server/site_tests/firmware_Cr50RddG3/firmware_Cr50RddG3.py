@@ -23,6 +23,8 @@ class firmware_Cr50RddG3(Cr50Test):
             raise error.TestNAError('Need ccd to run test')
         super(firmware_Cr50RddG3, self).initialize(host, cmdline_args,
                                                    full_args)
+        if self.check_cr50_capability('rdd_use_ccd_mode', True):
+            raise error.TestNAError('Rdd does not work on the device')
 
     def rdd_is_connected(self):
         """Return True if Cr50 detects Rdd."""

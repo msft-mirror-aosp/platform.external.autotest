@@ -43,10 +43,7 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
 
     def _tradefed_run_command(self, template):
         """Build tradefed 'run' command from template."""
-        return template + [
-                '--device-adb-server-port',
-                '%ADB_SERVER_PORT%',
-        ]
+        return template[:]
 
     def _get_tradefed_base_dir(self):
         return 'android-cts'

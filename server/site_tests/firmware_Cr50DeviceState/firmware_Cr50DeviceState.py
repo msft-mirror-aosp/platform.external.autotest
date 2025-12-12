@@ -8,6 +8,7 @@ import time
 import re
 
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib.cros import cr50_utils
 from autotest_lib.server import autotest
 from autotest_lib.server.cros.faft.cr50_test import Cr50Test
 
@@ -615,6 +616,17 @@ class firmware_Cr50DeviceState(Cr50Test):
             self.steps[-1][self.KEY_TPM_INIT] = self.get_tpm_init_time()
             logging.info('Resume from %s tpm initialized in %dus', state,
                          self.steps[-1][self.KEY_TPM_INIT])
+
+        result = cr50_utils.GSCTool(self.host, ['-a', '--strongbox', 'enable'],
+                                    ignore_status=True)
+        logging.info("Strongbox enable: %r", result)
+        if self.gsc.IS_CR50:
+            if not result or result.exit_status != 3:
+                raise error.TestFail('Unexpected SB enable result: %r', result)
+        elif not result or result.exit_status:
+            raise error.TestFail(
+                    'Unexpected result: SB commands should be '
+                    'skipped on ti50: %r', result)
 
     def print_fwmp(self, desc, initialized=True, check_pcr=True):
         """Print FWMP and PCR0 state for debugging."""

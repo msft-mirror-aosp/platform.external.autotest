@@ -123,6 +123,7 @@ gsctool.add_argument('-b',
                      '--erase_ap_ro_hash',
                      '-y',
                      '--factory_config',
+                     '--strongbox',
                      dest='info_cmd',
                      action='store_true')
 # upstart and post_reset will post resets instead of rebooting immediately

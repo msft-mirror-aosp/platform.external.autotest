@@ -37,7 +37,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         'help' : ['Known commands:(.*)HELP LIST.*>', COMPARE_WORDS, SORTED],
     }
     SUPPORTED_COMMANDS = {
-            'cr50': ['pinmux', 'help'],
+            # TODO(b/470981109): reenable pinmux command on cr50
+            'cr50': ['help'],
             'ti50-dt': ['help'],
             'ti50-nt': ['help']
     }

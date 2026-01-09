@@ -132,7 +132,7 @@ class ServoHost(base_servohost.BaseServoHost):
             # Anchor on EC3PO Console, LogConsoleOutput and dev/pts.
             # NOTE: if the log format changes, this regex needs to be
             # adjusted.
-            r'EC3PO\.Console[\s\-\w\d:.]+LogConsoleOutput - /dev/pts/\d+ - '
+            r'EC3PO\.Console[\s\-\w\d:.]+(LogConsoleOutput|log_console_output) - /dev/pts/\d+ - '
             # Lastly, we get the MCU's console line.
             r'(?P<%s>.+$)' % (MCU_GROUP, LINE_GROUP))
     MCU_EXTRACTOR = re.compile(MCU_RE)

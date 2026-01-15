@@ -623,10 +623,10 @@ class firmware_Cr50DeviceState(Cr50Test):
         if self.gsc.IS_CR50:
             if not result or result.exit_status != 3:
                 raise error.TestFail('Unexpected SB enable result: %r', result)
-        elif not result or result.exit_status:
+        elif not result or result.exit_status != 1:
             raise error.TestFail(
-                    'Unexpected result: SB commands should be '
-                    'skipped on ti50: %r', result)
+                    'Unexpected result: SB command did not exit with status 1: %r',
+                    result)
 
     def print_fwmp(self, desc, initialized=True, check_pcr=True):
         """Print FWMP and PCR0 state for debugging."""

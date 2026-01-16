@@ -6,7 +6,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dbus
 import logging
 import math
 import os
@@ -16,7 +15,6 @@ import subprocess
 from autotest_lib.client.bin import test
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib import file_utils
-from autotest_lib.client.cros import debugd_util
 from autotest_lib.client.cros import upstart
 
 import archiver
@@ -36,8 +34,8 @@ _FAKE_PRINTER_ID = 'FakePrinter'
 # First port number to use, this test uses consecutive ports numbers.
 _FIRST_PORT_NUMBER = 9100
 
-# Values are from platform/system_api/dbus/debugd/dbus-constants.h.
-_CUPS_SUCCESS = 0
+# Command to run lpadmin as the lpadmin user.
+_LPADMIN_COMMAND = ['sudo', '-u', 'lpadmin', '/usr/sbin/lpadmin']
 
 class platform_PrinterPpds(test.test):
     """
@@ -80,6 +78,48 @@ class platform_PrinterPpds(test.test):
             return path
         path_current = os.path.dirname(os.path.realpath(__file__))
         return os.path.join(path_current, path)
+
+
+    def _add_cups_printer(self, printer_id, uri, ppd_content):
+        """
+        Adds a CUPS printer manually.
+
+        @param printer_id: The ID to assign to the new CUPS printer.
+        @param uri: The URI of the printer (e.g., 'socket://127.0.0.1:9100').
+        @param ppd_content: The content of the PPD file as bytes.
+
+        @raises Exception if the lpadmin command fails.
+
+        """
+        cmd = _LPADMIN_COMMAND + ['-v', uri, '-p', printer_id, '-P', '-', '-E']
+        process = subprocess.Popen(cmd,
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate(input=ppd_content)
+
+        if process.returncode != 0:
+            raise Exception('Failed to add printer {}: {} {}'.format(
+                    printer_id, stdout.decode(), stderr.decode()))
+
+    def _remove_cups_printer(self, printer_id):
+        """
+        Removes a CUPS printer.
+
+        @param printer_id: The ID of the CUPS printer to remove.
+
+        @raises Exception if the lpadmin command fails.
+
+        """
+        cmd = _LPADMIN_COMMAND + ['-x', printer_id]
+        process = subprocess.Popen(cmd,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        if process.returncode != 0:
+            raise Exception('Failed to remove printer {}: {} {}'.format(
+                    printer_id, stdout.decode(), stderr.decode()))
 
 
     def initialize(self,
@@ -210,13 +250,12 @@ class platform_PrinterPpds(test.test):
                 self._new_digests[doc_name] = dict()
                 self._new_sizes[doc_name] = dict()
 
-        # We want to talk directly to cupsd and debugd without going through the
-        # UI.  Stop the UI to eliminate sources of flakiness.
+        # We want to talk directly to cupsd without going through the UI.  Stop
+        # the UI to eliminate sources of flakiness.
         try:
             upstart.stop_job('ui')
         except error.CmdError as e:
             logging.warning("Failed to stop ui: %s", e)
-        upstart.restart_job('debugd')
         upstart.restart_job('cupsd')
 
         # Runs tests for all PPD files (in parallel)
@@ -329,13 +368,9 @@ class platform_PrinterPpds(test.test):
 
                 # Add a CUPS printer manually with given ppd file
                 cups_printer_id = '%s_at_%05d' % (_FAKE_PRINTER_ID,port)
-                result = debugd_util.iface().CupsAddManuallyConfiguredPrinter(
-                                             cups_printer_id,
-                                             'socket://127.0.0.1:%d' % port,
-                                             dbus.ByteArray(ppd_content))
-                if result != _CUPS_SUCCESS:
-                    raise Exception('valid_config - Could not setup valid '
-                        'printer %d' % result)
+                self._add_cups_printer(cups_printer_id,
+                                       'socket://127.0.0.1:%d' % port,
+                                       ppd_content)
 
                 # Prints all test documents
                 try:
@@ -394,7 +429,7 @@ class platform_PrinterPpds(test.test):
                                 raise Exception('Empty output')
                 finally:
                     # Remove CUPS printer
-                    debugd_util.iface().CupsRemovePrinter(cups_printer_id)
+                    self._remove_cups_printer(cups_printer_id)
 
             # The fake printer is stopped at the end of "with" statement
         finally:

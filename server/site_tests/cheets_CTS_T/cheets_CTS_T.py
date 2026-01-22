@@ -53,17 +53,8 @@ class cheets_CTS_T(tradefed_test.TradefedTest):
 
     def _tradefed_env(self):
         env = super()._tradefed_env()
-        # b/359715026#comment12: Spawn OLC server on random port to avoid port
-        # collision on drone servers.
-        env['USE_NEW_OLC_SERVER'] = 'true'
-        if self._is_dev():
-            # Disable runtime MCTS downloads as we use android*-tests-dev build.
-            # https://docs.partner.android.com/gms/testing/overview/test-improvement-request-guide#verify-tot-builds
-            env['ENABLE_XTS_DYNAMIC_DOWNLOADER'] = 'false'
-        else:
-            # TODO(b/339791684): Enable ATS console on qual/public jobs after
-            # blockers are fixed and DEV jobs are stabilized.
-            env['USE_ATS'] = 'false'
+        # Disable ATS console and run with plain Tradefed.
+        env['USE_ATS'] = 'false'
         return env
 
     def initialize_camerabox(self, camera_facing, cmdline_args):

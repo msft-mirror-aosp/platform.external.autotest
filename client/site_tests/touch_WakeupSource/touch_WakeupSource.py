@@ -27,6 +27,7 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
             'pyro', 'veyron_minnie'
     ]
     _TOUCHPAD_WAKE_SET_BY_CROS_CONFIG = ['coral', 'nami']
+    _TOUCHPAD_WAKE_MODELS = ['kakadu']
 
     # Devices with Synaptics touchpads that do not report wake source,
     # or reference platforms like Rambi which are broken but do not ship,
@@ -36,6 +37,8 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
     _INVALID_TOUCHSCREENS = ['cyan', 'nocturne', 'sumo', 'ultima']
 
     def _touchpad_should_be_wake_source(self):
+        if self._platform in self._TOUCHPAD_WAKE_MODELS:
+            return True
         base_board = self._board.replace('-kernelnext', '')
         if base_board in self._NO_TOUCHPAD_WAKE:
             return False

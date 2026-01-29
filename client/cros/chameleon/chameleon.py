@@ -35,6 +35,9 @@ CHAMELEON_PORT = 9992
 CHAMELEOND_LOG_REMOTE_PATH = '/var/log/chameleond'
 DAEMON_LOG_REMOTE_PATH = '/var/log/daemon.log'
 BTMON_LOG_REMOTE_PATH = '/var/log/btsnoop.log'
+BOOKWORM_BLUETOOTH_LOG_REMOTE_PATH = '/tmp/bluetooth.log'
+BOOKWORM_AUDIO_SERVER_LOG_REMOTE_PATH = '/tmp/audio_server.log'
+BOOKWORM_DBUS_LOG_REMOTE_PATH = '/tmp/dbus.log'
 CHAMELEON_READY_TEST = 'GetSupportedPorts'
 
 
@@ -426,6 +429,54 @@ class ChameleonBoard(object):
                                                 BTMON_LOG_REMOTE_PATH)))
         if btmon_pid > 0:
             atexit.register(btmon_atexit_gen(btmon_pid))
+
+        # Check if the device is running Debian Bookworm on a Raspberry Pi
+        is_bookworm = False
+        try:
+            # Check /etc/os-release for "bookworm"
+            result = self.host.run('grep -q bookworm /etc/os-release',
+                                   ignore_status=True)
+            is_bookworm = result.exit_status == 0
+        except Exception as e:
+            logging.warning('Failed to determine Chameleon OS version: %s', e)
+
+        if is_bookworm:
+            # Get the current time on the device to use as the start time for logs
+            start_time = self.host.run(
+                    'date "+%Y-%m-%d %H:%M:%S"').stdout.strip()
+
+            def process_atexit():
+                self.host.run(
+                        'journalctl -u bluetooth --no-pager --since "%s" > %s'
+                        % (start_time, BOOKWORM_BLUETOOTH_LOG_REMOTE_PATH))
+                target_path = os.path.join(log_dir, 'bluetooth.log')
+                self.host.get_file(BOOKWORM_BLUETOOTH_LOG_REMOTE_PATH,
+                                   target_path)
+
+                self.host.run(
+                        'su - pi -c "journalctl --user -u pipewire -u wireplumber --no-pager --since \'%s\'" > %s'
+                        % (start_time, BOOKWORM_AUDIO_SERVER_LOG_REMOTE_PATH))
+                target_path = os.path.join(log_dir, 'audio_server.log')
+                self.host.get_file(BOOKWORM_AUDIO_SERVER_LOG_REMOTE_PATH,
+                                   target_path)
+
+            def dbus_monitor_atexit_gen(pid):
+
+                def dbus_monitor_atexit():
+                    self.host.run('kill %d' % pid)
+                    target_path = os.path.join(log_dir, 'dbus.log')
+                    self.host.get_file(BOOKWORM_DBUS_LOG_REMOTE_PATH,
+                                       target_path)
+
+                return dbus_monitor_atexit
+
+            atexit.register(process_atexit)
+
+            dbus_monitor_pid = int(
+                    self.host.run_background('dbus-monitor --system > %s' %
+                                             BOOKWORM_DBUS_LOG_REMOTE_PATH))
+            if dbus_monitor_pid > 0:
+                atexit.register(dbus_monitor_atexit_gen(dbus_monitor_pid))
 
 
     def reboot(self):

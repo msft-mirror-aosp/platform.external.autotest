@@ -225,7 +225,7 @@ CONFIG['SPLIT_SUITES'] = {
                 'CtsMediaRecorderTestCases.ctshardware': 965,
                 'CtsMediaStressTestCases': 11248,
                 'CtsMediaTranscodingTestCases': 300,
-                'CtsMediaV2TestCases': 1878,
+                'CtsMediaV2TestCases': 99999,  # b/469911973
                 'CtsMidiTestCases': 300,
                 'CtsMimeMap': 300,
                 'CtsMocking': 383,

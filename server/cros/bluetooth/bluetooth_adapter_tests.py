@@ -4891,10 +4891,11 @@ class BluetoothAdapterTests(test.test):
 
 
     @test_retry_and_log(False)
-    def test_gatt_browse(self, address):
+    def test_gatt_browse(self, address, is_bookworm=False):
         """Test that the GATT client can get the attributes correctly
 
         @param address: MAC address of a device
+        @param is_bookworm: True if the peer device is running Bookworm
 
         @returns: True if the attribute map received by GATT client is the same
                   as expected. False otherwise.
@@ -4904,7 +4905,7 @@ class BluetoothAdapterTests(test.test):
         gatt_client_facade = GATT_ClientFacade(self.bluetooth_facade)
         if self.floss:
             self.bluetooth_facade.connect_gatt_client(address)
-            expected_app = Floss_GATT_HIDApplication()
+            expected_app = Floss_GATT_HIDApplication(is_bookworm=is_bookworm)
         else:
             expected_app = GATT_HIDApplication()
         actual_app = gatt_client_facade.browse(address)

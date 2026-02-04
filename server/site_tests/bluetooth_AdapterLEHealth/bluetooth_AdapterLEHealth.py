@@ -200,7 +200,22 @@ class bluetooth_AdapterLEHealth(BluetoothAdapterQuickTests,
         time.sleep(self.TEST_SLEEP_SECS)
         self.test_pairing(device.address, device.pin, trusted=True)
         self.test_service_resolved(device.address)
-        self.test_gatt_browse(device.address)
+
+        # Check if peer is Bookworm
+        is_bookworm = False
+        try:
+            peer = self.device_id_to_peer[id(device)]
+            # Check /etc/os-release on the peer
+            result = peer.host.run(
+                    'grep "VERSION_CODENAME=bookworm" /etc/os-release',
+                    ignore_status=True)
+            if result.exit_status == 0:
+                is_bookworm = True
+        except Exception as e:
+            import logging
+            logging.warning('Failed to check OS version on peer: %s', e)
+
+        self.test_gatt_browse(device.address, is_bookworm=is_bookworm)
 
     @test_wrapper('LE secondary Test',
                   devices={'BLE_KEYBOARD': 1},

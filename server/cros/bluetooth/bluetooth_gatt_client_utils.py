@@ -71,6 +71,10 @@ class GATT_Application(object):
     REPORT_MAP_UUID = UUID_Short2Full('2a4b')
     HID_INFORMATION_UUID = UUID_Short2Full('2a4a')
     HID_CONTROL_POINT_UUID = UUID_Short2Full('2a4c')
+    DATABASE_HASH_UUID = UUID_Short2Full('2b2a')
+    CLIENT_SUPPORTED_FEATURES_UUID = UUID_Short2Full('2b29')
+    SERVER_SUPPORTED_FEATURES_UUID = UUID_Short2Full('2b3a')
+    CENTRAL_ADDRESS_RESOLUTION_UUID = UUID_Short2Full('2aa6')
 
     def __init__(self):
         """Initialize a GATT Application"""
@@ -193,9 +197,7 @@ class GATT_Service(object):
     """GATT client service class"""
     PROPERTIES = ['UUID', 'Primary', 'Device', 'Includes']
 
-    FLOSS_PROPERTIES = [
-            'uuid', 'instance_id', 'service_type', 'included_services'
-    ]
+    FLOSS_PROPERTIES = ['uuid', 'service_type', 'included_services']
 
     def __init__(self, uuid, object_path, bluetooth_facade):
         """Initialize a GATT service object
@@ -317,8 +319,7 @@ class GATT_Characteristic(object):
     PROPERTIES = ['UUID', 'Service', 'Value', 'Notifying', 'Flags']
 
     FLOSS_PROPERTIES = [
-            'uuid', 'instance_id', 'properties', 'permissions', 'write_type',
-            'key_size'
+            'uuid', 'properties', 'permissions', 'write_type', 'key_size'
     ]
 
     def __init__(self, uuid, object_path, bluetooth_facade):
@@ -452,7 +453,7 @@ class GATT_Descriptor(object):
 
     PROPERTIES = ['UUID', 'Characteristic', 'Value', 'Flags']
 
-    FLOSS_PROPERTIES = ['uuid', 'instance_id', 'permissions']
+    FLOSS_PROPERTIES = ['uuid', 'permissions']
 
     def __init__(self, uuid, object_path, bluetooth_facade):
         """Initialize a GATT descriptor object
@@ -670,7 +671,8 @@ class GATT_HIDApplication(GATT_Application):
 
 class Floss_GATT_HIDApplication(GATT_Application):
     """Default Floss HID Application on Raspberry Pi GATT server."""
-    def __init__(self):
+
+    def __init__(self, is_bookworm=False):
         """
         """
         GATT_Application.__init__(self)
@@ -679,7 +681,6 @@ class Floss_GATT_HIDApplication(GATT_Application):
         HIDService.properties = {
                 'uuid': HIDService.uuid,
                 'service_type': 0,
-                'instance_id': 0,
                 'included_services': []
         }
         self.add_service(HIDService)
@@ -690,16 +691,14 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 18,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 12
+                'permissions': 0
         }
         HIDService.add_characteristic(Report)
 
         CliChrcConfig = GATT_Descriptor(self.CLI_CHRC_CONFIG_UUID, None, None)
         CliChrcConfig.properties = {
                 'uuid': CliChrcConfig.uuid,
-                'permissions': 0,
-                'instance_id': 13
+                'permissions': 0
         }
         Report.add_descriptor(CliChrcConfig)
 
@@ -707,8 +706,7 @@ class Floss_GATT_HIDApplication(GATT_Application):
                                           None)
         ReportReference.properties = {
                 'uuid': ReportReference.uuid,
-                'permissions': 0,
-                'instance_id': 14
+                'permissions': 0
         }
         Report.add_descriptor(ReportReference)
 
@@ -718,8 +716,7 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 2,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 16
+                'permissions': 0
         }
         HIDService.add_characteristic(ReportMap)
 
@@ -730,8 +727,7 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 2,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 18
+                'permissions': 0
         }
         HIDService.add_characteristic(HIDInformation)
 
@@ -742,8 +738,7 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 4,
                 'key_size': 16,
                 'write_type': 1,
-                'permissions': 0,
-                'instance_id': 20
+                'permissions': 0
         }
         HIDService.add_characteristic(HIDControlPoint)
 
@@ -751,7 +746,6 @@ class Floss_GATT_HIDApplication(GATT_Application):
         BatteryService.properties = {
                 'uuid': BatteryService.uuid,
                 'service_type': 0,
-                'instance_id': 0,
                 'included_services': []
         }
         self.add_service(BatteryService)
@@ -762,16 +756,14 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 18,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 23
+                'permissions': 0
         }
         BatteryService.add_characteristic(BatteryLevel)
 
         CliChrcConfig = GATT_Descriptor(self.CLI_CHRC_CONFIG_UUID, None, None)
         CliChrcConfig.properties = {
                 'uuid': CliChrcConfig.uuid,
-                'permissions': 0,
-                'instance_id': 24
+                'permissions': 0
         }
         BatteryLevel.add_descriptor(CliChrcConfig)
 
@@ -780,7 +772,6 @@ class Floss_GATT_HIDApplication(GATT_Application):
         GenericAttributeProfile.properties = {
                 'uuid': GenericAttributeProfile.uuid,
                 'service_type': 0,
-                'instance_id': 0,
                 'included_services': []
         }
         self.add_service(GenericAttributeProfile)
@@ -792,24 +783,61 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 32,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 8
+                'permissions': 0
         }
         GenericAttributeProfile.add_characteristic(ServiceChanged)
 
         CliChrcConfig = GATT_Descriptor(self.CLI_CHRC_CONFIG_UUID, None, None)
         CliChrcConfig.properties = {
                 'uuid': CliChrcConfig.uuid,
-                'permissions': 0,
-                'instance_id': 9
+                'permissions': 0
         }
         ServiceChanged.add_descriptor(CliChrcConfig)
+
+        if is_bookworm:
+            # Add new GATT Caching / EATT characteristics for Bookworm
+
+            # Client Supported Features (0x2b29) - handle 0x000d (13)
+            ClientSupportedFeatures = GATT_Characteristic(
+                    self.CLIENT_SUPPORTED_FEATURES_UUID, None, None)
+            ClientSupportedFeatures.properties = {
+                    'uuid': ClientSupportedFeatures.uuid,
+                    'properties': 10,  # Read, Write
+                    'key_size': 16,
+                    'write_type': 2,
+                    'permissions': 0
+            }
+            GenericAttributeProfile.add_characteristic(ClientSupportedFeatures)
+
+            # Database Hash (0x2b2a) - handle 0x000f (15)
+            DatabaseHash = GATT_Characteristic(self.DATABASE_HASH_UUID, None,
+                                               None)
+            DatabaseHash.properties = {
+                    'uuid': DatabaseHash.uuid,
+                    'properties': 2,  # Read
+                    'key_size': 16,
+                    'write_type': 2,
+                    'permissions': 0
+            }
+            GenericAttributeProfile.add_characteristic(DatabaseHash)
+
+            # Server Supported Features (0x2b3a) - handle 0x0011 (17)
+            ServerSupportedFeatures = GATT_Characteristic(
+                    self.SERVER_SUPPORTED_FEATURES_UUID, None, None)
+            ServerSupportedFeatures.properties = {
+                    'uuid': ServerSupportedFeatures.uuid,
+                    'properties': 2,  # Read
+                    'key_size': 16,
+                    'write_type': 2,
+                    'permissions': 0
+            }
+            GenericAttributeProfile.add_characteristic(ServerSupportedFeatures)
+
 
         DeviceInfo = GATT_Service(self.DEVICE_INFO_UUID, None, None)
         DeviceInfo.properties = {
                 'uuid': DeviceInfo.uuid,
                 'service_type': 0,
-                'instance_id': 0,
                 'included_services': []
         }
         self.add_service(DeviceInfo)
@@ -821,8 +849,7 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 2,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 27
+                'permissions': 0
         }
         DeviceInfo.add_characteristic(ManufacturerNameStr)
 
@@ -832,8 +859,7 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 2,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 29
+                'permissions': 0
         }
         DeviceInfo.add_characteristic(PnPID)
         GenericAccessProfile = GATT_Service(self.GENERIC_ACCESS_PROFILE_UUID,
@@ -841,7 +867,6 @@ class Floss_GATT_HIDApplication(GATT_Application):
         GenericAccessProfile.properties = {
                 'uuid': GenericAccessProfile.uuid,
                 'service_type': 0,
-                'instance_id': 0,
                 'included_services': []
         }
         self.add_service(GenericAccessProfile)
@@ -852,8 +877,7 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 2,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 3
+                'permissions': 0
         }
         GenericAccessProfile.add_characteristic(DeviceName)
 
@@ -863,7 +887,19 @@ class Floss_GATT_HIDApplication(GATT_Application):
                 'properties': 2,
                 'key_size': 16,
                 'write_type': 2,
-                'permissions': 0,
-                'instance_id': 5
+                'permissions': 0
         }
         GenericAccessProfile.add_characteristic(Appearance)
+
+        if is_bookworm:
+            # Central Address Resolution (0x2aa6) - handle 0x0007 (7)
+            CentralAddrRes = GATT_Characteristic(
+                    self.CENTRAL_ADDRESS_RESOLUTION_UUID, None, None)
+            CentralAddrRes.properties = {
+                    'uuid': CentralAddrRes.uuid,
+                    'properties': 2,  # Read
+                    'key_size': 16,
+                    'write_type': 2,
+                    'permissions': 0
+            }
+            GenericAccessProfile.add_characteristic(CentralAddrRes)

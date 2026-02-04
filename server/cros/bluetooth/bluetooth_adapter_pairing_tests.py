@@ -194,6 +194,13 @@ class BluetoothAdapterPairingTests(
         # Verify that the adapter could remove the paired device.
         if not self.test_remove_pairing(device.address):
             return
+        # The peer device also needs to remove the pairing to allow
+        # re-pairing.
+        try:
+            device.RemoveDevice(self.bluetooth_facade.address)
+        except Exception as e:
+            logging.warn('Failed to remove device on peer: %s', e)
+
 
         # Check if the device could be re-paired after being forgotten.
         if pairing_twice:

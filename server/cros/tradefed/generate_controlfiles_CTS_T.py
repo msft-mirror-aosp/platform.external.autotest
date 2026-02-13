@@ -376,6 +376,7 @@ CONFIG['CTS_TIMEOUT'] = {
         'CtsMediaStressTestCases': 5.0,
         'CtsMediaPlayerTestCases': 2.0,
         'CtsMediaDecoderTestCases': 2.0,
+        'CtsMediaV2TestCases': 3.0,
         'CtsNNAPIBenchmarkTestCases': 2.0,
         'CtsPrintTestCases': 1.5,
         'CtsSecurityTestCases': 20.0,

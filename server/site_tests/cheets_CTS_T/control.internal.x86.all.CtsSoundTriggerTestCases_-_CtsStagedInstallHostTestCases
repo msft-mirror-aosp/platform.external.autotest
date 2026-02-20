@@ -7,13 +7,13 @@
 # This file has been automatically generated. Do not edit!
 
 AUTHOR = 'n/a'
-NAME = 'cheets_CTS_T.internal.x86.all.CtsMediaDecoderTestCases_-_CtsMediaDrmFrameworkTestCases'
+NAME = 'cheets_CTS_T.internal.x86.all.CtsSoundTriggerTestCases_-_CtsStagedInstallHostTestCases'
 METADATA = {
     "contacts": ["arc-cts-eng@google.com"],
     "bug_component": "b:183644",
     "criteria": "A part of Android CTS",
 }
-ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-x86-13'
+ATTRIBUTES = 'suite:arc-cts-qual, suite:arc-cts-qual-x86-21'
 DEPENDENCIES = 'arc, label-bot_size:BOT_SIZE_LARGE, cts_abi_x86'
 HW_DEPS = ['android-vm-tm']
 JOB_RETRIES = 1
@@ -29,11 +29,11 @@ def run_TS(machine):
         hosts=host_list,
         iterations=1,
         max_retry=9,
-        tag='internal.x86.all.CtsMediaDecoderTestCases_-_CtsMediaDrmFrameworkTestCases',
-        test_name='cheets_CTS_T.internal.x86.all.CtsMediaDecoderTestCases_-_CtsMediaDrmFrameworkTestCases',
-        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsMediaDecoderTestCases', '--include-filter', 'CtsMediaDecoderTestCases[instant]', '--include-filter', 'CtsMediaDecoderTestCases[secondary_user]', '--include-filter', 'CtsMediaDrmFrameworkTestCases', '--include-filter', 'CtsMediaDrmFrameworkTestCases[instant]', '--include-filter', 'CtsMediaDrmFrameworkTestCases[secondary_user]', '--logcat-on-failure'],
+        tag='internal.x86.all.CtsSoundTriggerTestCases_-_CtsStagedInstallHostTestCases',
+        test_name='cheets_CTS_T.internal.x86.all.CtsSoundTriggerTestCases_-_CtsStagedInstallHostTestCases',
+        run_template=['run', 'commandAndExit', 'cts', '--include-filter', 'CtsSoundTriggerTestCases', '--include-filter', 'CtsSoundTriggerTestCases[instant]', '--include-filter', 'CtsSoundTriggerTestCases[secondary_user]', '--include-filter', 'CtsSpeechTestCases', '--include-filter', 'CtsSpeechTestCases[secondary_user]', '--include-filter', 'CtsStagedInstallHostTestCases', '--logcat-on-failure'],
         retry_template=['run', 'commandAndExit', 'retry', '--retry', '{session_id}'],
-        target_module='all.CtsMediaDecoderTestCases_-_CtsMediaDrmFrameworkTestCases',
+        target_module='all.CtsSoundTriggerTestCases_-_CtsStagedInstallHostTestCases',
         target_plan=None,
         bundle='x86',
         uri='LATEST',

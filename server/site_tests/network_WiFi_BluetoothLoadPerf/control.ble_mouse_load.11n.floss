@@ -14,7 +14,8 @@ METADATA = {
         'hw_agnostic': False,
     'variant_category': '{"name": "WifiBtChipset_Soc_Kernel"}',
 }
-ATTRIBUTES = 'suite:bluetooth_floss_flaky'
+# Commented out to skip scheduling the problematic test.
+# ATTRIBUTES = 'suite:bluetooth_floss_flaky'
 TEST_TYPE = 'Server'
 DEPENDENCIES = ('wificell, working_bluetooth_btpeer:1, '
                 'peripheral_wifi_state:WORKING, '

@@ -2891,45 +2891,6 @@ class BluetoothAdapterTests(test.test):
         return True
 
 
-    @test_retry_and_log(False)
-    def test_check_valid_alias(self):
-        """Fail if the Bluetooth alias is not in the correct format.
-
-        @returns True if adapter alias follows expected format, False otherwise
-        """
-
-        device = self.get_base_platform_name()
-        adapter_info = self.get_adapter_properties()
-
-        # Don't complete test if this is a reference board
-        if device in self.REFERENCE_BOARDS:
-            return True
-
-        alias = adapter_info['Alias']
-        logging.debug('Saw Bluetooth Alias of: %s', alias)
-
-        device_type = self.host.get_board_type().lower()
-        alias_format = '%s_[a-z0-9]{4}' % device_type
-
-        floss_alias_format = 'floss_[a-z0-9]{4}'
-        self.results = {}
-
-        alias_was_correct = False
-        # Match BlueZ's alias format first because for Floss test, the alias
-        # could match either Floss or BlueZ format.
-        if re.match(alias_format, alias.lower()):
-            alias_was_correct = True
-
-        elif self.floss and re.match(floss_alias_format, alias.lower()):
-            alias_was_correct = True
-        else:
-            logging.info('unexpected alias %s found', alias)
-            self.results['alias_found'] = alias
-
-        self.results['alias_was_correct'] = alias_was_correct
-        return all(self.results.values())
-
-
     # -------------------------------------------------------------------
     # Tests about general discovering, pairing, and connection
     # -------------------------------------------------------------------

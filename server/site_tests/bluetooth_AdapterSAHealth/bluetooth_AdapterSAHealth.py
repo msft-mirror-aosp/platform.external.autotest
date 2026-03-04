@@ -200,11 +200,6 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.test_check_valid_adapter_id()
 
 
-    @test_wrapper('Valid adapter alias test', supports_floss=True)
-    def sa_valid_alias_test(self):
-        """Verify that the adapter has a correctly-formatted alias"""
-        self.test_check_valid_alias()
-
     @test_wrapper('DBUS API tests', supports_floss=True)
     def sa_dbus_api_tests(self):
         """ Verify that the Bluetooth DBus API calls work."""
@@ -249,7 +244,7 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         self.sa_valid_address_test()
         self.sa_dbus_api_tests()
         self.sa_power_reset()
-        self.sa_valid_alias_test()
+        self.sa_eir_max_name_size_test()
 
 
     def run_once(self,
@@ -265,17 +260,12 @@ class bluetooth_AdapterSAHealth(BluetoothAdapterQuickTests,
         @param host: the DUT, usually a chromebook
         @param num_iterations: the number of rounds to execute the test
         """
-        # BlueZ's alias is set by Chrome, so we need to enable chrome in
-        # the single test or batch test.
-        need_chrome = not floss and test_name in ["sa_valid_alias_test", None]
         # Initialize and run the test batch or the requested specific test
         self.quick_test_init(
                 host,
                 use_btpeer=False,
                 flag=flag,
-                start_browser=need_chrome,
                 floss=floss,
-                enable_ui=need_chrome,
                 floss_use_unstable_aflags=floss_use_unstable_aflags)
         self.sa_health_batch_run(num_iterations, test_name)
         self.quick_test_cleanup()

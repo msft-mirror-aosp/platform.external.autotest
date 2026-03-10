@@ -21,7 +21,7 @@ DOC = "Run the CUJ test suite cuj_4. This suite is used to run CUJ tast tests ag
 def run(machine):
     job.run_test('tast',
                  host=hosts.create_host(machine),
-                 test_exprs=['("group:cuj" && !cuj_experimental && !cuj_weekly && !cuj_loginperf)'],
+                 test_exprs=['("group:cuj" && !cuj_experimental && !cuj_weekly && !cuj_loginperf && !cuj_chargerate)'],
                  # 3 means reboot at start and between every test.
                  varslist=["graphics.rebootLevel=3"],
                  ignore_test_failures=True,

@@ -134,6 +134,8 @@ class ChromeTi50(chrome_cr50.ChromeCr50):
             # This message means WP is externally driven. It shouldn't happen.
             # Fail if it shows up in the logs.
             ['externally driven!', True],
+            # b/491950050 fail any test that reports import key failed
+            ['import key failed', True],
             # This message shows up when the AP would have been rebooted due to
             # an external event such as WP being driven high (e.g. via
             # servo_micro), if WP we re-enabled, or if the AP RO verification

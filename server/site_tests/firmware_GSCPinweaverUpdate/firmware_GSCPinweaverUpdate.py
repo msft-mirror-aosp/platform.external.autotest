@@ -171,6 +171,8 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
                 "echo 'clobber' > /mnt/stateful_partition/.update_available")
         self.host.reboot()
         tpm_utils.ClearTPMOwnerRequest(self.host, wait_for_ready=True)
+        start_id = tpm_utils.GetOwnershipId(self.host)
+        logging.info('ownership id:', start_id)
 
         # Initialize Pinweaver
         session_id = self.start_auth(self.USER)
@@ -194,6 +196,14 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
         # path.
         logging.info('Update to the current release')
         self.cr50_update(self.get_saved_cr50_original_path())
+
+        new_id = tpm_utils.GetOwnershipId(self.host)
+        logging.info('ownership id after update: ', new_id)
+        if start_id != new_id:
+            raise error.TestFail(
+                    'Ownership ID changed during update: new %r old %r' %
+                    (new_id, start_id))
+
         session_id = self.start_auth(self.USER)
 
         # Verify pinweaver lockout still works after the update.

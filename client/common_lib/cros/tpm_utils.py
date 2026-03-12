@@ -59,6 +59,17 @@ def ClearTPMServer(client, out_dir):
     ClearTPMOwnerRequest(client)
 
 
+def GetOwnershipId(client):
+    """Returns the hwsec ownership id.
+
+    @param client: client object to run commands on.
+    """
+    ownership_id = client.run('hwsec-ownership-id id')
+    if not ownership_id.exit_status == 0:
+        raise error.TestFail('Unable to get ownership ID.')
+    return ownership_id.stdout.strip()
+
+
 def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
     """Clears the TPM using crossystem command.
 
@@ -66,11 +77,7 @@ def ClearTPMOwnerRequest(client, wait_for_ready=False, timeout=60):
     @param wait_for_ready: wait until the TPM status is ready
     @param timeout: number of seconds to wait for the TPM to become ready.
     """
-    ownership_id = client.run('hwsec-ownership-id id')
-    if not ownership_id.exit_status == 0:
-        raise error.TestFail('Unable to get ownership ID.')
-
-    ownership_id = ownership_id.stdout.strip()
+    ownership_id = GetOwnershipId(client)
 
     logging.info('Sending Clear TPM owner request')
     client.run('crossystem clear_tpm_owner_request=1')

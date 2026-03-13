@@ -22,6 +22,7 @@ class firmware_GSCPinweaverUpdate(Cr50Test):
             # Ti50 always used platform/pinweaver. This is just a ti50 image
             # with the same rollback era.
             'ti50-dt': '0.23.21',
+            'ti50-nt': '0.33.242',
             # Geralt has some update issues with old images. Use a newer ti50
             # firmware version.
             'geralt': '0.23.230',

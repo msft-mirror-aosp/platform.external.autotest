@@ -24,7 +24,7 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
     # details.
     _NO_TOUCHPAD_WAKE = [
             'caroline', 'clapper', 'elm', 'glimmer', 'hana', 'kevin', 'kukui',
-            'pyro', 'veyron_minnie'
+            'pyro', 'veyron_minnie', 'eve', 'nautilus', 'reef'
     ]
     _TOUCHPAD_WAKE_SET_BY_CROS_CONFIG = ['coral', 'nami']
     _TOUCHPAD_WAKE_MODELS = ['kakadu']

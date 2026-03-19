@@ -6,6 +6,7 @@
 import logging
 import os
 
+from autotest_lib.client.cros import ec
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros import cros_config
@@ -120,19 +121,43 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
         raise error.TestError('Wakeup file for %s said "%s".' %
                               (input_type, result))
 
+    def _turn_off_tablet_mode(self):
+        """Turn off the tablet mode"""
+        if ec.has_cros_ec():
+            result = utils.run('ectool tabletmode off',
+                               ignore_status=True).stdout.strip()
+            if result.find("SUCCESS") == -1:
+                logging.info('Failed to turn off tablet mode.')
+
+    def _reset_tablet_mode(self):
+        """Reset the tablet mode"""
+        if ec.has_cros_ec():
+            result = utils.run('ectool tabletmode reset',
+                               ignore_status=True).stdout.strip()
+            if result.find("SUCCESS") == -1:
+                logging.info('Failed to reset tablet mode.')
+
     def run_once(self, source):
         """Entry point of this test."""
 
         # Check that touchpad is a wake source for all but the excepted boards.
         if source == 'touchpad':
-            if (self._has_touchpad and
-                self._platform not in self._INVALID_TOUCHPADS):
-                if self._touchpad_should_be_wake_source():
-                    if not self._is_wake_source('touchpad'):
-                        raise error.TestFail('Touchpad is not a wake source!')
-                else:
-                    if self._is_wake_source('touchpad'):
-                        raise error.TestFail('Touchpad is a wake source!')
+            try:
+                # Prevent failures caused by the touchpad being unavailable
+                # while tablet mode is enabled.
+                self._turn_off_tablet_mode()
+
+                if (self._has_touchpad
+                            and self._platform not in self._INVALID_TOUCHPADS):
+                    if self._touchpad_should_be_wake_source():
+                        if not self._is_wake_source('touchpad'):
+                            raise error.TestFail(
+                                    'Touchpad is not a wake source!')
+                    else:
+                        if self._is_wake_source('touchpad'):
+                            raise error.TestFail('Touchpad is a wake source!')
+            finally:
+                self._reset_tablet_mode()
 
         # Check that touchscreen is not a wake source (if present).
         # Devices without a touchpad should have touchscreen as wake source.

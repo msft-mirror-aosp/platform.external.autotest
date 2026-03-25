@@ -354,6 +354,8 @@ def gen_moblab(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
             for module in bundle.modules if '[' not in module
     ]
 
+    shard_config = config.get('SHARD_COUNT', {})
+
     passes = Concat([
             If(
                     has_modules(config.get('PUBLIC_SPLIT_BY_BITS_MODULES',
@@ -363,6 +365,12 @@ def gen_moblab(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
                             SplitByBits(),
                     ],
             ),
+            Concat([
+                    If(
+                            has_modules([module]),
+                            [SplitByTFShards(shard_count)],
+                    ) for module, shard_count in shard_config.items()
+            ]),
             AddSuites([config['MOBLAB_SUITE_NAME']]),
     ])
 

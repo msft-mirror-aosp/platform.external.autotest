@@ -755,19 +755,16 @@ def chromite_deploy_chrome(host,
     deploy_chrome_bin = os.path.join(chromite_dir, 'bin', 'deploy_chrome')
     vpython_spec = os.path.join(chrome_dir, '.vpython3')
 
-    cmd = [
-            'vpython3',
-            '-vpython-spec',
-            vpython_spec,
-            deploy_chrome_bin,
-    ]
     # In CFT SSH session is built on a SSH proxy by the host.
     # Chromite may not detect the reboot and later hit timeout
     # error. As a workaround remove the rootfs verification
     # and reboot prior to the chrome deployment.
     filesystem_util.make_rootfs_writable(host)
+
     cmd = [
-            'python3',
+            'vpython3',
+            '-vpython-spec',
+            vpython_spec,
             deploy_chrome_bin,
             '--noremove-rootfs-verification',
     ]

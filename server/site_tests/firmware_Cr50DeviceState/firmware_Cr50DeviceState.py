@@ -33,6 +33,7 @@ class firmware_Cr50DeviceState(Cr50Test):
     ]
     DEEP_SLEEP_STEP_SUFFIX = ' Num Deep Sleep Steps'
     BOARD_HAS_SBU_ISSUES = ['octopus']
+    SKIP_STRONGBOX_MESSAGE = 'skip command'
 
     # Use negative numbers to keep track of counts not in the IRQ list. The
     # actual number don't matter too much. Just make sure deep sleep is the
@@ -181,6 +182,9 @@ class firmware_Cr50DeviceState(Cr50Test):
         # to boot. It's supposed to be a conservative maximum.
         sleep_time = self.sleep_time * 2 + self.faft_config.delay_reboot_to_ping
         self.EXPECTED_IRQ_COUNT_RANGE[self.KEY_TIME] = [0, sleep_time]
+
+        minor_ver = int(self.gsc.get_version().split('.')[-1])
+        self.sb_supported = minor_ver > 320 and minor_ver != 350
 
     def get_tpm_init_time(self):
         """If the AP is on, return the time it took the tpm to initialize."""
@@ -621,8 +625,14 @@ class firmware_Cr50DeviceState(Cr50Test):
                                     ignore_status=True)
         logging.info("Strongbox enable: %r", result)
         if self.gsc.IS_CR50:
-            if not result or result.exit_status != 3:
-                raise error.TestFail('Unexpected SB enable result: %r', result)
+            if not result:
+                raise error.TestFail('Failed to run strongbox command')
+            if self.sb_supported:
+                if result.exit_status != 3:
+                    raise error.TestFail('Unexpected SB enable result: %r' %
+                                         result)
+            elif result.exit_status != 0 or self.SKIP_STRONGBOX_MESSAGE not in result.stdout:
+                raise error.TestFail('Failed to skip SB command: %r' % result)
         elif not result or result.exit_status != 1:
             raise error.TestFail(
                     'Unexpected result: SB command did not exit with status 1: %r',

@@ -26,7 +26,7 @@ GSC_STATE = '/var/cache/*50*'
 GSC_VERSION = '/var/cache/*50-version'
 GET_GSC_VERSION = 'cat %s' % GSC_VERSION
 GET_GSC_MESSAGES = 'grep "..50-.*\[" /var/log/messages'
-UPDATE_FAILURE = 'unexpected cr50-update exit code'
+UPDATE_ERRORS = ['unexpected cr50-update exit code', 'Error: gsctool status']
 STUB_VER = '-1.-1.-1'
 # This dictionary is used to search the gsctool output for the version strings.
 # There are two gsctool commands that will return versions: 'fwver' and
@@ -388,8 +388,10 @@ def CheckForFailures(client, last_message):
     logging.info('Check for errors')
     failures = []
     for message in messages:
-        if UPDATE_FAILURE in message:
-            failures.append(message)
+        for update_error in UPDATE_ERRORS:
+            if update_error in message:
+                logging.info('Found error: %s', message)
+                failures.append(message)
     if len(failures):
         logging.info(messages)
         raise error.TestFail('Detected unexpected exit code during update: '

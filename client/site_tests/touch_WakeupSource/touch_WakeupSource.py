@@ -121,6 +121,22 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
         raise error.TestError('Wakeup file for %s said "%s".' %
                               (input_type, result))
 
+    def _is_tablet_mode(self):
+        """Examine whether the device is in tablet mode based on the powerd log"""
+        mode_indicator = 'Configuring devices for mode'
+        cmd = 'cat /var/log/power_manager/powerd.LATEST | grep \'{}\''.format(
+                mode_indicator)
+        try:
+            out = [i for i in utils.run(cmd).stdout.split('\n') if i != '']
+            if out == []:
+                return False
+            else:
+                return "tablet" in out[-1]
+        except error.CmdError:
+            logging.info('Failed to search for mode indicator {}.'.format(
+                    mode_indicator))
+            return False
+
     def _turn_off_tablet_mode(self):
         """Turn off the tablet mode"""
         if ec.has_cros_ec():
@@ -128,6 +144,16 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
                                ignore_status=True).stdout.strip()
             if result.find("SUCCESS") == -1:
                 logging.info('Failed to turn off tablet mode.')
+
+            try:
+                utils.poll_for_condition(
+                        condition=lambda: self._is_tablet_mode() == False,
+                        timeout=5,
+                        sleep_interval=0.5,
+                )
+                logging.info("Tablet mode has been turned off")
+            except error.TimeoutError:
+                logging.info("Failed to disable Tablet Mode within 5 seconds")
 
     def _reset_tablet_mode(self):
         """Reset the tablet mode"""
@@ -145,7 +171,8 @@ class touch_WakeupSource(touch_playback_test_base.touch_playback_test_base):
             try:
                 # Prevent failures caused by the touchpad being unavailable
                 # while tablet mode is enabled.
-                self._turn_off_tablet_mode()
+                if self._is_tablet_mode():
+                    self._turn_off_tablet_mode()
 
                 if (self._has_touchpad
                             and self._platform not in self._INVALID_TOUCHPADS):

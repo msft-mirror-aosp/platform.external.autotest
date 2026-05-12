@@ -15,4 +15,7 @@
   <!-- b/403364427 -->
   <Entry include="CtsStatsdHostTestCases android.cts.statsd.metadata.MetadataTests#testConfigTtl" />
   <Entry include="CtsStatsdHostTestCases[instant] android.cts.statsd.metadata.MetadataTests#testConfigTtl" />
+  <!-- b/498801602 -->
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.ExtractorTest$SetDataSourceTest#testDataSourceNative" />
+  <Entry include="CtsMediaV2TestCases android.mediav2.cts.ExtractorTest$SetDataSourceTest#testUrlDataSource" />
 </SubPlan>

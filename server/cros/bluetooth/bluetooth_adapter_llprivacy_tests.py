@@ -394,7 +394,7 @@ class BluetoothAdapterLLPrivacyTests(
         check_connected_method(device)
 
         # reboot the DUT, LL privacy is disabled after reboot.
-        self.reboot()
+        self.reboot(False)
 
         self.test_device_is_connected(device.address)
         self.test_hid_device_created(device.address)

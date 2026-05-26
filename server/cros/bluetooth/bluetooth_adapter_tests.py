@@ -1720,7 +1720,7 @@ class BluetoothAdapterTests(test.test):
                                   test_start_time=start_time)
 
 
-    def reboot(self):
+    def reboot(self, set_log_level=True):
         """Reboot the DUT and recreate necessary processes and variables"""
         self.host.reboot()
 
@@ -1745,7 +1745,8 @@ class BluetoothAdapterTests(test.test):
 
         # Re-enable debugging verbose since Chrome will set it to
         # default(disable).
-        self.enable_disable_debug_log(enable=self.enable_debug_log)
+        if set_log_level:
+            self.enable_disable_debug_log(enable=self.enable_debug_log)
 
         # Re-disable cellular
         self.enable_disable_cellular(enable=False)

@@ -135,7 +135,7 @@ class firmware_Cr50RMAOpen(Cr50Test):
         """
         cmd = 'rma_auth ' + ('disable' if disable else authcode)
         get_challenge = not (authcode or disable)
-        resp = 'rma_auth(.*generated challenge:)?(.*)>'
+        resp = 'rma_auth(.*generated challenge:)?\s+([0-9A-Z]+).*>'
         if expected_exit_status:
             resp = self.LIMIT_CLI if get_challenge else self.MISMATCH_CLI
 

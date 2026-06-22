@@ -26,6 +26,18 @@ class autoupdate_Rollback(update_engine_test.UpdateEngineTest):
         self._host.run(['echo', 'car', '>', STATEFUL_MARKER_FILE])
         self._host.run(['echo', "'%s'" % POWERWASH_COMMAND, '>',
                         POWERWASH_MARKER_FILE])
+        # Verify and log actual file contents for STATEFUL_MARKER_FILE
+        stateful_content = self._host.run("cat %s" % STATEFUL_MARKER_FILE).stdout.strip()
+        logging.info("STATEFUL_MARKER_FILE contents: [%s]", stateful_content)
+        # Verify and log full file contents for POWERWASH_MARKER_FILE
+        file_contents = self._host.run("cat %s" % POWERWASH_MARKER_FILE).stdout.strip()
+        if POWERWASH_COMMAND not in file_contents:
+            raise error.TestFail("POWERWASH_MARKER_FILE did not contain"
+                                "the expected command: '%s'" % POWERWASH_COMMAND)
+        logging.info("POWERWASH_MARKER_FILE verified. Full Contents:\n[%s]", file_contents)
+
+        # Force disk flush
+        self._host.run("sync")
         self._host.reboot()
 
         marker = self._host.run(['test', '-e', STATEFUL_MARKER_FILE],

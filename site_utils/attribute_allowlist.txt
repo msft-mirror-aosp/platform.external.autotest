@@ -309,12 +309,6 @@ suite:audio
 suite:audio_advanced
 suite:audio_basic
 suite:audio_essential
-suite:av-analysis_per-build
-suite:av-analysis_per-day
-suite:av-analysis_per-week
-suite:av-analysis_trace_per-build
-suite:av-analysis_trace_per-day
-suite:av-analysis_trace_per-week
 suite:bluestreak-partners
 suite:bluestreak-pre-cq
 suite:bluetooth
@@ -346,10 +340,6 @@ suite:bluetooth_stress
 suite:bluetooth_wifi_coex
 suite:bluetooth_wifi_testbed_update
 suite:bootup_time
-suite:borealis-cq
-suite:borealis_per-build
-suite:borealis_per-day
-suite:borealis_per-week
 suite:brillo-presubmit
 suite:bvt-arc
 suite:bvt-cq
@@ -618,7 +608,6 @@ suite:chrome-informational
 suite:commercial-limited
 suite:cq-medium
 suite:cq-minimal
-suite:cros-av-analysis
 suite:cros-hwsec_nightly
 suite:cros-hwsec_per-week
 suite:crosbolt_arc_perf_memory_nightly

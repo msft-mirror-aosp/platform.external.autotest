@@ -16,8 +16,7 @@ ATTRIBUTES = (
 )
 TIME = "LONG"
 TEST_TYPE = "server"
-# TODO(b/427195218): Add servo-exists + servo_state:WORKING after bug resolved.
-# DEPENDENCIES = "servo_state:WORKING"
+DEPENDENCIES = "servo_state:WORKING, servo_deployed:True"
 
 DOC = """
 Cr50 should enter deep sleep every time the system goes into S5. Run

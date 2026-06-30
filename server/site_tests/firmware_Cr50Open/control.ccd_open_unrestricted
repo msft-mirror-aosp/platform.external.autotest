@@ -16,9 +16,7 @@ ATTRIBUTES = (
 )
 TIME = "SHORT"
 TEST_TYPE = "server"
-# TODO(b/427195218): Add servo-exists + servo_state:WORKING after bug resolved.
-# DEPENDENCIES = "servo_state:WORKING"
-DEPENDENCIES = "cr50:prepvt"
+DEPENDENCIES = "servo_state:WORKING, servo_deployed:True, cr50:prepvt"
 
 DOC = """
 Verify the console can be opened by pressing the power button after the device

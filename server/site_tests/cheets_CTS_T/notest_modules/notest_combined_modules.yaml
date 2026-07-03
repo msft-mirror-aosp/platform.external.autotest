@@ -19,3 +19,5 @@ CtsUffdGc: [shipatN, shipatP, shipatR]
 CtsTileService: [all]
 MicrodroidHost: [all]
 signed-Cts: [shipatN]
+
+cts-dev: [all] # waivers

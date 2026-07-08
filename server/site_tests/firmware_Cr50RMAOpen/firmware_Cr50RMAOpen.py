@@ -197,6 +197,7 @@ class firmware_Cr50RMAOpen(Cr50Test):
         self.gsc.send_command('ccd testlab open')
         self.gsc.ccd_reset_factory()
         self.gsc.send_command('wp disable atboot')
+        self.gsc.set_ccd_level('lock')
 
 
     def check_ccd_cap_settings(self, rma_opened):

@@ -185,6 +185,7 @@ class firmware_Cr50DeviceState(Cr50Test):
 
         minor_ver = int(self.gsc.get_version().split('.')[-1])
         self.sb_supported = minor_ver > 320 and minor_ver != 350
+        self.sb_noop = minor_ver >= 370 and minor_ver < 380
 
     def get_tpm_init_time(self):
         """If the AP is on, return the time it took the tpm to initialize."""
@@ -627,7 +628,11 @@ class firmware_Cr50DeviceState(Cr50Test):
         if self.gsc.IS_CR50:
             if not result:
                 raise error.TestFail('Failed to run strongbox command')
-            if self.sb_supported:
+            if self.sb_noop:
+                if result.exit_status != 0:
+                    raise error.TestFail('Unexpected SB noop result: %r' %
+                                         result)
+            elif self.sb_supported:
                 if result.exit_status != 3:
                     raise error.TestFail('Unexpected SB enable result: %r' %
                                          result)

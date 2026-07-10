@@ -385,7 +385,8 @@ class RemoteHost(base_classes.Host):
         if len(processes) == 0:
             return True # wait up processes aren't being used
         for procname in processes:
-            exit_status = self.run("{ ps -e || ps; } | grep '%s'" % procname,
+            exit_status = self.run("{ ps aux || ps -ef; } | grep '%s'" %
+                                   procname,
                                    ignore_status=True).exit_status
             if exit_status == 0:
                 return True

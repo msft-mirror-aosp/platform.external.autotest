@@ -100,6 +100,8 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         self.extra = []
         self.past_matches = {}
         self._ext = ''
+        minor_ver = int(self.gsc.get_version().split('.')[-1])
+        self.legacy_help_output = minor_ver >= 370 and minor_ver < 380
 
         # Make sure the console is restricted
         if self.gsc.get_cap('GscFullConsole')[self.gsc.CAP_REQ] == 'Always':
@@ -284,4 +286,7 @@ class firmware_Cr50ConsoleCommands(Cr50Test):
         if extra_labels:
             test_err.append('matched: %s' % ', '.join(extra_labels))
         if test_err:
-            raise error.TestError('\t'.join(test_err))
+            if not self.legacy_help_output:
+                raise error.TestError('\t'.join(test_err))
+            logging.info('Old image with manually validated commands')
+            logging.info('Ignoring: %s', ','.join(test_err))

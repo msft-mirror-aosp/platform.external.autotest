@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:DEV
+# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:LATEST
 
 # This file has been automatically generated. Do not edit!
 
@@ -35,7 +35,7 @@ def run_TS(machine):
         target_module='CtsAtraceHost',
         target_plan=None,
         bundle='arm',
-        uri='DEV',
+        uri='LATEST',
         timeout=7200)
 
 parallel_simple(run_TS, machines)

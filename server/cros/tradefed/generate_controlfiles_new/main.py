@@ -55,7 +55,7 @@ def generators_for_source_type(
     return _source_type_to_gen_funcs[source_type]
 
 
-@generate_from_source_type('DEV')
+@generate_from_source_type('LATEST')
 def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
     """Generates regression controlfiles."""
     logging.info('Generating regression controlfiles')
@@ -175,7 +175,7 @@ def gen_regression(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
     return passes.process_all_groups(groups)
 
 
-@generate_from_source_type('DEV')
+@generate_from_source_type('LATEST')
 def gen_extra_camera(bundle: Bundle, config: Config) -> Iterable[ModuleGroup]:
     """Generates extra camera controlfiles."""
     if not config.get('CONTROLFILE_WRITE_CAMERA'):

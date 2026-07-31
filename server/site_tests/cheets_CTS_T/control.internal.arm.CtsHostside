@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:DEV
+# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:LATEST
 
 # This file has been automatically generated. Do not edit!
 
@@ -35,7 +35,7 @@ def run_TS(machine):
         target_module='CtsHostside',
         target_plan=None,
         bundle='arm',
-        uri='DEV',
+        uri='LATEST',
         precondition_commands=['adb shell device_config set_sync_disabled_for_tests persistent', 'adb shell device_config put device_idle idle_to 90000'],
         timeout=30600)
 

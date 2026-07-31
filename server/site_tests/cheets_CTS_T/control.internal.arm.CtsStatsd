@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:DEV
+# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:LATEST
 
 # This file has been automatically generated. Do not edit!
 from autotest_lib.server.cros.tradefed import wifi_utils
@@ -38,7 +38,7 @@ def run_TS(machine):
         target_module='CtsStatsd',
         target_plan=None,
         bundle='arm',
-        uri='DEV',
+        uri='LATEST',
         precondition_commands=['adb shell cmd wifi add-network %s %s %s' % (pipes.quote(ssid), 'open' if wifipass == '' else 'wpa', pipes.quote(wifipass)), 'adb shell cmd wifi connect-network %s' % pipes.quote(ssid), 'adb shell dumpsys wifi transports -eth'],
         prerequisites=['camera_enumerate'],
         timeout=18000)

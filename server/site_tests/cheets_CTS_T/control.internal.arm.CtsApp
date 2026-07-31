@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:DEV
+# __GENERATED_BY_GENERATE_CONTROLFILES_PY__:LATEST
 
 # This file has been automatically generated. Do not edit!
 from autotest_lib.server import utils as server_utils
@@ -48,7 +48,7 @@ def run_TS(machine):
         target_module='CtsApp',
         target_plan=None,
         bundle='arm',
-        uri='DEV',
+        uri='LATEST',
         hard_reboot_on_failure=True,
         timeout=73800)
 

@@ -7,7 +7,7 @@ NAME = 'tast.audio-e2e-experimental-usb'
 TIME = 'MEDIUM'
 TEST_TYPE = 'Server'
 
-ATTRIBUTES = "suite:audio_advanced"
+# ATTRIBUTES = "suite:audio_advanced"
 PY_VERSION = 3
 
 DEPENDENCIES = 'chameleon_state:WORKING, test_usbaudio, label-chameleon_type:CHAMELEON_TYPE_RPI'

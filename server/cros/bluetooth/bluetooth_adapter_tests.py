@@ -26,6 +26,7 @@ import common
 from autotest_lib.client.bin import utils
 from autotest_lib.client.bin.input import input_event_recorder as recorder
 from autotest_lib.client.bin.input import linux_input
+from autotest_lib.client.common_lib import utils as common_utils
 from autotest_lib.client.common_lib import error
 from autotest_lib.client.common_lib.cros.bluetooth import bluetooth_socket
 from autotest_lib.client.cros.chameleon import chameleon
@@ -850,6 +851,9 @@ class BluetoothAdapterTests(test.test):
 
     # Minimum RSSI required for peer devices during testing
     MIN_RSSI = -70
+    # Minimum RSSI required outside of lab for noisier
+    # environment
+    MIN_RSSI_NON_LAB = -85
 
     CLASS_OF_SERVICE_MASK = 0xFFE000
     CLASS_OF_DEVICE_MASK = 0x001FFF
@@ -6916,6 +6920,18 @@ class BluetoothAdapterTests(test.test):
 
         @raises error.TestNA if any device isn't found or RSSI is too low
         """
+        is_lab = False
+        try:
+            if self.host and self.host.hostname:
+                is_lab = common_utils.host_is_in_lab_zone(self.host.hostname)
+        except Exception as e:
+            logging.warning(
+                    'Failed to detect if in lab, defaulting to False: %s', e)
+
+        min_rssi = self.MIN_RSSI if is_lab else self.MIN_RSSI_NON_LAB
+        logging.info('RSSI check: is_lab=%s, using threshold=%d (default=%d)',
+                     is_lab, min_rssi, self.MIN_RSSI)
+
         try:
             if not self.test_start_discovery():
                 raise error.TestNAError(
@@ -6941,7 +6957,7 @@ class BluetoothAdapterTests(test.test):
                             'Peer {} not discovered during RSSI check'.format(
                                     device.address))
 
-                if not rssi or rssi < self.MIN_RSSI:
+                if not rssi or rssi < min_rssi:
                     logging.info('Failing with TEST_NA since RSSI (%s) is low ',
                                   rssi)
                     raise error.TestNAError(

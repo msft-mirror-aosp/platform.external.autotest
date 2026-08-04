@@ -463,6 +463,12 @@ class BluetoothAdapterAudioTests(BluetoothAdapterTests):
         self.cleanup_audio_config()
         self.generate_audio_config(audio_config)
 
+        if getattr(self, 'audio_facade', None):
+            self.audio_facade.set_system_mute(False)
+            self.audio_facade.set_user_mute(False)
+        else:
+            logging.info('Audio facade cannot be found, skip unmmute.')
+
         audio_server = self.get_audio_server_name()
         if audio_server != PULSEAUDIO and audio_server != PIPEWIRE:
             raise error.TestError('%s not supported' % audio_server)

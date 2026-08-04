@@ -328,6 +328,16 @@ def set_system_mute(is_mute):
     get_cras_control_interface().SetOutputMute(is_mute)
 
 
+def set_user_mute(is_mute):
+    """Sets the user mute switch.
+
+    @param is_mute: Set True to mute the user playback.
+
+    """
+    get_cras_control_interface().SetOutputUserMute(is_mute)
+
+
+
 def set_capture_mute(is_mute):
     """Sets the capture mute switch.
 

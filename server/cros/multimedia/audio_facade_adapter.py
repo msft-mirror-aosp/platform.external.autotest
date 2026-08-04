@@ -287,6 +287,24 @@ class AudioFacadeRemoteAdapter(object):
         self._audio_proxy.set_system_volume(volume)
 
 
+    def set_system_mute(self, mute):
+        """Set the system mute.
+
+        @param mute: True to mute, False to unmute.
+
+        """
+        self._audio_proxy.set_system_mute(mute)
+
+
+    def set_user_mute(self, mute):
+        """Set the user mute.
+
+        @param mute: True to mute, False to unmute.
+
+        """
+        self._audio_proxy.set_user_mute(mute)
+
+
     def set_chrome_active_volume(self, volume):
         """Sets the active audio output volume using chrome.audio API.
 

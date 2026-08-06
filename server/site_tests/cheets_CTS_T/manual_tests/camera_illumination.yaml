@@ -6,7 +6,7 @@ android.hardware.camera2.cts.ImageReaderTest#testFlexibleYuv[1]: [craask, rudrik
 android.hardware.camera2.cts.ImageReaderTest#testFlexibleYuvWithTimestampBase[1]: [craask, rudriks]
 android.hardware.camera2.cts.ImageReaderTest#testRepeatingJpeg[1]: [craask]
 android.hardware.camera2.cts.MultiViewTest#testTextureImageWriterReaderOperation[1]: [ciri, homestar, wormdingler, kukui, domiso, rudriks, hylia]
-android.hardware.camera2.cts.RecordingTest#testVideoSnapshot[1]: [ampton, dirinboz]
+android.hardware.camera2.cts.RecordingTest#testVideoSnapshot[1]: [ampton, dirinboz, jelboz360]
 android.hardware.camera2.cts.StillCaptureTest#testAeCompensation[1]: [craask, rudriks, strongbad]
 android.hardware.camera2.cts.SurfaceViewPreviewTest#testCameraPreview[1]: [teliks]
 android.hardware.cts.CameraGLTest#testCameraToSurfaceTextureMetadata: [nautilus, anraggar, anraggar360, pujjoga, teliks, chinchou360, jubilant]

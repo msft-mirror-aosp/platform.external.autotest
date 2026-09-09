@@ -411,7 +411,7 @@ class Config(collections.UserDict):
         Returns:
             If the flag should be set.
         """
-        return self['TEST_NAME'] not in ('cheets_CTS_R', 'cheets_GTS_R')
+        return True
 
     def needs_cts_helpers(self, modules):
         """Oracle to determine if CTS helpers should be downloaded from DUT."""
@@ -457,4 +457,6 @@ class Config(collections.UserDict):
 
 
 class ModuleGroup(collections.UserDict):
+    """Represents a group of modules."""
+
     pass

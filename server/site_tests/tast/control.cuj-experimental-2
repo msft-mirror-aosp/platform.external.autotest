@@ -32,7 +32,7 @@ def run(machine):
                  varslist=["graphics.rebootLevel=3"],
                  ignore_test_failures=True,
                  max_run_sec=3*60*60,  # 3 hours
-                 totalshards=13,
+                 totalshards=11,
                  shardindex=2,
                  command_args=args)
 parallel_simple(run, machines)

@@ -8,6 +8,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from autotest_lib.client.common_lib import packages
+from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
 
 import contextlib
@@ -15,6 +17,7 @@ import errno
 import fcntl
 import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -22,6 +25,18 @@ import tempfile
 import requests
 
 _READ_BUFFER_SIZE_BYTES = 1024 * 1024  # 1 MB
+
+# curl --fail reports every HTTP status >= 400 as packages.CURL_HTTP_ERROR_EXIT,
+# so the status code parsed from -sS stderr is passed to
+# packages.is_http_not_found() to tell a 404/410 apart from, say, a 503.
+# Older curl versions append the reason phrase ("404 Not Found").
+_CURL_HTTP_STATUS_RE = re.compile(r'returned error: (\d{3})\b')
+
+# Timeout for the HTTP request and for the SSH fallback's connection setup.
+# The SSH curl transfer limit is generous because the dependency tarballs are
+# large.
+_REQUEST_TIMEOUT_SECONDS = 60
+_SSH_CURL_MAX_TIME_SECONDS = 30 * 60
 
 DEFAULT_DEPS_BUCKET = "chromeos-image-archive"
 STAGING_DEPS_BUCKET = "staging-chromeos-image-archive"
@@ -69,12 +84,14 @@ class TelemetrySetup(object):
     _TEST_SRC_DIR_NAME = 'test_src'
     _SRC_DIR_NAME = 'src'
 
-    # Names of the telemetry dependency tarballs.
-    _DEPENDENCIES = [
-            'dep-telemetry_dep.tar.bz2',
-            'dep-chrome_test.tar.bz2',
-            'dep-perf_data_dep.tar.bz2',
-    ]
+    # Names of the telemetry dependency packages. Each is published as a
+    # dep-<name> tarball under one of the names that
+    # packages.PackageManager.get_tarball_names() lists.
+    _DEPENDENCIES = (
+            'telemetry_dep',
+            'chrome_test',
+            'perf_data_dep',
+    )
 
     # Partial devserver URLs.
     _STATIC_URL_TEMPLATE = STATIC_URL_TEMPLATE
@@ -107,8 +124,12 @@ class TelemetrySetup(object):
         them into a 'src' directory.
 
         Returns:
-        Path to the src directory where the telemetry dependencies have been
-            downloaded and extracted.
+          Path to the src directory where the telemetry dependencies have been
+              downloaded and extracted.
+
+        Raises:
+          TelemetrySetupError: If the telemetry dependencies cannot be
+              downloaded, extracted, or moved into place.
         """
         src_folder = os.path.join(self._tlm_src_dir_path, self._SRC_DIR_NAME)
         test_src = os.path.join(self._tlm_src_dir_path,
@@ -118,54 +139,94 @@ class TelemetrySetup(object):
             if not os.path.exists(src_folder):
                 # Download the required dependency tarballs.
                 for dep in self._DEPENDENCIES:
-                    dep_path = self._DownloadFilesFromDevserver(
-                            dep, self._setup_dir_path)
-                    if os.path.exists(dep_path):
+                    dep_path = self._DownloadDependency(dep)
+                    if dep_path:
                         self._ExtractTarball(dep_path, self._tlm_src_dir_path)
+                    elif dep == 'telemetry_dep':
+                        raise TelemetrySetupError(
+                                'dep-telemetry_dep was not found for build '
+                                '%s.' % self._build)
+
+                if not os.path.isdir(test_src):
+                    raise TelemetrySetupError(
+                            'No %s/ directory after extracting dependencies '
+                            'for build %s.' %
+                            (self._TEST_SRC_DIR_NAME, self._build))
 
                 # By default all the tarballs extract to test_src but some parts
                 # of the telemetry code specifically hardcoded to exist inside
                 # of 'src'.
                 try:
                     shutil.move(test_src, src_folder)
-                except shutil.Error:
+                except OSError as e:
                     raise TelemetrySetupError(
                             'Failure in telemetry setup for build %s. Appears '
-                            'that the test_src to src move failed.' %
-                            self._build)
+                            'that the test_src to src move failed: %s' %
+                            (self._build, e))
         return src_folder
 
-    def _DownloadFilesFromDevserver(self, filename, dest_path):
-        """Downloads the given tar.bz2 file from the devserver.
+    def _DownloadDependency(self, dep_name):
+        """Downloads a dependency tarball in whichever supported format exists.
+
+        Candidates come from packages.PackageManager.get_tarball_names(), which
+        lists packages.DEFAULT_TARBALL_SUFFIX first, so a build that publishes
+        the default format costs a single request. Older builds may only
+        publish bzip2, and transitional builds may publish both formats.
 
         Args:
-          filename: Name of the tar.bz2 file to be downloaded.
+          dep_name: Name of the dependency package, e.g. 'telemetry_dep'.
+
+        Returns:
+            Full path to the downloaded tarball, or None if this build does not
+            publish the dependency in any supported format.
+        """
+        candidates = packages.PackageManager.get_tarball_names(dep_name, 'dep')
+        for filename in candidates:
+            dep_path = self._DownloadFilesFromDevserver(
+                    filename, self._setup_dir_path)
+            if dep_path:
+                return dep_path
+
+        # Not fatal here: a dependency can be absent because it is new, because
+        # it was dropped, or because this build predates it.
+        logging.warning('None of %s were found for build %s.',
+                        ', '.join(candidates), self._build)
+        return None
+
+    def _DownloadFilesFromDevserver(self, filename, dest_path):
+        """Downloads the given tarball from the devserver.
+
+        Args:
+          filename: Name of the tarball to be downloaded.
           dest_path: Full path to the directory where it should be downloaded.
 
         Returns:
-            Full path to the downloaded file.
+            Full path to the downloaded file, or None if the devserver does not
+            have it (HTTP 404/410).
 
         Raises:
           TelemetrySetupError when the download cannot be completed for any
-              reason.
+              other reason.
         """
         dep_path = os.path.join(dest_path, filename)
         url = (self._STATIC_URL_TEMPLATE %
                (self._ds.url(), self._gs_bucket, self._build, filename))
         try:
-            resp = requests.get(url, timeout=60)
+            resp = requests.get(url, timeout=_REQUEST_TIMEOUT_SECONDS)
             resp.raise_for_status()
             with open(dep_path, 'wb') as f:
                 for content in resp.iter_content(_READ_BUFFER_SIZE_BYTES):
                     f.write(content)
         except Exception as e:
-            if (isinstance(e, requests.exceptions.HTTPError)
-                        and resp.status_code == 404):
-                logging.error(
-                        'The request %s returned a 404 Not Found status.'
-                        'This dependency could be new and therefore does not '
-                        'exist. Hence, squashing the exception and proceeding.',
-                        url)
+            if (
+                    isinstance(e, requests.exceptions.HTTPError)
+                    and packages.is_http_not_found(
+                            packages.CURL_HTTP_ERROR_EXIT, resp.status_code)):
+                # Routine: each dependency is probed once per compression
+                # format, so the format this build does not use is absent.
+                logging.debug('The request %s returned HTTP %s (not found).',
+                              url, resp.status_code)
+                return None
             elif isinstance(e, requests.exceptions.ConnectionError):
                 logging.warning(
                         'The request failed because a connection to the devserver '
@@ -175,44 +236,97 @@ class TelemetrySetup(object):
                 return self._DownloadFilesFromDevserverViaSSH(url, dep_path)
             elif isinstance(e, requests.exceptions.Timeout):
                 logging.warning(
-                        'The request %s had 60s timeout. Attempting to execute '
-                        'the request %s once by SSH-ing into the devserver.',
-                        self._ds.url(), url)
+                        'Request %s timed out after %ds; retrying once over '
+                        'SSH via %s.', url, _REQUEST_TIMEOUT_SECONDS,
+                        self._ds.url())
                 return self._DownloadFilesFromDevserverViaSSH(url, dep_path)
             else:
                 raise TelemetrySetupError(
                         'An error occurred while trying to complete  %s: %s' %
                         (url, e))
+        logging.info('Downloaded telemetry dependency %s from %s.', filename,
+                     url)
         return dep_path
 
     def _DownloadFilesFromDevserverViaSSH(self, url, dep_path):
         """Downloads the file at the URL from the devserver by SSH-ing into it.
 
         Args:
-          url: URL of the location of the tar.bz2 file on the devserver.
+          url: URL of the location of the tarball on the devserver.
           dep_path: Full path to the file where it will be downloaded.
 
         Returns:
-            Full path to the downloaded file.
+            Full path to the downloaded file, or None if the devserver does not
+            have the file (HTTP 404/410).
 
         Raises:
           TelemetrySetupError when the download cannot be completed for any
-              reason.
+              other reason, including any other HTTP error.
         """
-        cmd = ['ssh', self._ds.hostname, 'curl', url]
-        with open(dep_path, 'w') as f:
+        # --fail makes curl exit non-zero on an HTTP error instead of writing
+        # the error page into a file that is about to be handed to tar, and -sS
+        # keeps the stderr line from which _CURL_HTTP_STATUS_RE parses the HTTP
+        # status code (without relying on curl >= 7.63's %{stderr}). ssh hands
+        # the command to the remote shell, so the URL, which embeds the build
+        # label and a '?', is quoted.
+        remote_cmd = 'curl --fail -sS --max-time %d %s' % (
+                _SSH_CURL_MAX_TIME_SECONDS, utils.sh_quote_word(url))
+        cmd = [
+                'ssh',
+                '-n',
+                '-o',
+                'BatchMode=yes',
+                '-o',
+                'ConnectTimeout=%d' % _REQUEST_TIMEOUT_SECONDS,
+                '-o',
+                'ServerAliveInterval=30',
+                '-o',
+                'ServerAliveCountMax=3',
+                self._ds.hostname,
+                remote_cmd,
+        ]
+        with open(dep_path, 'wb') as f:
             proc = subprocess.Popen(cmd, stdout=f, stderr=subprocess.PIPE)
             _, err = proc.communicate()
-            if proc.returncode != 0:
-                raise TelemetrySetupError(
-                        'The command: %s finished with returncode %s and '
-                        'errors as following: %s. The telemetry dependency '
-                        'could not be downloaded.' %
-                        (' '.join(cmd), proc.returncode, err))
+        err = err.decode('utf-8', 'replace')
+
+        match = _CURL_HTTP_STATUS_RE.search(err)
+        http_code = match.group(1) if match else ''
+        if packages.is_http_not_found(proc.returncode, http_code):
+            # Same meaning as 404/410 over the regular path: this build does
+            # not publish the file.
+            logging.debug('The request %s returned HTTP %s (not found).', url,
+                          http_code)
+            self._RemoveQuietly(dep_path)
+            return None
+
+        if proc.returncode != 0:
+            self._RemoveQuietly(dep_path)
+            raise TelemetrySetupError(
+                    'The command: %s finished with returncode %s and '
+                    'errors as following: %s. The telemetry dependency '
+                    'could not be downloaded.' %
+                    (' '.join(cmd), proc.returncode, err.strip()))
+        logging.info('Downloaded telemetry dependency %s from %s via SSH.',
+                     os.path.basename(dep_path), url)
         return dep_path
+
+    def _RemoveQuietly(self, path):
+        """Deletes a file, ignoring failures.
+
+        Args:
+          path: Full path to the file to delete.
+        """
+        try:
+            os.remove(path)
+        except OSError as e:
+            logging.debug('Could not remove %s: %s', path, e)
 
     def _ExtractTarball(self, tarball_path, dest_path):
         """Extracts the given tarball into the destination directory.
+
+        The decompressor is chosen from the file name rather than left to tar's
+        own detection, which only recognizes zstd on GNU tar 1.31 or newer.
 
         Args:
           tarball_path: Full path to the tarball to be extracted.
@@ -223,17 +337,31 @@ class TelemetrySetup(object):
           TelemetrySetupError if the method is unable to extract the tarball for
               any reason.
         """
-        cmd = ['tar', 'xf', tarball_path, '--directory', dest_path]
+        if tarball_path.endswith(packages.ZSTD_TARBALL_SUFFIX):
+            decompress = ['-I', 'zstd']
+        elif tarball_path.endswith(packages.BZIP2_TARBALL_SUFFIX):
+            decompress = ['-j']
+        else:
+            raise TelemetrySetupError('Unsupported tarball format: %s' %
+                                      tarball_path)
+        cmd = (['tar', '--no-same-owner', '-x'] + decompress +
+               ['-f', tarball_path, '--directory', dest_path])
+        logging.info('Extracting telemetry dependency: %s', ' '.join(cmd))
         try:
             proc = subprocess.Popen(cmd,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-            proc.communicate()
+            _, err = proc.communicate()
         except Exception as e:
             shutil.rmtree(dest_path)
             raise TelemetrySetupError(
                     'An exception occurred while trying to untar %s into %s: %s'
                     % (tarball_path, dest_path, str(e)))
+        if proc.returncode != 0:
+            raise TelemetrySetupError(
+                    'tar exited with %d while extracting %s into %s: %s' %
+                    (proc.returncode, tarball_path, dest_path,
+                     err.decode('utf-8', 'replace').strip()))
 
     def _MkDirP(self, path):
         """Recursively creates the given directory.

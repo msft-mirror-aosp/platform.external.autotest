@@ -20,6 +20,7 @@ import numpy
 
 import common
 from autotest_lib.client.common_lib import error, utils
+from autotest_lib.server.cros import telemetry_deploy
 from autotest_lib.server.cros import telemetry_setup
 
 TELEMETRY_RUN_BENCHMARKS_SCRIPT = 'tools/perf/run_benchmark'
@@ -27,7 +28,11 @@ TELEMETRY_RUN_TESTS_SCRIPT = 'tools/telemetry/run_tests'
 TELEMETRY_RUN_GPU_TESTS_SCRIPT = 'content/test/gpu/run_gpu_integration_test.py'
 TELEMETRY_TIMEOUT_MINS = 150
 
-DUT_CHROME_ROOT = '/usr/local/telemetry/src'
+# The same directory telemetry_deploy writes to. Aliased rather than repeated:
+# this module deploys to one constant and then execs out of the other, and if
+# they ever disagreed the failure would be "deploy succeeded, benchmark not
+# found".
+DUT_CHROME_ROOT = telemetry_deploy.TELEMETRY_DUT_SRC
 
 CHART_JSON_RESULT = 'results-chart.json'
 HISTOGRAM_SET_RESULT = 'histograms.json'
@@ -127,6 +132,9 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         self._telemetry_on_dut = telemetry_on_dut
         self._benchmark_deps = None
         self._is_lacros = is_lacros
+        # Whether this runner deployed Telemetry to the DUT, and is therefore
+        # responsible for removing it again.
+        self._deployed_telemetry = False
         logging.debug('Telemetry Path: %s', self._telemetry_path)
 
     def __enter__(self):
@@ -135,6 +143,62 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Called while exiting context manager."""
+        self._cleanup_telemetry_on_dut()
+
+    def _deploy_kwargs(self):
+        """Returns extra arguments for telemetry_deploy.ensure_telemetry_on_dut.
+
+        Overridden by subclasses that know which build and bucket the drone-side
+        tree was assembled from, so the DUT-side tree matches it.
+
+        @returns A dict of keyword arguments.
+        """
+        return {}
+
+    def _ensure_telemetry_on_dut(self, ignore_telemetry_on_dut=False):
+        """Deploys Telemetry to the DUT if it is not already there.
+
+        Test images have historically shipped Telemetry in the stateful
+        partition, in which case this is a no-op. It only does work on images
+        that do not, which is the direction images are moving in.
+
+        @param ignore_telemetry_on_dut: Deploy even when telemetry_on_dut is
+                                        False. Used by entry points that execute
+                                        on the DUT unconditionally, whatever the
+                                        mode says.
+
+        @raises error.AutotestError: If Telemetry was needed but could not be
+                                     deployed.
+        """
+        if not ignore_telemetry_on_dut and not self._telemetry_on_dut:
+            return
+
+        try:
+            deployed = telemetry_deploy.ensure_telemetry_on_dut(
+                    self._host, **self._deploy_kwargs())
+        except telemetry_deploy.TelemetryDeployError as e:
+            # Attributed as infra rather than as a test failure, matching how
+            # DroneTelemetryRunner._setup_telemetry() reports the equivalent
+            # drone-side failure.
+            raise error.AutotestError(
+                    'Telemetry could not be deployed to %s: %s' %
+                    (self._host.hostname, e)) from e
+
+        if deployed:
+            self._deployed_telemetry = True
+
+    def _cleanup_telemetry_on_dut(self):
+        """Removes Telemetry from the DUT, but only if this runner put it there.
+
+        Telemetry that came from the image is left alone: removing it would
+        surprise the next test to run on the same DUT, which may well be relying
+        on it being present.
+        """
+        if not self._deployed_telemetry:
+            return
+
+        telemetry_deploy.cleanup_telemetry_on_dut(self._host)
+        self._deployed_telemetry = False
 
     @abc.abstractmethod
     def _setup_telemetry(self):
@@ -403,6 +467,9 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         if self._telemetry_on_dut:
             telemetry_script = os.path.join(DUT_CHROME_ROOT,
                                             TELEMETRY_RUN_BENCHMARKS_SCRIPT)
+            # Must happen before _ensure_deps, which rsyncs benchmark data into
+            # this tree and so needs it to already exist.
+            self._ensure_telemetry_on_dut()
             self._ensure_deps(self._host, benchmark)
         else:
             telemetry_script = os.path.join(self._telemetry_path,
@@ -439,6 +506,9 @@ class TelemetryRunner(six.with_metaclass(abc.ABCMeta, object)):
         @returns A TelemetryResult instance with the results of this telemetry
                  execution.
         """
+        # This entry point always runs the harness on the DUT, whatever
+        # telemetry_on_dut says, so Telemetry is always required there.
+        self._ensure_telemetry_on_dut(ignore_telemetry_on_dut=True)
         script = os.path.join(DUT_CHROME_ROOT, TELEMETRY_RUN_GPU_TESTS_SCRIPT)
         cmd = [
                 self._host.ssh_command(alive_interval=900,
@@ -694,6 +764,7 @@ class DroneTelemetryRunner(TelemetryRunner):
                                          is None.
         """
         self._telemetry_setup = None
+        self._build = None
         self._override_setup_gs_bucket = override_setup_gs_bucket
         super(DroneTelemetryRunner, self).__init__(*args, **kwargs)
 
@@ -703,8 +774,14 @@ class DroneTelemetryRunner(TelemetryRunner):
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Called while exiting context manager; cleans up temp files."""
-        logging.info('Cleaning up the telemetry environment on the drone.')
-        self._telemetry_setup.Cleanup()
+        try:
+            logging.info('Cleaning up the telemetry environment on the drone.')
+            self._telemetry_setup.Cleanup()
+        finally:
+            # Still remove anything we deployed to the DUT, even if the drone
+            # side failed to clean up.
+            super(DroneTelemetryRunner, self).__exit__(exc_type, exc_value,
+                                                       traceback)
 
     def _setup_telemetry(self):
         """Setup Telemetry on the drone."""
@@ -716,6 +793,7 @@ class DroneTelemetryRunner(TelemetryRunner):
             raise error.AutotestError('Failed to grab build for host %s.' %
                                       self._host.host_port)
 
+        self._build = info.build
         logging.debug('Setting up telemetry for build: %s', info.build)
         try:
             self._telemetry_setup = telemetry_setup.TelemetrySetup(
@@ -726,3 +804,18 @@ class DroneTelemetryRunner(TelemetryRunner):
         except telemetry_setup.TelemetrySetupError as e:
             raise error.AutotestError('Telemetry Environment could not be '
                                       'setup: %s.' % e)
+
+    def _deploy_kwargs(self):
+        """Pins the DUT-side tree to the same build and bucket as the drone's.
+
+        Without this the DUT-side deploy would re-read the host info store and
+        default to the production bucket, so a staging run could end up with the
+        drone harness and the DUT harness on different builds -- or with a 404
+        for a build that only exists in staging.
+
+        @returns A dict of keyword arguments for ensure_telemetry_on_dut.
+        """
+        return {
+                'build': self._build,
+                'bucket': self._override_setup_gs_bucket,
+        }

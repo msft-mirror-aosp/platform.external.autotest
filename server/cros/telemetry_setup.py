@@ -23,9 +23,17 @@ import requests
 
 _READ_BUFFER_SIZE_BYTES = 1024 * 1024  # 1 MB
 
-
 DEFAULT_DEPS_BUCKET = "chromeos-image-archive"
 STAGING_DEPS_BUCKET = "staging-chromeos-image-archive"
+
+# Partial devserver URL for pulling a single dependency tarball out of a build's
+# autotest_packages.tar. Formatted with
+# (devserver_url, gs_bucket, build, tarball_name).
+#
+# Shared with server/cros/telemetry_deploy.py, which uses the same endpoint to
+# fetch the Telemetry dep directly onto a DUT.
+STATIC_URL_TEMPLATE = (
+        '%s/extract/%s/%s/autotest_packages.tar?file=autotest/packages/%s')
 
 
 @contextlib.contextmanager
@@ -69,8 +77,7 @@ class TelemetrySetup(object):
     ]
 
     # Partial devserver URLs.
-    _STATIC_URL_TEMPLATE = (
-            '%s/extract/%s/%s/autotest_packages.tar?file=autotest/packages/%s')
+    _STATIC_URL_TEMPLATE = STATIC_URL_TEMPLATE
 
     def __init__(self, hostname, build, override_gs_bucket=None):
         """Initializes the TelemetrySetup class.

@@ -58,6 +58,7 @@ def get_exclude_string(client_dir):
 
 
 def parse_args():
+    """Parse command-line options for packager."""
     parser = optparse.OptionParser()
     parser.add_option("-d", "--dependency", help="package the dependency"
                       " from client/deps directory and upload to the repo",
@@ -138,10 +139,12 @@ def process_packages(pkgmgr, pkg_type, pkg_names, src_dir,
             pkg_dir = os.path.join(src_dir, name)
 
         pkg_name = pkgmgr.get_tarball_name(name, pkg_type)
+        all_pkg_names = pkgmgr.get_tarball_names(name, pkg_type)
 
-        exclude_string_tar = ((
-            ' --exclude="**%s" --exclude="**%s.checksum" ' %
-            (pkg_name, pkg_name)) + exclude_string)
+        exclude_tarballs = ' '.join(
+                '--exclude="**%s" --exclude="**%s.checksum"' %
+                (candidate, candidate) for candidate in all_pkg_names)
+        exclude_string_tar = ' %s %s' % (exclude_tarballs, exclude_string)
         if action == ACTION_TAR_ONLY:
             # We don't want any pre-existing tarballs and checksums to
             # be repackaged, so we should purge these.
@@ -193,7 +196,16 @@ def process_packages(pkgmgr, pkg_type, pkg_names, src_dir,
                 # remove the temporary directory
                 shutil.rmtree(temp_dir)
         elif action == ACTION_REMOVE:
-            pkgmgr.remove_pkg(pkg_name, remove_checksum=True)
+            removed = False
+            remove_errors = []
+            for candidate in all_pkg_names:
+                try:
+                    pkgmgr.remove_pkg(candidate, remove_checksum=True)
+                    removed = True
+                except error.PackageRemoveError as e:
+                    remove_errors.append(str(e))
+            if not removed and remove_errors:
+                raise error.PackageRemoveError('; '.join(remove_errors))
         print("Done.")
 
 
@@ -216,17 +228,19 @@ def tar_packages(pkgmgr, pkg_type, pkg_names, src_dir, temp_dir):
             pkg_dir = os.path.join(src_dir, name)
 
         pkg_name = pkgmgr.get_tarball_name(name, pkg_type)
+        all_pkg_names = pkgmgr.get_tarball_names(name, pkg_type)
 
         # We don't want any pre-existing tarballs and checksums to
         # be repackaged, so we should purge these.
-        exclude_string_tar = ((
-            ' --exclude="**%s" --exclude="**%s.checksum" ' %
-            (pkg_name, pkg_name)) + exclude_string)
+        exclude_tarballs = ' '.join(
+                '--exclude="**%s" --exclude="**%s.checksum"' %
+                (candidate, candidate) for candidate in all_pkg_names)
+        exclude_string_tar = ' %s %s' % (exclude_tarballs, exclude_string)
         # Check if tarball already exists. If it does, don't duplicate
         # the effort.
         tarball_path = os.path.join(pkg_dir, pkg_name)
         if os.path.exists(tarball_path):
-          print("tar_packages: Tarball %s already exists" % tarball_path)
+            print("tar_packages: Tarball %s already exists" % tarball_path)
         else:
             tarball_path = pkgmgr.tar_package(pkg_name, pkg_dir,
                                               temp_dir, exclude_string_tar)
@@ -313,6 +327,7 @@ def get_test_dir(name, client_dir):
 
 
 def main():
+    """Entry point for packager."""
     # get options and args
     options, args = parse_args()
 

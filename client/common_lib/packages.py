@@ -42,6 +42,91 @@ def has_pbzip2():
 _PBZIP2_AVAILABLE = has_pbzip2()
 
 
+def has_zstd():
+    '''Check if zstd is available on this system.'''
+    try:
+        os_dep.command('zstd')
+    except ValueError:
+        return False
+    return True
+
+
+BZIP2_TARBALL_SUFFIX = '.tar.bz2'
+ZSTD_TARBALL_SUFFIX = '.tar.zst'
+
+# Suffix used for tarballs this module creates. Before flipping this to
+# ZSTD_TARBALL_SUFFIX, every reader and build consumer must support .tar.zst
+# and have the zstd binary available (see b/563203733):
+#   - client/common_lib/packages.py, client/common_lib/test.py,
+#     server/autotest.py, server/cros/telemetry_deploy.py, utils/packager.py
+#   - server/cros/telemetry_setup.py (here and in
+#     chromiumos/infra/autotest-drone)
+#   - chromite/service/packages.py and src/platform/dev/devserver.py
+#   - chromiumos-overlay: chromeos-base/telemetry,
+#     chromeos-base/autotest-client, eclass/autotest.eclass (doins and
+#     BDEPEND="app-arch/zstd"), and eclass/autotest-deponly.eclass
+#     (BDEPEND="app-arch/zstd")
+#   - older source images in cross-version AU tests
+DEFAULT_TARBALL_SUFFIX = BZIP2_TARBALL_SUFFIX
+
+
+def _ordered_tarball_suffixes():
+    """Returns supported tarball suffixes with DEFAULT_TARBALL_SUFFIX first."""
+    return (DEFAULT_TARBALL_SUFFIX, ) + tuple(
+            s for s in (BZIP2_TARBALL_SUFFIX, ZSTD_TARBALL_SUFFIX)
+            if s != DEFAULT_TARBALL_SUFFIX)
+
+
+# Compression suffixes a package tarball can carry. Derived from
+# DEFAULT_TARBALL_SUFFIX so that when a caller probes without a checksum
+# manifest, it tries the current default format first and flipping
+# DEFAULT_TARBALL_SUFFIX automatically moves the fallback probe onto the
+# non-default format.
+TARBALL_SUFFIXES = _ordered_tarball_suffixes()
+
+# Arguments to zstd when creating a tarball. tar_package is called both at
+# build time (utils/packager.py) and on the fly per job (server/autotest.py
+# _send_tarball), so -10 is used rather than -19: it keeps compression time
+# close to pbzip2 while preserving the decompression speedup.
+#
+# Do not raise --long above 27: because tar streams into zstd over a pipe, the
+# frame header always declares the full 2**27 (128 MiB) window, which is zstd's
+# default decoder limit. --long=28 or higher would require every reader to pass
+# --long to the decoder.
+_ZSTD_ARGS = '-10 --long=27'
+
+# curl --fail exits with 22 on an HTTP status >= 400. Also used by the
+# telemetry dependency downloaders in server/cros.
+CURL_HTTP_ERROR_EXIT = 22
+_HTTP_NOT_FOUND_CODES = frozenset(('404', '410'))
+
+
+def is_http_not_found(exit_status, http_code):
+    """True if curl --fail -w '%{http_code}' reported a missing object."""
+    return (exit_status == CURL_HTTP_ERROR_EXIT and http_code is not None
+            and str(http_code).strip() in _HTTP_NOT_FOUND_CODES)
+
+
+# Outcomes returned by BasePackageManager._install_candidate().
+_CANDIDATE_INSTALLED = 'installed'
+_CANDIDATE_NOT_FOUND = 'not_found'
+_CANDIDATE_REPO_ERROR = 'repo_error'
+_CANDIDATE_UNTAR_FAILED = 'untar_failed'
+
+_TARBALL_SUFFIX_PATTERN = '|'.join(re.escape(s) for s in TARBALL_SUFFIXES)
+_TARBALL_NAME_RE = re.compile(r'^([^-]*)-(.*)(?:%s)$' %
+                              _TARBALL_SUFFIX_PATTERN)
+_TARBALL_SUFFIX_SUB_RE = re.compile(r'(?:%s)' % _TARBALL_SUFFIX_PATTERN)
+
+
+def strip_tarball_suffix(filename):
+    """Returns filename without its tarball suffix, or None if it has none."""
+    for suffix in TARBALL_SUFFIXES:
+        if filename.endswith(suffix):
+            return filename[:-len(suffix)]
+    return None
+
+
 def parse_ssh_path(repo):
     '''
     Parse ssh://xx@xx/path/to/ and return a tuple with host_line and
@@ -141,6 +226,10 @@ class RepositoryFetcher(object):
 
 
 class HttpFetcher(RepositoryFetcher):
+    # Note: --fail is omitted from curl_cmd_pattern because _quick_http_test()
+    # curls the base repository URL, which may return an HTTP error on servers
+    # with directory listing disabled; format_cmd(..., fail=True) adds --fail
+    # and -w '%{http_code}' when fetching a package file.
     curl_cmd_pattern = 'curl --connect-timeout 15 -s %s -o %s'
 
 
@@ -206,7 +295,7 @@ class HttpFetcher(RepositoryFetcher):
             package_url = '%s?gs_bucket=%s' % (
                     package_url, gs_bucket[len('gs://'):].rstrip('/'))
         try:
-            cmd = self.format_cmd(package_url, dest_path)
+            cmd = self.format_cmd(package_url, dest_path, fail=True)
             result = self.run_command(cmd,
                                       _run_command_dargs={'timeout': 1200})
 
@@ -216,18 +305,36 @@ class HttpFetcher(RepositoryFetcher):
 
             logging.info('Successfully fetched %s from %s', filename,
                          package_url)
-        except error.CmdError as e:
+        except (error.CmdError, error.AutoservRunError) as e:
             # remove whatever junk was retrieved when the get failed
             self.run_command('rm -f %s' % dest_path)
 
-            raise error.PackageFetchError('%s not found in %s\n%s'
-                    'curl error code: %d' % (filename, package_url,
-                    e.result_obj.stderr, e.result_obj.exit_status))
+            result_obj = getattr(e, 'result_obj', None)
+            exit_status = getattr(result_obj, 'exit_status', None)
+            http_code = (getattr(result_obj, 'stdout', '') or '').strip()
+            stderr = getattr(result_obj, 'stderr', '')
+            if is_http_not_found(exit_status, http_code):
+                raise error.PackageNotFoundError(
+                        '%s not found in %s (HTTP %s)\n%s'
+                        'curl error code: %s' %
+                        (filename, package_url, http_code, stderr,
+                         exit_status))
+            status_detail = ((' (HTTP %s)' % http_code)
+                             if http_code and http_code != '000' else '')
+            raise error.PackageFetchError(
+                    '%s could not be fetched from %s%s\n%s'
+                    'curl error code: %s' %
+                    (filename, package_url, status_detail, stderr,
+                     exit_status))
 
     @classmethod
-    def format_cmd(cls, url, dest_path):
+    def format_cmd(cls, url, dest_path, fail=False):
         """Format the command to fetch the package."""
         cmd = cls.curl_cmd_pattern % (url, dest_path)
+        if fail:
+            if ' --fail ' not in cmd:
+                cmd += ' --fail'
+            cmd += " -w '%{http_code}'"
         headers = '-H X-SWARMING-TASK-ID:%s -H X-BBID:%s' % (
                 os.environ.get('SWARMING_TASK_ID', 'none'),
                 os.environ.get('BUILD_BUCKET_ID', 'none'))
@@ -246,12 +353,20 @@ class LocalFilesystemFetcher(RepositoryFetcher):
         local_path = os.path.join(self.url, filename)
         try:
             self.run_command('cp %s %s' % (local_path, dest_path))
-            logging.debug('Successfully fetched %s from %s', filename,
-                          local_path)
-        except error.CmdError as e:
+            logging.info('Successfully fetched %s from %s', filename,
+                         local_path)
+        except (error.CmdError, error.AutoservRunError) as e:
+            try:
+                self.run_command('test -e %s' % local_path)
+            except (error.CmdError, error.AutoservRunError) as test_err:
+                result_obj = getattr(test_err, 'result_obj', None)
+                if getattr(result_obj, 'exit_status', None) == 1:
+                    raise error.PackageNotFoundError(
+                            'Package %s does not exist in %s' %
+                            (filename, self.url))
             raise error.PackageFetchError(
-                'Package %s could not be fetched from %s'
-                % (filename, self.url), e)
+                    'Package %s could not be fetched from %s' %
+                    (filename, self.url), e)
 
 
 class BasePackageManager(object):
@@ -278,6 +393,13 @@ class BasePackageManager(object):
         '''
         # In memory dictionary that stores the checksum's of packages
         self._checksum_dict = {}
+        # Sticky once fetching packages.checksum fails so a single manager
+        # instance does not repeatedly stall on an unreachable repository;
+        # reset when add_repository() is called.
+        self._checksum_fetch_failed = False
+        # Compression suffixes whose extractor failed on the target machine,
+        # deprioritized on subsequent install_pkg() calls on this manager.
+        self._unusable_suffixes = set()
 
         self.pkgmgr_dir = pkgmgr_dir
         self.do_locking = do_locking
@@ -326,6 +448,7 @@ class BasePackageManager(object):
             self.repositories.append(repo)
         else:
             raise TypeError("repo must be RepositoryFetcher or url string")
+        self._checksum_fetch_failed = False
 
     def exists(self, destpath, target='file'):
         """Check if a file or directory exists using `test`.
@@ -397,6 +520,84 @@ class BasePackageManager(object):
                                    log=False)
 
 
+    def _resolve_fetchers(self, repo_url=None):
+        """Returns the fetchers to try, most preferred first."""
+        fetchers = ([self.get_fetcher(repo_url)] if repo_url else list(
+                reversed(self.repositories)))
+        if not fetchers:
+            raise error.PackageFetchError("No repository urls specified")
+        return fetchers
+
+    def _fetch_from(self,
+                    fetcher,
+                    pkg_name,
+                    dest_path,
+                    use_checksum=False,
+                    pkg_exists=None):
+        """Fetches pkg_name into dest_path from a single fetcher if needed."""
+        if use_checksum and pkg_exists is None:
+            pkg_exists = self.exists(dest_path)
+        need_to_fetch = (not use_checksum or not pkg_exists
+                         or not self.compare_checksum(dest_path))
+        if need_to_fetch:
+            fetcher.fetch_pkg_file(pkg_name, dest_path)
+            if use_checksum:
+                self.update_checksum(dest_path)
+
+    def _install_candidate(self, fetcher, candidate, fetch_dir, install_dir,
+                           preserve_install_dir, exists_by_candidate):
+        """Fetches and extracts one candidate tarball from fetcher.
+
+        @returns A (status, error) pair where status is one of
+                 _CANDIDATE_INSTALLED, _CANDIDATE_NOT_FOUND,
+                 _CANDIDATE_REPO_ERROR, or _CANDIDATE_UNTAR_FAILED.
+        @raises CmdError, AutoservRunError if preparing install_dir or
+                extracting a non-zstd tarball fails.
+        """
+        candidate_path = os.path.join(fetch_dir, candidate)
+        if candidate not in exists_by_candidate:
+            exists_by_candidate[candidate] = self.exists(candidate_path)
+        try:
+            self._fetch_from(fetcher,
+                             candidate,
+                             candidate_path,
+                             use_checksum=True,
+                             pkg_exists=exists_by_candidate[candidate])
+        except error.PackageNotFoundError as e:
+            exists_by_candidate[candidate] = False
+            logging.debug('%s not found in %s: %s', candidate, fetcher.url, e)
+            return _CANDIDATE_NOT_FOUND, e
+        except (error.PackageFetchError, error.AutoservRunError) as e:
+            exists_by_candidate[candidate] = False
+            logging.debug(
+                    'Fetching %s from %s failed, skipping remaining '
+                    'candidates for this repo: %s', candidate, fetcher.url, e)
+            return _CANDIDATE_REPO_ERROR, e
+        exists_by_candidate[candidate] = True
+
+        # check to see if the install_dir exists and if it does
+        # then check to see if the .checksum file is the latest
+        if (self.exists(install_dir, target='dir')
+                    and not self.untar_required(candidate_path, install_dir)):
+            return _CANDIDATE_INSTALLED, None
+
+        # untar the package into install_dir and
+        # update the checksum in that directory
+        if not preserve_install_dir:
+            # Make sure we clean up the install_dir
+            self._run_command('rm -rf %s' % install_dir)
+        self._run_command('mkdir -p %s' % install_dir)
+        try:
+            self.untar_pkg(candidate_path, install_dir)
+        except (error.CmdError, error.AutoservRunError) as e:
+            if candidate.endswith(ZSTD_TARBALL_SUFFIX):
+                logging.warning(
+                        'Extracting %s failed, trying next candidate: %s',
+                        candidate, e)
+                return _CANDIDATE_UNTAR_FAILED, e
+            raise
+        return _CANDIDATE_INSTALLED, None
+
     def install_pkg(self, name, pkg_type, fetch_dir, install_dir,
                     preserve_install_dir=False, repo_url=None):
         '''
@@ -404,7 +605,7 @@ class BasePackageManager(object):
         preserve_install_dir is specified as True.
         Fetch the package into the pkg_dir. Untar the package into install_dir
         The assumption is that packages are of the form :
-        <pkg_type>.<pkg_name>.tar.bz2
+        <pkg_type>-<pkg_name>.tar.bz2 or <pkg_type>-<pkg_name>.tar.zst
         name        : name of the package
         type        : type of the package
         fetch_dir   : The directory into which the package tarball will be
@@ -427,26 +628,58 @@ class BasePackageManager(object):
 
             self._run_command('mkdir -p %s' % fetch_dir)
 
-            pkg_name = self.get_tarball_name(name, pkg_type)
-            fetch_path = os.path.join(fetch_dir, pkg_name)
             try:
-                # Fetch the package into fetch_dir
-                self.fetch_pkg(pkg_name, fetch_path, use_checksum=True)
+                # If packages.checksum is already in memory or on disk, try
+                # any format it lists first while keeping unlisted formats as
+                # fallbacks. Avoid fetching packages.checksum up front when it
+                # is not cached so an uncached install does not make an extra
+                # network request (in the lab, _install_using_packaging deletes
+                # packages.checksum before installing client-autotest, and the
+                # published manifest only lists client-autotest).
+                names = self.get_tarball_names(name, pkg_type)
+                checksums = {}
+                if not repo_url and (self._checksum_dict or self.exists(
+                        self._get_checksum_file_path())):
+                    checksums = self._get_checksum_dict()
+                unusable_suffixes = tuple(self._unusable_suffixes)
+                candidates = sorted(
+                        names,
+                        key=lambda n:
+                        (n.endswith(unusable_suffixes), n not in checksums))
+                fetchers = self._resolve_fetchers(repo_url)
 
-                # check to see if the install_dir exists and if it does
-                # then check to see if the .checksum file is the latest
-                if (self.exists(install_dir, target='dir') and
-                    not self.untar_required(fetch_path, install_dir)):
-                    return
+                fetch_errors = []
+                exists_by_candidate = {}
+                unusable = set()
+                untar_error = None
+                for fetcher in fetchers:
+                    for candidate in candidates:
+                        if candidate in unusable:
+                            continue
+                        status, err = self._install_candidate(
+                                fetcher, candidate, fetch_dir, install_dir,
+                                preserve_install_dir, exists_by_candidate)
+                        if status == _CANDIDATE_INSTALLED:
+                            return
+                        if status == _CANDIDATE_UNTAR_FAILED:
+                            untar_error = err
+                            unusable.add(candidate)
+                            self._unusable_suffixes.add(ZSTD_TARBALL_SUFFIX)
+                            continue
+                        fetch_errors.append(str(err))
+                        if status == _CANDIDATE_REPO_ERROR:
+                            break
 
-                # untar the package into install_dir and
-                # update the checksum in that directory
-                if not preserve_install_dir:
-                    # Make sure we clean up the install_dir
-                    self._run_command('rm -rf %s' % install_dir)
-                self._run_command('mkdir -p %s' % install_dir)
-
-                self.untar_pkg(fetch_path, install_dir)
+                if untar_error is not None:
+                    if fetch_errors:
+                        logging.warning(
+                                'Fallback fetches after extraction error '
+                                'also failed: %s', '; '.join(fetch_errors))
+                    raise untar_error
+                raise error.PackageFetchError(
+                        '%s-%s could not be fetched in any supported '
+                        'compression format: %s' %
+                        (pkg_type, name, '; '.join(fetch_errors)))
 
             except error.PackageFetchError as why:
                 raise error.PackageInstallError(
@@ -481,37 +714,30 @@ class BasePackageManager(object):
         # See if the package was already fetched earlier, if so
         # the checksums need to be compared and the package is now
         # fetched only if they differ.
-        pkg_exists = self.exists(dest_path)
-
-        # if a repository location is explicitly provided, fetch the package
-        # from there and return
-        if repo_url:
-            repositories = [self.get_fetcher(repo_url)]
-        elif self.repositories:
-            repositories = self.repositories
-        else:
-            raise error.PackageFetchError("No repository urls specified")
+        pkg_exists = self.exists(dest_path) if use_checksum else False
 
         # install the package from the package repos, try the repos in
         # reverse order, assuming that the 'newest' repos are most desirable
-        for fetcher in reversed(repositories):
+        fetchers = self._resolve_fetchers(repo_url)
+        for fetcher in fetchers:
             try:
-                # Fetch the package if it is not there, the checksum does
-                # not match, or checksums are disabled entirely
-                need_to_fetch = (
-                        not use_checksum or not pkg_exists
-                        or not self.compare_checksum(dest_path))
-                if need_to_fetch:
-                    fetcher.fetch_pkg_file(pkg_name, dest_path)
-                    # update checksum so we won't refetch next time.
-                    if use_checksum:
-                        self.update_checksum(dest_path)
+                self._fetch_from(fetcher,
+                                 pkg_name,
+                                 dest_path,
+                                 use_checksum=use_checksum,
+                                 pkg_exists=pkg_exists)
+                if pkg_name == CHECKSUM_FILE:
+                    self._checksum_fetch_failed = False
                 return
             except (error.PackageFetchError, error.AutoservRunError) as e:
-                # The package could not be found in this repo, continue looking
+                # The package could not be fetched from this repo; reset
+                # pkg_exists since a failed fetch removes any cached dest_path.
+                pkg_exists = False
                 logging.debug(e)
 
-        repo_url_list = [repo.url for repo in repositories]
+        if pkg_name == CHECKSUM_FILE:
+            self._checksum_fetch_failed = True
+        repo_url_list = [fetcher.url for fetcher in reversed(fetchers)]
         message = ('%s could not be fetched from any of the repos %s' %
                    (pkg_name, repo_url_list))
         logging.debug(message)
@@ -717,11 +943,13 @@ class BasePackageManager(object):
         the checksum file.
         The checksum file is assumed to be present in self.pkgmgr_dir
         '''
-        checksum_path = self._get_checksum_file_path()
         if not self._checksum_dict:
+            checksum_path = self._get_checksum_file_path()
             # Fetch the checksum file
             try:
                 if not self.exists(checksum_path):
+                    if self._checksum_fetch_failed:
+                        return {}
                     # The packages checksum file does not exist locally.
                     # See if it is present in the repositories.
                     self.fetch_pkg(CHECKSUM_FILE, checksum_path)
@@ -733,6 +961,7 @@ class BasePackageManager(object):
                 # is being uploaded and if it is the first package to be
                 # uploaded to the repos (hence no checksum file created yet)
                 # Return an empty dictionary in that case
+                self._checksum_fetch_failed = True
                 return {}
 
             # Read the checksum file into memory
@@ -841,20 +1070,32 @@ class BasePackageManager(object):
 
     def tar_package(self, pkg_name, src_dir, dest_dir, exclude_string=None):
         '''
-        Create a tar.bz2 file with the name 'pkg_name' say test-blah.tar.bz2.
+        Create a tarball with the name 'pkg_name' say test-blah.tar.bz2.
+        The compression is taken from the name's suffix, so both '.tar.bz2'
+        and '.tar.zst' names are honoured.
         Excludes the directories specified in exclude_string while tarring
         the source. Returns the tarball path.
         '''
         tarball_path = os.path.join(dest_dir, pkg_name)
         temp_path = tarball_path + '.tmp'
         cmd_list = ['tar', '-cf', temp_path, '-C', src_dir]
-        if _PBZIP2_AVAILABLE:
+        if pkg_name.endswith(ZSTD_TARBALL_SUFFIX):
+            if not has_zstd():
+                raise error.PackagingError('zstd is required to create %s' %
+                                           pkg_name)
+            compression = 'zstd'
+            cmd_list.append("--use-compress-prog='zstd %s'" % _ZSTD_ARGS)
+        elif _PBZIP2_AVAILABLE:
+            compression = 'pbzip2'
             cmd_list.append('--use-compress-prog=pbzip2')
         else:
+            compression = 'bzip2'
             cmd_list.append('-j')
         if exclude_string is not None:
             cmd_list.append(exclude_string)
 
+        logging.info('Creating %s from %s (compression: %s)', pkg_name,
+                     src_dir, compression)
         try:
             utils.system(' '.join(cmd_list))
         except:
@@ -889,10 +1130,20 @@ class BasePackageManager(object):
         ".checksum" file in the dest_dir containing the checksum
         of the tarball. This method
         assumes that the package to be untarred is of the form
-        <name>.tar.bz2
+        <name>.tar.bz2 or <name>.tar.zst
         '''
-        self._run_command('tar --no-same-owner -xjf %s -C %s' %
-                          (tarball_path, dest_dir))
+        if tarball_path.endswith(ZSTD_TARBALL_SUFFIX):
+            compression = 'zstd'
+            compress_flag = '-I zstd -xf'
+        elif tarball_path.endswith(BZIP2_TARBALL_SUFFIX):
+            compression = 'bzip2'
+            compress_flag = '-xjf'
+        else:
+            raise ValueError('Unsupported tarball format: %s' % tarball_path)
+        logging.info('Untarring %s into %s (compression: %s)',
+                     os.path.basename(tarball_path), dest_dir, compression)
+        self._run_command('tar --no-same-owner %s %s -C %s' %
+                          (compress_flag, tarball_path, dest_dir))
         # Put the .checksum file in the install_dir to note
         # where the package came from
         pkg_checksum = self.compute_checksum(tarball_path)
@@ -903,16 +1154,33 @@ class BasePackageManager(object):
 
 
     @staticmethod
-    def get_tarball_name(name, pkg_type):
+    def get_tarball_name(name, pkg_type, suffix=None):
         """Converts a package name and type into a tarball name.
 
         @param name: The name of the package
         @param pkg_type: The type of the package
+        @param suffix: The compression suffix to use, or None for the default
 
         @returns A tarball filename for that specific type of package
         """
         assert '-' not in pkg_type
-        return '%s-%s.tar.bz2' % (pkg_type, name)
+        if suffix is None:
+            suffix = DEFAULT_TARBALL_SUFFIX
+        return '%s-%s%s' % (pkg_type, name, suffix)
+
+    @classmethod
+    def get_tarball_names(cls, name, pkg_type):
+        """Lists the tarball names a package may have, most preferred first.
+
+        @param name: The name of the package
+        @param pkg_type: The type of the package
+
+        @returns A list of candidate tarball filenames
+        """
+        return [
+                cls.get_tarball_name(name, pkg_type, suffix)
+                for suffix in _ordered_tarball_suffixes()
+        ]
 
 
     @staticmethod
@@ -923,8 +1191,12 @@ class BasePackageManager(object):
 
         @returns (name, pkg_type) where name is the package name and pkg_type
             is the package type.
+
+        @raises ValueError if tarball_name does not match a supported format.
         """
-        match = re.search(r'^([^-]*)-(.*)\.tar\.bz2$', tarball_name)
+        match = _TARBALL_NAME_RE.search(tarball_name or '')
+        if not match:
+            raise ValueError('Invalid package tarball name: %s' % tarball_name)
         pkg_type, name = match.groups()
         return name, pkg_type
 
@@ -948,12 +1220,11 @@ class BasePackageManager(object):
 
     def _get_package_name(self, url, regex):
         if not self.is_url(url):
-            if url.endswith('.tar.bz2'):
-                testname = url.replace('.tar.bz2', '')
-                testname = re.sub(r'(\d*)\.', '', testname)
+            stripped = strip_tarball_suffix(url)
+            if stripped is not None:
+                testname = re.sub(r'(\d*)\.', '', stripped)
                 return (testname, testname)
-            else:
-                return ('', url)
+            return ('', url)
 
         match = re.match(regex, url)
         if not match:
@@ -962,7 +1233,7 @@ class BasePackageManager(object):
         # Generate the group prefix.
         group = re.sub(r'\W', '_', group)
         # Drop the extension to get the raw test name.
-        testname = re.sub(r'\.tar\.bz2', '', filename)
+        testname = _TARBALL_SUFFIX_SUB_RE.sub('', filename)
         # Drop any random numbers at the end of the test name if any
         testname = re.sub(r'\.(\d*)', '', testname)
         return (group, testname)

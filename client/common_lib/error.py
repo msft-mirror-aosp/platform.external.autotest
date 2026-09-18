@@ -364,6 +364,10 @@ class PackageFetchError(PackagingError):
     'Raised when there is an error fetching the package'
 
 
+class PackageNotFoundError(PackageFetchError):
+    'Raised when a repository reports a package is absent (e.g. HTTP 404/410)'
+
+
 class PackageRemoveError(PackagingError):
     'Raised when there is an error removing the package'
 

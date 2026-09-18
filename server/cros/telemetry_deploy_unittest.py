@@ -10,6 +10,7 @@ from unittest import mock
 
 import common
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib import packages
 from autotest_lib.server.cros import telemetry_deploy
 
 
@@ -72,9 +73,15 @@ class FakeHost(object):
         for needle in self._timeouts:
             if needle in cmd:
                 return None
-        for needle, status in self._failures.items():
+        for needle, failure in self._failures.items():
             if needle in cmd:
-                return FakeCmdResult(exit_status=status, stderr='boom')
+                if isinstance(failure, tuple):
+                    status, stdout = failure
+                else:
+                    status, stdout = failure, ''
+                return FakeCmdResult(exit_status=status,
+                                     stdout=stdout,
+                                     stderr='boom')
         if cmd.startswith('df '):
             return FakeCmdResult(stdout=self._df_output)
         if cmd.startswith('du '):
@@ -120,6 +127,9 @@ _BZ2, _ZST = [
         next(name for name in telemetry_deploy.TELEMETRY_DEP_TARBALLS
              if name.endswith(suffix)) for suffix in ('.bz2', '.zst')
 ]
+
+# Scripted FakeHost failure for a curl --fail -w '%{http_code}' HTTP 404.
+_HTTP_404 = (packages.CURL_HTTP_ERROR_EXIT, '404')
 
 
 class IsTelemetryOnDutTest(unittest.TestCase):
@@ -646,12 +656,23 @@ class DownloadTest(unittest.TestCase):
         self.assertIn("--output '/tmp/x' 'http://cache/x'", curl)
 
     def test_http_error_is_reported_as_a_missing_payload(self):
-        """Distinguishing a 404 from a dead network is what enables fallback."""
+        """Distinguishing a 404/410 from a 5xx/network error enables fallback."""
+        for code in ('404', '410'):
+            host = FakeHost(
+                    failures={'curl': (packages.CURL_HTTP_ERROR_EXIT, code)})
+            with self.assertRaises(telemetry_deploy._PayloadNotFound):
+                telemetry_deploy._download_one(host, 'http://cache/x',
+                                               '/tmp/x', _BZ2)
+
+    def test_http_5xx_is_not_reported_as_missing(self):
+        """A 503 after retries is a server failure, not an unpublished format."""
         host = FakeHost(
-                failures={'curl': telemetry_deploy._CURL_HTTP_ERROR_EXIT})
-        with self.assertRaises(telemetry_deploy._PayloadNotFound):
+                failures={'curl': (packages.CURL_HTTP_ERROR_EXIT, '503')})
+        with self.assertRaises(telemetry_deploy.TelemetryDeployError) as cm:
             telemetry_deploy._download_one(host, 'http://cache/x', '/tmp/x',
                                            _BZ2)
+        self.assertNotIsInstance(cm.exception,
+                                 telemetry_deploy._PayloadNotFound)
 
     def test_other_failures_are_not_reported_as_missing(self):
         host = FakeHost(failures={'curl': 7})
@@ -695,10 +716,7 @@ class PayloadFormatTest(unittest.TestCase):
     def test_falls_back_to_zstd_when_bzip2_is_not_published(
             self, _enabled, dep_url):
         """The case this fallback exists for: a build past the zstd switch."""
-        host = FakeHost(failures={
-                _ABSENT: 1,
-                _BZ2: telemetry_deploy._CURL_HTTP_ERROR_EXIT
-        })
+        host = FakeHost(failures={_ABSENT: 1, _BZ2: _HTTP_404})
         self.assertTrue(telemetry_deploy.ensure_telemetry_on_dut(host))
         self.assertEqual(self._requested(dep_url), [_BZ2, _ZST])
         tar = host.matching('tar x')[0]
@@ -707,22 +725,21 @@ class PayloadFormatTest(unittest.TestCase):
 
     def test_network_failure_does_not_try_the_next_format(
             self, _enabled, dep_url):
-        """Only an HTTP error means "this build does not publish that".
+        """Only HTTP 404/410 means "this build does not publish that".
 
-        Asking for a different file because the network is down would turn one
-        clear failure into two confusing ones.
+        Asking for a different file because the network or server is down
+        would turn one clear failure into two confusing ones.
         """
-        host = FakeHost(failures={_ABSENT: 1, 'curl': 7})
-        with self.assertRaises(telemetry_deploy.TelemetryDeployError):
-            telemetry_deploy.ensure_telemetry_on_dut(host)
-        self.assertEqual(self._requested(dep_url), [_BZ2])
+        for failure in (7, (packages.CURL_HTTP_ERROR_EXIT, '503')):
+            dep_url.reset_mock()
+            host = FakeHost(failures={_ABSENT: 1, 'curl': failure})
+            with self.assertRaises(telemetry_deploy.TelemetryDeployError):
+                telemetry_deploy.ensure_telemetry_on_dut(host)
+            self.assertEqual(self._requested(dep_url), [_BZ2])
 
     def test_no_published_format_names_every_candidate(self, _enabled,
                                                        _dep_url):
-        host = FakeHost(failures={
-                _ABSENT: 1,
-                'curl': telemetry_deploy._CURL_HTTP_ERROR_EXIT
-        })
+        host = FakeHost(failures={_ABSENT: 1, 'curl': _HTTP_404})
         with self.assertRaises(telemetry_deploy.TelemetryDeployError) as cm:
             telemetry_deploy.ensure_telemetry_on_dut(host)
         for tarball in telemetry_deploy.TELEMETRY_DEP_TARBALLS:

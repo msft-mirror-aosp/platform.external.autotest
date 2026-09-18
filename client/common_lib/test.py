@@ -41,6 +41,7 @@ import traceback
 
 from autotest_lib.client.bin import utils
 from autotest_lib.client.common_lib import error
+from autotest_lib.client.common_lib import packages
 from autotest_lib.client.common_lib import utils as client_utils
 
 try:
@@ -842,7 +843,7 @@ def runtest(job,
     global_namespace = global_namespace.copy()
     # if this is not a plain test name then download and install the
     # specified test
-    if url.endswith('.tar.bz2'):
+    if packages.strip_tarball_suffix(url) is not None:
         (testgroup, testname) = _installtest(job, url)
         bindir = os.path.join(job.testdir, 'download', testgroup, testname)
         importdir = os.path.join(job.testdir, 'download')

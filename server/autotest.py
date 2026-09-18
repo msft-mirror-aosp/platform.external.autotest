@@ -1578,7 +1578,7 @@ class client_logger(object):
             pkg_name, dest_path, fifo_path = fetch_package_match.groups()
             serve_packages = global_config.global_config.get_config_value(
                 "PACKAGES", "serve_packages_from_autoserv", type=bool)
-            if serve_packages and pkg_name.endswith(".tar.bz2"):
+            if serve_packages and packages.strip_tarball_suffix(pkg_name):
                 try:
                     self._send_tarball(pkg_name, dest_path)
                 except Exception:

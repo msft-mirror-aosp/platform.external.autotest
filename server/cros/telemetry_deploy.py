@@ -48,6 +48,7 @@ import time
 
 import common
 from autotest_lib.client.common_lib import global_config
+from autotest_lib.client.common_lib import packages
 from autotest_lib.client.common_lib import utils
 from autotest_lib.client.common_lib.cros import dev_server
 from autotest_lib.server.cros import telemetry_setup
@@ -80,26 +81,17 @@ _SCRATCH_PATHS = (_SCRATCH_DIR, _STAGING_DIR)
 # autotest/packages/<name> and is not available as a standalone GCS object, so
 # it has to be fetched through the cache server's extract endpoint.
 #
-# A build publishes exactly one of these, so they are tried in order and the
-# first one that is not a 404 wins; chromeos-base/telemetry probes the same two
-# names, in the opposite order, for the same reason. bzip2 is first here because
-# it is what every build publishes today: putting zstd first would spend a
-# wasted round trip against the cache server on every single deploy. Swap the
-# order when builds start publishing zstd, so that the wasted round trip moves
-# to the shrinking set of older builds rather than the growing set of newer
-# ones. Nothing breaks if that is forgotten -- deploys just get slower.
+# They are tried in the order returned by PackageManager.get_tarball_names()
+# and the first one that is published for the build wins; chromeos-base/telemetry
+# probes the same two names. The order follows packages.DEFAULT_TARBALL_SUFFIX
+# (currently bzip2 first), so flipping DEFAULT_TARBALL_SUFFIX when builds switch
+# to zstd automatically moves the fallback probe onto the shrinking set of older
+# builds rather than the growing set of newer ones.
 #
 # _decompress_flag() derives the tar flag from whichever name resolved, so
 # adding or reordering formats needs no other change.
-TELEMETRY_DEP_TARBALLS = (
-        'dep-telemetry_dep.tar.bz2',
-        'dep-telemetry_dep.tar.zst',
-)
-
-# curl --fail exits with this on an HTTP status >= 400, which is how a build
-# that does not publish a given format is distinguished from a network problem.
-# Only the former is worth trying the next candidate for.
-_CURL_HTTP_ERROR_EXIT = 22
+TELEMETRY_DEP_TARBALLS = tuple(
+        packages.PackageManager.get_tarball_names('telemetry_dep', 'dep'))
 
 # Everything in the tarball is rooted at test_src/, but Telemetry has paths
 # hardcoded to src/, so the tree is renamed after extraction. This mirrors what
@@ -554,7 +546,7 @@ def _download_one(host, url, dest, tarball):
     @param dest: Path to download to on the DUT.
     @param tarball: File name being fetched, for the error messages.
 
-    @raises _PayloadNotFound: If the cache server answered with an HTTP error.
+    @raises _PayloadNotFound: If the cache server answered with HTTP 404 or 410.
     @raises TelemetryDeployError: If the download failed for any other reason.
     """
     # --fail turns an HTTP error into a non-zero exit instead of a saved error
@@ -571,13 +563,17 @@ def _download_one(host, url, dest, tarball):
            '--retry 3 --retry-connrefused '
            '--speed-limit 1024 --speed-time 60 '
            '--max-time %d '
+           "-w '%%{http_code}' "
            '--output %s %s' %
            (_CURL_MAX_TIME_SECONDS, _quoted(dest), _quoted(url)))
 
     result = _try_run(host, cmd, _DOWNLOAD_TIMEOUT_SECONDS, description)
-    if result is not None and result.exit_status == _CURL_HTTP_ERROR_EXIT:
+    if (
+            result is not None
+            and packages.is_http_not_found(result.exit_status, result.stdout)):
         raise _PayloadNotFound('%s is not published for this build.' % tarball)
     _check_result(host, result, _DOWNLOAD_TIMEOUT_SECONDS, description)
+    logging.info('Downloaded Telemetry payload %s from %s.', tarball, url)
 
 
 def _download_payload(host, build, cache_endpoint, bucket):
@@ -640,6 +636,8 @@ def _extract_on_dut(host, tarball_path, tarball):
         args.append(flag)
     args += ['--exclude=%s' % _quoted(path) for path in _EXCLUDED_PATHS]
     args += ['-f', _quoted(tarball_path), '-C', _quoted(_STAGING_DIR)]
+    logging.info('Extracting Telemetry payload %s (flag: %s) on %s.', tarball,
+                 flag or 'none', host.hostname)
     _run(host,
          ' '.join(args),
          timeout=_EXTRACT_TIMEOUT_SECONDS,

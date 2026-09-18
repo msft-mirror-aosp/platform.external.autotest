@@ -319,6 +319,15 @@ class TestAutotest(unittest.TestCase):
         logger._process_line('AUTOTEST_FETCH_PACKAGE:pkgname.tar.bz2:'
                              '/autotest/dest/:/autotest/fifo3')
 
+        for _ in range(2):  # _process_line reads the flag twice per line
+            c.get_config_value.expect_call('PACKAGES',
+                                           'serve_packages_from_autoserv',
+                                           type=bool).and_return(True)
+        logger._send_tarball.expect_call('pkgname.tar.zst', '/autotest/dest/')
+        self.host.run.expect_call('echo B > /autotest/fifo3')
+        logger._process_line('AUTOTEST_FETCH_PACKAGE:pkgname.tar.zst:'
+                             '/autotest/dest/:/autotest/fifo3')
+
 
 if __name__ == "__main__":
     unittest.main()

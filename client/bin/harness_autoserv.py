@@ -89,6 +89,8 @@ class harness_autoserv(harness.harness):
 
 
 class AutoservFetcher(packages.RepositoryFetcher):
+    """Repository fetcher that requests package tarballs from autoserv."""
+
     def __init__(self, package_manager, job_harness):
         self.url = "autoserv://"
         self.job_harness = job_harness
@@ -112,5 +114,5 @@ class AutoservFetcher(packages.RepositoryFetcher):
         if os.path.exists(dest_path):
             logging.debug('Successfully fetched %s from autoserv.', filename)
         else:
-            raise error.PackageFetchError('%s not fetched from autoserv.'
-                                          % filename)
+            raise error.PackageNotFoundError('%s not fetched from autoserv.' %
+                                             filename)

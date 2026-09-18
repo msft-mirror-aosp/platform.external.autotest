@@ -497,7 +497,10 @@ class Cr50Test(FirmwareTest):
             return self._retry_gsc_update(image, retries, rollback, True)
         finally:
             if dut_reset:
-                self.servo.set_nocheck(dut_reset, 'off')
+                try:
+                    self.servo.set_nocheck(dut_reset, 'off')
+                except Exception as e:
+                    logging.info("Failed to set %s off: %s", dut_reset, e)
 
     def _retry_gsc_update_with_ccd_and_ap(self, image, retries, rollback):
         """Try to update to the given with ccd then try the ap.
@@ -513,9 +516,15 @@ class Cr50Test(FirmwareTest):
             logging.info('Failed to update with ccd.')
         try:
             return self._retry_gsc_update_with_ccd(image, retries, rollback,
+                                                   'gsc_ec_reset')
+        except error.TestError as e:
+            logging.info('Failed to update with ccd with gsc_ec_reset on.: %s',
+                         e)
+        try:
+            return self._retry_gsc_update_with_ccd(image, retries, rollback,
                                                    'cold_reset')
         except error.TestError as e:
-            logging.info('Failed to update with ccd with cold_reset on.')
+            logging.info('Failed to update with ccd with cold_reset on: %s', e)
         try:
             if self.faft_config.chrome_ec:
                 logging.info('Sending AP shutdown')
@@ -523,12 +532,12 @@ class Cr50Test(FirmwareTest):
                 return self._retry_gsc_update_with_ccd(image, retries,
                                                        rollback)
         except error.TestError as e:
-            logging.info('Failed to update with ccd after apshutdown.')
+            logging.info('Failed to update with ccd after apshutdown: %s', e)
         try:
             return self._retry_gsc_update_with_ccd(image, retries, rollback,
                                                    'warm_reset')
         except error.TestError as e:
-            logging.info('Failed to update with ccd with warm_reset on.')
+            logging.info('Failed to update with ccd with warm_reset on: %s', e)
 
         # Make sure the DUT is up for a AP update.
         self._try_to_bring_dut_up()

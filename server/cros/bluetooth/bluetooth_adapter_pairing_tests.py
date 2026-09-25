@@ -291,8 +291,22 @@ class BluetoothAdapterPairingTests(
             device,
             loops,
             device_type,
-            check_connected_method=lambda device: True):
-        """Perform a connect disconnect loop test"""
+            check_connected_method=lambda device: True,
+            measure_hid_on_dut=False):
+        """Perform a connect disconnect loop test
+
+        @param device: the meta data with the peer device
+        @param loops: number of reconnection loops
+        @param device_type: The device type (used to check if it's LE)
+        @param check_connected_method: method called to check the connection
+        @param measure_hid_on_dut: if True, the reconnection duration is
+                measured on the DUT, from just before the reconnection is
+                triggered until the HID input device is created. Otherwise it
+                is measured by the test server around the RPCs, which includes
+                the RPC latency between the test server and the DUT.
+
+        @return the average reconnection duration in seconds, or None on failure
+        """
 
         # Reset the adapter to forget previously paired devices if any.
         self.test_reset_on_adapter()
@@ -318,6 +332,11 @@ class BluetoothAdapterPairingTests(
             time.sleep(2)
             self.test_device_is_not_connected(device.address)
 
+            # Take the DUT-side anchor before triggering the reconnection, so
+            # the DUT-measured duration can only overestimate it.
+            if measure_hid_on_dut:
+                dut_start_time = self.bluetooth_facade.get_monotonic_time()
+
             if 'BLE' in device_type:
                 self.test_device_set_discoverable(device, True)
                 start_time = time.time()
@@ -330,6 +349,12 @@ class BluetoothAdapterPairingTests(
             check_connected_method(device)
             end_time = time.time()
             time_diff = end_time - start_time
+
+            if measure_hid_on_dut and not bool(self.fails):
+                logging.info('%d: Connection establishment duration measured '
+                             'by the test server %f sec', i, time_diff)
+                time_diff = self.get_hid_reconnect_duration_on_dut(
+                        device.address, dut_start_time, time_diff)
 
             if 'BLE' in device_type:
                 self.test_device_set_discoverable(device, False)
@@ -412,7 +437,8 @@ class BluetoothAdapterPairingTests(
                 device=device,
                 loops=3,
                 device_type=device_type,
-                check_connected_method=self.test_hid_device_created_speed)
+                check_connected_method=self.test_hid_device_created_speed,
+                measure_hid_on_dut=True)
         if duration is not None:
             self.test_hid_device_reconnect_time(duration, device_type)
 

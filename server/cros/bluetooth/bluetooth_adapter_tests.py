@@ -6683,6 +6683,39 @@ class BluetoothAdapterTests(test.test):
         self.results = {'device_found': device_found}
         return all(self.results.values())
 
+    def get_hid_reconnect_duration_on_dut(self, device_address, dut_start_time,
+                                          fallback_duration):
+        """Gets the HID reconnection duration measured on the DUT.
+
+        The duration is measured from dut_start_time, taken on the DUT before
+        the reconnection is triggered, to the udev creation time of the HID
+        input device. Unlike a test server timer it does not include the RPC
+        latency between the test server and the DUT (except the one needed to
+        execute test_device_set_discoverable).
+
+        @param device_address: Address of peripheral device
+        @param dut_start_time: DUT CLOCK_MONOTONIC time in seconds, taken
+                before the reconnection is triggered
+        @param fallback_duration: duration in seconds to return if the HID
+                device creation time can't be read from the DUT
+
+        @return the reconnection duration in seconds
+        """
+        hid = self.bluetooth_facade.get_hid_device_created_time(
+                device_address, created_after=dut_start_time)
+        if not hid['found']:
+            logging.warning(
+                    'Failed to get the HID device creation time from the DUT, '
+                    'using the duration measured by the test server %f sec',
+                    fallback_duration)
+            return fallback_duration
+
+        duration = hid['created_time'] - dut_start_time
+        logging.info('HID device of %s created %f sec after the reconnection '
+                     'was triggered (measured on the DUT)', device_address,
+                     duration)
+        return duration
+
 
     @test_retry_and_log(False)
     def test_hid_device_reconnect_time(self, duration, device_type):

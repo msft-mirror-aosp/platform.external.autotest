@@ -993,6 +993,103 @@ class BluetoothBaseFacadeLocal(object):
         """
         return self._set_wake_enabled(value)
 
+    def _get_hid_device_properties(self, device_address):
+        """Gets the udev properties of the HID device of a peripheral.
+
+        @param device_address: Peripheral address
+
+        @return dict of udev properties (lowercase bytes keys) of the Bluetooth
+                input device whose uniq property matches device_address, or
+                None if no such input device exists.
+        """
+        device_address = device_address.lower()
+        existing_inputs = UdevadmTrigger(subsystem_match=['input']).DryRun()
+        for entry in existing_inputs:
+            entry = entry.decode()
+            bt_hid = any(t in entry for t in ['uhid', 'hci'])
+            logging.info('udevadm trigger entry is {}: {}'.format(
+                    bt_hid, entry))
+            if not bt_hid:
+                continue
+
+            # If the syspath has a uniq property that matches the peripheral
+            # device's address, then it has matched
+            props = UdevadmInfo.GetProperties(entry)
+            if props.get(b'uniq', b'').lower().decode() == device_address:
+                logging.info('Found hid device for address {} at {}'.format(
+                        device_address, entry))
+                return props
+            logging.info('Path {} is not right device.'.format(entry))
+
+        return None
+
+    def get_monotonic_time(self):
+        """Gets the current CLOCK_MONOTONIC time of the DUT.
+
+        Used as a DUT-side anchor for latency measurements, so that they do not
+        depend on the RPC latency between the test server and the DUT.
+
+        @return the DUT CLOCK_MONOTONIC time in seconds (float)
+        """
+        return time.monotonic()
+
+    def get_hid_device_created_time(self,
+                                    device_address,
+                                    created_after=0.0,
+                                    timeout=None,
+                                    sleep_interval=None):
+        """Gets the time when the HID device of a peripheral was created.
+
+        The creation time is the udev USEC_INITIALIZED property of the input
+        device, which udev records in CLOCK_MONOTONIC microseconds. It is thus
+        comparable with get_monotonic_time() and does not depend on how fast
+        the DUT is polled.
+
+        @param device_address: Peripheral address
+        @param created_after: only accept a HID device created at or after this
+                DUT CLOCK_MONOTONIC time in seconds, so a stale device from a
+                previous connection is not reported
+        @param timeout: maximum number of seconds to wait for the HID device
+        @param sleep_interval: time to sleep between polls
+
+        @return dict with 'found' (bool) and 'created_time' (float, DUT
+                CLOCK_MONOTONIC seconds; 0.0 if the device is not found)
+        """
+        result = {'found': False, 'created_time': 0.0}
+
+        def _hid_is_created_after():
+            props = self._get_hid_device_properties(device_address)
+            if props is None or b'usec_initialized' not in props:
+                return False
+            created_time = int(props[b'usec_initialized']) / 1e6
+            if created_time < created_after:
+                logging.info('HID device of %s created at %f, before %f',
+                             device_address, created_time, created_after)
+                return False
+            result['found'] = True
+            result['created_time'] = created_time
+            return True
+
+        if timeout is None:
+            timeout = self.HID_TIMEOUT
+        if sleep_interval is None:
+            sleep_interval = self.HID_CHECK_SECS
+
+        method_name = 'get_hid_device_created_time'
+        try:
+            utils.poll_for_condition(
+                    condition=_hid_is_created_after,
+                    timeout=timeout,
+                    sleep_interval=sleep_interval,
+                    desc=('Waiting for HID device to be created from %s' %
+                          device_address))
+        except utils.TimeoutError as e:
+            logging.error('%s: %s', method_name, e)
+        except Exception as e:
+            logging.error('%s: unexpected error: %s', method_name, e)
+
+        return result
+
     def wait_for_hid_device(self, device_address, timeout, sleep_interval):
         """Waits for hid device with given device address.
 
@@ -1003,34 +1100,8 @@ class BluetoothBaseFacadeLocal(object):
         @return True if hid device found, False otherwise
         """
 
-        def _match_hid_to_device(hidpath, device_address):
-            """Check if given hid syspath is for the given device address """
-            # If the syspath has a uniq property that matches the peripheral
-            # device's address, then it has matched
-            props = UdevadmInfo.GetProperties(hidpath)
-            if (props.get(b'uniq', b'').lower().decode() == device_address):
-                logging.info('Found hid device for address {} at {}'.format(
-                        device_address, hidpath))
-                return True
-            else:
-                logging.info('Path {} is not right device.'.format(hidpath))
-
-            return False
-
         def _hid_is_created(device_address):
-            existing_inputs = UdevadmTrigger(
-                    subsystem_match=['input']).DryRun()
-            for entry in existing_inputs:
-                entry = entry.decode()
-                bt_hid = any([t in entry for t in ['uhid', 'hci']])
-                logging.info('udevadm trigger entry is {}: {}'.format(
-                        bt_hid, entry))
-
-                if (bt_hid and _match_hid_to_device(entry,
-                                                    device_address.lower())):
-                    return True
-
-            return False
+            return self._get_hid_device_properties(device_address) is not None
 
         if timeout is None:
             timeout = self.HID_TIMEOUT

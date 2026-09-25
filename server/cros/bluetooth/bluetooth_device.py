@@ -1757,6 +1757,39 @@ class BluetoothDevice(object):
 
 
     @proxy_thread_safe
+    def get_monotonic_time(self):
+        """Get the current CLOCK_MONOTONIC time of the DUT.
+
+        Returns:
+            The DUT CLOCK_MONOTONIC time in seconds.
+        """
+        return self._proxy.get_monotonic_time()
+
+
+    @proxy_thread_safe
+    def get_hid_device_created_time(self,
+                                    device_address,
+                                    created_after=0.0,
+                                    timeout=None,
+                                    sleep_interval=None):
+        """Get the DUT time when the hid device of a peripheral was created.
+
+        Args:
+            device_address: Peripheral Address
+            created_after: only accept a hid device created at or after this
+                DUT CLOCK_MONOTONIC time in seconds
+            timeout: maximum number of seconds to wait
+            sleep_interval: time to sleep between polls
+
+        Returns:
+            A dict with 'found' (bool) and 'created_time' (float, DUT
+            CLOCK_MONOTONIC seconds).
+        """
+        return self._proxy.get_hid_device_created_time(
+                device_address, created_after, timeout, sleep_interval)
+
+
+    @proxy_thread_safe
     def bt_caused_last_resume(self):
         """Checks if last resume from suspend was caused by bluetooth
 

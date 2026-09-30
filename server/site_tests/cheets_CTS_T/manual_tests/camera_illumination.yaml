@@ -11,3 +11,4 @@ android.hardware.camera2.cts.StillCaptureTest#testAeCompensation[1]: [craask, ru
 android.hardware.camera2.cts.SurfaceViewPreviewTest#testCameraPreview[1]: [teliks]
 android.hardware.cts.CameraGLTest#testCameraToSurfaceTextureMetadata: [nautilus, anraggar, anraggar360, pujjoga, teliks, chinchou360, jubilant]
 android.hardware.cts.CameraTest#testPreviewFpsRange: [chinchou360, teliks]
+android.hardware.cts.CameraTest#testVideoSnapshot: [jelboz360]

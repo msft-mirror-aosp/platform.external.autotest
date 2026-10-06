@@ -13,6 +13,7 @@ METADATA = {
   "criteria": "Start a forced autoupdate at OOBE."
 }
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 TIME = "SHORT"
 PY_VERSION = 3
 

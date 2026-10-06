@@ -17,6 +17,7 @@ METADATA = {
 # TODO(b/316565576): Fix and return back after changes for OOBE's IM handling will be landed.
 ATTRIBUTES = ""
 TEST_TYPE = 'client'
+REQUIRE_TELEMETRY = True
 JOB_RETRIES = 2
 
 job.run_test('login_OobeLocalization')

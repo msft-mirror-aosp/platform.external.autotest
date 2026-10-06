@@ -9,6 +9,7 @@ METADATA = {
     "criteria": "Check that converting between different sample rates doesn't crash."
 }
 TEST_TYPE = 'client'
+REQUIRE_TELEMETRY = True
 ATTRIBUTES = ''
 DEPENDENCIES = 'audio_loopback_dongle'
 

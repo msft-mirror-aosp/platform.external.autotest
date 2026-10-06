@@ -19,6 +19,7 @@ METADATA = {
 }
 ATTRIBUTES = ""
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 
 args_dict = utils.args_to_dict(args)
 

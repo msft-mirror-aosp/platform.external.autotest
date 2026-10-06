@@ -11,6 +11,7 @@ METADATA = {
     "hw_agnostic": False
 }
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 
 job.run_test('power_BasicBrowsing', force_discharge='optional',
              tag=NAME.split('.')[1])

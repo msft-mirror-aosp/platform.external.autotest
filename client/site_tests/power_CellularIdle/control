@@ -12,6 +12,7 @@ METADATA = {
 # Disabling tauto test. b/328059571
 # ATTRIBUTES = "suite:cellular_power"
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')

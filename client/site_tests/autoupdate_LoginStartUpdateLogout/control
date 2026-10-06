@@ -13,6 +13,7 @@ METADATA = {
   "criteria": "Tests logging in and out during an update."
 }
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 TIME = "SHORT"
 PY_VERSION = 3
 DOC = """ Tests logging in and out during an update. """

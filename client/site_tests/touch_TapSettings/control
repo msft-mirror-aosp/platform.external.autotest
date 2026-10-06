@@ -13,6 +13,7 @@ METADATA = {
 #TODO: Uncomment this after solution for Autotest chrome extension found
 #ATTRIBUTES = "suite:touch_replay_touchpad, group:release-health, release-health_touch"
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 DEPENDENCIES = "touchpad"
 
 job.run_test('touch_TapSettings')

@@ -11,6 +11,7 @@ METADATA = {
                  "timeout."),
 }
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 TIME = "SHORT"
 DOC = """ Tests that the CAF and CAI rlz pings are sent after ping timeout. """
 PY_VERSION = 3

@@ -17,5 +17,6 @@ METADATA = {
 ATTRIBUTES = "suite:bvt-perbuild, suite:distributed_lab_qual_bvt_shard1"
 TEST_CLASS = "login"
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 
 job.run_test('login_LoginPin')

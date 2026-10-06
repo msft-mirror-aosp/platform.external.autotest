@@ -18,5 +18,6 @@ METADATA = {
 }
 ATTRIBUTES = "suite:bvt-perbuild, group:release-health, release-health_power"
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 
 job.run_test("power_AudioDetector")

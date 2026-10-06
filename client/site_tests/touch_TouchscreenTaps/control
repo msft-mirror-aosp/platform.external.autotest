@@ -12,6 +12,7 @@ METADATA = {
 }
 ATTRIBUTES = "suite:touch_replay_touchscreen, group:release-health, release-health_touch"
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 DEPENDENCIES = "touchscreen"
 
 job.run_test('touch_TouchscreenTaps')

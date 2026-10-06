@@ -15,6 +15,7 @@ TIME = "LONG"
 TEST_CATEGORY = "General"
 TEST_CLASS = "video"
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 JOB_RETRIES = 0
 
 METADATA = {

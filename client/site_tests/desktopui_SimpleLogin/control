@@ -11,5 +11,6 @@ METADATA = {
     "hw_agnostic": True
 }
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 
 job.run_test('desktopui_SimpleLogin')

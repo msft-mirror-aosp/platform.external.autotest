@@ -11,6 +11,7 @@ METADATA = {
 
 # ATTRIBUTES = 'suite:audio'
 TEST_TYPE = 'client'
+REQUIRE_TELEMETRY = True
 
 '''
 Test echo cancellation function using the post DSP delayed loopback device

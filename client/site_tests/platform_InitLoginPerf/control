@@ -13,5 +13,6 @@ METADATA = {
     "hw_agnostic": False
 }
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 
 job.run_test('platform_InitLoginPerf')

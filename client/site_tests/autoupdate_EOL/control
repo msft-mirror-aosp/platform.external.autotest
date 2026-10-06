@@ -13,6 +13,7 @@ METADATA = {
   "criteria": "Tests End of Life (EOL) / Autoupdate Expiration (AUE)"
 }
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 ATTRIBUTES = "suite:au-perbuild-chrome"
 TIME = "SHORT"
 PY_VERSION = 3

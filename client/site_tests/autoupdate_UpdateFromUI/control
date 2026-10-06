@@ -13,6 +13,7 @@ METADATA = {
   "criteria": "Tests triggering an update from the UI."
 }
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 TIME = "SHORT"
 PY_VERSION = 3
 DOC = """ Tests triggering an update from the UI. """

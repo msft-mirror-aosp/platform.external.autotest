@@ -11,6 +11,9 @@ from autotest_lib.client.common_lib.cros import chrome
 from autotest_lib.client.cros.power import power_suspend, power_utils
 
 
+REQUIRE_TELEMETRY = True
+
+
 class stub_IdleSuspend(test.test):
     """
     This is not a complete test. It is a stub test that must be run in parallel

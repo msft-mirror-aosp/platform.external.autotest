@@ -13,6 +13,7 @@ METADATA = {
 }
 ATTRIBUTES = ""
 TEST_TYPE = 'client'
+REQUIRE_TELEMETRY = True
 DEPENDENCIES = 'audio_loopback_dongle'
 
 """

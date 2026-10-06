@@ -2,6 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+importScripts(
+  "time.js",
+  "urls.js",
+  "params.js",
+  "task_monitor.js",
+);
+
 var cycle_tabs = {};
 var cycles = {};
 var time_ratio = 3600 * 1000 / test_time_ms; // default test time is 1 hour
@@ -110,10 +117,7 @@ function testListener(request, sender, sendResponse) {
 
 function report_page_nav_to_test() {
   //Sends message to PLT informing that user is navigating to new page.
-  var ping_url = 'http://localhost:8001/pagenav';
-  var req = new XMLHttpRequest();
-  req.open('GET', ping_url, true);
-  req.send("");
+  fetch("http://localhost:8001/pagenav");
 }
 
 function capture_completed_status(details) {
@@ -196,11 +200,11 @@ function launch_task(task) {
         {'url': '/focus.html', state: 'maximized'}, function (win) {
       close_preexisting_windows();
       close_restored_tabs(win, function() {
-        chrome.tabs.getSelected(win.id, function(tab) {
+        chrome.tabs.query({'windowId': win.id, 'active': true }, ([tab]) => {
           for (var i = 1; i < task.tabs.length; i++) {
-            chrome.tabs.create({'windowId':win.id, 'url': '/focus.html'});
+            chrome.tabs.create({'windowId': win.id, 'url': '/focus.html'});
           }
-          chrome.tabs.getAllInWindow(win.id, function(tabs) {
+          chrome.tabs.query({'windowId': win.id}, function(tabs) {
             for (var i = 0; i < tabs.length; i++) {
               tab = tabs[i];
               url = task.tabs[i];
@@ -222,7 +226,7 @@ function launch_task(task) {
       {'url': '/focus.html', state: 'maximized'}, function (win) {
       close_preexisting_windows();
       close_restored_tabs(win, function() {
-        chrome.tabs.getSelected(win.id, function(tab) {
+        chrome.tabs.query({'windowId': win.id, 'active': true}, ([tab]) => {
           var cycle = {
              'timeout': task.timeout,
              'name': task.name,
@@ -260,7 +264,7 @@ function page_timestamps_new_record(tab_id, url, start) {
 }
 
 function record_end_browse_time_for_window(win_id) {
-  chrome.tabs.getAllInWindow(win_id, function(tabs) {
+  chrome.tabs.query({'windowId': win_id}, function(tabs) {
     end = Date.now();
     console.log("page_timestamps_recorder:");
     console.log(JSON.stringify(page_timestamps_recorder));
@@ -330,10 +334,13 @@ function send_key_values() {
 }
 
 function send_post_data(post, url) {
-  var req = new XMLHttpRequest();
-  req.open('POST', url, true);
-  req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  req.send(post.join("&"));
+  fetch(url, {
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      "body": post.join("&"),
+  });
   console.log(post.join("&"));
 }
 
@@ -351,13 +358,9 @@ function startTest() {
   setTimeout(setupTest, 1000);
 }
 
-function initialize() {
-  // Called when the user clicks on the browser action.
-  chrome.browserAction.onClicked.addListener(function(tab) {
-    // Start the test with default settings.
-    chrome.runtime.onMessage.addListener(testListener);
-    setTimeout(setupTest, 1000);
-  });
-}
-
-window.addEventListener("load", initialize);
+// Called when the user clicks on the browser action.
+chrome.action.onClicked.addListener(function(tab) {
+  // Start the test with default settings.
+  chrome.runtime.onMessage.addListener(testListener);
+  setTimeout(setupTest, 1000);
+});

@@ -354,8 +354,6 @@ class power_LoadTest(arc.ArcTest):
                     # b/228256145 to avoid powerd restart
                     disable_features=[
                             'FirmwareUpdaterApp',
-                            'ExtensionManifestV2Disabled',
-                            'ExtensionManifestV2Unsupported'
                     ],
                     # --disable-sync disables test account info sync, eg. Wi-Fi credentials,
                     # so that each test run does not remember info from last test run.
@@ -1331,8 +1329,8 @@ def _get_extension_id(filename):
 
 def _get_extension_bg_url(filename):
     """
-    Calculates the url to pg.html page for an unpacked extension in filename
-    dir.
+    Calculates the url to the extension's background worker for an unpacked
+    extension in filename dir.
     """
     extension_id = _get_extension_id(filename)
-    return "chrome-extension://%s/bg.html" % extension_id
+    return "chrome-extension://%s/test.js" % extension_id

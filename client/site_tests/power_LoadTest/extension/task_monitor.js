@@ -135,10 +135,10 @@ class TaskMonitor {
     });
     this._records.length = 0;
 
-    const url = 'http://localhost:8001/task-monitor';
-    const req = new XMLHttpRequest();
-    req.open('POST', url, true);
-    req.send(formData);
+    fetch('http://localhost:8001/task-monitor', {
+        'method': 'POST',
+        'body': formData,
+    });
   }
 }
 

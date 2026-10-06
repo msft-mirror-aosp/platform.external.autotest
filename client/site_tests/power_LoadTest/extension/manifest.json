@@ -1,20 +1,22 @@
 {
   "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD69MHTFB90q+MCBlimEUDAwv9aAUS5Utkfs8YNSJein64VxlZKNFSCO501ork0MB92uH02Ic5CzwGkfAucdaj/KBM0vg7HJINZUzKYJjBXgaeOO00WCT29VilNdKyEkXLSHGuK9gIK/i72FNEldHJJ6JvWSvXUbZyBP4ZaxQsgtwIDAQAB",
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Power Test",
   "version": "2.0",
-  "browser_action": {
+  "action": {
     "default_icon": "skin/chrome_bug.png",
     "default_title": "test the web with the web"
   },
   "icons": { "48": "skin/chrome_bug.png",
           "128": "skin/chrome_bug.png" },
   "permissions": [
-    "webRequest", "http://*/", "https://*/", "tabs", "processes"
+    "webRequest", "tabs", "processes"
+  ],
+  "host_permissions": [
+    "http://*/", "https://*/"
   ],
   "background": {
-    "persistent": true,
-    "page": "bg.html"
+    "service_worker": "test.js"
   },
   "description": "GoogleTest",
   "content_scripts": [
@@ -32,6 +34,9 @@
     }
   ],
   "web_accessible_resources": [
-     "custom_event_listener.js"
+    {
+      "resources": ["custom_event_listener.js"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
   ]
 }

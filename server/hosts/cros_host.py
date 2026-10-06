@@ -1850,20 +1850,41 @@ class CrosHost(abstract_ssh.AbstractSSHHost):
         return bool(re.search(r'\bcros_minios\b', kernel_cmdline_params))
 
     def _powerwash_if_needed(self):
-        """Powerwash the device if the total disk size is less than 32G.
+        """Powerwash the device if the total disk size is less than 32G
+        and the stateful partition has less than 4GB of free space.
         Powerwash is not required if the dut is in minios mode.
         """
         if self._is_minios_mode():
             logging.info('Device is in MiniOS mode. No need to powerwash.')
-            return
+            return False
         dut_disk_size = self.get_disk_size_gb()
         if (dut_disk_size < cros_constants.MIN_DISK_SIZE):
-            logging.info('DUT disk size is %dGB. Powerwash it.', dut_disk_size)
+            # Check free space on stateful partition
+            result = self.run('df -k /mnt/stateful_partition', ignore_status=True)
+            if result.exit_status == 0:
+                try:
+                    lines = result.stdout.strip().split('\n')
+                    if len(lines) >= 2:
+                        parts = lines[-1].split()
+                        if len(parts) <= 3:
+                            raise ValueError('df output has too few columns: %s' % lines[-1])
+                        free_kb = int(parts[3])
+                        free_gb = free_kb / (1024.0 * 1024.0)
+                        if free_gb >= 4.0:
+                            logging.info('DUT disk size is %dGB, but %.1fGB is free on stateful. '
+                                         'Skipping powerwash.', dut_disk_size, free_gb)
+                            return False
+                except Exception as e:
+                    logging.warning('Failed to parse free space from df: %s', e)
+
+            logging.info('DUT disk size is %dGB (low free space). Powerwash it.', dut_disk_size)
             self.run([
                     'echo', '"fast safe"', '>',
                     '/mnt/stateful_partition/factory_install_reset'
             ])
             self.reboot(timeout=3 * self.POWERWASH_BOOT_TIMEOUT, wait=True)
+            return True
+        return False
 
     def _read_arc_prop_file(self, filename):
         for path in [

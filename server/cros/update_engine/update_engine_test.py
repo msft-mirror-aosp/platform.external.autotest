@@ -817,7 +817,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
 
         # Download and extract the stateful payload.
         try:
-            self._download_and_extract_stateful(statefuldev_url,
+            powerwashed = self._download_and_extract_stateful(statefuldev_url,
                                                 self._STATEFUL_MOUNT_DIR)
         except error.AutoservRunError as e:
             err_str = 'Failed to restore the stateful partition'
@@ -849,6 +849,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         # Reset the stateful restore flag since we no longer need to do it
         # during cleanup.
         self._should_restore_stateful = False
+        return powerwashed
 
     def _verify_stateful_integrity(self):
         """Verifies the stateful partition was extracted successfully."""
@@ -899,7 +900,7 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
             if wildcards:
                 cmd += ['--wildcards']
             cmd += members
-        self._host._powerwash_if_needed()
+        powerwashed = self._host._powerwash_if_needed()
 
         monitor = network_monitor.NetworkMonitor(self._host, stateful_url)
         monitor.start()
@@ -908,6 +909,8 @@ class UpdateEngineTest(test.test, update_engine_util.UpdateEngineUtil):
         finally:
             logging.info(" Download finished or failed. Stopping monitor...")
             monitor.stop()
+
+        return powerwashed
 
     def _get_stateful_url(self, public_bucket=False):
         """

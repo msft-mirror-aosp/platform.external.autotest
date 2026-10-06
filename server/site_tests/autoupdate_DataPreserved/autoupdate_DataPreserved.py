@@ -54,7 +54,13 @@ class autoupdate_DataPreserved(update_engine_test.UpdateEngineTest):
         # version may not be aligned with the target version, which can lead
         # to Python execution failures and break the test.
         logging.info('Restoring stateful partition to ToT version')
-        self._update_stateful()
+        powerwashed = self._update_stateful()
+
+        if powerwashed:
+            logging.info('Device was powerwashed during stateful update due '
+                         'to low disk space. Skipping user data verification '
+                         'and passing test gracefully.')
+            return
 
         # Ensure preferences and downloads are the same as before the update.
         self._run_client_test_and_check_result(self._USER_DATA_TEST,

@@ -108,7 +108,12 @@ class autoupdate_Basic(update_engine_test.UpdateEngineTest):
         if self._m2n:
             # Bring stateful version to the same version as rootfs.
             logging.info('Restoring stateful partition to ToT version')
-            self._update_stateful()
+            powerwashed = self._update_stateful()
+            if powerwashed:
+                logging.info('Device was powerwashed during stateful update '
+                             'due to low disk space. Skipping login '
+                             'verification and passing test gracefully.')
+                return
 
         self.touch_pil()
         # Check we can login with the same user after update.

@@ -23,7 +23,7 @@ class AudioTest(test.test):
     confidence check.
     """
 
-    def initialize(self, host):
+    def initialize(self, host, extra_browser_args=None):
         """Initialize audio test needed components and do some checks"""
         if host.chameleon is None:
             raise error.TestError("host.chameleon is None."
@@ -31,7 +31,11 @@ class AudioTest(test.test):
 
         self.host = host
         self.factory = remote_facade_factory.RemoteFacadeFactory(
-                host, disable_arc=True, results_dir=self.resultsdir, only_audio_ext=True)
+                host,
+                disable_arc=True,
+                results_dir=self.resultsdir,
+                only_audio_ext=True,
+                extra_browser_args=extra_browser_args)
         self.widget_factory = chameleon_audio_helper.AudioWidgetFactory(
             self.factory, self.host)
         self.facade = self.factory.create_audio_facade()

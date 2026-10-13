@@ -34,6 +34,13 @@ class audio_AudioAfterSuspend(audio_test.AudioTest):
     SUSPEND_SECONDS = 40
 
 
+    def initialize(self, host):
+        """Initialize audio test needed components."""
+        super(audio_AudioAfterSuspend, self).initialize(
+                host,
+                extra_browser_args=['--use-fake-cras-audio-client-for-dbus'])
+
+
     def action_plug_jack(self, plug_state):
         """Calls the audio interface API and plugs/unplugs.
 

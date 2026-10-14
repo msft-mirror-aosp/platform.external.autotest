@@ -409,7 +409,7 @@ class power_LoadTest(arc.ArcTest):
 
             # This opens a trap start page to capture tabs opened for first login.
             # It will be closed when startTest is run.
-            extension.EvaluateJavaScript('chrome.windows.create(null, null);')
+            extension.EvaluateJavaScript('void chrome.windows.create();')
 
             for i in range(self._loop_count):
                 start_time = time.time()

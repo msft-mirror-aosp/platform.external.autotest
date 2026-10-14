@@ -21,10 +21,10 @@ This uses the lmbench 3 bw_mem benchmark for measuring read throughput
 # The size of the accessed memory should be large enough to ensure it's
 # not measuring cache throughput.
 #
-# The memory throughput requirement is 25 GB/s. The test fails if the
-# memory throughput is less than the requirement.
+# The memory throughput requirement is 2.82 Gbps (360.96 MB/s). The test
+# fails if the memory throughput is less than the requirement.
 job.run_test('hardware_MemoryThroughput',
               tag='memory_qual', test='rd', warmup=100,
               num_iterations=5, parallel=4,
-              sizes=[67108864,], criteria=25*1024)
+              sizes=[67108864,], criteria=2.82 * 1024 / 8)
 

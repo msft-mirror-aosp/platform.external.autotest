@@ -62,7 +62,7 @@ class hardware_MemoryThroughput(test.test):
                 if bw_mb_per_sec < criteria:
                     raise error.TestFail(
                             'The memory throughput %f (MB/s) is less than the '
-                            'criteria %d (MB/s)' % (bw_mb_per_sec, criteria))
+                            'criteria %.2f (MB/s)' % (bw_mb_per_sec, criteria))
             else:
                 raise error.TestFail('invalid output line %s' % lines[0])
 

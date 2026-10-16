@@ -133,7 +133,11 @@ class TarballNamingTests(PackageManagerTestBase):
         """get_tarball_name defaults to DEFAULT_TARBALL_SUFFIX."""
         pm = packages.PackageManager
         self.assertEqual(pm.get_tarball_name('telemetry_dep', 'dep'),
-                         'dep-telemetry_dep.tar.bz2')
+                         'dep-telemetry_dep.tar.zst')
+        self.assertEqual(
+                pm.get_tarball_name('telemetry_dep', 'dep',
+                                    packages.BZIP2_TARBALL_SUFFIX),
+                'dep-telemetry_dep.tar.bz2')
         self.assertEqual(
                 pm.get_tarball_name('telemetry_dep', 'dep',
                                     packages.ZSTD_TARBALL_SUFFIX),
@@ -142,28 +146,44 @@ class TarballNamingTests(PackageManagerTestBase):
     def test_get_tarball_name_respects_runtime_default(self):
         """suffix=None resolves DEFAULT_TARBALL_SUFFIX at call time."""
         with mock.patch.object(packages, 'DEFAULT_TARBALL_SUFFIX',
-                               packages.ZSTD_TARBALL_SUFFIX):
+                               packages.BZIP2_TARBALL_SUFFIX):
             self.assertEqual(
                     packages.PackageManager.get_tarball_name(
                             'telemetry_dep', 'dep'),
-                    'dep-telemetry_dep.tar.zst')
+                    'dep-telemetry_dep.tar.bz2')
 
     def test_get_tarball_names_order(self):
         """get_tarball_names puts DEFAULT_TARBALL_SUFFIX first."""
         self.assertEqual(
                 packages.BasePackageManager.get_tarball_names(
                         'telemetry_dep', 'dep'),
-                ['dep-telemetry_dep.tar.bz2', 'dep-telemetry_dep.tar.zst'])
+                ['dep-telemetry_dep.tar.zst', 'dep-telemetry_dep.tar.bz2'])
         self.assertEqual(
                 packages.PackageManager.get_tarball_names(
                         'telemetry_dep', 'dep'),
-                ['dep-telemetry_dep.tar.bz2', 'dep-telemetry_dep.tar.zst'])
+                ['dep-telemetry_dep.tar.zst', 'dep-telemetry_dep.tar.bz2'])
         with mock.patch.object(packages, 'DEFAULT_TARBALL_SUFFIX',
-                               packages.ZSTD_TARBALL_SUFFIX):
+                               packages.BZIP2_TARBALL_SUFFIX):
             self.assertEqual(
                     packages.PackageManager.get_tarball_names(
                             'telemetry_dep', 'dep'),
-                    ['dep-telemetry_dep.tar.zst', 'dep-telemetry_dep.tar.bz2'])
+                    ['dep-telemetry_dep.tar.bz2', 'dep-telemetry_dep.tar.zst'])
+
+    def test_get_published_tarball_names(self):
+        """PUBLISHED_TARBALL_SUFFIXES is a subset of TARBALL_SUFFIXES."""
+        self.assertTrue(packages.PUBLISHED_TARBALL_SUFFIXES)
+        self.assertLessEqual(set(packages.PUBLISHED_TARBALL_SUFFIXES),
+                             set(packages.TARBALL_SUFFIXES))
+        self.assertEqual(
+                packages.PackageManager.get_published_tarball_names(
+                        'telemetry_dep', 'dep'),
+                ['dep-telemetry_dep.tar.zst', 'dep-telemetry_dep.tar.bz2'])
+        with mock.patch.object(packages, 'PUBLISHED_TARBALL_SUFFIXES',
+                               (packages.ZSTD_TARBALL_SUFFIX, )):
+            self.assertEqual(
+                    packages.PackageManager.get_published_tarball_names(
+                            'telemetry_dep', 'dep'),
+                    ['dep-telemetry_dep.tar.zst'])
 
     def test_parse_tarball_name(self):
         """parse_tarball_name accepts both suffixes and rejects unknown ones."""
@@ -410,21 +430,6 @@ class InstallPkgTests(PackageManagerTestBase):
     def test_install_pkg_first_candidate_found(self):
         """When the first candidate succeeds, the second is not probed."""
         pm = self._make_pkgmgr()
-        repo = StubFetcher('http://repo', {'dep-foo.tar.bz2'})
-        pm.add_repository(repo)
-        untarred = []
-        pm.untar_pkg = lambda path, d: untarred.append(path)
-
-        pm.install_pkg('foo', 'dep', '/fetch', '/install')
-        self.assertEqual(repo.calls, [
-                ('http://repo', 'dep-foo.tar.bz2'),
-                ('http://repo', 'packages.checksum'),
-        ])
-        self.assertEqual(untarred, ['/fetch/dep-foo.tar.bz2'])
-
-    def test_install_pkg_falls_back_to_second_candidate(self):
-        """When the first candidate raises PackageNotFoundError, second wins."""
-        pm = self._make_pkgmgr()
         repo = StubFetcher('http://repo', {'dep-foo.tar.zst'})
         pm.add_repository(repo)
         untarred = []
@@ -432,11 +437,26 @@ class InstallPkgTests(PackageManagerTestBase):
 
         pm.install_pkg('foo', 'dep', '/fetch', '/install')
         self.assertEqual(repo.calls, [
-                ('http://repo', 'dep-foo.tar.bz2'),
                 ('http://repo', 'dep-foo.tar.zst'),
                 ('http://repo', 'packages.checksum'),
         ])
         self.assertEqual(untarred, ['/fetch/dep-foo.tar.zst'])
+
+    def test_install_pkg_falls_back_to_second_candidate(self):
+        """When the first candidate raises PackageNotFoundError, second wins."""
+        pm = self._make_pkgmgr()
+        repo = StubFetcher('http://repo', {'dep-foo.tar.bz2'})
+        pm.add_repository(repo)
+        untarred = []
+        pm.untar_pkg = lambda path, d: untarred.append(path)
+
+        pm.install_pkg('foo', 'dep', '/fetch', '/install')
+        self.assertEqual(repo.calls, [
+                ('http://repo', 'dep-foo.tar.zst'),
+                ('http://repo', 'dep-foo.tar.bz2'),
+                ('http://repo', 'packages.checksum'),
+        ])
+        self.assertEqual(untarred, ['/fetch/dep-foo.tar.bz2'])
 
     def test_install_pkg_neither_found(self):
         """When neither candidate is found, PackageInstallError names both."""
@@ -447,8 +467,8 @@ class InstallPkgTests(PackageManagerTestBase):
         with self.assertRaises(error.PackageInstallError) as ctx:
             pm.install_pkg('foo', 'dep', '/fetch', '/install')
         self.assertEqual(repo.calls, [
-                ('http://repo', 'dep-foo.tar.bz2'),
                 ('http://repo', 'dep-foo.tar.zst'),
+                ('http://repo', 'dep-foo.tar.bz2'),
         ])
         self.assertIn('dep-foo.tar.bz2', str(ctx.exception))
         self.assertIn('dep-foo.tar.zst', str(ctx.exception))
@@ -456,29 +476,29 @@ class InstallPkgTests(PackageManagerTestBase):
     def test_install_pkg_uses_checksum_dict_to_order_candidates(self):
         """packages.checksum orders the advertised format first."""
         pm = self._make_pkgmgr()
-        pm._checksum_dict = {'dep-foo.tar.zst': 'deadbeef'}
-        repo = StubFetcher('http://repo', {'dep-foo.tar.zst'})
+        pm._checksum_dict = {'dep-foo.tar.bz2': 'deadbeef'}
+        repo = StubFetcher('http://repo', {'dep-foo.tar.bz2'})
         pm.add_repository(repo)
         untarred = []
         pm.untar_pkg = lambda path, d: untarred.append(path)
 
         pm.install_pkg('foo', 'dep', '/fetch', '/install')
-        self.assertEqual(repo.calls, [('http://repo', 'dep-foo.tar.zst')])
-        self.assertEqual(untarred, ['/fetch/dep-foo.tar.zst'])
+        self.assertEqual(repo.calls, [('http://repo', 'dep-foo.tar.bz2')])
+        self.assertEqual(untarred, ['/fetch/dep-foo.tar.bz2'])
 
     def test_install_pkg_uses_checksum_file_on_disk_when_memory_empty(self):
         """On-disk packages.checksum orders candidates when _checksum_dict is empty."""
         pm = self._make_pkgmgr()
         self.existing_files[
-                pm._get_checksum_file_path()] = 'deadbeef dep-foo.tar.zst\n'
-        repo = StubFetcher('http://repo', {'dep-foo.tar.zst'})
+                pm._get_checksum_file_path()] = 'deadbeef dep-foo.tar.bz2\n'
+        repo = StubFetcher('http://repo', {'dep-foo.tar.bz2'})
         pm.add_repository(repo)
         untarred = []
         pm.untar_pkg = lambda path, d: untarred.append(path)
 
         pm.install_pkg('foo', 'dep', '/fetch', '/install')
-        self.assertEqual(repo.calls, [('http://repo', 'dep-foo.tar.zst')])
-        self.assertEqual(untarred, ['/fetch/dep-foo.tar.zst'])
+        self.assertEqual(repo.calls, [('http://repo', 'dep-foo.tar.bz2')])
+        self.assertEqual(untarred, ['/fetch/dep-foo.tar.bz2'])
 
     def test_install_pkg_checksum_lists_both_formats(self):
         """When packages.checksum lists both formats, default suffix is first."""
@@ -494,8 +514,8 @@ class InstallPkgTests(PackageManagerTestBase):
         pm.untar_pkg = lambda path, d: untarred.append(path)
 
         pm.install_pkg('foo', 'dep', '/fetch', '/install')
-        self.assertEqual(repo.calls, [('http://repo', 'dep-foo.tar.bz2')])
-        self.assertEqual(untarred, ['/fetch/dep-foo.tar.bz2'])
+        self.assertEqual(repo.calls, [('http://repo', 'dep-foo.tar.zst')])
+        self.assertEqual(untarred, ['/fetch/dep-foo.tar.zst'])
 
     def test_install_pkg_checksum_stale_falls_back_to_other_format(self):
         """If the format in packages.checksum is missing, the other is tried."""
@@ -516,7 +536,7 @@ class InstallPkgTests(PackageManagerTestBase):
     def test_install_pkg_forwards_repo_url(self):
         """An explicit repo_url is resolved via get_fetcher and used directly."""
         pm = self._make_pkgmgr()
-        repo = StubFetcher('http://custom/repo', {'dep-foo.tar.bz2'})
+        repo = StubFetcher('http://custom/repo', {'dep-foo.tar.zst'})
         pm.untar_pkg = lambda path, d: None
 
         with mock.patch.object(pm, 'get_fetcher',
@@ -528,24 +548,24 @@ class InstallPkgTests(PackageManagerTestBase):
                            repo_url='http://custom/repo')
         mock_gf.assert_called_once_with('http://custom/repo')
         self.assertEqual(repo.calls, [
-                ('http://custom/repo', 'dep-foo.tar.bz2'),
+                ('http://custom/repo', 'dep-foo.tar.zst'),
         ])
 
     def test_empty_repo_url_uses_configured_repositories(self):
         """repo_url='' (from os.path.dirname on bare names) uses self.repositories."""
         pm = self._make_pkgmgr()
         repo = StubFetcher('http://repo',
-                           {'sleeptest.tar.bz2', 'dep-foo.tar.bz2'})
+                           {'sleeptest.tar.zst', 'dep-foo.tar.zst'})
         pm.add_repository(repo)
         pm.untar_pkg = lambda path, d: None
 
-        pm.fetch_pkg('sleeptest.tar.bz2',
-                     '/fetch/sleeptest.tar.bz2',
+        pm.fetch_pkg('sleeptest.tar.zst',
+                     '/fetch/sleeptest.tar.zst',
                      repo_url='')
         pm.install_pkg('foo', 'dep', '/fetch', '/install', repo_url='')
         self.assertEqual(repo.calls, [
-                ('http://repo', 'sleeptest.tar.bz2'),
-                ('http://repo', 'dep-foo.tar.bz2'),
+                ('http://repo', 'sleeptest.tar.zst'),
+                ('http://repo', 'dep-foo.tar.zst'),
                 ('http://repo', 'packages.checksum'),
         ])
 
@@ -581,15 +601,15 @@ class InstallPkgTests(PackageManagerTestBase):
         dead_repo = StubFetcher(
                 'http://dead-cache',
                 fail_with=lambda fn: error.PackageFetchError('timeout: ' + fn))
-        fallback_repo = StubFetcher('autoserv://', {'dep-foo.tar.bz2'})
+        fallback_repo = StubFetcher('autoserv://', {'dep-foo.tar.zst'})
         pm.repositories = [fallback_repo, dead_repo]
 
         pm.install_pkg('foo', 'dep', '/fetch', '/install')
         self.assertEqual(dead_repo.calls,
-                         [('http://dead-cache', 'dep-foo.tar.bz2')])
+                         [('http://dead-cache', 'dep-foo.tar.zst')])
         self.assertEqual(fallback_repo.calls,
-                         [('autoserv://', 'dep-foo.tar.bz2')])
-        self.assertEqual(untarred, ['/fetch/dep-foo.tar.bz2'])
+                         [('autoserv://', 'dep-foo.tar.zst')])
+        self.assertEqual(untarred, ['/fetch/dep-foo.tar.zst'])
 
     def test_install_pkg_uncached_dead_repo_makes_single_attempt(self):
         """Uncached install against a dead repo does not fetch packages.checksum."""
@@ -603,13 +623,13 @@ class InstallPkgTests(PackageManagerTestBase):
             pm.install_pkg('autotest', 'client', '/fetch', '/install')
 
         self.assertEqual(dead_repo.calls,
-                         [('http://dead-cache', 'client-autotest.tar.bz2')])
+                         [('http://dead-cache', 'client-autotest.tar.zst')])
 
     def test_install_pkg_does_not_retry_failed_checksum_fetch(self):
         """When packages.checksum fetch fails, compare_checksum does not retry."""
         pm = self._make_pkgmgr()
         # Simulate a cached tarball already on the DUT, but no local checksum.
-        self.existing_files['/fetch/client-autotest.tar.bz2'] = 'cached'
+        self.existing_files['/fetch/client-autotest.tar.zst'] = 'cached'
         dead_repo = StubFetcher(
                 'http://dead-cache',
                 fail_with=lambda fn: error.PackageFetchError('timeout: ' + fn))
@@ -620,13 +640,13 @@ class InstallPkgTests(PackageManagerTestBase):
 
         self.assertEqual(dead_repo.calls, [
                 ('http://dead-cache', 'packages.checksum'),
-                ('http://dead-cache', 'client-autotest.tar.bz2'),
+                ('http://dead-cache', 'client-autotest.tar.zst'),
         ])
 
     def test_failed_direct_checksum_fetch_marks_checksum_fetch_failed(self):
         """A failed fetch_pkg(CHECKSUM_FILE) prevents a retry in install_pkg."""
         pm = self._make_pkgmgr()
-        self.existing_files['/fetch/dep-foo.tar.bz2'] = 'cached'
+        self.existing_files['/fetch/dep-foo.tar.zst'] = 'cached'
         dead_repo = StubFetcher(
                 'http://dead-cache',
                 fail_with=lambda fn: error.PackageFetchError('timeout: ' + fn))
@@ -643,7 +663,7 @@ class InstallPkgTests(PackageManagerTestBase):
 
         self.assertEqual(dead_repo.calls, [
                 ('http://dead-cache', 'packages.checksum'),
-                ('http://dead-cache', 'dep-foo.tar.bz2'),
+                ('http://dead-cache', 'dep-foo.tar.zst'),
         ])
 
     def test_install_pkg_falls_back_to_bz2_when_zst_untar_fails(self):

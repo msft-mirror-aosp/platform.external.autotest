@@ -72,6 +72,11 @@ class TelemetrySetupError(Exception):
     pass
 
 
+class TelemetryExtractError(TelemetrySetupError):
+    """tar ran but failed to extract the archive."""
+    pass
+
+
 class TelemetrySetup(object):
     """Class that sets up the environment for telemetry testing."""
 
@@ -116,6 +121,7 @@ class TelemetrySetup(object):
         self._tmp_build_dir = os.path.join(self._BASE_DIR_PATH, self._build)
         self._tlm_src_dir_path = os.path.join(self._tmp_build_dir,
                                               self._TELEMETRY_SRC_DIR_NAME)
+        self._skipped_suffixes = set()
 
     def Setup(self):
         """Sets up the environment for telemetry testing.
@@ -139,13 +145,14 @@ class TelemetrySetup(object):
             if not os.path.exists(src_folder):
                 # Download the required dependency tarballs.
                 for dep in self._DEPENDENCIES:
-                    dep_path = self._DownloadDependency(dep)
-                    if dep_path:
-                        self._ExtractTarball(dep_path, self._tlm_src_dir_path)
-                    elif dep == 'telemetry_dep':
+                    if (not self._FetchAndExtract(dep)
+                                and dep == 'telemetry_dep'):
+                        note = (' (%s was skipped because zstd is not '
+                                'installed)' % packages.ZSTD_TARBALL_SUFFIX
+                                if not packages.has_zstd() else '')
                         raise TelemetrySetupError(
                                 'dep-telemetry_dep was not found for build '
-                                '%s.' % self._build)
+                                '%s%s.' % (self._build, note))
 
                 if not os.path.isdir(test_src):
                     raise TelemetrySetupError(
@@ -165,7 +172,38 @@ class TelemetrySetup(object):
                             (self._build, e))
         return src_folder
 
-    def _DownloadDependency(self, dep_name):
+    def _FetchAndExtract(self, dep):
+        """Downloads and extracts a dependency, falling back on zstd failure.
+
+        Args:
+          dep: Name of the dependency package, e.g. 'telemetry_dep'.
+
+        Returns:
+            True if the dependency was downloaded and extracted, or False if no
+            usable format of the dependency is published.
+        """
+        dep_path = self._DownloadDependency(dep,
+                                            exclude_suffixes=tuple(
+                                                    self._skipped_suffixes))
+        if not dep_path:
+            return False
+        try:
+            self._ExtractTarball(dep_path, self._tlm_src_dir_path)
+        except TelemetryExtractError as e:
+            if not dep_path.endswith(packages.ZSTD_TARBALL_SUFFIX):
+                raise
+            logging.warning('%s; falling back to %s.', e,
+                            packages.BZIP2_TARBALL_SUFFIX)
+            self._RemoveQuietly(dep_path)
+            self._skipped_suffixes.add(packages.ZSTD_TARBALL_SUFFIX)
+            fallback = self._DownloadDependency(
+                    dep, exclude_suffixes=tuple(self._skipped_suffixes))
+            if not fallback:
+                raise
+            self._ExtractTarball(fallback, self._tlm_src_dir_path)
+        return True
+
+    def _DownloadDependency(self, dep_name, exclude_suffixes=()):
         """Downloads a dependency tarball in whichever supported format exists.
 
         Candidates come from packages.PackageManager.get_tarball_names(), which
@@ -175,12 +213,30 @@ class TelemetrySetup(object):
 
         Args:
           dep_name: Name of the dependency package, e.g. 'telemetry_dep'.
+          exclude_suffixes: Compression suffixes to skip, e.g. after a failed
+              extraction.
 
         Returns:
             Full path to the downloaded tarball, or None if this build does not
             publish the dependency in any supported format.
         """
-        candidates = packages.PackageManager.get_tarball_names(dep_name, 'dep')
+        all_candidates = packages.PackageManager.get_tarball_names(
+                dep_name, 'dep')
+        zstd_missing = not packages.has_zstd()
+        if (zstd_missing and packages.ZSTD_TARBALL_SUFFIX
+                    not in self._skipped_suffixes):
+            logging.warning(
+                    'zstd is not installed on this host; skipping %s '
+                    'telemetry dependency tarballs.',
+                    packages.ZSTD_TARBALL_SUFFIX)
+            self._skipped_suffixes.add(packages.ZSTD_TARBALL_SUFFIX)
+        skipped = set(exclude_suffixes) | self._skipped_suffixes
+        if skipped:
+            candidates = [
+                    c for c in all_candidates if not c.endswith(tuple(skipped))
+            ]
+        else:
+            candidates = all_candidates
         for filename in candidates:
             dep_path = self._DownloadFilesFromDevserver(
                     filename, self._setup_dir_path)
@@ -189,8 +245,10 @@ class TelemetrySetup(object):
 
         # Not fatal here: a dependency can be absent because it is new, because
         # it was dropped, or because this build predates it.
-        logging.warning('None of %s were found for build %s.',
-                        ', '.join(candidates), self._build)
+        note = (' (%s skipped because zstd is not installed)' %
+                packages.ZSTD_TARBALL_SUFFIX if zstd_missing else '')
+        logging.warning('None of %s were found for build %s%s.',
+                        ', '.join(candidates), self._build, note)
         return None
 
     def _DownloadFilesFromDevserver(self, filename, dest_path):
@@ -358,7 +416,7 @@ class TelemetrySetup(object):
                     'An exception occurred while trying to untar %s into %s: %s'
                     % (tarball_path, dest_path, str(e)))
         if proc.returncode != 0:
-            raise TelemetrySetupError(
+            raise TelemetryExtractError(
                     'tar exited with %d while extracting %s into %s: %s' %
                     (proc.returncode, tarball_path, dest_path,
                      err.decode('utf-8', 'replace').strip()))

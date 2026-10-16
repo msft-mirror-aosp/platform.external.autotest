@@ -329,5 +329,43 @@ class TestAutotest(unittest.TestCase):
                              '/autotest/dest/:/autotest/fifo3')
 
 
+    def test_client_logger_send_tarball_skips_zstd_when_zstd_unavailable(self):
+        autotest.log_collector.expect_new(self.host, '', '')
+        logger = autotest.client_logger(self.host, '', '')
+        self.host.job.pkgmgr = self.god.create_mock_class(
+                packages.PackageManager, 'pkgmgr')
+        self.host.job.pkgmgr.pkgmgr_dir = '/pkgmgr'
+        self.host.job.clientdir = '/client'
+        self.god.stub_function(packages, 'has_zstd')
+        self.god.stub_class(autotest.autotemp, 'tempdir')
+
+        # A .tar.zst request returns early without calling tar_package.
+        os.path.exists.expect_call(
+                '/pkgmgr/packages/dep-foo.tar.zst').and_return(False)
+        self.host.job.pkgmgr.parse_tarball_name.expect_call(
+                'dep-foo.tar.zst').and_return(('foo', 'dep'))
+        packages.has_zstd.expect_call().and_return(False)
+        logger._send_tarball('dep-foo.tar.zst', '/autotest/dest/')
+        self.god.check_playback()
+
+        # A .tar.bz2 request is still packaged and sent when zstd is missing.
+        os.path.exists.expect_call(
+                '/pkgmgr/packages/dep-foo.tar.bz2').and_return(False)
+        self.host.job.pkgmgr.parse_tarball_name.expect_call(
+                'dep-foo.tar.bz2').and_return(('foo', 'dep'))
+        os.path.exists.expect_call('/client/deps/foo').and_return(True)
+        temp_dir = autotest.autotemp.tempdir.expect_new(
+                unique_id='autoserv-packager', dir='/job/tmp')
+        temp_dir.name = '/job/tmp/packager'
+        self.host.job.pkgmgr.tar_package.expect_call(
+                'dep-foo.tar.bz2', '/client/deps/foo', '/job/tmp/packager',
+                ' .').and_return('/job/tmp/packager/dep-foo.tar.bz2')
+        self.host.send_file.expect_call('/job/tmp/packager/dep-foo.tar.bz2',
+                                        '/autotest/dest/')
+        temp_dir.clean.expect_call()
+        logger._send_tarball('dep-foo.tar.bz2', '/autotest/dest/')
+        self.god.check_playback()
+
+
 if __name__ == "__main__":
     unittest.main()

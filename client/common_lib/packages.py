@@ -54,20 +54,26 @@ def has_zstd():
 BZIP2_TARBALL_SUFFIX = '.tar.bz2'
 ZSTD_TARBALL_SUFFIX = '.tar.zst'
 
-# Suffix used for tarballs this module creates. Before flipping this to
-# ZSTD_TARBALL_SUFFIX, every reader and build consumer must support .tar.zst
-# and have the zstd binary available (see b/563203733):
-#   - client/common_lib/packages.py, client/common_lib/test.py,
-#     server/autotest.py, server/cros/telemetry_deploy.py, utils/packager.py
-#   - server/cros/telemetry_setup.py (here and in
-#     chromiumos/infra/autotest-drone)
-#   - chromite/service/packages.py and src/platform/dev/devserver.py
-#   - chromiumos-overlay: chromeos-base/telemetry,
-#     chromeos-base/autotest-client, eclass/autotest.eclass (doins and
-#     BDEPEND="app-arch/zstd"), and eclass/autotest-deponly.eclass
-#     (BDEPEND="app-arch/zstd")
-#   - older source images in cross-version AU tests
-DEFAULT_TARBALL_SUFFIX = BZIP2_TARBALL_SUFFIX
+# Preferred suffix: readers probe it first (get_tarball_names()). During the
+# bzip2->zstd migration (b/563203733), utils/packager.py publishes every
+# suffix in PUBLISHED_TARBALL_SUFFIXES so bzip2-only consumers keep working.
+# Before dropping bzip2 from PUBLISHED_TARBALL_SUFFIXES (b/563203733):
+#   - These must accept .tar.zst: chromeos-base/telemetry,
+#     chromeos-base/autotest-client, and src/platform/dev/devserver.py (all
+#     bz2-only at cros/main).
+#   - These hosts must have the zstd binary: DUT images, including older
+#     source images in cross-version AU tests, and hosts running either copy
+#     of telemetry_setup.py (here and in autotest-drone), including the CFT
+#     cros-test image (check that cros-test-full-base ships it).
+# Do NOT add app-arch/zstd to BDEPEND in autotest*.eclass: it is already in
+# the SDK, and changing it invalidates the chromeos-chrome binpkg.
+DEFAULT_TARBALL_SUFFIX = ZSTD_TARBALL_SUFFIX
+
+# Compression suffixes that utils/packager.py builds and uploads for each
+# package. Kept separate from TARBALL_SUFFIXES so dropping bzip2 from
+# publishing (b/563203733) does not stop readers from probing .tar.bz2 for
+# older builds.
+PUBLISHED_TARBALL_SUFFIXES = (ZSTD_TARBALL_SUFFIX, BZIP2_TARBALL_SUFFIX)
 
 
 def _ordered_tarball_suffixes():
@@ -1180,6 +1186,20 @@ class BasePackageManager(object):
         return [
                 cls.get_tarball_name(name, pkg_type, suffix)
                 for suffix in _ordered_tarball_suffixes()
+        ]
+
+    @classmethod
+    def get_published_tarball_names(cls, name, pkg_type):
+        """Lists the tarball names that packager publishes for a package.
+
+        @param name: The name of the package
+        @param pkg_type: The type of the package
+
+        @returns A list of tarball filenames to build and upload
+        """
+        return [
+                cls.get_tarball_name(name, pkg_type, suffix)
+                for suffix in PUBLISHED_TARBALL_SUFFIXES
         ]
 
 

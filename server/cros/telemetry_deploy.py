@@ -81,12 +81,10 @@ _SCRATCH_PATHS = (_SCRATCH_DIR, _STAGING_DIR)
 # autotest/packages/<name> and is not available as a standalone GCS object, so
 # it has to be fetched through the cache server's extract endpoint.
 #
-# They are tried in the order returned by PackageManager.get_tarball_names()
-# and the first one that is published for the build wins; chromeos-base/telemetry
-# probes the same two names. The order follows packages.DEFAULT_TARBALL_SUFFIX
-# (currently bzip2 first), so flipping DEFAULT_TARBALL_SUFFIX when builds switch
-# to zstd automatically moves the fallback probe onto the shrinking set of older
-# builds rather than the growing set of newer ones.
+# They are tried in the order returned by PackageManager.get_tarball_names(),
+# which puts packages.DEFAULT_TARBALL_SUFFIX first, and the first one that is
+# published for the build wins. Older builds from before the zstd switch are
+# reached via the bzip2 fallback probe.
 #
 # _decompress_flag() derives the tar flag from whichever name resolved, so
 # adding or reordering formats needs no other change.

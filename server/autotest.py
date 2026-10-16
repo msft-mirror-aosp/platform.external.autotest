@@ -1624,6 +1624,13 @@ class client_logger(object):
         else:
             return  # no other types are supported
 
+        if (pkg_name.endswith(packages.ZSTD_TARBALL_SUFFIX)
+                    and not packages.has_zstd()):
+            logging.info(
+                    'zstd is not available on this host; skipping on-the-fly '
+                    '%s', pkg_name)
+            return
+
         # iterate over src_dirs until we find one that exists, then tar it
         for src_dir in src_dirs:
             if os.path.exists(src_dir):

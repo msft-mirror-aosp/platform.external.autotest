@@ -702,26 +702,26 @@ class PayloadFormatTest(unittest.TestCase):
         """Returns the candidate names asked for, in order."""
         return [call[0][4] for call in dep_url.call_args_list]
 
-    def test_bzip2_is_tried_first_today(self, _enabled, _dep_url):
-        """Every build publishes bzip2; zstd first would cost a wasted 404."""
-        self.assertEqual(telemetry_deploy.TELEMETRY_DEP_TARBALLS, (_BZ2, _ZST))
+    def test_zstd_is_tried_first_today(self, _enabled, _dep_url):
+        """New builds publish zstd; bzip2 is a fallback for older ones."""
+        self.assertEqual(telemetry_deploy.TELEMETRY_DEP_TARBALLS, (_ZST, _BZ2))
 
     def test_second_candidate_is_not_fetched_when_the_first_works(
             self, _enabled, dep_url):
         host = FakeHost(failures={_ABSENT: 1})
         telemetry_deploy.ensure_telemetry_on_dut(host)
-        self.assertEqual(self._requested(dep_url), [_BZ2])
-        self.assertIn(' -j ', host.matching('tar x')[0])
+        self.assertEqual(self._requested(dep_url), [_ZST])
+        self.assertIn(' --zstd ', host.matching('tar x')[0])
 
-    def test_falls_back_to_zstd_when_bzip2_is_not_published(
+    def test_falls_back_to_bzip2_when_zstd_is_not_published(
             self, _enabled, dep_url):
-        """The case this fallback exists for: a build past the zstd switch."""
-        host = FakeHost(failures={_ABSENT: 1, _BZ2: _HTTP_404})
+        """The case this fallback exists for: a build from before the switch."""
+        host = FakeHost(failures={_ABSENT: 1, _ZST: _HTTP_404})
         self.assertTrue(telemetry_deploy.ensure_telemetry_on_dut(host))
-        self.assertEqual(self._requested(dep_url), [_BZ2, _ZST])
+        self.assertEqual(self._requested(dep_url), [_ZST, _BZ2])
         tar = host.matching('tar x')[0]
-        self.assertIn(' --zstd ', tar)
-        self.assertIn(_ZST, tar)
+        self.assertIn(' -j ', tar)
+        self.assertIn(_BZ2, tar)
 
     def test_network_failure_does_not_try_the_next_format(
             self, _enabled, dep_url):
@@ -735,7 +735,7 @@ class PayloadFormatTest(unittest.TestCase):
             host = FakeHost(failures={_ABSENT: 1, 'curl': failure})
             with self.assertRaises(telemetry_deploy.TelemetryDeployError):
                 telemetry_deploy.ensure_telemetry_on_dut(host)
-            self.assertEqual(self._requested(dep_url), [_BZ2])
+            self.assertEqual(self._requested(dep_url), [_ZST])
 
     def test_no_published_format_names_every_candidate(self, _enabled,
                                                        _dep_url):

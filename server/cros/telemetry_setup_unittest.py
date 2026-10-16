@@ -6,6 +6,7 @@
 """Unit tests for server/cros/telemetry_setup.py."""
 
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -84,10 +85,11 @@ class DownloadDependencyTest(TelemetrySetupTestCase):
 
     def setUp(self):
         super().setUp()
-        patcher = mock.patch.object(packages, 'DEFAULT_TARBALL_SUFFIX',
-                                    packages.BZIP2_TARBALL_SUFFIX)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        has_zstd_patcher = mock.patch.object(packages,
+                                             'has_zstd',
+                                             return_value=True)
+        has_zstd_patcher.start()
+        self.addCleanup(has_zstd_patcher.stop)
 
     def _serve(self, statuses):
         """Answers requests.get for each tarball name with the given status.
@@ -116,44 +118,68 @@ class DownloadDependencyTest(TelemetrySetupTestCase):
         get = self._serve({_BZ2: 200, _ZST: 200})
         path = self.telemetry._DownloadDependency('telemetry_dep')
         self.assertEqual(path,
-                         os.path.join(self.telemetry._setup_dir_path, _BZ2))
-        self.assertEqual(self._requested(get), [_BZ2])
+                         os.path.join(self.telemetry._setup_dir_path, _ZST))
+        self.assertEqual(self._requested(get), [_ZST])
         with open(path, 'rb') as f:
             self.assertEqual(f.read(), b'payload')
 
     def test_order_follows_default_tarball_suffix(self):
         get = self._serve({_BZ2: 200, _ZST: 200})
         with mock.patch.object(packages, 'DEFAULT_TARBALL_SUFFIX',
-                               packages.ZSTD_TARBALL_SUFFIX):
+                               packages.BZIP2_TARBALL_SUFFIX):
             path = self.telemetry._DownloadDependency('telemetry_dep')
-        self.assertEqual(os.path.basename(path), _ZST)
-        self.assertEqual(self._requested(get), [_ZST])
+        self.assertEqual(os.path.basename(path), _BZ2)
+        self.assertEqual(self._requested(get), [_BZ2])
+
+    def test_skips_zstd_and_warns_once_when_zstd_binary_unavailable(self):
+        get = self._serve({_BZ2: 200, _ZST: 200})
+        with mock.patch.object(packages, 'has_zstd', return_value=False), \
+                self.assertLogs(level='WARNING') as logs:
+            first = self.telemetry._DownloadDependency('telemetry_dep')
+            second = self.telemetry._DownloadDependency('telemetry_dep')
+        self.assertEqual(os.path.basename(first), _BZ2)
+        self.assertEqual(os.path.basename(second), _BZ2)
+        self.assertEqual(self._requested(get), [_BZ2, _BZ2])
+        zstd_warnings = [
+                m for m in logs.output if 'zstd is not installed' in m
+        ]
+        self.assertEqual(len(zstd_warnings), 1)
+
+    def test_missing_dep_when_zstd_unavailable_notes_skipped_format(self):
+        self._serve({})
+        with mock.patch.object(packages, 'has_zstd', return_value=False), \
+                self.assertLogs(level='WARNING') as logs:
+            path = self.telemetry._DownloadDependency('telemetry_dep')
+        self.assertIsNone(path)
+        self.assertTrue(
+                any('.tar.zst skipped because zstd is not installed' in m
+                    for m in logs.output))
 
     def test_404_falls_through_to_next_format(self):
-        get = self._serve({_ZST: 200})
+        get = self._serve({_BZ2: 200})
         path = self.telemetry._DownloadDependency('telemetry_dep')
-        self.assertEqual(os.path.basename(path), _ZST)
-        self.assertEqual(self._requested(get), [_BZ2, _ZST])
+        self.assertEqual(os.path.basename(path), _BZ2)
+        self.assertEqual(self._requested(get), [_ZST, _BZ2])
 
     def test_410_falls_through_to_next_format(self):
-        get = self._serve({_BZ2: 410, _ZST: 200})
+        get = self._serve({_ZST: 410, _BZ2: 200})
         path = self.telemetry._DownloadDependency('telemetry_dep')
-        self.assertEqual(os.path.basename(path), _ZST)
-        self.assertEqual(self._requested(get), [_BZ2, _ZST])
+        self.assertEqual(os.path.basename(path), _BZ2)
+        self.assertEqual(self._requested(get), [_ZST, _BZ2])
 
     def test_no_format_published_returns_none_and_warns(self):
         get = self._serve({})
         with self.assertLogs(level='WARNING') as logs:
             path = self.telemetry._DownloadDependency('telemetry_dep')
         self.assertIsNone(path)
-        self.assertEqual(self._requested(get), [_BZ2, _ZST])
-        self.assertIn('%s, %s' % (_BZ2, _ZST), logs.output[0])
+        self.assertEqual(self._requested(get), [_ZST, _BZ2])
+        self.assertIn('%s, %s' % (_ZST, _BZ2), logs.output[0])
 
     def test_server_error_raises_without_trying_next_format(self):
-        get = self._serve({_BZ2: 503, _ZST: 200})
+        get = self._serve({_ZST: 503, _BZ2: 200})
         with self.assertRaises(telemetry_setup.TelemetrySetupError):
             self.telemetry._DownloadDependency('telemetry_dep')
-        self.assertEqual(self._requested(get), [_BZ2])
+        self.assertEqual(self._requested(get), [_ZST])
 
     def test_transient_http_errors_fall_back_to_ssh(self):
         errors = (
@@ -164,7 +190,7 @@ class DownloadDependencyTest(TelemetrySetupTestCase):
             with self.subTest(error=type(err).__name__):
 
                 def fake_get(url, timeout=None, exc=err):
-                    if _tarball_name(url) == _BZ2:
+                    if _tarball_name(url) == _ZST:
                         raise exc
                     return _http_response(200)
 
@@ -175,12 +201,12 @@ class DownloadDependencyTest(TelemetrySetupTestCase):
                         mock.patch.object(telemetry_setup.subprocess,
                                           'Popen', popen):
                     path = self.telemetry._DownloadDependency('telemetry_dep')
-                self.assertEqual(os.path.basename(path), _ZST)
+                self.assertEqual(os.path.basename(path), _BZ2)
                 self.assertEqual(popen.call_count, 1)
                 self.assertFalse(
                         os.path.exists(
                                 os.path.join(self.telemetry._setup_dir_path,
-                                             _BZ2)))
+                                             _ZST)))
 
 
 class DownloadViaSshTest(TelemetrySetupTestCase):
@@ -293,7 +319,7 @@ class ExtractTarballTest(TelemetrySetupTestCase):
             self._extract('dep-telemetry_dep.tar.gz')
 
     def test_tar_failure_raises(self):
-        with self.assertRaisesRegex(telemetry_setup.TelemetrySetupError,
+        with self.assertRaisesRegex(telemetry_setup.TelemetryExtractError,
                                     'zstd: Cannot exec'):
             self._extract(_ZST,
                           returncode=2,
@@ -374,6 +400,67 @@ class RealTarTest(TelemetrySetupTestCase):
             with self.assertRaises(telemetry_setup.TelemetrySetupError):
                 self.telemetry.Setup()
 
+    def test_setup_falls_back_to_bzip2_when_zstd_extraction_fails(self):
+        corrupt_zst = os.path.join(self.tmpdir, _ZST)
+        with open(corrupt_zst, 'wb') as f:
+            f.write(b'not a zstd archive')
+        valid_bz2 = self._make_tarball(_BZ2, ['-j'])
+
+        def fake_download(dep_name, exclude_suffixes=()):
+            if dep_name != 'telemetry_dep':
+                return None
+            if packages.ZSTD_TARBALL_SUFFIX in exclude_suffixes:
+                return valid_bz2
+            return corrupt_zst
+
+        with mock.patch.object(self.telemetry,
+                               '_DownloadDependency',
+                               side_effect=fake_download) as download, \
+                self.assertLogs(level='WARNING') as logs:
+            src = self.telemetry.Setup()
+        with open(os.path.join(src, 'marker')) as f:
+            self.assertEqual(f.read(), 'telemetry')
+        self.assertFalse(os.path.exists(corrupt_zst))
+        zst_excluded = (packages.ZSTD_TARBALL_SUFFIX, )
+        self.assertEqual(download.call_args_list, [
+                mock.call('telemetry_dep', exclude_suffixes=()),
+                mock.call('telemetry_dep', exclude_suffixes=zst_excluded),
+                mock.call('chrome_test', exclude_suffixes=zst_excluded),
+                mock.call('perf_data_dep', exclude_suffixes=zst_excluded),
+        ])
+        self.assertTrue(any('falling back to' in m for m in logs.output))
+
+    def test_setup_reraises_zstd_extraction_error_when_fallback_missing(self):
+        corrupt_zst = os.path.join(self.tmpdir, _ZST)
+        with open(corrupt_zst, 'wb') as f:
+            f.write(b'not a zstd archive')
+        with mock.patch.object(self.telemetry,
+                               '_DownloadDependency',
+                               side_effect=[corrupt_zst, None]), \
+                self.assertLogs(level='WARNING'):
+            with self.assertRaisesRegex(telemetry_setup.TelemetryExtractError,
+                                        re.escape(_ZST)):
+                self.telemetry.Setup()
+        self.assertFalse(os.path.exists(corrupt_zst))
+
+    def test_setup_does_not_fall_back_when_popen_raises_on_zstd(self):
+        zst_path = os.path.join(self.tmpdir, _ZST)
+        with open(zst_path, 'wb') as f:
+            f.write(b'payload')
+        with mock.patch.object(self.telemetry,
+                               '_DownloadDependency',
+                               return_value=zst_path) as download, \
+                mock.patch.object(telemetry_setup.subprocess,
+                                  'Popen',
+                                  side_effect=OSError('fork failed')):
+            with self.assertRaisesRegex(telemetry_setup.TelemetrySetupError,
+                                        'fork failed') as ctx:
+                self.telemetry.Setup()
+        self.assertNotIsInstance(ctx.exception,
+                                 telemetry_setup.TelemetryExtractError)
+        self.assertEqual(download.call_args_list,
+                         [mock.call('telemetry_dep', exclude_suffixes=())])
+
     def test_setup_raises_when_telemetry_dep_is_missing(self):
         chrome_test = self._make_tarball('dep-chrome_test.tar.bz2', ['-j'])
         with mock.patch.object(self.telemetry,
@@ -383,7 +470,18 @@ class RealTarTest(TelemetrySetupTestCase):
             with self.assertRaisesRegex(telemetry_setup.TelemetrySetupError,
                                         'dep-telemetry_dep'):
                 self.telemetry.Setup()
-        self.assertEqual(download.call_args_list, [mock.call('telemetry_dep')])
+        self.assertEqual(download.call_args_list,
+                         [mock.call('telemetry_dep', exclude_suffixes=())])
+
+    def test_setup_missing_telemetry_dep_notes_skipped_zstd(self):
+        with mock.patch.object(packages, 'has_zstd', return_value=False), \
+                mock.patch.object(self.telemetry,
+                                  '_DownloadDependency',
+                                  return_value=None):
+            with self.assertRaisesRegex(
+                    telemetry_setup.TelemetrySetupError,
+                    r'skipped because zstd is not installed'):
+                self.telemetry.Setup()
 
     def test_setup_raises_when_archive_lacks_test_src(self):
         with mock.patch.object(self.telemetry,

@@ -115,13 +115,20 @@ def get_build_dir(name, dest_dir, pkg_type):
         build_dir = os.path.join(base_build_dir, pkg_type + 's', name)
     return build_dir
 
+
+def _can_reuse_existing_tarballs(publish_pkg_names, pkg_dir):
+    """Returns True only if all published tarball formats exist in pkg_dir."""
+    return bool(publish_pkg_names) and all(
+            os.path.exists(os.path.join(pkg_dir, pkg_name))
+            for pkg_name in publish_pkg_names)
+
+
 def process_packages(pkgmgr, pkg_type, pkg_names, src_dir,
                      action, dest_dir=None):
     """Method to upload or remove package depending on the flag passed to it.
 
-    If tar_only is set to True, this routine is solely used to generate a
-    tarball and compute the md5sum from that tarball.
-    If the tar_only flag is True, then the remove flag is ignored.
+    If action is ACTION_TAR_ONLY, this routine is solely used to generate
+    tarballs and compute the md5sum for each published tarball format.
     """
     exclude_string = ' .'
     names = [p.strip() for p in pkg_names.split(',')]
@@ -138,8 +145,8 @@ def process_packages(pkgmgr, pkg_type, pkg_names, src_dir,
             # for the profilers and deps
             pkg_dir = os.path.join(src_dir, name)
 
-        pkg_name = pkgmgr.get_tarball_name(name, pkg_type)
         all_pkg_names = pkgmgr.get_tarball_names(name, pkg_type)
+        publish_pkg_names = pkgmgr.get_published_tarball_names(name, pkg_type)
 
         exclude_tarballs = ' '.join(
                 '--exclude="**%s" --exclude="**%s.checksum"' %
@@ -155,14 +162,16 @@ def process_packages(pkgmgr, pkg_type, pkg_names, src_dir,
                 msg = ("Work_dir directory for packages %s does not have "
                        "enough space available: %s" % (build_dir, e))
                 raise error.RepoDiskFullError(msg)
-            tarball_path = pkgmgr.tar_package(pkg_name, pkg_dir,
-                                              build_dir, exclude_string_tar)
+            for pkg_name in publish_pkg_names:
+                tarball_path = pkgmgr.tar_package(pkg_name, pkg_dir, build_dir,
+                                                  exclude_string_tar)
 
-            # Create the md5 hash too.
-            md5sum = pkgmgr.compute_checksum(tarball_path)
-            md5sum_filepath = os.path.join(build_dir, pkg_name + '.checksum')
-            with open(md5sum_filepath, "w") as f:
-                f.write(md5sum)
+                # Create the md5 hash too.
+                md5sum = pkgmgr.compute_checksum(tarball_path)
+                md5sum_filepath = os.path.join(build_dir,
+                                               pkg_name + '.checksum')
+                with open(md5sum_filepath, "w") as f:
+                    f.write(md5sum)
 
         elif action == ACTION_UPLOAD:
             # Tar the source and upload
@@ -175,23 +184,35 @@ def process_packages(pkgmgr, pkg_type, pkg_names, src_dir,
                            "enough space available: %s" % (temp_dir, e))
                     raise error.RepoDiskFullError(msg)
 
-                # Check if tarball already exists. If it does, then don't
-                # create a tarball again.
-                tarball_path = os.path.join(pkg_dir, pkg_name);
-                if os.path.exists(tarball_path):
-                    print("process_packages: Tarball %s already exists" %
-                          tarball_path)
-                else:
-                    tarball_path = pkgmgr.tar_package(pkg_name, pkg_dir,
-                                                      temp_dir,
-                                                      exclude_string_tar)
-                # Compare the checksum with what packages.checksum has. If they
-                # match then we don't need to perform the upload.
-                if not pkgmgr.compare_checksum(tarball_path):
-                    pkgmgr.upload_pkg(tarball_path, update_checksum=True)
-                else:
-                    logging.warning('Checksum not changed for %s, not copied '
+                reuse_existing = _can_reuse_existing_tarballs(
+                        publish_pkg_names, pkg_dir)
+                for pkg_name in publish_pkg_names:
+                    # Reuse pre-existing tarballs in pkg_dir only when every
+                    # published format is already present there; otherwise
+                    # build all formats fresh in temp_dir so formats cannot
+                    # come from different source snapshots.
+                    if reuse_existing:
+                        tarball_path = os.path.join(pkg_dir, pkg_name)
+                        print("process_packages: Tarball %s already exists" %
+                              tarball_path)
+                    else:
+                        tarball_path = pkgmgr.tar_package(
+                                pkg_name, pkg_dir, temp_dir,
+                                exclude_string_tar)
+                    try:
+                        # Compare the checksum with what packages.checksum has.
+                        # If they match then we don't need to perform the
+                        # upload.
+                        if not pkgmgr.compare_checksum(tarball_path):
+                            pkgmgr.upload_pkg(tarball_path,
+                                              update_checksum=True)
+                        else:
+                            logging.warning(
+                                    'Checksum not changed for %s, not copied '
                                     'in packages/ directory.', tarball_path)
+                    finally:
+                        if not reuse_existing and os.path.exists(tarball_path):
+                            os.remove(tarball_path)
             finally:
                 # remove the temporary directory
                 shutil.rmtree(temp_dir)
@@ -227,8 +248,8 @@ def tar_packages(pkgmgr, pkg_type, pkg_names, src_dir, temp_dir):
             # for the profilers and deps
             pkg_dir = os.path.join(src_dir, name)
 
-        pkg_name = pkgmgr.get_tarball_name(name, pkg_type)
         all_pkg_names = pkgmgr.get_tarball_names(name, pkg_type)
+        publish_pkg_names = pkgmgr.get_published_tarball_names(name, pkg_type)
 
         # We don't want any pre-existing tarballs and checksums to
         # be repackaged, so we should purge these.
@@ -236,15 +257,19 @@ def tar_packages(pkgmgr, pkg_type, pkg_names, src_dir, temp_dir):
                 '--exclude="**%s" --exclude="**%s.checksum"' %
                 (candidate, candidate) for candidate in all_pkg_names)
         exclude_string_tar = ' %s %s' % (exclude_tarballs, exclude_string)
-        # Check if tarball already exists. If it does, don't duplicate
-        # the effort.
-        tarball_path = os.path.join(pkg_dir, pkg_name)
-        if os.path.exists(tarball_path):
-            print("tar_packages: Tarball %s already exists" % tarball_path)
-        else:
-            tarball_path = pkgmgr.tar_package(pkg_name, pkg_dir,
-                                              temp_dir, exclude_string_tar)
-        tarballs.append(tarball_path)
+        reuse_existing = _can_reuse_existing_tarballs(publish_pkg_names,
+                                                      pkg_dir)
+        for pkg_name in publish_pkg_names:
+            # Check if all published tarballs already exist in pkg_dir. If so,
+            # don't duplicate the effort; if only a subset exists, rebuild all
+            # formats fresh in temp_dir.
+            if reuse_existing:
+                tarball_path = os.path.join(pkg_dir, pkg_name)
+                print("tar_packages: Tarball %s already exists" % tarball_path)
+            else:
+                tarball_path = pkgmgr.tar_package(pkg_name, pkg_dir, temp_dir,
+                                                  exclude_string_tar)
+            tarballs.append(tarball_path)
     return tarballs
 
 

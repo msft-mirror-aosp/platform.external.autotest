@@ -15,7 +15,9 @@ import fcntl
 import logging
 import os
 import re
+import shlex
 import shutil
+import tempfile
 import six
 
 import common
@@ -54,26 +56,12 @@ def has_zstd():
 BZIP2_TARBALL_SUFFIX = '.tar.bz2'
 ZSTD_TARBALL_SUFFIX = '.tar.zst'
 
-# Preferred suffix: readers probe it first (get_tarball_names()). During the
-# bzip2->zstd migration (b/563203733), utils/packager.py publishes every
-# suffix in PUBLISHED_TARBALL_SUFFIXES so bzip2-only consumers keep working.
-# Before dropping bzip2 from PUBLISHED_TARBALL_SUFFIXES (b/563203733):
-#   - These must accept .tar.zst: chromeos-base/telemetry,
-#     chromeos-base/autotest-client, and src/platform/dev/devserver.py (all
-#     bz2-only at cros/main).
-#   - These hosts must have the zstd binary: DUT images, including older
-#     source images in cross-version AU tests, and hosts running either copy
-#     of telemetry_setup.py (here and in autotest-drone), including the CFT
-#     cros-test image (check that cros-test-full-base ships it).
+# Default suffix for tarballs built and packaged by this module
+# (get_tarball_name()), and preferred first when probing candidate formats
+# (get_tarball_names()).
 # Do NOT add app-arch/zstd to BDEPEND in autotest*.eclass: it is already in
 # the SDK, and changing it invalidates the chromeos-chrome binpkg.
 DEFAULT_TARBALL_SUFFIX = ZSTD_TARBALL_SUFFIX
-
-# Compression suffixes that utils/packager.py builds and uploads for each
-# package. Kept separate from TARBALL_SUFFIXES so dropping bzip2 from
-# publishing (b/563203733) does not stop readers from probing .tar.bz2 for
-# older builds.
-PUBLISHED_TARBALL_SUFFIXES = (ZSTD_TARBALL_SUFFIX, BZIP2_TARBALL_SUFFIX)
 
 
 def _ordered_tarball_suffixes():
@@ -877,13 +865,21 @@ class BasePackageManager(object):
                                            % (dir_path, upload_path, why))
 
 
-    def remove_pkg(self, pkg_name, remove_path=None, remove_checksum=False):
+    def remove_pkg(self,
+                   pkg_name,
+                   remove_path=None,
+                   remove_checksum=False,
+                   missing_ok=False):
         '''
         Remove the package from the specified remove_path
-        pkg_name    : name of the package (ex: test-sleeptest.tar.bz2,
-                                           dep-gcc.tar.bz2)
-        remove_path : the location to remove the package from.
-
+        pkg_name        : name of the package (ex: test-sleeptest.tar.bz2,
+                                                   dep-gcc.tar.bz2)
+        remove_path     : the location to remove the package from.
+        remove_checksum : If True, also remove pkg_name from packages.checksum
+                          and sync the updated manifest to each target repo.
+        missing_ok      : If True, ignore missing package files and skip
+                          rewriting packages.checksum when pkg_name is absent
+                          from it.
         '''
         if remove_path:
             remove_path_list = [remove_path]
@@ -895,16 +891,74 @@ class BasePackageManager(object):
 
         checksum_path = self._get_checksum_file_path()
 
+        # When missing_ok=True (used to prune stale formats on upload), only
+        # rewrite the local packages.checksum when pkg_name is actually listed,
+        # avoiding extra shell/file writes across clean package builds.
+        checksum_dirty = False
         if remove_checksum:
-            self.remove_checksum(pkg_name)
+            if not missing_ok or pkg_name in self._get_checksum_dict():
+                self.remove_checksum(pkg_name)
+                checksum_dirty = True
 
-        # remove the package and upload the checksum file to the repos
+        # Remove the package and sync packages.checksum to each target repo.
         for path in remove_path_list:
-            self.remove_pkg_file(pkg_name, path)
-            self.upload_pkg_file(checksum_path, path)
+            if not missing_ok:
+                self.remove_pkg_file(pkg_name, path)
+                self.upload_pkg_file(checksum_path, path)
+                continue
 
+            if (not path.startswith('ssh://') or not remove_checksum
+                        or checksum_dirty or self._checksum_fetch_failed):
+                # Skip SSH calls on clean builds only when we actually loaded
+                # packages.checksum and confirmed pkg_name is absent from it.
+                self.remove_pkg_file(pkg_name, path, missing_ok=True)
 
-    def remove_pkg_file(self, filename, pkg_dir):
+            # Sync packages.checksum if self.remove_checksum() updated it.
+            # Otherwise, if path already has its own packages.checksum (e.g.
+            # when another local repo in upload_paths still lists pkg_name),
+            # prune pkg_name atomically while preserving all sibling entries.
+            if checksum_dirty:
+                self.upload_pkg_file(checksum_path, path)
+            elif remove_checksum and not path.startswith('ssh://'):
+                self._prune_repo_checksum_file(path, pkg_name)
+
+    def _prune_repo_checksum_file(self, path, pkg_name):
+        """Atomically removes pkg_name entries from path/packages.checksum."""
+        repo_checksum = os.path.join(path, CHECKSUM_FILE)
+        temp_checksum = None
+        try:
+            with open(repo_checksum, 'r') as f:
+                lines = f.read().splitlines()
+            kept = [
+                    line for line in lines
+                    if not (len(line.split(None, 1)) == 2
+                            and line.split(None, 1)[1] == pkg_name)
+            ]
+            if len(kept) == len(lines):
+                return
+            non_empty = [line for line in kept if line.strip()]
+            with tempfile.NamedTemporaryFile(mode='w',
+                                             dir=path,
+                                             prefix=CHECKSUM_FILE + '.',
+                                             delete=False) as tmp:
+                temp_checksum = tmp.name
+                tmp.write('\n'.join(non_empty) + ('\n' if non_empty else ''))
+            os.chmod(temp_checksum, 0o644)
+            os.replace(temp_checksum, repo_checksum)
+            temp_checksum = None
+        except FileNotFoundError:
+            return
+        except (IOError, os.error) as why:
+            raise error.PackageRemoveError('Could not update %s in %s: %s' %
+                                           (CHECKSUM_FILE, path, why))
+        finally:
+            if temp_checksum is not None:
+                try:
+                    os.unlink(temp_checksum)
+                except OSError:
+                    pass
+
+    def remove_pkg_file(self, filename, pkg_dir, missing_ok=False):
         '''
         Remove the file named filename from pkg_dir
         '''
@@ -913,11 +967,17 @@ class BasePackageManager(object):
             if pkg_dir.startswith('ssh://'):
                 hostline, remote_path = parse_ssh_path(pkg_dir)
                 path = os.path.join(remote_path, filename)
-                utils.run("ssh %s 'rm -rf %s/%s'" % (hostline, remote_path,
-                          path))
+                remote_cmd = 'rm -f %s' % shlex.quote(path)
+                utils.run('ssh %s %s' %
+                          (shlex.quote(hostline), shlex.quote(remote_cmd)))
             else:
                 os.remove(os.path.join(pkg_dir, filename))
-        except (IOError, os.error) as why:
+        except FileNotFoundError as why:
+            if not missing_ok:
+                raise error.PackageRemoveError(
+                        "Could not remove %s from %s: %s " %
+                        (filename, pkg_dir, why))
+        except (IOError, os.error, error.CmdError) as why:
             raise error.PackageRemoveError("Could not remove %s from %s: %s "
                                            % (filename, pkg_dir, why))
 
@@ -951,6 +1011,7 @@ class BasePackageManager(object):
         '''
         if not self._checksum_dict:
             checksum_path = self._get_checksum_file_path()
+            checksum_file_contents = None
             # Fetch the checksum file
             try:
                 if not self.exists(checksum_path):
@@ -960,19 +1021,32 @@ class BasePackageManager(object):
                     # See if it is present in the repositories.
                     self.fetch_pkg(CHECKSUM_FILE, checksum_path)
             except error.PackageFetchError:
-                # This should not happen whilst fetching a package..if a
-                # package is present in the repository, the corresponding
-                # checksum file should also be automatically present. This
-                # case happens only when a package
-                # is being uploaded and if it is the first package to be
-                # uploaded to the repos (hence no checksum file created yet)
-                # Return an empty dictionary in that case
-                self._checksum_fetch_failed = True
-                return {}
+                # Seed from an existing local upload target if available (e.g.
+                # packager.py -r <local_dir> when fetch_location is unset) so
+                # upload_pkg(update_checksum=True) preserves sibling entries.
+                for upload_path in self.upload_paths:
+                    if upload_path.startswith('ssh://'):
+                        continue
+                    candidate = os.path.join(upload_path, CHECKSUM_FILE)
+                    if os.path.isfile(candidate):
+                        with open(candidate, 'r') as f:
+                            checksum_file_contents = f.read()
+                        if (
+                                os.path.isdir(os.path.dirname(checksum_path))
+                                and not (os.path.exists(checksum_path)
+                                         and os.path.samefile(
+                                                 candidate, checksum_path))):
+                            shutil.copyfile(candidate, checksum_path)
+                        self._checksum_fetch_failed = False
+                        break
+                if checksum_file_contents is None:
+                    self._checksum_fetch_failed = True
+                    return {}
 
-            # Read the checksum file into memory
-            checksum_file_contents = self._run_command('cat '
-                                                       + checksum_path).stdout
+            if checksum_file_contents is None:
+                # Read the checksum file into memory
+                checksum_file_contents = self._run_command(
+                        'cat ' + checksum_path).stdout
 
             # Return {} if we have an empty checksum file present
             if not checksum_file_contents.strip():
@@ -980,6 +1054,8 @@ class BasePackageManager(object):
 
             # Parse the checksum file contents into self._checksum_dict
             for line in checksum_file_contents.splitlines():
+                if not line.strip():
+                    continue
                 checksum, package_name = line.split(None, 1)
                 self._checksum_dict[package_name] = checksum
 
@@ -1187,21 +1263,6 @@ class BasePackageManager(object):
                 cls.get_tarball_name(name, pkg_type, suffix)
                 for suffix in _ordered_tarball_suffixes()
         ]
-
-    @classmethod
-    def get_published_tarball_names(cls, name, pkg_type):
-        """Lists the tarball names that packager publishes for a package.
-
-        @param name: The name of the package
-        @param pkg_type: The type of the package
-
-        @returns A list of tarball filenames to build and upload
-        """
-        return [
-                cls.get_tarball_name(name, pkg_type, suffix)
-                for suffix in PUBLISHED_TARBALL_SUFFIXES
-        ]
-
 
     @staticmethod
     def parse_tarball_name(tarball_name):

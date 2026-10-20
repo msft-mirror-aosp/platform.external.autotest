@@ -7,6 +7,7 @@
 
 import os
 import re
+import shlex
 import shutil
 import sys
 import tempfile
@@ -168,22 +169,6 @@ class TarballNamingTests(PackageManagerTestBase):
                     packages.PackageManager.get_tarball_names(
                             'telemetry_dep', 'dep'),
                     ['dep-telemetry_dep.tar.bz2', 'dep-telemetry_dep.tar.zst'])
-
-    def test_get_published_tarball_names(self):
-        """PUBLISHED_TARBALL_SUFFIXES is a subset of TARBALL_SUFFIXES."""
-        self.assertTrue(packages.PUBLISHED_TARBALL_SUFFIXES)
-        self.assertLessEqual(set(packages.PUBLISHED_TARBALL_SUFFIXES),
-                             set(packages.TARBALL_SUFFIXES))
-        self.assertEqual(
-                packages.PackageManager.get_published_tarball_names(
-                        'telemetry_dep', 'dep'),
-                ['dep-telemetry_dep.tar.zst', 'dep-telemetry_dep.tar.bz2'])
-        with mock.patch.object(packages, 'PUBLISHED_TARBALL_SUFFIXES',
-                               (packages.ZSTD_TARBALL_SUFFIX, )):
-            self.assertEqual(
-                    packages.PackageManager.get_published_tarball_names(
-                            'telemetry_dep', 'dep'),
-                    ['dep-telemetry_dep.tar.zst'])
 
     def test_parse_tarball_name(self):
         """parse_tarball_name accepts both suffixes and rejects unknown ones."""
@@ -889,6 +874,146 @@ class TarAndUntarTests(PackageManagerTestBase):
                 self.assertEqual(f.read(), 'nested payload\n' * 50)
             self.assertTrue(os.path.isfile(os.path.join(dest_dir,
                                                         '.checksum')))
+
+    def test_remove_pkg_missing_ok_skips_missing_and_prunes_present(self):
+        """remove_pkg(missing_ok=True) skips missing files and prunes stale."""
+        repo_dir = os.path.join(self.temp_dir, 'repo')
+        os.makedirs(repo_dir)
+        pm = self._make_pkgmgr()
+        pm.upload_paths = [repo_dir]
+        pm._checksum_dict = {'dep-keep.tar.zst': '1111'}
+
+        # Absent from both upload_paths and checksum_dict: a pure no-op.
+        pm.remove_pkg('dep-missing.tar.bz2',
+                      remove_checksum=True,
+                      missing_ok=True)
+        self.assertEqual(self.commands, [])
+        self.assertFalse(
+                os.path.exists(os.path.join(repo_dir, packages.CHECKSUM_FILE)))
+
+        # Present in both upload_paths and checksum_dict: deletes both.
+        stale_file = os.path.join(repo_dir, 'dep-stale.tar.bz2')
+        with open(stale_file, 'w') as f:
+            f.write('stale')
+        pm._checksum_dict['dep-stale.tar.bz2'] = '2222'
+        checksum_file = pm._get_checksum_file_path()
+        with open(checksum_file, 'w') as f:
+            f.write('1111 dep-keep.tar.zst\n')
+        pm.remove_pkg('dep-stale.tar.bz2',
+                      remove_checksum=True,
+                      missing_ok=True)
+        self.assertFalse(os.path.exists(stale_file))
+        self.assertNotIn('dep-stale.tar.bz2', pm._checksum_dict)
+        self.assertEqual(pm._checksum_dict, {'dep-keep.tar.zst': '1111'})
+
+        # Fresh PackageManager (no local pkgmgr_dir checksum, repo_urls=[])
+        # preserves sibling entries in repo_dir/packages.checksum both with and
+        # without the stale archive file present on disk.
+        fresh_dir = os.path.join(self.temp_dir, 'fresh_pkgmgr')
+        os.makedirs(fresh_dir)
+        repo_checksum = os.path.join(repo_dir, packages.CHECKSUM_FILE)
+        with open(stale_file, 'w') as f:
+            f.write('stale')
+        with open(repo_checksum, 'w') as f:
+            f.write('1111 dep-keep.tar.zst\n2222 dep-stale.tar.bz2\n')
+        fresh_pm = packages.PackageManager(fresh_dir,
+                                           repo_urls=[],
+                                           upload_paths=[repo_dir],
+                                           do_locking=False,
+                                           run_function=self._fake_run)
+        fresh_pm.remove_pkg('dep-stale.tar.bz2',
+                            remove_checksum=True,
+                            missing_ok=True)
+        self.assertFalse(os.path.exists(stale_file))
+        with open(repo_checksum) as f:
+            self.assertEqual(f.read(), '1111 dep-keep.tar.zst\n')
+
+        # Divergent secondary repo checksum (stale archive file already absent)
+        # is atomically pruned in place without following symlinks.
+        fresh_dir2 = os.path.join(self.temp_dir, 'fresh_pkgmgr2')
+        os.makedirs(fresh_dir2)
+        with open(os.path.join(fresh_dir2, packages.CHECKSUM_FILE), 'w') as f:
+            f.write('1111 dep-keep.tar.zst\n')
+        with open(repo_checksum, 'w') as f:
+            f.write('1111 dep-keep.tar.zst\n3333 dep-orphan.tar.bz2\n')
+        fresh_pm2 = packages.PackageManager(fresh_dir2,
+                                            repo_urls=[],
+                                            upload_paths=[repo_dir],
+                                            do_locking=False,
+                                            run_function=self._fake_run)
+        fresh_pm2.remove_pkg('dep-orphan.tar.bz2',
+                             remove_checksum=True,
+                             missing_ok=True)
+        with open(repo_checksum) as f:
+            self.assertEqual(f.read(), '1111 dep-keep.tar.zst\n')
+
+    def test_remove_pkg_missing_ok_ssh_and_error_wrapping(self):
+        """SSH removal runs unless absent in loaded checksum; errors wrap."""
+        ssh_repo = 'ssh://user@host/remote/packages'
+
+        # 1. Default remove_checksum=False with missing_ok=True removes via SSH.
+        pm_no_csum = self._make_pkgmgr(upload_paths=[ssh_repo])
+        with mock.patch.object(packages.utils, 'run') as mock_run:
+            pm_no_csum.remove_pkg('dep-foo.tar.bz2', missing_ok=True)
+        mock_run.assert_called_once_with(
+                "ssh user@host 'rm -f /remote/packages/dep-foo.tar.bz2'")
+
+        # 2. Uncached repo_urls=[] (_checksum_fetch_failed=True) removes via
+        # SSH even if upload_pkg already populated _checksum_dict locally.
+        pm_uncached = self._make_pkgmgr(repo_urls=[], upload_paths=[ssh_repo])
+        self.assertEqual(pm_uncached._get_checksum_dict(), {})
+        self.assertTrue(pm_uncached._checksum_fetch_failed)
+        pm_uncached._checksum_dict = {'dep-foo.tar.zst': 'new-md5'}
+        with mock.patch.object(packages.utils, 'run') as mock_run:
+            pm_uncached.remove_pkg('dep-foo.tar.bz2',
+                                   remove_checksum=True,
+                                   missing_ok=True)
+        mock_run.assert_called_once_with(
+                "ssh user@host 'rm -f /remote/packages/dep-foo.tar.bz2'")
+
+        # 3. Loaded checksum without pkg_name skips unnecessary SSH call.
+        pm_clean = self._make_pkgmgr(upload_paths=[ssh_repo])
+        pm_clean._checksum_dict = {'dep-foo.tar.zst': '1111'}
+        with mock.patch.object(packages.utils, 'run') as mock_run:
+            pm_clean.remove_pkg('dep-foo.tar.bz2',
+                                remove_checksum=True,
+                                missing_ok=True)
+        mock_run.assert_not_called()
+
+        # 4. Custom filenames with spaces/$ are shell-quoted in both shells.
+        with mock.patch.object(packages.utils, 'run') as mock_run:
+            pm_no_csum.remove_pkg('custom $pkg.tar.bz2', missing_ok=True)
+        local_argv = shlex.split(mock_run.call_args[0][0])
+        self.assertEqual(local_argv[:2], ['ssh', 'user@host'])
+        self.assertEqual(shlex.split(local_argv[2]),
+                         ['rm', '-f', '/remote/packages/custom $pkg.tar.bz2'])
+
+        # 5. Non-ENOENT local OS errors wrap in PackageRemoveError, and
+        # _prune_repo_checksum_file replaces symlinks atomically via os.replace.
+        local_repo = os.path.join(self.temp_dir, 'ro_repo')
+        os.makedirs(local_repo)
+        pm_local = self._make_pkgmgr(upload_paths=[local_repo])
+        with mock.patch.object(os,
+                               'remove',
+                               side_effect=PermissionError('read-only')):
+            with self.assertRaises(error.PackageRemoveError):
+                pm_local.remove_pkg('dep-foo.tar.bz2', missing_ok=True)
+
+        target_file = os.path.join(self.temp_dir, 'outside_target')
+        original = '1111 dep-keep.tar.zst\n2222 dep-stale.tar.bz2\n'
+        with open(target_file, 'w') as f:
+            f.write(original)
+        repo_checksum = os.path.join(local_repo, packages.CHECKSUM_FILE)
+        os.symlink(target_file, repo_checksum)
+        pm_local._checksum_dict = {'dep-keep.tar.zst': '1111'}
+        pm_local.remove_pkg('dep-stale.tar.bz2',
+                            remove_checksum=True,
+                            missing_ok=True)
+        self.assertFalse(os.path.islink(repo_checksum))
+        with open(target_file) as f:
+            self.assertEqual(f.read(), original)
+        with open(repo_checksum) as f:
+            self.assertEqual(f.read(), '1111 dep-keep.tar.zst\n')
 
 
 class RuntestGateTests(unittest.TestCase):

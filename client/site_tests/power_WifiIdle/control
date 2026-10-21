@@ -3,15 +3,16 @@
 # compares between wifi on and off.
 
 NAME = "power_WifiIdle"
+AUTHOR = "ChromeOS Team"
 METADATA = {
     "contacts": ["cros-power-notifications@google.com"],
-    "author": "ChromeOS Team",
     "bug_component": "b:1361410",
     "criteria": "This test is a benchmark test",
     "hw_agnostic": False,
 }
 # ATTRIBUTES = ("suite:power_daily_misc")
 TEST_TYPE = "client"
+REQUIRE_TELEMETRY = True
 
 args_dict = utils.args_to_dict(args)
 pdash_note = args_dict.get('pdash_note', '')
